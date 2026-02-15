@@ -70,8 +70,11 @@ import { Badge } from "@/components/ui/badge";
 import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
 import { GeneralOptimizerSettings } from "@/components/general-optimizer-settings";
+import { useTranslation } from "react-i18next";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -79,19 +82,19 @@ export default function SettingsPage() {
           <div className="p-2 bg-primary/10 rounded-lg">
             <SettingsIcon className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
         </div>
 
         <Tabs defaultValue="templates" className="space-y-4">
           <TabsList>
             <TabsTrigger value="general" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
-              Ajustes generales
+              {t("settings.tabs.general")}
             </TabsTrigger>
 
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
-              Task Templates
+              {t("settings.tabs.templates")}
             </TabsTrigger>
 
             <TabsTrigger value="spaces" className="flex items-center gap-2">
