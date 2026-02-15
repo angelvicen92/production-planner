@@ -1,0 +1,9 @@
+{
+  "settings": {
+    "title": "Ajustes",
+    "tabs": {
+      "general": "Ajustes generales",
+      "templates": "Plantillas de tareas"
+    }
+  }
+}

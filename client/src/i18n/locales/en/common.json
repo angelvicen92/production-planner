@@ -1,0 +1,9 @@
+{
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General settings",
+      "templates": "Task templates"
+    }
+  }
+}
