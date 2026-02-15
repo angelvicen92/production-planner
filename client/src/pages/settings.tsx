@@ -3548,10 +3548,10 @@ function TaskTemplatesSettings() {
                 </TableCell>
               </TableRow>
             ) : (
-              templates?.map((t) => (
-                <TableRow key={t.id}>
+              templates?.map((template) => (
+                <TableRow key={template.id}>
                   <TableCell className="font-medium">
-                    {editingId === t.id ? (
+                    {editingId === template.id ? (
                       <Input
                         value={editData?.name ?? ""}
                         onChange={(e) =>
@@ -3564,9 +3564,9 @@ function TaskTemplatesSettings() {
                       <button
                         type="button"
                         className="text-left underline-offset-2 hover:underline"
-                        onClick={() => openTemplateDialog(t)}
+                        onClick={() => openTemplateDialog(template)}
                       >
-                        {t.name}
+                        {template.name}
                       </button>
                     )}
                   </TableCell>
@@ -3577,24 +3577,24 @@ function TaskTemplatesSettings() {
                         type="number"
                         className="h-8 w-28"
                         value={
-                          bulkDraft[Number(t.id)]?.defaultDuration ??
-                          t.defaultDuration ??
+                          bulkDraft[Number(template.id)]?.defaultDuration ??
+                          template.defaultDuration ??
                           30
                         }
                         onChange={(e) => {
                           const v = Number(e.target.value);
                           setBulkDraft((p) => ({
                             ...p,
-                            [Number(t.id)]: {
-                              ...(p[Number(t.id)] ?? {}),
-                              id: Number(t.id),
-                              name: p[Number(t.id)]?.name ?? t.name ?? "",
+                            [Number(template.id)]: {
+                              ...(p[Number(template.id)] ?? {}),
+                              id: Number(template.id),
+                              name: p[Number(template.id)]?.name ?? template.name ?? "",
                               defaultDuration: Number.isFinite(v) ? v : 30,
                             },
                           }));
                         }}
                       />
-                    ) : editingId === t.id ? (
+                    ) : editingId === template.id ? (
                       <Input
                         type="number"
                         value={editData?.defaultDuration ?? 30}
@@ -3610,7 +3610,7 @@ function TaskTemplatesSettings() {
                         }
                       />
                     ) : (
-                      `${t.defaultDuration} min`
+                      `${template.defaultDuration} min`
                     )}
                   </TableCell>
 
@@ -3619,9 +3619,9 @@ function TaskTemplatesSettings() {
                     {bulkEditing ? (
                       (() => {
                         const raw =
-                          bulkDraft[Number(t.id)]?.uiColor ??
-                          (t as any).uiColor ??
-                          (t as any).ui_color ??
+                          bulkDraft[Number(template.id)]?.uiColor ??
+                          (template as any).uiColor ??
+                          (template as any).ui_color ??
                           null;
 
                         const textValue = (raw ?? "") as string;
@@ -3638,10 +3638,10 @@ function TaskTemplatesSettings() {
                               onChange={(e) =>
                                 setBulkDraft((p) => ({
                                   ...p,
-                                  [Number(t.id)]: {
-                                    ...(p[Number(t.id)] ?? {}),
-                                    id: Number(t.id),
-                                    name: p[Number(t.id)]?.name ?? t.name ?? "",
+                                  [Number(template.id)]: {
+                                    ...(p[Number(template.id)] ?? {}),
+                                    id: Number(template.id),
+                                    name: p[Number(template.id)]?.name ?? template.name ?? "",
                                     uiColor: e.target.value,
                                   },
                                 }))
@@ -3654,10 +3654,10 @@ function TaskTemplatesSettings() {
                               onChange={(e) =>
                                 setBulkDraft((p) => ({
                                   ...p,
-                                  [Number(t.id)]: {
-                                    ...(p[Number(t.id)] ?? {}),
-                                    id: Number(t.id),
-                                    name: p[Number(t.id)]?.name ?? t.name ?? "",
+                                  [Number(template.id)]: {
+                                    ...(p[Number(template.id)] ?? {}),
+                                    id: Number(template.id),
+                                    name: p[Number(template.id)]?.name ?? template.name ?? "",
                                     uiColor: e.target.value || null,
                                   },
                                 }))
@@ -3668,7 +3668,7 @@ function TaskTemplatesSettings() {
                           </div>
                         );
                       })()
-                    ) : editingId === t.id ? (
+                    ) : editingId === template.id ? (
                       <div className="flex items-center gap-2">
                         <Input
                           type="color"
@@ -3709,13 +3709,13 @@ function TaskTemplatesSettings() {
                           className="h-4 w-4 rounded border"
                           style={{
                             backgroundColor:
-                              (t as any).uiColor ??
-                              (t as any).ui_color ??
+                              (template as any).uiColor ??
+                              (template as any).ui_color ??
                               "transparent",
                           }}
                         />
                         <span className="text-xs text-muted-foreground">
-                          {(t as any).uiColor ?? (t as any).ui_color ?? "—"}
+                          {(template as any).uiColor ?? (template as any).ui_color ?? "—"}
                         </span>
                       </div>
                     )}
@@ -3726,9 +3726,9 @@ function TaskTemplatesSettings() {
                     {bulkEditing ? (
                       (() => {
                         const raw =
-                          bulkDraft[Number(t.id)]?.uiColorSecondary ??
-                          (t as any).uiColorSecondary ??
-                          (t as any).ui_color_secondary ??
+                          bulkDraft[Number(template.id)]?.uiColorSecondary ??
+                          (template as any).uiColorSecondary ??
+                          (template as any).ui_color_secondary ??
                           null;
 
                         const textValue = (raw ?? "") as string;
@@ -3745,10 +3745,10 @@ function TaskTemplatesSettings() {
                               onChange={(e) =>
                                 setBulkDraft((p) => ({
                                   ...p,
-                                  [Number(t.id)]: {
-                                    ...(p[Number(t.id)] ?? {}),
-                                    id: Number(t.id),
-                                    name: p[Number(t.id)]?.name ?? t.name ?? "",
+                                  [Number(template.id)]: {
+                                    ...(p[Number(template.id)] ?? {}),
+                                    id: Number(template.id),
+                                    name: p[Number(template.id)]?.name ?? template.name ?? "",
                                     uiColorSecondary: e.target.value,
                                   },
                                 }))
@@ -3761,10 +3761,10 @@ function TaskTemplatesSettings() {
                               onChange={(e) =>
                                 setBulkDraft((p) => ({
                                   ...p,
-                                  [Number(t.id)]: {
-                                    ...(p[Number(t.id)] ?? {}),
-                                    id: Number(t.id),
-                                    name: p[Number(t.id)]?.name ?? t.name ?? "",
+                                  [Number(template.id)]: {
+                                    ...(p[Number(template.id)] ?? {}),
+                                    id: Number(template.id),
+                                    name: p[Number(template.id)]?.name ?? template.name ?? "",
                                     uiColorSecondary: e.target.value || null,
                                   },
                                 }))
@@ -3781,14 +3781,14 @@ function TaskTemplatesSettings() {
                           className="h-4 w-4 rounded border"
                           style={{
                             backgroundColor:
-                              (t as any).uiColorSecondary ??
-                              (t as any).ui_color_secondary ??
+                              (template as any).uiColorSecondary ??
+                              (template as any).ui_color_secondary ??
                               "transparent",
                           }}
                         />
                         <span className="text-xs text-muted-foreground">
-                          {(t as any).uiColorSecondary ??
-                            (t as any).ui_color_secondary ??
+                          {(template as any).uiColorSecondary ??
+                            (template as any).ui_color_secondary ??
                             "—"}
                         </span>
                       </div>
@@ -3800,23 +3800,23 @@ function TaskTemplatesSettings() {
                     {bulkEditing ? (
                       <Select
                         value={
-                          bulkDraft[Number(t.id)]?.zoneId === null ||
-                          bulkDraft[Number(t.id)]?.zoneId === undefined
+                          bulkDraft[Number(template.id)]?.zoneId === null ||
+                          bulkDraft[Number(template.id)]?.zoneId === undefined
                             ? String(
-                                (t as any).zoneId ??
-                                  (t as any).zone_id ??
+                                (template as any).zoneId ??
+                                  (template as any).zone_id ??
                                   "none",
                               )
-                            : String(bulkDraft[Number(t.id)]?.zoneId)
+                            : String(bulkDraft[Number(template.id)]?.zoneId)
                         }
                         onValueChange={(v) => {
                           const nextZoneId = v === "none" ? null : Number(v);
                           setBulkDraft((p) => ({
                             ...p,
-                            [Number(t.id)]: {
-                              ...(p[Number(t.id)] ?? {}),
-                              id: Number(t.id),
-                              name: p[Number(t.id)]?.name ?? t.name ?? "",
+                            [Number(template.id)]: {
+                              ...(p[Number(template.id)] ?? {}),
+                              id: Number(template.id),
+                              name: p[Number(template.id)]?.name ?? template.name ?? "",
                               zoneId: nextZoneId,
                               spaceId: null, // si cambias plató, resetea espacio
                             },
@@ -3839,7 +3839,7 @@ function TaskTemplatesSettings() {
                       <span className="text-sm">
                         {(() => {
                           const zid = Number(
-                            (t as any).zoneId ?? (t as any).zone_id,
+                            (template as any).zoneId ?? (template as any).zone_id,
                           );
                           if (!Number.isFinite(zid)) return "—";
                           return zonesById.get(zid)?.name ?? `#${zid}`;
@@ -3853,23 +3853,23 @@ function TaskTemplatesSettings() {
                     {bulkEditing ? (
                       <Select
                         value={
-                          bulkDraft[Number(t.id)]?.spaceId === null ||
-                          bulkDraft[Number(t.id)]?.spaceId === undefined
+                          bulkDraft[Number(template.id)]?.spaceId === null ||
+                          bulkDraft[Number(template.id)]?.spaceId === undefined
                             ? String(
-                                (t as any).spaceId ??
-                                  (t as any).space_id ??
+                                (template as any).spaceId ??
+                                  (template as any).space_id ??
                                   "none",
                               )
-                            : String(bulkDraft[Number(t.id)]?.spaceId)
+                            : String(bulkDraft[Number(template.id)]?.spaceId)
                         }
                         onValueChange={(v) => {
                           const nextSpaceId = v === "none" ? null : Number(v);
                           setBulkDraft((p) => ({
                             ...p,
-                            [Number(t.id)]: {
-                              ...(p[Number(t.id)] ?? {}),
-                              id: Number(t.id),
-                              name: p[Number(t.id)]?.name ?? t.name ?? "",
+                            [Number(template.id)]: {
+                              ...(p[Number(template.id)] ?? {}),
+                              id: Number(template.id),
+                              name: p[Number(template.id)]?.name ?? template.name ?? "",
                               spaceId: nextSpaceId,
                             },
                           }));
@@ -3882,9 +3882,9 @@ function TaskTemplatesSettings() {
                           <SelectItem value="none">Sin espacio</SelectItem>
                           {(() => {
                             const zid =
-                              bulkDraft[Number(t.id)]?.zoneId ??
-                              (t as any).zoneId ??
-                              (t as any).zone_id ??
+                              bulkDraft[Number(template.id)]?.zoneId ??
+                              (template as any).zoneId ??
+                              (template as any).zone_id ??
                               null;
 
                             if (zid === null || zid === undefined)
@@ -3907,7 +3907,7 @@ function TaskTemplatesSettings() {
                       <span className="text-sm">
                         {(() => {
                           const sid = Number(
-                            (t as any).spaceId ?? (t as any).space_id,
+                            (template as any).spaceId ?? (template as any).space_id,
                           );
                           if (!Number.isFinite(sid)) return "—";
                           return (
@@ -4086,7 +4086,7 @@ function TaskTemplatesSettings() {
 
                                     return (
                                       <div
-                                        key={t.id}
+                                        key={template.id}
                                         className="border rounded-md p-2"
                                       >
                                         <div className="text-sm font-medium mb-2">
@@ -4227,7 +4227,7 @@ function TaskTemplatesSettings() {
 
                                       return (
                                         <div
-                                          key={t.id}
+                                          key={template.id}
                                           className="border rounded-md p-2"
                                         >
                                           <div className="text-sm font-medium mb-2">
@@ -4302,24 +4302,24 @@ function TaskTemplatesSettings() {
                       <div className="flex flex-col gap-2">
                         <Select
                           value={String(
-                            bulkDraft[Number(t.id)]?.itinerantTeamRequirement ??
-                              (t as any).itinerantTeamRequirement ??
-                              (t as any).itinerant_team_requirement ??
+                            bulkDraft[Number(template.id)]?.itinerantTeamRequirement ??
+                              (template as any).itinerantTeamRequirement ??
+                              (template as any).itinerant_team_requirement ??
                               "none",
                           )}
                           onValueChange={(v) => {
                             setBulkDraft((p) => ({
                               ...p,
-                              [Number(t.id)]: {
-                                ...(p[Number(t.id)] ?? {}),
-                                id: Number(t.id),
-                                name: p[Number(t.id)]?.name ?? t.name ?? "",
+                              [Number(template.id)]: {
+                                ...(p[Number(template.id)] ?? {}),
+                                id: Number(template.id),
+                                name: p[Number(template.id)]?.name ?? template.name ?? "",
                                 itinerantTeamRequirement: v,
                                 itinerantTeamId:
                                   v === "specific"
-                                    ? (p[Number(t.id)]?.itinerantTeamId ??
-                                      (t as any).itinerantTeamId ??
-                                      (t as any).itinerant_team_id ??
+                                    ? (p[Number(template.id)]?.itinerantTeamId ??
+                                      (template as any).itinerantTeamId ??
+                                      (template as any).itinerant_team_id ??
                                       null)
                                     : null,
                               },
@@ -4338,25 +4338,25 @@ function TaskTemplatesSettings() {
                           </SelectContent>
                         </Select>
 
-                        {(bulkDraft[Number(t.id)]?.itinerantTeamRequirement ??
-                          (t as any).itinerantTeamRequirement ??
-                          (t as any).itinerant_team_requirement ??
+                        {(bulkDraft[Number(template.id)]?.itinerantTeamRequirement ??
+                          (template as any).itinerantTeamRequirement ??
+                          (template as any).itinerant_team_requirement ??
                           "none") === "specific" ? (
                           <Select
                             value={String(
-                              bulkDraft[Number(t.id)]?.itinerantTeamId ??
-                                (t as any).itinerantTeamId ??
-                                (t as any).itinerant_team_id ??
+                              bulkDraft[Number(template.id)]?.itinerantTeamId ??
+                                (template as any).itinerantTeamId ??
+                                (template as any).itinerant_team_id ??
                                 "none",
                             )}
                             onValueChange={(v) => {
                               const nextId = v === "none" ? null : Number(v);
                               setBulkDraft((p) => ({
                                 ...p,
-                                [Number(t.id)]: {
-                                  ...(p[Number(t.id)] ?? {}),
-                                  id: Number(t.id),
-                                  name: p[Number(t.id)]?.name ?? t.name ?? "",
+                                [Number(template.id)]: {
+                                  ...(p[Number(template.id)] ?? {}),
+                                  id: Number(template.id),
+                                  name: p[Number(template.id)]?.name ?? template.name ?? "",
                                   itinerantTeamId: nextId,
                                 },
                               }));
@@ -4402,12 +4402,12 @@ function TaskTemplatesSettings() {
                       <span className="text-sm">
                         {(() => {
                           const req =
-                            (t as any).itinerantTeamRequirement ??
-                            (t as any).itinerant_team_requirement ??
+                            (template as any).itinerantTeamRequirement ??
+                            (template as any).itinerant_team_requirement ??
                             "none";
                           const id =
-                            (t as any).itinerantTeamId ??
-                            (t as any).itinerant_team_id ??
+                            (template as any).itinerantTeamId ??
+                            (template as any).itinerant_team_id ??
                             null;
 
                           if (req === "any") return "Cualquiera (motor decide)";
@@ -4432,9 +4432,9 @@ function TaskTemplatesSettings() {
                           <Button variant="outline" size="sm" className="h-8">
                             {(() => {
                               const deps =
-                                bulkDraft[Number(t.id)]?.dependsOnTemplateIds ??
-                                (t as any).dependsOnTemplateIds ??
-                                (t as any).depends_on_template_ids ??
+                                bulkDraft[Number(template.id)]?.dependsOnTemplateIds ??
+                                (template as any).dependsOnTemplateIds ??
+                                (template as any).depends_on_template_ids ??
                                 [];
 
                               const ids = Array.isArray(deps)
@@ -4459,25 +4459,25 @@ function TaskTemplatesSettings() {
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-lg">
                           <DialogHeader>
-                            <DialogTitle>Dependencias — {t.name}</DialogTitle>
+                            <DialogTitle>Dependencias — {template.name}</DialogTitle>
                           </DialogHeader>
 
                           <div className="flex items-center gap-2 pb-2">
                             <Checkbox
                               checked={Boolean(
-                                bulkDraft[Number(t.id)]?.hasDependency ??
-                                  (t as any).hasDependency ??
-                                  (t as any).has_dependency ??
+                                bulkDraft[Number(template.id)]?.hasDependency ??
+                                  (template as any).hasDependency ??
+                                  (template as any).has_dependency ??
                                   false,
                               )}
                               onCheckedChange={(v) => {
                                 const checked = v === true;
                                 setBulkDraft((p) => {
-                                  const current = p[Number(t.id)] ?? {};
+                                  const current = p[Number(template.id)] ?? {};
                                   const existingDeps =
                                     current.dependsOnTemplateIds ??
-                                    (t as any).dependsOnTemplateIds ??
-                                    (t as any).depends_on_template_ids ??
+                                    (template as any).dependsOnTemplateIds ??
+                                    (template as any).depends_on_template_ids ??
                                     [];
                                   const deps = checked
                                     ? Array.isArray(existingDeps)
@@ -4486,10 +4486,10 @@ function TaskTemplatesSettings() {
                                     : [];
                                   return {
                                     ...p,
-                                    [Number(t.id)]: {
+                                    [Number(template.id)]: {
                                       ...current,
-                                      id: Number(t.id),
-                                      name: current.name ?? t.name ?? "",
+                                      id: Number(template.id),
+                                      name: current.name ?? template.name ?? "",
                                       hasDependency: checked,
                                       dependsOnTemplateIds: deps,
                                     },
@@ -4503,18 +4503,18 @@ function TaskTemplatesSettings() {
                           <div className="border rounded-md p-2 max-h-72 overflow-auto space-y-1">
                             {(templates ?? []).map((tt: any) => {
                               const depId = Number(tt.id);
-                              const selfId = Number(t.id);
+                              const selfId = Number(template.id);
 
-                              const draft = bulkDraft[Number(t.id)] ?? {};
+                              const draft = bulkDraft[Number(template.id)] ?? {};
                               const enabled = Boolean(
                                 draft.hasDependency ??
-                                  (t as any).hasDependency ??
-                                  (t as any).has_dependency ??
+                                  (template as any).hasDependency ??
+                                  (template as any).has_dependency ??
                                   false,
                               );
                               const deps = (draft.dependsOnTemplateIds ??
-                                (t as any).dependsOnTemplateIds ??
-                                (t as any).depends_on_template_ids ??
+                                (template as any).dependsOnTemplateIds ??
+                                (template as any).depends_on_template_ids ??
                                 []) as number[];
 
                               const checked = Array.isArray(deps)
@@ -4532,11 +4532,11 @@ function TaskTemplatesSettings() {
                                     onCheckedChange={(v) => {
                                       const next = v === true;
                                       setBulkDraft((p) => {
-                                        const current = p[Number(t.id)] ?? {};
+                                        const current = p[Number(template.id)] ?? {};
                                         const curDeps =
                                           (current.dependsOnTemplateIds ??
-                                            (t as any).dependsOnTemplateIds ??
-                                            (t as any)
+                                            (template as any).dependsOnTemplateIds ??
+                                            (template as any)
                                               .depends_on_template_ids ??
                                             []) as number[];
 
@@ -4551,14 +4551,14 @@ function TaskTemplatesSettings() {
 
                                         return {
                                           ...p,
-                                          [Number(t.id)]: {
+                                          [Number(template.id)]: {
                                             ...current,
-                                            id: Number(t.id),
-                                            name: current.name ?? t.name ?? "",
+                                            id: Number(template.id),
+                                            name: current.name ?? template.name ?? "",
                                             hasDependency: Boolean(
                                               current.hasDependency ??
-                                                (t as any).hasDependency ??
-                                                (t as any).has_dependency ??
+                                                (template as any).hasDependency ??
+                                                (template as any).has_dependency ??
                                                 false,
                                             ),
                                             dependsOnTemplateIds: updated,
@@ -4577,15 +4577,15 @@ function TaskTemplatesSettings() {
                           </div>
 
                           {Boolean(
-                            bulkDraft[Number(t.id)]?.hasDependency ??
-                              (t as any).hasDependency ??
-                              (t as any).has_dependency ??
+                            bulkDraft[Number(template.id)]?.hasDependency ??
+                              (template as any).hasDependency ??
+                              (template as any).has_dependency ??
                               false,
                           ) &&
                             (
-                              (bulkDraft[Number(t.id)]?.dependsOnTemplateIds ??
-                                (t as any).dependsOnTemplateIds ??
-                                (t as any).depends_on_template_ids ??
+                              (bulkDraft[Number(template.id)]?.dependsOnTemplateIds ??
+                                (template as any).dependsOnTemplateIds ??
+                                (template as any).depends_on_template_ids ??
                                 []) as any[]
                             )?.length === 0 && (
                               <p className="text-xs text-red-500 pt-2">
@@ -4598,11 +4598,11 @@ function TaskTemplatesSettings() {
                       <span className="text-sm text-muted-foreground">
                         {(() => {
                           const deps = Array.isArray(
-                            (t as any).dependsOnTemplateIds,
+                            (template as any).dependsOnTemplateIds,
                           )
-                            ? (t as any).dependsOnTemplateIds
-                            : Array.isArray((t as any).depends_on_template_ids)
-                              ? (t as any).depends_on_template_ids
+                            ? (template as any).dependsOnTemplateIds
+                            : Array.isArray((template as any).depends_on_template_ids)
+                              ? (template as any).depends_on_template_ids
                               : [];
                           if (!deps.length) return "—";
                           const names = deps
@@ -4622,7 +4622,7 @@ function TaskTemplatesSettings() {
                   <TableCell className="text-right flex justify-end gap-2">
                     {bulkEditing ? (
                       <span className="text-muted-foreground">—</span>
-                    ) : editingId === t.id ? (
+                    ) : editingId === template.id ? (
                       <>
                         <Button
                           variant="outline"
@@ -4650,7 +4650,7 @@ function TaskTemplatesSettings() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            openReqDialog(t);
+                            openReqDialog(template);
                           }}
                           disabled={deleteTask.isPending}
                           title="Requisitos de recursos (genérico/específico/alternativas)"
@@ -4661,7 +4661,7 @@ function TaskTemplatesSettings() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => startEdit(t)}
+                          onClick={() => startEdit(template)}
                           disabled={deleteTask.isPending}
                         >
                           Edit
@@ -4671,7 +4671,7 @@ function TaskTemplatesSettings() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(t.id)}
+                          onClick={() => handleDelete(template.id)}
                           disabled={deleteTask.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
