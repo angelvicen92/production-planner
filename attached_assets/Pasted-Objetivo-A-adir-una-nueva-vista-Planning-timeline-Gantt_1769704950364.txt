@@ -1,0 +1,125 @@
+Objetivo: Añadir una nueva vista “Planning” (timeline/Gantt) dentro de la pantalla de detalle de un plan, usando únicamente datos ya existentes (sin cambios de backend / DB). La vista debe mostrar la planificación generada (startPlanned/endPlanned), el horario del día y el bloque de comida.
+
+Contexto del proyecto
+
+App React + TypeScript + Tailwind + shadcn/ui.
+
+Pantalla principal de plan: client/src/pages/plan-details.tsx
+
+Datos de plan/tareas/concursantes ya existen y funcionan (no romper).
+
+Ya existe “Generate Planning” que persiste start_planned/end_planned.
+
+Regla de oro: no mover hooks debajo de returns (evitar “Rendered more hooks…”).
+
+No tocar el contrato API en @shared/routes.ts ni añadir endpoints.
+
+Alcance exacto (lo que tienes que implementar)
+
+Añadir Tabs en Plan Details:
+
+Tab 1: “Tasks” (la vista actual, tal cual).
+
+Tab 2: “Planning” (nueva vista).
+
+Nueva vista Planning (timeline/Gantt)
+
+Encabezado con:
+
+Work Start/End
+
+Meal Start/End
+
+Cameras Available
+
+Botón “Generate Planning” (usar el existente si ya está en la página; no duplicar lógica).
+
+Timeline horizontal:
+
+Rango: desde workStart hasta workEnd.
+
+Debe sombrear visualmente el tramo de comida (mealStart–mealEnd).
+
+Mostrar tareas como “barras”:
+
+Cada tarea con startPlanned/endPlanned se dibuja como un rectángulo posicionado proporcionalmente en la línea de tiempo.
+
+Texto dentro: label (si cabe) y horas HH:MM–HH:MM.
+
+Tooltip o popover al hover con: label, contestant (si existe), camerasRequired/Override (si está), status.
+
+Agrupar en “lanes” por concursante:
+
+Si la tarea tiene contestantId, va en el lane del concursante con su nombre.
+
+Si no tiene concursante, lane “Sin concursante”.
+
+Orden:
+
+Lanes ordenadas alfabéticamente por nombre.
+
+Dentro de cada lane, tareas ordenadas por startPlanned (o por id si falta).
+
+Estados robustos (no crashear nunca)
+
+Si no hay tareas → mostrar empty state claro.
+
+Si hay tareas pero ninguna tiene startPlanned/endPlanned → mostrar mensaje: “Aún no hay planificación. Pulsa Generate Planning.”
+
+Si falta algún dato del plan (workStart etc.) → mostrar warning y CTA a editar día.
+
+Nunca asumir relaciones cargadas: usar optional chaining y fallbacks.
+
+UI/UX
+
+Debe ser usable en pantallas normales:
+
+Timeline con overflow-x si es necesario.
+
+Lanes con scroll vertical (p.ej. ScrollArea).
+
+Usar componentes shadcn/ui ya existentes en repo:
+
+Tabs, Card, Badge, ScrollArea, Tooltip/Popover (elige uno).
+
+Estilo limpio y consistente (Tailwind).
+
+No meter librerías nuevas.
+
+Archivos que PUEDES tocar/crear (limitado)
+
+Editar: client/src/pages/plan-details.tsx
+
+Crear componentes si ayuda:
+
+client/src/components/planning-timeline.tsx (o nombre parecido)
+
+client/src/components/planning-lane.tsx (opcional)
+
+Puedes añadir utilidades pequeñas (solo si hace falta):
+
+client/src/lib/time.ts (si no existe) para convertir HH:MM a minutos.
+
+Archivos que NO debes tocar
+
+Backend: server/**, engine/**
+
+Shared API contract: shared/routes.ts
+
+No migraciones Supabase.
+
+Criterios de aceptación (checklist)
+
+ En Plan Details aparecen Tabs “Tasks” y “Planning”.
+
+ La tab “Tasks” se ve exactamente igual que antes.
+
+ La tab “Planning” muestra timeline con sombreado de comida.
+
+ Se dibujan barras para tareas con startPlanned/endPlanned.
+
+ Lanes por concursante con nombre correcto + lane “Sin concursante”.
+
+ Si no hay planificación, aparece mensaje guía y no crashea.
+
+ No hay errores TS ni warnings de hooks.

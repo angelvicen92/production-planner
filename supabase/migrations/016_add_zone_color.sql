@@ -1,0 +1,2 @@
+ALTER TABLE zones
+ADD COLUMN ui_color TEXT;

@@ -1,0 +1,111 @@
+import { Layout } from "@/components/layout";
+import { usePlans, usePlan } from "@/hooks/use-plans";
+import { useContestants } from "@/hooks/use-tasks";
+import { PlanningTimeline } from "@/components/planning-timeline";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
+import { Loader2, GanttChartSquare } from "lucide-react";
+
+export default function TimelinePage() {
+  const { data: plans, isLoading: isLoadingPlans } = usePlans();
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  const planId = selectedPlanId ? parseInt(selectedPlanId) : plans?.[0]?.id;
+  const { data: contestants = [], isLoading: isLoadingContestants } = useContestants(planId || 0);
+
+  const selectedPlanSummary = plans?.find(p => p.id === planId);
+  const { data: selectedPlan, isLoading: isLoadingPlan } = usePlan(planId || 0);
+
+  if (isLoadingPlans) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <GanttChartSquare className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">Timeline Explorer</h1>
+          </div>
+
+          <div className="w-full md:w-64">
+            <Select 
+              value={selectedPlanId || plans?.[0]?.id?.toString()} 
+              onValueChange={setSelectedPlanId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {plans?.map((p) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    Plan #{p.id} - {new Date(p.date).toLocaleDateString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {selectedPlanSummary ? (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Plan Details: #{selectedPlanSummary.id}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <p className="font-medium capitalize">{selectedPlanSummary.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Work Hours</p>
+                    <p className="font-medium">{selectedPlanSummary.workStart} - {selectedPlanSummary.workEnd}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Meal Break</p>
+                    <p className="font-medium">{selectedPlanSummary.mealStart} - {selectedPlanSummary.mealEnd}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tasks</p>
+                    <p className="font-medium">{(selectedPlan as any)?.dailyTasks?.length || 0} items</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isLoadingPlan ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : isLoadingContestants ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <PlanningTimeline 
+                plan={(selectedPlan as any) ?? ({ ...selectedPlanSummary, dailyTasks: [] } as any)} 
+                contestants={contestants as any} 
+              />
+            )}
+          </div>
+        ) : (
+          <Card className="p-12 text-center bg-muted/50">
+            <p className="text-muted-foreground">No plans available to visualize.</p>
+          </Card>
+        )}
+      </div>
+    </Layout>
+  );
+}

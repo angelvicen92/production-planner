@@ -1,0 +1,51 @@
+modules = ["nodejs-20", "web", "postgresql-16"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[env]
+PORT = "5000"
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["node", "./dist/index.cjs"]
+build = ["npm", "run", "build"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[agent]
+integrations = ["javascript_log_in_with_replit:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_URL = "https://dyqusivzgxebkxkwohwn.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5cXVzaXZ6Z3hlYmt4a3dvaHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NjE0ODgsImV4cCI6MjA4NTAzNzQ4OH0.cs49-OFBDPe7WiEtBqa96kYywZAwy2QkZ-z9VmUenWQ"
+
+VITE_SUPABASE_URL = "https://dyqusivzgxebkxkwohwn.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5cXVzaXZ6Z3hlYmt4a3dvaHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NjE0ODgsImV4cCI6MjA4NTAzNzQ4OH0.cs49-OFBDPe7WiEtBqa96kYywZAwy2QkZ-z9VmUenWQ"

@@ -1,0 +1,205 @@
+QUIERO UN CAMBIO GRANDE, PERO CONTROLADO. ACTÚA COMO TECH LEAD.
+
+CONTEXTO
+Tengo un proyecto en Replit con:
+- client/ (React+TS+Vite+Tailwind+shadcn+React Query)
+- server/ (Express)
+- drizzle ORM y auth de Replit (Passport)
+- carpeta engine/ con stub
+
+OBJETIVO DE ESTE LOTE
+Alinear el proyecto con el PRD: Supabase Postgres + Auth + Realtime + RLS.
+El resultado debe ser una base sólida para implementar el motor.
+
+REGLAS ABSOLUTAS (NO NEGOCIABLES)
+1) NO hardcodear dominio (nada “Plató 7” en strings).
+2) engine/ NO depende de supabase ni de frontend. Es puro.
+3) Todas las vistas deben tener loading/empty/error (no crashear por null/undefined).
+4) Las tareas in_progress/done son inmutables a nivel backend (aunque UI falle).
+5) Cambios manuales deben crear locks como entidad (ya existe tabla locks).
+6) NO metas features fuera de scope (reportes, export, analytics, multi-día, IA).
+
+GRAN CAMBIO: MIGRAR A SUPABASE (AUTH + DB + REALTIME)
+- Eliminar el sistema actual de auth de Replit/Passport.
+- Implementar Supabase Auth (email/password) desde el frontend.
+- Backend: Express sigue existiendo como API, pero ahora usa Supabase como base de datos.
+- Realtime: el frontend se suscribe a cambios de daily_tasks del plan actual y refresca queries.
+
+ENTORNO / VARIABLES
+Añade soporte a estas env vars:
+
+Frontend (.env / Replit Secrets):
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
+
+Backend (Replit Secrets):
+- SUPABASE_URL   (mismo valor que VITE_SUPABASE_URL)
+- SUPABASE_SERVICE_ROLE_KEY  (service role key)
+- SUPABASE_ANON_KEY          (anon key)
+
+IMPORTANTE:
+- El frontend usa Anon Key.
+- El backend usa Service Role Key para operaciones admin y motor (pero debe aplicar reglas del dominio igualmente).
+- El backend debe requerir Authorization Bearer token para endpoints (excepto health).
+
+IMPLEMENTACIÓN - PASOS OBLIGATORIOS
+
+A) SUPABASE CLIENTS
+1) Crear archivo:
+- client/src/lib/supabaseClient.ts
+  - export supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
+
+2) Crear archivo:
+- server/supabase.ts
+  - export supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  - export supabaseAnon  = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+3) Middleware auth en backend:
+- server/middleware/requireAuth.ts
+  - Lee header Authorization: Bearer <token>
+  - Valida usuario llamando a supabaseAnon.auth.getUser(token)
+  - Si ok, adjunta req.user = { id, email }
+  - Si no, 401.
+
+B) ELIMINAR AUTH VIEJO (CRÍTICO)
+- Eliminar o dejar sin uso:
+  - server/replit_integrations/auth/*
+  - hooks/use-auth.ts actual si usa endpoints legacy
+  - rutas server que dependan de passport/session
+- Cambiar server/index.ts para NO montar auth de Replit.
+- El server debe ser stateless (sin sesiones). Solo Bearer token.
+
+C) BASE DE DATOS EN SUPABASE (SQL EN EL REPO)
+Crear carpeta:
+- supabase/migrations/001_init.sql
+
+Incluye SQL para crear tablas (si aún no existen) usando Postgres:
+- plans
+- zones
+- spaces
+- resources
+- resource_availability
+- task_templates
+- daily_tasks
+- locks
+
+Notas:
+- Puedes usar BIGINT GENERATED ALWAYS AS IDENTITY para ids (o UUID si prefieres), pero sé consistente en TS.
+- Campos deben alinearse con shared/schema.ts actual (work_start, meal_start, etc).
+- Añadir índices básicos:
+  - daily_tasks(plan_id)
+  - locks(plan_id), locks(task_id)
+  - resource_availability(plan_id), resource_availability(resource_id)
+
+D) RLS MÍNIMO (NO PERFECTO PERO FUNCIONAL)
+En el mismo SQL, activar RLS y crear políticas mínimas:
+- Para authenticated:
+  - SELECT en todas estas tablas
+  - INSERT/UPDATE en plans, daily_tasks, locks (para MVP)
+- (NO te compliques con roles Admin/Ayudante/Auxiliar en este lote, solo deja preparado el campo futuro).
+
+E) REEMPLAZAR DRIZZLE POR SUPABASE EN STORAGE
+1) Mantén shared/schema.ts como “tipos” si quieres, pero:
+- server/storage.ts debe pasar a usar supabaseAdmin (no drizzle).
+- server/db.ts ya no debe ser necesario para queries principales.
+
+2) Implementa en server/storage.ts funciones equivalentes:
+- listPlans()
+- createPlan()
+- getPlanById(id)
+- listPlanTasks(planId)
+- createTask(planId, templateId, overrides)
+- createLock(...)
+- listLocks(planId)
+- updateTaskStatus(taskId, status, startReal/endReal) con reglas:
+    - Si status pasa a in_progress o done, crear lock de ejecución (lock_type='full') automáticamente.
+    - Prohibir updates de startPlanned/endPlanned en tasks que ya estén in_progress/done.
+    - Prohibir cambiar templateId/contestantId de in_progress/done.
+
+F) ENDPOINTS API (CON AUTH)
+Actualizar server/routes.ts para usar requireAuth en todos los endpoints:
+- GET /api/plans
+- POST /api/plans
+- GET /api/plans/:id
+- GET /api/plans/:id/tasks
+- POST /api/plans/:id/tasks
+- POST /api/plans/:id/generate
+- POST /api/plans/:id/replan
+- PATCH /api/tasks/:id/status  (start/finish/cancel/interrupt)
+
+Motor:
+- /generate y /replan construyen EngineInput (desde supabase) y llaman engine.generatePlan()
+- De momento engine devuelve infeasible NOT_IMPLEMENTED estructurado (ok).
+- AUN ASÍ, /generate debe devolver 422 con reasons[] estructurado, no strings.
+
+G) FRONTEND AUTH + API CLIENT
+1) Rehacer client/src/hooks/use-auth.ts:
+- Usar supabase.auth:
+  - signInWithPassword
+  - signUp
+  - signOut
+  - onAuthStateChange para mantener user
+- El login page (client/src/pages/login.tsx) debe funcionar con email/password.
+
+2) API client:
+- En client/src/lib/api.ts (crear si no existe):
+  - fetch wrapper que inyecta Authorization Bearer token usando supabase.auth.getSession()
+
+3) Actualizar hooks:
+- client/src/hooks/use-plans.ts
+- client/src/hooks/use-tasks.ts
+para llamar a endpoints /api/* con el wrapper.
+
+H) REALTIME MÍNIMO (SOLO PARA DAILY_TASKS)
+En plan-details.tsx o en use-tasks.ts:
+- suscribirse con supabase.channel(...)
+- escuchar cambios de tabla daily_tasks
+- filtrar por plan_id del plan actual
+- cuando llegue un evento, invalidar query de tasks (React Query invalidateQueries)
+
+I) UX MÍNIMA PERO MÁS CERCANA AL PRD
+En plan-details:
+- Mostrar:
+  - horario del plan (work_start/end, meal)
+  - lista de tasks con status
+  - botones de ejecución:
+     Start / Finish / Cancel / Interrupt
+  - panel “Locks activos” (lista de locks por plan)
+- NO hagas timeline compleja todavía.
+- Estados UI: loading/empty/error siempre.
+
+J) DOCUMENTACIÓN (CRÍTICO)
+Actualizar README (o crear client/requirements.md si ya existe) con:
+- Qué secrets poner en Replit
+- Cómo crear proyecto Supabase y dónde copiar URL/keys
+- Cómo ejecutar migración SQL manualmente (pegar en SQL Editor)
+- Cómo probar:
+   1) login
+   2) crear plan
+   3) crear task
+   4) start/finish task
+   5) ver lock creado
+   6) ver realtime refrescando tasks
+
+RESTRICCIONES IMPORTANTES
+- NO introduzcas librerías raras ni cambies stack.
+- NO rehagas UI entera.
+- NO implementes el solver todavía.
+- TODO debe compilar y correr en Replit al final.
+
+SALIDA ESPERADA
+- App funcionando con login Supabase.
+- Planes y tareas guardadas en Supabase.
+- Endpoints protegidos por Bearer token.
+- Realtime actualiza tasks en plan-details.
+- Locks visibles y creados al ejecutar.
+- Motor stub conectado (aunque sea NOT_IMPLEMENTED).
+
+ANTES DE TERMINAR
+- Pasa TypeScript sin errores.
+- No dejes imports rotos.
+- Asegura que no queda código viejo de auth en uso.
+
+ENTREGA
+- Implementa todo esto directamente en el repo.
+- Si una parte no da tiempo, prioriza: Auth + DB + API + Realtime + Locks de ejecución.

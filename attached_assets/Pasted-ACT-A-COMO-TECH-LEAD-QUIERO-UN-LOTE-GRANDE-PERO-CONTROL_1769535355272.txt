@@ -1,0 +1,278 @@
+ACTÚA COMO TECH LEAD. QUIERO UN LOTE GRANDE PERO CONTROLADO.
+OBJETIVO: que la app dé un salto grande y se acerque al MVP real.
+NO implementar el solver todavía. SOLO construir los inputs del motor (setup del día) correctamente.
+
+CONTEXTO ACTUAL
+- Frontend: React + TS + Vite + Tailwind + shadcn/ui + React Query
+- Backend: Express + Supabase (Auth funcionando)
+- Engine: /engine con generatePlan() stub, buildEngineInput() construye input desde storage
+- Endpoints existentes: plans, tasks, locks, generate
+- Ya arranca y login funciona.
+
+PRINCIPIOS NO NEGOCIABLES
+1) Nada hardcodeado del dominio (nombres de espacios/tareas/reglas).
+2) Frontend NO contiene lógica de negocio: valida en backend.
+3) UI defensiva: loading/empty/error en TODAS las pantallas.
+4) Lo ejecutado no se toca: daily_tasks con status in_progress/done no se pueden editar (regla backend).
+5) Locks explícitos: cualquier edición manual futura debe modelarse como lock (tabla locks ya existe).
+6) NO features fuera de scope (no reportes, no export, no analytics, no multi-día automático).
+7) Engine puro: /engine no debe importar supabase ni frontend.
+
+OBJETIVO FUNCIONAL DE ESTE LOTE (MVP REAL)
+Construir el “SETUP DEL DÍA” completo:
+A) Catálogo: zonas, espacios, recursos (auxiliar/coach/presentadora), plantillas de tareas (task_templates)
+B) Concursantes: CRUD + atributos (instrumento, coach asignado)
+C) Día: seleccionar concursantes para un plan, crear tareas del día (daily_tasks) asignadas a concursante con overrides
+D) Preparar EngineInput completo (sin solver) para que /generate ya reciba datos reales y verificables
+
+────────────────────────────────────────
+A) BASE DE DATOS (Supabase) — MIGRACIÓN SQL
+────────────────────────────────────────
+Crea una migración SQL en el repo (supabase/migrations/002_setup_day.sql).
+Si ya existe alguna tabla, usa ALTER TABLE.
+
+1) contestants
+- id (bigint identity o uuid, consistente con resto)
+- name text not null
+- instrument boolean not null default false
+- coach_id bigint/uuid nullable references resources(id)
+- created_at timestamp default now()
+
+2) plan_contestants (relación por plan)
+- id
+- plan_id references plans(id) on delete cascade
+- contestant_id references contestants(id) on delete cascade
+- unique(plan_id, contestant_id)
+
+3) task_templates (asegurar columnas MVP)
+- default_duration_min int not null
+- default_cameras smallint not null default 0 (0/1/2)
+- requires_coach boolean not null default false
+- requires_presenter boolean not null default false
+- exclusive_auxiliar boolean not null default false
+- default_space_id nullable references spaces(id)
+- has_time_window boolean not null default false
+- window_start text nullable (HH:mm)
+- window_end text nullable (HH:mm)
+- default_dependency_template_id nullable references task_templates(id)
+- rules_json jsonb not null default '{}'::jsonb
+
+4) daily_tasks (asegurar overrides + dependencia instanciada)
+- contestant_id nullable references contestants(id)
+- duration_override_min int nullable
+- cameras_override smallint nullable (0/1/2)
+- space_override_id nullable references spaces(id)
+- dependency_task_id nullable references daily_tasks(id)
+- window_start_override text nullable
+- window_end_override text nullable
+- requires_coach_override boolean nullable
+- requires_presenter_override boolean nullable
+- exclusive_auxiliar_override boolean nullable
+- template_id references task_templates(id) not null
+- plan_id references plans(id) not null
+- status enum pending/in_progress/done/interrupted/cancelled ya existe o crear
+- start_planned/end_planned/start_real/end_real ya existen o asegurar
+
+Índices:
+- daily_tasks(plan_id)
+- daily_tasks(contestant_id)
+- plan_contestants(plan_id)
+- locks(plan_id), locks(task_id)
+
+RLS mínimo:
+- enable RLS en contestants, plan_contestants, task_templates, daily_tasks
+- policy: authenticated users can SELECT/INSERT/UPDATE/DELETE (MVP)
+NO implementar roles aún.
+
+────────────────────────────────────────
+B) BACKEND API (Express) — NUEVOS ENDPOINTS
+────────────────────────────────────────
+Todos requieren requireAuth.
+
+CATÁLOGO
+- GET  /api/zones
+- POST /api/zones
+- GET  /api/spaces
+- POST /api/spaces
+- GET  /api/resources
+- POST /api/resources   (type: auxiliar/coach/presenter)
+
+PLANTILLAS
+- GET    /api/task-templates
+- POST   /api/task-templates
+- PATCH  /api/task-templates/:id
+- DELETE /api/task-templates/:id
+Regla delete: si existe daily_task usando esa template, devolver 409 con mensaje claro.
+
+CONCURSANTES
+- GET    /api/contestants
+- POST   /api/contestants
+- PATCH  /api/contestants/:id
+- DELETE /api/contestants/:id
+Regla delete: si está asignado a plan o tiene tasks, devolver 409.
+
+SETUP DEL PLAN (día)
+- GET  /api/plans/:id/setup
+  Devuelve un objeto con:
+  {
+    plan,
+    contestantsAll,
+    contestantsInPlan,
+    taskTemplates,
+    zones,
+    spaces,
+    resources,
+    tasksForPlan
+  }
+
+- POST /api/plans/:id/contestants
+  Body: { contestantIds: [] }
+  Sincroniza la tabla plan_contestants para ese plan.
+
+- POST /api/plans/:id/tasks
+  Crea daily_task desde template + contestant + overrides.
+  Body mínimo:
+  {
+    templateId,
+    contestantId|null,
+    overrides: {
+      durationOverrideMin,
+      camerasOverride,
+      spaceOverrideId,
+      windowStartOverride,
+      windowEndOverride,
+      dependencyTaskId,
+      requiresCoachOverride,
+      requiresPresenterOverride,
+      exclusiveAuxiliarOverride
+    }
+  }
+
+- PATCH /api/daily-tasks/:id
+  Edita overrides SOLO si status='pending'
+  Si status in_progress/done -> 409 con mensaje “Task already started/finished and cannot be edited”.
+
+- DELETE /api/daily-tasks/:id
+  Solo si pending. Si no, 409.
+
+VALIDACIONES BACKEND (IMPORTANTE)
+- camerasOverride y default_cameras deben ser 0/1/2.
+- window_start < window_end si ambos existen.
+- dependencyTaskId debe ser del mismo plan.
+- Si template tiene has_time_window=true y no hay override, usar window_start/window_end.
+- Si template requiere coach/presenter y override no lo desactiva, el EngineInput debe reflejarlo.
+
+────────────────────────────────────────
+C) STORAGE SUPABASE
+────────────────────────────────────────
+Extiende server/storage.ts (o donde esté el storage supabase) con métodos:
+- listTaskTemplates, createTaskTemplate, updateTaskTemplate, deleteTaskTemplate
+- listContestants, createContestant, updateContestant, deleteContestant
+- getPlanSetup(planId): devuelve el objeto setup (plan + lookups + tasks)
+- setPlanContestants(planId, contestantIds)
+- createDailyTask(planId, payload)
+- updateDailyTaskOverrides(taskId, payload) (validar status pending)
+- deleteDailyTask(taskId) (validar status pending)
+
+Mantén reglas defensivas y mensajes claros.
+
+────────────────────────────────────────
+D) FRONTEND UI (MVP FUNCIONAL, NO BONITO)
+────────────────────────────────────────
+
+Añadir navegación simple:
+- “Planes”
+- “Catálogo”
+- “Concursantes”
+- “Setup del día” (dentro del detalle de plan)
+
+1) Pantalla “Catálogo”
+Tabs:
+- Zonas (lista + crear)
+- Espacios (lista + crear, con dropdown de zona)
+- Recursos (lista + crear, type auxiliar/coach/presenter)
+- Plantillas de tareas (CRUD)
+
+Formulario Plantilla (campos mínimos):
+- name
+- default_duration_min
+- default_cameras (select 0/1/2)
+- requires_coach (checkbox)
+- requires_presenter (checkbox)
+- exclusive_auxiliar (checkbox)
+- default_space_id (select opcional)
+- has_time_window (checkbox)
+  - window_start / window_end (inputs HH:mm)
+- default_dependency_template_id (select opcional)
+- rules_json (textarea json opcional, validación básica)
+
+2) Pantalla “Concursantes”
+CRUD:
+- name
+- instrument (checkbox)
+- coach_id (dropdown de recursos type=coach, opcional)
+
+3) Setup del plan (PlanDetailPage)
+Sección “Setup”
+- Editar work_start/work_end, meal_start/meal_end, cameras_available (PATCH plan si ya existe endpoint; si no existe, créalo)
+- Selector de concursantes para ese plan (multi-select con checkboxes)
+  - botón “Guardar concursantes del día”
+- Sección “Tareas del día”
+  - Formulario crear task:
+    - elegir plantilla
+    - elegir concursante (opcional)
+    - overrides:
+      - duración (opcional)
+      - cámaras (0/1/2 opcional)
+      - espacio override (opcional)
+      - ventana override (opcional HH:mm-HH:mm)
+      - dependencia: dropdown de tareas del mismo plan
+      - requiere coach/presenter override (opcional)
+      - exclusiva auxiliar override (opcional)
+  - Lista de tareas del plan mostrando:
+    - template name
+    - contestant name (si hay)
+    - duración final efectiva
+    - cámaras final efectiva
+    - ventana efectiva
+    - dependencia (si hay)
+    - status
+
+IMPORTANTE UI:
+- loading/empty/error en todas las listas
+- no crash si faltan relaciones (usar optional chaining + fallback “—”)
+
+4) Panel Locks (ya existente o añadir)
+En PlanDetail: lista “Locks activos” (GET /api/plans/:id/locks)
+
+5) Botón “Generar planificación”
+Llama a POST /api/plans/:id/generate
+Muestra reasons estructurados si 422 (renderiza code + message)
+
+────────────────────────────────────────
+E) ENGINE INPUT (sin solver)
+────────────────────────────────────────
+Actualizar buildEngineInput para incluir:
+- plan: workDay, meal, camerasAvailable
+- tasks: incluir templateId, contestantId, status, overrides, planned/real
+- locks: incluir lockType, lockedStart/end, lockedResourceId
+Dejar resources para siguiente lote si aún no está.
+
+NO calcular schedule. generatePlan seguirá devolviendo NOT_IMPLEMENTED, pero ya con input real.
+
+────────────────────────────────────────
+CRITERIOS DE ACEPTACIÓN (OBLIGATORIOS)
+────────────────────────────────────────
+Al final de este lote debo poder:
+1) Crear plantillas de tareas con campos del dominio
+2) Crear concursantes
+3) Crear un plan y editar horarios/comida/cámaras
+4) Asignar concursantes al plan
+5) Crear tareas del día para un plan con overrides y dependencias
+6) Ver lista de tareas y locks
+7) Pulsar “Generar planificación” y ver 422 con reasons estructurados (NOT_IMPLEMENTED por ahora)
+8) TypeScript sin errores y app estable en Replit
+
+PRIORIDAD SI FALTA TIEMPO:
+Setup del día + plantillas + concursantes + validaciones backend > UI bonita.
+NO implementar solver todavía.

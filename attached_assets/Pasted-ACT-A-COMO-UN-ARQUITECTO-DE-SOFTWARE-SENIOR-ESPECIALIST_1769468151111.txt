@@ -1,0 +1,219 @@
+ACTÚA COMO UN ARQUITECTO DE SOFTWARE SENIOR ESPECIALISTA EN APLICACIONES
+DE PLANIFICACIÓN OPERATIVA CON OPTIMIZACIÓN POR RESTRICCIONES.
+
+OBJETIVO:
+Construir DESDE CERO la base técnica de una aplicación web de planificación
+diaria para producción audiovisual. El objetivo NO es una app bonita ni completa,
+sino una ARQUITECTURA LIMPIA Y CORRECTA sobre la que se implementará un motor
+de planificación complejo.
+
+ESTE PROYECTO ES FUNDACIONAL. NO OPTIMICES, NO SIMPLIFIQUES, NO INVENTES.
+
+────────────────────────────────────────
+STACK OBLIGATORIO (NO CAMBIAR)
+────────────────────────────────────────
+
+Frontend:
+- React + TypeScript
+- Vite
+- Tailwind
+- shadcn/ui
+- React Query
+- SPA
+
+Backend / Infraestructura:
+- Supabase (PostgreSQL, Auth, Realtime, RLS)
+
+Entorno:
+- Replit
+
+────────────────────────────────────────
+PRINCIPIOS ABSOLUTOS (CRÍTICOS)
+────────────────────────────────────────
+
+1. El MOTOR DE PLANIFICACIÓN es el núcleo del sistema.
+2. El motor DEBE ser un módulo independiente, puro y aislado.
+3. El frontend NO contiene lógica de negocio.
+4. NO se hardcodea ningún concepto del dominio.
+5. Toda edición manual futura se modelará como LOCK.
+6. Las tareas en ejecución o finalizadas serán INAMOVIBLES.
+7. La arquitectura debe permitir explicar infeasibilidad (no solo fallar).
+
+Si no puedes implementar algo correctamente, CREA SOLO LA ESTRUCTURA.
+
+────────────────────────────────────────
+ARQUITECTURA OBLIGATORIA
+────────────────────────────────────────
+
+/src
+  /app            → frontend React
+  /engine         → motor de planificación (PURO, sin UI, sin Supabase directo)
+  /domain         → tipos y modelos del dominio
+  /server         → API / integración Supabase
+  /lib            → utilidades compartidas
+
+REGLA:
+- /engine NO importa nada de frontend ni Supabase.
+- /engine recibe INPUTS estructurados y devuelve OUTPUTS estructurados.
+
+────────────────────────────────────────
+MODELO DE DOMINIO (TABLAS MÍNIMAS)
+────────────────────────────────────────
+
+CREA LAS SIGUIENTES TABLAS EN SUPABASE (con migraciones claras):
+
+1. plans
+   - id
+   - date
+   - work_start
+   - work_end
+   - meal_start
+   - meal_end
+   - cameras_available
+   - status
+
+2. zones
+   - id
+   - name
+
+3. spaces
+   - id
+   - name
+   - zone_id
+   - priority_level (int, configurable)
+
+4. resources
+   - id
+   - type ENUM ('auxiliar','coach','presenter')
+   - name
+
+5. resource_availability
+   - id
+   - resource_id
+   - plan_id
+   - start
+   - end
+
+6. task_templates
+   - id
+   - name
+   - default_duration
+   - requires_auxiliar (bool)
+   - requires_coach (bool)
+   - requires_presenter (bool)
+   - default_cameras (0/1/2)
+   - exclusive_auxiliar (bool)
+   - setup_id (nullable)
+   - rules_json (jsonb)
+
+7. daily_tasks
+   - id
+   - plan_id
+   - template_id
+   - contestant_id (nullable)
+   - duration_override (nullable)
+   - cameras_override (nullable)
+   - status ENUM ('pending','in_progress','done','interrupted','cancelled')
+   - start_planned (nullable)
+   - end_planned (nullable)
+   - start_real (nullable)
+   - end_real (nullable)
+
+8. locks
+   - id
+   - plan_id
+   - task_id
+   - lock_type ENUM ('time','space','resource','full')
+   - locked_start (nullable)
+   - locked_end (nullable)
+   - locked_resource_id (nullable)
+   - created_by
+   - reason
+
+────────────────────────────────────────
+MOTOR DE PLANIFICACIÓN (CRÍTICO)
+────────────────────────────────────────
+
+CREA /engine CON:
+
+- types.ts
+  - EngineInput
+  - EngineOutput
+  - TaskInput
+  - ResourceInput
+  - LockInput
+  - InfeasibleReason
+
+- buildInput.ts
+  - Función que transforma datos de BD → EngineInput
+
+- solve.ts
+  - function generatePlan(input: EngineInput): EngineOutput
+  - IMPLEMENTACIÓN STUB:
+      - NO intentes resolver el problema aún
+      - valida estructura
+      - devuelve NOT_IMPLEMENTED como infeasible
+      - con mensaje claro y estructurado
+
+- explain.ts
+  - utilidades para generar mensajes operativos (no técnicos)
+
+REGLA ABSOLUTA:
+El motor NO escribe en base de datos.
+
+────────────────────────────────────────
+API (BACKEND)
+────────────────────────────────────────
+
+Implementa endpoints mínimos:
+
+POST   /plans
+GET    /plans/:id
+POST   /plans/:id/generate
+POST   /plans/:id/replan
+
+Comportamiento:
+- /generate:
+    - construye EngineInput
+    - llama al motor
+    - si infeasible → devuelve razones
+    - si factible → (FUTURO) persistirá resultados
+
+────────────────────────────────────────
+FRONTEND (MÍNIMO, FUNCIONAL)
+────────────────────────────────────────
+
+Pantallas mínimas:
+- Login (Supabase Auth)
+- Lista de planes
+- Vista de plan (JSON o tabla simple)
+- Botón “Generar planificación”
+- Panel de errores del motor
+
+NO:
+- drag & drop
+- timelines complejas
+- UX avanzada
+
+────────────────────────────────────────
+QUÉ ESTÁ PROHIBIDO
+────────────────────────────────────────
+
+- Hardcodear espacios (“Plató 7”, etc.)
+- Lógica de negocio en frontend
+- Mezclar motor y API
+- Simplificar locks a booleans
+- Resolver el algoritmo ahora
+- Añadir features fuera de este scope
+
+────────────────────────────────────────
+OBJETIVO FINAL DE ESTE PASO
+────────────────────────────────────────
+
+Entregar una BASE LIMPIA Y PROFESIONAL que:
+- compile
+- tenga dominio correcto
+- tenga motor preparado
+- permita iterar sin rehacer arquitectura
+
+NO intentes ser listo. Sé correcto.
