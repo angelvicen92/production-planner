@@ -99,16 +99,16 @@ export default function SettingsPage() {
 
             <TabsTrigger value="spaces" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
-              Platós & Espacios
+              {t("settings.tabs.spaces")}
             </TabsTrigger>
 
             <TabsTrigger value="resources" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
-              Recursos
+              {t("settings.tabs.resources")}
             </TabsTrigger>
             <TabsTrigger value="staff" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Producción / Redacción
+              {t("settings.tabs.staff")}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="general" className="space-y-4">
@@ -138,6 +138,7 @@ export default function SettingsPage() {
 }
 
 function StaffPeopleSettings() {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useStaffPeople();
   const create = useCreateStaffPerson();
   const update = useUpdateStaffPerson();
@@ -155,31 +156,31 @@ function StaffPeopleSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Personas (Producción y Redacción)</CardTitle>
+        <CardTitle>{t("settings.staffPeople.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1">
-            <Label>Nombre</Label>
+            <Label>{t("common.name")}</Label>
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ej: Mónica"
+              placeholder={t("settings.staffPeople.namePlaceholder")}
             />
           </div>
 
           <div className="space-y-1">
-            <Label>Tipo</Label>
+            <Label>{t("common.type")}</Label>
             <Select
               value={newRoleType}
               onValueChange={(v) => setNewRoleType(v as StaffRoleType)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona" />
+                <SelectValue placeholder={t("common.select")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="production">Producción</SelectItem>
-                <SelectItem value="editorial">Redacción</SelectItem>
+                <SelectItem value="production">{t("common.production")}</SelectItem>
+                <SelectItem value="editorial">{t("common.editorial")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -204,7 +205,7 @@ function StaffPeopleSettings() {
               }
             >
               <Plus className="h-4 w-4 mr-2" />
-              Añadir
+              {t("common.add")}
             </Button>
           </div>
         </div>
@@ -212,31 +213,31 @@ function StaffPeopleSettings() {
         {isLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Cargando...
+            {t("common.loading")}
           </div>
         ) : error ? (
           <div className="text-sm text-destructive">
-            No se pudo cargar la lista.
+            {t("common.loadError")}
           </div>
         ) : rows.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            Aún no hay personas. Añade al menos una de Producción y/o Redacción.
+            {t("settings.staffPeople.empty")}
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Activa</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.type")}</TableHead>
+                <TableHead>{t("common.active")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((p) => {
                 const isEditing = editingId === Number(p?.id);
                 const roleLabel =
-                  p?.roleType === "editorial" ? "Redacción" : "Producción";
+                  p?.roleType === "editorial" ? t("common.editorial") : t("common.production");
 
                 return (
                   <TableRow key={String(p?.id)}>
@@ -260,13 +261,13 @@ function StaffPeopleSettings() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("common.select")} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="production">
                               Producción
                             </SelectItem>
-                            <SelectItem value="editorial">Redacción</SelectItem>
+                            <SelectItem value="editorial">{t("common.editorial")}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
@@ -293,7 +294,7 @@ function StaffPeopleSettings() {
                             size="sm"
                             onClick={() => setEditingId(null)}
                           >
-                            Cancelar
+                            {t("common.cancel")}
                           </Button>
                           <Button
                             size="sm"
@@ -312,7 +313,7 @@ function StaffPeopleSettings() {
                               setEditingId(null);
                             }}
                           >
-                            Guardar
+                            {t("common.save")}
                           </Button>
                         </div>
                       ) : (
@@ -330,7 +331,7 @@ function StaffPeopleSettings() {
                             setEditActive(Boolean(p?.isActive));
                           }}
                         >
-                          Editar
+                          {t("common.edit")}
                         </Button>
                       )}
                     </TableCell>
@@ -346,6 +347,7 @@ function StaffPeopleSettings() {
 }
 
 function ItinerantTeamsSettings() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -361,12 +363,12 @@ function ItinerantTeamsSettings() {
       qc.invalidateQueries({ queryKey: [api.itinerantTeams.list.path] });
       setCode("");
       setName("");
-      toast({ title: "Equipo creado" });
+      toast({ title: t("settings.itinerantTeams.teamCreatedToast") });
     },
     onError: (err: any) => {
       toast({
-        title: "Error",
-        description: err?.message || "No se pudo crear el equipo",
+        title: t("common.error"),
+        description: err?.message || t("settings.itinerantTeams.createErrorToast"),
         variant: "destructive",
       });
     },
@@ -377,26 +379,26 @@ function ItinerantTeamsSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Equipos itinerantes</CardTitle>
+        <CardTitle>{t("settings.itinerantTeams.title")}</CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1">
-            <Label>Code (técnico)</Label>
+            <Label>{t("settings.itinerantTeams.codeLabel")}</Label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Ej: reality_duo"
+              placeholder={t("settings.itinerantTeams.codePlaceholder")}
             />
           </div>
 
           <div className="space-y-1">
-            <Label>Nombre</Label>
+            <Label>{t("common.name")}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Reality Duo"
+              placeholder={t("settings.itinerantTeams.namePlaceholder")}
             />
           </div>
 
@@ -413,22 +415,22 @@ function ItinerantTeamsSettings() {
               {createTeam.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creando…
+                  {t("common.creating")}
                 </>
               ) : (
-                "Añadir"
+                t("common.add")
               )}
             </Button>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="text-sm text-muted-foreground">Cargando…</div>
+          <div className="text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : error ? (
-          <div className="text-sm text-red-600">Error al cargar equipos</div>
+          <div className="text-sm text-red-600">{t("settings.itinerantTeams.loadError")}</div>
         ) : rows.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            No hay equipos itinerantes todavía.
+            {t("settings.itinerantTeams.empty")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -901,6 +903,7 @@ function StaffDefaultsSettings() {
 }
 
 function ZonesSpacesSettings() {
+  const { t } = useTranslation();
   const {
     data: zones,
     isLoading: zonesLoading,
@@ -1419,7 +1422,7 @@ function ZonesSpacesSettings() {
                   setResourcesSpaceId(node.id);
                 }}
               >
-                Recursos
+                {t("settings.tabs.resources")}
               </Button>
 
               <Button
@@ -1647,7 +1650,7 @@ function ZonesSpacesSettings() {
                                 setResourcesZoneId(z.id);
                               }}
                             >
-                              Recursos
+                              {t("settings.tabs.resources")}
                             </Button>
 
                             <Button
@@ -1805,7 +1808,7 @@ function ZonesSpacesSettings() {
               </div>
 
               <div className="text-xs text-muted-foreground">
-                Recursos específicos (ancla unidades concretas al plató):
+                {t("settings.tabs.resources")} específicos (ancla unidades concretas al plató):
               </div>
 
               <div className="space-y-4 max-h-[55vh] overflow-auto pr-2">
@@ -1943,7 +1946,7 @@ function ZonesSpacesSettings() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Recursos del espacio: {resourcesSpaceLabel}
+              {t("settings.tabs.resources")} del espacio: {resourcesSpaceLabel}
             </DialogTitle>
             <div className="text-sm text-muted-foreground">
               Seleccionados: {spaceResourcesDraftIds.length} · Genéricos:{" "}
@@ -2024,7 +2027,7 @@ function ZonesSpacesSettings() {
               </div>
 
               <div className="text-xs text-muted-foreground">
-                Recursos específicos (ancla unidades concretas al espacio):
+                {t("settings.tabs.resources")} específicos (ancla unidades concretas al espacio):
               </div>
 
               <div className="space-y-4 max-h-[55vh] overflow-auto pr-2">
@@ -2151,6 +2154,7 @@ function ZonesSpacesSettings() {
 }
 
 function TaskTemplatesSettings() {
+  const { t } = useTranslation();
   const { data: templates, isLoading } = useTaskTemplates();
   const { data: itinerantTeams = [] } = useItinerantTeams();
   const createTask = useCreateTaskTemplate();
@@ -3161,12 +3165,12 @@ function TaskTemplatesSettings() {
             </DialogHeader>
 
             {!templateDialogDraft ? (
-              <div className="text-sm text-muted-foreground">Cargando…</div>
+              <div className="text-sm text-muted-foreground">{t("common.loading")}</div>
             ) : (
               <div className="space-y-4 pt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Nombre</Label>
+                    <Label>{t("common.name")}</Label>
                     <Input
                       value={templateDialogDraft.name ?? ""}
                       onChange={(e) =>
@@ -4651,7 +4655,7 @@ function TaskTemplatesSettings() {
                           disabled={deleteTask.isPending}
                           title="Requisitos de recursos (genérico/específico/alternativas)"
                         >
-                          Recursos
+                          {t("settings.tabs.resources")}
                         </Button>
                         <Button
                           type="button"
