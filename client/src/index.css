@@ -117,3 +117,57 @@
     width: calc(100% / var(--planning-zoom, 1));
   }
 }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  .no-print,
+  aside,
+  nav {
+    display: none !important;
+  }
+
+  main,
+  .print-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-block,
+  .rounded-lg,
+  section,
+  article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border-color: #bbb !important;
+  }
+
+  .badge,
+  [class*="badge"] {
+    border: 1px solid #999 !important;
+    background: transparent !important;
+    color: #000 !important;
+  }
+
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #bbb;
+    padding-top: 4mm;
+    font-size: 10px;
+    color: #444;
+  }
+}
+
+.print-only {
+  display: none;
+}
