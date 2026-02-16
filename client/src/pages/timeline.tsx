@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout";
 import { usePlans, usePlan } from "@/hooks/use-plans";
 import { useContestants } from "@/hooks/use-tasks";
 import { PlanningTimeline } from "@/components/planning-timeline";
+import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
@@ -94,10 +95,12 @@ export default function TimelinePage() {
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : (
-              <PlanningTimeline 
-                plan={(selectedPlan as any) ?? ({ ...selectedPlanSummary, dailyTasks: [] } as any)} 
-                contestants={contestants as any} 
-              />
+              <FullscreenPlanningPanel title="Timeline Explorer" viewKey="timeline-explorer" supportsZoom>
+                <PlanningTimeline 
+                  plan={(selectedPlan as any) ?? ({ ...selectedPlanSummary, dailyTasks: [] } as any)} 
+                  contestants={contestants as any} 
+                />
+              </FullscreenPlanningPanel>
             )}
           </div>
         ) : (

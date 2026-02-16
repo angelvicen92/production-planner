@@ -91,3 +91,29 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600;
   }
 }
+
+@layer components {
+  .planning-panel[data-density="compact"] {
+    @apply text-sm;
+  }
+
+  .planning-panel[data-density="compact"] .planning-density-row {
+    @apply p-2;
+  }
+
+  .planning-panel[data-density="compact"] [class*="py-2"] {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .planning-panel[data-density="compact"] [class*="text-xs"] {
+    font-size: 0.7rem;
+    line-height: 1rem;
+  }
+
+  .planning-panel[data-planning-zoom-enabled="true"] [data-planning-zoom-target] {
+    transform: scale(var(--planning-zoom, 1));
+    transform-origin: top left;
+    width: calc(100% / var(--planning-zoom, 1));
+  }
+}
