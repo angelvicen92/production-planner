@@ -112,14 +112,20 @@ export function useUpdateTaskStatus() {
     mutationFn: ({ taskId, status, startReal, endReal }: {
       taskId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
-      startReal?: string;
-      endReal?: string;
-    }) =>
-      apiRequest(
+      startReal?: string | null;
+      endReal?: string | null;
+    }) => {
+      const body: any = { status };
+
+      if (typeof startReal === "string") body.startReal = startReal;
+      if (typeof endReal === "string") body.endReal = endReal;
+
+      return apiRequest(
         "PATCH",
         buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        { status, startReal, endReal }
-      ),
+        body
+      );
+    },
 
     onSuccess: (data: any) => {
       const planId = data?.planId ?? data?.plan_id;
