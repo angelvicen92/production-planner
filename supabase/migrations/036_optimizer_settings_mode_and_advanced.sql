@@ -8,7 +8,7 @@ ALTER TABLE public.optimizer_settings
   ADD COLUMN IF NOT EXISTS main_zone_priority_advanced_value INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE public.optimizer_settings
-  ADD COLUMN IF NOT EXISTS grouping_advanced_value INTEGER NOT NULL DEFAULT 6;
+  ADD COLUMN IF NOT EXISTS grouping_advanced_value INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE public.optimizer_settings
   ADD COLUMN IF NOT EXISTS contestant_compact_advanced_value INTEGER NOT NULL DEFAULT 0;
