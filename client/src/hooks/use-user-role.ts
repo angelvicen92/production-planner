@@ -11,6 +11,16 @@ export function useUserRole(enabled = true) {
     queryFn: () => apiRequest<{ role: AppRole }>("GET", "/api/me/role"),
   });
 
+  if (!enabled) {
+    return {
+      role: null,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: query.refetch,
+    };
+  }
+
   return {
     role: query.data?.role ?? null,
     isLoading: query.isLoading,
