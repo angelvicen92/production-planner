@@ -1077,6 +1077,65 @@ export default function PlanDetailsPage() {
     );
   }
 
+  const resourceFilterOptions = useMemo<ResourceSelectable[]>(() => {
+    if (!plan) return [];
+
+    const options: ResourceSelectable[] = [];
+    const planItems = planResourceItemNameById ?? {};
+    const staffList = Array.isArray(staffPeople) ? staffPeople : [];
+    const itinerantTeamList = Array.isArray(itinerantTeams) ? itinerantTeams : [];
+
+    for (const [idStr, name] of Object.entries(planItems)) {
+      const id = Number(idStr);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      options.push({
+        id: `resource_item:${id}`,
+        label: String(name ?? `Recurso #${id}`),
+        kind: "resource_item",
+      });
+    }
+
+    for (const person of staffList) {
+      const personId = Number((person as any)?.id);
+      if (!Number.isFinite(personId) || personId <= 0) continue;
+      const roleType = String((person as any)?.roleType ?? "");
+      const isActive = Boolean((person as any)?.isActive ?? true);
+      if (!isActive) continue;
+      if (roleType !== "production" && roleType !== "editorial") continue;
+
+      options.push({
+        id: `${roleType}:${personId}`,
+        label: `${roleType === "production" ? "Producción" : "Redacción"} · ${String((person as any)?.name ?? `Persona #${personId}`)}`,
+        kind: roleType,
+      });
+    }
+
+    for (const team of itinerantTeamList) {
+      const teamId = Number((team as any)?.id);
+      if (!Number.isFinite(teamId) || teamId <= 0) continue;
+      const isActive = Boolean((team as any)?.isActive ?? (team as any)?.is_active ?? true);
+      if (!isActive) continue;
+      options.push({
+        id: `itinerant_team:${teamId}`,
+        label: `Itinerante · ${String((team as any)?.name ?? (team as any)?.code ?? `Equipo #${teamId}`)}`,
+        kind: "itinerant_team",
+      });
+    }
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [plan, planResourceItemNameById, staffPeople, itinerantTeams]);
+
+  const resourceOptionById = useMemo(
+    () => new Map(resourceFilterOptions.map((opt) => [String(opt.id), opt])),
+    [resourceFilterOptions],
+  );
+
+  const [resourceSelectorOpen, setResourceSelectorOpen] = useState(false);
+
+  const selectedResourceOptions = resourceFilterIds
+    .map((id) => resourceOptionById.get(String(id)))
+    .filter((v): v is ResourceSelectable => Boolean(v));
+
   if (planLoading) {
     return (
       <Layout>
@@ -1212,60 +1271,6 @@ export default function PlanDetailsPage() {
       }
     }, 250);
   }
-
-  const resourceFilterOptions = useMemo<ResourceSelectable[]>(() => {
-    const options: ResourceSelectable[] = [];
-
-    for (const [idStr, name] of Object.entries(planResourceItemNameById ?? {})) {
-      const id = Number(idStr);
-      if (!Number.isFinite(id) || id <= 0) continue;
-      options.push({
-        id: `resource_item:${id}`,
-        label: String(name ?? `Recurso #${id}`),
-        kind: "resource_item",
-      });
-    }
-
-    for (const person of staffPeople ?? []) {
-      const personId = Number((person as any)?.id);
-      if (!Number.isFinite(personId) || personId <= 0) continue;
-      const roleType = String((person as any)?.roleType ?? "");
-      const isActive = Boolean((person as any)?.isActive ?? true);
-      if (!isActive) continue;
-      if (roleType !== "production" && roleType !== "editorial") continue;
-
-      options.push({
-        id: `${roleType}:${personId}`,
-        label: `${roleType === "production" ? "Producción" : "Redacción"} · ${String((person as any)?.name ?? `Persona #${personId}`)}`,
-        kind: roleType,
-      });
-    }
-
-    for (const team of itinerantTeams ?? []) {
-      const teamId = Number((team as any)?.id);
-      if (!Number.isFinite(teamId) || teamId <= 0) continue;
-      const isActive = Boolean((team as any)?.isActive ?? (team as any)?.is_active ?? true);
-      if (!isActive) continue;
-      options.push({
-        id: `itinerant_team:${teamId}`,
-        label: `Itinerante · ${String((team as any)?.name ?? (team as any)?.code ?? `Equipo #${teamId}`)}`,
-        kind: "itinerant_team",
-      });
-    }
-
-    return options.sort((a, b) => a.label.localeCompare(b.label));
-  }, [planResourceItemNameById, staffPeople, itinerantTeams]);
-
-  const resourceOptionById = useMemo(
-    () => new Map(resourceFilterOptions.map((opt) => [String(opt.id), opt])),
-    [resourceFilterOptions],
-  );
-
-  const [resourceSelectorOpen, setResourceSelectorOpen] = useState(false);
-
-  const selectedResourceOptions = resourceFilterIds
-    .map((id) => resourceOptionById.get(String(id)))
-    .filter((v): v is ResourceSelectable => Boolean(v));
 
   const toggleStageFilter = (zoneId: number) => {
     setStageFilterIds((prev) =>
