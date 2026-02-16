@@ -14,6 +14,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRole } from "@/hooks/use-user-role";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,12 +44,13 @@ export function Layout({ children }: LayoutProps) {
 
   const [location] = useLocation();
   const { signOut, user } = useAuth();
+  const { role } = useUserRole(Boolean(user));
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Plans", href: "/plans", icon: CalendarDays },
     { name: "Timeline", href: "/timeline", icon: GanttChartSquare },
-    { name: "Settings", href: "/settings", icon: Settings },
+    ...(role === "admin" ? [{ name: "Settings", href: "/settings", icon: Settings }] : []),
   ];
 
   return (

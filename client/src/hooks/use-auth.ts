@@ -2,6 +2,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useState, useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
+import { apiRequest } from "@/lib/api";
+
+async function bootstrapRole() {
+  try {
+    await apiRequest<{ role: string }>("POST", "/api/bootstrap-role", {});
+  } catch (error) {
+    console.error("[AUTH] bootstrap role failed", error);
+  }
+}
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -16,22 +25,32 @@ export function useAuth() {
       try {
         const supabase = await getSupabaseClient();
 
-        // Get initial session
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
-        setUser(data.session?.user ?? null);
+
+        const currentUser = data.session?.user ?? null;
+        setUser(currentUser);
         setIsLoading(false);
 
-        // Listen for auth changes
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-          setUser(session?.user ?? null);
+        if (currentUser) {
+          await bootstrapRole();
+          queryClient.invalidateQueries();
+        }
+
+        const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+          const nextUser = session?.user ?? null;
+          setUser(nextUser);
           setIsLoading(false);
-          queryClient.invalidateQueries(); // Refresh all data on auth change
+
+          if (nextUser) {
+            await bootstrapRole();
+          }
+
+          queryClient.invalidateQueries();
         });
 
         unsubscribe = () => sub.subscription.unsubscribe();
-      } catch (e) {
-        // If config missing or backend unreachable, keep app stable
+      } catch {
         if (!cancelled) {
           setUser(null);
           setIsLoading(false);
@@ -45,21 +64,17 @@ export function useAuth() {
     };
   }, [queryClient]);
 
-  const signIn = useMutation({
-    mutationFn: async ({ email, password }: any) => {
+  const signInWithMagicLink = useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
       const supabase = await getSupabaseClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
       if (error) throw error;
-      return data;
-    },
-  });
-
-  const signUp = useMutation({
-    mutationFn: async ({ email, password }: any) => {
-      const supabase = await getSupabaseClient();
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      return data;
+      return { ok: true };
     },
   });
 
@@ -75,10 +90,8 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    signIn: signIn.mutateAsync,
-    isSigningIn: signIn.isPending,
-    signUp: signUp.mutateAsync,
-    isSigningUp: signUp.isPending,
+    signInWithMagicLink: signInWithMagicLink.mutateAsync,
+    isSendingMagicLink: signInWithMagicLink.isPending,
     signOut: signOut.mutateAsync,
     isSigningOut: signOut.isPending,
   };

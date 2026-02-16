@@ -7,11 +7,153 @@ import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlan } from "../engine/solve";
+import { getUserRole, withPermissionDenied } from "./authz";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+
+  // Authentication + coarse-grained authorization for all API endpoints
+  app.use("/api", async (req, res, next) => {
+    if (req.path === "/health") return next();
+
+    if (
+      req.path.startsWith("/debug/engine-input") ||
+      req.path.startsWith("/debug/generate") ||
+      req.path.startsWith("/debug/daily-task")
+    ) {
+      return next();
+    }
+
+    return requireAuth(req, res, async () => {
+      const method = req.method.toUpperCase();
+      const path = req.path;
+
+      const adminOnlyPrefixes = [
+        "/settings",
+        "/program-settings",
+        "/optimizer-settings",
+        "/task-templates",
+        "/zones",
+        "/spaces",
+        "/resource-types",
+        "/resource-items",
+        "/resource-pools",
+        "/staff-people",
+        "/staff-defaults",
+        "/itinerant-teams",
+      ];
+
+      const writePlansPrefixes = ["/plans", "/locks"];
+
+      const isAdminOnly = adminOnlyPrefixes.some((prefix) =>
+        path === prefix || path.startsWith(`${prefix}/`),
+      );
+
+      const isPlansWrite =
+        method !== "GET" &&
+        writePlansPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+
+      if (!isAdminOnly && !isPlansWrite) {
+        return next();
+      }
+
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      try {
+        const role = await getUserRole(userId);
+        (req as any).userRole = role;
+
+        if (isAdminOnly && role !== "admin") {
+          return withPermissionDenied(res);
+        }
+
+        if (isPlansWrite && role !== "admin" && role !== "production") {
+          return withPermissionDenied(res);
+        }
+
+        return next();
+      } catch (error) {
+        console.error("[AUTHZ] coarse permission check failed", error);
+        return res.status(500).json({ message: "Failed to validate permissions" });
+      }
+    });
+  });
+
+  app.post("/api/bootstrap-role", async (req, res) => {
+    try {
+      const user = (req as any)?.user as { id: string; email?: string | null } | undefined;
+      const userId = user?.id;
+      const email = (user?.email || "").trim().toLowerCase();
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+      const targetRoleKey = adminEmail && email === adminEmail ? "admin" : "viewer";
+
+      const { data: roleRow, error: roleError } = await supabaseAdmin
+        .from("roles")
+        .select("id, key")
+        .eq("key", targetRoleKey)
+        .single();
+
+      if (roleError || !roleRow?.id) {
+        throw roleError || new Error(`Role not found: ${targetRoleKey}`);
+      }
+
+      const { data: existingRole, error: existingRoleError } = await supabaseAdmin
+        .from("user_roles")
+        .select("role_id, roles(key)")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingRoleError) throw existingRoleError;
+
+      const existingRoleKey = (existingRole as any)?.roles?.key as string | undefined;
+
+      if (targetRoleKey === "admin") {
+        if (existingRole?.role_id !== roleRow.id) {
+          const { error: upsertError } = await supabaseAdmin
+            .from("user_roles")
+            .upsert({ user_id: userId, role_id: roleRow.id }, { onConflict: "user_id" });
+          if (upsertError) throw upsertError;
+        }
+      } else if (!existingRoleKey) {
+        const { error: insertError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role_id: roleRow.id });
+        if (insertError && insertError.code !== "23505") throw insertError;
+      }
+
+      const role = await getUserRole(userId);
+      return res.json({ role: role ?? "viewer" });
+    } catch (err: any) {
+      console.error("[BOOTSTRAP ROLE]", err);
+      return res.status(500).json({ message: err?.message || "Failed to bootstrap role" });
+    }
+  });
+
+  app.get("/api/me/role", async (req, res) => {
+    try {
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const role = await getUserRole(userId);
+      if (!role) {
+        return res.status(404).json({ message: "Role not assigned" });
+      }
+
+      return res.json({ role });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch user role" });
+    }
+  });
 
   // Zones (Platós)
   app.get(api.zones.list.path, async (_req, res) => {
@@ -2261,22 +2403,6 @@ export async function registerRoutes(
   // Health check
   app.get("/api/health", (req, res) => res.json({ status: "ok" }));
   
-  // Apply Auth Middleware to all /api routes except health (+ debug)
-  app.use("/api", (req, res, next) => {
-    if (req.path === "/health") return next();
-
-    // ✅ Permitir debug sin auth (solo para diagnosticar)
-    if (
-      req.path.startsWith("/debug/engine-input") ||
-      req.path.startsWith("/debug/generate") ||
-      req.path.startsWith("/debug/daily-task")
-    ) {
-      return next();
-    }
-
-    requireAuth(req, res, next);
-  });
-
   // Plans
   app.get(api.plans.list.path, async (req, res) => {
     const plans = await storage.getPlans();
