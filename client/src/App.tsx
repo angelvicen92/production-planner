@@ -1,14 +1,15 @@
-import { Switch, Route, Redirect } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { useEffect, useState } from "react";
+import { Redirect, Route, Switch } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/use-auth";
-import { useUserRole, type AppRole } from "@/hooks/use-user-role";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { AccessDenied } from "@/components/access-denied";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useUserRole, type AppRole } from "@/hooks/use-user-role";
 
 import LoginPage from "@/pages/login";
 import PlansPage from "@/pages/plans";
@@ -26,33 +27,67 @@ function FullScreenLoader() {
   );
 }
 
-function ProtectedRoute({ component: Component, allowedRoles }: any) {
-  const { user, isLoading } = useAuth();
-  const { role, isLoading: roleLoading } = useUserRole(Boolean(user));
+function AuthLoadingFallback({ seconds = 8 }: { seconds?: number }) {
+  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setShowTimeoutMessage(true), seconds * 1000);
+    return () => window.clearTimeout(timeout);
+  }, [seconds]);
+
+  if (!showTimeoutMessage) {
+    return <FullScreenLoader />;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="max-w-sm rounded-lg border bg-card p-6 text-center space-y-4">
+        <p className="text-sm text-muted-foreground">Estamos tardando más de lo normal en validar tu sesión.</p>
+        <a href="/login" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">
+          Ir a login
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { session, authLoading } = useAuth();
+
+  if (authLoading) {
+    return <AuthLoadingFallback />;
+  }
+
+  if (!session) {
+    return <Redirect to="/login" />;
+  }
+
+  return <>{children}</>;
+}
+
+function RoleGuard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: AppRole[] }) {
+  const { session } = useAuth();
+  const { role, isLoading: roleLoading } = useUserRole(Boolean(session));
   const { toast } = useToast();
 
   const hasRoleRestriction = Array.isArray(allowedRoles) && allowedRoles.length > 0;
   const isAuthorized = !hasRoleRestriction || (!!role && allowedRoles.includes(role));
 
   useEffect(() => {
-    if (!isLoading && !roleLoading && user && hasRoleRestriction && !isAuthorized) {
+    if (!roleLoading && session && hasRoleRestriction && !isAuthorized) {
       toast({ title: "Acceso denegado", description: "No tienes permisos para esta acción." });
     }
-  }, [isLoading, roleLoading, user, hasRoleRestriction, isAuthorized, toast]);
+  }, [roleLoading, session, hasRoleRestriction, isAuthorized, toast]);
 
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
-
-  if (!user) {
+  if (!session) {
     return <Redirect to="/login" />;
   }
 
-  if (roleLoading) {
+  if (roleLoading && hasRoleRestriction) {
     return <FullScreenLoader />;
   }
 
-  if (!isAuthorized) {
+  if (hasRoleRestriction && !isAuthorized) {
     return (
       <div className="space-y-4">
         <AccessDenied />
@@ -61,23 +96,31 @@ function ProtectedRoute({ component: Component, allowedRoles }: any) {
     );
   }
 
-  return <Component />;
+  return <>{children}</>;
+}
+
+function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: AppRole[] }) {
+  return (
+    <AuthGuard>
+      <RoleGuard allowedRoles={allowedRoles}>
+        <Component />
+      </RoleGuard>
+    </AuthGuard>
+  );
 }
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { session, authLoading } = useAuth();
 
-  if (isLoading) {
-    return <FullScreenLoader />;
+  if (authLoading) {
+    return <AuthLoadingFallback />;
   }
 
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
 
-      <Route path="/">
-        {user ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}
-      </Route>
+      <Route path="/">{session ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}</Route>
 
       <Route path="/dashboard">{() => <ProtectedRoute component={DashboardPage} />}</Route>
 
@@ -87,9 +130,7 @@ function Router() {
 
       <Route path="/timeline">{() => <ProtectedRoute component={TimelinePage} />}</Route>
 
-      <Route path="/settings">
-        {() => <ProtectedRoute component={SettingsPage} allowedRoles={["admin"] as AppRole[]} />}
-      </Route>
+      <Route path="/settings">{() => <ProtectedRoute component={SettingsPage} allowedRoles={["admin"]} />}</Route>
 
       <Route component={NotFound} />
     </Switch>
@@ -99,10 +140,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
