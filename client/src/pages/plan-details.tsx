@@ -835,6 +835,26 @@ export default function PlanDetailsPage() {
     return `${hh}:${mm}`;
   }
 
+  const handlePlanningTaskStatusChange = async (
+    task: any,
+    status: "in_progress" | "done" | "interrupted" | "cancelled",
+  ) => {
+    const payload: any = {
+      taskId: Number(task?.id),
+      status,
+      startReal:
+        status === "in_progress"
+          ? (task?.startReal ?? nowHHMM())
+          : (task?.startReal ?? null),
+      endReal:
+        status === "done" || status === "interrupted" || status === "cancelled"
+          ? (task?.endReal ?? nowHHMM())
+          : null,
+    };
+
+    await updateTaskStatus.mutateAsync(payload);
+  };
+
   function handleCreateContestant() {
     if (!newName.trim()) return;
 
@@ -2607,6 +2627,8 @@ export default function PlanDetailsPage() {
                 zoneStaffModes={planZoneStaffModes as any}
                 itinerantTeams={itinerantTeams as any}
                 staffAssignments={planStaffAssignments as any}
+                onTaskStatusChange={handlePlanningTaskStatusChange}
+                taskStatusPending={updateTaskStatus.isPending}
               />
             </div>
           </TabsContent>

@@ -1,12 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -84,6 +91,110 @@ interface PlanningTimelineProps {
     realityTeamCode: string | null;
     itinerantTeamId: number | null;
   }[];
+
+  onTaskStatusChange?: (
+    task: Task,
+    status: "in_progress" | "done" | "interrupted" | "cancelled",
+  ) => Promise<void>;
+  taskStatusPending?: boolean;
+}
+
+function taskActionsForStatus(status: string) {
+  if (status === "pending") return ["in_progress", "cancelled"] as const;
+  if (status === "in_progress") {
+    return ["done", "interrupted", "cancelled"] as const;
+  }
+  if (status === "interrupted") return ["in_progress"] as const;
+  return [] as const;
+}
+
+function actionLabel(status: "in_progress" | "done" | "interrupted" | "cancelled") {
+  if (status === "in_progress") return "Start";
+  if (status === "done") return "Finish";
+  if (status === "interrupted") return "Interrupt";
+  return "Cancel";
+}
+
+function TaskStatusMenuTrigger({
+  task,
+  contestantName,
+  locationLabel,
+  onTaskStatusChange,
+  taskStatusPending = false,
+  className,
+  style,
+  children,
+}: {
+  task: Task;
+  contestantName: string;
+  locationLabel: string;
+  onTaskStatusChange?: (
+    task: Task,
+    status: "in_progress" | "done" | "interrupted" | "cancelled",
+  ) => Promise<void>;
+  taskStatusPending?: boolean;
+  className: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const actions = taskActionsForStatus(task.status ?? "pending");
+
+  const summaryTime =
+    task.startReal || task.endReal
+      ? `${task.startReal ?? "—"}–${task.endReal ?? "—"}`
+      : `${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`;
+
+  const handleSelect = async (
+    status: "in_progress" | "done" | "interrupted" | "cancelled",
+  ) => {
+    if (!onTaskStatusChange) return;
+    await onTaskStatusChange(task, status);
+    setOpen(false);
+  };
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(className, "text-left")}
+          style={style}
+          disabled={!onTaskStatusChange}
+        >
+          {children}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-72">
+        <DropdownMenuLabel className="space-y-1">
+          <p className="truncate">{task.template?.name || "Tarea"}</p>
+          <p className="text-[11px] font-normal text-muted-foreground truncate">
+            {contestantName || "—"} · {summaryTime}
+          </p>
+          <p className="text-[11px] font-normal text-muted-foreground truncate">
+            {locationLabel || "—"}
+          </p>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {actions.length === 0 ? (
+          <DropdownMenuItem disabled>Sin acciones</DropdownMenuItem>
+        ) : (
+          actions.map((action) => (
+            <DropdownMenuItem
+              key={action}
+              disabled={taskStatusPending}
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleSelect(action);
+              }}
+            >
+              {actionLabel(action)}
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
   export function PlanningTimeline({
@@ -98,6 +209,8 @@ interface PlanningTimelineProps {
     zoneStaffModes = [],
     itinerantTeams = [],
     staffAssignments = [],
+    onTaskStatusChange,
+    taskStatusPending = false,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks } = plan;
 
@@ -182,6 +295,16 @@ interface PlanningTimelineProps {
     () => (mealEnd ? timeToMinutes(mealEnd) : null),
     [mealEnd],
   );
+
+  const contestantNameById = useMemo(() => {
+    const mapped: Record<number, string> = {};
+    for (const contestant of contestants ?? []) {
+      const id = Number(contestant?.id);
+      if (!Number.isFinite(id)) continue;
+      mapped[id] = String(contestant?.name ?? "—");
+    }
+    return mapped;
+  }, [contestants]);
 
   const lanes = useMemo(() => {
     const grouped: Record<string, { name: string; tasks: Task[] }> = {};
@@ -867,56 +990,44 @@ interface PlanningTimelineProps {
                                             );
 
                                             return (
-                                              <Tooltip key={task.id}>
-                                                <TooltipTrigger asChild>
-                                                  <div
-                                                    className={cn(
-                                                      "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-default z-10",
-                                                      task.status ===
-                                                        "in_progress"
-                                                        ? "ring-2 ring-blue-400"
-                                                        : "",
-                                                      task.status === "done"
-                                                        ? "opacity-80"
-                                                        : "",
-                                                    )}
-                                                    style={{
-                                                      top,
-                                                      height,
-                                                      backgroundColor:
-                                                        taskBaseColor(task),
-                                                      borderColor:
-                                                        taskBaseColor(task),
-                                                    }}
-                                                  >
-                                                    <div className="text-[12px] font-bold truncate">
-                                                      {task.template?.name ||
-                                                        "Tarea"}
-                                                    </div>
-                                                    <div className="text-[10px] opacity-70">
-                                                      {task.startPlanned}-
-                                                      {task.endPlanned}
-                                                    </div>
-                                                  </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                  <div className="space-y-1 p-1">
-                                                    <p className="font-bold">
-                                                      {task.template?.name ||
-                                                        "Tarea"}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      {task.startPlanned} -{" "}
-                                                      {task.endPlanned}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      {getTaskLocationLabel(
-                                                        task,
-                                                      )}
-                                                    </p>
-                                                  </div>
-                                                </TooltipContent>
-                                              </Tooltip>
+                                              <TaskStatusMenuTrigger
+                                                key={task.id}
+                                                task={task}
+                                                contestantName={
+                                                  contestantNameById[
+                                                    Number(task.contestantId)
+                                                  ] ?? "—"
+                                                }
+                                                locationLabel={getTaskLocationLabel(task)}
+                                                onTaskStatusChange={onTaskStatusChange}
+                                                taskStatusPending={taskStatusPending}
+                                                className={cn(
+                                                  "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                                  task.status === "in_progress"
+                                                    ? "ring-2 ring-green-500"
+                                                    : "",
+                                                  task.status === "done"
+                                                    ? "opacity-80"
+                                                    : "",
+                                                )}
+                                                style={{
+                                                  top,
+                                                  height,
+                                                  backgroundColor:
+                                                    taskBaseColor(task),
+                                                  borderColor:
+                                                    task.status === "in_progress"
+                                                      ? "rgb(34 197 94)"
+                                                      : taskBaseColor(task),
+                                                }}
+                                              >
+                                                <div className="text-[12px] font-bold truncate">
+                                                  {task.template?.name || "Tarea"}
+                                                </div>
+                                                <div className="text-[10px] opacity-70">
+                                                  {task.startPlanned}-{task.endPlanned}
+                                                </div>
+                                              </TaskStatusMenuTrigger>
                                             );
                                           })}
                                         </div>
@@ -954,15 +1065,32 @@ interface PlanningTimelineProps {
                                         );
 
                                         return (
-                                          <div
+                                          <TaskStatusMenuTrigger
                                             key={task.id}
-                                            className="absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-default z-10"
+                                            task={task}
+                                            contestantName={
+                                              contestantNameById[
+                                                Number(task.contestantId)
+                                              ] ?? "—"
+                                            }
+                                            locationLabel={getTaskLocationLabel(task)}
+                                            onTaskStatusChange={onTaskStatusChange}
+                                            taskStatusPending={taskStatusPending}
+                                            className={cn(
+                                              "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                              task.status === "in_progress"
+                                                ? "ring-2 ring-green-500"
+                                                : "",
+                                            )}
                                             style={{
                                               top,
                                               height,
                                               backgroundColor:
                                                 taskBaseColor(task),
-                                              borderColor: taskBaseColor(task),
+                                              borderColor:
+                                                task.status === "in_progress"
+                                                  ? "rgb(34 197 94)"
+                                                  : taskBaseColor(task),
                                             }}
                                           >
                                             <div className="text-[12px] font-bold truncate">
@@ -972,7 +1100,7 @@ interface PlanningTimelineProps {
                                               {task.startPlanned}-
                                               {task.endPlanned}
                                             </div>
-                                          </div>
+                                          </TaskStatusMenuTrigger>
                                         );
                                       })}
                                     </div>
@@ -1106,25 +1234,34 @@ interface PlanningTimelineProps {
 
                                       <div className="space-y-2">
                                         {sp.tasks.map((task) => (
-                                          <Tooltip key={task.id}>
-                                            <TooltipTrigger asChild>
-                                              <div
-                                                className={cn(
-                                                  "rounded-lg border shadow-sm px-3 py-2 cursor-default",
-                                                  task.status === "in_progress"
-                                                    ? "ring-2 ring-blue-400"
-                                                    : "",
-                                                  task.status === "done"
-                                                    ? "opacity-80"
-                                                    : "",
-                                                )}
-                                                style={{
-                                                  backgroundColor:
-                                                    taskBaseColor(task),
-                                                  borderColor:
-                                                    taskBaseColor(task),
-                                                }}
-                                              >
+                                          <TaskStatusMenuTrigger
+                                            key={task.id}
+                                            task={task}
+                                            contestantName={
+                                              contestantNameById[
+                                                Number(task.contestantId)
+                                              ] ?? "—"
+                                            }
+                                            locationLabel={getTaskLocationLabel(task)}
+                                            onTaskStatusChange={onTaskStatusChange}
+                                            taskStatusPending={taskStatusPending}
+                                            className={cn(
+                                              "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                                              task.status === "in_progress"
+                                                ? "ring-2 ring-green-500"
+                                                : "",
+                                              task.status === "done"
+                                                ? "opacity-80"
+                                                : "",
+                                            )}
+                                            style={{
+                                              backgroundColor: taskBaseColor(task),
+                                              borderColor:
+                                                task.status === "in_progress"
+                                                  ? "rgb(34 197 94)"
+                                                  : taskBaseColor(task),
+                                            }}
+                                          >
                                                 <div className="flex items-start justify-between gap-3">
                                                   <div className="min-w-0">
                                                     <div className="text-sm font-bold truncate">
@@ -1143,24 +1280,7 @@ interface PlanningTimelineProps {
                                                     {task.status}
                                                   </Badge>
                                                 </div>
-                                              </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              <div className="space-y-1 p-1">
-                                                <p className="font-bold">
-                                                  {task.template?.name ||
-                                                    "Tarea"}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  {task.startPlanned} -{" "}
-                                                  {task.endPlanned}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  {getTaskLocationLabel(task)}
-                                                </p>
-                                              </div>
-                                            </TooltipContent>
-                                          </Tooltip>
+                                          </TaskStatusMenuTrigger>
                                         ))}
                                       </div>
                                     </div>
@@ -1176,12 +1296,29 @@ interface PlanningTimelineProps {
                                 </div>
                                 <div className="w-[280px] space-y-2">
                                   {unlocatedCol.tasks.map((task) => (
-                                    <div
+                                    <TaskStatusMenuTrigger
                                       key={task.id}
-                                      className="rounded-lg border shadow-sm px-3 py-2"
+                                      task={task}
+                                      contestantName={
+                                        contestantNameById[
+                                          Number(task.contestantId)
+                                        ] ?? "—"
+                                      }
+                                      locationLabel={getTaskLocationLabel(task)}
+                                      onTaskStatusChange={onTaskStatusChange}
+                                      taskStatusPending={taskStatusPending}
+                                      className={cn(
+                                        "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                                        task.status === "in_progress"
+                                          ? "ring-2 ring-green-500"
+                                          : "",
+                                      )}
                                       style={{
                                         backgroundColor: taskBaseColor(task),
-                                        borderColor: taskBaseColor(task),
+                                        borderColor:
+                                          task.status === "in_progress"
+                                            ? "rgb(34 197 94)"
+                                            : taskBaseColor(task),
                                       }}
                                     >
                                       <div className="text-sm font-bold truncate">
@@ -1190,7 +1327,7 @@ interface PlanningTimelineProps {
                                       <div className="text-xs opacity-70">
                                         {task.startPlanned}-{task.endPlanned}
                                       </div>
-                                    </div>
+                                    </TaskStatusMenuTrigger>
                                   ))}
                                 </div>
                               </div>
@@ -1359,43 +1496,47 @@ interface PlanningTimelineProps {
 
                       return (
                         <Tooltip key={task.id}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={cn(
-                                "absolute top-4 h-12 rounded-lg border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-default transition-all hover:scale-[1.02] z-10",
-                                // ✅ status como “marca”, sin destruir el color base
-                                task.status === "in_progress"
-                                  ? "ring-2 ring-blue-400"
-                                  : "",
-                                task.status === "done" ? "opacity-80" : "",
-                              )}
-                              style={{
-                                left: `${((tStart - startMin) / duration) * 100}%`,
-                                width: `${(tDur / duration) * 100}%`,
+                          <TaskStatusMenuTrigger
+                            task={task}
+                            contestantName={
+                              contestantNameById[Number(task.contestantId)] ?? "—"
+                            }
+                            locationLabel={getTaskLocationLabel(task)}
+                            onTaskStatusChange={onTaskStatusChange}
+                            taskStatusPending={taskStatusPending}
+                            className={cn(
+                              "absolute top-4 h-12 rounded-lg border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              task.status === "in_progress"
+                                ? "ring-2 ring-green-500"
+                                : "",
+                              task.status === "done" ? "opacity-80" : "",
+                            )}
+                            style={{
+                              left: `${((tStart - startMin) / duration) * 100}%`,
+                              width: `${(tDur / duration) * 100}%`,
 
-                                // ✅ color base por template (si no hay, fallback)
-                                backgroundColor: taskBaseColor(task),
-                                borderColor: taskBaseColor(task),
-                                color: taskTextColor(task),
-                              }}
-                            >
-                              <span className="text-xs font-bold truncate">
-                                {task.template?.name || "Tarea"}
-                              </span>
-                              <span className="text-[10px] opacity-70">
-                                {task.startPlanned}-{task.endPlanned}
-                              </span>
-                            </div>
-                          </TooltipTrigger>
+                              backgroundColor: taskBaseColor(task),
+                              borderColor:
+                                task.status === "in_progress"
+                                  ? "rgb(34 197 94)"
+                                  : taskBaseColor(task),
+                              color: taskTextColor(task),
+                            }}
+                          >
+                            <span className="text-xs font-bold truncate">
+                              {task.template?.name || "Tarea"}
+                            </span>
+                            <span className="text-[10px] opacity-70">
+                              {task.startPlanned}-{task.endPlanned}
+                            </span>
+                          </TaskStatusMenuTrigger>
                           <TooltipContent>
                             <div className="space-y-1 p-1">
                               <p className="font-bold">
                                 {task.template?.name || "Tarea"}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {viewMode === "contestants"
-                                  ? `Ubicación: ${getTaskLocationLabel(task)}`
-                                  : lane.name}
+                                Ubicación: {getTaskLocationLabel(task)}
                               </p>
                               {/* ✅ Recursos asignados por el planificador (motor) */}
                               {(() => {
