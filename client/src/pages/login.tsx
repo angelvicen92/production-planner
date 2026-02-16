@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,9 +72,44 @@ export default function LoginPage() {
     setSent(null);
   };
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLoginSubmit = async (method: "auto" | "magic" | "password") => {
     resetMessages();
+
+    if (!trimmedEmail) {
+      setError("Introduce email");
+      return;
+    }
+
+    const hasPassword = Boolean(password?.trim());
+    const shouldUsePassword = method === "password" || (method === "auto" && hasPassword);
+
+    if (shouldUsePassword) {
+      if (!hasPassword) {
+        setError("Introduce contraseña");
+        return;
+      }
+
+      if ((password?.trim().length ?? 0) < 6) {
+        setError("Contraseña muy corta");
+        return;
+      }
+
+      try {
+        await signInWithPassword({ email: trimmedEmail, password });
+        setSent("Inicio de sesión correcto.");
+      } catch (err: any) {
+        const rawMessage = String(err?.message ?? "").toLowerCase();
+        if (rawMessage.includes("invalid") || rawMessage.includes("credentials") || rawMessage.includes("password")) {
+          setError(
+            "Contraseña incorrecta. Si no recuerdas tu contraseña, utiliza ‘Recuperar contraseña’ o ‘Enviar enlace’",
+          );
+          return;
+        }
+        setError(err?.message || "No se pudo iniciar sesión con contraseña.");
+      }
+
+      return;
+    }
 
     try {
       await signInWithMagicLink({ email: trimmedEmail });
@@ -84,19 +119,12 @@ export default function LoginPage() {
     }
   };
 
-  const handlePasswordLogin = async () => {
-    resetMessages();
-
-    if (!password.trim()) {
-      setError("Introduce contraseña");
+  const handleLoginFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isBusy) {
       return;
     }
-
-    try {
-      await signInWithPassword({ email: trimmedEmail, password });
-    } catch (err: any) {
-      setError(err?.message || "No se pudo iniciar sesión con contraseña.");
-    }
+    await handleLoginSubmit("auto");
   };
 
   const handleSignUp = async () => {
@@ -171,7 +199,105 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-4 pt-4">
-          {!showReset && (
+          {showLogin && (
+            <form onSubmit={handleLoginFormSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña (opcional para enlace)</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Introduce tu contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {sent && (
+                <Alert>
+                  <Mail className="h-4 w-4" />
+                  <AlertDescription>{sent}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => void handleLoginSubmit("magic")}
+                disabled={isBusy}
+              >
+                {isSendingMagicLink && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Enviar enlace
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => void handleLoginSubmit("password")}
+                disabled={isBusy}
+              >
+                {isSigningInWithPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
+                Entrar con contraseña
+              </Button>
+
+              <div className="flex items-center justify-between text-sm pt-2">
+                <button type="button" className="text-primary hover:underline" onClick={() => setView("signup")}>
+                  Crear cuenta
+                </button>
+                <button type="button" className="text-primary hover:underline" onClick={() => setView("forgot")}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            </form>
+          )}
+
+          {showSignUp && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Crea tu contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          {showForgot && (
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -181,19 +307,6 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-              />
-            </div>
-          )}
-
-          {(showLogin || showSignUp) && (
-            <div className="space-y-2">
-              <Label htmlFor="password">{showSignUp ? "Contraseña" : "Contraseña (opcional para enlace)"}</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={showSignUp ? "Crea tu contraseña" : "Introduce tu contraseña"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           )}
@@ -211,38 +324,18 @@ export default function LoginPage() {
             </div>
           )}
 
-          {error && (
+          {!showLogin && error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {sent && (
+          {!showLogin && sent && (
             <Alert>
               <Mail className="h-4 w-4" />
               <AlertDescription>{sent}</AlertDescription>
             </Alert>
-          )}
-
-          {showLogin && (
-            <form onSubmit={handleMagicLinkSubmit} className="space-y-2">
-              <Button type="submit" className="w-full" disabled={!trimmedEmail || isBusy}>
-                {isSendingMagicLink && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enviar enlace
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handlePasswordLogin}
-                disabled={!trimmedEmail || isBusy}
-              >
-                {isSigningInWithPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
-                Entrar con contraseña
-              </Button>
-            </form>
           )}
 
           {showSignUp && (
@@ -266,22 +359,11 @@ export default function LoginPage() {
             </Button>
           )}
 
-          {!showReset && (
+          {!showReset && !showLogin && (
             <div className="flex items-center justify-between text-sm pt-2">
-              {showLogin ? (
-                <>
-                  <button type="button" className="text-primary hover:underline" onClick={() => setView("signup")}>
-                    Crear cuenta
-                  </button>
-                  <button type="button" className="text-primary hover:underline" onClick={() => setView("forgot")}>
-                    ¿Olvidaste tu contraseña?
-                  </button>
-                </>
-              ) : (
-                <button type="button" className="text-primary hover:underline" onClick={() => setView("login")}>
-                  Volver a iniciar sesión
-                </button>
-              )}
+              <button type="button" className="text-primary hover:underline" onClick={() => setView("login")}>
+                Volver a iniciar sesión
+              </button>
             </div>
           )}
         </CardContent>
