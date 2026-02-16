@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { usePlans } from "@/hooks/use-plans";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
@@ -8,19 +9,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getIncidents } from "@/lib/war-room-store";
 import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
+import { pickDefaultPlan } from "@/lib/plan-default";
+import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 
 const roles = ["Realización", "Producción", "Redacción", "Técnico", "Coach/Contenido"];
 
+const scopeLabels: Record<string, string> = {
+  zone: "Plató",
+  space: "Espacio",
+  reality_team: "Equipo reality",
+  itinerant_team: "Equipo itinerante",
+};
+
 export default function CallSheetPage() {
-  const { data: plans = [] } = usePlans();
+  const { data: plans = [], isLoading: plansLoading } = usePlans();
   const [planId, setPlanId] = useState<string>("");
   const [role, setRole] = useState(roles[0]);
   const [compact, setCompact] = useState(false);
   const [printMode, setPrintMode] = useState(false);
   const [pdfHelpOpen, setPdfHelpOpen] = useState(false);
-  const selected = useMemo(() => plans.find((p) => String(p.id) === planId) || plans[0] || null, [plans, planId]);
-  const { data } = usePlanOpsData(selected?.id);
+
+  const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
+  const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
+
+  const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
+  const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
+
+  const tasks = useMemo(
+    () => [...(data.tasks || [])].sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999)),
+    [data.tasks],
+  );
 
   const notesKey = `call-sheet-notes-${selected?.id || "none"}-${role}`;
   const [notes, setNotes] = useState("");
@@ -31,27 +51,111 @@ export default function CallSheetPage() {
     try { localStorage.setItem(notesKey, notes); } catch {}
   }, [notesKey, notes]);
 
-  const blocks = useMemo(() => {
-    const items = [...(data.tasks || [])].sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999));
-    return {
-      "Mañana": items.filter((t: any) => (hhmmToMinutes(t?.startPlanned) ?? 0) < 12 * 60),
-      "Mediodía": items.filter((t: any) => {
-        const m = hhmmToMinutes(t?.startPlanned) ?? 0;
-        return m >= 12 * 60 && m < 16 * 60;
-      }),
-      "Tarde": items.filter((t: any) => (hhmmToMinutes(t?.startPlanned) ?? 0) >= 16 * 60),
-    };
-  }, [data.tasks]);
+  const blocks = useMemo(() => ({
+    Mañana: tasks.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) < 12 * 60),
+    Mediodía: tasks.filter((task: any) => {
+      const minute = hhmmToMinutes(task?.startPlanned) ?? 0;
+      return minute >= 12 * 60 && minute < 16 * 60;
+    }),
+    Tarde: tasks.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) >= 16 * 60),
+  }), [tasks]);
+
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const nowTask = tasks.find((task: any) => {
+    const start = hhmmToMinutes(task?.startPlanned);
+    const end = hhmmToMinutes(task?.endPlanned);
+    return start !== null && end !== null && nowMinutes >= start && nowMinutes <= end;
+  });
+  const nextTask = tasks.find((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes);
 
   const critical = useMemo(() => {
-    const out: string[] = [];
-    if ((data.tasks || []).some((t: any) => !t?.zoneId && !t?.spaceId)) out.push("Hay tareas sin ubicación");
-    if ((data.tasks || []).some((t: any) => !t?.startPlanned || !t?.endPlanned)) out.push("Hay tareas sin horario completo");
-    if ((data.locks || []).length > 8) out.push("Nivel alto de bloqueos");
-    return out.slice(0, 3);
+    const output: string[] = [];
+    if ((data.tasks || []).some((task: any) => !task?.zoneId && !task?.spaceId)) output.push("Hay tareas sin ubicación");
+    if ((data.tasks || []).some((task: any) => !task?.startPlanned || !task?.endPlanned)) output.push("Hay tareas sin horario completo");
+    if ((data.locks || []).length > 8) output.push("Nivel alto de bloqueos");
+    return output.slice(0, 3);
   }, [data]);
 
-  const endMinute = Math.max(...(data.tasks || []).map((t: any) => hhmmToMinutes(t?.endPlanned) ?? 0), 0);
+  const endMinute = Math.max(...tasks.map((task: any) => hhmmToMinutes(task?.endPlanned) ?? 0), 0);
+
+  const modeByZone = useMemo(() => {
+    const map = new Map<number, "zone" | "space">();
+    for (const mode of data.zoneStaffModes || []) {
+      map.set(Number(mode.zoneId), mode.mode === "space" ? "space" : "zone");
+    }
+    return map;
+  }, [data.zoneStaffModes]);
+
+  const staffByRole = useMemo(() => {
+    const byRole = {
+      production: [] as any[],
+      editorial: [] as any[],
+    };
+
+    for (const assignment of data.staffAssignments || []) {
+      const zoneId = Number(assignment.zoneId || spacesById.get(Number(assignment.spaceId))?.zoneId || 0);
+      const mode = modeByZone.get(zoneId) || "zone";
+      const include = assignment.scopeType === "zone" || assignment.scopeType === "space" || assignment.scopeType === "reality_team" || assignment.scopeType === "itinerant_team";
+      if (!include) continue;
+
+      if (mode === "zone" && assignment.scopeType === "space") continue;
+      if (mode === "space" && assignment.scopeType === "zone") continue;
+
+      const bucket = assignment.staffRole === "editorial" ? byRole.editorial : byRole.production;
+      bucket.push(assignment);
+    }
+
+    return byRole;
+  }, [data.staffAssignments, modeByZone, spacesById]);
+
+  const groupedStaff = (entries: any[]) => {
+    const grouped = new Map<string, any[]>();
+    for (const assignment of entries) {
+      const key = assignment.scopeType === "zone"
+        ? `${scopeLabels.zone} · ${getZoneName(assignment.zoneId, zonesById)}`
+        : assignment.scopeType === "space"
+          ? `${scopeLabels.space} · ${getSpaceName(assignment.spaceId, spacesById)}`
+          : `${scopeLabels[assignment.scopeType] || assignment.scopeType}`;
+
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)?.push(assignment);
+    }
+
+    return [...grouped.entries()];
+  };
+
+  const incidents = getIncidents(selected?.id);
+
+  const technicalTopCams = [...tasks]
+    .sort((a: any, b: any) => Number(b?.camerasOverride ?? b?.template?.defaultCameras ?? 0) - Number(a?.camerasOverride ?? a?.template?.defaultCameras ?? 0))
+    .slice(0, 5);
+
+  const copySummary = async () => {
+    const lines = [
+      `Hoja del día · ${(selected as any)?.name || "Sin plan"}`,
+      `Fecha: ${String(selected?.date || "").slice(0, 10)}`,
+      `Rol: ${role}`,
+      `Ahora: ${nowTask ? getTaskName(nowTask) : "Sin tarea"}`,
+      `Siguiente: ${nextTask ? getTaskName(nextTask) : "Sin tarea"}`,
+      `Riesgos: ${critical.length ? critical.join(", ") : "Sin alertas críticas"}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(lines);
+    } catch {}
+  };
+
+  if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+
+  if (!plans.length) {
+    return (
+      <Layout>
+        <div className="rounded-lg border bg-card p-6 text-sm">
+          No hay planes disponibles. <Link className="text-primary underline" href="/plans">Ir a planes</Link>.
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -61,41 +165,92 @@ export default function CallSheetPage() {
             <h1 className="mr-auto text-2xl font-bold">Hoja del Día</h1>
             <Select value={selected ? String(selected.id) : undefined} onValueChange={setPlanId}>
               <SelectTrigger className="w-[260px]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
-              <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={String(p.id)}>{(p as any).name || `Plan ${p.id}`}</SelectItem>)}</SelectContent>
+              <SelectContent>{plans.map((plan) => <SelectItem key={plan.id} value={String(plan.id)}>{(plan as any).name || `Plan ${plan.id}`}</SelectItem>)}</SelectContent>
             </Select>
-            <Button variant={compact ? "default" : "outline"} onClick={() => setCompact((v) => !v)}>Compacto/Detallado</Button>
-            <Button variant={printMode ? "default" : "outline"} onClick={() => setPrintMode((v) => !v)}>Modo impresión</Button>
+            <Button variant={compact ? "default" : "outline"} onClick={() => setCompact((value) => !value)}>Compacto/Detallado</Button>
+            <Button variant={printMode ? "default" : "outline"} onClick={() => setPrintMode((value) => !value)}>Modo impresión</Button>
             <Button onClick={() => window.print()}>Imprimir</Button>
             <Button variant="outline" onClick={() => {
               const dismissed = localStorage.getItem("callSheetPdfHelpDismissed") === "1";
               if (!dismissed) setPdfHelpOpen(true);
               else window.print();
             }}>Exportar PDF</Button>
+            <Button variant="outline" onClick={copySummary}>Copiar resumen</Button>
           </div>
           <Tabs value={role} onValueChange={setRole} className="mt-3">
-            <TabsList>{roles.map((r) => <TabsTrigger key={r} value={r}>{r}</TabsTrigger>)}</TabsList>
+            <TabsList>{roles.map((item) => <TabsTrigger key={item} value={item}>{item}</TabsTrigger>)}</TabsList>
           </Tabs>
         </div>
 
-        <div className="print-only print-footer">{(selected as any)?.name || "Sin plan"} · {String(selected?.date || "").slice(0, 10)} · Generado: {minutesToHHMM(new Date().getHours() * 60 + new Date().getMinutes())}</div>
+        {(isLoading || error) && (
+          <section className="mb-4 rounded-lg border bg-card p-4 text-sm">
+            {isLoading ? "Cargando datos operativos..." : "No se pudieron cargar datos operativos."}
+            {error && <Button className="ml-2" size="sm" variant="outline" onClick={() => refetch()}>Reintentar</Button>}
+          </section>
+        )}
+
+        <div className="print-only mb-3 border-b pb-2">
+          <div className="text-lg font-semibold">Hoja del Día · {(selected as any)?.name || "Sin plan"}</div>
+          <div className="text-xs">Fecha: {String(selected?.date || "").slice(0, 10)} · Generado: {minutesToHHMM(new Date().getHours() * 60 + new Date().getMinutes())}</div>
+        </div>
 
         <section className="mb-4 rounded-lg border bg-card p-4 print-block">
           <h2 className="font-semibold">Cabecera de día</h2>
           <div className="text-sm text-muted-foreground">{String(selected?.date || "").slice(0, 10)} · {selected?.workStart || "--:--"}–{selected?.workEnd || "--:--"}</div>
           <div className="mt-2 text-sm">Hora prevista fin: <strong>{minutesToHHMM(endMinute)}</strong></div>
-          <div className="mt-2 flex flex-wrap gap-1">{critical.length ? critical.map((c) => <Badge key={c} variant="destructive">{c}</Badge>) : <span className="text-sm text-muted-foreground">Sin alertas críticas</span>}</div>
+          <div className="mt-2 flex flex-wrap gap-1">{critical.length ? critical.map((item) => <Badge key={item} variant="destructive">{item}</Badge>) : <span className="text-sm text-muted-foreground">Sin alertas críticas</span>}</div>
+        </section>
+
+        <section className="mb-4 rounded-lg border bg-card p-4 print-block">
+          <h3 className="font-semibold mb-2">Enfoque {role}</h3>
+          {role === "Realización" && (
+            <div className="text-sm space-y-1">
+              <div>Ahora: <strong>{nowTask ? getTaskName(nowTask) : "Sin tarea en curso"}</strong></div>
+              <div>Siguiente: <strong>{nextTask ? getTaskName(nextTask) : "Sin siguiente"}</strong></div>
+              <div>Cambios en 60 min: {tasks.filter((task: any) => {
+                const start = hhmmToMinutes(task?.startPlanned);
+                return start !== null && start >= nowMinutes && start <= nowMinutes + 60;
+              }).length}</div>
+            </div>
+          )}
+          {role === "Producción" && (
+            <ul className="list-disc pl-5 text-sm">
+              <li>Locks activos: {data.locks.length}</li>
+              <li>Tareas sin ubicación: {tasks.filter((task: any) => !task?.zoneId && !task?.spaceId).length}</li>
+              <li>Incidencias abiertas (War Room): {incidents.filter((incident) => !incident.resolved).length}</li>
+            </ul>
+          )}
+          {role === "Técnico" && (
+            <div className="space-y-1 text-sm">
+              <div>Pico cámaras identificado en dashboard operativo.</div>
+              {technicalTopCams.map((task) => (
+                <div key={task.id}>• {getTaskName(task)} · {Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cam · {formatRange(task?.startPlanned, task?.endPlanned)}</div>
+              ))}
+            </div>
+          )}
+          {role === "Redacción" && (
+            <div className="space-y-1 text-sm">
+              {tasks.map((task: any) => (
+                <div key={task.id} className="flex items-center gap-2">
+                  <Badge variant="outline">Hit</Badge>
+                  <span>{formatRange(task?.startPlanned, task?.endPlanned)} · {getTaskName(task)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : getZoneName(task.zoneId, zonesById)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {role === "Coach/Contenido" && <div className="text-sm">Revisar tiempos de bloques, incidencias y notas para briefing de equipo.</div>}
         </section>
 
         {Object.entries(blocks).map(([label, items]) => (
           <section key={label} className={`mb-4 rounded-lg border bg-card p-4 print-block ${compact ? "text-sm" : ""}`}>
             <h3 className="mb-2 font-semibold">{label}</h3>
-            {(items as any[]).length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas</div> : (items as any[]).map((t: any) => (
-              <div key={t.id} className="mb-2 rounded border p-2">
-                <div className="font-medium">{t?.template?.name || "Tarea sin nombre"}</div>
-                <div className="text-muted-foreground">{formatRange(t?.startPlanned, t?.endPlanned)} · {t?.locationLabel || "Ubicación por definir"}</div>
+            {(items as any[]).length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas</div> : (items as any[]).map((task: any) => (
+              <div key={task.id} className="mb-2 rounded border p-2">
+                <div className="font-medium">{getTaskName(task)}</div>
+                <div className="text-muted-foreground">{formatRange(task?.startPlanned, task?.endPlanned)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : task?.zoneId ? getZoneName(task.zoneId, zonesById) : "Ubicación por definir"}</div>
                 <div className="mt-1 flex gap-1 flex-wrap">
-                  <Badge variant="secondary">{Number(t?.camerasOverride ?? t?.template?.defaultCameras ?? 0)} cam</Badge>
-                  {(!t?.zoneId && !t?.spaceId) && <Badge variant="outline">Sin ubicación</Badge>}
+                  <Badge variant="secondary">{Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cam</Badge>
+                  {(!task?.zoneId && !task?.spaceId) && <Badge variant="outline">Sin ubicación</Badge>}
                 </div>
               </div>
             ))}
@@ -104,14 +259,32 @@ export default function CallSheetPage() {
 
         <section className="mb-4 rounded-lg border bg-card p-4 print-block">
           <h3 className="font-semibold mb-2">Personal y Asignaciones</h3>
-          {(data.staffAssignments || []).length === 0 ? <div className="text-sm text-muted-foreground">No hay asignaciones</div> :
-            (data.staffAssignments || []).map((a: any) => <div className="text-sm" key={a.id}>{a.staffPersonName || "Sin nombre"} · {a.staffRole} · {a.scopeType}</div>)}
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <div className="mb-1 font-medium">Producción</div>
+              {groupedStaff(staffByRole.production).length === 0 ? <div className="text-sm text-muted-foreground">Sin asignaciones</div> : groupedStaff(staffByRole.production).map(([group, entries]) => (
+                <div key={group} className="mb-2 text-sm">
+                  <div className="font-medium">{group}</div>
+                  <div>{(entries as any[]).map((entry) => entry.staffPersonName || "Sin nombre").join(", ")}</div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="mb-1 font-medium">Redacción</div>
+              {groupedStaff(staffByRole.editorial).length === 0 ? <div className="text-sm text-muted-foreground">Sin asignaciones</div> : groupedStaff(staffByRole.editorial).map(([group, entries]) => (
+                <div key={group} className="mb-2 text-sm">
+                  <div className="font-medium">{group}</div>
+                  <div>{(entries as any[]).map((entry) => entry.staffPersonName || "Sin nombre").join(", ")}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-lg border bg-card p-4 print-block">
           <h3 className="font-semibold mb-2">Riesgos y notas operativas</h3>
           <ul className="list-disc pl-5 text-sm mb-3">
-            {critical.map((c) => <li key={c}>{c}</li>)}
+            {critical.map((item) => <li key={item}>{item}</li>)}
           </ul>
           <Textarea className="no-print" placeholder="Notas por rol (autosave local)..." value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="print-only text-sm whitespace-pre-wrap">{notes}</div>
