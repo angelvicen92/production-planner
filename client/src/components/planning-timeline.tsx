@@ -635,7 +635,7 @@ function TaskStatusMenuTrigger({
               <TooltipProvider>
                 <div className="border rounded-xl bg-card shadow-sm">
                       <div className="h-[650px] w-full overflow-auto">
-                        <div className="p-4 space-y-6">
+                        <div className="p-4 space-y-6" data-planning-zoom-target>
               {lanesToShow.length === 0 ? (
                 <Card className="p-8 text-center bg-muted/50">
                   <p className="text-muted-foreground">
@@ -1351,10 +1351,10 @@ function TaskStatusMenuTrigger({
       <div className="border rounded-xl bg-card shadow-sm">
         <ScrollArea className="h-[600px] w-full">
           <div className="overflow-x-auto">
-            <div className="min-w-[800px] relative pb-4">
+            <div className="min-w-[800px] relative pb-4" data-planning-zoom-target>
               {/* Timeline Header */}
               <div className="flex border-b sticky top-0 bg-card z-20">
-                <div className="w-48 p-3 border-r font-semibold text-sm bg-muted/30">
+                <div className="w-48 p-3 border-r font-semibold text-sm bg-muted/30 planning-density-row">
                   Recurso
                 </div>
                 <div className="flex-1 relative h-10">
@@ -1378,7 +1378,7 @@ function TaskStatusMenuTrigger({
                   key={id}
                   className="flex border-b group hover:bg-muted/5 transition-colors"
                 >
-                  <div className="w-48 p-3 border-r bg-muted/10">
+                  <div className="w-48 p-3 border-r bg-muted/10 planning-density-row">
                     <div className="font-medium text-sm leading-5 truncate">{lane.name}</div>
 
                     {viewMode === "spaces" ? (() => {

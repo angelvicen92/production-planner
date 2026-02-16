@@ -4,6 +4,7 @@ import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanningTimeline } from "@/components/planning-timeline";
+import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
 import {
   ArrowLeft,
   Calendar,
@@ -2615,21 +2616,27 @@ export default function PlanDetailsPage() {
                 </div>
               </div>
 
-              <PlanningTimeline
-                plan={plan as any}
-                contestants={contestants as any}
-                viewMode={timelineView}
-                spaceVerticalMode={spaceVerticalMode}
-                zones={zones as any}
-                spaces={spaces as any}
-                zoneResourceAssignments={zoneAssignmentsForTooltip}
-                planResourceItemNameById={planResourceItemNameById}
-                zoneStaffModes={planZoneStaffModes as any}
-                itinerantTeams={itinerantTeams as any}
-                staffAssignments={planStaffAssignments as any}
-                onTaskStatusChange={handlePlanningTaskStatusChange}
-                taskStatusPending={updateTaskStatus.isPending}
-              />
+              <FullscreenPlanningPanel
+                title="Planning"
+                viewKey={`plan-${id}-${timelineView}-${spaceVerticalMode}`}
+                supportsZoom
+              >
+                <PlanningTimeline
+                  plan={plan as any}
+                  contestants={contestants as any}
+                  viewMode={timelineView}
+                  spaceVerticalMode={spaceVerticalMode}
+                  zones={zones as any}
+                  spaces={spaces as any}
+                  zoneResourceAssignments={zoneAssignmentsForTooltip}
+                  planResourceItemNameById={planResourceItemNameById}
+                  zoneStaffModes={planZoneStaffModes as any}
+                  itinerantTeams={itinerantTeams as any}
+                  staffAssignments={planStaffAssignments as any}
+                  onTaskStatusChange={handlePlanningTaskStatusChange}
+                  taskStatusPending={updateTaskStatus.isPending}
+                />
+              </FullscreenPlanningPanel>
             </div>
           </TabsContent>
 
