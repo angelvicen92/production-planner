@@ -73,6 +73,9 @@ function mapDeleteError(err: any, fallback: string) {
         path === prefix || path.startsWith(`${prefix}/`),
       );
 
+      const isAdminOnlyWrite = isAdminOnly && method !== "GET";
+      const isAdminOnlyRead = isAdminOnly && method === "GET";
+
       const isPlansWrite =
         method !== "GET" &&
         writePlansPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -90,7 +93,11 @@ function mapDeleteError(err: any, fallback: string) {
         const role = await getUserRole(userId);
         (req as any).userRole = role;
 
-        if (isAdminOnly && role !== "admin") {
+        if (isAdminOnlyRead && !role) {
+          return withPermissionDenied(res);
+        }
+
+        if (isAdminOnlyWrite && role !== "admin") {
           return withPermissionDenied(res);
         }
 
