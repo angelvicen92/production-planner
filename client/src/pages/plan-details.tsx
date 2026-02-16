@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { usePlan, useGeneratePlan, useUpdatePlan } from "@/hooks/use-plans";
+import { useGeneratePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -591,7 +591,61 @@ export default function PlanDetailsPage() {
   const id = parseInt(params.id || "0");
   const [, setLocation] = useLocation();
 
-  const { data: plan, isLoading } = usePlan(id);
+  const [plan, setPlan] = useState<any | null>(null);
+  const [planLoading, setPlanLoading] = useState(true);
+  const [planError, setPlanError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlanDetails() {
+      try {
+        setPlanLoading(true);
+        setPlanError(null);
+
+        const response = await apiRequest<any>(
+          "GET",
+          buildUrl(api.plans.get.path, { id }),
+        );
+
+        if (!cancelled) {
+          setPlan(response ?? null);
+        }
+      } catch (error: any) {
+        if (cancelled) return;
+
+        const isPermissionDenied =
+          error?.type === "permission_denied" ||
+          error?.status === 401 ||
+          error?.status === 403;
+
+        setPlan(null);
+        setPlanError(
+          isPermissionDenied
+            ? "No tienes permisos para ver este plan."
+            : (error?.message ?? "No se pudo cargar el plan."),
+        );
+      } finally {
+        if (!cancelled) {
+          setPlanLoading(false);
+        }
+      }
+    }
+
+    if (!Number.isFinite(id) || id <= 0) {
+      setPlan(null);
+      setPlanError("ID de plan inválido.");
+      setPlanLoading(false);
+      return;
+    }
+
+    loadPlanDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
   const generatePlan = useGeneratePlan();
 
   const updatePlan = useUpdatePlan();
@@ -968,11 +1022,30 @@ export default function PlanDetailsPage() {
     );
   }
 
-  if (isLoading) {
+  if (planLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (planError) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-[60vh] px-4">
+          <Alert variant="destructive" className="max-w-xl w-full">
+            <AlertTitle>No se pudo cargar el plan</AlertTitle>
+            <AlertDescription>{planError}</AlertDescription>
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" onClick={() => setLocation("/plans")}>
+                Volver
+              </Button>
+              <Button onClick={() => window.location.reload()}>Reintentar</Button>
+            </div>
+          </Alert>
         </div>
       </Layout>
     );

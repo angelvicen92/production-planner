@@ -31,12 +31,19 @@ export async function apiRequest<T>(
   const contentType = res.headers.get("content-type") || "";
 
   if (!res.ok) {
+    const warnPrefix = `[apiRequest] ${method.toUpperCase()} ${path} failed`;
+
     if (res.status === 401 || res.status === 403) {
       const permissionError = new Error(
         "No tienes permisos para esta acción.",
       ) as ApiPermissionError;
       permissionError.type = "permission_denied";
       permissionError.status = res.status;
+      console.warn(warnPrefix, {
+        url: path,
+        status: res.status,
+        message: permissionError.message,
+      });
       throw permissionError;
     }
 
@@ -48,6 +55,11 @@ export async function apiRequest<T>(
     (error as any).status = res.status;
     (error as any).reasons = payload?.reasons;
     (error as any).contentType = contentType;
+    console.warn(warnPrefix, {
+      url: path,
+      status: res.status,
+      message: error.message,
+    });
     throw error;
   }
 
