@@ -1,5 +1,9 @@
-import { z } from 'zod';
 import { getSupabaseClient } from "./supabaseClient";
+
+export type ApiPermissionError = Error & {
+  type: "permission_denied";
+  status: 401 | 403;
+};
 
 export async function apiRequest<T>(
   method: string,
@@ -7,7 +11,9 @@ export async function apiRequest<T>(
   data?: unknown
 ): Promise<T> {
   const supabase = await getSupabaseClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const token = session?.access_token;
 
@@ -17,7 +23,7 @@ export async function apiRequest<T>(
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: data ? JSON.stringify(data) : undefined,
   });
@@ -25,7 +31,15 @@ export async function apiRequest<T>(
   const contentType = res.headers.get("content-type") || "";
 
   if (!res.ok) {
-    // intenta leer JSON si es JSON; si no, lee texto
+    if (res.status === 401 || res.status === 403) {
+      const permissionError = new Error(
+        "No tienes permisos para esta acción.",
+      ) as ApiPermissionError;
+      permissionError.type = "permission_denied";
+      permissionError.status = res.status;
+      throw permissionError;
+    }
+
     const payload = contentType.includes("application/json")
       ? await res.json().catch(() => ({}))
       : { message: await res.text().catch(() => "") };
@@ -39,13 +53,12 @@ export async function apiRequest<T>(
 
   if (res.status === 204) return {} as T;
 
-  // Si la respuesta no es JSON, devuelve un error MUY claro
   if (!contentType.includes("application/json")) {
     const text = await res.text().catch(() => "");
     const preview = text.slice(0, 80).replace(/\s+/g, " ");
     const error = new Error(
       `La API devolvió ${contentType || "sin content-type"} en vez de JSON. ` +
-      `Probablemente estás cayendo en index.html. Respuesta: "${preview}..."`
+        `Probablemente estás cayendo en index.html. Respuesta: "${preview}..."`,
     );
     (error as any).status = res.status;
     (error as any).contentType = contentType;
@@ -54,4 +67,3 @@ export async function apiRequest<T>(
 
   return res.json();
 }
-
