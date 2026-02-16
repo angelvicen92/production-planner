@@ -148,9 +148,7 @@ export function ResourcesList() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/resource-types-with-items");
-      if (!res.ok) throw new Error("Error cargando recursos");
-      const json = await res.json();
+      const json = await apiRequest<ResourceType[]>("GET", "/api/resource-types-with-items");
       setTypes(json ?? []);
     } catch (e: any) {
       setError(e?.message || "Error cargando recursos");
@@ -163,15 +161,10 @@ export function ResourcesList() {
     const name = newName.trim();
     if (!name) return;
 
-    const res = await fetch(`/api/resource-items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err?.message || "Error guardando nombre");
+    try {
+      await apiRequest("PATCH", `/api/resource-items/${itemId}`, { name });
+    } catch (e: any) {
+      alert(e?.message || "Error guardando nombre");
       return;
     }
 
@@ -192,10 +185,10 @@ export function ResourcesList() {
   async function deleteItem(itemId: number) {
     if (!confirm("¿Seguro que quieres borrar esta unidad?")) return;
 
-    const res = await fetch(`/api/resource-items/${itemId}`, { method: "DELETE" });
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err?.message || "Error borrando unidad");
+    try {
+      await apiRequest("DELETE", `/api/resource-items/${itemId}`);
+    } catch (e: any) {
+      alert(e?.message || "Error borrando unidad");
       return;
     }
 
@@ -666,4 +659,3 @@ export function ResourcesList() {
       </div>
       );
     }
-

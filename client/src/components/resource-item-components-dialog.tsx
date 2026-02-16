@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/api";
 
 type ItemOption = { id: number; name: string };
 
@@ -45,13 +46,7 @@ export function ResourceItemComponentsDialog(props: {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/resource-items/${parentItem.id}/components`);
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err?.message || "Error cargando componentes");
-        }
-
-        const json = await res.json();
+        const json = await apiRequest<any[]>("GET", `/api/resource-items/${parentItem.id}/components`);
 
         const mapped: ComponentRow[] = (json ?? []).map((r: any) => ({
           componentId: Number(r.componentId),
@@ -92,16 +87,7 @@ export function ResourceItemComponentsDialog(props: {
       setSaving(true);
       setError(null);
 
-      const res = await fetch(`/api/resource-items/${parentItem.id}/components`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "Error guardando componentes");
-      }
+      await apiRequest("PUT", `/api/resource-items/${parentItem.id}/components`, payload);
 
       onSaved?.();
       onOpenChange(false);
