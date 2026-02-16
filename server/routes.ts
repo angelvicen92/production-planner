@@ -15,6 +15,27 @@ export async function registerRoutes(
 ): Promise<Server> {
 
 
+
+function mapDeleteError(err: any, fallback: string) {
+  const code = String(err?.code ?? "");
+  if (code === "PGRST116") {
+    return { status: 404, body: { message: "No encontrado" } };
+  }
+  if (code === "42501") {
+    return {
+      status: 403,
+      body: { type: "permission_denied", message: "No tienes permisos para esta acción." },
+    };
+  }
+  if (code === "23503" || code === "23514") {
+    return {
+      status: 409,
+      body: { message: "No se puede eliminar porque está en uso por otros registros." },
+    };
+  }
+  return { status: 400, body: { message: err?.message || fallback } };
+}
+
   // Authentication + coarse-grained authorization for all API endpoints
   app.use("/api", async (req, res, next) => {
     if (req.path === "/health") return next();
@@ -296,6 +317,26 @@ export async function registerRoutes(
     }
   });
 
+
+  app.delete(api.staffPeople.delete.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+
+      const { error } = await supabaseAdmin
+        .from("staff_people")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      const mapped = mapDeleteError(err, "Cannot delete staff person");
+      return res.status(mapped.status).json(mapped.body);
+    }
+  });
+
   // Itinerant Teams (Reality 1/2/3, Reality Duo, etc.)
   app.get(api.itinerantTeams.list.path, async (_req, res) => {
     try {
@@ -349,6 +390,26 @@ export async function registerRoutes(
       });
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot create itinerant team" });
+    }
+  });
+
+
+  app.delete(api.itinerantTeams.delete.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+
+      const { error } = await supabaseAdmin
+        .from("itinerant_teams")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      const mapped = mapDeleteError(err, "Cannot delete itinerant team");
+      return res.status(mapped.status).json(mapped.body);
     }
   });
 
@@ -934,6 +995,25 @@ export async function registerRoutes(
     }
   });
 
+
+  app.delete("/api/resource-types/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+
+      const { error } = await supabaseAdmin
+        .from("resource_types")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return res.json({ success: true });
+    } catch (err: any) {
+      const mapped = mapDeleteError(err, "Cannot delete resource type");
+      return res.status(mapped.status).json(mapped.body);
+    }
+  });
+
   app.post("/api/resource-items", async (req, res) => {
     try {
       const input = z
@@ -1001,7 +1081,8 @@ export async function registerRoutes(
       if (error) throw error;
       res.json({ success: true });
     } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Cannot delete resource item" });
+      const mapped = mapDeleteError(err, "Cannot delete resource item");
+      return res.status(mapped.status).json(mapped.body);
     }
   });
 
@@ -2342,7 +2423,8 @@ export async function registerRoutes(
 
       res.json({ success: true });
     } catch (err: any) {
-      return res.status(400).json({ message: err?.message || "Cannot delete zone" });
+      const mapped = mapDeleteError(err, "Cannot delete zone");
+      return res.status(mapped.status).json(mapped.body);
     }
   });
 
@@ -2396,7 +2478,8 @@ export async function registerRoutes(
 
       res.json({ success: true });
     } catch (err: any) {
-      return res.status(400).json({ message: err?.message || "Cannot delete space" });
+      const mapped = mapDeleteError(err, "Cannot delete space");
+      return res.status(mapped.status).json(mapped.body);
     }
   });
 

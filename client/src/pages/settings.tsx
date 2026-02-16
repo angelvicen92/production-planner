@@ -62,10 +62,15 @@ import {
   useStaffPeople,
   useCreateStaffPerson,
   useUpdateStaffPerson,
+  useDeleteStaffPerson,
   type StaffRoleType,
 } from "@/hooks/use-staff";
 import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
 import { useUserRole } from "@/hooks/use-user-role";
+import {
+  useDeleteItinerantTeam,
+  useItinerantTeams,
+} from "@/hooks/use-itinerant-teams";
 import { Badge } from "@/components/ui/badge";
 import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
@@ -142,6 +147,7 @@ function StaffPeopleSettings() {
   const { data, isLoading, error } = useStaffPeople();
   const create = useCreateStaffPerson();
   const update = useUpdateStaffPerson();
+  const remove = useDeleteStaffPerson();
 
   const [newName, setNewName] = useState("");
   const [newRoleType, setNewRoleType] = useState<StaffRoleType>("production");
@@ -327,22 +333,36 @@ function StaffPeopleSettings() {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingId(Number(p.id));
-                            setEditName(String(p?.name ?? ""));
-                            setEditRoleType(
-                              p?.roleType === "editorial"
-                                ? "editorial"
-                                : "production",
-                            );
-                            setEditActive(Boolean(p?.isActive));
-                          }}
-                        >
-                          {t("common.edit")}
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingId(Number(p.id));
+                              setEditName(String(p?.name ?? ""));
+                              setEditRoleType(
+                                p?.roleType === "editorial"
+                                  ? "editorial"
+                                  : "production",
+                              );
+                              setEditActive(Boolean(p?.isActive));
+                            }}
+                          >
+                            {t("common.edit")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={remove.isPending}
+                            title="Eliminar"
+                            onClick={() => {
+                              if (!confirm(`¿Eliminar ${String(p?.name ?? "este elemento")}? Esta acción no se puede deshacer`)) return;
+                              remove.mutate(Number(p.id));
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -362,6 +382,7 @@ function ItinerantTeamsSettings() {
   const { toast } = useToast();
 
   const { data: teams = [], isLoading, error } = useItinerantTeams();
+  const deleteTeam = useDeleteItinerantTeam();
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -458,6 +479,26 @@ function ItinerantTeamsSettings() {
                   <div className="font-medium text-sm">{t.name}</div>
                   <div className="text-xs text-muted-foreground">{t.code}</div>
                 </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={deleteTeam.isPending}
+                  title="Eliminar"
+                  onClick={() => {
+                    if (!confirm(`¿Eliminar ${String(t?.name ?? "este elemento")}? Esta acción no se puede deshacer`)) return;
+                    deleteTeam.mutate(Number(t.id), {
+                      onSuccess: () => toast({ title: "Eliminado" }),
+                      onError: (err: any) =>
+                        toast({
+                          title: "No se pudo eliminar",
+                          description: err?.message || "Error desconocido",
+                          variant: "destructive",
+                        }),
+                    });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>
@@ -1446,7 +1487,7 @@ function ZonesSpacesSettings() {
                 disabled={children.length > 0 || deleteSpace.isPending}
                 onClick={() => {
                   if (children.length > 0) return;
-                  if (!confirm("¿Eliminar este espacio?")) return;
+                  if (!confirm("¿Eliminar este espacio? Esta acción no se puede deshacer")) return;
                   deleteSpace.mutate(node.id);
                 }}
                 title={
@@ -1680,7 +1721,7 @@ function ZonesSpacesSettings() {
                                   return;
                                 if (
                                   !confirm(
-                                    "¿Eliminar este Plató? (Solo si no tiene espacios)",
+                                    "¿Eliminar este plató? Esta acción no se puede deshacer",
                                   )
                                 )
                                   return;
