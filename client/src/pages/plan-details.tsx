@@ -19,6 +19,8 @@ import {
   ChevronUp,
   Trash2,
   Users,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +41,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +85,23 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+type ResourceSelectable = {
+  id: string | number;
+  label: string;
+  kind: "resource_item" | "production" | "editorial" | "itinerant_team";
+  meta?: { typeName?: string; color?: string };
+};
 
 function PlanStaffRolesTab({
   planId,
@@ -654,6 +673,7 @@ export default function PlanDetailsPage() {
 
   const { data: contestants = [] } = useContestants(id);
   const { data: zones = [], isLoading: zonesLoading } = useZones();
+  const { data: staffPeople = [] } = useStaffPeople();
   const { data: planZoneStaffModes = [] } = usePlanZoneStaffModes(id);
   const { data: planStaffAssignments = [] } = usePlanStaffAssignments(id);
   const { data: itinerantTeams = [] } = useItinerantTeams();
@@ -834,14 +854,15 @@ export default function PlanDetailsPage() {
       return [];
     }
   });
-  const [resourceFilterIds, setResourceFilterIds] = useState<number[]>(() => {
+  const [resourceFilterIds, setResourceFilterIds] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
       const raw = window.localStorage.getItem("timeline.resourceFilterIds");
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed)
-        ? parsed.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)
-        : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((v) => String(v ?? "").trim())
+        .filter((v) => v.length > 0);
     } catch {
       return [];
     }
@@ -1192,10 +1213,59 @@ export default function PlanDetailsPage() {
     }, 250);
   }
 
-  const resourceFilterOptions = Object.entries(planResourceItemNameById ?? {})
-    .map(([idStr, name]) => ({ id: Number(idStr), name: String(name ?? "") }))
-    .filter((r) => Number.isFinite(r.id) && r.id > 0)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const resourceFilterOptions = useMemo<ResourceSelectable[]>(() => {
+    const options: ResourceSelectable[] = [];
+
+    for (const [idStr, name] of Object.entries(planResourceItemNameById ?? {})) {
+      const id = Number(idStr);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      options.push({
+        id: `resource_item:${id}`,
+        label: String(name ?? `Recurso #${id}`),
+        kind: "resource_item",
+      });
+    }
+
+    for (const person of staffPeople ?? []) {
+      const personId = Number((person as any)?.id);
+      if (!Number.isFinite(personId) || personId <= 0) continue;
+      const roleType = String((person as any)?.roleType ?? "");
+      const isActive = Boolean((person as any)?.isActive ?? true);
+      if (!isActive) continue;
+      if (roleType !== "production" && roleType !== "editorial") continue;
+
+      options.push({
+        id: `${roleType}:${personId}`,
+        label: `${roleType === "production" ? "Producción" : "Redacción"} · ${String((person as any)?.name ?? `Persona #${personId}`)}`,
+        kind: roleType,
+      });
+    }
+
+    for (const team of itinerantTeams ?? []) {
+      const teamId = Number((team as any)?.id);
+      if (!Number.isFinite(teamId) || teamId <= 0) continue;
+      const isActive = Boolean((team as any)?.isActive ?? (team as any)?.is_active ?? true);
+      if (!isActive) continue;
+      options.push({
+        id: `itinerant_team:${teamId}`,
+        label: `Itinerante · ${String((team as any)?.name ?? (team as any)?.code ?? `Equipo #${teamId}`)}`,
+        kind: "itinerant_team",
+      });
+    }
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [planResourceItemNameById, staffPeople, itinerantTeams]);
+
+  const resourceOptionById = useMemo(
+    () => new Map(resourceFilterOptions.map((opt) => [String(opt.id), opt])),
+    [resourceFilterOptions],
+  );
+
+  const [resourceSelectorOpen, setResourceSelectorOpen] = useState(false);
+
+  const selectedResourceOptions = resourceFilterIds
+    .map((id) => resourceOptionById.get(String(id)))
+    .filter((v): v is ResourceSelectable => Boolean(v));
 
   const toggleStageFilter = (zoneId: number) => {
     setStageFilterIds((prev) =>
@@ -1205,7 +1275,7 @@ export default function PlanDetailsPage() {
     );
   };
 
-  const toggleResourceFilter = (resourceId: number) => {
+  const toggleResourceFilter = (resourceId: string) => {
     setResourceFilterIds((prev) =>
       prev.includes(resourceId)
         ? prev.filter((id) => id !== resourceId)
@@ -2800,26 +2870,62 @@ export default function PlanDetailsPage() {
 
               {timelineView === "resources" && (
                 <Card className="p-3 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {resourceFilterOptions.map((resource) => {
-                      const checked = resourceFilterIds.includes(resource.id);
-                      return (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Popover open={resourceSelectorOpen} onOpenChange={setResourceSelectorOpen}>
+                      <PopoverTrigger asChild>
                         <Button
-                          key={resource.id}
                           type="button"
-                          size="sm"
-                          variant={checked ? "default" : "outline"}
-                          onClick={() => toggleResourceFilter(resource.id)}
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={resourceSelectorOpen}
+                          className="w-full justify-between md:w-[360px]"
                         >
-                          {resource.name || `Recurso #${resource.id}`}
+                          {selectedResourceOptions.length > 0
+                            ? `${selectedResourceOptions.length} seleccionado(s)`
+                            : "Selecciona recursos"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
-                      );
-                    })}
-                  </div>
-                  {resourceFilterOptions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay recursos para filtrar.</p>
-                  ) : null}
-                  <div className="flex items-center gap-2">
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[360px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar recurso/persona/equipo..." />
+                          <CommandList>
+                            <CommandEmpty>Sin resultados.</CommandEmpty>
+                            <CommandGroup>
+                              {resourceFilterOptions.map((resource) => {
+                                const id = String(resource.id);
+                                const checked = resourceFilterIds.includes(id);
+                                const kindLabel =
+                                  resource.kind === "production"
+                                    ? "Producción"
+                                    : resource.kind === "editorial"
+                                      ? "Redacción"
+                                      : resource.kind === "itinerant_team"
+                                        ? "Itinerante"
+                                        : "Recurso";
+
+                                return (
+                                  <CommandItem
+                                    key={id}
+                                    value={`${resource.label} ${kindLabel}`}
+                                    onSelect={() => toggleResourceFilter(id)}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        checked ? "opacity-100" : "opacity-0",
+                                      )}
+                                    />
+                                    <span className="truncate">{resource.label}</span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
                     <Button
                       type="button"
                       size="sm"
@@ -2829,10 +2935,30 @@ export default function PlanDetailsPage() {
                     >
                       Limpiar
                     </Button>
-                    {resourceFilterIds.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">Selecciona recursos</span>
-                    ) : null}
                   </div>
+
+                  {selectedResourceOptions.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedResourceOptions.map((option) => (
+                        <Badge key={String(option.id)} variant="secondary" className="gap-2">
+                          <span>{option.label}</span>
+                          <button
+                            type="button"
+                            className="text-xs opacity-80 hover:opacity-100"
+                            onClick={() => toggleResourceFilter(String(option.id))}
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Selecciona recursos</p>
+                  )}
+
+                  {resourceFilterOptions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay recursos para filtrar.</p>
+                  ) : null}
                 </Card>
               )}
 
@@ -2848,6 +2974,7 @@ export default function PlanDetailsPage() {
                   spaceVerticalMode={spaceVerticalMode}
                   stageFilterIds={stageFilterIds}
                   resourceFilterIds={resourceFilterIds}
+                  resourceSelectables={resourceFilterOptions as any}
                   zones={zones as any}
                   spaces={spaces as any}
                   zoneResourceAssignments={zoneAssignmentsForTooltip}
