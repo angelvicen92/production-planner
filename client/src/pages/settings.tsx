@@ -2181,9 +2181,6 @@ function TaskTemplatesSettings() {
   const { toast } = useToast();
 
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [bulkEditing, setBulkEditing] = useState(false);
-  const [bulkDraft, setBulkDraft] = useState<Record<number, any>>({});
-
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formData, setFormData] = useState<any>({
     name: "",
@@ -2277,7 +2274,11 @@ function TaskTemplatesSettings() {
       uiColorInput: String(tpl.uiColor ?? tpl.ui_color ?? ""),
       uiColor: normalizeColorToHex(tpl.uiColor ?? tpl.ui_color ?? null),
       uiColorError: null,
+      uiColorSecondaryInput: String(
+        tpl.uiColorSecondary ?? tpl.ui_color_secondary ?? "",
+      ),
       uiColorSecondary: tpl.uiColorSecondary ?? tpl.ui_color_secondary ?? null,
+      uiColorSecondaryError: null,
       requiresAuxiliar: Boolean(
         tpl.requiresAuxiliar ?? tpl.requires_auxiliar ?? false,
       ),
@@ -2299,6 +2300,35 @@ function TaskTemplatesSettings() {
         tpl.itinerant_team_requirement ??
         "none",
       itinerantTeamId: tpl.itinerantTeamId ?? tpl.itinerant_team_id ?? null,
+      requiresItinerantTeam:
+        String(
+          tpl.itinerantTeamRequirement ?? tpl.itinerant_team_requirement ?? "none",
+        ) !== "none",
+      allowedItinerantTeamIds: (() => {
+        const rawRules = tpl.rulesJson ?? tpl.rules_json;
+        const fromRules = Array.isArray(rawRules?.itinerantTeamAllowedIds)
+          ? rawRules.itinerantTeamAllowedIds
+              .map((id: unknown) => Number(id))
+              .filter((id: number) => Number.isFinite(id) && id > 0)
+          : [];
+        if (fromRules.length > 0) return fromRules;
+
+        const currentRequirement = String(
+          tpl.itinerantTeamRequirement ?? tpl.itinerant_team_requirement ?? "none",
+        );
+        const currentSpecificId = Number(
+          tpl.itinerantTeamId ?? tpl.itinerant_team_id ?? NaN,
+        );
+        if (currentRequirement === "specific" && Number.isFinite(currentSpecificId)) {
+          return [currentSpecificId];
+        }
+        if (currentRequirement === "any") {
+          return (itinerantTeams as any[])
+            .map((team: any) => Number(team?.id))
+            .filter((id: number) => Number.isFinite(id) && id > 0);
+        }
+        return [];
+      })(),
       rulesJsonData: tpl.rulesJson ?? tpl.rules_json ?? null,
       resourceRequirementsData:
         tpl.resourceRequirements ?? tpl.resource_requirements ?? null,
@@ -2319,11 +2349,6 @@ function TaskTemplatesSettings() {
       return "Selecciona al menos 1 dependencia.";
     if ((d?.dependsOnTemplateIds ?? []).includes(Number(d?.id)))
       return "Auto-dependencia detectada";
-    if (
-      String(d?.itinerantTeamRequirement ?? "none") === "specific" &&
-      (d?.itinerantTeamId ?? null) == null
-    )
-      return "Equipo itinerante incompleto";
     return null;
   };
 
@@ -2333,7 +2358,11 @@ function TaskTemplatesSettings() {
     if (err) return toast({ title: err, variant: "destructive" });
 
     const rawColorInput = String(editData.uiColorInput ?? "").trim();
+    const rawSecondaryColorInput = String(
+      editData.uiColorSecondaryInput ?? "",
+    ).trim();
     const normalizedUiColor = normalizeColorToHex(rawColorInput);
+    const normalizedSecondaryColor = normalizeColorToHex(rawSecondaryColorInput);
     if (rawColorInput && !normalizedUiColor) {
       return toast({
         title: "Color inválido",
@@ -2341,6 +2370,45 @@ function TaskTemplatesSettings() {
         variant: "destructive",
       });
     }
+    if (rawSecondaryColorInput && !normalizedSecondaryColor) {
+      return toast({
+        title: "Color inválido",
+        description: "Usa HEX (#RRGGBB o #RGB) o rgb(r,g,b).",
+        variant: "destructive",
+      });
+    }
+
+    const normalizedAllowedTeamIds = Boolean(editData.requiresItinerantTeam)
+      ? Array.from(
+          new Set(
+            (editData.allowedItinerantTeamIds ?? [])
+              .map((id: unknown) => Number(id))
+              .filter((id: number) => Number.isFinite(id) && id > 0),
+          ),
+        )
+      : [];
+
+    const itinerantTeamRequirement =
+      normalizedAllowedTeamIds.length === 0
+        ? "none"
+        : normalizedAllowedTeamIds.length === 1
+          ? "specific"
+          : "any";
+    const itinerantTeamId =
+      normalizedAllowedTeamIds.length === 1 ? normalizedAllowedTeamIds[0] : null;
+
+    if (normalizedAllowedTeamIds.length > 1) {
+      toast({
+        title: "Restricción parcial en espera",
+        description:
+          "El motor aún no restringe por subconjunto; se guardará para futura compatibilidad.",
+      });
+    }
+
+    const previousRules =
+      editData.rulesJsonData && typeof editData.rulesJsonData === "object"
+        ? editData.rulesJsonData
+        : {};
 
     updateTask.mutate(
       {
@@ -2352,7 +2420,7 @@ function TaskTemplatesSettings() {
           zoneId: editData.zoneId ?? null,
           spaceId: editData.spaceId ?? null,
           uiColor: normalizedUiColor,
-          uiColorSecondary: editData.uiColorSecondary ?? null,
+          uiColorSecondary: normalizedSecondaryColor,
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
           requiresCoach: Boolean(editData.requiresCoach),
           requiresPresenter: Boolean(editData.requiresPresenter),
@@ -2364,12 +2432,12 @@ function TaskTemplatesSettings() {
           dependsOnTemplateId: editData.hasDependency
             ? (editData.dependsOnTemplateIds?.[0] ?? null)
             : null,
-          itinerantTeamRequirement: editData.itinerantTeamRequirement ?? "none",
-          itinerantTeamId:
-            String(editData.itinerantTeamRequirement ?? "none") === "specific"
-              ? (editData.itinerantTeamId ?? null)
-              : null,
-          rulesJson: editData.rulesJsonData ?? null,
+          itinerantTeamRequirement,
+          itinerantTeamId,
+          rulesJson: {
+            ...previousRules,
+            itinerantTeamAllowedIds: normalizedAllowedTeamIds,
+          },
           resourceRequirements: editData.resourceRequirementsData ?? null,
         },
       } as any,
@@ -2394,13 +2462,6 @@ function TaskTemplatesSettings() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Global Task Templates</CardTitle>
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setBulkEditing((v) => !v)}
-          >
-            Editar todas
-          </Button>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -2445,11 +2506,6 @@ function TaskTemplatesSettings() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {bulkEditing && (
-          <div className="text-sm text-muted-foreground">
-            Bulk edit activo (lógica mantenida).
-          </div>
-        )}
         {(templates ?? []).map((tpl: any) => {
           const isEditing = editingId === Number(tpl.id) && !!editData;
           const curr = isEditing ? editData : tpl;
@@ -2458,12 +2514,6 @@ function TaskTemplatesSettings() {
           const secondary = String(
             curr?.uiColorSecondary ?? curr?.ui_color_secondary ?? "",
           ).trim();
-          const deps = Array.isArray(curr?.dependsOnTemplateIds)
-            ? curr.dependsOnTemplateIds
-            : Array.isArray(curr?.depends_on_template_ids)
-              ? curr.depends_on_template_ids
-              : [];
-
           return (
             <Card key={tpl.id}>
               <CardHeader className="pb-3">
@@ -2492,10 +2542,6 @@ function TaskTemplatesSettings() {
                           {tpl.name ?? `#${tpl.id}`}
                         </p>
                       )}
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-3">
-                      <span>{curr?.defaultDuration ?? 30} min</span>
-                      <span>{deps.length} deps</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -2605,19 +2651,7 @@ function TaskTemplatesSettings() {
 
                   <section className="space-y-3">
                     <p className="text-sm font-medium">Recursos</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                      <label className="flex items-center gap-2">
-                        <Checkbox
-                          checked={!!editData?.requiresAuxiliar}
-                          onCheckedChange={(v) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              requiresAuxiliar: Boolean(v),
-                            }))
-                          }
-                        />
-                        Auxiliar
-                      </label>
+                    <div className="grid grid-cols-2 md:grid-cols-2 gap-2 text-sm">
                       <label className="flex items-center gap-2">
                         <Checkbox
                           checked={!!editData?.requiresCoach}
@@ -2642,80 +2676,72 @@ function TaskTemplatesSettings() {
                         />
                         Presenter
                       </label>
+                    </div>
+                    <div className="space-y-2 text-sm">
                       <label className="flex items-center gap-2">
                         <Checkbox
-                          checked={!!editData?.exclusiveAuxiliar}
+                          checked={!!editData?.requiresItinerantTeam}
                           onCheckedChange={(v) =>
                             setEditData((p: any) => ({
                               ...p,
-                              exclusiveAuxiliar: Boolean(v),
+                              requiresItinerantTeam: Boolean(v),
+                              allowedItinerantTeamIds: Boolean(v)
+                                ? (p?.allowedItinerantTeamIds ?? [])
+                                : [],
                             }))
                           }
                         />
-                        Auxiliar exclusivo
+                        Requiere equipo itinerante
                       </label>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label>Equipo itinerante</Label>
-                        <Select
-                          value={String(
-                            editData?.itinerantTeamRequirement ?? "none",
-                          )}
-                          onValueChange={(v) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              itinerantTeamRequirement: v,
-                              itinerantTeamId:
-                                v === "specific"
-                                  ? (p?.itinerantTeamId ?? null)
-                                  : null,
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="No" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No</SelectItem>
-                            <SelectItem value="any">Cualquiera</SelectItem>
-                            <SelectItem value="specific">Específico</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {String(editData?.itinerantTeamRequirement ?? "none") ===
-                        "specific" && (
-                        <div className="space-y-1">
-                          <Label>Equipo específico</Label>
-                          <Select
-                            value={String(editData?.itinerantTeamId ?? "none")}
-                            onValueChange={(v) =>
-                              setEditData((p: any) => ({
-                                ...p,
-                                itinerantTeamId:
-                                  v === "none" ? null : Number(v),
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona equipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">
-                                Selecciona equipo
-                              </SelectItem>
-                              {(itinerantTeams as any[]).map((team: any) => (
-                                <SelectItem
-                                  key={team.id}
-                                  value={String(team.id)}
+                      {!!editData?.requiresItinerantTeam && (
+                        <div className="space-y-2 rounded-md border p-3">
+                          <p className="text-xs text-muted-foreground">
+                            Selecciona 1 para fijar equipo específico; selecciona varios para permitir alternativas.
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {(itinerantTeams as any[]).map((team: any) => {
+                              const teamId = Number(team?.id);
+                              const checked = (
+                                editData?.allowedItinerantTeamIds ?? []
+                              ).includes(teamId);
+                              return (
+                                <label
+                                  key={team?.id}
+                                  className="flex items-center gap-2"
                                 >
-                                  {team?.name ??
-                                    team?.code ??
-                                    `Equipo #${team?.id ?? "—"}`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) =>
+                                      setEditData((p: any) => {
+                                        const set = new Set<number>(
+                                          (p?.allowedItinerantTeamIds ?? []).map((id: unknown) => Number(id)),
+                                        );
+                                        if (v === true) set.add(teamId);
+                                        else set.delete(teamId);
+                                        return {
+                                          ...p,
+                                          allowedItinerantTeamIds: Array.from(set).filter(
+                                            (id: number) => Number.isFinite(id) && id > 0,
+                                          ),
+                                        };
+                                      })
+                                    }
+                                  />
+                                  {team?.name ?? team?.code ?? `Equipo #${team?.id ?? "—"}`}
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {(editData?.allowedItinerantTeamIds?.length ?? 0) === 0 && (
+                            <p className="text-xs text-amber-600">
+                              Selecciona al menos uno o desactiva este requisito.
+                            </p>
+                          )}
+                          {(editData?.allowedItinerantTeamIds?.length ?? 0) > 1 && (
+                            <p className="text-xs text-amber-600">
+                              El motor aún no restringe por subconjunto; guardaremos esta selección para futura compatibilidad.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2779,68 +2805,87 @@ function TaskTemplatesSettings() {
 
                   <section className="space-y-3">
                     <p className="text-sm font-medium">Color</p>
-                    <div className="grid grid-cols-1 md:grid-cols-[auto,auto,1fr] gap-3 items-end">
-                      <div className="space-y-1">
-                        <Label>Swatch</Label>
-                        <div
-                          className="h-10 w-10 rounded border"
-                          style={{
-                            backgroundColor: editData?.uiColor
-                              ? String(editData.uiColor)
-                              : "#e2e8f0",
-                          }}
-                          aria-label={
-                            editData?.uiColor
-                              ? `Color ${editData.uiColor}`
-                              : "Sin color"
-                          }
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {editData?.uiColor
-                            ? String(editData.uiColor)
-                            : "Sin color"}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Paleta</Label>
-                        <Input
-                          type="color"
-                          value={getColorPickerValue(editData?.uiColorInput)}
-                          onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              uiColor: e.target.value,
-                              uiColorInput: e.target.value,
-                              uiColorError: null,
-                            }))
-                          }
-                          className="h-10 w-16 p-1"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Color de plantilla</Label>
-                        <Input
-                          value={String(editData?.uiColorInput ?? "")}
-                          onChange={(e) =>
-                            setEditData((p: any) => {
-                              const raw = e.target.value;
-                              const normalized = normalizeColorToHex(raw);
-                              return {
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label>Color de tarea</Label>
+                        <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
+                          <Input
+                            type="color"
+                            value={getColorPickerValue(editData?.uiColorInput)}
+                            onChange={(e) =>
+                              setEditData((p: any) => ({
                                 ...p,
-                                uiColorInput: raw,
-                                uiColor: normalized,
-                                uiColorError:
-                                  raw.trim() && !normalized
-                                    ? "Color inválido"
-                                    : null,
-                              };
-                            })
-                          }
-                          placeholder="Sin color · #RRGGBB o rgb(r,g,b)"
-                        />
+                                uiColor: e.target.value,
+                                uiColorInput: e.target.value,
+                                uiColorError: null,
+                              }))
+                            }
+                            className="h-10 w-16 p-1"
+                          />
+                          <Input
+                            value={String(editData?.uiColorInput ?? "")}
+                            onChange={(e) =>
+                              setEditData((p: any) => {
+                                const raw = e.target.value;
+                                const normalized = normalizeColorToHex(raw);
+                                return {
+                                  ...p,
+                                  uiColorInput: raw,
+                                  uiColor: normalized,
+                                  uiColorError:
+                                    raw.trim() && !normalized
+                                      ? "Color inválido"
+                                      : null,
+                                };
+                              })
+                            }
+                            placeholder="Sin color · #RRGGBB o rgb(r,g,b)"
+                          />
+                        </div>
                         {editData?.uiColorError && (
+                          <p className="text-xs text-destructive">{editData.uiColorError}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Color de plató</Label>
+                        <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
+                          <Input
+                            type="color"
+                            value={getColorPickerValue(editData?.uiColorSecondaryInput)}
+                            onChange={(e) =>
+                              setEditData((p: any) => ({
+                                ...p,
+                                uiColorSecondary: e.target.value,
+                                uiColorSecondaryInput: e.target.value,
+                                uiColorSecondaryError: null,
+                              }))
+                            }
+                            className="h-10 w-16 p-1"
+                          />
+                          <Input
+                            value={String(editData?.uiColorSecondaryInput ?? "")}
+                            onChange={(e) =>
+                              setEditData((p: any) => {
+                                const raw = e.target.value;
+                                const normalized = normalizeColorToHex(raw);
+                                return {
+                                  ...p,
+                                  uiColorSecondaryInput: raw,
+                                  uiColorSecondary: normalized,
+                                  uiColorSecondaryError:
+                                    raw.trim() && !normalized
+                                      ? "Color inválido"
+                                      : null,
+                                };
+                              })
+                            }
+                            placeholder="Sin color · #RRGGBB o rgb(r,g,b)"
+                          />
+                        </div>
+                        {editData?.uiColorSecondaryError && (
                           <p className="text-xs text-destructive">
-                            {editData.uiColorError}
+                            {editData.uiColorSecondaryError}
                           </p>
                         )}
                       </div>
