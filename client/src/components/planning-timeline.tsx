@@ -47,6 +47,13 @@ interface Contestant {
   name: string;
 }
 
+type ResourceSelectable = {
+  id: string | number;
+  label: string;
+  kind: "resource_item" | "production" | "editorial" | "itinerant_team";
+  meta?: { typeName?: string; color?: string };
+};
+
 interface PlanningTimelineProps {
   // Vista vertical para "Por plató y espacio"
   spaceVerticalMode?: "timeline" | "list";
@@ -63,7 +70,8 @@ interface PlanningTimelineProps {
   // New: view mode + optional location catalogs
   viewMode?: "contestants" | "spaces" | "resources";
   stageFilterIds?: number[];
-  resourceFilterIds?: number[];
+  resourceFilterIds?: string[];
+  resourceSelectables?: ResourceSelectable[];
   zones?: { id: number; name: string; uiColor?: string | null }[];
   spaces?: {
     id: number;
@@ -208,6 +216,7 @@ function TaskStatusMenuTrigger({
     spaceVerticalMode = "timeline",
     stageFilterIds = [],
     resourceFilterIds = [],
+    resourceSelectables = [],
     zones = [],
     spaces = [],
     zoneResourceAssignments = {},
@@ -345,46 +354,176 @@ function TaskStatusMenuTrigger({
     });
   }, [dailyTasks, spaces, selectedStageIdsSet]);
 
-  const resourceNameById = useMemo(() => {
-    const mapped: Record<number, string> = {};
-    for (const [idStr, name] of Object.entries(planResourceItemNameById ?? {})) {
-      const id = Number(idStr);
-      if (!Number.isFinite(id)) continue;
-      mapped[id] = String(name ?? `Recurso #${id}`);
+  const selectedResourceKeys = useMemo(
+    () => (resourceFilterIds ?? []).map((id) => String(id ?? "")).filter((id) => id.length > 0),
+    [resourceFilterIds],
+  );
+
+  const resourceSelectableById = useMemo(() => {
+    const mapped = new Map<string, ResourceSelectable>();
+    for (const opt of resourceSelectables ?? []) {
+      const key = String(opt.id ?? "");
+      if (!key) continue;
+      mapped.set(key, opt);
     }
     return mapped;
-  }, [planResourceItemNameById]);
+  }, [resourceSelectables]);
+
+  const zoneById = useMemo(() => {
+    const mapped = new Map<number, { id: number; name: string }>();
+    for (const zone of zones ?? []) {
+      const id = Number(zone?.id);
+      if (!Number.isFinite(id)) continue;
+      mapped.set(id, { id, name: String(zone?.name ?? `Plató #${id}`) });
+    }
+    return mapped;
+  }, [zones]);
+
+  const spaceById = useMemo(() => {
+    const mapped = new Map<number, { id: number; name: string; zoneId: number | null }>();
+    for (const space of spaces ?? []) {
+      const id = Number(space?.id);
+      if (!Number.isFinite(id)) continue;
+      const zoneIdRaw = space?.zoneId;
+      const zoneId = zoneIdRaw == null ? null : Number(zoneIdRaw);
+      mapped.set(id, {
+        id,
+        name: String(space?.name ?? `Espacio #${id}`),
+        zoneId: Number.isFinite(zoneId as any) ? Number(zoneId) : null,
+      });
+    }
+    return mapped;
+  }, [spaces]);
+
+  const sortTasks = (list: Task[]) => {
+    list.sort((a, b) => {
+      const aStart = a.startPlanned ? timeToMinutes(a.startPlanned) : 0;
+      const bStart = b.startPlanned ? timeToMinutes(b.startPlanned) : 0;
+      return aStart - bStart || a.id - b.id;
+    });
+  };
 
   const resourceTaskMap = useMemo(() => {
-    const mapped = new Map<number, Task[]>();
+    const mapped = new Map<string, Task[]>();
+
+    const zoneModeByZoneId = new Map<number, "zone" | "space">();
+    for (const zm of zoneStaffModes ?? []) {
+      const zoneId = Number(zm?.zoneId);
+      if (!Number.isFinite(zoneId)) continue;
+      zoneModeByZoneId.set(zoneId, zm?.mode === "space" ? "space" : "zone");
+    }
+
+    const zoneTasksMap = new Map<number, Task[]>();
+    const spaceTasksMap = new Map<number, Task[]>();
+
     for (const task of filteredDailyTasksByStage ?? []) {
+      const taskZoneIdRaw = task?.zoneId;
+      const taskSpaceIdRaw = task?.spaceId;
+      const taskZoneId = taskZoneIdRaw == null ? null : Number(taskZoneIdRaw);
+      const taskSpaceId = taskSpaceIdRaw == null ? null : Number(taskSpaceIdRaw);
+
+      if (Number.isFinite(taskSpaceId as any)) {
+        const spaceId = Number(taskSpaceId);
+        const spaceList = spaceTasksMap.get(spaceId) ?? [];
+        spaceList.push(task);
+        spaceTasksMap.set(spaceId, spaceList);
+
+        const zoneFromSpace = spaceById.get(spaceId)?.zoneId;
+        if (Number.isFinite(zoneFromSpace as any)) {
+          const zoneList = zoneTasksMap.get(Number(zoneFromSpace)) ?? [];
+          zoneList.push(task);
+          zoneTasksMap.set(Number(zoneFromSpace), zoneList);
+        }
+      } else if (Number.isFinite(taskZoneId as any)) {
+        const zoneId = Number(taskZoneId);
+        const zoneList = zoneTasksMap.get(zoneId) ?? [];
+        zoneList.push(task);
+        zoneTasksMap.set(zoneId, zoneList);
+      }
+
       const assignedRaw = task?.assignedResources ?? task?.assigned_resource_ids ?? [];
       const ids = Array.isArray(assignedRaw)
         ? assignedRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
         : [];
 
       for (const id of ids) {
-        const list = mapped.get(id) ?? [];
+        const key = `resource_item:${id}`;
+        const list = mapped.get(key) ?? [];
         list.push(task);
-        mapped.set(id, list);
+        mapped.set(key, list);
       }
     }
 
-    for (const list of mapped.values()) {
-      list.sort((a, b) => {
-        const aStart = a.startPlanned ? timeToMinutes(a.startPlanned) : 0;
-        const bStart = b.startPlanned ? timeToMinutes(b.startPlanned) : 0;
-        return aStart - bStart || a.id - b.id;
-      });
+    for (const assignment of staffAssignments ?? []) {
+      const role = assignment?.staffRole;
+      const roleKind = role === "production" ? "production" : role === "editorial" ? "editorial" : null;
+      if (!roleKind) continue;
+      const personId = Number((assignment as any)?.staffPersonId);
+      if (!Number.isFinite(personId) || personId <= 0) continue;
+
+      const key = `${roleKind}:${personId}`;
+      const bucket = mapped.get(key) ?? [];
+
+      if (assignment.scopeType === "zone") {
+        const zoneId = Number(assignment.zoneId);
+        if (Number.isFinite(zoneId)) {
+          bucket.push(...(zoneTasksMap.get(zoneId) ?? []));
+        }
+      } else if (assignment.scopeType === "space") {
+        const spaceId = Number(assignment.spaceId);
+        if (Number.isFinite(spaceId)) {
+          bucket.push(...(spaceTasksMap.get(spaceId) ?? []));
+        }
+      }
+
+      mapped.set(key, bucket);
+    }
+
+    for (const team of itinerantTeams ?? []) {
+      const teamId = Number((team as any)?.id);
+      if (!Number.isFinite(teamId) || teamId <= 0) continue;
+      const key = `itinerant_team:${teamId}`;
+      const bucket = mapped.get(key) ?? [];
+
+      const teamAssignments = (staffAssignments ?? []).filter(
+        (a) => a.scopeType === "itinerant_team" && Number((a as any)?.itinerantTeamId) === teamId,
+      );
+
+      for (const assignment of teamAssignments) {
+        const zoneId = Number(assignment.zoneId);
+        if (Number.isFinite(zoneId)) {
+          const zoneMode = zoneModeByZoneId.get(zoneId) ?? "zone";
+          if (zoneMode === "zone") {
+            bucket.push(...(zoneTasksMap.get(zoneId) ?? []));
+          } else {
+            const spaceRows = (spaces ?? []).filter((s: any) => Number(s?.zoneId) === zoneId);
+            for (const space of spaceRows) {
+              const sid = Number(space?.id);
+              if (!Number.isFinite(sid)) continue;
+              bucket.push(...(spaceTasksMap.get(sid) ?? []));
+            }
+          }
+        }
+
+        const spaceId = Number(assignment.spaceId);
+        if (Number.isFinite(spaceId)) {
+          bucket.push(...(spaceTasksMap.get(spaceId) ?? []));
+        }
+      }
+
+      mapped.set(key, bucket);
+    }
+
+    for (const [key, list] of mapped.entries()) {
+      const dedup = new Map<number, Task>();
+      for (const task of list) dedup.set(Number(task.id), task);
+      const normalized = Array.from(dedup.values());
+      sortTasks(normalized);
+      mapped.set(key, normalized);
     }
 
     return mapped;
-  }, [filteredDailyTasksByStage]);
-
-  const selectedResourceIds = useMemo(
-    () => (resourceFilterIds ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0),
-    [resourceFilterIds],
-  );
+  }, [filteredDailyTasksByStage, staffAssignments, itinerantTeams, zoneStaffModes, spaces, spaceById]);
 
   const lanes = useMemo(() => {
     const grouped: Record<string, { name: string; tasks: Task[] }> = {};
@@ -1427,7 +1566,7 @@ function TaskStatusMenuTrigger({
   }
 
   if (viewMode === "resources") {
-    if (selectedResourceIds.length === 0) {
+    if (selectedResourceKeys.length === 0) {
       return (
         <Card className="p-8 text-center bg-muted/50">
           <p className="text-muted-foreground">Selecciona recursos para ver sus tareas.</p>
@@ -1435,29 +1574,95 @@ function TaskStatusMenuTrigger({
       );
     }
 
+    const kindLabel = (kind: ResourceSelectable["kind"]) => {
+      if (kind === "production") return "Producción";
+      if (kind === "editorial") return "Redacción";
+      if (kind === "itinerant_team") return "Itinerante";
+      return "Recurso";
+    };
+
+    const scopeText = (resourceKey: string, kind: ResourceSelectable["kind"]) => {
+      if (kind === "resource_item") return null;
+
+      if (kind === "itinerant_team") {
+        const teamId = Number(resourceKey.split(":")[1]);
+        const related = (staffAssignments ?? []).filter(
+          (a) => a.scopeType === "itinerant_team" && Number((a as any)?.itinerantTeamId) === teamId,
+        );
+        if (related.length === 0) return "Sin ámbito asignado";
+        return related
+          .map((a) => {
+            if (a.scopeType === "space" && Number.isFinite(Number(a.spaceId))) {
+              const sp = spaceById.get(Number(a.spaceId));
+              return sp ? `Espacio: ${sp.name}` : null;
+            }
+            if (Number.isFinite(Number(a.zoneId))) {
+              const zone = zoneById.get(Number(a.zoneId));
+              return zone ? `Plató: ${zone.name}` : null;
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join(" · ");
+      }
+
+      const personId = Number(resourceKey.split(":")[1]);
+      const related = (staffAssignments ?? []).filter(
+        (a) => a.staffRole === kind && Number((a as any)?.staffPersonId) === personId,
+      );
+      if (related.length === 0) return "Sin ámbito asignado";
+      return related
+        .map((a) => {
+          if (a.scopeType === "space" && Number.isFinite(Number(a.spaceId))) {
+            const sp = spaceById.get(Number(a.spaceId));
+            if (!sp) return null;
+            const zone = sp.zoneId == null ? null : zoneById.get(Number(sp.zoneId));
+            return zone ? `Espacio: ${zone.name} · ${sp.name}` : `Espacio: ${sp.name}`;
+          }
+          if (a.scopeType === "zone" && Number.isFinite(Number(a.zoneId))) {
+            const zone = zoneById.get(Number(a.zoneId));
+            return zone ? `Plató: ${zone.name}` : null;
+          }
+          if (a.scopeType === "itinerant_team" && Number.isFinite(Number((a as any)?.itinerantTeamId))) {
+            const tId = Number((a as any).itinerantTeamId);
+            const team = (itinerantTeams ?? []).find((t: any) => Number(t?.id) === tId);
+            return `Equipo itinerante: ${String(team?.name ?? team?.code ?? `#${tId}`)}`;
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join(" · ");
+    };
+
     return (
       <TooltipProvider>
         <div className="border rounded-xl bg-card shadow-sm">
           <ScrollArea className="h-[600px] w-full">
             <div className="p-4 space-y-4" data-planning-zoom-target>
-              {selectedResourceIds.map((resourceId) => {
-                const tasksForResource = resourceTaskMap.get(resourceId) ?? [];
-                const resourceName = resourceNameById[resourceId] ?? `Recurso #${resourceId}`;
+              {selectedResourceKeys.map((resourceKey) => {
+                const option = resourceSelectableById.get(resourceKey);
+                const resourceName = option?.label ?? resourceKey;
+                const tasksForResource = resourceTaskMap.get(resourceKey) ?? [];
 
                 return (
-                  <Card key={resourceId} className="p-4">
-                    <div className="mb-3 border-b pb-2">
-                      <h3 className="font-semibold">{resourceName}</h3>
-                      <p className="text-xs text-muted-foreground">ID: {resourceId}</p>
+                  <Card key={resourceKey} className="p-4">
+                    <div className="mb-3 border-b pb-2 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{resourceName}</h3>
+                        <Badge variant="outline" className="text-[10px]">{kindLabel(option?.kind ?? "resource_item")}</Badge>
+                      </div>
+                      {option ? (
+                        <p className="text-xs text-muted-foreground">{scopeText(resourceKey, option.kind) || "Sin ámbito asignado"}</p>
+                      ) : null}
                     </div>
 
                     {tasksForResource.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Sin tareas asignadas.</p>
+                      <p className="text-sm text-muted-foreground">Sin tareas asociadas.</p>
                     ) : (
                       <div className="space-y-2">
                         {tasksForResource.map((task) => (
                           <TaskStatusMenuTrigger
-                            key={`${resourceId}-${task.id}`}
+                            key={`${resourceKey}-${task.id}`}
                             task={task}
                             contestantName={
                               contestantNameById[Number(task.contestantId)] ?? "—"
