@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/api";
 
 export type ResourceTypeLite = {
   id: number;
@@ -22,16 +23,7 @@ export function CreateResourceType({ onCreated }: { onCreated: () => void }) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/resource-types", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, code }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err?.message || "Error creando tipo");
-      }
+      await apiRequest("POST", "/api/resource-types", { name, code });
 
       setName("");
       setCode("");
@@ -86,16 +78,7 @@ export function CreateResourceItem({
       setError(null);
 
       const parsedTypeId = Number(typeId);
-      const res = await fetch("/api/resource-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ typeId: parsedTypeId, name }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err?.message || "Error creando unidad");
-      }
+      await apiRequest("POST", "/api/resource-items", { typeId: parsedTypeId, name });
 
       setName("");
       onCreated();
