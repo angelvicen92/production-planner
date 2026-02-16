@@ -94,17 +94,39 @@ export function GeneralOptimizerSettings() {
   const mainZoneBasic = useMemo(() => Math.max(draft?.heuristics.mainZoneFinishEarly.basicLevel ?? 0, draft?.heuristics.mainZoneKeepBusy.basicLevel ?? 0), [draft]);
   const groupingBasic = useMemo(() => Math.max(draft?.heuristics.groupBySpaceTemplateMatch.basicLevel ?? 0, draft?.heuristics.groupBySpaceActive.basicLevel ?? 0), [draft]);
 
-  const setHeuristic = (key: keyof OptimizerSettings["heuristics"], next: Partial<HeuristicSetting>) => {
+  const buildHeuristics = (
+    base: OptimizerSettings,
+    updates: Partial<Record<keyof OptimizerSettings["heuristics"], Partial<HeuristicSetting>>>,
+  ) => {
+    const heuristics = { ...base.heuristics };
+
+    for (const [key, next] of Object.entries(updates) as Array<[keyof OptimizerSettings["heuristics"], Partial<HeuristicSetting>]>) {
+      const current = base.heuristics[key];
+      heuristics[key] = {
+        basicLevel: clampBasic(next.basicLevel ?? current.basicLevel ?? 0),
+        advancedValue: clampAdvanced(next.advancedValue ?? current.advancedValue ?? basicToAdvanced(current.basicLevel ?? 0)),
+      };
+    }
+
+    return heuristics;
+  };
+
+  const updateHeuristicsLocal = (updates: Partial<Record<keyof OptimizerSettings["heuristics"], Partial<HeuristicSetting>>>) => {
     if (!draft) return;
-    const current = draft.heuristics[key];
-    const merged = {
-      basicLevel: clampBasic(next.basicLevel ?? current.basicLevel ?? 0),
-      advancedValue: clampAdvanced(next.advancedValue ?? current.advancedValue ?? basicToAdvanced(current.basicLevel ?? 0)),
-    };
-    const heuristics = { ...draft.heuristics, [key]: merged };
+    const heuristics = buildHeuristics(draft, updates);
+    setDraft({ ...draft, heuristics });
+  };
+
+  const saveHeuristics = (updates: Partial<Record<keyof OptimizerSettings["heuristics"], Partial<HeuristicSetting>>>) => {
+    if (!draft) return;
+    const heuristics = buildHeuristics(draft, updates);
     const nextDraft = { ...draft, heuristics };
     setDraft(nextDraft);
     update.mutate({ heuristics } as any);
+  };
+
+  const setHeuristic = (key: keyof OptimizerSettings["heuristics"], next: Partial<HeuristicSetting>) => {
+    saveHeuristics({ [key]: next });
   };
 
   const setMainZoneLevel = (level: number) => {
@@ -200,7 +222,7 @@ export function GeneralOptimizerSettings() {
               </SelectContent>
             </Select>
           ) : (
-            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.mainZoneFinishEarly.advancedValue]} onValueChange={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); setHeuristic("mainZoneFinishEarly",{advancedValue}); setHeuristic("mainZoneKeepBusy",{advancedValue}); }} /><div className="text-xs">Valor: {draft.heuristics.mainZoneFinishEarly.advancedValue}</div></div>
+            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.mainZoneFinishEarly.advancedValue]} onValueChange={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); updateHeuristicsLocal({ mainZoneFinishEarly: { advancedValue }, mainZoneKeepBusy: { advancedValue } }); }} onValueCommit={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); saveHeuristics({ mainZoneFinishEarly: { advancedValue }, mainZoneKeepBusy: { advancedValue } }); }} /><div className="text-xs">Valor: {draft.heuristics.mainZoneFinishEarly.advancedValue}</div></div>
           )}
           <div className="text-xs text-muted-foreground">Básico fuerte ≈ 9 (Avanzado).</div>
         </div>
@@ -215,7 +237,7 @@ export function GeneralOptimizerSettings() {
               </SelectContent>
             </Select>
           ) : (
-            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.groupBySpaceTemplateMatch.advancedValue]} onValueChange={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); setHeuristic("groupBySpaceTemplateMatch",{advancedValue}); setHeuristic("groupBySpaceActive",{advancedValue}); }} /><div className="text-xs">Valor: {draft.heuristics.groupBySpaceTemplateMatch.advancedValue}</div></div>
+            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.groupBySpaceTemplateMatch.advancedValue]} onValueChange={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); updateHeuristicsLocal({ groupBySpaceTemplateMatch: { advancedValue }, groupBySpaceActive: { advancedValue } }); }} onValueCommit={(arr)=>{ const advancedValue=clampAdvanced(arr?.[0] ?? 0); saveHeuristics({ groupBySpaceTemplateMatch: { advancedValue }, groupBySpaceActive: { advancedValue } }); }} /><div className="text-xs">Valor: {draft.heuristics.groupBySpaceTemplateMatch.advancedValue}</div></div>
           )}
         </div>
 
@@ -227,7 +249,7 @@ export function GeneralOptimizerSettings() {
               <SelectContent><SelectItem value="0">Apagado</SelectItem><SelectItem value="1">Suave</SelectItem><SelectItem value="2">Medio</SelectItem><SelectItem value="3">Fuerte</SelectItem></SelectContent>
             </Select>
           ) : (
-            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.contestantCompact.advancedValue]} onValueChange={(arr)=>setHeuristic("contestantCompact",{advancedValue: arr?.[0] ?? 0})} /><div className="text-xs">Valor: {draft.heuristics.contestantCompact.advancedValue}</div></div>
+            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.contestantCompact.advancedValue]} onValueChange={(arr)=>updateHeuristicsLocal({ contestantCompact: { advancedValue: arr?.[0] ?? 0 } })} onValueCommit={(arr)=>saveHeuristics({ contestantCompact: { advancedValue: arr?.[0] ?? 0 } })} /><div className="text-xs">Valor: {draft.heuristics.contestantCompact.advancedValue}</div></div>
           )}
         </div>
 
@@ -239,7 +261,7 @@ export function GeneralOptimizerSettings() {
               <SelectContent><SelectItem value="0">Apagado</SelectItem><SelectItem value="1">Suave</SelectItem><SelectItem value="2">Medio</SelectItem><SelectItem value="3">Fuerte</SelectItem></SelectContent>
             </Select>
           ) : (
-            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.contestantStayInZone.advancedValue]} onValueChange={(arr)=>setHeuristic("contestantStayInZone",{advancedValue: arr?.[0] ?? 0})} /><div className="text-xs">Valor: {draft.heuristics.contestantStayInZone.advancedValue}</div></div>
+            <div className="space-y-1"><Slider min={0} max={10} step={1} value={[draft.heuristics.contestantStayInZone.advancedValue]} onValueChange={(arr)=>updateHeuristicsLocal({ contestantStayInZone: { advancedValue: arr?.[0] ?? 0 } })} onValueCommit={(arr)=>saveHeuristics({ contestantStayInZone: { advancedValue: arr?.[0] ?? 0 } })} /><div className="text-xs">Valor: {draft.heuristics.contestantStayInZone.advancedValue}</div></div>
           )}
           <div className="text-xs text-muted-foreground">Bonus suave por permanecer en la misma zona; no bloquea cambios de plató.</div>
         </div>
