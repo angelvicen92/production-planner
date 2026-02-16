@@ -65,6 +65,7 @@ import {
   type StaffRoleType,
 } from "@/hooks/use-staff";
 import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
+import { useUserRole } from "@/hooks/use-user-role";
 import { Badge } from "@/components/ui/badge";
 import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
@@ -2179,6 +2180,9 @@ function TaskTemplatesSettings() {
   const updateTask = useUpdateTaskTemplate();
   const deleteTask = useDeleteTaskTemplate();
   const { toast } = useToast();
+  const qc = useQueryClient();
+  const { role } = useUserRole(true);
+  const canEditDependencies = role === "admin";
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -2197,6 +2201,7 @@ function TaskTemplatesSettings() {
   });
 
   const [editData, setEditData] = useState<any | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const spacesByZone = new Map<number, any[]>();
   (spaces as any[]).forEach((s: any) => {
@@ -2347,11 +2352,13 @@ function TaskTemplatesSettings() {
         tpl.exclusiveAuxiliar ?? tpl.exclusive_auxiliar ?? false,
       ),
       hasDependency: Boolean(tpl.hasDependency ?? tpl.has_dependency ?? false),
-      dependsOnTemplateIds: Array.isArray(tpl.dependsOnTemplateIds)
-        ? tpl.dependsOnTemplateIds
-        : Array.isArray(tpl.depends_on_template_ids)
-          ? tpl.depends_on_template_ids
-          : [],
+      dependsOnTemplateIds: getTemplateDependencyIds(tpl),
+      inverseDepsOriginal: (dependentsByTemplateId.get(Number(tpl.id)) ?? [])
+        .map((dependent: any) => Number(dependent?.id))
+        .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(tpl.id)),
+      inverseDepsDraft: (dependentsByTemplateId.get(Number(tpl.id)) ?? [])
+        .map((dependent: any) => Number(dependent?.id))
+        .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(tpl.id)),
       itinerantTeamRequirement:
         tpl.itinerantTeamRequirement ??
         tpl.itinerant_team_requirement ??
@@ -2409,8 +2416,8 @@ function TaskTemplatesSettings() {
     return null;
   };
 
-  const saveEdit = () => {
-    if (!editData || editingId == null) return;
+  const saveEdit = async () => {
+    if (!editData || editingId == null || isSavingEdit) return;
     const err = validateDraft(editData);
     if (err) return toast({ title: err, variant: "destructive" });
 
@@ -2467,8 +2474,38 @@ function TaskTemplatesSettings() {
         ? editData.rulesJsonData
         : {};
 
-    updateTask.mutate(
-      {
+    const normalizedDirectDependencies = Array.from(
+      new Set(
+        (editData.dependsOnTemplateIds ?? [])
+          .map((id: unknown) => Number(id))
+          .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(editData.id)),
+      ),
+    );
+
+    const inverseOriginal = new Set<number>(
+      (editData.inverseDepsOriginal ?? [])
+        .map((id: unknown) => Number(id))
+        .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(editData.id)),
+    );
+    const inverseDraft = new Set<number>(
+      (editData.inverseDepsDraft ?? [])
+        .map((id: unknown) => Number(id))
+        .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(editData.id)),
+    );
+
+    const addedInverse: number[] = [];
+    const removedInverse: number[] = [];
+    inverseDraft.forEach((id) => {
+      if (!inverseOriginal.has(id)) addedInverse.push(id);
+    });
+    inverseOriginal.forEach((id) => {
+      if (!inverseDraft.has(id)) removedInverse.push(id);
+    });
+
+    try {
+      setIsSavingEdit(true);
+
+      await updateTask.mutateAsync({
         id: editingId,
         patch: {
           name: String(editData.name ?? "").trim(),
@@ -2483,11 +2520,9 @@ function TaskTemplatesSettings() {
           requiresPresenter: Boolean(editData.requiresPresenter),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
           hasDependency: Boolean(editData.hasDependency),
-          dependsOnTemplateIds: editData.hasDependency
-            ? (editData.dependsOnTemplateIds ?? [])
-            : [],
+          dependsOnTemplateIds: editData.hasDependency ? normalizedDirectDependencies : [],
           dependsOnTemplateId: editData.hasDependency
-            ? (editData.dependsOnTemplateIds?.[0] ?? null)
+            ? (normalizedDirectDependencies?.[0] ?? null)
             : null,
           itinerantTeamRequirement,
           itinerantTeamId,
@@ -2497,9 +2532,58 @@ function TaskTemplatesSettings() {
           },
           resourceRequirements: editData.resourceRequirementsData ?? null,
         },
-      } as any,
-      { onSuccess: cancelEdit },
-    );
+      } as any);
+
+      if (canEditDependencies) {
+        for (const dependentId of [...addedInverse, ...removedInverse]) {
+          const dependentTemplate = (templates ?? []).find(
+            (rawTemplate: any) => Number(rawTemplate?.id) === Number(dependentId),
+          );
+          if (!dependentTemplate) continue;
+
+          const currentDeps = new Set<number>(
+            getTemplateDependencyIds(dependentTemplate).filter(
+              (depId) => depId > 0 && depId !== Number(dependentId),
+            ),
+          );
+
+          if (addedInverse.includes(dependentId)) currentDeps.add(Number(editingId));
+          if (removedInverse.includes(dependentId)) currentDeps.delete(Number(editingId));
+
+          const nextDeps = Array.from(currentDeps).filter(
+            (depId) => depId > 0 && depId !== Number(dependentId),
+          );
+
+          try {
+            await apiRequest(
+              "PATCH",
+              buildUrl(api.taskTemplates.update.path, { id: Number(dependentId) }),
+              {
+                hasDependency: nextDeps.length > 0,
+                dependsOnTemplateIds: nextDeps,
+                dependsOnTemplateId: nextDeps[0] ?? null,
+              },
+            );
+          } catch (error: any) {
+            const dependentName =
+              String(dependentTemplate?.name ?? "").trim() ||
+              `Template #${dependentId}`;
+            toast({
+              title: "No se pudieron guardar dependencias inversas",
+              description:
+                `Falló al actualizar ${dependentName}: ${error?.message || "error desconocido"}`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+
+      await qc.invalidateQueries({ queryKey: [api.taskTemplates.list.path] });
+      cancelEdit();
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -2632,10 +2716,10 @@ function TaskTemplatesSettings() {
                   <div className="flex gap-1.5 shrink-0">
                     {isEditing ? (
                       <>
-                        <Button size="sm" onClick={saveEdit}>
+                        <Button size="sm" onClick={saveEdit} disabled={isSavingEdit || updateTask.isPending}>
                           Guardar
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={isSavingEdit || updateTask.isPending}>
                           Cancelar
                         </Button>
                       </>
@@ -2837,6 +2921,7 @@ function TaskTemplatesSettings() {
                     <label className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={!!editData?.hasDependency}
+                        disabled={!canEditDependencies}
                         onCheckedChange={(v) =>
                           setEditData((p: any) => ({
                             ...p,
@@ -2849,6 +2934,12 @@ function TaskTemplatesSettings() {
                       />
                       Esta plantilla depende de otras
                     </label>
+                    {!canEditDependencies && (
+                      <p className="text-xs text-muted-foreground">
+                        Solo admin puede editar dependencias.
+                      </p>
+                    )}
+
                     {!!editData?.hasDependency && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {(templates ?? [])
@@ -2866,6 +2957,7 @@ function TaskTemplatesSettings() {
                               >
                                 <Checkbox
                                   checked={checked}
+                                  disabled={!canEditDependencies}
                                   onCheckedChange={(v) =>
                                     setEditData((p: any) => {
                                       const set = new Set(
@@ -2889,35 +2981,50 @@ function TaskTemplatesSettings() {
 
                     <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-3">
                       <p className="text-sm font-medium">Dependen de esta plantilla</p>
-                      {dependents.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          Ninguna plantilla depende de esta.
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {dependents.map((dependent: any) => {
-                            const dependentId = Number(dependent?.id);
-                            const dependentName =
-                              String(dependent?.name ?? "").trim() ||
-                              `Template #${dependentId || "—"}`;
+                      <p className="text-xs text-muted-foreground">
+                        Marcar aquí hace que la otra plantilla tenga como prerequisito a esta.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {(templates ?? [])
+                          .filter((x: any) => Number(x?.id) !== Number(editData?.id))
+                          .map((x: any, idx: number) => {
+                            const dependentId = Number(x?.id);
+                            const checked = (
+                              editData?.inverseDepsDraft ?? []
+                            ).includes(dependentId);
                             return (
-                              <div
-                                key={`dependent-${dependentId}`}
-                                className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5"
+                              <label
+                                className="flex items-center gap-2 text-sm"
+                                key={x?.id ?? `inv-dep-${idx}`}
                               >
-                                <span className="text-sm truncate">{dependentName}</span>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2"
-                                  onClick={() => startEdit(dependent)}
-                                >
-                                  Abrir
-                                </Button>
-                              </div>
+                                <Checkbox
+                                  checked={checked}
+                                  disabled={!canEditDependencies}
+                                  onCheckedChange={(v) =>
+                                    setEditData((p: any) => {
+                                      const set = new Set<number>(
+                                        (p?.inverseDepsDraft ?? [])
+                                          .map((id: unknown) => Number(id))
+                                          .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(p?.id)),
+                                      );
+                                      if (v === true) set.add(dependentId);
+                                      else set.delete(dependentId);
+                                      return {
+                                        ...p,
+                                        inverseDepsDraft: Array.from(set),
+                                      };
+                                    })
+                                  }
+                                />
+                                {x?.name ?? `Template #${x?.id ?? "—"}`}
+                              </label>
                             );
                           })}
-                        </div>
+                      </div>
+                      {(templates ?? []).filter((x: any) => Number(x?.id) !== Number(editData?.id)).length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          No hay otras plantillas disponibles.
+                        </p>
                       )}
                     </div>
                   </section>
