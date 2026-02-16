@@ -1,5 +1,6 @@
 import { IStorage } from "../server/storage";
 import { EngineInput } from "./types";
+import { resolveWeight } from "@shared/optimizer";
 
 export async function buildEngineInput(
   planId: number,
@@ -301,7 +302,40 @@ export async function buildEngineInput(
     optimizerMainZoneOptFinishEarly: optimizer?.mainZoneOptFinishEarly !== false,
     optimizerMainZoneOptKeepBusy: optimizer?.mainZoneOptKeepBusy !== false,
     optimizerContestantCompactLevel: optimizer?.contestantCompactLevel ?? 0,
+    optimizerContestantStayInZoneLevel: optimizer?.contestantStayInZoneLevel ?? 0,
 
+    optimizerWeights: {
+      mainZoneFinishEarly: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.mainZoneFinishEarly,
+        optimizer?.mainZonePriorityLevel,
+      ),
+      mainZoneKeepBusy: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.mainZoneKeepBusy,
+        optimizer?.mainZonePriorityLevel,
+      ),
+      contestantCompact: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.contestantCompact,
+        optimizer?.contestantCompactLevel,
+      ),
+      groupBySpaceTemplateMatch: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.groupBySpaceTemplateMatch,
+        optimizer?.groupingLevel,
+      ),
+      groupBySpaceActive: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.groupBySpaceActive,
+        optimizer?.groupingLevel,
+      ),
+      contestantStayInZone: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.contestantStayInZone,
+        optimizer?.contestantStayInZoneLevel,
+      ),
+    },
 
           tasks: details.tasks.map((t: any) => {
       const contestantId = (t.contestant_id ?? t.contestantId ?? null) as

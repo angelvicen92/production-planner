@@ -8,6 +8,13 @@ import {
   Lock,
   InsertLock,
 } from "@shared/schema";
+import {
+  OptimizerHeuristicKey,
+  coerceOptimizationMode,
+  clampAdvancedValue,
+  clampBasicLevel,
+  normalizeHeuristicSetting,
+} from "@shared/optimizer";
 
 export interface IStorage {
   // Plans
@@ -80,6 +87,11 @@ export interface IStorage {
   // Optimizer Settings (global)
   getOptimizerSettings(): Promise<{
     mainZoneId: number | null;
+    optimizationMode: "basic" | "advanced";
+    heuristics: Record<
+      OptimizerHeuristicKey,
+      { basicLevel: number; advancedValue: number }
+    >;
 
     // legacy
     prioritizeMainZone: boolean;
@@ -88,6 +100,7 @@ export interface IStorage {
     // ✅ niveles
     mainZonePriorityLevel: number; // 0..3
     groupingLevel: number; // 0..3
+    contestantStayInZoneLevel: number; // 0..3
 
     // ✅ modos del plató principal
     mainZoneOptFinishEarly: boolean;
@@ -155,29 +168,63 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value",
       )
       .eq("id", 1)
       .single();
 
     if (error) throw error;
 
-    const mainZonePriorityLevelRaw = (data as any)?.main_zone_priority_level;
-    const groupingLevelRaw = (data as any)?.grouping_level;
+    const prioritizeMainZone = data?.prioritize_main_zone === true;
+    const groupBySpaceAndTemplate = data?.group_by_space_and_template !== false;
 
-    const mainZonePriorityLevel = Number.isFinite(
-      Number(mainZonePriorityLevelRaw),
-    )
-      ? Math.max(0, Math.min(3, Number(mainZonePriorityLevelRaw)))
-      : data?.prioritize_main_zone === true
-        ? 2
-        : 0;
+    const mainZonePriorityLevel = clampBasicLevel(
+      (data as any)?.main_zone_priority_level ?? (prioritizeMainZone ? 2 : 0),
+    );
+    const groupingLevel = clampBasicLevel(
+      (data as any)?.grouping_level ?? (groupBySpaceAndTemplate ? 2 : 0),
+    );
+    const contestantCompactLevel = clampBasicLevel(
+      (data as any)?.contestant_compact_level ?? 0,
+    );
+    const contestantStayInZoneLevel = clampBasicLevel(
+      (data as any)?.contestant_stay_in_zone_level ?? 0,
+    );
 
-    const groupingLevel = Number.isFinite(Number(groupingLevelRaw))
-      ? Math.max(0, Math.min(3, Number(groupingLevelRaw)))
-      : data?.group_by_space_and_template !== false
-        ? 2
-        : 0;
+    const heuristics = {
+      mainZoneFinishEarly: normalizeHeuristicSetting({
+        basicLevel: mainZonePriorityLevel,
+        advancedValue: clampAdvancedValue(
+          (data as any)?.main_zone_priority_advanced_value,
+        ),
+      }, mainZonePriorityLevel),
+      mainZoneKeepBusy: normalizeHeuristicSetting({
+        basicLevel: mainZonePriorityLevel,
+        advancedValue: clampAdvancedValue(
+          (data as any)?.main_zone_priority_advanced_value,
+        ),
+      }, mainZonePriorityLevel),
+      contestantCompact: normalizeHeuristicSetting({
+        basicLevel: contestantCompactLevel,
+        advancedValue: clampAdvancedValue(
+          (data as any)?.contestant_compact_advanced_value,
+        ),
+      }, contestantCompactLevel),
+      groupBySpaceTemplateMatch: normalizeHeuristicSetting({
+        basicLevel: groupingLevel,
+        advancedValue: clampAdvancedValue((data as any)?.grouping_advanced_value),
+      }, groupingLevel),
+      groupBySpaceActive: normalizeHeuristicSetting({
+        basicLevel: groupingLevel,
+        advancedValue: clampAdvancedValue((data as any)?.grouping_advanced_value),
+      }, groupingLevel),
+      contestantStayInZone: normalizeHeuristicSetting({
+        basicLevel: contestantStayInZoneLevel,
+        advancedValue: clampAdvancedValue(
+          (data as any)?.contestant_stay_in_zone_advanced_value,
+        ),
+      }, contestantStayInZoneLevel),
+    } as const;
 
     return {
       mainZoneId:
@@ -185,13 +232,17 @@ export class SupabaseStorage implements IStorage {
           ? null
           : Number(data.main_zone_id),
 
+      optimizationMode: coerceOptimizationMode((data as any)?.optimization_mode),
+      heuristics: heuristics as any,
+
       // legacy
-      prioritizeMainZone: data?.prioritize_main_zone === true,
-      groupBySpaceAndTemplate: data?.group_by_space_and_template !== false,
+      prioritizeMainZone,
+      groupBySpaceAndTemplate,
 
       // ✅ niveles
       mainZonePriorityLevel,
       groupingLevel,
+      contestantStayInZoneLevel,
 
       // ✅ modos del plató principal
       mainZoneOptFinishEarly:
@@ -199,10 +250,7 @@ export class SupabaseStorage implements IStorage {
       mainZoneOptKeepBusy: (data as any)?.main_zone_opt_keep_busy !== false,
 
       // ✅ compactar concursantes
-      contestantCompactLevel: Math.max(
-        0,
-        Math.min(3, Number((data as any)?.contestant_compact_level ?? 0)),
-      ),
+      contestantCompactLevel,
     };
   }
 

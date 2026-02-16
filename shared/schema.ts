@@ -48,6 +48,14 @@ export const optimizerSettings = pgTable("optimizer_settings", {
   // ✅ niveles amigables
   mainZonePriorityLevel: integer("main_zone_priority_level").notNull().default(0),
   groupingLevel: integer("grouping_level").notNull().default(2),
+  contestantStayInZoneLevel: integer("contestant_stay_in_zone_level").notNull().default(0),
+
+  // ✅ escala avanzada (0..10)
+  optimizationMode: text("optimization_mode").notNull().default("basic"),
+  mainZonePriorityAdvancedValue: integer("main_zone_priority_advanced_value").notNull().default(0),
+  groupingAdvancedValue: integer("grouping_advanced_value").notNull().default(6),
+  contestantCompactAdvancedValue: integer("contestant_compact_advanced_value").notNull().default(0),
+  contestantStayInZoneAdvancedValue: integer("contestant_stay_in_zone_advanced_value").notNull().default(0),
 
   // ✅ nuevos modos del plató principal (se pueden combinar)
   mainZoneOptFinishEarly: boolean("main_zone_opt_finish_early").notNull().default(true),

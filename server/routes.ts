@@ -1115,54 +1115,29 @@ export async function registerRoutes(
   // Optimizer Settings (defaults globales)
   app.get(api.optimizerSettings.get.path, async (_req, res) => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from("optimizer_settings")
-        .select("*")
-        .eq("id", 1)
-        .single();
-
-      if (error) throw error;
-
-      const mainZonePriorityLevelRaw = (data as any)?.main_zone_priority_level;
-      const groupingLevelRaw = (data as any)?.grouping_level;
-
-      const mainZonePriorityLevel =
-        Number.isFinite(Number(mainZonePriorityLevelRaw))
-          ? Math.max(0, Math.min(3, Number(mainZonePriorityLevelRaw)))
-          : data.prioritize_main_zone === true
-            ? 2
-            : 0;
-
-      const groupingLevel =
-        Number.isFinite(Number(groupingLevelRaw))
-          ? Math.max(0, Math.min(3, Number(groupingLevelRaw)))
-          : data.group_by_space_and_template !== false
-            ? 2
-            : 0;
+      const settings = await storage.getOptimizerSettings();
 
       res.json({
-        id: Number(data.id),
-        mainZoneId:
-          data.main_zone_id === null || data.main_zone_id === undefined
-            ? null
-            : Number(data.main_zone_id),
+        id: 1,
+        mainZoneId: settings.mainZoneId,
+        optimizationMode: settings.optimizationMode,
+        heuristics: settings.heuristics,
 
         // booleans legacy (siguen existiendo)
-        prioritizeMainZone: data.prioritize_main_zone === true,
-        groupBySpaceAndTemplate: data.group_by_space_and_template !== false,
+        prioritizeMainZone: settings.prioritizeMainZone,
+        groupBySpaceAndTemplate: settings.groupBySpaceAndTemplate,
 
         // ✅ niveles amigables
-        mainZonePriorityLevel,
-        groupingLevel,
+        mainZonePriorityLevel: settings.mainZonePriorityLevel,
+        groupingLevel: settings.groupingLevel,
+        contestantStayInZoneLevel: settings.contestantStayInZoneLevel,
+
         // ✅ modos del plató principal
-        mainZoneOptFinishEarly: (data as any)?.main_zone_opt_finish_early !== false,
-        mainZoneOptKeepBusy: (data as any)?.main_zone_opt_keep_busy !== false,
+        mainZoneOptFinishEarly: settings.mainZoneOptFinishEarly,
+        mainZoneOptKeepBusy: settings.mainZoneOptKeepBusy,
 
         // ✅ compactar concursantes
-        contestantCompactLevel: Math.max(
-          0,
-          Math.min(3, Number((data as any)?.contestant_compact_level ?? 0)),
-        ),
+        contestantCompactLevel: settings.contestantCompactLevel,
       });
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch optimizer settings" });
@@ -1172,23 +1147,43 @@ export async function registerRoutes(
   app.patch(api.optimizerSettings.update.path, async (req, res) => {
     try {
       const input = api.optimizerSettings.update.input.parse(req.body);
+      const current = await storage.getOptimizerSettings();
 
       const patch: any = {};
       if (input.mainZoneId !== undefined) patch.main_zone_id = input.mainZoneId;
+      if (input.optimizationMode !== undefined) patch.optimization_mode = input.optimizationMode;
+
+      const normalizeHeuristicPatch = (key: keyof typeof current.heuristics) => {
+        const incoming = input.heuristics?.[key];
+        if (!incoming) return current.heuristics[key];
+        return {
+          basicLevel: Math.max(0, Math.min(3, Number(incoming.basicLevel ?? current.heuristics[key].basicLevel))),
+          advancedValue: Math.max(0, Math.min(10, Number(incoming.advancedValue ?? current.heuristics[key].advancedValue))),
+        };
+      };
+
+      const hzMainFinishEarly = normalizeHeuristicPatch("mainZoneFinishEarly");
+      const hzMainKeepBusy = normalizeHeuristicPatch("mainZoneKeepBusy");
+      const hzGroupingMatch = normalizeHeuristicPatch("groupBySpaceTemplateMatch");
+      const hzGroupingActive = normalizeHeuristicPatch("groupBySpaceActive");
+      const hzCompact = normalizeHeuristicPatch("contestantCompact");
+      const hzStayInZone = normalizeHeuristicPatch("contestantStayInZone");
 
       // niveles nuevos
       if (input.mainZonePriorityLevel !== undefined) {
         const lvl = Math.max(0, Math.min(3, Number(input.mainZonePriorityLevel)));
         patch.main_zone_priority_level = lvl;
-        // mantenemos coherencia con legacy boolean
         patch.prioritize_main_zone = lvl > 0;
       }
 
       if (input.groupingLevel !== undefined) {
         const lvl = Math.max(0, Math.min(3, Number(input.groupingLevel)));
         patch.grouping_level = lvl;
-        // mantenemos coherencia con legacy boolean
         patch.group_by_space_and_template = lvl > 0;
+      }
+
+      if (input.contestantStayInZoneLevel !== undefined) {
+        patch.contestant_stay_in_zone_level = Math.max(0, Math.min(3, Number(input.contestantStayInZoneLevel)));
       }
 
       // ✅ modos del plató principal
@@ -1199,7 +1194,6 @@ export async function registerRoutes(
         patch.main_zone_opt_keep_busy = input.mainZoneOptKeepBusy;
       }
 
-      // ✅ compactar concursantes (0..3)
       if (input.contestantCompactLevel !== undefined) {
         const lvl = Math.max(0, Math.min(3, Number(input.contestantCompactLevel)));
         patch.contestant_compact_level = lvl;
@@ -1218,6 +1212,39 @@ export async function registerRoutes(
         if (input.groupingLevel === undefined) {
           patch.grouping_level = input.groupBySpaceAndTemplate ? 2 : 0;
         }
+      }
+
+      // new schema heuristic values (without breaking legacy payloads)
+      if (input.heuristics?.mainZoneFinishEarly || input.heuristics?.mainZoneKeepBusy) {
+        const best = hzMainFinishEarly.basicLevel >= hzMainKeepBusy.basicLevel ? hzMainFinishEarly : hzMainKeepBusy;
+        patch.main_zone_priority_level = best.basicLevel;
+        patch.main_zone_priority_advanced_value = Math.max(hzMainFinishEarly.advancedValue, hzMainKeepBusy.advancedValue);
+        patch.prioritize_main_zone = best.basicLevel > 0;
+      } else if (input.mainZonePriorityLevel !== undefined) {
+        patch.main_zone_priority_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.mainZonePriorityLevel)))] ?? 0;
+      }
+
+      if (input.heuristics?.groupBySpaceTemplateMatch || input.heuristics?.groupBySpaceActive) {
+        const best = hzGroupingMatch.basicLevel >= hzGroupingActive.basicLevel ? hzGroupingMatch : hzGroupingActive;
+        patch.grouping_level = best.basicLevel;
+        patch.grouping_advanced_value = Math.max(hzGroupingMatch.advancedValue, hzGroupingActive.advancedValue);
+        patch.group_by_space_and_template = best.basicLevel > 0;
+      } else if (input.groupingLevel !== undefined) {
+        patch.grouping_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.groupingLevel)))] ?? 0;
+      }
+
+      if (input.heuristics?.contestantCompact) {
+        patch.contestant_compact_level = hzCompact.basicLevel;
+        patch.contestant_compact_advanced_value = hzCompact.advancedValue;
+      } else if (input.contestantCompactLevel !== undefined) {
+        patch.contestant_compact_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.contestantCompactLevel)))] ?? 0;
+      }
+
+      if (input.heuristics?.contestantStayInZone) {
+        patch.contestant_stay_in_zone_level = hzStayInZone.basicLevel;
+        patch.contestant_stay_in_zone_advanced_value = hzStayInZone.advancedValue;
+      } else if (input.contestantStayInZoneLevel !== undefined) {
+        patch.contestant_stay_in_zone_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.contestantStayInZoneLevel)))] ?? 0;
       }
 
       const { error } = await supabaseAdmin
