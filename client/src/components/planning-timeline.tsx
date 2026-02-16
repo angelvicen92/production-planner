@@ -38,6 +38,8 @@ interface Task {
   zoneId?: number | null;
   spaceId?: number | null;
   locationLabel?: string | null;
+  assignedResources?: number[] | null;
+  assigned_resource_ids?: number[] | null;
 }
 
 interface Contestant {
@@ -59,7 +61,9 @@ interface PlanningTimelineProps {
   contestants: Contestant[];
 
   // New: view mode + optional location catalogs
-  viewMode?: "contestants" | "spaces";
+  viewMode?: "contestants" | "spaces" | "resources";
+  stageFilterIds?: number[];
+  resourceFilterIds?: number[];
   zones?: { id: number; name: string; uiColor?: string | null }[];
   spaces?: {
     id: number;
@@ -202,6 +206,8 @@ function TaskStatusMenuTrigger({
     contestants,
     viewMode = "contestants",
     spaceVerticalMode = "timeline",
+    stageFilterIds = [],
+    resourceFilterIds = [],
     zones = [],
     spaces = [],
     zoneResourceAssignments = {},
@@ -306,18 +312,92 @@ function TaskStatusMenuTrigger({
     return mapped;
   }, [contestants]);
 
+  const selectedStageIdsSet = useMemo(
+    () => new Set((stageFilterIds ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id))),
+    [stageFilterIds],
+  );
+
+  const filteredZones = useMemo(() => {
+    if (selectedStageIdsSet.size === 0) return zones ?? [];
+    return (zones ?? []).filter((zone) => selectedStageIdsSet.has(Number(zone?.id)));
+  }, [zones, selectedStageIdsSet]);
+
+  const filteredSpaces = useMemo(() => {
+    if (selectedStageIdsSet.size === 0) return spaces ?? [];
+    return (spaces ?? []).filter((space) => {
+      const zoneId = Number(space?.zoneId);
+      return Number.isFinite(zoneId) && selectedStageIdsSet.has(zoneId);
+    });
+  }, [spaces, selectedStageIdsSet]);
+
+  const filteredDailyTasksByStage = useMemo(() => {
+    if (selectedStageIdsSet.size === 0) return dailyTasks ?? [];
+    return (dailyTasks ?? []).filter((task) => {
+      const taskZoneId = Number(task?.zoneId);
+      if (Number.isFinite(taskZoneId) && selectedStageIdsSet.has(taskZoneId)) return true;
+
+      const taskSpaceId = Number(task?.spaceId);
+      if (!Number.isFinite(taskSpaceId)) return false;
+
+      const space = (spaces ?? []).find((s) => Number(s?.id) === taskSpaceId);
+      const spaceZoneId = Number(space?.zoneId);
+      return Number.isFinite(spaceZoneId) && selectedStageIdsSet.has(spaceZoneId);
+    });
+  }, [dailyTasks, spaces, selectedStageIdsSet]);
+
+  const resourceNameById = useMemo(() => {
+    const mapped: Record<number, string> = {};
+    for (const [idStr, name] of Object.entries(planResourceItemNameById ?? {})) {
+      const id = Number(idStr);
+      if (!Number.isFinite(id)) continue;
+      mapped[id] = String(name ?? `Recurso #${id}`);
+    }
+    return mapped;
+  }, [planResourceItemNameById]);
+
+  const resourceTaskMap = useMemo(() => {
+    const mapped = new Map<number, Task[]>();
+    for (const task of filteredDailyTasksByStage ?? []) {
+      const assignedRaw = task?.assignedResources ?? task?.assigned_resource_ids ?? [];
+      const ids = Array.isArray(assignedRaw)
+        ? assignedRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+        : [];
+
+      for (const id of ids) {
+        const list = mapped.get(id) ?? [];
+        list.push(task);
+        mapped.set(id, list);
+      }
+    }
+
+    for (const list of mapped.values()) {
+      list.sort((a, b) => {
+        const aStart = a.startPlanned ? timeToMinutes(a.startPlanned) : 0;
+        const bStart = b.startPlanned ? timeToMinutes(b.startPlanned) : 0;
+        return aStart - bStart || a.id - b.id;
+      });
+    }
+
+    return mapped;
+  }, [filteredDailyTasksByStage]);
+
+  const selectedResourceIds = useMemo(
+    () => (resourceFilterIds ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0),
+    [resourceFilterIds],
+  );
+
   const lanes = useMemo(() => {
     const grouped: Record<string, { name: string; tasks: Task[] }> = {};
 
     const zonesById = new Map<number, { id: number; name: string }>();
-    for (const z of zones as any[])
+    for (const z of filteredZones as any[])
       zonesById.set(Number(z.id), { id: Number(z.id), name: String(z.name) });
 
     const spacesById = new Map<
       number,
       { id: number; name: string; zoneId: number | null }
     >();
-    for (const s of spaces as any[]) {
+    for (const s of filteredSpaces as any[]) {
       const sid = Number(s.id);
       const zid =
         s.zoneId === null || s.zoneId === undefined ? null : Number(s.zoneId);
@@ -347,7 +427,7 @@ function TaskStatusMenuTrigger({
 
     if (viewMode === "spaces") {
       // Initialize lanes for all spaces (so the view is stable)
-      for (const s of spaces as any[]) {
+      for (const s of filteredSpaces as any[]) {
         grouped[`space-${s.id}`] = { name: String(s.name), tasks: [] };
       }
       // ✅ Equipos itinerantes (columnas lógicas dinámicas)
@@ -369,7 +449,7 @@ function TaskStatusMenuTrigger({
       grouped["zone-only"] = { name: "Solo zona (sin espacio)", tasks: [] };
       grouped["unlocated"] = { name: "Sin ubicación", tasks: [] };
 
-      (dailyTasks ?? []).forEach((task) => {
+      (filteredDailyTasksByStage ?? []).forEach((task) => {
         if (task.spaceId) {
           const key = `space-${Number(task.spaceId)}`;
           if (!grouped[key]) {
@@ -421,7 +501,7 @@ function TaskStatusMenuTrigger({
     });
     grouped["none"] = { name: "Sin concursante", tasks: [] };
 
-    (dailyTasks ?? []).forEach((task) => {
+    (filteredDailyTasksByStage ?? []).forEach((task) => {
       const key = task.contestantId ? String(task.contestantId) : "none";
       if (grouped[key]) {
         grouped[key].tasks.push(task);
@@ -451,7 +531,7 @@ function TaskStatusMenuTrigger({
         if (b[0] === "none") return -1;
         return a[1].name.localeCompare(b[1].name);
       });
-  }, [dailyTasks, contestants, viewMode, zones, spaces]);
+  }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces]);
 
   if (!workStart || !workEnd) {
     return (
@@ -512,12 +592,12 @@ function TaskStatusMenuTrigger({
 
     // Agrupar por zona -> espacio, orden cronológico
     const zonesById = new Map<number, string>();
-    (zones ?? []).forEach((z: any) =>
+    (filteredZones ?? []).forEach((z: any) =>
       zonesById.set(Number(z.id), String(z.name)),
     );
 
     const spacesByZone = new Map<number, { id: number; name: string }[]>();
-    (spaces ?? []).forEach((s: any) => {
+    (filteredSpaces ?? []).forEach((s: any) => {
       const zid =
         s.zoneId === null || s.zoneId === undefined ? null : Number(s.zoneId);
       if (!Number.isFinite(zid as any)) return;
@@ -534,7 +614,7 @@ function TaskStatusMenuTrigger({
     // tasks filtradas:
     // - excluimos comida de concursante (no es un espacio)
     // - PERO mostramos comida “sin concursante” (bloque de plató/zona)
-    const tasks = (dailyTasks ?? []).filter((t: any) => {
+    const tasks = (filteredDailyTasksByStage ?? []).filter((t: any) => {
       if (!t?.startPlanned || !t?.endPlanned) return false;
       if (!isMeal(t)) return true;
       const cid = t?.contestantId ?? t?.contestant_id ?? null;
@@ -659,12 +739,12 @@ function TaskStatusMenuTrigger({
                   };
 
                   const zonesById2 = new Map<number, string>();
-                  (zones ?? []).forEach((z: any) =>
+                  (filteredZones ?? []).forEach((z: any) =>
                     zonesById2.set(Number(z.id), String(z.name)),
                   );
 
                   // Construir platós desde `zones` (no desde spacesByZone), para que NO desaparezcan platós
-                  const zoneCols: ZoneCol[] = (zones as any[]).map((z: any) => {
+                  const zoneCols: ZoneCol[] = (filteredZones as any[]).map((z: any) => {
                     const zid = Number(z.id);
                     const zoneName = String(
                       z.name ?? zonesById2.get(zid) ?? `Zona #${zid}`,
@@ -893,7 +973,7 @@ function TaskStatusMenuTrigger({
                                                 }
 
                                                 // mode === "space" (sin herencia)
-                                                const spaceId = (spaces ?? []).find(
+                                                const spaceId = (filteredSpaces ?? []).find(
                                                   (s: any) =>
                                                     Number(s.zoneId) === Number(zc.zoneId) && String(s.name) === String(sp.name),
                                                 )?.id;
@@ -1197,7 +1277,7 @@ function TaskStatusMenuTrigger({
                                               }
 
                                               // mode === "space" (sin herencia)
-                                              const spaceId = (spaces ?? []).find(
+                                              const spaceId = (filteredSpaces ?? []).find(
                                                 (s: any) =>
                                                   Number(s.zoneId) === Number(zc.zoneId) && String(s.name) === String(sp.name),
                                               )?.id;
@@ -1346,6 +1426,89 @@ function TaskStatusMenuTrigger({
     );
   }
 
+  if (viewMode === "resources") {
+    if (selectedResourceIds.length === 0) {
+      return (
+        <Card className="p-8 text-center bg-muted/50">
+          <p className="text-muted-foreground">Selecciona recursos para ver sus tareas.</p>
+        </Card>
+      );
+    }
+
+    return (
+      <TooltipProvider>
+        <div className="border rounded-xl bg-card shadow-sm">
+          <ScrollArea className="h-[600px] w-full">
+            <div className="p-4 space-y-4" data-planning-zoom-target>
+              {selectedResourceIds.map((resourceId) => {
+                const tasksForResource = resourceTaskMap.get(resourceId) ?? [];
+                const resourceName = resourceNameById[resourceId] ?? `Recurso #${resourceId}`;
+
+                return (
+                  <Card key={resourceId} className="p-4">
+                    <div className="mb-3 border-b pb-2">
+                      <h3 className="font-semibold">{resourceName}</h3>
+                      <p className="text-xs text-muted-foreground">ID: {resourceId}</p>
+                    </div>
+
+                    {tasksForResource.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sin tareas asignadas.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {tasksForResource.map((task) => (
+                          <TaskStatusMenuTrigger
+                            key={`${resourceId}-${task.id}`}
+                            task={task}
+                            contestantName={
+                              contestantNameById[Number(task.contestantId)] ?? "—"
+                            }
+                            locationLabel={getTaskLocationLabel(task)}
+                            onTaskStatusChange={onTaskStatusChange}
+                            taskStatusPending={taskStatusPending}
+                            className={cn(
+                              "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                              task.status === "in_progress" ? "ring-2 ring-green-500" : "",
+                              task.status === "done" ? "opacity-80" : "",
+                            )}
+                            style={{
+                              backgroundColor: taskBaseColor(task),
+                              borderColor:
+                                task.status === "in_progress"
+                                  ? "rgb(34 197 94)"
+                                  : taskBaseColor(task),
+                              color: taskTextColor(task),
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold truncate">
+                                  {task.template?.name || "Tarea"}
+                                </div>
+                                <div className="text-xs opacity-70">
+                                  {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
+                                </div>
+                                <div className="text-xs opacity-70 truncate">
+                                  {getTaskLocationLabel(task)} · {contestantNameById[Number(task.contestantId)] ?? "Sin concursante"}
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="text-[10px]">
+                                {task.status}
+                              </Badge>
+                            </div>
+                          </TaskStatusMenuTrigger>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="border rounded-xl bg-card shadow-sm">
@@ -1376,12 +1539,12 @@ function TaskStatusMenuTrigger({
               {lanes.map(([id, lane]) => (
                 <div
                   key={id}
-                  className="flex border-b group hover:bg-muted/5 transition-colors"
+                  className={cn("flex border-b group hover:bg-muted/5 transition-colors", viewMode === "contestants" ? "min-h-0" : "")}
                 >
-                  <div className="w-48 p-3 border-r bg-muted/10 planning-density-row">
+                  <div className={cn("w-48 border-r bg-muted/10 planning-density-row", viewMode === "contestants" ? "p-1.5" : "p-3")}>
                     <div className="font-medium text-sm leading-5 truncate">{lane.name}</div>
 
-                    {viewMode === "spaces" ? (() => {
+                    {(() => {
                   // Determine scope for this lane
                   const itMatch = String(id).match(/^it-team-(\d+)$/);
                   const itinerantTeamId = itMatch ? Number(itMatch[1]) : null;
@@ -1447,9 +1610,9 @@ function TaskStatusMenuTrigger({
                           </div>
                         </div>
                       );
-                    })() : null}
+                    })()}
                   </div>
-                  <div className="flex-1 relative h-20">
+                  <div className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}>
                     {/* Grid 5 min (like PDF) */}
                     <div className="absolute inset-0 pointer-events-none z-0">
                       {Array.from({ length: Math.floor(duration / 5) + 1 }).map(
@@ -1505,7 +1668,8 @@ function TaskStatusMenuTrigger({
                             onTaskStatusChange={onTaskStatusChange}
                             taskStatusPending={taskStatusPending}
                             className={cn(
-                              "absolute top-4 h-12 rounded-lg border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
                                 ? "ring-2 ring-green-500"
                                 : "",

@@ -816,16 +816,50 @@ export default function PlanDetailsPage() {
   const [newCoachPriId, setNewCoachPriId] = useState<string>("none");
 
   const [showAdminTasks, setShowAdminTasks] = useState(false);
-  const [timelineView, setTimelineView] = useState<"contestants" | "spaces">(
+  const [timelineView, setTimelineView] = useState<"contestants" | "spaces" | "resources">(
     "contestants",
   );
   const [spaceVerticalMode, setSpaceVerticalMode] = useState<
     "timeline" | "list"
   >("timeline");
+  const [stageFilterIds, setStageFilterIds] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("timeline.stageFilterIds");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed)
+        ? parsed.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const [resourceFilterIds, setResourceFilterIds] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("timeline.resourceFilterIds");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed)
+        ? parsed.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [activeTab, setActiveTab] = useState<
     "tasks" | "planning" | "resources" | "execution"
   >("tasks");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("timeline.stageFilterIds", JSON.stringify(stageFilterIds));
+  }, [stageFilterIds]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("timeline.resourceFilterIds", JSON.stringify(resourceFilterIds));
+  }, [resourceFilterIds]);
 
   useEffect(() => {
     if (!Number.isFinite(id) || id <= 0) return;
@@ -1157,6 +1191,27 @@ export default function PlanDetailsPage() {
       }
     }, 250);
   }
+
+  const resourceFilterOptions = Object.entries(planResourceItemNameById ?? {})
+    .map(([idStr, name]) => ({ id: Number(idStr), name: String(name ?? "") }))
+    .filter((r) => Number.isFinite(r.id) && r.id > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const toggleStageFilter = (zoneId: number) => {
+    setStageFilterIds((prev) =>
+      prev.includes(zoneId)
+        ? prev.filter((id) => id !== zoneId)
+        : [...prev, zoneId],
+    );
+  };
+
+  const toggleResourceFilter = (resourceId: number) => {
+    setResourceFilterIds((prev) =>
+      prev.includes(resourceId)
+        ? prev.filter((id) => id !== resourceId)
+        : [...prev, resourceId],
+    );
+  };
 
   return (
     <Layout>
@@ -2646,6 +2701,16 @@ export default function PlanDetailsPage() {
                     >
                       Por plató y espacio
                     </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        timelineView === "resources" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setTimelineView("resources")}
+                    >
+                      Recursos
+                    </Button>
                     {timelineView === "spaces" && (
                       <div className="flex items-center gap-2 ml-3">
                         <Button
@@ -2680,7 +2745,9 @@ export default function PlanDetailsPage() {
                     Vista:{" "}
                     {timelineView === "contestants"
                       ? "Concursantes"
-                      : "Espacios"}
+                      : timelineView === "spaces"
+                        ? "Espacios"
+                        : "Recursos"}
                   </Badge>
                   <Badge variant="outline" className="bg-emerald-50/50">
                     Tasks:{" "}
@@ -2688,6 +2755,86 @@ export default function PlanDetailsPage() {
                   </Badge>
                 </div>
               </div>
+
+              {timelineView === "spaces" && (
+                <Card className="p-3">
+                  {zonesLoading ? (
+                    <p className="text-sm text-muted-foreground">Cargando platós...</p>
+                  ) : !Array.isArray(zones) || zones.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay platós</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {(zones as any[]).map((zone: any) => {
+                          const zoneId = Number(zone?.id);
+                          if (!Number.isFinite(zoneId)) return null;
+                          const checked = stageFilterIds.includes(zoneId);
+                          return (
+                            <Button
+                              key={zoneId}
+                              type="button"
+                              size="sm"
+                              variant={checked ? "default" : "outline"}
+                              onClick={() => toggleStageFilter(zoneId)}
+                            >
+                              {zone?.name ?? `Plató #${zoneId}`}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setStageFilterIds([])}
+                          disabled={stageFilterIds.length === 0}
+                        >
+                          Limpiar filtro
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {timelineView === "resources" && (
+                <Card className="p-3 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {resourceFilterOptions.map((resource) => {
+                      const checked = resourceFilterIds.includes(resource.id);
+                      return (
+                        <Button
+                          key={resource.id}
+                          type="button"
+                          size="sm"
+                          variant={checked ? "default" : "outline"}
+                          onClick={() => toggleResourceFilter(resource.id)}
+                        >
+                          {resource.name || `Recurso #${resource.id}`}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {resourceFilterOptions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay recursos para filtrar.</p>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setResourceFilterIds([])}
+                      disabled={resourceFilterIds.length === 0}
+                    >
+                      Limpiar
+                    </Button>
+                    {resourceFilterIds.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">Selecciona recursos</span>
+                    ) : null}
+                  </div>
+                </Card>
+              )}
 
               <FullscreenPlanningPanel
                 title="Planning"
@@ -2699,6 +2846,8 @@ export default function PlanDetailsPage() {
                   contestants={contestants as any}
                   viewMode={timelineView}
                   spaceVerticalMode={spaceVerticalMode}
+                  stageFilterIds={stageFilterIds}
+                  resourceFilterIds={resourceFilterIds}
                   zones={zones as any}
                   spaces={spaces as any}
                   zoneResourceAssignments={zoneAssignmentsForTooltip}
