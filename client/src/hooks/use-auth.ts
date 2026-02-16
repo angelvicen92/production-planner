@@ -16,6 +16,10 @@ function getMagicLinkRedirectUrl() {
   return `${window.location.origin}/dashboard`;
 }
 
+function getRecoveryRedirectUrl() {
+  return `${window.location.origin}/login`;
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
@@ -91,6 +95,41 @@ export function useAuth() {
     },
   });
 
+  const signUpWithPassword = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const supabase = await getSupabaseClient();
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: getMagicLinkRedirectUrl(),
+        },
+      });
+      if (error) throw error;
+      return { ok: true };
+    },
+  });
+
+  const sendPasswordResetEmail = useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const supabase = await getSupabaseClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: getRecoveryRedirectUrl(),
+      });
+      if (error) throw error;
+      return { ok: true };
+    },
+  });
+
+  const updatePassword = useMutation({
+    mutationFn: async ({ password }: { password: string }) => {
+      const supabase = await getSupabaseClient();
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      return { ok: true };
+    },
+  });
+
   const signOut = useMutation({
     mutationFn: async () => {
       const supabase = await getSupabaseClient();
@@ -107,6 +146,12 @@ export function useAuth() {
     isSendingMagicLink: signInWithMagicLink.isPending,
     signInWithPassword: signInWithPassword.mutateAsync,
     isSigningInWithPassword: signInWithPassword.isPending,
+    signUpWithPassword: signUpWithPassword.mutateAsync,
+    isSigningUpWithPassword: signUpWithPassword.isPending,
+    sendPasswordResetEmail: sendPasswordResetEmail.mutateAsync,
+    isSendingPasswordResetEmail: sendPasswordResetEmail.isPending,
+    updatePassword: updatePassword.mutateAsync,
+    isUpdatingPassword: updatePassword.isPending,
     signOut: signOut.mutateAsync,
     isSigningOut: signOut.isPending,
   };
