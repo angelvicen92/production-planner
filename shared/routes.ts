@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optimizerHeuristicKeys } from "./optimizer";
 import {
   insertPlanSchema,
   plans,
@@ -792,6 +793,26 @@ export const api = {
         200: z.object({
           id: z.number(),
           mainZoneId: z.number().nullable(),
+          optimizationMode: z.enum(["basic", "advanced"]),
+
+          heuristics: z.object(
+            Object.fromEntries(
+              optimizerHeuristicKeys.map((key) => [
+                key,
+                z.object({
+                  basicLevel: z.number().int().min(0).max(3),
+                  advancedValue: z.number().int().min(0).max(10),
+                }),
+              ]),
+            ) as Record<
+              string,
+              z.ZodObject<{
+                basicLevel: z.ZodNumber;
+                advancedValue: z.ZodNumber;
+              }>
+            >,
+          ),
+
           prioritizeMainZone: z.boolean(),
           groupBySpaceAndTemplate: z.boolean(),
 
@@ -805,6 +826,9 @@ export const api = {
 
           // ✅ compactar concursantes
           contestantCompactLevel: z.number().int().min(0).max(3),
+
+          // ✅ nuevo: mantener concursante en el mismo plató
+          contestantStayInZoneLevel: z.number().int().min(0).max(3),
         }),
       },
     },
@@ -814,6 +838,26 @@ export const api = {
       input: z
         .object({
           mainZoneId: z.number().int().positive().nullable().optional(),
+          optimizationMode: z.enum(["basic", "advanced"]).optional(),
+
+          heuristics: z
+            .object(
+              Object.fromEntries(
+                optimizerHeuristicKeys.map((key) => [
+                  key,
+                  z
+                    .object({
+                      basicLevel: z.number().int().min(0).max(3).optional(),
+                      advancedValue: z.number().int().min(0).max(10).optional(),
+                    })
+                    .strict()
+                    .optional(),
+                ]),
+              ) as Record<string, z.ZodOptional<z.ZodObject<any>>>,
+            )
+            .strict()
+            .optional(),
+
           prioritizeMainZone: z.boolean().optional(),
           groupBySpaceAndTemplate: z.boolean().optional(),
 
@@ -827,6 +871,9 @@ export const api = {
 
           // ✅ compactar concursantes
           contestantCompactLevel: z.number().int().min(0).max(3).optional(),
+
+          // ✅ nuevo: mantener concursante en el mismo plató
+          contestantStayInZoneLevel: z.number().int().min(0).max(3).optional(),
         })
         .strict(),
       responses: {

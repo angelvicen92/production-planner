@@ -155,6 +155,17 @@ export interface EngineInput {
 
   // ✅ compactar concursantes (0=Off..3=Fuerte)
   optimizerContestantCompactLevel?: number;
+  optimizerContestantStayInZoneLevel?: number;
+
+  optimizerWeights?: Partial<Record<
+    | "mainZoneFinishEarly"
+    | "mainZoneKeepBusy"
+    | "contestantCompact"
+    | "groupBySpaceTemplateMatch"
+    | "groupBySpaceActive"
+    | "contestantStayInZone",
+    number
+  >>;
 
   // v-next: resources, spaces, zones, availability
 }

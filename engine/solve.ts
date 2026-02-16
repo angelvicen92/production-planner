@@ -460,6 +460,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
       occupiedBySpace.set(spaceId, arr);
     }
 
+    const zoneId = Number(task?.zoneId ?? 0);
+    if (contestantId && zoneId) lastZoneByContestant.set(contestantId, zoneId);
+
     const assigned =
       (task as any)?.assignedResources ??
       (task as any)?.assignedResourceIds ??
@@ -782,6 +785,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const groupingMatchWeights = [0, 2_000, 10_000, 30_000];
   const groupingActiveSpaceWeights = [0, 50, 200, 600];
   const contestantCompactWeights = [0, 800, 3_000, 9_000];
+  const contestantStayInZoneWeights = [0, 600, 1_200, 2_000, 3_000, 4_500, 6_000, 7_500, 9_000, 10_500, 12_000];
+
+  const weightFromInput = (key: keyof NonNullable<(typeof input)["optimizerWeights"]>, fallback: number) => {
+    const raw = (input as any)?.optimizerWeights?.[key];
+    if (!Number.isFinite(Number(raw))) return fallback;
+    return Math.max(0, Math.min(10, Number(raw)));
+  };
 
   const finishEarlyWeight = optMainZoneOptFinishEarly
     ? (finishEarlyWeights[optMainZoneLevel] ?? 0)
@@ -797,12 +807,24 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const contestantCompactWeight =
     contestantCompactWeights[optContestantCompactLevel] ?? 0;
 
+  const effectiveFinishEarlyWeight = optMainZoneOptFinishEarly
+    ? Math.round(weightFromInput("mainZoneFinishEarly", finishEarlyWeight / 300_000) * 300_000)
+    : 0;
+  const effectiveKeepBusyWeight = optMainZoneOptKeepBusy
+    ? Math.round(weightFromInput("mainZoneKeepBusy", keepBusyWeight / 90_000) * 90_000)
+    : 0;
+  const effectiveGroupingMatchWeight = Math.round(weightFromInput("groupBySpaceTemplateMatch", groupingMatchWeight / 3_000) * 3_000);
+  const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
+  const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
+  const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
+
   // “memoria” simple para intentar hacer bloques por espacio+tipo
   const lastTemplateBySpace = new Map<number, number>();
 
   // ✅ memoria para compactar por zona/concursante
   const lastEndByZone = new Map<number, number>();
   const lastEndByContestant = new Map<number, number>();
+  const lastZoneByContestant = new Map<number, number>();
 
   const depsSatisfied = (task: any) => {
     const depIds = getDepTaskIds(task);
@@ -1144,7 +1166,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // ✅ memoria para compactar concursantes
       const cId = getContestantId(task);
-      if (cId) lastEndByContestant.set(cId, finish);
+      if (cId) {
+        lastEndByContestant.set(cId, finish);
+        if (zId) lastZoneByContestant.set(cId, zId);
+      }
 
       return null; // ✅ tarea colocada
     }
@@ -1435,7 +1460,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (Number.isFinite(tplId) && tplId > 0)
       lastTemplateBySpace.set(spaceId, tplId);
     lastEndByZone.set(zoneId, finish);
-    if (contestantId) lastEndByContestant.set(contestantId, finish);
+    if (contestantId) {
+      lastEndByContestant.set(contestantId, finish);
+      lastZoneByContestant.set(contestantId, zoneId);
+    }
 
     return true;
   };
@@ -1490,32 +1518,40 @@ export function generatePlan(input: EngineInput): EngineOutput {
       let s = 0;
 
       // 1) Plató principal: “Terminar cuanto antes”
-      if (finishEarlyWeight > 0 && optMainZoneId && zone === optMainZoneId) {
-        s += finishEarlyWeight;
+      if (effectiveFinishEarlyWeight > 0 && optMainZoneId && zone === optMainZoneId) {
+        s += effectiveFinishEarlyWeight;
       }
 
       // 2) Plató principal: “Sin huecos” (si ya empezó)
       if (
-        keepBusyWeight > 0 &&
+        effectiveKeepBusyWeight > 0 &&
         optMainZoneId &&
         lastEndByZone.has(optMainZoneId) &&
         zone === optMainZoneId
       ) {
-        s += keepBusyWeight;
+        s += effectiveKeepBusyWeight;
       }
 
       // 3) Compactar concursantes
-      if (contestantCompactWeight > 0) {
+      if (effectiveContestantCompactWeight > 0) {
         const cId = getContestantId(t);
-        if (cId && lastEndByContestant.has(cId)) s += contestantCompactWeight;
+        if (cId && lastEndByContestant.has(cId)) s += effectiveContestantCompactWeight;
       }
 
       // 4) Agrupar tareas iguales en el mismo espacio + espacio activo
       if (optGroupingLevel > 0) {
         const lastTpl = space ? (lastTemplateBySpace.get(space) ?? null) : null;
 
-        if (space && lastTpl !== null && lastTpl === tpl) s += groupingMatchWeight;
-        if (space && lastTemplateBySpace.has(space)) s += groupingActiveSpaceWeight;
+        if (space && lastTpl !== null && lastTpl === tpl) s += effectiveGroupingMatchWeight;
+        if (space && lastTemplateBySpace.has(space)) s += effectiveGroupingActiveSpaceWeight;
+      }
+
+      // 5) Mantener concursante en el mismo plató (heurística blanda)
+      if (effectiveContestantStayInZoneWeight > 0) {
+        const cId = getContestantId(t);
+        if (cId && zone && lastZoneByContestant.get(cId) === zone) {
+          s += effectiveContestantStayInZoneWeight;
+        }
       }
 
       return s;
@@ -1525,7 +1561,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     // intentamos rellenarlo con una tarea que ENCAJE exacta en ese hueco.
     // (Solo se aplica a tareas del MISMO espacio dentro del plató principal.)
     if (
-      keepBusyWeight > 0 &&
+      effectiveKeepBusyWeight > 0 &&
       optMainZoneId &&
       lastEndByZone.has(optMainZoneId)
     ) {
@@ -1594,28 +1630,28 @@ export function generatePlan(input: EngineInput): EngineOutput {
       let sb = 0;
 
       // 1) Plató principal: “Terminar cuanto antes” (según nivel)
-      if (finishEarlyWeight > 0 && optMainZoneId) {
-        if (aZone === optMainZoneId) sa += finishEarlyWeight;
-        if (bZone === optMainZoneId) sb += finishEarlyWeight;
+      if (effectiveFinishEarlyWeight > 0 && optMainZoneId) {
+        if (aZone === optMainZoneId) sa += effectiveFinishEarlyWeight;
+        if (bZone === optMainZoneId) sb += effectiveFinishEarlyWeight;
       }
 
       // 2) Plató principal: “Sin huecos” (si ya hemos empezado a planificar en ese plató)
       if (
-        keepBusyWeight > 0 &&
+        effectiveKeepBusyWeight > 0 &&
         optMainZoneId &&
         lastEndByZone.has(optMainZoneId)
       ) {
-        if (aZone === optMainZoneId) sa += keepBusyWeight;
-        if (bZone === optMainZoneId) sb += keepBusyWeight;
+        if (aZone === optMainZoneId) sa += effectiveKeepBusyWeight;
+        if (bZone === optMainZoneId) sb += effectiveKeepBusyWeight;
       }
 
       // 3) Compactar concursantes: si un concursante ya tiene tareas, intenta agruparlas
-      if (contestantCompactWeight > 0) {
+      if (effectiveContestantCompactWeight > 0) {
         const aC = getContestantId(a);
         const bC = getContestantId(b);
 
-        if (aC && lastEndByContestant.has(aC)) sa += contestantCompactWeight;
-        if (bC && lastEndByContestant.has(bC)) sb += contestantCompactWeight;
+        if (aC && lastEndByContestant.has(aC)) sa += effectiveContestantCompactWeight;
+        if (bC && lastEndByContestant.has(bC)) sb += effectiveContestantCompactWeight;
       }
 
       // 4) Agrupar tareas iguales dentro del mismo espacio (según nivel)
@@ -1624,15 +1660,25 @@ export function generatePlan(input: EngineInput): EngineOutput {
         const lastB = bSpace ? (lastTemplateBySpace.get(bSpace) ?? null) : null;
 
         if (aSpace && lastA !== null && lastA === aTpl)
-          sa += groupingMatchWeight;
+          sa += effectiveGroupingMatchWeight;
         if (bSpace && lastB !== null && lastB === bTpl)
-          sb += groupingMatchWeight;
+          sb += effectiveGroupingMatchWeight;
 
         // pequeño premio por seguir trabajando en un espacio “ya activo”
         if (aSpace && lastTemplateBySpace.has(aSpace))
-          sa += groupingActiveSpaceWeight;
+          sa += effectiveGroupingActiveSpaceWeight;
         if (bSpace && lastTemplateBySpace.has(bSpace))
-          sb += groupingActiveSpaceWeight;
+          sb += effectiveGroupingActiveSpaceWeight;
+      }
+
+      // 5) Mantener concursante en el mismo plató (solo bonus, sin penalización)
+      if (effectiveContestantStayInZoneWeight > 0) {
+        const aC = getContestantId(a);
+        const bC = getContestantId(b);
+        if (aC && aZone && lastZoneByContestant.get(aC) === aZone)
+          sa += effectiveContestantStayInZoneWeight;
+        if (bC && bZone && lastZoneByContestant.get(bC) === bZone)
+          sb += effectiveContestantStayInZoneWeight;
       }
 
       // desempate estable: respeta orden original de topo-sort
