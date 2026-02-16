@@ -1,127 +1,288 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePlans, useGeneratePlan } from "@/hooks/use-plans";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
+import { pickDefaultPlan } from "@/lib/plan-default";
+import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
+import { addIncident } from "@/lib/war-room-store";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
-
-const taskName = (t: any) => t?.template?.name || t?.name || "Tarea sin nombre";
-
-function pickDefaultPlan(plans: any[]) {
-  if (!plans.length) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  const exact = plans.find((p) => String(p?.date || "").slice(0, 10) === today);
-  if (exact) return exact;
-  const now = new Date(today).getTime();
-  const sorted = [...plans].sort((a, b) => new Date(a?.date || 0).getTime() - new Date(b?.date || 0).getTime());
-  const future = sorted.find((p) => new Date(p?.date || 0).getTime() >= now);
-  return future || sorted.at(-1) || null;
-}
+import { buildUrl, api } from "@shared/routes";
 
 export default function DashboardPage() {
   const { data: plans = [], isLoading: plansLoading } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [locationDialogTask, setLocationDialogTask] = useState<any | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
   const generate = useGeneratePlan();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const selectedPlan = useMemo(() => {
     if (!plans.length) return null;
-    const fromUi = plans.find((p) => String(p.id) === selectedPlanId);
+    const fromUi = plans.find((plan) => String(plan.id) === selectedPlanId);
     return fromUi || pickDefaultPlan(plans);
   }, [plans, selectedPlanId]);
 
   const planId = selectedPlan?.id as number | undefined;
   const { data, isLoading, error, refetch } = usePlanOpsData(planId);
 
-  const zonesById = useMemo(() => new Map((data.zones || []).map((z: any) => [Number(z.id), z])), [data.zones]);
-  const spacesById = useMemo(() => new Map((data.spaces || []).map((s: any) => [Number(s.id), s])), [data.spaces]);
+  const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
+  const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
+
   const locksByTask = useMemo(() => {
-    const m = new Map<number, any[]>();
-    for (const l of data.locks || []) {
-      const id = Number(l?.task_id);
-      if (!m.has(id)) m.set(id, []);
-      m.get(id)?.push(l);
+    const map = new Map<number, any[]>();
+    for (const lock of data.locks || []) {
+      const taskId = Number(lock?.task_id);
+      if (!map.has(taskId)) map.set(taskId, []);
+      map.get(taskId)?.push(lock);
     }
-    return m;
+    return map;
   }, [data.locks]);
 
+  const invalidateOpsData = async (id?: number) => {
+    if (!id) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/tasks`] }),
+      queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/locks`] }),
+      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] }),
+    ]);
+  };
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ taskId, status, startReal, endReal }: any) =>
+      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, startReal, endReal }),
+    onSettled: async () => invalidateOpsData(planId),
+    onError: () => {
+      toast({ title: "No se pudo actualizar", description: "La tarea no cambió de estado.", variant: "destructive" });
+    },
+  });
+
+  const assignLocation = useMutation({
+    mutationFn: async ({ taskId, zoneId, spaceId }: any) =>
+      apiRequest("PATCH", `/api/daily-tasks/${taskId}`, { zoneId: Number(zoneId), spaceId: Number(spaceId) }),
+    onSuccess: async () => {
+      setLocationDialogTask(null);
+      setSelectedZoneId("");
+      setSelectedSpaceId("");
+      await invalidateOpsData(planId);
+    },
+    onError: () => {
+      toast({ title: "No se pudo actualizar", description: "No fue posible asignar la ubicación.", variant: "destructive" });
+    },
+  });
+
+  const runQuickAction = (taskId: number, action: "start" | "interrupt" | "done") => {
+    const nowHHMM = minutesToHHMM(new Date().getHours() * 60 + new Date().getMinutes());
+    if (action === "interrupt" && !window.confirm("¿Interrumpir esta tarea?")) return;
+
+    const payloadByAction = {
+      start: { status: "in_progress", startReal: nowHHMM },
+      interrupt: { status: "interrupted" },
+      done: { status: "done", endReal: nowHHMM },
+    } as const;
+
+    updateStatus.mutate({ taskId, ...payloadByAction[action] });
+  };
+
   const today = new Date().toISOString().slice(0, 10);
-  const isTodayPlan = String(selectedPlan?.date || "").slice(0, 10) === today;
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const isTodayPlan = String(selectedPlan?.date || "").slice(0, 10) === today;
 
   const tasksWithTime = useMemo(
-    () => (data.tasks || []).filter((t: any) => hhmmToMinutes(t?.startPlanned) !== null && hhmmToMinutes(t?.endPlanned) !== null),
+    () => (data.tasks || []).filter((task: any) => hhmmToMinutes(task?.startPlanned) !== null && hhmmToMinutes(task?.endPlanned) !== null),
     [data.tasks],
   );
 
-  const peak = useMemo(() => {
-    const start = hhmmToMinutes(selectedPlan?.workStart) ?? Math.min(...tasksWithTime.map((t: any) => hhmmToMinutes(t.startPlanned) ?? 1440), 540);
-    const end = hhmmToMinutes(selectedPlan?.workEnd) ?? Math.max(...tasksWithTime.map((t: any) => hhmmToMinutes(t.endPlanned) ?? 0), 1080);
-    const samples = sampleEveryFiveMinutes(start, end);
-    let max = 0;
-    let at = start;
-    for (const s of samples) {
-      const count = (data.tasks || []).reduce((sum: number, t: any) => {
-        const ts = hhmmToMinutes(t?.startPlanned);
-        const te = hhmmToMinutes(t?.endPlanned);
-        if (ts === null || te === null) return sum;
-        const cams = Number(t?.camerasOverride ?? t?.template?.defaultCameras ?? 0);
-        return contains(ts, te, s) ? sum + cams : sum;
-      }, 0);
-      if (count > max) {
-        max = count;
-        at = s;
-      }
-    }
-    return { max, start: at, end: at + 5 };
-  }, [data.tasks, selectedPlan?.workStart, selectedPlan?.workEnd, tasksWithTime]);
-
   const inProgress = useMemo(
     () =>
-      (data.tasks || []).filter((t: any) => {
-        if (t?.status === "in_progress") return true;
-        const s = hhmmToMinutes(t?.startPlanned);
-        const e = hhmmToMinutes(t?.endPlanned);
-        if (!isTodayPlan || s === null || e === null) return false;
-        return contains(s, e, nowMinutes);
+      (data.tasks || []).filter((task: any) => {
+        if (task?.status === "in_progress") return true;
+        const start = hhmmToMinutes(task?.startPlanned);
+        const end = hhmmToMinutes(task?.endPlanned);
+        if (!isTodayPlan || start === null || end === null) return false;
+        return contains(start, end, nowMinutes);
       }),
     [data.tasks, isTodayPlan, nowMinutes],
   );
 
   const next60 = useMemo(
     () =>
-      (data.tasks || []).filter((t: any) => {
-        const s = hhmmToMinutes(t?.startPlanned);
-        if (s === null) return false;
-        return s >= nowMinutes && s <= nowMinutes + 60 && t?.status !== "done";
+      (data.tasks || []).filter((task: any) => {
+        const start = hhmmToMinutes(task?.startPlanned);
+        if (start === null) return false;
+        return start >= nowMinutes && start <= nowMinutes + 60 && task?.status !== "done";
       }),
     [data.tasks, nowMinutes],
   );
 
-  const upcomingNoLocation = next60.filter((t: any) => !t?.zoneId && !t?.spaceId);
+  const upcomingNoLocation = next60.filter((task: any) => !task?.zoneId && !task?.spaceId);
+
+  const peak = useMemo(() => {
+    const start = hhmmToMinutes(selectedPlan?.workStart) ?? Math.min(...tasksWithTime.map((task: any) => hhmmToMinutes(task.startPlanned) ?? 1440), 540);
+    const end = hhmmToMinutes(selectedPlan?.workEnd) ?? Math.max(...tasksWithTime.map((task: any) => hhmmToMinutes(task.endPlanned) ?? 0), 1080);
+    const samples = sampleEveryFiveMinutes(start, end);
+
+    let max = 0;
+    let at = start;
+    for (const sample of samples) {
+      const camerasAtMinute = (data.tasks || []).reduce((total: number, task: any) => {
+        const taskStart = hhmmToMinutes(task?.startPlanned);
+        const taskEnd = hhmmToMinutes(task?.endPlanned);
+        if (taskStart === null || taskEnd === null) return total;
+        const cams = Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0);
+        return contains(taskStart, taskEnd, sample) ? total + cams : total;
+      }, 0);
+      if (camerasAtMinute > max) {
+        max = camerasAtMinute;
+        at = sample;
+      }
+    }
+
+    return { max, start: at, end: at + 5 };
+  }, [data.tasks, selectedPlan?.workStart, selectedPlan?.workEnd, tasksWithTime]);
+
+  const zoneModeByZoneId = useMemo(() => {
+    const map = new Map<number, "zone" | "space">();
+    for (const mode of data.zoneStaffModes || []) {
+      map.set(Number(mode.zoneId), mode.mode === "space" ? "space" : "zone");
+    }
+    return map;
+  }, [data.zoneStaffModes]);
+
+  const operationalMap = useMemo(() => {
+    const grouped = new Map<number, { zone: any; spaces: Map<number, any> }>();
+
+    for (const task of tasksWithTime) {
+      const zoneId = Number(task?.zoneId || spacesById.get(Number(task?.spaceId))?.zoneId || 0);
+      const spaceId = Number(task?.spaceId || 0);
+      if (!zoneId || !spaceId) continue;
+      if (!grouped.has(zoneId)) {
+        grouped.set(zoneId, { zone: zonesById.get(zoneId), spaces: new Map() });
+      }
+
+      const zoneNode = grouped.get(zoneId)!;
+      if (!zoneNode.spaces.has(spaceId)) {
+        zoneNode.spaces.set(spaceId, { space: spacesById.get(spaceId), tasks: [] as any[] });
+      }
+      zoneNode.spaces.get(spaceId).tasks.push(task);
+    }
+
+    return [...grouped.entries()].map(([zoneId, node]) => {
+      const mode = zoneModeByZoneId.get(zoneId) || "zone";
+      const zoneStaff = (data.staffAssignments || []).filter(
+        (assignment: any) => assignment.staffRole === "production" && assignment.scopeType === "zone" && Number(assignment.zoneId) === zoneId,
+      );
+
+      const spaces = [...node.spaces.entries()].map(([spaceId, spaceNode]) => {
+        const nowTask = spaceNode.tasks.find((task: any) => {
+          const start = hhmmToMinutes(task?.startPlanned);
+          const end = hhmmToMinutes(task?.endPlanned);
+          return start !== null && end !== null && contains(start, end, nowMinutes);
+        });
+
+        const nextTask = [...spaceNode.tasks]
+          .filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes)
+          .sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999))[0];
+
+        const spaceStaff = (data.staffAssignments || []).filter(
+          (assignment: any) => assignment.staffRole === "production" && assignment.scopeType === "space" && Number(assignment.spaceId) === spaceId,
+        );
+
+        return {
+          space: spaceNode.space,
+          nowTask,
+          nextTask,
+          staffNames: (mode === "space" ? spaceStaff : zoneStaff).map((staff: any) => staff.staffPersonName).filter(Boolean),
+        };
+      });
+
+      return {
+        zone: node.zone,
+        spaces,
+      };
+    });
+  }, [data.staffAssignments, nowMinutes, spacesById, tasksWithTime, zoneModeByZoneId, zonesById]);
+
+  const createIncidentAndGo = (task?: any, title?: string) => {
+    if (!selectedPlan?.id) return;
+    addIncident(selectedPlan.id!, {
+      type: "Riesgo",
+      severity: "warn",
+      text: title || `Incidencia detectada: ${task ? getTaskName(task) : "sin detalle"}`,
+      taskId: Number(task?.id) || null,
+      zoneId: Number(task?.zoneId) || null,
+      spaceId: Number(task?.spaceId) || null,
+    });
+    window.location.assign("/war-room");
+  };
 
   const liveAlerts = [
-    ...(inProgress.filter((t: any) => (hhmmToMinutes(t?.endPlanned) ?? 9999) < nowMinutes).map((t: any) => ({
-      title: `Retraso: ${taskName(t)}`,
-      impact: "Puede comprometer la siguiente cadena de tareas.",
-      action: `/plans/${selectedPlan?.id}`,
-    })) || []),
+    ...inProgress
+      .filter((task: any) => (hhmmToMinutes(task?.endPlanned) ?? 9999) < nowMinutes)
+      .map((task: any) => ({
+        id: `delay-${task.id}`,
+        severity: "critical" as const,
+        title: `Retraso: ${getTaskName(task)}`,
+        impact: "Puede comprometer la siguiente cadena de tareas.",
+        primary: { label: "Abrir plan", href: `/plans/${selectedPlan?.id}` },
+        secondary: { label: "Crear incidencia", onClick: () => createIncidentAndGo(task, `Retraso en ${getTaskName(task)}`) },
+      })),
     ...(peak.max > Number(selectedPlan?.camerasAvailable ?? 0)
-      ? [{ title: "Conflicto de cámaras", impact: `Pico ${peak.max} supera disponible`, action: `/plans/${selectedPlan?.id}` }]
+      ? [{
+          id: "cams-peak",
+          severity: "warn" as const,
+          title: "Conflicto de cámaras",
+          impact: `Pico ${peak.max}/${selectedPlan?.camerasAvailable ?? 0} supera disponibilidad`,
+          primary: { label: "Abrir war-room", href: "/war-room" },
+          secondary: { label: "Crear incidencia", onClick: () => createIncidentAndGo(undefined, "Pico de cámaras excedido") },
+        }]
       : []),
-    ...upcomingNoLocation.map((t: any) => ({
-      title: `Sin ubicación: ${taskName(t)}`,
+    ...upcomingNoLocation.map((task: any) => ({
+      id: `noloc-${task.id}`,
+      severity: "critical" as const,
+      title: `Sin ubicación: ${getTaskName(task)}`,
       impact: "Riesgo de retraso inmediato.",
-      action: `/plans/${selectedPlan?.id}`,
+      primary: { label: "Asignar ubicación", onClick: () => setLocationDialogTask(task) },
+      secondary: { label: "Crear incidencia", onClick: () => createIncidentAndGo(task, `Sin ubicación en ${getTaskName(task)}`) },
     })),
-    ...((data.locks?.length || 0) > 5 ? [{ title: "Nivel alto de locks", impact: "Posibles bloqueos operativos.", action: `/plans/${selectedPlan?.id}` }] : []),
+    ...((data.locks?.length || 0) > 5
+      ? [{
+          id: "high-locks",
+          severity: "info" as const,
+          title: "Nivel alto de locks",
+          impact: "Posibles bloqueos operativos.",
+          primary: { label: "Abrir war-room", href: "/war-room" },
+          secondary: { label: "Ver plan", href: `/plans/${selectedPlan?.id}` },
+        }]
+      : []),
   ];
 
-  if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+
+  const renderAlertAction = (action: { label: string; href?: string; onClick?: () => void }, variant: "default" | "outline" = "default") => {
+    if (action.href) {
+      return <Button asChild size="sm" variant={variant}><Link href={action.href}>{action.label}</Link></Button>;
+    }
+    return <Button size="sm" variant={variant} onClick={action.onClick}>{action.label}</Button>;
+  };
+  const availableSpacesByZone = useMemo(
+    () => (data.spaces || []).filter((space: any) => Number(space.zoneId) === Number(selectedZoneId)),
+    [data.spaces, selectedZoneId],
+  );
+
+  if (plansLoading) {
+    return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+  }
 
   return (
     <Layout>
@@ -132,11 +293,13 @@ export default function DashboardPage() {
             <Select value={selectedPlan ? String(selectedPlan.id) : undefined} onValueChange={setSelectedPlanId}>
               <SelectTrigger className="w-[280px]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
               <SelectContent>
-                {plans.map((p) => <SelectItem key={p.id} value={String(p.id)}>{(p as any).name || `Plan ${p.id}`} · {String(p.date || "").slice(0, 10)}</SelectItem>)}
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={String(plan.id)}>{(plan as any).name || `Plan ${plan.id}`} · {String(plan.date || "").slice(0, 10)}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button asChild variant="outline"><Link href={`/plans/${selectedPlan?.id || ""}`}>Abrir plan</Link></Button>
-            <Button onClick={() => generate.mutate(selectedPlan?.id)} disabled={!selectedPlan?.id || generate.isPending}>
+            <Button onClick={() => selectedPlan?.id && generate.mutate(selectedPlan.id)} disabled={!selectedPlan?.id || generate.isPending}>
               <Sparkles className="mr-2 h-4 w-4" /> Generar/Recalcular
             </Button>
             <Button variant="outline" onClick={() => refetch()} disabled={!selectedPlan?.id}>
@@ -173,31 +336,73 @@ export default function DashboardPage() {
                   <div key={panel.title} className="rounded-lg border bg-card p-4">
                     <h3 className="mb-3 font-semibold">{panel.title}</h3>
                     <div className="space-y-2">
-                      {(panel.items || []).length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas.</div> : panel.items.map((t: any) => {
-                        const z = zonesById.get(Number(t?.zoneId));
-                        const s = spacesById.get(Number(t?.spaceId));
-                        return <div key={t.id} className="rounded border p-2 text-sm">
-                          <div className="font-medium">{taskName(t)}</div>
-                          <div className="text-muted-foreground">{formatRange(t?.startPlanned, t?.endPlanned)} · {s?.name || z?.name || "Sin ubicación"}</div>
+                      {(panel.items || []).length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas.</div> : panel.items.map((task: any) => (
+                        <div key={task.id} className="rounded border p-2 text-sm">
+                          <div className="font-medium">{getTaskName(task)}</div>
+                          <div className="text-muted-foreground">{formatRange(task?.startPlanned, task?.endPlanned)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : getZoneName(task.zoneId, zonesById)}</div>
                           <div className="mt-1 flex flex-wrap gap-1">
-                            <Badge variant="secondary">{Number(t?.camerasOverride ?? t?.template?.defaultCameras ?? 0)} cámaras</Badge>
-                            <Badge variant="outline">{t?.status || "pending"}</Badge>
-                            {(locksByTask.get(Number(t?.id))?.length || 0) > 0 && <Badge variant="destructive">lock</Badge>}
+                            <Badge variant="secondary">{Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cámaras</Badge>
+                            <Badge variant="outline">{task?.status || "pending"}</Badge>
+                            {(locksByTask.get(Number(task?.id))?.length || 0) > 0 && <Badge variant="destructive">lock</Badge>}
                           </div>
-                        </div>;
-                      })}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "start")}>Iniciar</Button>
+                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "interrupt")}>Pausar/Interrumpir</Button>
+                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "done")}>Finalizar</Button>
+                            {!task?.zoneId && !task?.spaceId && <Button size="sm" onClick={() => setLocationDialogTask(task)}>Asignar ubicación</Button>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
 
               <div className="rounded-lg border bg-card p-4">
+                <h3 className="mb-2 font-semibold">MAPA OPERATIVO</h3>
+                {operationalMap.length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas con zona y espacio para mapear.</div> : (
+                  <div className="space-y-3">
+                    {operationalMap.map((zoneBlock: any) => (
+                      <div key={zoneBlock.zone?.id || zoneBlock.zone?.name} className="rounded border p-2">
+                        <div className="mb-2 font-medium">{zoneBlock.zone?.name || "Zona"}</div>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {zoneBlock.spaces.map((spaceBlock: any) => (
+                            <div key={spaceBlock.space?.id || spaceBlock.space?.name} className="rounded border p-2 text-sm">
+                              <div className="font-semibold">{spaceBlock.space?.name || "Espacio"}</div>
+                              <div className="text-xs text-muted-foreground">AHORA: {spaceBlock.nowTask ? `${getTaskName(spaceBlock.nowTask)} (${formatRange(spaceBlock.nowTask?.startPlanned, spaceBlock.nowTask?.endPlanned)})` : "Sin tarea"}</div>
+                              <div className="text-xs text-muted-foreground">SIGUIENTE: {spaceBlock.nextTask ? `${getTaskName(spaceBlock.nextTask)} (${formatRange(spaceBlock.nextTask?.startPlanned, spaceBlock.nextTask?.endPlanned)})` : "Sin siguiente"}</div>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                <Badge variant="secondary">{Number(spaceBlock.nowTask?.camerasOverride ?? spaceBlock.nowTask?.template?.defaultCameras ?? 0)} cámaras</Badge>
+                                <Badge variant="outline">{spaceBlock.nowTask?.status || "pending"}</Badge>
+                                {(locksByTask.get(Number(spaceBlock.nowTask?.id))?.length || 0) > 0 && <Badge variant="destructive">lock</Badge>}
+                              </div>
+                              <div className="mt-1 text-xs">Staff: {spaceBlock.staffNames.length ? spaceBlock.staffNames.join(", ") : "Sin asignar"}</div>
+                              {spaceBlock.nowTask && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "start")}>Iniciar</Button>
+                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "interrupt")}>Interrumpir</Button>
+                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "done")}>Finalizar</Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-4">
                 <h3 className="mb-2 font-semibold">ALERTAS EN VIVO</h3>
-                {liveAlerts.length === 0 ? <div className="text-sm text-muted-foreground">Sin alertas críticas.</div> : liveAlerts.map((a, i) => (
-                  <div key={i} className="mb-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
-                    <div className="font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{a.title}</div>
-                    <div>Impacto: {a.impact}</div>
-                    <Link href={a.action} className="text-primary underline">Acción sugerida</Link>
+                {liveAlerts.length === 0 ? <div className="text-sm text-muted-foreground">Sin alertas críticas.</div> : liveAlerts.map((alert) => (
+                  <div key={alert.id} className={`mb-2 rounded border p-3 text-sm ${alert.severity === "critical" ? "border-red-300 bg-red-50" : alert.severity === "warn" ? "border-amber-300 bg-amber-50" : "border-slate-300 bg-slate-50"}`}>
+                    <div className="font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{alert.title}</div>
+                    <div>Impacto: {alert.impact}</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {renderAlertAction(alert.primary)}
+                      {renderAlertAction(alert.secondary, "outline")}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -206,26 +411,10 @@ export default function DashboardPage() {
             <TabsContent value="exec" className="space-y-4">
               <div className="grid gap-3 md:grid-cols-5">
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Total tareas</div><div className="font-semibold">{data.tasks.length}</div></div>
-                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Fin previsto</div><div className="font-semibold">{minutesToHHMM(Math.max(...tasksWithTime.map((t: any) => hhmmToMinutes(t.endPlanned) ?? 0), 0))}</div></div>
+                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Fin previsto</div><div className="font-semibold">{minutesToHHMM(Math.max(...tasksWithTime.map((task: any) => hhmmToMinutes(task.endPlanned) ?? 0), 0))}</div></div>
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Locks</div><div className="font-semibold">{data.locks.length}</div></div>
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Peak cámaras</div><div className="font-semibold">{peak.max}</div></div>
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Ventana peak</div><div className="font-semibold">{formatRange(minutesToHHMM(peak.start), minutesToHHMM(peak.end))}</div></div>
-              </div>
-
-              <div className="rounded-lg border bg-card p-4">
-                <h3 className="font-semibold mb-2">RIESGOS ACCIONABLES</h3>
-                <ul className="list-disc pl-5 text-sm space-y-1">
-                  {(data.tasks || []).some((t: any) => !t?.startPlanned || !t?.endPlanned) && <li>Tareas sin horario completo.</li>}
-                  {(data.tasks || []).some((t: any) => !t?.zoneId && !t?.spaceId) && <li>Tareas sin ubicación.</li>}
-                  {peak.max > Number(selectedPlan?.camerasAvailable ?? 0) && <li>Peak de cámaras excedido ({peak.max}/{selectedPlan?.camerasAvailable ?? 0}).</li>}
-                  {data.locks.length > 8 && <li>Exceso de locks.</li>}
-                </ul>
-              </div>
-
-              <div className="rounded-lg border bg-card p-4">
-                <h3 className="font-semibold mb-2">CALIDAD / ESTABILIDAD DEL PLAN</h3>
-                <div className="text-sm">Ubicación completa: {Math.round(((data.tasks.filter((t: any) => t?.zoneId || t?.spaceId).length || 0) / Math.max(data.tasks.length, 1)) * 100)}%</div>
-                <div className="text-sm">Horario completo: {Math.round(((tasksWithTime.length || 0) / Math.max(data.tasks.length, 1)) * 100)}%</div>
               </div>
             </TabsContent>
           </Tabs>
@@ -233,6 +422,29 @@ export default function DashboardPage() {
 
         {isLoading && <div className="text-sm text-muted-foreground">Cargando datos operativos…</div>}
       </div>
+
+      <Dialog open={!!locationDialogTask} onOpenChange={(open) => !open && setLocationDialogTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Asignar ubicación</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="text-sm text-muted-foreground">{locationDialogTask ? getTaskName(locationDialogTask) : ""}</div>
+            <Select value={selectedZoneId} onValueChange={(value) => { setSelectedZoneId(value); setSelectedSpaceId(""); }}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar zona" /></SelectTrigger>
+              <SelectContent>{(data.zones || []).map((zone: any) => <SelectItem key={zone.id} value={String(zone.id)}>{zone.name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={selectedSpaceId} onValueChange={setSelectedSpaceId} disabled={!selectedZoneId}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar espacio" /></SelectTrigger>
+              <SelectContent>{availableSpacesByZone.map((space: any) => <SelectItem key={space.id} value={String(space.id)}>{space.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLocationDialogTask(null)}>Cancelar</Button>
+            <Button disabled={!locationDialogTask || !selectedZoneId || !selectedSpaceId || assignLocation.isPending} onClick={() => assignLocation.mutate({ taskId: locationDialogTask.id, zoneId: selectedZoneId, spaceId: selectedSpaceId })}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
