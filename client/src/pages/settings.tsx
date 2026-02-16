@@ -2205,6 +2205,63 @@ function TaskTemplatesSettings() {
     spacesByZone.set(zid, [...(spacesByZone.get(zid) ?? []), s]);
   });
 
+  const zoneById = new Map<number, any>();
+  (zones as any[]).forEach((z: any) => {
+    const zid = Number(z?.id);
+    if (!Number.isFinite(zid) || zid <= 0) return;
+    zoneById.set(zid, z);
+  });
+
+  const spaceById = new Map<number, any>();
+  (spaces as any[]).forEach((s: any) => {
+    const sid = Number(s?.id);
+    if (!Number.isFinite(sid) || sid <= 0) return;
+    spaceById.set(sid, s);
+  });
+
+  const getTemplateDependencyIds = (rawTemplate: any): number[] => {
+    const parsed = Array.isArray(rawTemplate?.dependsOnTemplateIds)
+      ? rawTemplate.dependsOnTemplateIds
+      : Array.isArray(rawTemplate?.depends_on_template_ids)
+        ? rawTemplate.depends_on_template_ids
+        : rawTemplate?.depends_on_template_ids != null
+          ? (() => {
+              if (typeof rawTemplate.depends_on_template_ids === "string") {
+                try {
+                  return JSON.parse(rawTemplate.depends_on_template_ids);
+                } catch {
+                  return [];
+                }
+              }
+              return rawTemplate.depends_on_template_ids;
+            })()
+          : [];
+
+    const normalized = Array.isArray(parsed)
+      ? parsed
+          .map((value: unknown) => Number(value))
+          .filter((value: number) => Number.isFinite(value) && value > 0)
+      : [];
+
+    if (normalized.length > 0) return normalized;
+
+    const fallback = Number(
+      rawTemplate?.dependsOnTemplateId ?? rawTemplate?.depends_on_template_id,
+    );
+    return Number.isFinite(fallback) && fallback > 0 ? [fallback] : [];
+  };
+
+  const dependentsByTemplateId = new Map<number, any[]>();
+  (templates ?? []).forEach((rawTemplate: any) => {
+    const rawTemplateId = Number(rawTemplate?.id);
+    if (!Number.isFinite(rawTemplateId) || rawTemplateId <= 0) return;
+    getTemplateDependencyIds(rawTemplate).forEach((dependencyId) => {
+      const bucket = dependentsByTemplateId.get(dependencyId) ?? [];
+      bucket.push(rawTemplate);
+      dependentsByTemplateId.set(dependencyId, bucket);
+    });
+  });
+
   const hexToRgba = (hex: string, alpha: number): string => {
     const a = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 0;
     const v = String(hex ?? "").trim();
@@ -2509,20 +2566,43 @@ function TaskTemplatesSettings() {
         {(templates ?? []).map((tpl: any) => {
           const isEditing = editingId === Number(tpl.id) && !!editData;
           const curr = isEditing ? editData : tpl;
+          const tplZoneId = Number(curr?.zoneId ?? curr?.zone_id ?? NaN);
+          const tplSpaceId = Number(curr?.spaceId ?? curr?.space_id ?? NaN);
+          const zone = Number.isFinite(tplZoneId) ? zoneById.get(tplZoneId) : null;
+          const space = Number.isFinite(tplSpaceId)
+            ? spaceById.get(tplSpaceId)
+            : null;
+          const zoneName = String(zone?.name ?? "").trim() || "Sin asignar";
+          const spaceName = String(space?.name ?? "").trim() || "—";
+          const zoneColor =
+            String(zone?.uiColor ?? zone?.ui_color ?? "").trim() || "#e2e8f0";
+          const durationMin = Number(
+            curr?.defaultDuration ?? curr?.default_duration ?? NaN,
+          );
           const primary =
             String(curr?.uiColor ?? curr?.ui_color ?? "").trim() || "#94a3b8";
           const secondary = String(
             curr?.uiColorSecondary ?? curr?.ui_color_secondary ?? "",
           ).trim();
+          const dependents = dependentsByTemplateId.get(Number(tpl?.id)) ?? [];
           return (
             <Card key={tpl.id}>
-              <CardHeader className="pb-3">
+              <CardHeader className="py-2 px-3 sm:px-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 flex items-stretch gap-2">
                     <div
-                      className="rounded-md px-3 py-2"
+                      className="w-1.5 rounded-sm"
+                      style={{ backgroundColor: primary }}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="w-1.5 rounded-sm"
+                      style={{ backgroundColor: zoneColor }}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="flex-1 rounded-md px-2.5 py-1.5"
                       style={{
-                        borderLeft: `6px solid ${primary}`,
                         backgroundColor: secondary
                           ? hexToRgba(secondary, 0.18)
                           : "transparent",
@@ -2538,13 +2618,18 @@ function TaskTemplatesSettings() {
                           }
                         />
                       ) : (
-                        <p className="font-medium truncate">
-                          {tpl.name ?? `#${tpl.id}`}
-                        </p>
+                        <div className="space-y-0.5">
+                          <p className="font-medium truncate leading-5">
+                            {tpl.name ?? `#${tpl.id}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-4">
+                            Duración: {Number.isFinite(durationMin) ? durationMin : "—"} min · Plató: {zoneName} · Espacio: {spaceName}
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 shrink-0">
                     {isEditing ? (
                       <>
                         <Button size="sm" onClick={saveEdit}>
@@ -2801,6 +2886,40 @@ function TaskTemplatesSettings() {
                           })}
                       </div>
                     )}
+
+                    <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-3">
+                      <p className="text-sm font-medium">Dependen de esta plantilla</p>
+                      {dependents.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Ninguna plantilla depende de esta.
+                        </p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {dependents.map((dependent: any) => {
+                            const dependentId = Number(dependent?.id);
+                            const dependentName =
+                              String(dependent?.name ?? "").trim() ||
+                              `Template #${dependentId || "—"}`;
+                            return (
+                              <div
+                                key={`dependent-${dependentId}`}
+                                className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5"
+                              >
+                                <span className="text-sm truncate">{dependentName}</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={() => startEdit(dependent)}
+                                >
+                                  Abrir
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </section>
 
                   <section className="space-y-3">
