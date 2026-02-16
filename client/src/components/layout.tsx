@@ -3,6 +3,8 @@ import {
   LayoutDashboard, 
   CalendarDays, 
   GanttChartSquare,
+  FileText,
+  ShieldAlert,
   Settings, 
   LogOut,
   Menu,
@@ -50,6 +52,8 @@ export function Layout({ children }: LayoutProps) {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Plans", href: "/plans", icon: CalendarDays },
     { name: "Timeline", href: "/timeline", icon: GanttChartSquare },
+    { name: "Call Sheet", href: "/call-sheet", icon: FileText },
+    { name: "War Room", href: "/war-room", icon: ShieldAlert },
     ...(role === "admin" ? [{ name: "Settings", href: "/settings", icon: Settings }] : []),
   ];
 
