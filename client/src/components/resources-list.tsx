@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateResourceItem, CreateResourceType, ResourceTypeLite } from "@/components/create-resource-pool";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronsDown, ChevronsUp, Plus } from "lucide-react";
+import { ChevronsDown, ChevronsUp, Plus, Trash2 } from "lucide-react";
 import { ResourceItemComponentsDialog } from "@/components/resource-item-components-dialog";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
@@ -11,6 +11,7 @@ import { useTaskTemplates } from "@/hooks/use-tasks";
 import { useSpaces, useZones } from "@/hooks/use-spaces";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
 
 type ResourceItem = {
   id: number;
@@ -34,6 +34,7 @@ type ResourceType = {
 };
 
 export function ResourcesList() {
+  const { toast } = useToast();
   const [types, setTypes] = useState<ResourceType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,12 +184,16 @@ export function ResourcesList() {
   }
 
   async function deleteItem(itemId: number) {
-    if (!confirm("¿Seguro que quieres borrar esta unidad?")) return;
+    if (!confirm("¿Eliminar esta unidad? Esta acción no se puede deshacer")) return;
 
     try {
       await apiRequest("DELETE", `/api/resource-items/${itemId}`);
     } catch (e: any) {
-      alert(e?.message || "Error borrando unidad");
+      toast({
+        title: "No se pudo eliminar",
+        description: e?.message || "Error borrando unidad",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -198,6 +203,27 @@ export function ResourcesList() {
         items: t.items.filter((i) => i.id !== itemId),
       }))
     );
+    toast({ title: "Eliminado" });
+  }
+
+
+
+  async function deleteType(typeId: number, typeName: string) {
+    if (!confirm(`¿Eliminar ${typeName}? Esta acción no se puede deshacer`)) return;
+
+    try {
+      await apiRequest("DELETE", `/api/resource-types/${typeId}`);
+    } catch (e: any) {
+      toast({
+        title: "No se pudo eliminar",
+        description: e?.message || "Error borrando tipo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTypes((prev) => prev.filter((t) => t.id !== typeId));
+    toast({ title: "Eliminado" });
   }
 
   useEffect(() => {
@@ -374,6 +400,15 @@ export function ResourcesList() {
                           >
                             <ChevronsUp className="h-4 w-4" />
                           </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            title="Eliminar"
+                            onClick={() => deleteType(t.id, t.name)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardHeader>
@@ -412,12 +447,14 @@ export function ResourcesList() {
                                 >
                                   Componentes
                                 </Button>
-                                <button
-                                  className="text-sm text-red-600 hover:underline"
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  title="Eliminar"
                                   onClick={() => deleteItem(i.id)}
                                 >
-                                  Eliminar
-                                </button>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             );
                           })

@@ -10,6 +10,8 @@ import {
   contestants,
   insertContestantSchema,
   updateContestantSchema,
+  zones,
+  spaces,
 } from "./schema";
 
 export const updatePlanSchema = z
@@ -109,6 +111,15 @@ export const api = {
           roleType: z.enum(["production", "editorial"]),
           isActive: z.boolean(),
         }),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/staff-people/:id",
+      responses: {
+        200: z.object({ success: z.literal(true) }),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       },
@@ -228,6 +239,15 @@ export const api = {
           isActive: z.boolean(),
           orderIndex: z.number(),
         }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/itinerant-teams/:id",
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
       },
     },
   },

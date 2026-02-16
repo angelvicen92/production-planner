@@ -70,3 +70,25 @@ export function useUpdateStaffPerson() {
     },
   });
 }
+
+
+export function useDeleteStaffPerson() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiRequest("DELETE", api.staffPeople.delete.path.replace(":id", String(id))),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [api.staffPeople.list.path] });
+      toast({ title: "Eliminado" });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "No se pudo eliminar",
+        description: err?.message || "Error desconocido",
+        variant: "destructive",
+      });
+    },
+  });
+}
