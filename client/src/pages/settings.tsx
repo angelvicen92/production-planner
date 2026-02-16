@@ -65,7 +65,6 @@ import {
   useDeleteStaffPerson,
   type StaffRoleType,
 } from "@/hooks/use-staff";
-import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
 import { useUserRole } from "@/hooks/use-user-role";
 import {
   useDeleteItinerantTeam,
