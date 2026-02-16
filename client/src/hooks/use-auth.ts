@@ -12,6 +12,10 @@ async function bootstrapRole() {
   }
 }
 
+function getMagicLinkRedirectUrl() {
+  return `${window.location.origin}/dashboard`;
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
@@ -70,9 +74,18 @@ export function useAuth() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: getMagicLinkRedirectUrl(),
         },
       });
+      if (error) throw error;
+      return { ok: true };
+    },
+  });
+
+  const signInWithPassword = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const supabase = await getSupabaseClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       return { ok: true };
     },
@@ -92,6 +105,8 @@ export function useAuth() {
     isAuthenticated: !!user,
     signInWithMagicLink: signInWithMagicLink.mutateAsync,
     isSendingMagicLink: signInWithMagicLink.isPending,
+    signInWithPassword: signInWithPassword.mutateAsync,
+    isSigningInWithPassword: signInWithPassword.isPending,
     signOut: signOut.mutateAsync,
     isSigningOut: signOut.isPending,
   };
