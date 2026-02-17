@@ -2157,6 +2157,70 @@ export default function PlanDetailsPage() {
                                   );
                                 })()}
 
+                              <TableCell>
+                                <Input
+                                  className="h-8"
+                                  defaultValue={t.comment1Text ?? ""}
+                                  placeholder="comment1"
+                                  onBlur={async (e) => {
+                                    await apiRequest(
+                                      "PATCH",
+                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
+                                      { comment1Text: e.currentTarget.value || null },
+                                    );
+                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                  }}
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  className="h-8"
+                                  defaultValue={t.comment1Color ?? ""}
+                                  placeholder="#RRGGBB"
+                                  onBlur={async (e) => {
+                                    await apiRequest(
+                                      "PATCH",
+                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
+                                      { comment1Color: e.currentTarget.value || null },
+                                    );
+                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                  }}
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  className="h-8"
+                                  defaultValue={t.comment2Text ?? ""}
+                                  placeholder="comment2"
+                                  onBlur={async (e) => {
+                                    await apiRequest(
+                                      "PATCH",
+                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
+                                      { comment2Text: e.currentTarget.value || null },
+                                    );
+                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                  }}
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  className="h-8"
+                                  defaultValue={t.comment2Color ?? ""}
+                                  placeholder="#RRGGBB"
+                                  onBlur={async (e) => {
+                                    await apiRequest(
+                                      "PATCH",
+                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
+                                      { comment2Color: e.currentTarget.value || null },
+                                    );
+                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                  }}
+                                />
+                              </TableCell>
+
                                 <TableCell>
                                   <Button
                                     variant="ghost"
@@ -2293,6 +2357,10 @@ export default function PlanDetailsPage() {
                           <TableHead className="w-[140px]">Cameras</TableHead>
                           <TableHead className="w-[200px]">Plató</TableHead>
                           <TableHead className="w-[220px]">Espacio</TableHead>
+                          <TableHead className="w-[180px]">Comment 1</TableHead>
+                          <TableHead className="w-[140px]">Color C1</TableHead>
+                          <TableHead className="w-[180px]">Comment 2</TableHead>
+                          <TableHead className="w-[140px]">Color C2</TableHead>
                           <TableHead className="w-[90px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -3426,14 +3494,7 @@ export default function PlanDetailsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const direct = reason?.taskId ?? null;
-                        if (direct) return goToTask(direct);
-
-                        const msg = String(reason?.message ?? "");
-                        const m = msg.match(/\btarea\s+(\d+)\b/i);
-                        const extracted = m ? Number(m[1]) : null;
-
-                        goToTask(extracted);
+                        goToTask(reason?.taskId ?? null);
                       }}
                     >
                       Ir a configurar

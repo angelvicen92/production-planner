@@ -58,6 +58,7 @@ export async function buildEngineInput(
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
       const spaceParentById: Record<number, number | null> = {};
+      const spaceNameById: Record<number, string> = {};
       for (const s of (allSpaces as any[]) ?? []) {
         const id = Number((s as any)?.id);
         if (!Number.isFinite(id) || id <= 0) continue;
@@ -67,12 +68,14 @@ export async function buildEngineInput(
 
     if (parentRaw === null || parentRaw === undefined) {
       spaceParentById[id] = null;
-      continue;
+    } else {
+      const parentId = Number(parentRaw);
+      spaceParentById[id] =
+        Number.isFinite(parentId) && parentId > 0 ? parentId : null;
     }
 
-    const parentId = Number(parentRaw);
-    spaceParentById[id] =
-      Number.isFinite(parentId) && parentId > 0 ? parentId : null;
+    const spaceName = String((s as any)?.name ?? "").trim();
+    if (spaceName) spaceNameById[id] = spaceName;
   }
 
   const zoneResourceTypeRequirements =
@@ -270,6 +273,23 @@ export async function buildEngineInput(
     mealTaskTemplateName: String(
       p.meal_task_template_name ?? p.mealTaskTemplateName ?? "Comer",
     ),
+    mealTaskTemplateId: (() => {
+      const explicit = Number(p.meal_task_template_id ?? p.mealTaskTemplateId ?? NaN);
+      if (Number.isFinite(explicit) && explicit > 0) return explicit;
+
+      const mealName = String(
+        p.meal_task_template_name ?? p.mealTaskTemplateName ?? "",
+      )
+        .trim()
+        .toLowerCase();
+      if (!mealName) return null;
+
+      const found = (templates as any[]).find(
+        (tpl: any) => String(tpl?.name ?? "").trim().toLowerCase() === mealName,
+      );
+      const inferred = Number(found?.id ?? NaN);
+      return Number.isFinite(inferred) && inferred > 0 ? inferred : null;
+    })(),
 
     // ✅ Comida concursantes (por plan)
     contestantMealDurationMinutes: Number(
@@ -286,6 +306,7 @@ export async function buildEngineInput(
     zoneResourceAssignments,
     spaceResourceAssignments,
     spaceParentById,
+    spaceNameById,
     zoneResourceTypeRequirements,
     spaceResourceTypeRequirements,
         planResourceItems,

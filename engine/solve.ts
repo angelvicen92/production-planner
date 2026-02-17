@@ -59,43 +59,61 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const warnings: { code: string; message: string; taskId?: number }[] = [];
   const excludedTaskIds = new Set<number>();
 
-  // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
   const mealName = String((input as any)?.mealTaskTemplateName ?? "")
     .trim()
     .toLowerCase();
+  const mealTemplateIdRaw = Number((input as any)?.mealTaskTemplateId ?? NaN);
+  const mealTemplateId = Number.isFinite(mealTemplateIdRaw) && mealTemplateIdRaw > 0
+    ? mealTemplateIdRaw
+    : null;
+
+  const taskDisplay = (task: any) => {
+    const templateName = String(task?.templateName ?? "").trim();
+    const contestantName = String(task?.contestantName ?? "").trim();
+    const base = templateName ? `"${templateName}"` : `Tarea #${Number(task?.id ?? "") || "?"}`;
+    return contestantName ? `${base} (${contestantName})` : base;
+  };
+
+  const spaceLabel = (task: any) => {
+    const sid = Number(task?.spaceId ?? task?.space_id ?? NaN);
+    if (!Number.isFinite(sid) || sid <= 0) return null;
+    const byId = ((input as any)?.spaceNameById ?? {}) as Record<number, string>;
+    const name = String(byId[sid] ?? "").trim();
+    return name ? `"${name}"` : `Espacio #${sid}`;
+  };
+
+  const isMealTask = (task: any) => {
+    const tplId = Number(task?.templateId ?? NaN);
+    if (mealTemplateId && Number.isFinite(tplId) && tplId === mealTemplateId) {
+      return true;
+    }
+    const taskTemplateName = String(task?.templateName ?? "")
+      .trim()
+      .toLowerCase();
+    return mealName.length > 0 && taskTemplateName === mealName;
+  };
+
+  // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
   for (const task of tasks as any[]) {
     const id = Number(task?.id);
     const zid = task?.zoneId;
 
     if (!Number.isFinite(id)) continue;
 
-    const taskTemplateName = String(task?.templateName ?? "")
-      .trim()
-      .toLowerCase();
-    const isMealTask = mealName.length > 0 && taskTemplateName === mealName;
-
     // ✅ EXCEPCIÓN: la tarea "comida" no requiere plató/zona y no debe generar warning
-    if (isMealTask) continue;
+    if (isMealTask(task)) continue;
 
     if (zid === null || zid === undefined || !Number.isFinite(Number(zid))) {
       excludedTaskIds.add(id);
 
-      const who = task?.contestantName
-        ? ` (${task.contestantName})`
-        : task?.contestantId
-          ? ` (concursante ${task.contestantId})`
-          : "";
-
-      const spaceInfo = Number.isFinite(Number(task?.spaceId))
-        ? ` (spaceId ${Number(task.spaceId)})`
-        : "";
-
+      const spLabel = spaceLabel(task);
       warnings.push({
         code: "REQUIRES_CONFIGURATION",
         taskId: id,
         message:
-          `Requiere configuración: la tarea ${id}${who} no tiene plató/zona (zoneId).` +
-          `${spaceInfo} Asigna un plató (zona) en la tarea o en su espacio.`,
+          `Requiere configuración: ${taskDisplay(task)} no tiene plató/zona.` +
+          (spLabel ? ` Espacio: ${spLabel}.` : "") +
+          " Asigna un plató (zona) en la tarea o en su espacio.",
       });
     }
   }
@@ -130,6 +148,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
     );
   };
 
+  const taskById = new Map<number, any>();
+  for (const t of tasks as any[]) taskById.set(Number(t?.id), t);
+
   // 2) Si una tarea depende de otra excluida, también se excluye (en cascada)
   let changed = true;
   while (changed) {
@@ -146,12 +167,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
         excludedTaskIds.add(id);
         changed = true;
 
+        const blockingTask = taskById.get(Number(blocking));
         warnings.push({
           code: "REQUIRES_CONFIGURATION",
           taskId: id,
           message:
-            `Requiere configuración: la tarea ${id} depende de ${Number(blocking)}, ` +
-            `pero esa tarea está sin configuración (sin plató/zona) y se ha excluido.`,
+            `Requiere configuración: ${taskDisplay(task)} depende de ${taskDisplay(blockingTask)}, ` +
+            `pero ${taskDisplay(blockingTask)} está sin configuración (sin plató/zona) y se ha excluido.`,
         });
       }
     }
@@ -163,7 +185,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   );
 
   // ✅ Validación: si una tarea tiene dependencias pero no podemos resolver TODOS sus prereqs -> infeasible
-  const missingDeps: { code: string; message: string; taskId?: number }[] = [];
+  const missingDeps: any[] = [];
 
   const tplNameById = ((input as any)?.taskTemplateNameById ?? {}) as Record<
     number,
@@ -173,9 +195,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const nm = tplNameById[tplId];
     return nm ? nm : `Template ${tplId}`;
   };
-
-  const taskById = new Map<number, any>();
-  for (const t of tasks as any[]) taskById.set(Number(t?.id), t);
 
   const taskLabel = (t: any) => {
     const nm = String(t?.templateName ?? "").trim();
@@ -584,9 +603,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const parent = spaceParentById[sid];
       const next =
         parent === null || parent === undefined ? null : Number(parent);
-      if (!Number.isFinite(next) || next <= 0) break;
+      if (next === null || !Number.isFinite(next) || next <= 0) break;
 
-      sid = next;
+      sid = Number(next);
     }
 
     return [];
@@ -659,13 +678,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }> = [];
 
   const plannedEndByTaskId = new Map<number, number>();
-
-  const isMealTask = (task: any) => {
-    const n = String(task?.templateName ?? "")
-      .trim()
-      .toLowerCase();
-    return mealName.length > 0 && n === mealName;
-  };
 
   const isResourceBreakTask = (task: any) =>
     task?.breakKind === "space_meal" || task?.breakKind === "itinerant_meal";
@@ -1843,8 +1855,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
           {
             code: "MEAL_CONTESTANT_NO_FIT",
             message:
-              `No se pudo encajar la comida del concursante dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) ` +
-              `respetando máximo simultáneo (${contestantMealMaxSim}).`,
+              `No se pudo encajar la comida de "${String(task?.contestantName ?? contestantId)}" ` +
+              `dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) ` +
+              `respetando máximo simultáneo (${contestantMealMaxSim}).` +
+              (String(task?.templateName ?? "").trim()
+                ? ` (Tarea: "${String(task.templateName).trim()}").`
+                : ""),
             taskId,
           },
         ],

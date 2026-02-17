@@ -99,6 +99,7 @@ export interface EngineInput {
   meal: TimeWindow;
   // Nombre de la plantilla que representa "comida" (ej. "Sodexo")
   mealTaskTemplateName?: string;
+  mealTaskTemplateId?: number | null;
 
   // ✅ Comida concursantes (por plan)
   contestantMealDurationMinutes?: number;
@@ -124,6 +125,10 @@ export interface EngineInput {
   // ✅ Jerarquía de espacios para herencia de pools
   // Key: spaceId -> parentSpaceId (o null si no tiene)
   spaceParentById?: Record<number, number | null>;
+
+  // ✅ Etiquetas legibles de espacios para warnings/mensajes del motor
+  // Key: spaceId -> spaceName
+  spaceNameById?: Record<number, string>;
 
   // ✅ Requisitos genéricos por tipo (override por plan)
   // Key: zoneId -> (resourceTypeId -> quantity)
