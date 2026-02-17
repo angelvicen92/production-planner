@@ -764,14 +764,27 @@ function TaskStatusMenuTrigger({
   const hasPlanning = (timelineTasks ?? []).some(
     (t) => t.startPlanned && t.endPlanned,
   );
+  const unscheduledPendingTasks = (dailyTasks ?? []).filter(
+    (t) =>
+      String(t?.status ?? "pending") === "pending" &&
+      (!t?.startPlanned || !t?.endPlanned),
+  );
 
   if (!hasPlanning && timelineTasks.length > 0) {
     return (
-      <Card className="p-8 text-center bg-muted/50">
-        <p className="text-muted-foreground">
+      <Card className="p-8 bg-muted/50 space-y-4">
+        <p className="text-muted-foreground text-center">
           Aún no hay planificación. Pulsa "Generate Planning" para calcular los
           horarios.
         </p>
+        {unscheduledPendingTasks.length > 0 && (
+          <div className="rounded-md border bg-background/80 p-3">
+            <p className="text-sm font-medium">Pendientes sin planificar ({unscheduledPendingTasks.length})</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Estas tareas todavía no tienen inicio/fin planificado y no se muestran en el timeline.
+            </p>
+          </div>
+        )}
       </Card>
     );
   }
