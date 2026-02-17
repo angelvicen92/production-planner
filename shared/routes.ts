@@ -778,6 +778,8 @@ export const api = {
           mealEnd: z.string(),
           contestantMealDurationMinutes: z.number(),
           contestantMealMaxSimultaneous: z.number(),
+          spaceMealBreakMinutes: z.number(),
+          itinerantMealBreakMinutes: z.number(),
           mealTaskTemplateName: z.string(),
           clockMode: z.enum(["auto", "manual"]),
           simulatedTime: z
@@ -812,6 +814,8 @@ export const api = {
             .min(1)
             .max(50)
             .optional(),
+          spaceMealBreakMinutes: z.number().int().min(1).max(240).optional(),
+          itinerantMealBreakMinutes: z.number().int().min(1).max(240).optional(),
           mealTaskTemplateName: z.string().min(1).max(80).optional(),
           clockMode: z.enum(["auto", "manual"]).optional(),
           simulatedTime: z

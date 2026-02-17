@@ -1503,6 +1503,8 @@ function mapDeleteError(err: any, fallback: string) {
         mealEnd: String(data.meal_end),
         contestantMealDurationMinutes: Number(data.contestant_meal_duration_minutes),
         contestantMealMaxSimultaneous: Number(data.contestant_meal_max_simultaneous),
+        spaceMealBreakMinutes: Number(data.space_meal_break_minutes ?? 45),
+        itinerantMealBreakMinutes: Number(data.itinerant_meal_break_minutes ?? 45),
         mealTaskTemplateName: String(data.meal_task_template_name ?? "Comer"),
         clockMode: data.clock_mode === "manual" ? "manual" : "auto",
         simulatedTime:
@@ -1526,6 +1528,10 @@ function mapDeleteError(err: any, fallback: string) {
         patch.contestant_meal_duration_minutes = input.contestantMealDurationMinutes;
       if (input.contestantMealMaxSimultaneous !== undefined)
         patch.contestant_meal_max_simultaneous = input.contestantMealMaxSimultaneous;
+      if (input.spaceMealBreakMinutes !== undefined)
+        patch.space_meal_break_minutes = input.spaceMealBreakMinutes;
+      if (input.itinerantMealBreakMinutes !== undefined)
+        patch.itinerant_meal_break_minutes = input.itinerantMealBreakMinutes;
 
       if (input.mealTaskTemplateName !== undefined)
         patch.meal_task_template_name = String(input.mealTaskTemplateName).trim();
@@ -2752,6 +2758,18 @@ function mapDeleteError(err: any, fallback: string) {
 
             template: t.template,
           })),
+          breaks: (full.breaks || []).map((b: any) => ({
+            id: Number(b.id),
+            kind: String(b.kind),
+            spaceId: b.space_id == null ? null : Number(b.space_id),
+            itinerantTeamId:
+              b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
+            durationMinutes: Number(b.duration_minutes ?? 45),
+            earliestStart: b.earliest_start ?? null,
+            latestEnd: b.latest_end ?? null,
+            lockedStart: b.locked_start ?? null,
+            lockedEnd: b.locked_end ?? null,
+          })),
         });
       } catch (e: any) {
         console.error("[GET PLAN] error", e);
@@ -3199,6 +3217,17 @@ function mapDeleteError(err: any, fallback: string) {
       let updated = 0;
 
       for (const p of planned) {
+        if (Number((p as any).taskId) < 0) {
+          const breakId = Math.abs(Number((p as any).taskId));
+          await storage.savePlannedBreakTimes(
+            planId,
+            breakId,
+            String((p as any).startPlanned),
+            String((p as any).endPlanned),
+          );
+          updated++;
+          continue;
+        }
         await storage.updatePlannedTimes(
           p.taskId,
           p.startPlanned,

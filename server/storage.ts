@@ -92,9 +92,13 @@ export interface IStorage {
         tasks: DailyTask[];
         locks: Lock[];
         availability: any[];
+        breaks: any[];
       }
     | undefined
   >;
+
+  syncPlanMealBreaks(planId: number): Promise<void>;
+  savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
 
   // Optimizer Settings (global)
   getOptimizerSettings(): Promise<{
@@ -170,6 +174,122 @@ export interface IStorage {
 }
 
 export class SupabaseStorage implements IStorage {
+  async syncPlanMealBreaks(planId: number): Promise<void> {
+    const { data: plan, error: planErr } = await supabaseAdmin
+      .from("plans")
+      .select("id, meal_start, meal_end")
+      .eq("id", planId)
+      .single();
+    if (planErr) throw planErr;
+
+    const { data: settings } = await supabaseAdmin
+      .from("program_settings")
+      .select("space_meal_break_minutes, itinerant_meal_break_minutes")
+      .eq("id", 1)
+      .maybeSingle();
+
+    const spaceDuration = Math.max(1, Number((settings as any)?.space_meal_break_minutes ?? 45));
+    const itinerantDuration = Math.max(1, Number((settings as any)?.itinerant_meal_break_minutes ?? 45));
+
+    const mealStart = String((plan as any)?.meal_start ?? "12:00");
+    const mealEnd = String((plan as any)?.meal_end ?? "16:00");
+
+    const { data: spaces } = await supabaseAdmin
+      .from("spaces")
+      .select("id");
+    const { data: teams } = await supabaseAdmin
+      .from("itinerant_teams")
+      .select("id, is_active");
+
+    const { data: existing } = await supabaseAdmin
+      .from("plan_breaks")
+      .select("id, kind, space_id, itinerant_team_id")
+      .eq("plan_id", planId);
+
+    const existingSpace = new Set<number>();
+    const existingTeam = new Set<number>();
+    for (const row of existing ?? []) {
+      if ((row as any)?.kind === "space_meal" && (row as any)?.space_id) {
+        existingSpace.add(Number((row as any).space_id));
+      }
+      if ((row as any)?.kind === "itinerant_meal" && (row as any)?.itinerant_team_id) {
+        existingTeam.add(Number((row as any).itinerant_team_id));
+      }
+    }
+
+    const toInsert: any[] = [];
+    for (const s of spaces ?? []) {
+      const sid = Number((s as any)?.id);
+      if (!Number.isFinite(sid) || existingSpace.has(sid)) continue;
+      toInsert.push({
+        plan_id: planId,
+        kind: "space_meal",
+        space_id: sid,
+        itinerant_team_id: null,
+        duration_minutes: spaceDuration,
+        earliest_start: mealStart,
+        latest_end: mealEnd,
+      });
+    }
+    for (const t of teams ?? []) {
+      const tid = Number((t as any)?.id);
+      const active = (t as any)?.is_active ?? true;
+      if (!active || !Number.isFinite(tid) || existingTeam.has(tid)) continue;
+      toInsert.push({
+        plan_id: planId,
+        kind: "itinerant_meal",
+        space_id: null,
+        itinerant_team_id: tid,
+        duration_minutes: itinerantDuration,
+        earliest_start: mealStart,
+        latest_end: mealEnd,
+      });
+    }
+
+    if (toInsert.length > 0) {
+      const { error: insErr } = await supabaseAdmin.from("plan_breaks").insert(toInsert);
+      if (insErr) throw insErr;
+    }
+
+    await supabaseAdmin
+      .from("plan_breaks")
+      .update({
+        earliest_start: mealStart,
+        latest_end: mealEnd,
+      })
+      .eq("plan_id", planId)
+      .eq("kind", "space_meal");
+
+    await supabaseAdmin
+      .from("plan_breaks")
+      .update({
+        earliest_start: mealStart,
+        latest_end: mealEnd,
+      })
+      .eq("plan_id", planId)
+      .eq("kind", "itinerant_meal");
+
+    await supabaseAdmin
+      .from("plan_breaks")
+      .update({ duration_minutes: spaceDuration })
+      .eq("plan_id", planId)
+      .eq("kind", "space_meal");
+
+    await supabaseAdmin
+      .from("plan_breaks")
+      .update({ duration_minutes: itinerantDuration })
+      .eq("plan_id", planId)
+      .eq("kind", "itinerant_meal");
+  }
+
+  async savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from("plan_breaks")
+      .update({ locked_start: start, locked_end: end })
+      .eq("plan_id", planId)
+      .eq("id", breakId);
+    if (error) throw error;
+  }
   async getPlans(): Promise<Plan[]> {
     const { data, error } = await supabaseAdmin.from("plans").select("*");
     if (error) throw error;
@@ -856,6 +976,7 @@ export class SupabaseStorage implements IStorage {
       throw new Error(e?.message || "Failed to snapshot resources for plan");
     }
 
+    await this.syncPlanMealBreaks(Number((data as any).id));
     return data as Plan;
   }
 
@@ -1136,6 +1257,12 @@ export class SupabaseStorage implements IStorage {
               t.template.resource_requirements ??
               (t.template as any).resourceRequirements ??
               null,
+            itinerantTeamRequirement:
+              t.template.itinerant_team_requirement ?? "none",
+            itinerantTeamId:
+              t.template.itinerant_team_id == null
+                ? null
+                : Number(t.template.itinerant_team_id),
           }
         : null,
     }));
@@ -1406,6 +1533,7 @@ export class SupabaseStorage implements IStorage {
       .single();
 
     if (error) throw error;
+    await this.syncPlanMealBreaks(planId);
     return data as any;
   }
 
@@ -2062,6 +2190,7 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getPlanFullDetails(planId: number) {
+    await this.syncPlanMealBreaks(planId);
     const plan = await this.getPlan(planId);
     if (!plan) return undefined;
 
@@ -2089,7 +2218,12 @@ export class SupabaseStorage implements IStorage {
       .select("*")
       .eq("plan_id", planId);
 
-    return { plan, tasks, locks, availability: availability || [] };
+    const { data: breaks } = await supabaseAdmin
+      .from("plan_breaks")
+      .select("*")
+      .eq("plan_id", planId);
+
+    return { plan, tasks, locks, availability: availability || [], breaks: breaks || [] };
   }
 }
 

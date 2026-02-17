@@ -196,6 +196,7 @@ export function useCreateContestant(planId: number) {
     }) => apiRequest("POST", `/api/plans/${planId}/contestants`, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contestants", planId] });
+      queryClient.refetchQueries({ queryKey: ["contestants", planId] });
 
       // ✅ refresca plan para que aparezca la Daily Task "Comer" sin recargar
       queryClient.invalidateQueries({
@@ -204,6 +205,9 @@ export function useCreateContestant(planId: number) {
 
       // por si alguna vista usa el endpoint de tasks suelto
       queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
+      queryClient.refetchQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
+
+      queryClient.invalidateQueries({ queryKey: ["plan-ops", planId] });
     },
   });
 }
@@ -252,4 +256,3 @@ export function useUpdateContestant(planId: number) {
     },
   });
 }
-
