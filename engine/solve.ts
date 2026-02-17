@@ -1994,6 +1994,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   // 1) Recursos en tareas fijas (persistidas) -> task.assignedResourceIds
   for (const task of tasks as any[]) {
+    const status = String(task?.status ?? "pending");
+    const isFixed =
+      status === "in_progress" ||
+      status === "done" ||
+      lockedTaskIds.has(Number(task?.id));
+    if (!isFixed) continue;
+
     const sp = task?.startPlanned ?? null;
     const ep = task?.endPlanned ?? null;
     if (!sp || !ep) continue;

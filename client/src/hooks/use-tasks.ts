@@ -120,10 +120,28 @@ export function useUpdateTaskStatus() {
       ),
 
     onSuccess: (data: any) => {
-      const planId = data?.planId ?? data?.plan_id;
+      const planId = Number(data?.planId ?? data?.plan_id ?? 0);
+      const taskId = Number(data?.id ?? data?.taskId ?? 0);
+
+      if (planId && taskId) {
+        queryClient.setQueryData(
+          [buildUrl(api.plans.get.path, { id: planId })],
+          (old: any) => {
+            if (!old) return old;
+            const nextDailyTasks = Array.isArray(old.dailyTasks)
+              ? old.dailyTasks.map((task: any) =>
+                  Number(task?.id) === taskId ? { ...task, ...data } : task,
+                )
+              : old.dailyTasks;
+            return { ...old, dailyTasks: nextDailyTasks };
+          },
+        );
+      }
+
       if (planId) {
-        queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id: planId })] });
-        queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
+        queryClient.invalidateQueries({
+          queryKey: [buildUrl(api.plans.get.path, { id: planId })],
+        });
         queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/locks`] });
       }
 
@@ -196,17 +214,9 @@ export function useCreateContestant(planId: number) {
     }) => apiRequest("POST", `/api/plans/${planId}/contestants`, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contestants", planId] });
-      queryClient.refetchQueries({ queryKey: ["contestants", planId] });
-
-      // ✅ refresca plan para que aparezca la Daily Task "Comer" sin recargar
       queryClient.invalidateQueries({
         queryKey: [buildUrl(api.plans.get.path, { id: planId })],
       });
-
-      // por si alguna vista usa el endpoint de tasks suelto
-      queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
-      queryClient.refetchQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
-
       queryClient.invalidateQueries({ queryKey: ["plan-ops", planId] });
     },
   });

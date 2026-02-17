@@ -30,7 +30,6 @@ export function usePlan(id: number) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-          queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/tasks`] });
         }
       )
       .subscribe();

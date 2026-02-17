@@ -2794,6 +2794,20 @@ export default function PlanDetailsPage() {
                     Tasks:{" "}
                     {plan.dailyTasks?.filter((t: any) => t.startPlanned).length}
                   </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50/60"
+                    title="Tareas pending sin inicio/fin planificado; no se muestran en el timeline hasta planificarlas"
+                  >
+                    Pendientes sin planificar:{" "}
+                    {
+                      (plan.dailyTasks ?? []).filter(
+                        (t: any) =>
+                          String(t?.status ?? "pending") === "pending" &&
+                          (!t?.startPlanned || !t?.endPlanned),
+                      ).length
+                    }
+                  </Badge>
                 </div>
               </div>
 
