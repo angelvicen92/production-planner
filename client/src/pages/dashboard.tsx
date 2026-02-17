@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePlans, useGeneratePlan } from "@/hooks/use-plans";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
+import { useMeLinks } from "@/hooks/useMeLinks";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 import { pickDefaultPlan } from "@/lib/plan-default";
@@ -36,6 +37,8 @@ export default function DashboardPage() {
 
   const planId = selectedPlan?.id as number | undefined;
   const { data, isLoading, error, refetch } = usePlanOpsData(planId);
+  const { links, staffPerson, resourceItem } = useMeLinks(true);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -116,6 +119,28 @@ export default function DashboardPage() {
     [data.tasks, isTodayPlan, nowMinutes],
   );
 
+  const myScope = useMemo(() => {
+    const set = new Set<string>();
+    if (!links?.staffPersonId) return set;
+    for (const assignment of data.staffAssignments || []) {
+      if (Number(assignment.staffPersonId) !== Number(links.staffPersonId)) continue;
+      if (assignment.scopeType === "zone" && assignment.zoneId) set.add(`zone:${assignment.zoneId}`);
+      if (assignment.scopeType === "space" && assignment.spaceId) set.add(`space:${assignment.spaceId}`);
+    }
+    return set;
+  }, [data.staffAssignments, links?.staffPersonId]);
+
+  const filterMine = (items: any[]) => {
+    if (!onlyMine) return items;
+    if (links?.staffPersonId && myScope.size > 0) {
+      return items.filter((task) => myScope.has(`space:${task?.spaceId}`) || myScope.has(`zone:${task?.zoneId}`));
+    }
+    if (links?.resourceItemId && String(resourceItem?.typeName || "").toLowerCase().includes("cámara")) {
+      return items.filter((task) => Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0) > 0);
+    }
+    return items;
+  };
+
   const next60 = useMemo(
     () =>
       (data.tasks || []).filter((task: any) => {
@@ -127,6 +152,8 @@ export default function DashboardPage() {
   );
 
   const upcomingNoLocation = next60.filter((task: any) => !task?.zoneId && !task?.spaceId);
+  const inProgressView = useMemo(() => filterMine(inProgress), [inProgress, onlyMine, links, myScope, resourceItem]);
+  const next60View = useMemo(() => filterMine(next60), [next60, onlyMine, links, myScope, resourceItem]);
 
   const peak = useMemo(() => {
     const start = hhmmToMinutes(selectedPlan?.workStart) ?? Math.min(...tasksWithTime.map((task: any) => hhmmToMinutes(task.startPlanned) ?? 1440), 540);
@@ -228,7 +255,7 @@ export default function DashboardPage() {
   };
 
   const liveAlerts = [
-    ...inProgress
+    ...inProgressView
       .filter((task: any) => (hhmmToMinutes(task?.endPlanned) ?? 9999) < nowMinutes)
       .map((task: any) => ({
         id: `delay-${task.id}`,
@@ -305,6 +332,12 @@ export default function DashboardPage() {
             <Button variant="outline" onClick={() => refetch()} disabled={!selectedPlan?.id}>
               <RefreshCw className="mr-2 h-4 w-4" /> Refrescar
             </Button>
+            {(staffPerson || resourceItem) ? (
+              <Badge variant="secondary">{staffPerson ? `Operador: ${staffPerson.name}` : `Recurso vinculado: ${resourceItem?.name || "-"}`}</Badge>
+            ) : null}
+            {(links?.staffPersonId || links?.resourceItemId) ? (
+              <Button variant={onlyMine ? "default" : "outline"} onClick={() => setOnlyMine((v) => !v)}>Ir a mis asignaciones</Button>
+            ) : null}
           </div>
           {!plans.length && <div className="mt-3 text-sm">No hay planes. <Link href="/plans" className="text-primary underline">Ir a planes</Link></div>}
         </div>
@@ -327,12 +360,12 @@ export default function DashboardPage() {
               <div className="grid gap-3 md:grid-cols-4">
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Modo</div><div className="font-semibold">{isTodayPlan ? "EN DIRECTO" : "MODO PREPARACIÓN"}</div></div>
                 <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Hora</div><div className="font-semibold">{minutesToHHMM(nowMinutes)}</div></div>
-                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">En curso</div><div className="font-semibold">{inProgress.length}</div></div>
-                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Próximos 60 min</div><div className="font-semibold">{next60.length}</div></div>
+                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">En curso</div><div className="font-semibold">{inProgressView.length}</div></div>
+                <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">Próximos 60 min</div><div className="font-semibold">{next60View.length}</div></div>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                {[{ title: "EN CURSO", items: inProgress }, { title: "PRÓXIMOS 60 MIN", items: next60 }].map((panel) => (
+                {[{ title: "EN CURSO", items: inProgressView }, { title: "PRÓXIMOS 60 MIN", items: next60View }].map((panel) => (
                   <div key={panel.title} className="rounded-lg border bg-card p-4">
                     <h3 className="mb-3 font-semibold">{panel.title}</h3>
                     <div className="space-y-2">

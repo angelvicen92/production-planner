@@ -75,9 +75,14 @@ import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
 import { GeneralOptimizerSettings } from "@/components/general-optimizer-settings";
 import { useTranslation } from "react-i18next";
+import { UsersAdminSettings } from "@/components/settings/users-admin";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
+  const { role } = useUserRole(true);
+  const { user } = useAuth();
+  const isAdmin = role === "admin";
 
   return (
     <Layout>
@@ -114,6 +119,12 @@ export default function SettingsPage() {
               <Users className="h-4 w-4" />
               {t("settings.tabs.staff")}
             </TabsTrigger>
+            {isAdmin ? (
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Usuarios
+              </TabsTrigger>
+            ) : null}
           </TabsList>
           <TabsContent value="general" className="space-y-4">
             <GeneralProgramSettings />
@@ -135,6 +146,11 @@ export default function SettingsPage() {
             <ItinerantTeamsSettings />
             <StaffDefaultsSettings />
           </TabsContent>
+          {isAdmin ? (
+            <TabsContent value="users" className="space-y-4">
+              <UsersAdminSettings currentUserId={user?.id} />
+            </TabsContent>
+          ) : null}
         </Tabs>
       </div>
     </Layout>
