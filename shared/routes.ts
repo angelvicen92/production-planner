@@ -767,6 +767,11 @@ export const api = {
           contestantMealDurationMinutes: z.number(),
           contestantMealMaxSimultaneous: z.number(),
           mealTaskTemplateName: z.string(),
+          clockMode: z.enum(["auto", "manual"]),
+          simulatedTime: z
+            .string()
+            .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
+            .nullable(),
         }),
       },
     },
@@ -796,6 +801,12 @@ export const api = {
             .max(50)
             .optional(),
           mealTaskTemplateName: z.string().min(1).max(80).optional(),
+          clockMode: z.enum(["auto", "manual"]).optional(),
+          simulatedTime: z
+            .string()
+            .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
+            .nullable()
+            .optional(),
         })
         .strict(),
       responses: {
@@ -1342,14 +1353,6 @@ export const api = {
             "interrupted",
             "cancelled",
           ]),
-          startReal: z
-            .string()
-            .regex(/^\d{2}:\d{2}$/)
-            .optional(),
-          endReal: z
-            .string()
-            .regex(/^\d{2}:\d{2}$/)
-            .optional(),
         })
         .strict(),
       responses: {

@@ -33,6 +33,8 @@ export const programSettings = pgTable("program_settings", {
   mealEnd: text("meal_end").notNull(),
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
+  clockMode: text("clock_mode").notNull().default("auto"),
+  simulatedTime: text("simulated_time"),
 });
 
 // 1.2 optimizer_settings (defaults globales del optimizador)

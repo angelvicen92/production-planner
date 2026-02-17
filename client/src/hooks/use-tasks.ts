@@ -109,23 +109,15 @@ export function useUpdateTaskStatus() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ taskId, status, startReal, endReal }: {
+    mutationFn: ({ taskId, status }: {
       taskId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
-      startReal?: string | null;
-      endReal?: string | null;
-    }) => {
-      const body: any = { status };
-
-      if (typeof startReal === "string") body.startReal = startReal;
-      if (typeof endReal === "string") body.endReal = endReal;
-
-      return apiRequest(
+    }) =>
+      apiRequest(
         "PATCH",
         buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        body
-      );
-    },
+        { status }
+      ),
 
     onSuccess: (data: any) => {
       const planId = data?.planId ?? data?.plan_id;

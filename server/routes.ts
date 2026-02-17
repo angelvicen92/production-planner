@@ -1504,6 +1504,11 @@ function mapDeleteError(err: any, fallback: string) {
         contestantMealDurationMinutes: Number(data.contestant_meal_duration_minutes),
         contestantMealMaxSimultaneous: Number(data.contestant_meal_max_simultaneous),
         mealTaskTemplateName: String(data.meal_task_template_name ?? "Comer"),
+        clockMode: data.clock_mode === "manual" ? "manual" : "auto",
+        simulatedTime:
+          typeof data.simulated_time === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(data.simulated_time)
+            ? data.simulated_time
+            : null,
       });
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch program settings" });
@@ -1524,6 +1529,9 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.mealTaskTemplateName !== undefined)
         patch.meal_task_template_name = String(input.mealTaskTemplateName).trim();
+
+      if (input.clockMode !== undefined) patch.clock_mode = input.clockMode;
+      if (input.simulatedTime !== undefined) patch.simulated_time = input.simulatedTime;
 
       const { error } = await supabaseAdmin
         .from("program_settings")

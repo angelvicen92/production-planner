@@ -5,7 +5,9 @@ import { api } from "@shared/routes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Clock3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type ProgramSettings = {
@@ -15,6 +17,8 @@ type ProgramSettings = {
   contestantMealDurationMinutes: number;
   contestantMealMaxSimultaneous: number;
   mealTaskTemplateName: string;
+  clockMode: "auto" | "manual";
+  simulatedTime: string | null;
 };
 
 export function GeneralProgramSettings() {
@@ -84,6 +88,13 @@ export function GeneralProgramSettings() {
           .toLowerCase() === mealName.toLowerCase(),
     );
 
+  const setSimulatedNow = () => {
+    const hh = String(new Date().getHours()).padStart(2, "0");
+    const mm = String(new Date().getMinutes()).padStart(2, "0");
+    const now = `${hh}:${mm}`;
+
+    setDraft((p) => (p ? { ...p, simulatedTime: now } : p));
+  };
 
   return (
     <Card>
@@ -153,6 +164,48 @@ export function GeneralProgramSettings() {
               }
             />
           </div>
+          <div className="col-span-2 space-y-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label className="text-sm font-medium">Hora automática</Label>
+                <p className="text-xs text-muted-foreground">Usa hora real Europe/Madrid para ejecución y atrasos.</p>
+              </div>
+              <Switch
+                checked={(draft?.clockMode ?? "auto") === "auto"}
+                onCheckedChange={(checked) =>
+                  setDraft((p) =>
+                    p
+                      ? {
+                          ...p,
+                          clockMode: checked ? "auto" : "manual",
+                          simulatedTime: checked ? p.simulatedTime : (p.simulatedTime ?? "09:00"),
+                        }
+                      : p,
+                  )
+                }
+              />
+            </div>
+
+            {(draft?.clockMode ?? "auto") === "manual" ? (
+              <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <div>
+                  <Label>Hora simulada (manual)</Label>
+                  <Input
+                    type="time"
+                    value={draft?.simulatedTime ?? "09:00"}
+                    onChange={(e) =>
+                      setDraft((p) => (p ? { ...p, simulatedTime: e.target.value || null } : p))
+                    }
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={setSimulatedNow} className="gap-2">
+                  <Clock3 className="h-4 w-4" />
+                  Poner ahora
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
           <div className="col-span-2">
             <Label>Nombre de la tarea que representa “comida” (default)</Label>
             <Input
@@ -195,6 +248,8 @@ export function GeneralProgramSettings() {
                 contestantMealMaxSimultaneous:
                   draft.contestantMealMaxSimultaneous,
                 mealTaskTemplateName: draft.mealTaskTemplateName,
+                clockMode: draft.clockMode,
+                simulatedTime: draft.clockMode === "manual" ? (draft.simulatedTime ?? "09:00") : null,
               });
             }}
           >

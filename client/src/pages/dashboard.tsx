@@ -63,8 +63,8 @@ export default function DashboardPage() {
   };
 
   const updateStatus = useMutation({
-    mutationFn: async ({ taskId, status, startReal, endReal }: any) =>
-      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, startReal, endReal }),
+    mutationFn: async ({ taskId, status }: any) =>
+      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status }),
     onSettled: async () => invalidateOpsData(planId),
     onError: () => {
       toast({ title: "No se pudo actualizar", description: "La tarea no cambió de estado.", variant: "destructive" });
@@ -86,13 +86,12 @@ export default function DashboardPage() {
   });
 
   const runQuickAction = (taskId: number, action: "start" | "interrupt" | "done") => {
-    const nowHHMM = minutesToHHMM(new Date().getHours() * 60 + new Date().getMinutes());
     if (action === "interrupt" && !window.confirm("¿Interrumpir esta tarea?")) return;
 
     const payloadByAction = {
-      start: { status: "in_progress", startReal: nowHHMM },
+      start: { status: "in_progress" },
       interrupt: { status: "interrupted" },
-      done: { status: "done", endReal: nowHHMM },
+      done: { status: "done" },
     } as const;
 
     updateStatus.mutate({ taskId, ...payloadByAction[action] });

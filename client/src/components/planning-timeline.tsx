@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 interface Task {
   id: number;
@@ -228,6 +229,7 @@ function TaskStatusMenuTrigger({
     taskStatusPending = false,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks } = plan;
+  const { nowTime } = useProductionClock();
 
   // =========================
   // 🎨 Helpers for UI colors
@@ -301,6 +303,24 @@ function TaskStatusMenuTrigger({
     [workEnd],
   );
   const duration = endMin - startMin;
+  const nowMin = useMemo(() => (nowTime ? timeToMinutes(nowTime) : null), [nowTime]);
+  const clampedNowMin = useMemo(() => {
+    if (nowMin === null) return null;
+    if (nowMin < startMin || nowMin > endMin) return null;
+    return nowMin;
+  }, [nowMin, startMin, endMin]);
+
+  const isOverdueTask = (task: Task) => {
+    if (clampedNowMin === null || !task?.startPlanned) return false;
+    const start = timeToMinutes(task.startPlanned);
+    return task.status === "pending" && start <= clampedNowMin;
+  };
+
+  const isRunningLateTask = (task: Task) => {
+    if (clampedNowMin === null || !task?.endPlanned) return false;
+    const end = timeToMinutes(task.endPlanned);
+    return task.status === "in_progress" && end <= clampedNowMin;
+  };
 
   const mealStartMin = useMemo(
     () => (mealStart ? timeToMinutes(mealStart) : null),
@@ -1269,6 +1289,13 @@ function TaskStatusMenuTrigger({
                                       className="relative border rounded-lg bg-muted/5 overflow-hidden"
                                       style={{ height: totalHeightPx }}
                                     >
+                                      {clampedNowMin !== null ? (
+                                        <div
+                                          className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
+                                          style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
+                                        />
+                                      ) : null}
+
                                       {unlocatedCol.tasks.map((task) => {
                                         const tStart = task.startPlanned
                                           ? timeToMinutes(task.startPlanned)
@@ -1300,6 +1327,8 @@ function TaskStatusMenuTrigger({
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
+                                              isOverdueTask(task) ? "ring-2 ring-red-500/80" : "",
+                                              isRunningLateTask(task) ? "border-red-500" : "",
                                             )}
                                             style={{
                                               top,
@@ -1469,6 +1498,8 @@ function TaskStatusMenuTrigger({
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
+                                              isOverdueTask(task) ? "ring-2 ring-red-500/80" : "",
+                                              isRunningLateTask(task) ? "border-red-500" : "",
                                               task.status === "done"
                                                 ? "opacity-80"
                                                 : "",
@@ -1855,6 +1886,13 @@ function TaskStatusMenuTrigger({
                       />
                     )}
 
+                    {clampedNowMin !== null ? (
+                      <div
+                        className="absolute top-0 bottom-0 border-l-2 border-red-500 z-20 pointer-events-none"
+                        style={{ left: `${((clampedNowMin - startMin) / duration) * 100}%` }}
+                      />
+                    ) : null}
+
                     {/* Tasks */}
                     {lane.tasks.map((task) => {
                       if (!task.startPlanned || !task.endPlanned) return null;
@@ -1879,6 +1917,8 @@ function TaskStatusMenuTrigger({
                                 ? "ring-2 ring-green-500"
                                 : "",
                               task.status === "done" ? "opacity-80" : "",
+                              isOverdueTask(task) ? "ring-2 ring-red-500/80" : "",
+                              isRunningLateTask(task) ? "border-red-500" : "",
                             )}
                             style={{
                               left: `${((tStart - startMin) / duration) * 100}%`,
@@ -1973,6 +2013,12 @@ function TaskStatusMenuTrigger({
                                 >
                                   {task.status}
                                 </Badge>
+                                {isOverdueTask(task) ? (
+                                  <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
+                                ) : null}
+                                {isRunningLateTask(task) ? (
+                                  <Badge variant="destructive" className="text-[10px]">Running late</Badge>
+                                ) : null}
                                 {task.camerasOverride && (
                                   <Badge
                                     variant="secondary"
