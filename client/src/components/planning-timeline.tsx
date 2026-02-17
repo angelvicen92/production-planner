@@ -18,6 +18,7 @@ import {
 import { timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { useProductionClock } from "@/hooks/use-production-clock";
+import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 
 interface Task {
   id: number;
@@ -30,6 +31,7 @@ interface Task {
   endReal?: string | null;
   template?: {
     name: string;
+    abbrev?: string | null;
     uiColor?: string | null;
     uiColorSecondary?: string | null;
   };
@@ -41,6 +43,10 @@ interface Task {
   locationLabel?: string | null;
   assignedResources?: number[] | null;
   assigned_resource_ids?: number[] | null;
+  comment1Text?: string | null;
+  comment1Color?: string | null;
+  comment2Text?: string | null;
+  comment2Color?: string | null;
 }
 
 interface Contestant {
@@ -77,6 +83,7 @@ interface PlanningTimelineProps {
   spaces?: {
     id: number;
     name: string;
+    abbrev?: string | null;
     zoneId: number | null;
     parentSpaceId?: number | null;
   }[];
@@ -230,6 +237,8 @@ function TaskStatusMenuTrigger({
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks } = plan;
   const { nowTime } = useProductionClock();
+  const density = usePlanningDensity();
+  const isCompact = density === "compact";
 
   // =========================
   // 🎨 Helpers for UI colors
@@ -293,6 +302,20 @@ function TaskStatusMenuTrigger({
 
     return "—";
   };
+
+  const compactSpaceLabel = (task: Task) => {
+    const sp = task.spaceId ? (spaces ?? []).find((s) => Number((s as any).id) === Number(task.spaceId)) : null;
+    const raw = String((sp as any)?.abbrev ?? (sp as any)?.name ?? "").trim();
+    if (!raw) return "";
+    if (raw.length <= 10) return raw;
+    return `${raw.slice(0, 9)}.`;
+  };
+
+  const compactTaskLabel = (task: Task) => {
+    const short = String(task.template?.abbrev ?? "").trim();
+    return short || task.template?.name || "Tarea";
+  };
+
 
   const startMin = useMemo(
     () => (workStart ? timeToMinutes(workStart) : 480),
@@ -1214,6 +1237,13 @@ function TaskStatusMenuTrigger({
                                               />
                                             )}
 
+                                          {clampedNowMin !== null ? (
+                                            <div
+                                              className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
+                                              style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
+                                            />
+                                          ) : null}
+
                                           {sp.tasks.map((task) => {
                                             const tStart = task.startPlanned
                                               ? timeToMinutes(task.startPlanned)
@@ -1261,11 +1291,13 @@ function TaskStatusMenuTrigger({
                                                 }}
                                               >
                                                 <div className="text-[12px] font-bold truncate">
-                                                  {task.template?.name || "Tarea"}
+                                                  {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
-                                                  {task.startPlanned}-{task.endPlanned}
+                                                  {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                                 </div>
+                                              {task.comment1Text ? (<div className="text-[10px] truncate" style={{ color: task.comment1Color || undefined }}>{task.comment1Text}</div>) : null}
+                                                {task.comment2Text ? (<div className="text-[10px] truncate" style={{ color: task.comment2Color || undefined }}>{task.comment2Text}</div>) : null}
                                               </TaskStatusMenuTrigger>
                                             );
                                           })}
@@ -1342,7 +1374,7 @@ function TaskStatusMenuTrigger({
                                             }}
                                           >
                                             <div className="text-[12px] font-bold truncate">
-                                              {task.template?.name || "Tarea"}
+                                              {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                             </div>
                                             <div className="text-[10px] opacity-70">
                                               {task.startPlanned}-
@@ -1572,10 +1604,10 @@ function TaskStatusMenuTrigger({
                                       }}
                                     >
                                       <div className="text-sm font-bold truncate">
-                                        {task.template?.name || "Tarea"}
+                                        {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                       </div>
                                       <div className="text-xs opacity-70">
-                                        {task.startPlanned}-{task.endPlanned}
+                                        {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                       </div>
                                     </TaskStatusMenuTrigger>
                                   ))}
@@ -1669,7 +1701,8 @@ function TaskStatusMenuTrigger({
       <TooltipProvider>
         <div className="border rounded-xl bg-card shadow-sm">
           <ScrollArea className="h-[600px] w-full">
-            <div className="p-4 space-y-4" data-planning-zoom-target>
+            <div className="p-4" data-planning-zoom-target>
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedResourceKeys.length)}, minmax(280px, 1fr))` }}>
               {selectedResourceKeys.map((resourceKey) => {
                 const option = resourceSelectableById.get(resourceKey);
                 const resourceName = option?.label ?? resourceKey;
@@ -1718,7 +1751,7 @@ function TaskStatusMenuTrigger({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="text-sm font-bold truncate">
-                                  {task.template?.name || "Tarea"}
+                                  {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                 </div>
                                 <div className="text-xs opacity-70">
                                   {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
@@ -1738,6 +1771,7 @@ function TaskStatusMenuTrigger({
                   </Card>
                 );
               })}
+              </div>
             </div>
           </ScrollArea>
         </div>
@@ -1933,16 +1967,16 @@ function TaskStatusMenuTrigger({
                             }}
                           >
                             <span className="text-xs font-bold truncate">
-                              {task.template?.name || "Tarea"}
+                              {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                             </span>
                             <span className="text-[10px] opacity-70">
-                              {task.startPlanned}-{task.endPlanned}
+                              {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                             </span>
                           </TaskStatusMenuTrigger>
                           <TooltipContent>
                             <div className="space-y-1 p-1">
                               <p className="font-bold">
-                                {task.template?.name || "Tarea"}
+                                {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Ubicación: {getTaskLocationLabel(task)}

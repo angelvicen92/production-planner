@@ -78,6 +78,7 @@ export const zones = pgTable("zones", {
 export const spaces = pgTable("spaces", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  abbrev: text("abbrev"),
   zoneId: integer("zone_id").notNull().references(() => zones.id),
   priorityLevel: integer("priority_level").notNull().default(1),
   parentSpaceId: integer("parent_space_id").references(() => spaces.id),
@@ -126,6 +127,9 @@ export const taskTemplates = pgTable("task_templates", {
   requiresCoach: boolean("requires_coach").notNull().default(false),
   requiresPresenter: boolean("requires_presenter").notNull().default(false),
   defaultCameras: integer("default_cameras").notNull().default(0),
+  abbrev: text("abbrev"),
+  defaultComment1Color: text("default_comment1_color"),
+  defaultComment2Color: text("default_comment2_color"),
   exclusiveAuxiliar: boolean("exclusive_auxiliar").notNull().default(false),
   setupId: integer("setup_id"), // Self reference possible, but simplified for now
   rulesJson: jsonb("rules_json").$type<any>(), // Flexible for engine rules
@@ -203,13 +207,17 @@ export const dailyTasks = pgTable("daily_tasks", {
   // Real times (Execution)
   startReal: text("start_real"),
   endReal: text("end_real"),
+  comment1Text: text("comment1_text"),
+  comment1Color: text("comment1_color"),
+  comment2Text: text("comment2_text"),
+  comment2Color: text("comment2_color"),
 });
 
 // 8. locks
 export const locks = pgTable("locks", {
   id: serial("id").primaryKey(),
   planId: integer("plan_id").notNull().references(() => plans.id),
-  task_id: integer("task_id").notNull().references(() => dailyTasks.id),
+  taskId: integer("task_id").notNull().references(() => dailyTasks.id),
   lockType: lockTypeEnum("lock_type").notNull(),
   
   lockedStart: text("locked_start"),

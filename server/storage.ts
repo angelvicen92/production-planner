@@ -986,6 +986,7 @@ export class SupabaseStorage implements IStorage {
       zoneId: s.zone_id,
       priorityLevel: s.priority_level,
       parentSpaceId: s.parent_space_id ?? null,
+      abbrev: s.abbrev ?? null,
     }));
   }
 
@@ -1029,6 +1030,7 @@ export class SupabaseStorage implements IStorage {
       zone_id: input.zoneId,
       priority_level: input.priorityLevel ?? 1,
       parent_space_id: input.parentSpaceId ?? null,
+      abbrev: input.abbrev ?? null,
     };
 
     const { data, error } = await supabaseAdmin
@@ -1044,6 +1046,7 @@ export class SupabaseStorage implements IStorage {
       zoneId: data.zone_id,
       priorityLevel: data.priority_level,
       parentSpaceId: data.parent_space_id ?? null,
+      abbrev: data.abbrev ?? null,
     };
   }
 
@@ -1055,6 +1058,7 @@ export class SupabaseStorage implements IStorage {
       upd.priority_level = patch.priorityLevel;
     if (patch.parentSpaceId === null || typeof patch.parentSpaceId === "number")
       upd.parent_space_id = patch.parentSpaceId;
+    if (patch.abbrev === null || typeof patch.abbrev === "string") upd.abbrev = patch.abbrev;
 
     const { data, error } = await supabaseAdmin
       .from("spaces")
@@ -1070,6 +1074,7 @@ export class SupabaseStorage implements IStorage {
       zoneId: data.zone_id,
       priorityLevel: data.priority_level,
       parentSpaceId: data.parent_space_id ?? null,
+      abbrev: data.abbrev ?? null,
     };
   }
 
@@ -1102,6 +1107,10 @@ export class SupabaseStorage implements IStorage {
       createdAt: t.created_at ?? null,
       // ✅ recursos asignados por el planificador (motor) (plan_resource_items.id[])
       assignedResources: t.assigned_resource_ids ?? null,
+      comment1Text: t.comment1_text ?? null,
+      comment1Color: t.comment1_color ?? null,
+      comment2Text: t.comment2_text ?? null,
+      comment2Color: t.comment2_color ?? null,
 
       template: t.template
         ? {
@@ -1109,6 +1118,9 @@ export class SupabaseStorage implements IStorage {
             name: t.template.name,
             defaultDuration: t.template.default_duration,
             defaultCameras: t.template.default_cameras,
+            abbrev: t.template.abbrev ?? null,
+            defaultComment1Color: t.template.default_comment1_color ?? null,
+            defaultComment2Color: t.template.default_comment2_color ?? null,
             createdAt: t.template.created_at ?? null,
 
             // ✅ nuevo
@@ -1139,15 +1151,14 @@ export class SupabaseStorage implements IStorage {
     let finalSpaceId: number | null | undefined =
       (task as any).spaceId ?? (task as any).space_id ?? undefined;
 
+    const { data: tpl, error: tplErr } = await supabaseAdmin
+      .from("task_templates")
+      .select("zone_id, space_id, default_comment1_color, default_comment2_color")
+      .eq("id", task.templateId)
+      .single();
+    if (tplErr) throw tplErr;
+
     if (finalZoneId === undefined && finalSpaceId === undefined) {
-      const { data: tpl, error: tplErr } = await supabaseAdmin
-        .from("task_templates")
-        .select("zone_id, space_id")
-        .eq("id", task.templateId)
-        .single();
-
-      if (tplErr) throw tplErr;
-
       finalZoneId = (tpl as any)?.zone_id ?? null;
       finalSpaceId = (tpl as any)?.space_id ?? null;
     }
@@ -1184,6 +1195,10 @@ export class SupabaseStorage implements IStorage {
 
         // Si es creación normal, no ponemos etiqueta (solo se usa cuando se borra ubicación)
         location_label: null,
+        comment1_text: (task as any).comment1Text ?? null,
+        comment1_color: (task as any).comment1Color ?? ((tpl as any)?.default_comment1_color ?? null),
+        comment2_text: (task as any).comment2Text ?? null,
+        comment2_color: (task as any).comment2Color ?? ((tpl as any)?.default_comment2_color ?? null),
       })
       .select()
       .single();
@@ -1351,9 +1366,10 @@ export class SupabaseStorage implements IStorage {
 
     // 4. Create Execution Lock if in_progress or done
     if (["in_progress", "done"].includes(updates.status)) {
+      if (!task?.id) throw new Error("Cannot create execution lock: taskId missing");
       await this.createLock({
         planId: task.plan_id,
-        task_id: task.id,
+        taskId: task.id,
         lockType: "full",
         lockedStart: nextStartReal || task.start_planned,
         lockedEnd: nextEndReal || task.end_planned,
@@ -1459,9 +1475,6 @@ export class SupabaseStorage implements IStorage {
           ? null
           : Number(t.itinerant_team_id ?? t.itinerantTeamId),
 
-      // ✅ requisitos de recursos (JSONB)
-      resourceRequirements:
-        t.resource_requirements ?? t.resourceRequirements ?? null,
 
       hasDependency: t.has_dependency ?? t.hasDependency ?? false,
       dependsOnTemplateId:
@@ -1506,6 +1519,9 @@ export class SupabaseStorage implements IStorage {
         ? template.resourceRequirements
         : null,
       default_cameras: template.defaultCameras ?? 0,
+      abbrev: template.abbrev ?? null,
+      default_comment1_color: template.defaultComment1Color ?? null,
+      default_comment2_color: template.defaultComment2Color ?? null,
       requires_auxiliar: template.requiresAuxiliar ?? false,
       requires_coach: template.requiresCoach ?? false,
       requires_presenter: template.requiresPresenter ?? false,
@@ -1560,6 +1576,9 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      abbrev: (data as any).abbrev ?? null,
+      defaultComment1Color: (data as any).default_comment1_color ?? null,
+      defaultComment2Color: (data as any).default_comment2_color ?? null,
       zoneId: data.zone_id ?? null,
       spaceId: data.space_id ?? null,
       requiresAuxiliar: data.requires_auxiliar ?? false,
@@ -1623,6 +1642,9 @@ export class SupabaseStorage implements IStorage {
       safe.default_duration = patch.defaultDuration;
     if (typeof patch.defaultCameras === "number")
       safe.default_cameras = patch.defaultCameras;
+    if (patch.abbrev === null || typeof patch.abbrev === "string") safe.abbrev = patch.abbrev;
+    if (patch.defaultComment1Color === null || typeof patch.defaultComment1Color === "string") safe.default_comment1_color = patch.defaultComment1Color;
+    if (patch.defaultComment2Color === null || typeof patch.defaultComment2Color === "string") safe.default_comment2_color = patch.defaultComment2Color;
     if (patch.uiColor === null || typeof patch.uiColor === "string") {
       safe.ui_color = patch.uiColor;
     }
@@ -1736,6 +1758,9 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      abbrev: (data as any).abbrev ?? null,
+      defaultComment1Color: (data as any).default_comment1_color ?? null,
+      defaultComment2Color: (data as any).default_comment2_color ?? null,
       requiresAuxiliar: data.requires_auxiliar ?? false,
       requiresCoach: data.requires_coach ?? false,
       requiresPresenter: data.requires_presenter ?? false,
@@ -1799,11 +1824,14 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createLock(lock: InsertLock): Promise<Lock> {
+    if (!Number.isFinite(Number((lock as any).taskId)) || Number((lock as any).taskId) <= 0) {
+      throw new Error("Cannot create lock without a valid taskId");
+    }
     const { data, error } = await supabaseAdmin
       .from("locks")
       .insert({
         plan_id: lock.planId,
-        task_id: lock.taskId,
+        task_id: Number(lock.taskId),
         lock_type: lock.lockType,
         locked_start: lock.lockedStart,
         locked_end: lock.lockedEnd,

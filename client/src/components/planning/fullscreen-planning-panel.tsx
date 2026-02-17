@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Minus, Plus, Minimize2, Maximize2 } from "lucide-react";
@@ -24,6 +24,12 @@ const getStoredDensity = (): DensityMode => {
   const raw = localStorage.getItem("planning-density");
   return raw === "compact" ? "compact" : "normal";
 };
+
+export const PlanningDensityContext = createContext<DensityMode>("normal");
+
+export function usePlanningDensity(): DensityMode {
+  return useContext(PlanningDensityContext);
+}
 
 const getStoredZoom = () => {
   if (typeof window === "undefined") return 100;
@@ -91,6 +97,7 @@ export function FullscreenPlanningPanel({
 
   return (
     <TooltipProvider>
+      <PlanningDensityContext.Provider value={density}>
       <div
       className={cn(
         "planning-panel flex min-h-0 flex-col",
@@ -151,6 +158,7 @@ export function FullscreenPlanningPanel({
 
       <div className="planning-panel-content min-h-0 flex-1 overflow-auto">{children}</div>
       </div>
+      </PlanningDensityContext.Provider>
     </TooltipProvider>
   );
 }
