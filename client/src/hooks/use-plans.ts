@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { Plan, InsertPlan, DailyTask } from "@shared/schema";
 import { api, buildUrl } from "@shared/routes";
+import { planQueryKey } from "@/lib/plan-query-keys";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -29,7 +30,7 @@ export function usePlan(id: number) {
           filter: `plan_id=eq.${id}`
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+          queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
         }
       )
       .subscribe();
@@ -40,7 +41,7 @@ export function usePlan(id: number) {
   }, [id, queryClient]);
 
   return useQuery<Plan & { dailyTasks?: DailyTask[] }>({
-    queryKey: [buildUrl(api.plans.get.path, { id })],
+    queryKey: planQueryKey(id),
     queryFn: () => apiRequest("GET", buildUrl(api.plans.get.path, { id })),
     enabled: !!id,
   });
@@ -79,7 +80,7 @@ export function useGeneratePlan() {
     mutationFn: (id: number) => 
       apiRequest("POST", buildUrl(api.plans.generate.path, { id })),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+      queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
     },
   });
 }
@@ -90,9 +91,26 @@ export function useUpdatePlan() {
   return useMutation({
     mutationFn: ({ id, patch }: { id: number; patch: any }) =>
       apiRequest("PATCH", buildUrl(api.plans.update.path, { id }), patch),
-    onSuccess: (_data, vars) => {
+    onMutate: async ({ id, patch }) => {
+      const key = planQueryKey(id);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previousPlan = queryClient.getQueryData(key);
+
+      queryClient.setQueryData(key, (old: any) => {
+        if (!old) return old;
+        return { ...old, ...patch };
+      });
+
+      return { previousPlan, id };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previousPlan) {
+        queryClient.setQueryData(planQueryKey(ctx.id), ctx.previousPlan);
+      }
+    },
+    onSettled: (_data, _error, vars) => {
       queryClient.invalidateQueries({ queryKey: [api.plans.list.path] });
-      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id: vars.id })] });
+      queryClient.invalidateQueries({ queryKey: planQueryKey(vars.id) });
     },
   });
 }

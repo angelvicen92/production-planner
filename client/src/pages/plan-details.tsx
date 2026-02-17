@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { useGeneratePlan, useUpdatePlan } from "@/hooks/use-plans";
+import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -603,60 +603,14 @@ export default function PlanDetailsPage() {
   const id = parseInt(params.id || "0");
   const [, setLocation] = useLocation();
 
-  const [plan, setPlan] = useState<any | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
-  const [planError, setPlanError] = useState<string | null>(null);
+  // Single source of truth for Planning UI: every task/day refresh comes from this plan bundle query.
+  const {
+    data: plan,
+    isLoading: planLoading,
+    error: planQueryError,
+  } = usePlan(id);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPlanDetails() {
-      try {
-        setPlanLoading(true);
-        setPlanError(null);
-
-        const response = await apiRequest<any>(
-          "GET",
-          buildUrl(api.plans.get.path, { id }),
-        );
-
-        if (!cancelled) {
-          setPlan(response ?? null);
-        }
-      } catch (error: any) {
-        if (cancelled) return;
-
-        const isPermissionDenied =
-          error?.type === "permission_denied" ||
-          error?.status === 401 ||
-          error?.status === 403;
-
-        setPlan(null);
-        setPlanError(
-          isPermissionDenied
-            ? "No tienes permisos para ver este plan."
-            : (error?.message ?? "No se pudo cargar el plan."),
-        );
-      } finally {
-        if (!cancelled) {
-          setPlanLoading(false);
-        }
-      }
-    }
-
-    if (!Number.isFinite(id) || id <= 0) {
-      setPlan(null);
-      setPlanError("ID de plan inválido.");
-      setPlanLoading(false);
-      return;
-    }
-
-    loadPlanDetails();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
 
   const generatePlan = useGeneratePlan();
 
@@ -936,6 +890,7 @@ export default function PlanDetailsPage() {
   ) => {
     const payload: any = {
       taskId: Number(task?.id),
+      planId: id,
       status,
     };
 
@@ -961,9 +916,6 @@ export default function PlanDetailsPage() {
           setNewInstrument(false);
           setNewSong("");
           setNewCoachPriId("none");
-          void apiRequest<any>("GET", buildUrl(api.plans.get.path, { id }))
-            .then((response) => setPlan(response ?? null))
-            .catch(() => undefined);
         },
       },
     );
@@ -986,6 +938,19 @@ export default function PlanDetailsPage() {
     open: false,
     reasons: [],
   });
+
+  useEffect(() => {
+    if (!editOpen || !plan) return;
+    setEdit({
+      workStart: plan.workStart || "",
+      workEnd: plan.workEnd || "",
+      mealStart: plan.mealStart || "",
+      mealEnd: plan.mealEnd || "",
+      contestantMealDurationMinutes: plan.contestantMealDurationMinutes ?? 75,
+      contestantMealMaxSimultaneous: plan.contestantMealMaxSimultaneous ?? 10,
+      camerasAvailable: plan.camerasAvailable ?? 0,
+    });
+  }, [editOpen, plan]);
 
   // Infeasible (no se puede planificar)
   const [errorDialog, setErrorDialog] = useState<{
@@ -1039,7 +1004,7 @@ export default function PlanDetailsPage() {
   function isMissingSpace(t: any) {
     const zoneId = t?.zoneId ?? t?.zone_id ?? null;
 
-    const mealName = String(plan?.mealTaskTemplateName ?? "Comer")
+    const mealName = String((plan as any)?.mealTaskTemplateName ?? "Comer")
       .trim()
       .toLowerCase();
 
@@ -2362,6 +2327,7 @@ export default function PlanDetailsPage() {
                                   onValueChange={(next) => {
                                     updateTaskStatus.mutate({
                                       taskId: task.id,
+                                      planId: id,
                                       status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
                                     });
                                   }}
@@ -3122,6 +3088,7 @@ export default function PlanDetailsPage() {
                                     onClick={() =>
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
+                                        planId: id,
                                         status: "in_progress",
                                       } as any)
                                     }
@@ -3138,6 +3105,7 @@ export default function PlanDetailsPage() {
                                     onClick={() =>
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
+                                        planId: id,
                                         status: "done",
                                       } as any)
                                     }
@@ -3155,6 +3123,7 @@ export default function PlanDetailsPage() {
                                     onClick={() =>
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
+                                        planId: id,
                                         status: "interrupted",
                                       } as any)
                                     }
@@ -3509,6 +3478,7 @@ type PlanResourceItemRow = {
 };
 
 function PlanResourcesTab({ planId }: { planId: number }) {
+  const { toast } = useToast();
   const [rows, setRows] = useState<PlanResourceItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

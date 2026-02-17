@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/api";
 import { DailyTask, Lock, TaskTemplate, InsertDailyTask, InsertTaskTemplate } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { api, buildUrl } from "@shared/routes";
+import { contestantsQueryKey, planLocksQueryKey, planQueryKey, planTasksQueryKey } from "@/lib/plan-query-keys";
 
 export function useTaskTemplates() {
   return useQuery<TaskTemplate[]>({
@@ -80,7 +81,7 @@ export function useCreateTaskTemplate() {
 
 export function useTasks(planId: number) {
   return useQuery<DailyTask[]>({
-    queryKey: [`/api/plans/${planId}/tasks`],
+    queryKey: planTasksQueryKey(planId),
     enabled: !!planId,
     queryFn: () => apiRequest("GET", `/api/plans/${planId}/tasks`)
   });
@@ -91,11 +92,34 @@ export function useCreateDailyTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (data: InsertDailyTask) => 
+    mutationFn: (data: InsertDailyTask) =>
       apiRequest<DailyTask>("POST", api.dailyTasks.create.path, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id: variables.planId })] });
-      queryClient.invalidateQueries({ queryKey: [`/api/plans/${variables.planId}/tasks`] });
+    onMutate: async (variables) => {
+      const key = planQueryKey(variables.planId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previousPlan = queryClient.getQueryData(key);
+
+      const optimisticId = -Date.now();
+      queryClient.setQueryData(key, (old: any) => {
+        if (!old) return old;
+        const nextTask = {
+          ...variables,
+          id: optimisticId,
+          status: "pending",
+        };
+        const tasks = Array.isArray(old.dailyTasks) ? old.dailyTasks : [];
+        return { ...old, dailyTasks: [...tasks, nextTask] };
+      });
+
+      return { previousPlan, planId: variables.planId, optimisticId };
+    },
+    onError: (_err, _variables, ctx) => {
+      if (ctx?.previousPlan) {
+        queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      queryClient.invalidateQueries({ queryKey: planQueryKey(variables.planId) });
       toast({
         title: "Task Added",
         description: "Task has been added to the plan.",
@@ -111,50 +135,49 @@ export function useUpdateTaskStatus() {
   return useMutation({
     mutationFn: ({ taskId, status }: {
       taskId: number;
+      planId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
     }) =>
       apiRequest(
         "PATCH",
         buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        { status }
+        { status },
       ),
+    onMutate: async ({ planId, taskId, status }) => {
+      const key = planQueryKey(planId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previousPlan = queryClient.getQueryData(key);
 
-    onSuccess: (data: any) => {
-      const planId = Number(data?.planId ?? data?.plan_id ?? 0);
-      const taskId = Number(data?.id ?? data?.taskId ?? 0);
-
-      if (planId && taskId) {
-        queryClient.setQueryData(
-          [buildUrl(api.plans.get.path, { id: planId })],
-          (old: any) => {
-            if (!old) return old;
-            const nextDailyTasks = Array.isArray(old.dailyTasks)
-              ? old.dailyTasks.map((task: any) =>
-                  Number(task?.id) === taskId ? { ...task, ...data } : task,
-                )
-              : old.dailyTasks;
-            return { ...old, dailyTasks: nextDailyTasks };
-          },
-        );
-      }
-
-      if (planId) {
-        queryClient.invalidateQueries({
-          queryKey: [buildUrl(api.plans.get.path, { id: planId })],
-        });
-        queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/locks`] });
-      }
-
-      toast({
-        title: "Task Updated",
-        description: `Status changed to ${data.status}`,
+      queryClient.setQueryData(key, (old: any) => {
+        if (!old) return old;
+        const nextDailyTasks = Array.isArray(old.dailyTasks)
+          ? old.dailyTasks.map((task: any) =>
+              Number(task?.id) === taskId ? { ...task, status } : task,
+            )
+          : old.dailyTasks;
+        return { ...old, dailyTasks: nextDailyTasks };
       });
+
+      return { previousPlan, planId };
     },
-    onError: (err: any) => {
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.previousPlan) {
+        queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
+      }
       toast({
         title: "No se pudo actualizar la tarea",
         description: err?.message || "Error desconocido",
         variant: "destructive",
+      });
+    },
+    onSettled: (data: any, _error, vars) => {
+      const planId = Number(data?.planId ?? data?.plan_id ?? vars.planId ?? 0);
+      if (planId) {
+        queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
+      }
+      toast({
+        title: "Task Updated",
+        description: `Status changed to ${data?.status ?? vars.status}`,
       });
     },
   });
@@ -162,7 +185,7 @@ export function useUpdateTaskStatus() {
 
 export function useLocks(planId: number) {
   return useQuery<Lock[]>({
-    queryKey: [`/api/plans/${planId}/locks`],
+    queryKey: planLocksQueryKey(planId),
     enabled: !!planId,
     queryFn: () => apiRequest("GET", `/api/plans/${planId}/locks`)
   });
@@ -189,7 +212,7 @@ type ContestantUI = {
 
 export function useContestants(planId: number) {
   return useQuery<ContestantUI[]>({
-    queryKey: ["contestants", planId],
+    queryKey: contestantsQueryKey(planId),
     queryFn: () => apiRequest("GET", `/api/plans/${planId}/contestants`),
     enabled: !!planId,
   });
@@ -212,12 +235,32 @@ export function useCreateContestant(planId: number) {
 
       vocalCoachPlanResourceItemId?: number | null;
     }) => apiRequest("POST", `/api/plans/${planId}/contestants`, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["contestants", planId] });
-      queryClient.invalidateQueries({
-        queryKey: [buildUrl(api.plans.get.path, { id: planId })],
-      });
-      queryClient.invalidateQueries({ queryKey: ["plan-ops", planId] });
+    onMutate: async (input) => {
+      const key = contestantsQueryKey(planId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previousContestants = queryClient.getQueryData(key);
+      const optimisticId = -Date.now();
+
+      queryClient.setQueryData(key, (old: any[] = []) => [
+        ...old,
+        {
+          id: optimisticId,
+          planId,
+          createdAt: new Date().toISOString(),
+          ...input,
+        },
+      ]);
+
+      return { previousContestants };
+    },
+    onError: (_error, _input, ctx) => {
+      if (ctx?.previousContestants) {
+        queryClient.setQueryData(contestantsQueryKey(planId), ctx.previousContestants);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: contestantsQueryKey(planId) });
+      queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
     },
   });
 }
@@ -252,8 +295,8 @@ export function useUpdateContestant(planId: number) {
       ),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["contestants", planId] });
-      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id: planId })] });
+      queryClient.invalidateQueries({ queryKey: contestantsQueryKey(planId) });
+      queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
       toast({ title: "Guardado" });
     },
 
