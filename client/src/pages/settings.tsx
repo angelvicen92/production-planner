@@ -2244,6 +2244,8 @@ function TaskTemplatesSettings() {
     name: "",
     defaultDuration: 30,
     defaultCameras: 0,
+    defaultComment1Color: null,
+    defaultComment2Color: null,
     zoneId: null,
     spaceId: null,
     uiColor: "#94a3b8",
@@ -2385,6 +2387,8 @@ function TaskTemplatesSettings() {
         tpl.defaultDuration ?? tpl.default_duration ?? 30,
       ),
       defaultCameras: Number(tpl.defaultCameras ?? tpl.default_cameras ?? 0),
+      defaultComment1Color: tpl.defaultComment1Color ?? tpl.default_comment1_color ?? null,
+      defaultComment2Color: tpl.defaultComment2Color ?? tpl.default_comment2_color ?? null,
       zoneId: tpl.zoneId ?? tpl.zone_id ?? null,
       spaceId: tpl.spaceId ?? tpl.space_id ?? null,
       uiColorInput: String(tpl.uiColor ?? tpl.ui_color ?? ""),
@@ -2565,6 +2569,8 @@ function TaskTemplatesSettings() {
           name: String(editData.name ?? "").trim(),
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          defaultComment1Color: String(editData.defaultComment1Color ?? "").trim() || null,
+          defaultComment2Color: String(editData.defaultComment2Color ?? "").trim() || null,
           zoneId: editData.zoneId ?? null,
           spaceId: editData.spaceId ?? null,
           uiColor: normalizedUiColor,
@@ -2684,6 +2690,20 @@ function TaskTemplatesSettings() {
                       ...p,
                       defaultDuration: Number(e.target.value),
                     }))
+                  }
+                />
+                <Input
+                  placeholder="Color comentario 1 (default)"
+                  value={String(formData.defaultComment1Color ?? "")}
+                  onChange={(e) =>
+                    setFormData((p: any) => ({ ...p, defaultComment1Color: e.target.value || null }))
+                  }
+                />
+                <Input
+                  placeholder="Color comentario 2 (default)"
+                  value={String(formData.defaultComment2Color ?? "")}
+                  onChange={(e) =>
+                    setFormData((p: any) => ({ ...p, defaultComment2Color: e.target.value || null }))
                   }
                 />
                 <Button
@@ -2814,6 +2834,32 @@ function TaskTemplatesSettings() {
                             }))
                           }
                           placeholder="30"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Color comentario 1 (default)</Label>
+                        <Input
+                          value={String(editData?.defaultComment1Color ?? "")}
+                          onChange={(e) =>
+                            setEditData((p: any) => ({
+                              ...p,
+                              defaultComment1Color: e.target.value || null,
+                            }))
+                          }
+                          placeholder="#RRGGBB"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Color comentario 2 (default)</Label>
+                        <Input
+                          value={String(editData?.defaultComment2Color ?? "")}
+                          onChange={(e) =>
+                            setEditData((p: any) => ({
+                              ...p,
+                              defaultComment2Color: e.target.value || null,
+                            }))
+                          }
+                          placeholder="#RRGGBB"
                         />
                       </div>
                       <div className="space-y-1">

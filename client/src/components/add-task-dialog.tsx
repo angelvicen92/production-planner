@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlusCircle, Loader2 } from "lucide-react";
 
 interface AddTaskDialogProps {
@@ -60,8 +60,37 @@ export function AddTaskDialog({
       planId,
       status: "pending",
       contestantId: contestantId ?? undefined,
+      comment1Text: "",
+      comment1Color: "",
+      comment2Text: "",
+      comment2Color: "",
     },
   });
+
+  const selectedTemplateId = form.watch("templateId");
+
+  useEffect(() => {
+    const tid = Number(selectedTemplateId ?? NaN);
+    if (!Number.isFinite(tid) || tid <= 0) return;
+
+    const selectedTemplate = (templates ?? []).find(
+      (template) => Number(template?.id) === tid,
+    );
+    if (!selectedTemplate) return;
+
+    const c1 = String(form.getValues("comment1Color") ?? "").trim();
+    const c2 = String(form.getValues("comment2Color") ?? "").trim();
+
+    if (!c1) {
+      const d1 = String(selectedTemplate.defaultComment1Color ?? "").trim();
+      if (d1) form.setValue("comment1Color", d1, { shouldDirty: true });
+    }
+
+    if (!c2) {
+      const d2 = String(selectedTemplate.defaultComment2Color ?? "").trim();
+      if (d2) form.setValue("comment2Color", d2, { shouldDirty: true });
+    }
+  }, [selectedTemplateId, templates, form]);
 
   function onSubmit(data: InsertDailyTask) {
     createTask.mutate(data, {
@@ -71,6 +100,10 @@ export function AddTaskDialog({
           planId,
           status: "pending",
           contestantId: contestantId ?? undefined,
+          comment1Text: "",
+          comment1Color: "",
+          comment2Text: "",
+          comment2Color: "",
         });
       },
     });
@@ -223,6 +256,61 @@ export function AddTaskDialog({
                 )}
               />
             )}
+
+            <div className="grid grid-cols-1 gap-3">
+              <FormField
+                control={form.control}
+                name="comment1Text"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Comentario 1</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="Texto comentario 1" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="comment1Color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color comentario 1</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="#RRGGBB" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="comment2Text"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Comentario 2</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="Texto comentario 2" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="comment2Color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color comentario 2</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="#RRGGBB" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button
               type="submit"
