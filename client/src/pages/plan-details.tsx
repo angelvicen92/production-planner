@@ -937,14 +937,6 @@ export default function PlanDetailsPage() {
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
   >([]);
-
-  function nowHHMM() {
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-    return `${hh}:${mm}`;
-  }
-
   const handlePlanningTaskStatusChange = async (
     task: any,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
@@ -952,14 +944,6 @@ export default function PlanDetailsPage() {
     const payload: any = {
       taskId: Number(task?.id),
       status,
-      startReal:
-        status === "in_progress"
-          ? (task?.startReal ?? nowHHMM())
-          : (task?.startReal ?? null),
-      endReal:
-        status === "done" || status === "interrupted" || status === "cancelled"
-          ? (task?.endReal ?? nowHHMM())
-          : null,
     };
 
     await updateTaskStatus.mutateAsync(payload);
@@ -2380,23 +2364,9 @@ export default function PlanDetailsPage() {
                                 <Select
                                   value={task.status || "pending"}
                                   onValueChange={(next) => {
-                                    const t = nowHHMM();
                                     updateTaskStatus.mutate({
                                       taskId: task.id,
-                                      status: next,
-                                      // timestamps automáticos mínimos:
-                                      startReal:
-                                        next === "in_progress" &&
-                                        !task.startReal
-                                          ? t
-                                          : undefined,
-                                      endReal:
-                                        (next === "done" ||
-                                          next === "interrupted" ||
-                                          next === "cancelled") &&
-                                        !task.endReal
-                                          ? t
-                                          : undefined,
+                                      status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
                                     });
                                   }}
                                 >
@@ -3076,7 +3046,6 @@ export default function PlanDetailsPage() {
                               ? `${zoneName ?? "Zona"} · ${spaceName}`
                               : (zoneName ?? "Sin asignar");
 
-                          const nowHHMM = () => format(new Date(), "HH:mm");
 
                           const canStart =
                             status === "pending" || status === "interrupted";
@@ -3144,8 +3113,6 @@ export default function PlanDetailsPage() {
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
                                         status: "in_progress",
-                                        startReal: t?.startReal ?? nowHHMM(),
-                                        endReal: null,
                                       } as any)
                                     }
                                   >
@@ -3162,8 +3129,6 @@ export default function PlanDetailsPage() {
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
                                         status: "done",
-                                        startReal: t?.startReal ?? null,
-                                        endReal: nowHHMM(),
                                       } as any)
                                     }
                                   >
@@ -3181,8 +3146,6 @@ export default function PlanDetailsPage() {
                                       updateTaskStatus.mutate({
                                         taskId: Number(t.id),
                                         status: "interrupted",
-                                        startReal: t?.startReal ?? null,
-                                        endReal: nowHHMM(),
                                       } as any)
                                     }
                                   >

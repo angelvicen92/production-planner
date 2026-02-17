@@ -16,6 +16,20 @@ import {
   normalizeHeuristicSetting,
 } from "@shared/optimizer";
 
+function getEuropeMadridTimeHHMM(): string {
+  const formatted = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+  return formatted.slice(0, 5);
+}
+
+function isValidHHMM(value: unknown): value is string {
+  return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+}
+
 export interface IStorage {
   // Plans
   getPlans(): Promise<Plan[]>;
@@ -34,8 +48,6 @@ export interface IStorage {
     taskId: number,
     updates: {
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
-      startReal?: string;
-      endReal?: string;
     },
     userId: string,
   ): Promise<DailyTask>;
@@ -1292,13 +1304,35 @@ export class SupabaseStorage implements IStorage {
       }
     }
 
+    const { data: settings, error: settingsErr } = await supabaseAdmin
+      .from("program_settings")
+      .select("clock_mode,simulated_time")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settingsErr) throw settingsErr;
+
+    const effectiveTime =
+      settings?.clock_mode === "manual" && isValidHHMM(settings?.simulated_time)
+        ? settings.simulated_time
+        : getEuropeMadridTimeHHMM();
+
+    const nextStartReal =
+      updates?.status === "in_progress" && !task.start_real
+        ? effectiveTime
+        : (task.start_real ?? null);
+
+    const nextEndReal =
+      ["done", "interrupted", "cancelled"].includes(String(updates?.status)) && !task.end_real
+        ? effectiveTime
+        : (task.end_real ?? null);
+
     // 3. Update status
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("daily_tasks")
       .update({
         status: updates.status,
-        start_real: updates.startReal,
-        end_real: updates.endReal,
+        start_real: nextStartReal,
+        end_real: nextEndReal,
       })
       .eq("id", taskId)
       .select()
@@ -1306,14 +1340,23 @@ export class SupabaseStorage implements IStorage {
 
     if (updateError) throw updateError;
 
+    const { error: eventErr } = await supabaseAdmin.from("task_status_events").insert({
+      plan_id: task.plan_id,
+      task_id: task.id,
+      status: updates.status,
+      changed_by: userId ?? null,
+      time_real: effectiveTime,
+    });
+    if (eventErr) throw eventErr;
+
     // 4. Create Execution Lock if in_progress or done
     if (["in_progress", "done"].includes(updates.status)) {
       await this.createLock({
         planId: task.plan_id,
-        taskId: task.id,
+        task_id: task.id,
         lockType: "full",
-        lockedStart: updates.startReal || task.start_planned,
-        lockedEnd: updates.endReal || task.end_planned,
+        lockedStart: nextStartReal || task.start_planned,
+        lockedEnd: nextEndReal || task.end_planned,
         createdBy: userId,
         reason: `Execution lock for status: ${updates.status}`,
       });
