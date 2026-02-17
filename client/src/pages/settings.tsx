@@ -33,6 +33,7 @@ import {
   DialogTrigger,
   DialogDescription,
   DialogClose,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -701,83 +702,80 @@ function StaffDefaultsSettings() {
       realityTeamCode,
       itinerantTeamId,
     });
-    const [selected, setSelected] = useState<string>("");
+    const [open, setOpen] = useState(false);
+    const [draft, setDraft] = useState<number[]>([]);
+
+    const selectedLabel =
+      list.length === 0
+        ? "—"
+        : list.map((a: any) => String(a?.staffPersonName ?? `#${a?.staffPersonId}`)).join(", ");
+
+    const rolePeople = activePeople.filter((p: any) => p.roleType === staffRole);
 
     return (
-      <div className="space-y-2">
-        <div className="text-sm font-medium">{title}</div>
-
-        <div className="flex flex-wrap gap-2">
-          {list.length === 0 ? (
-            <span className="text-sm text-muted-foreground">—</span>
-          ) : (
-            list.map((a: any, i: number) => {
-              const globalIndex = (localAssignments ?? []).findIndex(
-                (x: any) => x === a,
-              );
-              return (
-                <Badge
-                  key={`${a.staffRole}-${a.staffPersonId}-${i}`}
-                  variant="secondary"
-                >
-                  {String(a?.staffPersonName ?? "") || `#${a?.staffPersonId}`}
-                  <button
-                    type="button"
-                    className="ml-2 text-xs opacity-70 hover:opacity-100"
-                    onClick={() => removeAssignment(globalIndex)}
-                    aria-label="Quitar"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              );
-            })
-          )}
+      <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+        <div className="min-w-0">
+          <div className="text-xs text-muted-foreground">{title}</div>
+          <div className="truncate text-sm">{selectedLabel}</div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Select
-            value={selected}
-            onValueChange={setSelected}
-            disabled={modesLoading || asgLoading}
-          >
-            <SelectTrigger className="w-[260px]">
-              <SelectValue placeholder="Selecciona persona" />
-            </SelectTrigger>
-            <SelectContent>
-              {activePeople
-                .filter((p: any) => p.roleType === staffRole)
-                .map((p: any) => (
-                  <SelectItem key={String(p.id)} value={String(p.id)}>
+        <Dialog
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (next) {
+              setDraft(list.map((a: any) => Number(a?.staffPersonId ?? a?.staff_person_id)).filter((n: number) => Number.isFinite(n)));
+            }
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button type="button" variant="outline" size="sm">Editar</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 max-h-72 overflow-auto">
+              {rolePeople.map((p: any) => {
+                const pid = Number(p.id);
+                const active = draft.includes(pid);
+                return (
+                  <label key={pid} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={(e) => {
+                        setDraft((prev) =>
+                          e.target.checked ? [...prev, pid] : prev.filter((x) => x !== pid),
+                        );
+                      }}
+                    />
                     {p.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            disabled={!selected}
-            onClick={() => {
-              const pid = Number(selected);
-              if (!Number.isFinite(pid)) return;
-              addAssignment({
-                staffRole,
-                scopeType,
-                staffPersonId: pid,
-                zoneId,
-                spaceId,
-                realityTeamCode,
-                itinerantTeamId,
-              });
-              setSelected("");
-            }}
-          >
-            Añadir
-          </Button>
-        </div>
+                  </label>
+                );
+              })}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setLocalAssignments((prev) => prev.filter((a: any) => {
+                    if (a?.staffRole !== staffRole || a?.scopeType !== scopeType) return true;
+                    const zid = a?.zoneId ?? a?.zone_id ?? null;
+                    const sid = a?.spaceId ?? a?.space_id ?? null;
+                    const rtc = a?.realityTeamCode ?? a?.reality_team_code ?? null;
+                    const itid = a?.itinerantTeamId ?? a?.itinerant_team_id ?? null;
+                    return (zoneId ?? null) !== (zid ?? null) || (spaceId ?? null) !== (sid ?? null) || (realityTeamCode ?? null) !== (rtc ?? null) || (itinerantTeamId ?? null) !== (itid ?? null);
+                  }));
+                  for (const pid of draft) {
+                    addAssignment({ staffRole, scopeType, staffPersonId: pid, zoneId, spaceId, realityTeamCode, itinerantTeamId });
+                  }
+                  setOpen(false);
+                }}
+              >Guardar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   };

@@ -408,6 +408,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const occupiedBySpace = new Map<number, Interval[]>();
   const occupiedByResource = new Map<number, Interval[]>();
   const occupiedByZoneMeal = new Map<number, Interval[]>(); // bloqueos de “comida plató”
+  const occupiedByItinerant = new Map<number, Interval[]>();
+  const lastZoneByContestant = new Map<number, number>();
   const mealIntervals: Interval[] = []; // solo comidas de concursantes (para max simultáneo)
 
   const fixedEndByTaskId = new Map<number, number>();
@@ -462,6 +464,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const zoneId = Number(task?.zoneId ?? 0);
     if (contestantId && zoneId) lastZoneByContestant.set(contestantId, zoneId);
+
+    const itinerantTeamId = Number(task?.itinerantTeamId ?? 0);
+    if (itinerantTeamId) {
+      const arr = occupiedByItinerant.get(itinerantTeamId) ?? [];
+      addIntervalSorted(arr, { start: s, end: e, taskId: Number(task.id) });
+      occupiedByItinerant.set(itinerantTeamId, arr);
+    }
 
     const assigned =
       (task as any)?.assignedResources ??
@@ -658,6 +667,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return mealName.length > 0 && n === mealName;
   };
 
+  const isResourceBreakTask = (task: any) =>
+    task?.breakKind === "space_meal" || task?.breakKind === "itinerant_meal";
+
   const getZoneIdForTask = (task: any) => {
     const zidRaw = task?.zoneId ?? null;
     if (Number.isFinite(Number(zidRaw))) return Number(zidRaw);
@@ -733,6 +745,41 @@ export function generatePlan(input: EngineInput): EngineOutput {
       assignedResources: [],
     });
     plannedEndByTaskId.set(Number(task.id), finish);
+  }
+
+  for (const task of tasksSorted as any[]) {
+    if (!isResourceBreakTask(task)) continue;
+    const duration = Math.max(1, Number(task?.durationOverrideMin ?? 45));
+    const winStart = toMinutes(task?.fixedWindowStart ?? toHHMM(mealStart));
+    const winEnd = toMinutes(task?.fixedWindowEnd ?? toHHMM(mealEnd));
+
+    let start = snapUp(winStart);
+    if (task?.breakKind === "space_meal") {
+      const spaceId = Number(task?.spaceId ?? 0);
+      if (!spaceId) continue;
+      const occ = occupiedBySpace.get(spaceId) ?? [];
+      start = findEarliestGap(occ, start, duration);
+      if (start + duration > winEnd) {
+        return { feasible: false, reasons: [{ code: "SPACE_BREAK_NO_FIT", message: `No cabe parada de comida en espacio ${spaceId}.` }] } as any;
+      }
+      const end = start + duration;
+      addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
+      occupiedBySpace.set(spaceId, occ);
+      plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: spaceId, assignedResources: [] });
+      continue;
+    }
+
+    const teamId = Number(task?.itinerantTeamId ?? 0);
+    if (!teamId) continue;
+    const occ = occupiedByItinerant.get(teamId) ?? [];
+    start = findEarliestGap(occ, start, duration);
+    if (start + duration > winEnd) {
+      return { feasible: false, reasons: [{ code: "ITINERANT_BREAK_NO_FIT", message: `No cabe parada de comida en equipo itinerante ${teamId}.` }] } as any;
+    }
+    const end = start + duration;
+    addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
+    occupiedByItinerant.set(teamId, occ);
+    plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: null, assignedResources: [] });
   }
 
   // 2) Tareas NO comida (paralelas), respetando: deps + concursante + espacio + recursos + bloqueos de comida de plató
@@ -824,7 +871,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
   // ✅ memoria para compactar por zona/concursante
   const lastEndByZone = new Map<number, number>();
   const lastEndByContestant = new Map<number, number>();
-  const lastZoneByContestant = new Map<number, number>();
 
   const depsSatisfied = (task: any) => {
     const depIds = getDepTaskIds(task);
@@ -848,6 +894,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const contestantId = getContestantId(task);
     const spaceId = getSpaceId(task);
     const zoneId = getZoneId(task);
+    const taskItinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     // requisito mínimo para bloquear espacio (tu app es “requiere 1 espacio”)
     if (!spaceId) {
@@ -933,6 +980,15 @@ export function generatePlan(input: EngineInput): EngineOutput {
             },
           ],
         } as any;
+      }
+
+      if (taskItinerantTeamId) {
+        const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
+        const teamStart = findEarliestGap(teamOcc, start, duration);
+        if (teamStart !== start) {
+          start = snapUp(teamStart);
+          continue;
+        }
       }
 
       // 2.5) Asignación de recursos respetando NO solape (comida no usa recursos; aquí sí)
@@ -1133,6 +1189,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
       // ✅ reservar intervalos
       addIntervalSorted(spaceOcc, { start, end: finish, taskId });
       occupiedBySpace.set(spaceId, spaceOcc);
+      if (taskItinerantTeamId) {
+        const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
+        addIntervalSorted(teamOcc, { start, end: finish, taskId });
+        occupiedByItinerant.set(taskItinerantTeamId, teamOcc);
+      }
 
       if (contestantId) {
         const cOcc = occupiedByContestant.get(contestantId) ?? [];
@@ -1469,7 +1530,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   };
 
   const pendingNonMeal = (tasksSorted as any[]).filter((task) => {
-    if (isMealTask(task)) return false;
+    if (isMealTask(task) || isResourceBreakTask(task)) return false;
 
     const taskId = Number(task?.id);
     if (!Number.isFinite(taskId)) return false;

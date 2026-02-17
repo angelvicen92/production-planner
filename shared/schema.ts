@@ -33,8 +33,24 @@ export const programSettings = pgTable("program_settings", {
   mealEnd: text("meal_end").notNull(),
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
+  spaceMealBreakMinutes: integer("space_meal_break_minutes").notNull().default(45),
+  itinerantMealBreakMinutes: integer("itinerant_meal_break_minutes").notNull().default(45),
   clockMode: text("clock_mode").notNull().default("auto"),
   simulatedTime: text("simulated_time"),
+});
+
+export const planBreaks = pgTable("plan_breaks", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id),
+  kind: text("kind").notNull(),
+  spaceId: integer("space_id"),
+  itinerantTeamId: integer("itinerant_team_id"),
+  durationMinutes: integer("duration_minutes").notNull(),
+  earliestStart: text("earliest_start"),
+  latestEnd: text("latest_end"),
+  lockedStart: text("locked_start"),
+  lockedEnd: text("locked_end"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 // 1.2 optimizer_settings (defaults globales del optimizador)
@@ -295,4 +311,3 @@ export const updateContestantSchema = z.object({
 export type Contestant = typeof contestants.$inferSelect;
 export type InsertContestant = z.infer<typeof insertContestantSchema>;
 export type UpdateContestant = z.infer<typeof updateContestantSchema>;
-

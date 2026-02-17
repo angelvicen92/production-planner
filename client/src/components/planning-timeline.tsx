@@ -47,6 +47,8 @@ interface Task {
   comment1Color?: string | null;
   comment2Text?: string | null;
   comment2Color?: string | null;
+  breakKind?: "space_meal" | "itinerant_meal" | string;
+  itinerantTeamId?: number | null;
 }
 
 interface Contestant {
@@ -71,6 +73,14 @@ interface PlanningTimelineProps {
     mealStart: string | null;
     mealEnd: string | null;
     dailyTasks: Task[];
+    breaks?: Array<{
+      id: number;
+      kind: "space_meal" | "itinerant_meal" | string;
+      spaceId: number | null;
+      itinerantTeamId: number | null;
+      lockedStart?: string | null;
+      lockedEnd?: string | null;
+    }>;
   };
   contestants: Contestant[];
 
@@ -235,7 +245,7 @@ function TaskStatusMenuTrigger({
     onTaskStatusChange,
     taskStatusPending = false,
     }: PlanningTimelineProps) {
-  const { workStart, workEnd, mealStart, mealEnd, dailyTasks } = plan;
+  const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
   const density = usePlanningDensity();
   const isCompact = density === "compact";
@@ -382,9 +392,28 @@ function TaskStatusMenuTrigger({
     });
   }, [spaces, selectedStageIdsSet]);
 
+  const timelineTasks = useMemo(() => {
+    const breakTasks = (viewMode === "contestants" ? [] : breaks)
+      .filter((b) => b.lockedStart && b.lockedEnd)
+      .map((b) => ({
+        id: -Number(b.id),
+        templateId: -1,
+        contestantId: null,
+        status: "done",
+        startPlanned: b.lockedStart ?? null,
+        endPlanned: b.lockedEnd ?? null,
+        template: { name: "COMIDA", abbrev: "BREAK", uiColor: "#d6d3d1" },
+        spaceId: b.spaceId,
+        zoneId: null,
+        breakKind: b.kind,
+        itinerantTeamId: b.itinerantTeamId,
+      })) as Task[];
+    return [...(dailyTasks ?? []), ...breakTasks];
+  }, [breaks, dailyTasks, viewMode]);
+
   const filteredDailyTasksByStage = useMemo(() => {
-    if (selectedStageIdsSet.size === 0) return dailyTasks ?? [];
-    return (dailyTasks ?? []).filter((task) => {
+    if (selectedStageIdsSet.size === 0) return timelineTasks ?? [];
+    return (timelineTasks ?? []).filter((task) => {
       const taskZoneId = Number(task?.zoneId);
       if (Number.isFinite(taskZoneId) && selectedStageIdsSet.has(taskZoneId)) return true;
 
@@ -395,7 +424,7 @@ function TaskStatusMenuTrigger({
       const spaceZoneId = Number(space?.zoneId);
       return Number.isFinite(spaceZoneId) && selectedStageIdsSet.has(spaceZoneId);
     });
-  }, [dailyTasks, spaces, selectedStageIdsSet]);
+  }, [timelineTasks, spaces, selectedStageIdsSet]);
 
   const selectedResourceKeys = useMemo(
     () => (resourceFilterIds ?? []).map((id) => String(id ?? "")).filter((id) => id.length > 0),
@@ -632,6 +661,13 @@ function TaskStatusMenuTrigger({
       grouped["unlocated"] = { name: "Sin ubicación", tasks: [] };
 
       (filteredDailyTasksByStage ?? []).forEach((task) => {
+        if (task.breakKind === "itinerant_meal" && task.itinerantTeamId) {
+          const key = `it-team-${Number(task.itinerantTeamId)}`;
+          if (!grouped[key]) grouped[key] = { name: `Equipo ${task.itinerantTeamId}`, tasks: [] };
+          grouped[key].tasks.push(task);
+          return;
+        }
+
         if (task.spaceId) {
           const key = `space-${Number(task.spaceId)}`;
           if (!grouped[key]) {
@@ -725,11 +761,11 @@ function TaskStatusMenuTrigger({
     );
   }
 
-  const hasPlanning = (dailyTasks ?? []).some(
+  const hasPlanning = (timelineTasks ?? []).some(
     (t) => t.startPlanned && t.endPlanned,
   );
 
-  if (!hasPlanning && dailyTasks.length > 0) {
+  if (!hasPlanning && timelineTasks.length > 0) {
     return (
       <Card className="p-8 text-center bg-muted/50">
         <p className="text-muted-foreground">
@@ -740,7 +776,7 @@ function TaskStatusMenuTrigger({
     );
   }
 
-  if (dailyTasks.length === 0) {
+  if (timelineTasks.length === 0) {
     return (
       <Card className="p-8 text-center bg-muted/50">
         <p className="text-muted-foreground">No hay tareas creadas todavía.</p>

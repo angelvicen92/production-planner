@@ -337,7 +337,8 @@ export async function buildEngineInput(
       ),
     },
 
-          tasks: details.tasks.map((t: any) => {
+          tasks: [
+            ...details.tasks.map((t: any) => {
       const contestantId = (t.contestant_id ?? t.contestantId ?? null) as
         | number
         | null;
@@ -408,6 +409,11 @@ export async function buildEngineInput(
             ? (contestantNameById.get(contestantId) ?? null)
             : null,
           status: t.status,
+          itinerantTeamId:
+            (tpl as any)?.itinerantTeamRequirement === "specific" &&
+            Number.isFinite(Number((tpl as any)?.itinerantTeamId))
+              ? Number((tpl as any).itinerantTeamId)
+              : null,
 
           // ✅ Dependencias (ya resueltas a taskIds)
           hasDependency,
@@ -435,6 +441,26 @@ export async function buildEngineInput(
           (t.assignedResources ?? t.assigned_resource_ids ?? null) as any,
         };
     }),
+            ...(((details as any).breaks ?? []) as any[]).map((b: any) => ({
+              id: -Number(b.id),
+              planId,
+              templateId: -1,
+              templateName: "COMIDA",
+              status: "pending" as const,
+              zoneId: null,
+              spaceId: b.space_id == null ? null : Number(b.space_id),
+              contestantId: null,
+              contestantName: null,
+              breakId: Number(b.id),
+              breakKind: String(b.kind),
+              itinerantTeamId:
+                b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
+              fixedWindowStart: String(b.earliest_start ?? p.meal_start ?? p.mealStart),
+              fixedWindowEnd: String(b.latest_end ?? p.meal_end ?? p.mealEnd),
+              durationOverrideMin: Number(b.duration_minutes ?? 45),
+              assignedResourceIds: [],
+            })),
+          ],
 
     locks: details.locks.map((l: any) => ({
       id: l.id,

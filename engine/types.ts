@@ -22,7 +22,7 @@ export interface ResourceRequirementsInput {
   }>;
 }
 
-  export interface TaskInput {
+export interface TaskInput {
     id: number;
     planId: number;
     templateId: number;
@@ -38,7 +38,12 @@ export interface ResourceRequirementsInput {
 
     contestantId?: number | null;
     contestantName?: string | null;
+    itinerantTeamId?: number | null;
     status: TaskStatus;
+    breakId?: number;
+    breakKind?: "space_meal" | "itinerant_meal" | string;
+    fixedWindowStart?: string | null;
+    fixedWindowEnd?: string | null;
 
   durationOverrideMin?: number | null;
   camerasOverride?: 0 | 1 | 2 | null;
