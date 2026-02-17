@@ -175,6 +175,10 @@ export const api = {
               scopeType: z.enum(["zone", "space", "reality_team", "itinerant_team"]),
               zoneId: z.number().int().positive().nullable().optional(),
               spaceId: z.number().int().positive().nullable().optional(),
+          comment1Text: z.string().max(500).nullable().optional(),
+          comment1Color: z.string().nullable().optional(),
+          comment2Text: z.string().max(500).nullable().optional(),
+          comment2Color: z.string().nullable().optional(),
               realityTeamCode: z.string().min(1).nullable().optional(),
               itinerantTeamId: z.number().int().positive().nullable().optional(),
             }),
@@ -193,6 +197,10 @@ export const api = {
                 scopeType: z.enum(["zone", "space", "reality_team", "itinerant_team"]),
                 zoneId: z.number().int().positive().nullable().optional(),
                 spaceId: z.number().int().positive().nullable().optional(),
+          comment1Text: z.string().max(500).nullable().optional(),
+          comment1Color: z.string().nullable().optional(),
+          comment2Text: z.string().max(500).nullable().optional(),
+          comment2Color: z.string().nullable().optional(),
                 realityTeamCode: z.string().min(1).nullable().optional(),
                 itinerantTeamId: z.number().int().positive().nullable().optional(),
               }),
@@ -418,6 +426,10 @@ export const api = {
                 scopeType: z.enum(["zone", "space", "reality_team", "itinerant_team"]),
                 zoneId: z.number().int().positive().nullable().optional(),
                 spaceId: z.number().int().positive().nullable().optional(),
+          comment1Text: z.string().max(500).nullable().optional(),
+          comment1Color: z.string().nullable().optional(),
+          comment2Text: z.string().max(500).nullable().optional(),
+          comment2Color: z.string().nullable().optional(),
                 realityTeamCode: z.string().min(1).nullable().optional(),
                 itinerantTeamId: z.number().int().positive().nullable().optional(),
               }),
@@ -1094,6 +1106,7 @@ export const api = {
           zoneId: z.number().int().positive(),
           priorityLevel: z.number().int().min(1).max(5).optional(),
           parentSpaceId: z.number().int().positive().nullable().optional(),
+          abbrev: z.string().max(32).nullable().optional(),
         })
         .strict(),
       responses: {
@@ -1110,6 +1123,7 @@ export const api = {
           zoneId: z.number().int().positive().optional(),
           priorityLevel: z.number().int().min(1).max(5).optional(),
           parentSpaceId: z.number().int().positive().nullable().optional(),
+          abbrev: z.string().max(32).nullable().optional(),
         })
         .strict(),
       responses: {
@@ -1221,6 +1235,9 @@ export const api = {
           name: z.string().min(1),
           defaultDuration: z.number().int().positive(),
           defaultCameras: z.number().int().min(0).optional().default(0),
+          abbrev: z.string().max(32).nullable().optional(),
+          defaultComment1Color: z.string().nullable().optional(),
+          defaultComment2Color: z.string().nullable().optional(),
 
           requiresAuxiliar: z.boolean().optional(),
           requiresCoach: z.boolean().optional(),
@@ -1273,6 +1290,9 @@ export const api = {
           name: z.string().min(1).optional(),
           defaultDuration: z.number().int().positive().optional(),
           defaultCameras: z.number().int().min(0).optional(),
+          abbrev: z.string().max(32).nullable().optional(),
+          defaultComment1Color: z.string().nullable().optional(),
+          defaultComment2Color: z.string().nullable().optional(),
 
           requiresAuxiliar: z.boolean().optional(),
           requiresCoach: z.boolean().optional(),
@@ -1335,7 +1355,12 @@ export const api = {
     create: {
       method: "POST" as const,
       path: "/api/daily-tasks",
-      input: insertDailyTaskSchema,
+      input: insertDailyTaskSchema.extend({
+        comment1Text: z.string().max(500).nullable().optional(),
+        comment1Color: z.string().nullable().optional(),
+        comment2Text: z.string().max(500).nullable().optional(),
+        comment2Color: z.string().nullable().optional(),
+      }),
       responses: {
         201: z.custom<typeof dailyTasks.$inferSelect>(),
       },
@@ -1370,6 +1395,9 @@ export const api = {
           name: z.string().min(1).optional(),
           defaultDuration: z.number().int().positive().optional(),
           defaultCameras: z.number().int().min(0).optional(),
+          abbrev: z.string().max(32).nullable().optional(),
+          defaultComment1Color: z.string().nullable().optional(),
+          defaultComment2Color: z.string().nullable().optional(),
 
           // ✅ color hex configurable
           uiColor: z
@@ -1385,6 +1413,10 @@ export const api = {
 
           zoneId: z.number().int().positive().nullable().optional(),
           spaceId: z.number().int().positive().nullable().optional(),
+          comment1Text: z.string().max(500).nullable().optional(),
+          comment1Color: z.string().nullable().optional(),
+          comment2Text: z.string().max(500).nullable().optional(),
+          comment2Color: z.string().nullable().optional(),
         })
         .strict(),
       responses: {

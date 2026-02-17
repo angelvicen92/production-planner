@@ -3037,6 +3037,10 @@ function mapDeleteError(err: any, fallback: string) {
       // ✅ ubicación
       if (input.zoneId !== undefined) patchDb.zone_id = input.zoneId;
       if (input.spaceId !== undefined) patchDb.space_id = input.spaceId;
+      if (input.comment1Text !== undefined) patchDb.comment1_text = input.comment1Text;
+      if (input.comment1Color !== undefined) patchDb.comment1_color = input.comment1Color;
+      if (input.comment2Text !== undefined) patchDb.comment2_text = input.comment2Text;
+      if (input.comment2Color !== undefined) patchDb.comment2_color = input.comment2Color;
 
       // si el usuario toca ubicación, limpiamos location_label (deja de ser "espacio borrado")
       if (input.zoneId !== undefined || input.spaceId !== undefined) {
@@ -3075,6 +3079,10 @@ function mapDeleteError(err: any, fallback: string) {
         zoneId: updated.zone_id ?? null,
         spaceId: updated.space_id ?? null,
         locationLabel: updated.location_label ?? null,
+        comment1Text: updated.comment1_text ?? null,
+        comment1Color: updated.comment1_color ?? null,
+        comment2Text: updated.comment2_text ?? null,
+        comment2Color: updated.comment2_color ?? null,
       });
     } catch (err: any) {
       if (err?.name === "ZodError") {

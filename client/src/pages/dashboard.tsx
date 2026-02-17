@@ -18,6 +18,7 @@ import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName
 import { addIncident } from "@/lib/war-room-store";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 export default function DashboardPage() {
   const { data: plans = [], isLoading: plansLoading } = usePlans();
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const { data, isLoading, error, refetch } = usePlanOpsData(planId);
   const { links, staffPerson, resourceItem } = useMeLinks(true);
   const [onlyMine, setOnlyMine] = useState(false);
+  const { nowTime, mode } = useProductionClock();
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -98,7 +100,8 @@ export default function DashboardPage() {
   };
 
   const today = new Date().toISOString().slice(0, 10);
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const nowMinutes = hhmmToMinutes(nowTime) ?? new Date().getHours() * 60 + new Date().getMinutes();
+  const nowTimeLabel = nowTime ?? "--:--";
   const isTodayPlan = String(selectedPlan?.date || "").slice(0, 10) === today;
 
   const tasksWithTime = useMemo(
@@ -349,7 +352,13 @@ export default function DashboardPage() {
         ) : null}
 
         {!selectedPlan ? null : (
-          <Tabs defaultValue="live" className="space-y-3">
+          <>
+          <div className="mb-3 flex items-center gap-2">
+        <Badge variant="outline">Clock: {nowTimeLabel}</Badge>
+        <Badge variant="secondary">Modo: {mode === "manual" ? "manual" : "auto"}</Badge>
+      </div>
+
+      <Tabs defaultValue="live" className="space-y-3">
             <TabsList>
               <TabsTrigger value="live">EN VIVO (Realización)</TabsTrigger>
               <TabsTrigger value="exec">EJECUTIVO (Producción)</TabsTrigger>
@@ -450,6 +459,7 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
           </Tabs>
+          </>
         )}
 
         {isLoading && <div className="text-sm text-muted-foreground">Cargando datos operativos…</div>}
