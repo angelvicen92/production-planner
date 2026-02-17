@@ -13,6 +13,7 @@ import { getIncidents } from "@/lib/war-room-store";
 import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
 import { pickDefaultPlan } from "@/lib/plan-default";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
+import { useMeLinks } from "@/hooks/useMeLinks";
 
 const roles = ["Realización", "Producción", "Redacción", "Técnico", "Coach/Contenido"];
 
@@ -30,9 +31,11 @@ export default function CallSheetPage() {
   const [compact, setCompact] = useState(false);
   const [printMode, setPrintMode] = useState(false);
   const [pdfHelpOpen, setPdfHelpOpen] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
+  const { links, staffPerson, resourceItem } = useMeLinks(true);
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -41,6 +44,36 @@ export default function CallSheetPage() {
     () => [...(data.tasks || [])].sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999)),
     [data.tasks],
   );
+
+  useEffect(() => {
+    if (!links?.staffPersonId) return;
+    const linked = (data.staffAssignments || []).find((a: any) => Number(a.staffPersonId) === Number(links.staffPersonId));
+    if (!linked) return;
+    if (linked.staffRole === "production") setRole("Producción");
+    if (linked.staffRole === "editorial") setRole("Redacción");
+  }, [data.staffAssignments, links?.staffPersonId]);
+
+  const myScope = useMemo(() => {
+    const set = new Set<string>();
+    if (!links?.staffPersonId) return set;
+    for (const assignment of data.staffAssignments || []) {
+      if (Number(assignment.staffPersonId) !== Number(links.staffPersonId)) continue;
+      if (assignment.scopeType === "zone" && assignment.zoneId) set.add(`zone:${assignment.zoneId}`);
+      if (assignment.scopeType === "space" && assignment.spaceId) set.add(`space:${assignment.spaceId}`);
+    }
+    return set;
+  }, [data.staffAssignments, links?.staffPersonId]);
+
+  const tasksView = useMemo(() => {
+    if (!onlyMine) return tasks;
+    if (links?.staffPersonId && myScope.size > 0) {
+      return tasks.filter((task: any) => myScope.has(`space:${task?.spaceId}`) || myScope.has(`zone:${task?.zoneId}`));
+    }
+    if (links?.resourceItemId && String(resourceItem?.typeName || "").toLowerCase().includes("cámara")) {
+      return tasks.filter((task: any) => Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0) > 0);
+    }
+    return tasks;
+  }, [onlyMine, tasks, links, myScope, resourceItem]);
 
   const notesKey = `call-sheet-notes-${selected?.id || "none"}-${role}`;
   const [notes, setNotes] = useState("");
@@ -52,21 +85,21 @@ export default function CallSheetPage() {
   }, [notesKey, notes]);
 
   const blocks = useMemo(() => ({
-    Mañana: tasks.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) < 12 * 60),
-    Mediodía: tasks.filter((task: any) => {
+    Mañana: tasksView.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) < 12 * 60),
+    Mediodía: tasksView.filter((task: any) => {
       const minute = hhmmToMinutes(task?.startPlanned) ?? 0;
       return minute >= 12 * 60 && minute < 16 * 60;
     }),
-    Tarde: tasks.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) >= 16 * 60),
-  }), [tasks]);
+    Tarde: tasksView.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) >= 16 * 60),
+  }), [tasksView]);
 
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-  const nowTask = tasks.find((task: any) => {
+  const nowTask = tasksView.find((task: any) => {
     const start = hhmmToMinutes(task?.startPlanned);
     const end = hhmmToMinutes(task?.endPlanned);
     return start !== null && end !== null && nowMinutes >= start && nowMinutes <= end;
   });
-  const nextTask = tasks.find((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes);
+  const nextTask = tasksView.find((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes);
 
   const critical = useMemo(() => {
     const output: string[] = [];
@@ -176,6 +209,12 @@ export default function CallSheetPage() {
               else window.print();
             }}>Exportar PDF</Button>
             <Button variant="outline" onClick={copySummary}>Copiar resumen</Button>
+            {(staffPerson || resourceItem) ? (
+              <Badge variant="secondary">{staffPerson ? `Operador: ${staffPerson.name}` : `Recurso vinculado: ${resourceItem?.name || "-"}`}</Badge>
+            ) : null}
+            {(links?.staffPersonId || links?.resourceItemId) ? (
+              <Button variant={onlyMine ? "default" : "outline"} onClick={() => setOnlyMine((v) => !v)}>Solo mis scopes</Button>
+            ) : null}
           </div>
           <Tabs value={role} onValueChange={setRole} className="mt-3">
             <TabsList>{roles.map((item) => <TabsTrigger key={item} value={item}>{item}</TabsTrigger>)}</TabsList>

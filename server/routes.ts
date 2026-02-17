@@ -14,6 +14,22 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  const ensureAdmin = async (req: any, res: any): Promise<{ ok: true; userId: string } | { ok: false }> => {
+    const userId = req?.user?.id as string | undefined;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return { ok: false };
+    }
+
+    const role = await getUserRole(userId);
+    if (role !== "admin") {
+      withPermissionDenied(res);
+      return { ok: false };
+    }
+
+    return { ok: true, userId };
+  };
+
 
 
 function mapDeleteError(err: any, fallback: string) {
@@ -180,6 +196,186 @@ function mapDeleteError(err: any, fallback: string) {
       return res.json({ role });
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch user role" });
+    }
+  });
+
+  app.get("/api/me/links", async (req, res) => {
+    try {
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { data, error } = await supabaseAdmin
+        .from("user_entity_links")
+        .select("entity_type, entity_id")
+        .eq("user_id", userId)
+        .eq("is_primary", true);
+
+      if (error) throw error;
+
+      let staffPersonId: number | null = null;
+      let resourceItemId: number | null = null;
+      for (const row of data ?? []) {
+        if (row.entity_type === "staff_person") staffPersonId = Number(row.entity_id);
+        if (row.entity_type === "resource_item") resourceItemId = Number(row.entity_id);
+      }
+
+      return res.json({ staffPersonId, resourceItemId });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch user links" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const auth = await ensureAdmin(req, res);
+      if (!auth.ok) return;
+
+      const page = Math.max(1, Number(req.query.page ?? 1));
+      const perPage = 50;
+      const userList = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+      if (userList.error) {
+        return res.status(500).json({ message: `Supabase admin listUsers falló: ${userList.error.message}` });
+      }
+
+      const users = userList.data?.users ?? [];
+      const userIds = users.map((u) => u.id);
+
+      const rolesMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: roleRows, error: roleErr } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id, roles(key)")
+          .in("user_id", userIds);
+        if (roleErr) throw roleErr;
+        for (const row of roleRows ?? []) {
+          rolesMap.set(String((row as any).user_id), String((row as any).roles?.key ?? "viewer"));
+        }
+      }
+
+      const linksMap = new Map<string, { staffPersonId: number | null; resourceItemId: number | null }>();
+      if (userIds.length > 0) {
+        const { data: linkRows, error: linkErr } = await supabaseAdmin
+          .from("user_entity_links")
+          .select("user_id, entity_type, entity_id")
+          .in("user_id", userIds)
+          .eq("is_primary", true);
+        if (linkErr) throw linkErr;
+
+        for (const userId of userIds) {
+          linksMap.set(userId, { staffPersonId: null, resourceItemId: null });
+        }
+        for (const row of linkRows ?? []) {
+          const userId = String((row as any).user_id);
+          const current = linksMap.get(userId) ?? { staffPersonId: null, resourceItemId: null };
+          if ((row as any).entity_type === "staff_person") current.staffPersonId = Number((row as any).entity_id);
+          if ((row as any).entity_type === "resource_item") current.resourceItemId = Number((row as any).entity_id);
+          linksMap.set(userId, current);
+        }
+      }
+
+      const payload = users.map((user) => ({
+        id: user.id,
+        email: user.email ?? "",
+        createdAt: user.created_at ?? null,
+        lastSignInAt: user.last_sign_in_at ?? null,
+        roleKey: (rolesMap.get(user.id) as any) || "viewer",
+        links: linksMap.get(user.id) ?? { staffPersonId: null, resourceItemId: null },
+      }));
+
+      return res.json({
+        users: payload,
+        nextPage: users.length >= perPage ? page + 1 : null,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch admin users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/role", async (req, res) => {
+    try {
+      const auth = await ensureAdmin(req, res);
+      if (!auth.ok) return;
+
+      const userId = String(req.params.userId || "").trim();
+      const parsed = z.object({ roleKey: z.enum(["admin", "production", "aux", "viewer"]) }).parse(req.body);
+
+      const { data: roleRow, error: roleErr } = await supabaseAdmin
+        .from("roles")
+        .select("id, key")
+        .eq("key", parsed.roleKey)
+        .single();
+      if (roleErr || !roleRow?.id) throw roleErr || new Error("Role not found");
+
+      const { error: upsertErr } = await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: userId, role_id: roleRow.id }, { onConflict: "user_id" });
+      if (upsertErr) throw upsertErr;
+
+      const warning = userId === auth.userId && parsed.roleKey !== "admin"
+        ? "Te estás quitando rol admin a ti mismo."
+        : undefined;
+
+      return res.json({ roleKey: parsed.roleKey, warning });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Cannot update user role" });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/links", async (req, res) => {
+    try {
+      const auth = await ensureAdmin(req, res);
+      if (!auth.ok) return;
+
+      const userId = String(req.params.userId || "").trim();
+      const parsed = z.object({
+        staffPersonId: z.number().int().positive().nullable().optional(),
+        resourceItemId: z.number().int().positive().nullable().optional(),
+      }).parse(req.body ?? {});
+
+      if (parsed.staffPersonId != null) {
+        const { data, error } = await supabaseAdmin.from("staff_people").select("id").eq("id", parsed.staffPersonId).maybeSingle();
+        if (error) throw error;
+        if (!data) return res.status(400).json({ message: "Staff person no existe" });
+      }
+
+      if (parsed.resourceItemId != null) {
+        const { data, error } = await supabaseAdmin.from("resource_items").select("id").eq("id", parsed.resourceItemId).maybeSingle();
+        if (error) throw error;
+        if (!data) return res.status(400).json({ message: "Resource item no existe" });
+      }
+
+      const syncLink = async (entityType: "staff_person" | "resource_item", entityId?: number | null) => {
+        if (entityId == null) {
+          const { error } = await supabaseAdmin
+            .from("user_entity_links")
+            .delete()
+            .eq("user_id", userId)
+            .eq("entity_type", entityType)
+            .eq("is_primary", true);
+          if (error) throw error;
+          return;
+        }
+
+        const { error } = await supabaseAdmin
+          .from("user_entity_links")
+          .upsert(
+            { user_id: userId, entity_type: entityType, entity_id: entityId, is_primary: true },
+            { onConflict: "user_id,entity_type,is_primary" },
+          );
+        if (error) throw error;
+      };
+
+      await syncLink("staff_person", parsed.staffPersonId ?? null);
+      await syncLink("resource_item", parsed.resourceItemId ?? null);
+
+      return res.json({
+        links: {
+          staffPersonId: parsed.staffPersonId ?? null,
+          resourceItemId: parsed.resourceItemId ?? null,
+        },
+      });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Cannot update user links" });
     }
   });
 
