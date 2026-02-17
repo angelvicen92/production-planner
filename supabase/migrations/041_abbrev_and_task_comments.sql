@@ -1,4 +1,4 @@
--- 040_abbrev_and_task_comments.sql
+-- 041_abbrev_and_task_comments.sql
 
 ALTER TABLE public.task_templates
   ADD COLUMN IF NOT EXISTS abbrev text,
