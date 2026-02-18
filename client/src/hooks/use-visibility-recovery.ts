@@ -11,11 +11,9 @@ export function useVisibilityRecovery(options: UseVisibilityRecoveryOptions = {}
   const queryClient = useQueryClient();
 
   const recoverNow = useCallback(async () => {
-    await queryClient.cancelQueries();
-    await queryClient.getMutationCache().clear();
-
-    queryClient.invalidateQueries();
-    await queryClient.refetchQueries({ type: "active" });
+    await queryClient.invalidateQueries({
+      refetchType: "active",
+    });
 
     const client = await getSupabaseClient();
     const {
@@ -34,6 +32,7 @@ export function useVisibilityRecovery(options: UseVisibilityRecoveryOptions = {}
 
   useEffect(() => {
     let throttle: ReturnType<typeof setTimeout> | null = null;
+    let hiddenAt: number | null = document.visibilityState === "hidden" ? Date.now() : null;
 
     const triggerRecovery = () => {
       if (throttle) return;
@@ -44,7 +43,15 @@ export function useVisibilityRecovery(options: UseVisibilityRecoveryOptions = {}
     };
 
     const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+
       if (document.visibilityState === "visible") {
+        const hiddenDurationMs = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (hiddenDurationMs < 3_000) return;
         triggerRecovery();
       }
     };

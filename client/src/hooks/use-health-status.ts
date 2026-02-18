@@ -30,8 +30,10 @@ export function useHealthStatus() {
       await apiRequest<{ status: string }>("GET", "/api/health");
       setApiPingOk(true);
       setLastPingMs(Math.round(performance.now() - started));
-    } catch {
-      setApiPingOk(false);
+    } catch (error: any) {
+      if (error?.name !== "AbortError") {
+        setApiPingOk(false);
+      }
       setLastPingMs(Math.round(performance.now() - started));
     }
   }, []);
