@@ -100,8 +100,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     if (!Number.isFinite(id)) continue;
 
-    // ✅ EXCEPCIÓN: la tarea "comida" no requiere plató/zona y no debe generar warning
+    // ✅ EXCEPCIÓN: tareas de comida/break no requieren siempre plató/zona
     if (isMealTask(task)) continue;
+    if (task?.breakKind === "space_meal" && Number.isFinite(Number(task?.spaceId))) continue;
+    if (task?.breakKind === "itinerant_meal" && Number.isFinite(Number(task?.itinerantTeamId))) continue;
 
     if (zid === null || zid === undefined || !Number.isFinite(Number(zid))) {
       excludedTaskIds.add(id);

@@ -25,7 +25,7 @@ const scopeLabels: Record<string, string> = {
 };
 
 export default function CallSheetPage() {
-  const { data: plans = [], isLoading: plansLoading } = usePlans();
+  const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
   const [planId, setPlanId] = useState<string>("");
   const [role, setRole] = useState(roles[0]);
   const [compact, setCompact] = useState(false);
@@ -179,6 +179,7 @@ export default function CallSheetPage() {
   };
 
   if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+  if (plansError) return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
 
   if (!plans.length) {
     return (

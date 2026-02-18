@@ -921,8 +921,12 @@ export class SupabaseStorage implements IStorage {
         }
       }
     } catch (e: any) {
+      await supabaseAdmin.from("plans").delete().eq("id", data.id);
+      throw new Error(e?.message || "Failed to snapshot resources for plan");
+    }
+
+    try {
       // ✅ Snapshot: defaults de ROLES (Settings -> Plan)
-      // 1) modo por plató (zone|space)
       const { data: staffModeDefs, error: smdErr } = await supabaseAdmin
         .from("staff_zone_mode_defaults")
         .select("zone_id, mode");
@@ -942,16 +946,13 @@ export class SupabaseStorage implements IStorage {
           const { error: insErr } = await supabaseAdmin
             .from("plan_zone_staff_mode")
             .insert(rows);
-
           if (insErr) throw insErr;
         }
       }
 
-      // 2) asignaciones (zone/space/reality_team)
       const { data: staffAsgDefs, error: sadErr } = await supabaseAdmin
         .from("staff_assignment_defaults")
         .select("staff_role, staff_person_id, scope_type, zone_id, space_id, reality_team_code");
-
       if (sadErr) throw sadErr;
 
       if ((staffAsgDefs ?? []).length > 0) {
@@ -968,12 +969,11 @@ export class SupabaseStorage implements IStorage {
         const { error: insErr } = await supabaseAdmin
           .from("plan_staff_assignments")
           .insert(rows);
-
         if (insErr) throw insErr;
       }
-      // Si falla el snapshot, borramos el plan recién creado para no dejarlo inconsistente
+    } catch (e: any) {
       await supabaseAdmin.from("plans").delete().eq("id", data.id);
-      throw new Error(e?.message || "Failed to snapshot resources for plan");
+      throw new Error(e?.message || "Failed to snapshot staff defaults for plan");
     }
 
     await this.syncPlanMealBreaks(Number((data as any).id));

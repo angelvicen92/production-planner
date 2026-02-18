@@ -18,7 +18,7 @@ import { formatRange, hhmmToMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
 
 export default function WarRoomPage() {
-  const { data: plans = [], isLoading: plansLoading } = usePlans();
+  const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
   const [planId, setPlanId] = useState<string>("");
   const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
@@ -116,6 +116,7 @@ export default function WarRoomPage() {
   const spacesByZone = (zoneId: string) => (data.spaces || []).filter((space: any) => String(space.zoneId) === String(zoneId));
 
   if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+  if (plansError) return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
 
   return (
     <Layout>

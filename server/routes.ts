@@ -1146,7 +1146,8 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const { data, error } = await supabaseAdmin
         .from("resource_types")
-        .select("id, code, name, resource_items(id, name, is_active)")
+        .select("id, code, name, is_active, resource_items(id, name, is_active)")
+        .eq("is_active", true)
         .order("name", { ascending: true });
 
       if (error) throw error;
@@ -1206,14 +1207,13 @@ function mapDeleteError(err: any, fallback: string) {
 
       const { error } = await supabaseAdmin
         .from("resource_types")
-        .delete()
+        .update({ is_active: false })
         .eq("id", id);
 
       if (error) throw error;
-      return res.json({ success: true });
+      return res.json({ success: true, archived: true });
     } catch (err: any) {
-      const mapped = mapDeleteError(err, "Cannot delete resource type");
-      return res.status(mapped.status).json(mapped.body);
+      return res.status(400).json({ message: err?.message || "Cannot archive resource type" });
     }
   });
 
@@ -1278,14 +1278,13 @@ function mapDeleteError(err: any, fallback: string) {
 
       const { error } = await supabaseAdmin
         .from("resource_items")
-        .delete()
+        .update({ is_active: false })
         .eq("id", id);
 
       if (error) throw error;
-      res.json({ success: true });
+      res.json({ success: true, archived: true });
     } catch (err: any) {
-      const mapped = mapDeleteError(err, "Cannot delete resource item");
-      return res.status(mapped.status).json(mapped.body);
+      return res.status(400).json({ message: err?.message || "Cannot archive resource item" });
     }
   });
 
@@ -1593,12 +1592,12 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.mainZoneId !== undefined) patch.main_zone_id = input.mainZoneId;
       if (input.optimizationMode !== undefined) patch.optimization_mode = input.optimizationMode;
 
-      const normalizeHeuristicPatch = (key: keyof typeof current.heuristics) => {
-        const incoming = input.heuristics?.[key];
-        if (!incoming) return current.heuristics[key];
+      const normalizeHeuristicPatch = (key: string) => {
+        const incoming = (input.heuristics as any)?.[key];
+        if (!incoming) return (current.heuristics as any)[key];
         return {
-          basicLevel: Math.max(0, Math.min(3, Number(incoming.basicLevel ?? current.heuristics[key].basicLevel))),
-          advancedValue: Math.max(0, Math.min(10, Number(incoming.advancedValue ?? current.heuristics[key].advancedValue))),
+          basicLevel: Math.max(0, Math.min(3, Number(incoming.basicLevel ?? (current.heuristics as any)[key].basicLevel))),
+          advancedValue: Math.max(0, Math.min(10, Number(incoming.advancedValue ?? (current.heuristics as any)[key].advancedValue))),
         };
       };
 
@@ -2713,6 +2712,12 @@ function mapDeleteError(err: any, fallback: string) {
     app.get(api.plans.get.path, async (req, res) => {
       try {
         const planId = Number(req.params.id);
+        try {
+          await storage.syncPlanMealBreaks(planId);
+        } catch (syncErr) {
+          console.warn("[GET PLAN] syncPlanMealBreaks failed", syncErr);
+        }
+
         const full = await storage.getPlanFullDetails(planId);
         if (!full) return res.status(404).json({ message: "Plan not found" });
 
@@ -2769,6 +2774,13 @@ function mapDeleteError(err: any, fallback: string) {
             latestEnd: b.latest_end ?? null,
             lockedStart: b.locked_start ?? null,
             lockedEnd: b.locked_end ?? null,
+          })),
+          locks: (full.locks || []).map((l: any) => ({
+            id: Number(l.id),
+            taskId: Number(l.task_id ?? l.taskId),
+            lockType: String(l.lock_type ?? l.lockType ?? "time"),
+            lockedStart: l.locked_start ?? l.lockedStart ?? null,
+            lockedEnd: l.locked_end ?? l.lockedEnd ?? null,
           })),
         });
       } catch (e: any) {
@@ -3110,6 +3122,107 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+
+  app.patch("/api/daily-tasks/:id/time-lock", async (req, res) => {
+    try {
+      const taskId = Number(req.params.id);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return res.status(400).json({ message: "Invalid task id" });
+      }
+
+      const input = z
+        .object({
+          lockedStart: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+          lockedEnd: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+          clear: z.boolean().optional(),
+        })
+        .strict()
+        .parse(req.body ?? {});
+
+      const { data: task, error: taskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id, plan_id")
+        .eq("id", taskId)
+        .maybeSingle();
+
+      if (taskErr) throw taskErr;
+      if (!task) return res.status(404).json({ message: "Task not found" });
+
+      const planId = Number((task as any).plan_id);
+
+      if (input.clear) {
+        const { error: delErr } = await supabaseAdmin
+          .from("locks")
+          .delete()
+          .eq("plan_id", planId)
+          .eq("task_id", taskId)
+          .eq("lock_type", "time");
+        if (delErr) throw delErr;
+
+        return res.json({ success: true, cleared: true });
+      }
+
+      const lockedStart = input.lockedStart ?? null;
+      const lockedEnd = input.lockedEnd ?? null;
+      if (!lockedStart || !lockedEnd) {
+        return res.status(400).json({ message: "lockedStart and lockedEnd are required" });
+      }
+      if (lockedEnd <= lockedStart) {
+        return res.status(400).json({ message: "lockedEnd must be greater than lockedStart" });
+      }
+
+      const { data: existing, error: existingErr } = await supabaseAdmin
+        .from("locks")
+        .select("id, lock_type")
+        .eq("plan_id", planId)
+        .eq("task_id", taskId)
+        .in("lock_type", ["time", "full"])
+        .limit(1)
+        .maybeSingle();
+      if (existingErr) throw existingErr;
+
+      if (existing?.id) {
+        const { error: updLockErr } = await supabaseAdmin
+          .from("locks")
+          .update({
+            lock_type: "time",
+            locked_start: lockedStart,
+            locked_end: lockedEnd,
+            created_by: "manual",
+            reason: "fixed_by_user",
+          })
+          .eq("id", Number(existing.id));
+        if (updLockErr) throw updLockErr;
+      } else {
+        const { error: insErr } = await supabaseAdmin
+          .from("locks")
+          .insert({
+            plan_id: planId,
+            task_id: taskId,
+            lock_type: "time",
+            locked_start: lockedStart,
+            locked_end: lockedEnd,
+            created_by: "manual",
+            reason: "fixed_by_user",
+          });
+        if (insErr) throw insErr;
+      }
+
+      const { error: updTaskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .update({ start_planned: lockedStart, end_planned: lockedEnd })
+        .eq("id", taskId);
+      if (updTaskErr) throw updTaskErr;
+
+      return res.json({ success: true, taskId, planId, lockedStart, lockedEnd });
+    } catch (err: any) {
+      if (err?.name === "ZodError") {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot update time lock" });
+    }
+  });
+
   // Engine Integration
   // ✅ DEBUG: ver exactamente qué recibe el motor (EngineInput)
   app.get("/api/debug/engine-input/:planId", async (req, res) => {
@@ -3195,15 +3308,50 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const engineInput = await buildEngineInput(planId, storage);
       const result = generatePlan(engineInput);
+      const details = await storage.getPlanFullDetails(planId);
+      const templates = await storage.getTaskTemplates();
+      const spaces = await storage.getSpaces();
+      const zones = await storage.getZones();
+      const contestants = await storage.getContestantsByPlan(planId);
+      const tasks = details?.tasks ?? [];
+
+      const taskById = new Map<number, any>((tasks as any[]).map((t: any) => [Number(t.id), t]));
+      const tplById = new Map<number, any>((templates as any[]).map((t: any) => [Number(t.id), t]));
+      const zoneById = new Map<number, any>((zones as any[]).map((z: any) => [Number(z.id), z]));
+      const spaceById = new Map<number, any>((spaces as any[]).map((sp: any) => [Number(sp.id), sp]));
+      const contestantById = new Map<number, any>((contestants as any[]).map((c: any) => [Number(c.id), c]));
+
+      const enrich = (raw: any) => {
+        const w = typeof raw === "string" ? { message: raw } : { ...(raw ?? {}) };
+        const task = Number.isFinite(Number(w.taskId)) ? taskById.get(Number(w.taskId)) : null;
+        const templateId = Number(w.templateId ?? task?.template_id ?? task?.templateId ?? NaN);
+        const contestantId = Number(w.contestantId ?? task?.contestant_id ?? task?.contestantId ?? NaN);
+        const zoneId = Number(w.zoneId ?? task?.zone_id ?? task?.zoneId ?? NaN);
+        const spaceId = Number(w.spaceId ?? task?.space_id ?? task?.spaceId ?? NaN);
+
+        const templateName = Number.isFinite(templateId) ? String(tplById.get(templateId)?.name ?? "") : "";
+        const contestantName = Number.isFinite(contestantId) ? String(contestantById.get(contestantId)?.name ?? "") : "";
+        const zoneName = Number.isFinite(zoneId) ? String(zoneById.get(zoneId)?.name ?? "") : "";
+        const spaceName = Number.isFinite(spaceId) ? String(spaceById.get(spaceId)?.name ?? "") : "";
+        const taskName = task ? `${templateName || task?.template?.name || 'Tarea'}${contestantName ? ` (${contestantName})` : ""}` : undefined;
+
+        return {
+          ...w,
+          taskName: w.taskName ?? taskName,
+          templateName: w.templateName ?? (templateName || undefined),
+          contestantName: w.contestantName ?? (contestantName || undefined),
+          zoneName: w.zoneName ?? (zoneName || undefined),
+          spaceName: w.spaceName ?? (spaceName || undefined),
+          message:
+            w.message ||
+            [taskName, zoneName ? `Plató: ${zoneName}` : "", spaceName ? `Espacio: ${spaceName}` : ""]
+              .filter(Boolean)
+              .join(" · "),
+        };
+      };
 
       if (!result.feasible) {
-        // ✅ Importante: NO convertir reasons a string.
-        // La UI necesita `code`, `contestantId`, `missingTemplateId`, etc. para acciones (crear prerequisitos).
-        const reasons = (result.reasons || []).map((r: any) => {
-          if (typeof r === "string") return { message: r };
-          if (r && typeof r === "object") return r;
-          return { message: String(r) };
-        });
+        const reasons = (result.reasons || []).map((r: any) => enrich(r));
 
         return res.status(422).json({
           message: "INFEASIBLE",
@@ -3238,7 +3386,7 @@ function mapDeleteError(err: any, fallback: string) {
         updated++;
       }
 
-      const warnings = (result as any)?.warnings ?? [];
+      const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       res.json({ success: true, planId, tasksUpdated: updated, warnings });
 
     } catch (e: any) {

@@ -21,6 +21,7 @@ import {
   Users,
   Check,
   ChevronsUpDown,
+  Lock,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +98,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 
 type ResourceSelectable = {
   id: string | number;
@@ -818,6 +820,7 @@ export default function PlanDetailsPage() {
   const [activeTab, setActiveTab] = useState<
     "tasks" | "planning" | "resources" | "execution"
   >("tasks");
+  const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -884,6 +887,15 @@ export default function PlanDetailsPage() {
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
   >([]);
+  const lockedTaskIds = useMemo(() => {
+    const set = new Set<number>();
+    for (const l of ((plan as any)?.locks ?? []) as any[]) {
+      const tid = Number(l?.task_id ?? l?.taskId);
+      if (Number.isFinite(tid) && tid > 0) set.add(tid);
+    }
+    return set;
+  }, [plan]);
+
   const handlePlanningTaskStatusChange = async (
     task: any,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
@@ -1516,7 +1528,7 @@ export default function PlanDetailsPage() {
                 if (!open) setSelectedContestant(null);
               }}
             >
-              <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden">
+              <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>
                     Ficha: {selectedContestant?.name ?? "Concursante"}
@@ -1905,7 +1917,7 @@ export default function PlanDetailsPage() {
                       </span>
                     </div>
 
-                    <div className="rounded-lg border border-border overflow-hidden">
+                    <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1943,7 +1955,27 @@ export default function PlanDetailsPage() {
                                 </TableCell>
 
                                 <TableCell className="text-xs">
-                                  {t.status || "pending"}
+                                  <Select
+                                    value={t.status || "pending"}
+                                    onValueChange={(next) => {
+                                      updateTaskStatus.mutate({
+                                        taskId: t.id,
+                                        planId: id,
+                                        status: next as any,
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-8 w-[150px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">pending</SelectItem>
+                                      <SelectItem value="in_progress">in_progress</SelectItem>
+                                      <SelectItem value="done">done</SelectItem>
+                                      <SelectItem value="interrupted">interrupted</SelectItem>
+                                      <SelectItem value="cancelled">cancelled</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </TableCell>
 
                                 {(() => {
@@ -2174,15 +2206,13 @@ export default function PlanDetailsPage() {
                               </TableCell>
 
                               <TableCell>
-                                <Input
-                                  className="h-8"
-                                  defaultValue={t.comment1Color ?? ""}
-                                  placeholder="#RRGGBB"
-                                  onBlur={async (e) => {
+                                <ColorSwatchPicker
+                                  value={t.comment1Color ?? ""}
+                                  onChange={async (next) => {
                                     await apiRequest(
                                       "PATCH",
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment1Color: e.currentTarget.value || null },
+                                      { comment1Color: next || null },
                                     );
                                     queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
                                   }}
@@ -2206,15 +2236,13 @@ export default function PlanDetailsPage() {
                               </TableCell>
 
                               <TableCell>
-                                <Input
-                                  className="h-8"
-                                  defaultValue={t.comment2Color ?? ""}
-                                  placeholder="#RRGGBB"
-                                  onBlur={async (e) => {
+                                <ColorSwatchPicker
+                                  value={t.comment2Color ?? ""}
+                                  onChange={async (next) => {
                                     await apiRequest(
                                       "PATCH",
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment2Color: e.currentTarget.value || null },
+                                      { comment2Color: next || null },
                                     );
                                     queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
                                   }}
@@ -2339,7 +2367,14 @@ export default function PlanDetailsPage() {
                     <p className="text-sm text-muted-foreground">
                       (Opcional) Crear una tarea global sin pasar por la ficha.
                     </p>
-                    <AddTaskDialog planId={id} />
+                    <div className="flex items-center gap-2">
+                      {tasksShowUnplannedOnly ? (
+                        <Button variant="outline" size="sm" onClick={() => setTasksShowUnplannedOnly(false)}>
+                          Ver todas
+                        </Button>
+                      ) : null}
+                      <AddTaskDialog planId={id} />
+                    </div>
                   </div>
 
                   <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
@@ -2376,7 +2411,13 @@ export default function PlanDetailsPage() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          plan.dailyTasks?.map((task: any) => (
+                          (plan.dailyTasks ?? [])
+                            .filter((task: any) =>
+                              tasksShowUnplannedOnly
+                                ? String(task?.status ?? "pending") === "pending" && (!task?.startPlanned || !task?.endPlanned)
+                                : true,
+                            )
+                            .map((task: any) => (
                             <TableRow key={task.id}>
                               <TableCell className="font-medium">
                                 {task.template?.name ||
@@ -2705,38 +2746,51 @@ export default function PlanDetailsPage() {
                               })()}
 
                               <TableCell>
-                                {task.status !== "in_progress" &&
-                                task.status !== "done" ? (
+                                <div className="flex items-center gap-2">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={async () => {
-                                      if (!confirm("Delete this task?")) return;
-
-                                      await apiRequest(
-                                        "DELETE",
-                                        buildUrl(api.dailyTasks.delete.path, {
-                                          id: task.id,
-                                        }),
-                                      );
-
-                                      // refrescar plan (tareas incluidas)
-                                      queryClient.invalidateQueries({
-                                        queryKey: [
-                                          buildUrl(api.plans.get.path, { id }),
-                                        ],
+                                      const start = window.prompt("Hora inicio fija (HH:MM)", task.startPlanned || "10:00");
+                                      if (!start) return;
+                                      const end = window.prompt("Hora fin fija (HH:MM)", task.endPlanned || "10:30");
+                                      if (!end) return;
+                                      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, {
+                                        lockedStart: start,
+                                        lockedEnd: end,
                                       });
-
-                                      toast({ title: "Task deleted" });
+                                      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                      toast({ title: "Tarea fijada" });
                                     }}
                                   >
-                                    Delete
+                                    <Lock className="h-4 w-4 mr-1" /> Fijar
                                   </Button>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">
-                                    Locked
-                                  </span>
-                                )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={async () => {
+                                      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, { clear: true });
+                                      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                      toast({ title: "Fijación eliminada" });
+                                    }}
+                                  >
+                                    Quitar
+                                  </Button>
+                                  {task.status !== "in_progress" && task.status !== "done" ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => {
+                                        if (!confirm("Delete this task?")) return;
+                                        await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: task.id }));
+                                        queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                        toast({ title: "Task deleted" });
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  ) : null}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -2828,10 +2882,16 @@ export default function PlanDetailsPage() {
                     Tasks:{" "}
                     {plan.dailyTasks?.filter((t: any) => t.startPlanned).length}
                   </Badge>
-                  <Badge
+                  <Button
+                    type="button"
                     variant="outline"
+                    size="sm"
                     className="bg-amber-50/60"
-                    title="Tareas pending sin inicio/fin planificado; no se muestran en el timeline hasta planificarlas"
+                    title="Tareas pending sin inicio/fin planificado"
+                    onClick={() => {
+                      setActiveTab("tasks");
+                      setTasksShowUnplannedOnly(true);
+                    }}
                   >
                     Pendientes sin planificar:{" "}
                     {
@@ -2841,7 +2901,7 @@ export default function PlanDetailsPage() {
                           (!t?.startPlanned || !t?.endPlanned),
                       ).length
                     }
-                  </Badge>
+                  </Button>
                 </div>
               </div>
 
@@ -3003,6 +3063,7 @@ export default function PlanDetailsPage() {
                   staffAssignments={planStaffAssignments as any}
                   onTaskStatusChange={handlePlanningTaskStatusChange}
                   taskStatusPending={updateTaskStatus.isPending}
+                  lockedTaskIds={Array.from(lockedTaskIds)}
                 />
               </FullscreenPlanningPanel>
             </div>

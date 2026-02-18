@@ -78,6 +78,16 @@ export async function buildEngineInput(
     if (spaceName) spaceNameById[id] = spaceName;
   }
 
+
+  const zoneIdBySpaceId: Record<number, number> = {};
+  for (const s of (allSpaces as any[]) ?? []) {
+    const sid = Number((s as any)?.id);
+    const zid = Number((s as any)?.zone_id ?? (s as any)?.zoneId ?? NaN);
+    if (Number.isFinite(sid) && sid > 0 && Number.isFinite(zid) && zid > 0) {
+      zoneIdBySpaceId[sid] = zid;
+    }
+  }
+
   const zoneResourceTypeRequirements =
     (await storage.getZoneResourceTypeRequirementsForPlan(planId)) ?? {};
 
@@ -468,8 +478,11 @@ export async function buildEngineInput(
               templateId: -1,
               templateName: "COMIDA",
               status: "pending" as const,
-              zoneId: null,
               spaceId: b.space_id == null ? null : Number(b.space_id),
+              zoneId:
+                b.space_id == null
+                  ? null
+                  : zoneIdBySpaceId[Number(b.space_id)] ?? null,
               contestantId: null,
               contestantName: null,
               breakId: Number(b.id),
