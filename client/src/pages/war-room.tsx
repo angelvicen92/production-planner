@@ -17,6 +17,7 @@ import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName
 import { formatRange, hhmmToMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
 import { QueryGuard } from "@/components/QueryGuard";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 export default function WarRoomPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
@@ -33,6 +34,8 @@ export default function WarRoomPage() {
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
   const [storeVersion, setStoreVersion] = useState(0);
+  const { nowTime } = useProductionClock();
+  const nowMinutes = hhmmToMinutes(nowTime) ?? 0;
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -81,13 +84,12 @@ export default function WarRoomPage() {
   };
 
   const upcomingNoLocation = useMemo(() => {
-    const now = new Date().getHours() * 60 + new Date().getMinutes();
     return (data.tasks || []).filter((task: any) => {
       const start = hhmmToMinutes(task?.startPlanned);
       if (start === null) return false;
-      return !task?.zoneId && !task?.spaceId && start >= now && start <= now + 60;
+      return !task?.zoneId && !task?.spaceId && start >= nowMinutes && start <= nowMinutes + 60;
     });
-  }, [data.tasks]);
+  }, [data.tasks, nowMinutes]);
 
   const locksUpcoming = useMemo(() => {
     const soonTaskIds = new Set(
@@ -95,13 +97,12 @@ export default function WarRoomPage() {
         .filter((task: any) => {
           const start = hhmmToMinutes(task?.startPlanned);
           if (start === null) return false;
-          const now = new Date().getHours() * 60 + new Date().getMinutes();
-          return start >= now && start <= now + 90;
+          return start >= nowMinutes && start <= nowMinutes + 90;
         })
         .map((task: any) => Number(task.id)),
     );
     return (data.locks || []).filter((lock: any) => soonTaskIds.has(Number(lock.task_id)));
-  }, [data.locks, data.tasks]);
+  }, [data.locks, data.tasks, nowMinutes]);
 
   const summary = [
     `War Room · ${(selected as any)?.name || "Sin plan"}`,
