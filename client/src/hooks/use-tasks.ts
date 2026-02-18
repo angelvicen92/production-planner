@@ -183,6 +183,52 @@ export function useUpdateTaskStatus() {
   });
 }
 
+export function useResetTask() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ taskId }: { taskId: number; planId: number }) =>
+      apiRequest("POST", buildUrl(api.dailyTasks.reset.path, { id: taskId })),
+    onMutate: async ({ planId, taskId }) => {
+      const key = planQueryKey(planId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previousPlan = queryClient.getQueryData(key);
+
+      queryClient.setQueryData(key, (old: any) => {
+        if (!old) return old;
+        const nextDailyTasks = Array.isArray(old.dailyTasks)
+          ? old.dailyTasks.map((task: any) =>
+              Number(task?.id) === taskId
+                ? { ...task, status: "pending", startReal: null, endReal: null }
+                : task,
+            )
+          : old.dailyTasks;
+        return { ...old, dailyTasks: nextDailyTasks };
+      });
+
+      return { previousPlan, planId };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.previousPlan) {
+        queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
+      }
+      toast({
+        title: "No se pudo resetear la tarea",
+        description: err?.message || "Error desconocido",
+        variant: "destructive",
+      });
+    },
+    onSettled: (data: any, _error, vars) => {
+      const planId = Number(data?.planId ?? data?.plan_id ?? vars.planId ?? 0);
+      if (planId) {
+        queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
+      }
+      toast({ title: "Tarea reseteada", description: "La tarea volvió a pendiente." });
+    },
+  });
+}
+
 export function useLocks(planId: number) {
   return useQuery<Lock[]>({
     queryKey: planLocksQueryKey(planId),

@@ -1402,6 +1402,17 @@ export const api = {
       },
     },
 
+    reset: {
+      method: "POST" as const,
+      path: "/api/tasks/:id/reset",
+      responses: {
+        200: z.custom<typeof dailyTasks.$inferSelect>(),
+        400: errorSchemas.validation,
+        403: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+
     update: {
       method: "PATCH" as const,
       path: "/api/daily-tasks/:id",

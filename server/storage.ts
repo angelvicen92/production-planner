@@ -51,6 +51,7 @@ export interface IStorage {
     },
     userId: string,
   ): Promise<DailyTask>;
+  resetTask(taskId: number, userId: string): Promise<DailyTask>;
 
   // Templates
   getTaskTemplates(): Promise<TaskTemplate[]>;
@@ -1525,6 +1526,55 @@ export class SupabaseStorage implements IStorage {
         reason: `Execution lock for status: ${updates.status}`,
       });
     }
+
+    return updated as DailyTask;
+  }
+
+  async resetTask(taskId: number, userId: string): Promise<DailyTask> {
+    const { data: task, error: fetchError } = await supabaseAdmin
+      .from("daily_tasks")
+      .select("*")
+      .eq("id", taskId)
+      .single();
+
+    if (fetchError || !task) throw new Error("Task not found");
+
+    const previousStatus = String(task.status ?? "pending");
+    const previousStartReal = task.start_real ?? null;
+    const previousEndReal = task.end_real ?? null;
+
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from("daily_tasks")
+      .update({
+        status: "pending",
+        start_real: null,
+        end_real: null,
+      })
+      .eq("id", taskId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    const { error: eventErr } = await supabaseAdmin.from("task_status_events").insert({
+      plan_id: task.plan_id,
+      task_id: task.id,
+      status: "pending",
+      changed_by: userId ?? null,
+      time_real: getEuropeMadridTimeHHMM(),
+    });
+
+    if (eventErr) throw eventErr;
+
+    console.info("[TASK_RESET]", {
+      taskId: task.id,
+      planId: task.plan_id,
+      previousStatus,
+      previousStartReal,
+      previousEndReal,
+      userId: userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
 
     return updated as DailyTask;
   }
