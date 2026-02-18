@@ -3,7 +3,7 @@ import { apiRequest } from "@/lib/api";
 import { Plan, InsertPlan, DailyTask } from "@shared/schema";
 import { api, buildUrl } from "@shared/routes";
 import { planQueryKey } from "@/lib/plan-query-keys";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,11 +17,19 @@ export function usePlans() {
 export function usePlan(id: number) {
   const queryClient = useQueryClient();
 
+  const invalidateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!id) return;
 
-    const invalidate = () => {
-      queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+    const invalidateDebounced = () => {
+      if (invalidateTimeoutRef.current) {
+        clearTimeout(invalidateTimeoutRef.current);
+      }
+      invalidateTimeoutRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+        invalidateTimeoutRef.current = null;
+      }, 300);
     };
 
     const channel = supabase
@@ -34,7 +42,7 @@ export function usePlan(id: number) {
           table: 'daily_tasks',
           filter: `plan_id=eq.${id}`
         },
-        invalidate
+        invalidateDebounced
       )
       .on(
         'postgres_changes',
@@ -44,7 +52,7 @@ export function usePlan(id: number) {
           table: 'locks',
           filter: `plan_id=eq.${id}`
         },
-        invalidate
+        invalidateDebounced
       )
       .on(
         'postgres_changes',
@@ -54,11 +62,15 @@ export function usePlan(id: number) {
           table: 'plan_breaks',
           filter: `plan_id=eq.${id}`
         },
-        invalidate
+        invalidateDebounced
       )
       .subscribe();
 
     return () => {
+      if (invalidateTimeoutRef.current) {
+        clearTimeout(invalidateTimeoutRef.current);
+        invalidateTimeoutRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
   }, [id, queryClient]);

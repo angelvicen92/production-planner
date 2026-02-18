@@ -1,8 +1,10 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +52,11 @@ interface Task {
   comment2Color?: string | null;
   breakKind?: "space_meal" | "itinerant_meal" | string;
   itinerantTeamId?: number | null;
+  isManualBlock?: boolean;
+  manualTitle?: string | null;
+  manualColor?: string | null;
+  manualScopeType?: "space" | "contestant" | string | null;
+  manualScopeId?: number | null;
 }
 
 interface Contestant {
@@ -129,6 +136,9 @@ interface PlanningTimelineProps {
   ) => Promise<void>;
   taskStatusPending?: boolean;
   lockedTaskIds?: number[];
+  onApplyManualEdits?: (edits: Array<{ taskId: number; start: string; end: string }>) => Promise<void>;
+  onCancelManualEdits?: () => Promise<void> | void;
+  onCreateManualBlock?: () => void;
 }
 
 function taskActionsForStatus(status: string) {
@@ -156,6 +166,9 @@ function TaskStatusMenuTrigger({
   className,
   style,
   children,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
 }: {
   task: Task;
   contestantName: string;
@@ -168,6 +181,9 @@ function TaskStatusMenuTrigger({
   className: string;
   style?: CSSProperties;
   children: ReactNode;
+  draggable?: boolean;
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragEnd?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
@@ -193,6 +209,9 @@ function TaskStatusMenuTrigger({
           className={cn(className, "text-left")}
           style={style}
           disabled={!onTaskStatusChange}
+          draggable={draggable}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
         >
           {children}
         </button>
@@ -247,6 +266,9 @@ function TaskStatusMenuTrigger({
     onTaskStatusChange,
     taskStatusPending = false,
     lockedTaskIds = [],
+    onApplyManualEdits,
+    onCancelManualEdits,
+    onCreateManualBlock,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
@@ -255,6 +277,22 @@ function TaskStatusMenuTrigger({
   const lockedSet = useMemo(() => new Set((lockedTaskIds ?? []).map((id) => Number(id))), [lockedTaskIds]);
   const isTaskFixed = (task: Task) =>
     task.status === "in_progress" || task.status === "done" || lockedSet.has(Number(task.id));
+
+  const [manualMode, setManualMode] = useState(false);
+  const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
+  const dragStateRef = useRef<{ taskId: number; laneId: string } | null>(null);
+  const taskById = useMemo(() => {
+    const mapped = new Map<number, Task>();
+    for (const t of (dailyTasks ?? [])) mapped.set(Number(t.id), t);
+    return mapped;
+  }, [dailyTasks]);
+
+  const minutesToHHMM = (mins: number) => {
+    const clamped = Math.max(0, Math.min(23 * 60 + 59, Math.round(mins)));
+    const hh = String(Math.floor(clamped / 60)).padStart(2, "0");
+    const mm = String(clamped % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
 
   // =========================
   // 🎨 Helpers for UI colors
@@ -284,6 +322,7 @@ function TaskStatusMenuTrigger({
 
   const taskBaseColor = (task: Task) => {
     // En "Por plató y espacio" usamos el color secundario
+    if (task.isManualBlock && task.manualColor) return task.manualColor;
     const primary = task.template?.uiColor ?? null;
     const secondary = task.template?.uiColorSecondary ?? null;
     return viewMode === "spaces"
@@ -414,8 +453,12 @@ function TaskStatusMenuTrigger({
         breakKind: b.kind,
         itinerantTeamId: b.itinerantTeamId,
       })) as Task[];
-    return [...(dailyTasks ?? []), ...breakTasks];
-  }, [breaks, dailyTasks, viewMode]);
+    return [...(dailyTasks ?? []), ...breakTasks].map((t) => {
+      const edit = pendingManualEdits[Number(t.id)];
+      if (!edit) return t;
+      return { ...t, startPlanned: edit.start, endPlanned: edit.end };
+    });
+  }, [breaks, dailyTasks, pendingManualEdits, viewMode]);
 
   const filteredDailyTasksByStage = useMemo(() => {
     if (selectedStageIdsSet.size === 0) return timelineTasks ?? [];
@@ -1131,7 +1174,7 @@ function TaskStatusMenuTrigger({
                                 <div key={zc.zoneId} className="shrink-0 w-max">
                                   <div
                                     className="font-semibold mb-2 px-2 py-1 rounded-md border"
-                                    style={{
+                            style={{
                                       backgroundColor: hexToRgba(zc.zoneColor, 0.22) ?? undefined,
                                       borderColor: zc.zoneColor ?? undefined,
                                       color: textColorForBg(zc.zoneColor),
@@ -1346,7 +1389,7 @@ function TaskStatusMenuTrigger({
                                                 }}
                                               >
                                                 <div className="text-[12px] font-bold truncate">
-                                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
                                                   {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1429,7 +1472,7 @@ function TaskStatusMenuTrigger({
                                             }}
                                           >
                                             <div className="text-[12px] font-bold truncate">
-                                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
                                             </div>
                                             <div className="text-[10px] opacity-70">
                                               {task.startPlanned}-
@@ -1659,7 +1702,7 @@ function TaskStatusMenuTrigger({
                                       }}
                                     >
                                       <div className="text-sm font-bold truncate">
-                                        {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                        {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
                                       </div>
                                       <div className="text-xs opacity-70">
                                         {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1806,7 +1849,7 @@ function TaskStatusMenuTrigger({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="text-sm font-bold truncate">
-                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
                                 </div>
                                 <div className="text-xs opacity-70">
                                   {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
@@ -1858,6 +1901,29 @@ function TaskStatusMenuTrigger({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Switch checked={manualMode} onCheckedChange={(v) => setManualMode(Boolean(v))} />
+                  <span className="text-sm">Modo manual</span>
+                </div>
+                {manualMode ? (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/40">
+                    <span className="text-xs">Modo manual: {Object.keys(pendingManualEdits).length} cambios</span>
+                    <Button size="sm" variant="default" onClick={async () => {
+                      const edits = Object.entries(pendingManualEdits).map(([taskId, v]) => ({ taskId: Number(taskId), start: v.start, end: v.end }));
+                      if (edits.length === 0) return;
+                      await onApplyManualEdits?.(edits);
+                      setPendingManualEdits({});
+                    }}>Aplicar y replanificar</Button>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                      setPendingManualEdits({});
+                      await onCancelManualEdits?.();
+                    }}>Cancelar cambios</Button>
+                    <Button size="sm" variant="secondary" onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
+                  </div>
+                ) : null}
               </div>
 
               {/* Lanes */}
@@ -1937,7 +2003,54 @@ function TaskStatusMenuTrigger({
                       );
                     })()}
                   </div>
-                  <div className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}>
+                  <div
+                    className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}
+                    onDragOver={(e) => {
+                      if (!manualMode) return;
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      if (!manualMode) return;
+                      const dragging = dragStateRef.current;
+                      if (!dragging) return;
+                      e.preventDefault();
+                      const task = taskById.get(Number(dragging.taskId));
+                      if (!task?.startPlanned || !task?.endPlanned) return;
+                      if (task.status === "in_progress" || task.status === "done") return;
+                      if (task.isManualBlock) return;
+                      if (String(dragging.laneId) !== String(id)) return;
+
+                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const ratio = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+                      const rawStart = startMin + ratio * duration;
+                      const snapStart = Math.round(rawStart / 5) * 5;
+                      const currentStart = timeToMinutes(task.startPlanned);
+                      const currentEnd = timeToMinutes(task.endPlanned);
+                      const taskDur = Math.max(5, currentEnd - currentStart);
+                      let nextStart = Math.max(startMin, Math.min(endMin - taskDur, snapStart));
+                      let nextEnd = nextStart + taskDur;
+
+                      const peers = lane.tasks
+                        .filter((x) => Number(x.id) !== Number(task.id))
+                        .map((x) => ({ s: x.startPlanned ? timeToMinutes(x.startPlanned) : null, e: x.endPlanned ? timeToMinutes(x.endPlanned) : null }))
+                        .filter((x) => x.s !== null && x.e !== null) as Array<{ s: number; e: number }>;
+                      peers.sort((a, b) => a.s - b.s);
+                      for (const peer of peers) {
+                        if (nextEnd <= peer.s || nextStart >= peer.e) continue;
+                        nextStart = peer.e;
+                        nextEnd = nextStart + taskDur;
+                      }
+
+                      setPendingManualEdits((prev) => ({
+                        ...prev,
+                        [Number(task.id)]: {
+                          start: minutesToHHMM(nextStart),
+                          end: minutesToHHMM(nextEnd),
+                        },
+                      }));
+                      dragStateRef.current = null;
+                    }}
+                  >
                     {/* Grid 5 min (like PDF) */}
                     <div className="absolute inset-0 pointer-events-none z-0">
                       {Array.from({ length: Math.floor(duration / 5) + 1 }).map(
@@ -2001,6 +2114,7 @@ function TaskStatusMenuTrigger({
                             taskStatusPending={taskStatusPending}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
                               viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
                                 ? "ring-2 ring-green-500"

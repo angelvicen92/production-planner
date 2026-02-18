@@ -821,6 +821,30 @@ export default function PlanDetailsPage() {
     "tasks" | "planning" | "resources" | "execution"
   >("tasks");
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
+  const [timeLockDialog, setTimeLockDialog] = useState<{
+    open: boolean;
+    task: any | null;
+    start: string;
+    end: string;
+  }>({ open: false, task: null, start: "10:00", end: "10:30" });
+  const [manualBlockDialog, setManualBlockDialog] = useState<{
+    open: boolean;
+    scopeType: "space" | "contestant";
+    scopeId: string;
+    start: string;
+    end: string;
+    title: string;
+    color: string;
+  }>({
+    open: false,
+    scopeType: "space",
+    scopeId: "",
+    start: "10:00",
+    end: "10:30",
+    title: "Bloqueo manual",
+    color: "#FCD34D",
+  });
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1092,6 +1116,23 @@ export default function PlanDetailsPage() {
   const selectedResourceOptions = resourceFilterIds
     .map((id) => resourceOptionById.get(String(id)))
     .filter((v): v is ResourceSelectable => Boolean(v));
+
+  const openTimeLockDialog = (task: any) => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, "0");
+    const suggestedStart = `${hh}:${mm}`;
+
+    const tpl = (taskTemplates as any[]).find((t: any) => Number(t?.id) === Number(task?.templateId ?? task?.template_id));
+    const duration = Math.max(5, Number(task?.durationOverride ?? task?.duration_override ?? tpl?.defaultDuration ?? 30));
+    const start = String(task?.startPlanned ?? task?.start_planned ?? suggestedStart);
+    const startMin = parseHHMMToMinutes(start) ?? parseHHMMToMinutes(suggestedStart) ?? 600;
+    const endMin = Math.min(23 * 60 + 59, startMin + duration);
+    const endSuggested = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
+    const end = String(task?.endPlanned ?? task?.end_planned ?? endSuggested);
+
+    setTimeLockDialog({ open: true, task, start, end });
+  };
 
   if (planLoading) {
     return (
@@ -2750,17 +2791,8 @@ export default function PlanDetailsPage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={async () => {
-                                      const start = window.prompt("Hora inicio fija (HH:MM)", task.startPlanned || "10:00");
-                                      if (!start) return;
-                                      const end = window.prompt("Hora fin fija (HH:MM)", task.endPlanned || "10:30");
-                                      if (!end) return;
-                                      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, {
-                                        lockedStart: start,
-                                        lockedEnd: end,
-                                      });
-                                      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-                                      toast({ title: "Tarea fijada" });
+                                    onClick={() => {
+                                      openTimeLockDialog(task);
                                     }}
                                   >
                                     <Lock className="h-4 w-4 mr-1" /> Fijar
@@ -3064,6 +3096,21 @@ export default function PlanDetailsPage() {
                   onTaskStatusChange={handlePlanningTaskStatusChange}
                   taskStatusPending={updateTaskStatus.isPending}
                   lockedTaskIds={Array.from(lockedTaskIds)}
+                  onApplyManualEdits={async (edits) => {
+                    for (const edit of edits) {
+                      await apiRequest("PATCH", `/api/daily-tasks/${edit.taskId}/time-lock`, {
+                        start: edit.start,
+                        end: edit.end,
+                      });
+                    }
+                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
+                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                    toast({ title: "Cambios manuales aplicados" });
+                  }}
+                  onCancelManualEdits={async () => {
+                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                  }}
+                  onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true }))}
                 />
               </FullscreenPlanningPanel>
             </div>
@@ -3584,6 +3631,144 @@ export default function PlanDetailsPage() {
             </div>
           </DialogContent>
         </Dialog>
+        <Dialog
+          open={manualBlockDialog.open}
+          onOpenChange={(open) => setManualBlockDialog((prev) => ({ ...prev, open }))}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Añadir comentario/bloqueo</DialogTitle>
+              <DialogDescription>
+                Crea una tira fija manual para bloquear un carril por horario.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Ámbito</Label>
+                <Select
+                  value={manualBlockDialog.scopeType}
+                  onValueChange={(v: any) => setManualBlockDialog((prev) => ({ ...prev, scopeType: v, scopeId: "" }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="space">Espacio</SelectItem>
+                    <SelectItem value="contestant">Concursante</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{manualBlockDialog.scopeType === "space" ? "Espacio" : "Concursante"}</Label>
+                <Select value={manualBlockDialog.scopeId || ""} onValueChange={(v) => setManualBlockDialog((prev) => ({ ...prev, scopeId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona" /></SelectTrigger>
+                  <SelectContent>
+                    {(manualBlockDialog.scopeType === "space" ? (spaces as any[]) : (contestants as any[])).map((row: any) => (
+                      <SelectItem key={String(row.id)} value={String(row.id)}>{String(row.name ?? `#${row.id}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2"><Label>Inicio</Label><Input value={manualBlockDialog.start} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, start: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>Fin</Label><Input value={manualBlockDialog.end} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, end: e.target.value }))} /></div>
+              </div>
+              <div className="space-y-2"><Label>Título</Label><Input value={manualBlockDialog.title} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, title: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Color</Label><ColorSwatchPicker value={manualBlockDialog.color} onChange={(v) => setManualBlockDialog((prev) => ({ ...prev, color: v }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setManualBlockDialog((prev) => ({ ...prev, open: false }))}>Cancelar</Button>
+              <Button onClick={async () => {
+                const scopeId = Number(manualBlockDialog.scopeId);
+                const startMin = parseHHMMToMinutes(manualBlockDialog.start);
+                const endMin = parseHHMMToMinutes(manualBlockDialog.end);
+                if (!Number.isFinite(scopeId) || scopeId <= 0 || startMin === null || endMin === null || endMin <= startMin) {
+                  toast({ title: "Datos inválidos", variant: "destructive" });
+                  return;
+                }
+                await apiRequest("POST", `/api/plans/${id}/manual-block`, {
+                  scopeType: manualBlockDialog.scopeType,
+                  scopeId,
+                  start: manualBlockDialog.start,
+                  end: manualBlockDialog.end,
+                  title: manualBlockDialog.title,
+                  color: manualBlockDialog.color,
+                });
+                queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                toast({ title: "Bloqueo creado" });
+                setManualBlockDialog((prev) => ({ ...prev, open: false }));
+              }}>Guardar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={timeLockDialog.open}
+          onOpenChange={(open) =>
+            setTimeLockDialog((prev) => ({ ...prev, open }))
+          }
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Fijar horario manual</DialogTitle>
+              <DialogDescription>
+                Define inicio y fin (HH:MM) para bloquear esta tarea.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Inicio</Label>
+                <Input
+                  value={timeLockDialog.start}
+                  onChange={(e) =>
+                    setTimeLockDialog((prev) => ({ ...prev, start: e.target.value }))
+                  }
+                  placeholder="HH:MM"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fin</Label>
+                <Input
+                  value={timeLockDialog.end}
+                  onChange={(e) =>
+                    setTimeLockDialog((prev) => ({ ...prev, end: e.target.value }))
+                  }
+                  placeholder="HH:MM"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setTimeLockDialog({ open: false, task: null, start: "10:00", end: "10:30" })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  const startMin = parseHHMMToMinutes(timeLockDialog.start);
+                  const endMin = parseHHMMToMinutes(timeLockDialog.end);
+                  if (startMin === null || endMin === null || endMin <= startMin) {
+                    toast({ title: "Horas inválidas", description: "Revisa inicio/fin HH:MM", variant: "destructive" });
+                    return;
+                  }
+
+                  const taskId = Number(timeLockDialog.task?.id ?? 0);
+                  if (!Number.isFinite(taskId) || taskId <= 0) return;
+
+                  await apiRequest("PATCH", `/api/daily-tasks/${taskId}/time-lock`, {
+                    start: timeLockDialog.start,
+                    end: timeLockDialog.end,
+                  });
+                  queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                  toast({ title: "Tarea fijada" });
+                  setTimeLockDialog({ open: false, task: null, start: "10:00", end: "10:30" });
+                }}
+              >
+                Guardar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </Layout>
   );

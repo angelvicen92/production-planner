@@ -203,7 +203,7 @@ export class SupabaseStorage implements IStorage {
 
     const { data: existing } = await supabaseAdmin
       .from("plan_breaks")
-      .select("id, kind, space_id, itinerant_team_id")
+      .select("id, kind, space_id, itinerant_team_id, duration_minutes, earliest_start, latest_end")
       .eq("plan_id", planId);
 
     const existingSpace = new Set<number>();
@@ -251,35 +251,44 @@ export class SupabaseStorage implements IStorage {
       if (insErr) throw insErr;
     }
 
-    await supabaseAdmin
-      .from("plan_breaks")
-      .update({
-        earliest_start: mealStart,
-        latest_end: mealEnd,
-      })
-      .eq("plan_id", planId)
-      .eq("kind", "space_meal");
+    const rows = existing ?? [];
+    const spaceNeedTimeIds: number[] = [];
+    const spaceNeedDurIds: number[] = [];
+    const itinerantNeedTimeIds: number[] = [];
+    const itinerantNeedDurIds: number[] = [];
 
-    await supabaseAdmin
-      .from("plan_breaks")
-      .update({
-        earliest_start: mealStart,
-        latest_end: mealEnd,
-      })
-      .eq("plan_id", planId)
-      .eq("kind", "itinerant_meal");
+    for (const row of rows as any[]) {
+      const id = Number(row?.id);
+      if (!Number.isFinite(id) || id <= 0) continue;
 
-    await supabaseAdmin
-      .from("plan_breaks")
-      .update({ duration_minutes: spaceDuration })
-      .eq("plan_id", planId)
-      .eq("kind", "space_meal");
+      const kind = String(row?.kind ?? "");
+      const currentStart = String(row?.earliest_start ?? "");
+      const currentEnd = String(row?.latest_end ?? "");
+      const currentDuration = Number(row?.duration_minutes ?? NaN);
 
-    await supabaseAdmin
-      .from("plan_breaks")
-      .update({ duration_minutes: itinerantDuration })
-      .eq("plan_id", planId)
-      .eq("kind", "itinerant_meal");
+      const needTime = currentStart !== mealStart || currentEnd !== mealEnd;
+      if (kind === "space_meal") {
+        if (needTime) spaceNeedTimeIds.push(id);
+        if (currentDuration !== spaceDuration) spaceNeedDurIds.push(id);
+      } else if (kind === "itinerant_meal") {
+        if (needTime) itinerantNeedTimeIds.push(id);
+        if (currentDuration !== itinerantDuration) itinerantNeedDurIds.push(id);
+      }
+    }
+
+    const updateByIds = async (ids: number[], patch: Record<string, any>) => {
+      if (ids.length === 0) return;
+      const { error } = await supabaseAdmin
+        .from("plan_breaks")
+        .update(patch)
+        .in("id", ids);
+      if (error) throw error;
+    };
+
+    await updateByIds(spaceNeedTimeIds, { earliest_start: mealStart, latest_end: mealEnd });
+    await updateByIds(itinerantNeedTimeIds, { earliest_start: mealStart, latest_end: mealEnd });
+    await updateByIds(spaceNeedDurIds, { duration_minutes: spaceDuration });
+    await updateByIds(itinerantNeedDurIds, { duration_minutes: itinerantDuration });
   }
 
   async savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void> {
@@ -1607,31 +1616,6 @@ export class SupabaseStorage implements IStorage {
       hasDependency: t.has_dependency ?? t.hasDependency ?? false,
       dependsOnTemplateId:
         t.depends_on_template_id ?? t.dependsOnTemplateId ?? null,
-
-      // ✅ NUEVO: múltiples dependencias
-      dependsOnTemplateIds: Array.isArray(t.depends_on_template_ids)
-        ? (t.depends_on_template_ids as any[])
-            .map((x) => Number(x))
-            .filter((n) => Number.isFinite(n))
-        : t.depends_on_template_ids
-          ? (() => {
-              try {
-                const parsed =
-                  typeof t.depends_on_template_ids === "string"
-                    ? JSON.parse(t.depends_on_template_ids)
-                    : t.depends_on_template_ids;
-                return Array.isArray(parsed)
-                  ? parsed
-                      .map((x: any) => Number(x))
-                      .filter((n: any) => Number.isFinite(n))
-                  : [];
-              } catch {
-                return [];
-              }
-            })()
-          : (t.depends_on_template_id ?? t.dependsOnTemplateId) != null
-            ? [Number(t.depends_on_template_id ?? t.dependsOnTemplateId)]
-            : [],
     })) as any;
   }
 
