@@ -2007,59 +2007,108 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const windowStart = pendingMealCandidates[0].windowStart;
     const windowEnd = pendingMealCandidates[0].windowEnd;
-    const slots: Array<{ start: number; end: number; count: number }> = [];
+    const slots: Array<{ start: number; end: number }> = [];
     for (
       let t = windowStart;
       t + contestantMealDuration <= windowEnd;
       t += contestantMealDuration
     ) {
-      slots.push({ start: t, end: t + contestantMealDuration, count: 0 });
+      slots.push({ start: t, end: t + contestantMealDuration });
+    }
+
+    const isMealTaskId = (taskId: number | undefined) => {
+      if (!taskId) return false;
+      const t = taskById.get(Number(taskId));
+      return !!t && isMealTask(t);
+    };
+
+    // Para viabilidad por slot solo usamos ocupación ya existente NO comida.
+    const contestantBaseOccupation = new Map<number, Interval[]>();
+    for (const [contestantId, intervals] of occupiedByContestant.entries()) {
+      contestantBaseOccupation.set(
+        contestantId,
+        intervals
+          .filter((it) => !isMealTaskId(it.taskId))
+          .map((it) => ({ ...it })),
+      );
+    }
+
+    const candidatesWithViableSlots = pendingMealCandidates.map((cand) => {
+      const cOcc = contestantBaseOccupation.get(cand.contestantId) ?? [];
+      const viableSlotIdxs: number[] = [];
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        if (findEarliestGap(cOcc, slot.start, contestantMealDuration) === slot.start) {
+          viableSlotIdxs.push(i);
+        }
+      }
+      return { cand, viableSlotIdxs };
+    });
+
+    candidatesWithViableSlots.sort((a, b) => {
+      if (a.viableSlotIdxs.length !== b.viableSlotIdxs.length) {
+        return a.viableSlotIdxs.length - b.viableSlotIdxs.length;
+      }
+      return a.cand.taskId - b.cand.taskId;
+    });
+
+    const slotCounts = new Array(slots.length).fill(0);
+    const assignedSlotIdxByTaskId = new Map<number, number>();
+    let restrictiveFail: MealTaskCandidate | null = null;
+    let restrictiveFailViableSlots = Number.POSITIVE_INFINITY;
+
+    const dfs = (idx: number): boolean => {
+      if (idx >= candidatesWithViableSlots.length) return true;
+
+      const row = candidatesWithViableSlots[idx];
+      let triedAny = false;
+
+      for (const slotIdx of row.viableSlotIdxs) {
+        if (slotCounts[slotIdx] >= contestantMealMaxSim) continue;
+        triedAny = true;
+
+        slotCounts[slotIdx] += 1;
+        assignedSlotIdxByTaskId.set(row.cand.taskId, slotIdx);
+        if (dfs(idx + 1)) return true;
+        assignedSlotIdxByTaskId.delete(row.cand.taskId);
+        slotCounts[slotIdx] -= 1;
+      }
+
+      if (!triedAny && row.viableSlotIdxs.length < restrictiveFailViableSlots) {
+        restrictiveFail = row.cand;
+        restrictiveFailViableSlots = row.viableSlotIdxs.length;
+      }
+
+      return false;
+    };
+
+    const solved = dfs(0);
+    if (!solved) {
+      return {
+        ok: false as const,
+        failingCandidate: restrictiveFail ?? candidatesWithViableSlots[0].cand,
+      };
     }
 
     const contestantOccupation = cloneOccupiedByContestant();
     const activeMealIntervals = mealIntervals.map((it) => ({ ...it }));
     const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
 
-    for (const cand of pendingMealCandidates) {
-      let pickedSlot: { start: number; end: number; count: number } | null = null;
+    for (const row of pendingMealCandidates) {
+      const slotIdx = assignedSlotIdxByTaskId.get(row.taskId);
+      if (slotIdx === undefined) continue;
 
-      for (const slot of slots) {
-        if (slot.count >= contestantMealMaxSim) continue;
-
-        const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
-        if (findEarliestGap(cOcc, slot.start, contestantMealDuration) !== slot.start)
-          continue;
-
-        if (
-          countConcurrentMealsFrom(activeMealIntervals, slot.start, slot.end) >=
-          contestantMealMaxSim
-        ) {
-          continue;
-        }
-
-        pickedSlot = slot;
-        break;
-      }
-
-      if (!pickedSlot) {
-        return { ok: false as const, failingCandidate: cand };
-      }
-
-      pickedSlot.count += 1;
-      const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
-      addIntervalSorted(cOcc, {
-        start: pickedSlot.start,
-        end: pickedSlot.end,
-        taskId: cand.taskId,
-      });
-      contestantOccupation.set(cand.contestantId, cOcc);
+      const slot = slots[slotIdx];
+      const cOcc = contestantOccupation.get(row.contestantId) ?? [];
+      addIntervalSorted(cOcc, { start: slot.start, end: slot.end, taskId: row.taskId });
+      contestantOccupation.set(row.contestantId, cOcc);
       addIntervalSorted(activeMealIntervals, {
-        start: pickedSlot.start,
-        end: pickedSlot.end,
-        taskId: cand.taskId,
+        start: slot.start,
+        end: slot.end,
+        taskId: row.taskId,
       });
 
-      assignments.push({ cand, start: pickedSlot.start, end: pickedSlot.end });
+      assignments.push({ cand: row, start: slot.start, end: slot.end });
     }
 
     return { ok: true as const, assignments };
@@ -2068,6 +2117,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const mealAttempts = 5;
   let mealSolved = false;
   let failingMealCandidate: MealTaskCandidate | null = null;
+  let slotPackingFailed = false;
 
   if (canUseDiscreteSlotPacking) {
     const out = tryScheduleMealsDiscreteSlots();
@@ -2084,6 +2134,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       }
       mealSolved = true;
     } else {
+      slotPackingFailed = true;
       failingMealCandidate = out.failingCandidate;
     }
   }
@@ -2141,7 +2192,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       reasons: [{
         code: "MEAL_CONTESTANT_NO_FIT",
         message:
-          `No se pudo encajar la comida de "${failingMealCandidate.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}) tras ${mealAttempts} intentos. ${capacityMsg}` +
+          `No se pudo encajar la comida de "${failingMealCandidate.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}) ${slotPackingFailed ? "en slot packing / matching" : `tras ${mealAttempts} intentos`}. ${capacityMsg}` +
           (String(failingMealCandidate.task?.templateName ?? "").trim()
             ? ` (Tarea: "${String(failingMealCandidate.task.templateName).trim()}").`
             : ""),
