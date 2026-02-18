@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { buildUrl, api } from "@shared/routes";
-import { QueryState } from "@/components/query-state";
+import { QueryGuard } from "@/components/QueryGuard";
 import { Layout } from "@/components/layout";
 import { usePlans } from "@/hooks/use-plans";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
@@ -183,7 +183,7 @@ export default function CallSheetPage() {
     } catch {}
   };
 
-  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryState isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
+  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryGuard isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
 
   if (!plans.length) {
     return (
@@ -228,7 +228,7 @@ export default function CallSheetPage() {
 
         {(isLoading || error) && (
           <section className="mb-4">
-            <QueryState
+            <QueryGuard
               isLoading={isLoading}
               isError={Boolean(error)}
               error={error}

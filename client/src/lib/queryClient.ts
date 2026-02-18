@@ -15,14 +15,14 @@ export const getQueryFn = <T>(options: {
 }): QueryFunction<T> => {
   const { on401: unauthorizedBehavior } = options;
 
-  return async ({ queryKey }) => {
+  return async ({ queryKey, signal }) => {
     const path = String(queryKey[0] ?? "");
     if (!path) {
       throw new Error("Query key inválida: falta path.");
     }
 
     try {
-      return await apiRequest<T>("GET", path);
+      return await apiRequest<T>("GET", path, undefined, { signal });
     } catch (error: any) {
       const status = Number(error?.status ?? 0);
       if (unauthorizedBehavior === "returnNull" && status === 401) {
