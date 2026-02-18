@@ -3532,16 +3532,58 @@ export default function PlanDetailsPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="mt-3 space-y-2">
-              {errorDialog.reasons.map((reason, idx) => (
-                <div
-                  key={idx}
-                  className="border border-destructive/30 bg-destructive/5 rounded-lg p-3"
-                >
-                  <div className="text-sm text-destructive">
-                    {formatInfeasibleReason(reason)}
+              {errorDialog.reasons.map((reason, idx) => {
+                const d = reason?.diagnostic;
+                const isMealDiag = reason?.code === "MEAL_CONTESTANT_NO_FIT" && d;
+                const restrictive = Array.isArray(d?.restrictiveContestants)
+                  ? d.restrictiveContestants
+                  : [];
+
+                return (
+                  <div
+                    key={idx}
+                    className="border border-destructive/30 bg-destructive/5 rounded-lg p-3 space-y-2"
+                  >
+                    <div className="text-sm text-destructive">
+                      {formatInfeasibleReason(reason)}
+                    </div>
+
+                    {isMealDiag && (
+                      <div className="rounded-md border border-border bg-background/70 p-3 text-xs space-y-1">
+                        <div className="font-semibold">Diagnóstico de comidas</div>
+                        <div>Ventana: {String(d.windowStart)}–{String(d.windowEnd)}</div>
+                        <div>Duración: {Number(d.duration)} min</div>
+                        <div>Máximo simultáneo: {Number(d.maxSim)}</div>
+                        <div>Capacidad teórica: {Number(d.capacityTheoretical)}</div>
+                        <div>Comidas necesarias: {Number(d.mealsNeeded)}</div>
+
+                        {d.isCapacityImpossible ? (
+                          <div className="font-medium text-destructive">
+                            Config imposible: faltan plazas de capacidad.
+                          </div>
+                        ) : (
+                          <div className="font-medium text-amber-700 dark:text-amber-300">
+                            Revisar disponibilidad/orden, ver concursantes restrictivos.
+                          </div>
+                        )}
+
+                        {!d.isCapacityImpossible && restrictive.length > 0 && (
+                          <div className="pt-1">
+                            <div className="font-medium">Top concursantes restrictivos:</div>
+                            <ul className="list-disc pl-4">
+                              {restrictive.slice(0, 3).map((c: any, ridx: number) => (
+                                <li key={ridx}>
+                                  {String(c.contestantName)}: {String(c.windowStart)}–{String(c.windowEnd)}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="flex justify-end gap-2 pt-4">
               {errorDialog.reasons.some(

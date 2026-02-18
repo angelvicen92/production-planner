@@ -193,6 +193,24 @@ export interface InfeasibleReason {
   message: string; // mensaje operativo
   taskId?: number;
   blockingLockIds?: number[];
+  diagnostic?: {
+    windowStart: string;
+    windowEnd: string;
+    windowMinutes: number;
+    duration: number;
+    maxSim: number;
+    capacityTheoretical: number;
+    mealsNeeded: number;
+    isCapacityImpossible: boolean;
+    restrictiveContestants?: Array<{
+      contestantId: number;
+      contestantName: string;
+      windowStart: string;
+      windowEnd: string;
+      windowMinutes: number;
+      possibleSlots: number;
+    }>;
+  };
 }
 
 export interface EngineOutput {
