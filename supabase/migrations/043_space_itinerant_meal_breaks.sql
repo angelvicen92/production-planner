@@ -1,4 +1,4 @@
--- 042_space_itinerant_meal_breaks.sql
+-- 043_space_itinerant_meal_breaks.sql
 
 ALTER TABLE public.program_settings
   ADD COLUMN IF NOT EXISTS space_meal_break_minutes INTEGER NOT NULL DEFAULT 45,
