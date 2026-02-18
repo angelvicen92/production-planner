@@ -18,6 +18,14 @@ export async function apiRequest<T>(
   const timeout = setTimeout(() => controller.abort(), 20_000);
 
   const externalSignal = options?.signal;
+  if (externalSignal?.aborted) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    const abortError = createAbortError((externalSignal as any).reason);
+    logTrace("ABORT", requestId, method, path, durationMs, abortError.message);
+    publishApiHealth({ status: "aborted", durationMs, at: Date.now(), message: abortError.message });
+    throw abortError;
+  }
+
   const signal = combineSignals(controller.signal, externalSignal);
 
   logTrace("START", requestId, method, path);
@@ -119,6 +127,14 @@ export async function apiRequest<T>(
 }
 
 let requestCounter = 0;
+
+function createAbortError(reason?: unknown) {
+  const error = new DOMException("The operation was aborted.", "AbortError");
+  if (reason !== undefined) {
+    (error as any).reason = reason;
+  }
+  return error;
+}
 
 function combineSignals(internal: AbortSignal, external?: AbortSignal) {
   if (!external) return internal;
