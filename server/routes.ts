@@ -31,6 +31,29 @@ export async function registerRoutes(
   };
 
 
+  const ensureUserCanAccessPlan = async (userId: string, planId: number): Promise<boolean> => {
+    const role = await getUserRole(userId);
+    if (role === "admin" || role === "production") {
+      const { data: plan, error } = await supabaseAdmin
+        .from("plans")
+        .select("id")
+        .eq("id", planId)
+        .maybeSingle();
+      if (error) throw error;
+      return Boolean(plan?.id);
+    }
+
+    const { data: plan, error } = await supabaseAdmin
+      .from("plans")
+      .select("id")
+      .eq("id", planId)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean(plan?.id);
+  };
+
+
+
 
 function mapDeleteError(err: any, fallback: string) {
   const code = String(err?.code ?? "");
@@ -222,6 +245,73 @@ function mapDeleteError(err: any, fallback: string) {
       return res.json({ staffPersonId, resourceItemId });
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch user links" });
+    }
+  });
+
+
+  app.get("/api/me/preferences", async (req, res) => {
+    try {
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { data, error } = await supabaseAdmin
+        .from("user_preferences")
+        .select("favorite_plan_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const favoritePlanId = data?.favorite_plan_id ? Number(data.favorite_plan_id) : null;
+      if (favoritePlanId) {
+        const canAccess = await ensureUserCanAccessPlan(userId, favoritePlanId);
+        if (!canAccess) {
+          const { error: clearError } = await supabaseAdmin
+            .from("user_preferences")
+            .upsert({ user_id: userId, favorite_plan_id: null, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+          if (clearError) throw clearError;
+          return res.json({ favoritePlanId: null });
+        }
+      }
+
+      return res.json({ favoritePlanId });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch preferences" });
+    }
+  });
+
+  app.post("/api/me/preferences/favorite-plan", async (req, res) => {
+    try {
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const payload = z
+        .object({
+          planId: z.number().int().positive().nullable(),
+        })
+        .parse(req.body ?? {});
+
+      if (payload.planId !== null) {
+        const canAccess = await ensureUserCanAccessPlan(userId, payload.planId);
+        if (!canAccess) {
+          return res.status(404).json({ message: "Plan not found or inaccessible" });
+        }
+      }
+
+      const { error } = await supabaseAdmin
+        .from("user_preferences")
+        .upsert(
+          { user_id: userId, favorite_plan_id: payload.planId, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
+      if (error) throw error;
+
+      return res.json({ favoritePlanId: payload.planId });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid favorite plan payload" });
+      }
+      return res.status(500).json({ message: err?.message || "Failed to save preferences" });
     }
   });
 

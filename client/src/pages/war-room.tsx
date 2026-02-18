@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
-import { pickDefaultPlan } from "@/lib/plan-default";
+import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { addIncident, getIncidents, toggleResolved } from "@/lib/war-room-store";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { formatRange, hhmmToMinutes } from "@/lib/time";
@@ -22,7 +22,8 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 export default function WarRoomPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
   const [planId, setPlanId] = useState<string>("");
-  const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
+  const { defaultPlanId } = useDefaultPlanId(plans, planId);
+  const selected = useMemo(() => plans.find((plan) => plan.id === defaultPlanId) || null, [plans, defaultPlanId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
 
   const queryClient = useQueryClient();

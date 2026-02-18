@@ -5,19 +5,21 @@ import { PlanningTimeline } from "@/components/planning-timeline";
 import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { GanttChartSquare } from "lucide-react";
 import { QueryGuard } from "@/components/QueryGuard";
 import { queryClient } from "@/lib/queryClient";
+import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 
 export default function TimelinePage() {
   const { data: plans, isLoading: isLoadingPlans, error: plansError, refetch: refetchPlans } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const { defaultPlanId } = useDefaultPlanId(plans || [], selectedPlanId);
 
-  const planId = selectedPlanId ? parseInt(selectedPlanId) : plans?.[0]?.id;
+  const planId = defaultPlanId || undefined;
   const { data: contestants = [], isLoading: isLoadingContestants, error: contestantsError, refetch: refetchContestants } = useContestants(planId || 0);
 
-  const selectedPlanSummary = plans?.find(p => p.id === planId);
+  const selectedPlanSummary = useMemo(() => plans?.find(p => p.id === planId), [plans, planId]);
   const { data: selectedPlan, isLoading: isLoadingPlan, error: planError, refetch: refetchPlan } = usePlan(planId || 0);
 
   if (isLoadingPlans || plansError) {
@@ -52,7 +54,7 @@ export default function TimelinePage() {
 
           <div className="w-full md:w-64">
             <Select 
-              value={selectedPlanId || plans?.[0]?.id?.toString()} 
+              value={planId ? String(planId) : undefined} 
               onValueChange={setSelectedPlanId}
             >
               <SelectTrigger>
