@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
+import { planQueryKey } from "@/lib/plan-query-keys";
 
 import {
   Table,
@@ -821,6 +822,8 @@ export default function PlanDetailsPage() {
     "tasks" | "planning" | "resources" | "execution"
   >("tasks");
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
+  const [showLockedOnly, setShowLockedOnly] = useState(false);
+  const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
     task: any | null;
@@ -911,11 +914,15 @@ export default function PlanDetailsPage() {
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
   >([]);
-  const lockedTaskIds = useMemo(() => {
+  const timeLockedTaskIds = useMemo(() => {
     const set = new Set<number>();
     for (const l of ((plan as any)?.locks ?? []) as any[]) {
       const tid = Number(l?.task_id ?? l?.taskId);
-      if (Number.isFinite(tid) && tid > 0) set.add(tid);
+      const type = String(l?.lock_type ?? l?.lockType ?? "");
+      const ls = l?.locked_start ?? l?.lockedStart ?? null;
+      const le = l?.locked_end ?? l?.lockedEnd ?? null;
+      if (!Number.isFinite(tid) || tid <= 0) continue;
+      if ((type === "time" || type === "full") && ls && le) set.add(tid);
     }
     return set;
   }, [plan]);
@@ -2241,7 +2248,7 @@ export default function PlanDetailsPage() {
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
                                       { comment1Text: e.currentTarget.value || null },
                                     );
-                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                   }}
                                 />
                               </TableCell>
@@ -2255,7 +2262,7 @@ export default function PlanDetailsPage() {
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
                                       { comment1Color: next || null },
                                     );
-                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                   }}
                                 />
                               </TableCell>
@@ -2271,7 +2278,7 @@ export default function PlanDetailsPage() {
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
                                       { comment2Text: e.currentTarget.value || null },
                                     );
-                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                   }}
                                 />
                               </TableCell>
@@ -2285,7 +2292,7 @@ export default function PlanDetailsPage() {
                                       buildUrl(api.dailyTasks.update.path, { id: t.id }),
                                       { comment2Color: next || null },
                                     );
-                                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                   }}
                                 />
                               </TableCell>
@@ -2409,11 +2416,22 @@ export default function PlanDetailsPage() {
                       (Opcional) Crear una tarea global sin pasar por la ficha.
                     </p>
                     <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Fijas: {timeLockedTaskIds.size}</Badge>
+                      <Button
+                        variant={showLockedOnly ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowLockedOnly((v) => !v)}
+                      >
+                        {showLockedOnly ? "Mostrar todas" : "Mostrar solo fijadas"}
+                      </Button>
                       {tasksShowUnplannedOnly ? (
                         <Button variant="outline" size="sm" onClick={() => setTasksShowUnplannedOnly(false)}>
                           Ver todas
                         </Button>
                       ) : null}
+                      <Button variant="destructive" size="sm" onClick={() => setClearTimeLocksDialogOpen(true)}>
+                        Liberar todas
+                      </Button>
                       <AddTaskDialog planId={id} />
                     </div>
                   </div>
@@ -2456,6 +2474,11 @@ export default function PlanDetailsPage() {
                             .filter((task: any) =>
                               tasksShowUnplannedOnly
                                 ? String(task?.status ?? "pending") === "pending" && (!task?.startPlanned || !task?.endPlanned)
+                                : true,
+                            )
+                            .filter((task: any) =>
+                              showLockedOnly
+                                ? timeLockedTaskIds.has(Number(task?.id)) || Boolean(task?.isManualBlock ?? task?.is_manual_block)
                                 : true,
                             )
                             .map((task: any) => (
@@ -2802,7 +2825,7 @@ export default function PlanDetailsPage() {
                                     size="sm"
                                     onClick={async () => {
                                       await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, { clear: true });
-                                      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                      queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                       toast({ title: "Fijación eliminada" });
                                     }}
                                   >
@@ -2815,7 +2838,7 @@ export default function PlanDetailsPage() {
                                       onClick={async () => {
                                         if (!confirm("Delete this task?")) return;
                                         await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: task.id }));
-                                        queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                        queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                         toast({ title: "Task deleted" });
                                       }}
                                     >
@@ -2833,6 +2856,31 @@ export default function PlanDetailsPage() {
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
+            <Dialog open={clearTimeLocksDialogOpen} onOpenChange={setClearTimeLocksDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Liberar todas las fijaciones horarias</DialogTitle>
+                  <DialogDescription>
+                    Esto liberará fijaciones horarias (time locks) de tareas pendientes. No toca in_progress/done ni manual_blocks.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setClearTimeLocksDialogOpen(false)}>Cancelar</Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      await apiRequest("DELETE", buildUrl(api.plans.clearTimeLocks.path, { id }));
+                      queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                      setClearTimeLocksDialogOpen(false);
+                      toast({ title: "Fijaciones horarias liberadas" });
+                    }}
+                  >
+                    Liberar todas
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="planning" className="mt-0">
@@ -3095,7 +3143,7 @@ export default function PlanDetailsPage() {
                   staffAssignments={planStaffAssignments as any}
                   onTaskStatusChange={handlePlanningTaskStatusChange}
                   taskStatusPending={updateTaskStatus.isPending}
-                  lockedTaskIds={Array.from(lockedTaskIds)}
+                  lockedTaskIds={Array.from(timeLockedTaskIds)}
                   onApplyManualEdits={async (edits) => {
                     const taskById = new Map<number, any>(
                       ((plan?.dailyTasks ?? []) as any[]).map((task) => [Number(task?.id), task]),
@@ -3120,7 +3168,7 @@ export default function PlanDetailsPage() {
                       });
                     }
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
-                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({
                       title:
                         changedEdits.length > 0
@@ -3129,7 +3177,7 @@ export default function PlanDetailsPage() {
                     });
                   }}
                   onCancelManualEdits={async () => {
-                    queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                   }}
                   onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true }))}
                 />
@@ -3713,7 +3761,7 @@ export default function PlanDetailsPage() {
                   title: manualBlockDialog.title,
                   color: manualBlockDialog.color,
                 });
-                queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                 toast({ title: "Bloqueo creado" });
                 setManualBlockDialog((prev) => ({ ...prev, open: false }));
               }}>Guardar</Button>
@@ -3779,7 +3827,7 @@ export default function PlanDetailsPage() {
                     start: timeLockDialog.start,
                     end: timeLockDialog.end,
                   });
-                  queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                  queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                   toast({ title: "Tarea fijada" });
                   setTimeLockDialog({ open: false, task: null, start: "10:00", end: "10:30" });
                 }}
