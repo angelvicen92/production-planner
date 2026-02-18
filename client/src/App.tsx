@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AccessDenied } from "@/components/access-denied";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
-import { useVisibilityRefetch } from "@/hooks/use-visibility-refetch";
+import { useVisibilityRecovery } from "@/hooks/use-visibility-recovery";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, type AppRole } from "@/hooks/use-user-role";
 
@@ -113,7 +113,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
 }
 
 function AppLifecycleEffects() {
-  useVisibilityRefetch();
+  useVisibilityRecovery();
   return null;
 }
 

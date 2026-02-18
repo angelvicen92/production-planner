@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { QueryState } from "@/components/query-state";
+import { QueryGuard } from "@/components/QueryGuard";
 import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
@@ -1148,7 +1148,7 @@ export default function PlanDetailsPage() {
       <Layout>
         <div className="flex items-center justify-center h-[60vh] px-4">
           <div className="w-full max-w-xl space-y-3">
-            <QueryState
+            <QueryGuard
               isLoading={planLoading}
               isError={Boolean(planError)}
               error={planQueryError}

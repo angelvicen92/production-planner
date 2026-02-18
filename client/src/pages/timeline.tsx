@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { GanttChartSquare } from "lucide-react";
-import { QueryState } from "@/components/query-state";
+import { QueryGuard } from "@/components/QueryGuard";
 import { queryClient } from "@/lib/queryClient";
 
 export default function TimelinePage() {
@@ -24,7 +24,7 @@ export default function TimelinePage() {
     return (
       <Layout>
         <div className="p-6">
-          <QueryState
+          <QueryGuard
             isLoading={isLoadingPlans}
             isError={Boolean(plansError)}
             error={plansError}
@@ -97,7 +97,7 @@ export default function TimelinePage() {
               </CardContent>
             </Card>
 
-            <QueryState
+            <QueryGuard
               isLoading={isLoadingPlan || isLoadingContestants}
               isError={Boolean(planError || contestantsError)}
               error={planError || contestantsError}
@@ -116,7 +116,7 @@ export default function TimelinePage() {
                   contestants={contestants as any} 
                 />
               </FullscreenPlanningPanel>
-            </QueryState>
+            </QueryGuard>
           </div>
         ) : (
           <Card className="p-12 text-center bg-muted/50">

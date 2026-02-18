@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { HealthIndicator } from "@/components/health-indicator";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRole } from "@/hooks/use-user-role";
 
@@ -62,9 +63,12 @@ export function Layout({ children }: LayoutProps) {
       {/* Mobile Menu Button */}
       <div className="lg:hidden p-4 flex items-center justify-between bg-card border-b">
         <div className="font-bold text-xl text-primary">OptiPlan</div>
-        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X /> : <Menu />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <HealthIndicator />
+          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </Button>
+        </div>
       </div>
 
       <div className="flex h-screen overflow-hidden">
@@ -96,6 +100,8 @@ export function Layout({ children }: LayoutProps) {
                   O
                 </div>
               )}
+
+              {!isSidebarCollapsed ? <HealthIndicator /> : null}
 
               {/* Toggle (solo desktop) */}
               <Button

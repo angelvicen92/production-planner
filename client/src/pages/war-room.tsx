@@ -16,7 +16,7 @@ import { addIncident, getIncidents, toggleResolved } from "@/lib/war-room-store"
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { formatRange, hhmmToMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
-import { QueryState } from "@/components/query-state";
+import { QueryGuard } from "@/components/QueryGuard";
 
 export default function WarRoomPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
@@ -116,7 +116,7 @@ export default function WarRoomPage() {
 
   const spacesByZone = (zoneId: string) => (data.spaces || []).filter((space: any) => String(space.zoneId) === String(zoneId));
 
-  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryState isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
+  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryGuard isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
 
   return (
     <Layout>
@@ -137,7 +137,7 @@ export default function WarRoomPage() {
         </div>
 
         {(isLoading || error) && (
-          <QueryState
+          <QueryGuard
             isLoading={isLoading}
             isError={Boolean(error)}
             error={error}

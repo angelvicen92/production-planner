@@ -78,6 +78,7 @@ import { GeneralOptimizerSettings } from "@/components/general-optimizer-setting
 import { useTranslation } from "react-i18next";
 import { UsersAdminSettings } from "@/components/settings/users-admin";
 import { useAuth } from "@/hooks/use-auth";
+import { QueryGuard } from "@/components/QueryGuard";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -236,20 +237,12 @@ function StaffPeopleSettings() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t("common.loading")}
-          </div>
-        ) : error ? (
-          <div className="text-sm text-destructive">
-            {t("common.loadError")}
-          </div>
-        ) : rows.length === 0 ? (
+        <QueryGuard isLoading={isLoading} isError={Boolean(error)} error={error} loadingText={t("common.loading")}>
+          {rows.length === 0 ? (
           <div className="text-sm text-muted-foreground">
             {t("settings.staffPeople.empty")}
           </div>
-        ) : (
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -386,7 +379,8 @@ function StaffPeopleSettings() {
               })}
             </TableBody>
           </Table>
-        )}
+          )}
+        </QueryGuard>
       </CardContent>
     </Card>
   );
@@ -472,19 +466,12 @@ function ItinerantTeamsSettings() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="text-sm text-muted-foreground">
-            {t("common.loading")}
-          </div>
-        ) : error ? (
-          <div className="text-sm text-red-600">
-            {t("settings.itinerantTeams.loadError")}
-          </div>
-        ) : rows.length === 0 ? (
+        <QueryGuard isLoading={isLoading} isError={Boolean(error)} error={error} loadingText={t("common.loading")} errorTitle={t("settings.itinerantTeams.loadError")}>
+          {rows.length === 0 ? (
           <div className="text-sm text-muted-foreground">
             {t("settings.itinerantTeams.empty")}
           </div>
-        ) : (
+          ) : (
           <div className="space-y-2">
             {rows.map((t: any) => (
               <div
@@ -518,7 +505,8 @@ function ItinerantTeamsSettings() {
               </div>
             ))}
           </div>
-        )}
+          )}
+        </QueryGuard>
       </CardContent>
     </Card>
   );
