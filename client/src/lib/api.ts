@@ -10,6 +10,9 @@ export async function apiRequest<T>(
   path: string,
   data?: unknown
 ): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+
   const supabase = await getSupabaseClient();
   const {
     data: { session },
@@ -17,16 +20,27 @@ export async function apiRequest<T>(
 
   const token = session?.access_token;
 
-  const res = await fetch(path, {
-    method,
-    cache: "no-store",
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: data ? JSON.stringify(data) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      cache: "no-store",
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error("Tiempo de espera agotado");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const contentType = res.headers.get("content-type") || "";
 

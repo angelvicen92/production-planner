@@ -317,6 +317,17 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    clearTimeLocks: {
+      method: "DELETE" as const,
+      path: "/api/plans/:id/time-locks",
+      responses: {
+        200: z.object({
+          clearedCount: z.number(),
+        }),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
 
     vocalCoachRules: {
       list: {

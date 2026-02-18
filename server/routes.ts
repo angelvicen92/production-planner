@@ -3246,6 +3246,59 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.delete("/api/plans/:id/time-locks", async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const { data: planRow, error: planErr } = await supabaseAdmin
+        .from("plans")
+        .select("id")
+        .eq("id", planId)
+        .maybeSingle();
+      if (planErr) throw planErr;
+      if (!planRow) return res.status(404).json({ message: "Plan not found" });
+
+      const { data: timeLocks, error: lockErr } = await supabaseAdmin
+        .from("locks")
+        .select("task_id")
+        .eq("plan_id", planId)
+        .eq("lock_type", "time");
+      if (lockErr) throw lockErr;
+
+      const taskIds = Array.from(
+        new Set(
+          (timeLocks ?? [])
+            .map((row: any) => Number(row?.task_id))
+            .filter((taskId) => Number.isFinite(taskId) && taskId > 0),
+        ),
+      );
+
+      const { error: delErr } = await supabaseAdmin
+        .from("locks")
+        .delete()
+        .eq("plan_id", planId)
+        .eq("lock_type", "time");
+      if (delErr) throw delErr;
+
+      if (taskIds.length > 0) {
+        const { error: updErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .update({ start_planned: null, end_planned: null })
+          .in("id", taskIds)
+          .not("status", "in", "(in_progress,done)")
+          .eq("is_manual_block", false);
+        if (updErr) throw updErr;
+      }
+
+      return res.json({ clearedCount: taskIds.length });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Cannot clear time locks" });
+    }
+  });
+
 
   app.post("/api/plans/:id/manual-block", async (req, res) => {
     try {
