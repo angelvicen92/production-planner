@@ -292,6 +292,18 @@ export class SupabaseStorage implements IStorage {
   }
 
   async savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void> {
+    const { data: current, error: readError } = await supabaseAdmin
+      .from("plan_breaks")
+      .select("locked_start, locked_end")
+      .eq("plan_id", planId)
+      .eq("id", breakId)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    const currentStart = (current as any)?.locked_start ?? null;
+    const currentEnd = (current as any)?.locked_end ?? null;
+    if (currentStart === start && currentEnd === end) return;
+
     const { error } = await supabaseAdmin
       .from("plan_breaks")
       .update({ locked_start: start, locked_end: end })

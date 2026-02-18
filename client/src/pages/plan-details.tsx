@@ -3097,7 +3097,23 @@ export default function PlanDetailsPage() {
                   taskStatusPending={updateTaskStatus.isPending}
                   lockedTaskIds={Array.from(lockedTaskIds)}
                   onApplyManualEdits={async (edits) => {
-                    for (const edit of edits) {
+                    const taskById = new Map<number, any>(
+                      ((plan?.dailyTasks ?? []) as any[]).map((task) => [Number(task?.id), task]),
+                    );
+
+                    const changedEdits = edits.filter((edit) => {
+                      const current = taskById.get(Number(edit.taskId));
+                      if (!current) return true;
+
+                      const currentStart =
+                        current?.lockedStart ?? current?.startPlanned ?? current?.start_planned ?? null;
+                      const currentEnd =
+                        current?.lockedEnd ?? current?.endPlanned ?? current?.end_planned ?? null;
+
+                      return currentStart !== edit.start || currentEnd !== edit.end;
+                    });
+
+                    for (const edit of changedEdits) {
                       await apiRequest("PATCH", `/api/daily-tasks/${edit.taskId}/time-lock`, {
                         start: edit.start,
                         end: edit.end,
@@ -3105,7 +3121,12 @@ export default function PlanDetailsPage() {
                     }
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
                     queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-                    toast({ title: "Cambios manuales aplicados" });
+                    toast({
+                      title:
+                        changedEdits.length > 0
+                          ? "Cambios manuales aplicados"
+                          : "Sin cambios manuales para aplicar",
+                    });
                   }}
                   onCancelManualEdits={async () => {
                     queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });

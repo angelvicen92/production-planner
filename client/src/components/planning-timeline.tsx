@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
-import { Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -277,6 +276,24 @@ function TaskStatusMenuTrigger({
   const lockedSet = useMemo(() => new Set((lockedTaskIds ?? []).map((id) => Number(id))), [lockedTaskIds]);
   const isTaskFixed = (task: Task) =>
     task.status === "in_progress" || task.status === "done" || lockedSet.has(Number(task.id));
+
+  const hasTimeLock = (task: Task) =>
+    !task.isManualBlock &&
+    task.status !== "in_progress" &&
+    task.status !== "done" &&
+    lockedSet.has(Number(task.id));
+
+  const taskPrefixIcon = (task: Task) => {
+    if (task.isManualBlock) return "🗒";
+    if (task.status === "in_progress" || task.status === "done") return "🔒";
+    if (hasTimeLock(task)) return "📌";
+    return null;
+  };
+
+  const taskDisplayName = (task: Task) => {
+    if (task.isManualBlock) return task.manualTitle ?? task.template?.name ?? "Bloqueo";
+    return isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea");
+  };
 
   const [manualMode, setManualMode] = useState(false);
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
@@ -1370,6 +1387,7 @@ function TaskStatusMenuTrigger({
                                                 taskStatusPending={taskStatusPending}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                                  task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   task.status === "in_progress"
                                                     ? "ring-2 ring-green-500"
                                                     : "",
@@ -1389,7 +1407,7 @@ function TaskStatusMenuTrigger({
                                                 }}
                                               >
                                                 <div className="text-[12px] font-bold truncate">
-                                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
+                                                  {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
                                                   {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1454,6 +1472,7 @@ function TaskStatusMenuTrigger({
                                             taskStatusPending={taskStatusPending}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                                  task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1472,7 +1491,7 @@ function TaskStatusMenuTrigger({
                                             }}
                                           >
                                             <div className="text-[12px] font-bold truncate">
-                                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
+                                              {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                             </div>
                                             <div className="text-[10px] opacity-70">
                                               {task.startPlanned}-
@@ -1625,6 +1644,7 @@ function TaskStatusMenuTrigger({
                                             taskStatusPending={taskStatusPending}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                                        task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1689,6 +1709,7 @@ function TaskStatusMenuTrigger({
                                       taskStatusPending={taskStatusPending}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                                        task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                         task.status === "in_progress"
                                           ? "ring-2 ring-green-500"
                                           : "",
@@ -1702,7 +1723,7 @@ function TaskStatusMenuTrigger({
                                       }}
                                     >
                                       <div className="text-sm font-bold truncate">
-                                        {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
+                                        {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                       </div>
                                       <div className="text-xs opacity-70">
                                         {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1834,6 +1855,7 @@ function TaskStatusMenuTrigger({
                             taskStatusPending={taskStatusPending}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                              task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                               task.status === "in_progress" ? "ring-2 ring-green-500" : "",
                               task.status === "done" ? "opacity-80" : "",
                             )}
@@ -1849,7 +1871,7 @@ function TaskStatusMenuTrigger({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="text-sm font-bold truncate">
-                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{task.isManualBlock ? `NOTA · ${task.manualTitle ?? task.template?.name ?? "Bloqueo"}` : (isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea"))}
+                                  {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                 </div>
                                 <div className="text-xs opacity-70">
                                   {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
@@ -2114,6 +2136,7 @@ function TaskStatusMenuTrigger({
                             taskStatusPending={taskStatusPending}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
                               viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
@@ -2136,7 +2159,7 @@ function TaskStatusMenuTrigger({
                             }}
                           >
                             <span className="text-xs font-bold truncate">
-                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                              {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                             </span>
                             <span className="text-[10px] opacity-70">
                               {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -2145,7 +2168,7 @@ function TaskStatusMenuTrigger({
                           <TooltipContent>
                             <div className="space-y-1 p-1">
                               <p className="font-bold">
-                                {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Ubicación: {getTaskLocationLabel(task)}

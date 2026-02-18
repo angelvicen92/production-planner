@@ -268,6 +268,35 @@ export async function buildEngineInput(
     );
   }
 
+  const locksArr = Array.isArray(details.locks) ? details.locks : [];
+  const lockByTaskId = new Map<
+    number,
+    { lockType: string; lockedStart: string | null; lockedEnd: string | null }
+  >();
+  for (const lock of locksArr as any[]) {
+    const taskId = Number(lock?.task_id ?? lock?.taskId ?? NaN);
+    if (!Number.isFinite(taskId) || taskId <= 0) continue;
+
+    const lockType = String(lock?.lock_type ?? lock?.lockType ?? "").trim();
+    if (lockType !== "time" && lockType !== "full") continue;
+
+    const lockedStart = (lock?.locked_start ?? lock?.lockedStart ?? null) as string | null;
+    const lockedEnd = (lock?.locked_end ?? lock?.lockedEnd ?? null) as string | null;
+    if (!lockedStart || !lockedEnd) continue;
+
+    lockByTaskId.set(taskId, { lockType, lockedStart, lockedEnd });
+  }
+
+  const minutesFromHHMM = (value: string | null | undefined) => {
+    if (!value) return null;
+    const parts = String(value).split(":");
+    if (parts.length < 2) return null;
+    const hh = Number(parts[0]);
+    const mm = Number(parts[1]);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+    return hh * 60 + mm;
+  };
+
   return {
     planId: p.id,
 
@@ -424,6 +453,18 @@ export async function buildEngineInput(
         const manualScopeType = (t.manual_scope_type ?? t.manualScopeType ?? null) as string | null;
         const manualScopeIdRaw = t.manual_scope_id ?? t.manualScopeId ?? null;
         const manualScopeId = manualScopeIdRaw == null ? null : Number(manualScopeIdRaw);
+        const startPlanned = (t.start_planned ?? t.startPlanned ?? null) as string | null;
+        const endPlanned = (t.end_planned ?? t.endPlanned ?? null) as string | null;
+        const explicitDuration = t.duration_override ?? t.durationOverride ?? null;
+        const lockForTask = lockByTaskId.get(Number(t.id));
+        const manualDuration = (() => {
+          const startMin = minutesFromHHMM(startPlanned);
+          const endMin = minutesFromHHMM(endPlanned);
+          if (startMin === null || endMin === null) return 15;
+          const delta = endMin - startMin;
+          if (!Number.isFinite(delta) || delta <= 0) return 15;
+          return delta;
+        })();
         const effectiveContestantId =
           isManualBlock && manualScopeType === "contestant" && Number.isFinite(manualScopeId as any)
             ? Number(manualScopeId)
@@ -437,11 +478,13 @@ export async function buildEngineInput(
             ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "BLOQUEO")
             : (tpl?.name ?? t.template?.name ?? null)) as string | null,
           
-          resourceRequirements: normalizeResourceRequirements(
-            (tpl as any)?.resourceRequirements ??
-              (tpl as any)?.resource_requirements ??
-              null,
-          ),
+          resourceRequirements: isManualBlock
+            ? []
+            : normalizeResourceRequirements(
+                (tpl as any)?.resourceRequirements ??
+                  (tpl as any)?.resource_requirements ??
+                  null,
+              ),
 
           zoneId: (t.zone_id ?? t.zoneId ?? null) as number | null,
           spaceId: isManualBlock && manualScopeType === "space" && Number.isFinite(manualScopeId as any)
@@ -460,24 +503,28 @@ export async function buildEngineInput(
               : null,
 
           // ✅ Dependencias (ya resueltas a taskIds)
-          hasDependency,
-          dependsOnTemplateIds,
-          dependsOnTaskIds,
+          hasDependency: isManualBlock ? false : hasDependency,
+          dependsOnTemplateIds: isManualBlock ? [] : dependsOnTemplateIds,
+          dependsOnTaskIds: isManualBlock ? [] : dependsOnTaskIds,
           // legacy (compat)
-          dependsOnTemplateId,
-          dependsOnTaskId,
+          dependsOnTemplateId: isManualBlock ? null : dependsOnTemplateId,
+          dependsOnTaskId: isManualBlock ? null : dependsOnTaskId,
 
-        durationOverrideMin: t.duration_override ?? t.durationOverride ?? null,
+        durationOverrideMin: isManualBlock ? manualDuration : explicitDuration,
         camerasOverride: (t.cameras_override ?? t.camerasOverride ?? null) as
           | 0
           | 1
           | 2
           | null,
 
-        startPlanned: t.start_planned ?? t.startPlanned ?? null,
-        endPlanned: t.end_planned ?? t.endPlanned ?? null,
-        lockedStart: t.start_planned ?? t.startPlanned ?? null,
-        lockedEnd: t.end_planned ?? t.endPlanned ?? null,
+        startPlanned,
+        endPlanned,
+        lockedStart: isManualBlock
+          ? startPlanned
+          : (lockForTask?.lockedStart ?? null),
+        lockedEnd: isManualBlock
+          ? endPlanned
+          : (lockForTask?.lockedEnd ?? null),
         startReal: t.start_real ?? t.startReal ?? null,
         endReal: t.end_real ?? t.endReal ?? null,
 
