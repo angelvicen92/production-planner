@@ -3001,6 +3001,39 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.post(api.dailyTasks.reset.path, async (req, res) => {
+    const user = (req as any).user;
+
+    try {
+      const taskId = Number(req.params.id);
+      const role = await getUserRole(user.id);
+      if (role !== "admin" && role !== "production") {
+        return withPermissionDenied(res);
+      }
+
+      const updated: any = await storage.resetTask(taskId, user.id);
+
+      return res.json({
+        id: updated.id,
+        planId: updated.plan_id ?? updated.planId ?? null,
+        templateId: updated.template_id ?? updated.templateId ?? null,
+        contestantId: updated.contestant_id ?? updated.contestantId ?? null,
+        status: updated.status,
+        startPlanned: updated.start_planned ?? updated.startPlanned ?? null,
+        endPlanned: updated.end_planned ?? updated.endPlanned ?? null,
+        startReal: updated.start_real ?? updated.startReal ?? null,
+        endReal: updated.end_real ?? updated.endReal ?? null,
+        durationOverride: updated.duration_override ?? updated.durationOverride ?? null,
+        camerasOverride: updated.cameras_override ?? updated.camerasOverride ?? null,
+      });
+    } catch (err: any) {
+      if ((String(err?.message || "")).toLowerCase().includes("not found")) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot reset task" });
+    }
+  });
+
   // Delete Daily Task (only if not in progress / done)
   app.delete(api.dailyTasks.delete.path, async (req, res) => {
     const taskId = Number(req.params.id);

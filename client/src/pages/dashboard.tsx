@@ -20,6 +20,43 @@ import { QueryState } from "@/components/query-state";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
 import { useProductionClock } from "@/hooks/use-production-clock";
+import { useElapsedSince } from "@/hooks/use-elapsed-since";
+
+function TaskRealTimeMeta({ task }: { task: any }) {
+  const elapsed = useElapsedSince(task?.startReal ?? null);
+
+  const parseHHMM = (value?: string | null) => {
+    const m = String(value ?? "").match(/^(\d{2}):(\d{2})$/);
+    if (!m) return null;
+    return Number(m[1]) * 60 + Number(m[2]);
+  };
+
+  const toHHMM = (minutes: number) => {
+    const safe = ((minutes % 1440) + 1440) % 1440;
+    return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+  };
+
+  const etaReal = (() => {
+    if (String(task?.status ?? "") === "done" && task?.endReal) return task.endReal;
+    if (String(task?.status ?? "") !== "in_progress" || !task?.startReal) return "—";
+    const startMin = parseHHMM(task.startReal);
+    const duration = Number(task?.durationOverride ?? task?.template?.defaultDuration ?? 0);
+    if (startMin === null || !Number.isFinite(duration) || duration <= 0) return "—";
+    return toHHMM(startMin + duration);
+  })();
+
+  return (
+    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+      <div>Inicio teórico: {task?.startPlanned ?? "—"}</div>
+      <div>Inicio real: {task?.startReal ?? "—"}</div>
+      <div>Fin teórico: {task?.endPlanned ?? "—"}</div>
+      <div>Fin previsto: {etaReal}</div>
+      {String(task?.status ?? "") === "in_progress" && elapsed ? (
+        <div className="col-span-2 text-emerald-700">Tiempo en marcha: {elapsed}</div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
@@ -74,6 +111,15 @@ export default function DashboardPage() {
     },
   });
 
+
+  const resetTask = useMutation({
+    mutationFn: async ({ taskId }: { taskId: number }) => apiRequest("POST", `/api/tasks/${taskId}/reset`),
+    onSettled: async () => invalidateOpsData(planId),
+    onError: () => {
+      toast({ title: "No se pudo resetear", description: "La tarea no volvió a pendiente.", variant: "destructive" });
+    },
+  });
+
   const assignLocation = useMutation({
     mutationFn: async ({ taskId, zoneId, spaceId }: any) =>
       apiRequest("PATCH", `/api/daily-tasks/${taskId}`, { zoneId: Number(zoneId), spaceId: Number(spaceId) }),
@@ -98,6 +144,19 @@ export default function DashboardPage() {
     } as const;
 
     updateStatus.mutate({ taskId, ...payloadByAction[action] });
+  };
+
+
+  const runResetAction = (task: any) => {
+    const status = String(task?.status ?? "pending");
+    if (status === "pending") return;
+
+    const confirmMessage = status === "in_progress"
+      ? "¿Resetear? Se borrará inicio real."
+      : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
+
+    if (!window.confirm(confirmMessage)) return;
+    resetTask.mutate({ taskId: Number(task.id) });
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -404,6 +463,7 @@ export default function DashboardPage() {
                         <div key={task.id} className="rounded border p-2 text-sm">
                           <div className="font-medium">{getTaskName(task)}</div>
                           <div className="text-muted-foreground">{formatRange(task?.startPlanned, task?.endPlanned)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : getZoneName(task.zoneId, zonesById)}</div>
+                          <TaskRealTimeMeta task={task} />
                           <div className="mt-1 flex flex-wrap gap-1">
                             <Badge variant="secondary">{Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cámaras</Badge>
                             <Badge variant="outline">{task?.status || "pending"}</Badge>
@@ -413,6 +473,7 @@ export default function DashboardPage() {
                             <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "start")}>Iniciar</Button>
                             <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "interrupt")}>Pausar/Interrumpir</Button>
                             <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "done")}>Finalizar</Button>
+                            <Button size="sm" variant="destructive" disabled={task?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(task)}>Reset a pendiente</Button>
                             {!task?.zoneId && !task?.spaceId && <Button size="sm" onClick={() => setLocationDialogTask(task)}>Asignar ubicación</Button>}
                           </div>
                         </div>
@@ -435,6 +496,7 @@ export default function DashboardPage() {
                               <div className="font-semibold">{spaceBlock.space?.name || "Espacio"}</div>
                               <div className="text-xs text-muted-foreground">AHORA: {spaceBlock.nowTask ? `${getTaskName(spaceBlock.nowTask)} (${formatRange(spaceBlock.nowTask?.startPlanned, spaceBlock.nowTask?.endPlanned)})` : "Sin tarea"}</div>
                               <div className="text-xs text-muted-foreground">SIGUIENTE: {spaceBlock.nextTask ? `${getTaskName(spaceBlock.nextTask)} (${formatRange(spaceBlock.nextTask?.startPlanned, spaceBlock.nextTask?.endPlanned)})` : "Sin siguiente"}</div>
+                              {spaceBlock.nowTask ? <TaskRealTimeMeta task={spaceBlock.nowTask} /> : null}
                               <div className="mt-1 flex flex-wrap gap-1">
                                 <Badge variant="secondary">{Number(spaceBlock.nowTask?.camerasOverride ?? spaceBlock.nowTask?.template?.defaultCameras ?? 0)} cámaras</Badge>
                                 <Badge variant="outline">{spaceBlock.nowTask?.status || "pending"}</Badge>
@@ -446,6 +508,7 @@ export default function DashboardPage() {
                                   <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "start")}>Iniciar</Button>
                                   <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "interrupt")}>Interrumpir</Button>
                                   <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "done")}>Finalizar</Button>
+                                  <Button size="sm" variant="destructive" disabled={spaceBlock.nowTask?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(spaceBlock.nowTask)}>Reset a pendiente</Button>
                                 </div>
                               )}
                             </div>

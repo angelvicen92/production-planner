@@ -60,6 +60,7 @@ import {
   useCreateDailyTask,
   useUpdateContestant,
   useUpdateTaskStatus,
+  useResetTask,
   useTaskTemplates,
 } from "@/hooks/use-tasks";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,23 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
+import { useElapsedSince } from "@/hooks/use-elapsed-since";
+
+function ExecutionElapsedTimer({
+  status,
+  startReal,
+}: {
+  status?: string | null;
+  startReal?: string | null;
+}) {
+  const elapsed = useElapsedSince(startReal);
+
+  if (status !== "in_progress" || !startReal || !elapsed) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  return <span className="text-xs font-medium text-emerald-700">Tiempo en marcha: {elapsed}</span>;
+}
 
 type ResourceSelectable = {
   id: string | number;
@@ -645,6 +663,13 @@ export default function PlanDetailsPage() {
     return hh * 60 + mm;
   };
 
+  const minutesToHHMM = (minutes: number) => {
+    const normalized = ((minutes % 1440) + 1440) % 1440;
+    const hh = Math.floor(normalized / 60);
+    const mm = normalized % 60;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  };
+
   const zonesById = new Map<number, any>();
   for (const z of zones as any[]) zonesById.set(Number(z.id), z);
 
@@ -749,6 +774,7 @@ export default function PlanDetailsPage() {
   const createDailyTask = useCreateDailyTask();
   const updateContestant = useUpdateContestant(id);
   const updateTaskStatus = useUpdateTaskStatus();
+  const resetTask = useResetTask();
 
   const [newName, setNewName] = useState("");
   const [newInstrument, setNewInstrument] = useState(false);
@@ -3207,8 +3233,11 @@ export default function PlanDetailsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[90px]">Plan</TableHead>
-                        <TableHead className="w-[90px]">Real</TableHead>
+                        <TableHead className="w-[95px]">Inicio teórico</TableHead>
+                        <TableHead className="w-[95px]">Inicio real</TableHead>
+                        <TableHead className="w-[95px]">Fin teórico</TableHead>
+                        <TableHead className="w-[95px]">Fin previsto</TableHead>
+                        <TableHead className="w-[170px]">Timer</TableHead>
                         <TableHead>Tarea</TableHead>
                         <TableHead className="w-[220px]">Ubicación</TableHead>
                         <TableHead className="w-[140px]">Estado</TableHead>
@@ -3276,16 +3305,25 @@ export default function PlanDetailsPage() {
                                 isMissingSpace(t) ? "bg-yellow-50/50" : ""
                               }
                             >
+                              <TableCell className="font-mono text-xs">{t?.startPlanned ?? "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">{t?.startReal ?? "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">{t?.endPlanned ?? "—"}</TableCell>
                               <TableCell className="font-mono text-xs">
-                                {t?.startPlanned && t?.endPlanned
-                                  ? `${t.startPlanned}–${t.endPlanned}`
-                                  : "—"}
+                                {status === "done" && t?.endReal
+                                  ? t.endReal
+                                  : status === "in_progress" && t?.startReal
+                                    ? (() => {
+                                        const startMin = parseHHMMToMinutes(String(t.startReal));
+                                        const durationMinutes = Number(t?.durationOverride ?? t?.template?.defaultDuration ?? 0);
+                                        if (startMin === null || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+                                          return "—";
+                                        }
+                                        return minutesToHHMM(startMin + durationMinutes);
+                                      })()
+                                    : "—"}
                               </TableCell>
-
                               <TableCell className="font-mono text-xs">
-                                {t?.startReal || t?.endReal
-                                  ? `${t.startReal ?? "—"}–${t.endReal ?? "—"}`
-                                  : "—"}
+                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} />
                               </TableCell>
 
                               <TableCell className="font-medium">
@@ -3371,6 +3409,21 @@ export default function PlanDetailsPage() {
                                   >
                                     Interrupt
                                   </Button>
+
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={status === "pending" || resetTask.isPending}
+                                    onClick={() => {
+                                      const msg = status === "in_progress"
+                                        ? "¿Resetear? Se borrará inicio real."
+                                        : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
+                                      if (!window.confirm(msg)) return;
+                                      resetTask.mutate({ taskId: Number(t.id), planId: id });
+                                    }}
+                                  >
+                                    Reset a pendiente
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -3380,7 +3433,7 @@ export default function PlanDetailsPage() {
                       {(plan?.dailyTasks ?? []).length === 0 && (
                         <TableRow>
                           <TableCell
-                            colSpan={6}
+                            colSpan={9}
                             className="text-sm text-muted-foreground"
                           >
                             Aún no hay tareas en este plan.
