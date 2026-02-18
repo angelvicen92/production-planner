@@ -17,6 +17,7 @@ import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
 import { pickDefaultPlan } from "@/lib/plan-default";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { useMeLinks } from "@/hooks/useMeLinks";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 const roles = ["Realización", "Producción", "Redacción", "Técnico", "Coach/Contenido"];
 
@@ -41,6 +42,7 @@ export default function CallSheetPage() {
   const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
   const { links, staffPerson, resourceItem } = useMeLinks(true);
+  const { nowTime } = useProductionClock();
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -98,7 +100,7 @@ export default function CallSheetPage() {
     Tarde: tasksView.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) >= 16 * 60),
   }), [tasksView]);
 
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const nowMinutes = hhmmToMinutes(nowTime) ?? 0;
   const nowTask = tasksView.find((task: any) => {
     const start = hhmmToMinutes(task?.startPlanned);
     const end = hhmmToMinutes(task?.endPlanned);
@@ -247,7 +249,7 @@ export default function CallSheetPage() {
 
         <div className="print-only mb-3 border-b pb-2">
           <div className="text-lg font-semibold">Hoja del Día · {(selected as any)?.name || "Sin plan"}</div>
-          <div className="text-xs">Fecha: {String(selected?.date || "").slice(0, 10)} · Generado: {minutesToHHMM(new Date().getHours() * 60 + new Date().getMinutes())}</div>
+          <div className="text-xs">Fecha: {String(selected?.date || "").slice(0, 10)} · Generado: {minutesToHHMM(nowMinutes)}</div>
         </div>
 
         <section className="mb-4 rounded-lg border bg-card p-4 print-block">

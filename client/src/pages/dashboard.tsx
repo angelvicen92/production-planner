@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const { data, isLoading, error, refetch } = usePlanOpsData(planId);
   const { links, staffPerson, resourceItem } = useMeLinks(true);
   const [onlyMine, setOnlyMine] = useState(false);
-  const { nowTime, mode } = useProductionClock();
+  const { effectiveNow, nowTime, mode } = useProductionClock();
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   };
 
   const today = new Date().toISOString().slice(0, 10);
-  const nowMinutes = hhmmToMinutes(nowTime) ?? new Date().getHours() * 60 + new Date().getMinutes();
+  const nowMinutes = hhmmToMinutes(nowTime) ?? effectiveNow.getHours() * 60 + effectiveNow.getMinutes();
   const nowTimeLabel = nowTime ?? "--:--";
   const isTodayPlan = String(selectedPlan?.date || "").slice(0, 10) === today;
 
