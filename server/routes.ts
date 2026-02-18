@@ -2760,6 +2760,11 @@ function mapDeleteError(err: any, fallback: string) {
             spaceId: t.space_id ?? t.spaceId ?? null,
             locationLabel: t.location_label ?? t.locationLabel ?? null,
             assignedResources: t.assignedResources ?? t.assigned_resource_ids ?? null,
+            isManualBlock: t.is_manual_block ?? t.isManualBlock ?? false,
+            manualTitle: t.manual_title ?? t.manualTitle ?? null,
+            manualColor: t.manual_color ?? t.manualColor ?? null,
+            manualScopeType: t.manual_scope_type ?? t.manualScopeType ?? null,
+            manualScopeId: t.manual_scope_id ?? t.manualScopeId ?? null,
 
             template: t.template,
           })),
@@ -3004,7 +3009,7 @@ function mapDeleteError(err: any, fallback: string) {
       // 1) Leer tarea para validar estado
       const { data: task, error: readErr } = await supabaseAdmin
         .from("daily_tasks")
-        .select("id,status,plan_id")
+        .select("id,status,plan_id,is_manual_block")
         .eq("id", taskId)
         .maybeSingle();
 
@@ -3020,7 +3025,17 @@ function mapDeleteError(err: any, fallback: string) {
         });
       }
 
-      // 2) Borrar
+      // 2) Borrar locks vinculados si es bloque manual
+      if ((task as any).is_manual_block === true) {
+        const { error: delLockErr } = await supabaseAdmin
+          .from("locks")
+          .delete()
+          .eq("plan_id", Number((task as any).plan_id))
+          .eq("task_id", taskId);
+        if (delLockErr) throw delLockErr;
+      }
+
+      // 3) Borrar tarea
       const { error: delErr } = await supabaseAdmin
         .from("daily_tasks")
         .delete()
@@ -3134,6 +3149,8 @@ function mapDeleteError(err: any, fallback: string) {
         .object({
           lockedStart: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
           lockedEnd: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+          start: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+          end: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
           clear: z.boolean().optional(),
         })
         .strict()
@@ -3159,11 +3176,17 @@ function mapDeleteError(err: any, fallback: string) {
           .eq("lock_type", "time");
         if (delErr) throw delErr;
 
+        const { error: clrTaskErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .update({ start_planned: null, end_planned: null })
+          .eq("id", taskId);
+        if (clrTaskErr) throw clrTaskErr;
+
         return res.json({ success: true, cleared: true });
       }
 
-      const lockedStart = input.lockedStart ?? null;
-      const lockedEnd = input.lockedEnd ?? null;
+      const lockedStart = input.lockedStart ?? input.start ?? null;
+      const lockedEnd = input.lockedEnd ?? input.end ?? null;
       if (!lockedStart || !lockedEnd) {
         return res.status(400).json({ message: "lockedStart and lockedEnd are required" });
       }
@@ -3222,6 +3245,121 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot update time lock" });
     }
   });
+
+
+  app.post("/api/plans/:id/manual-block", async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const input = z
+        .object({
+          scopeType: z.enum(["space", "contestant"]),
+          scopeId: z.number().int().positive(),
+          start: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
+          end: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
+          title: z.string().min(1).max(120),
+          color: z.string().min(1).max(32).optional(),
+        })
+        .strict()
+        .parse(req.body ?? {});
+
+      if (input.end <= input.start) {
+        return res.status(400).json({ message: "end must be greater than start" });
+      }
+
+      const { data: manualTemplate, error: tplErr } = await supabaseAdmin
+        .from("task_templates")
+        .select("id")
+        .ilike("name", "manual_block")
+        .limit(1)
+        .maybeSingle();
+      if (tplErr) throw tplErr;
+      let manualTemplateId = Number(manualTemplate?.id ?? NaN);
+      if (!Number.isFinite(manualTemplateId) || manualTemplateId <= 0) {
+        const { data: fallbackTpl, error: fallbackTplErr } = await supabaseAdmin
+          .from("task_templates")
+          .select("id")
+          .order("id", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (fallbackTplErr) throw fallbackTplErr;
+        manualTemplateId = Number((fallbackTpl as any)?.id ?? NaN);
+      }
+      if (!Number.isFinite(manualTemplateId) || manualTemplateId <= 0) {
+        return res.status(400).json({ message: "No task template available for manual block" });
+      }
+
+      const insertTask: any = {
+        plan_id: planId,
+        template_id: manualTemplateId,
+        contestant_id: input.scopeType === "contestant" ? Number(input.scopeId) : null,
+        zone_id: null,
+        space_id: input.scopeType === "space" ? Number(input.scopeId) : null,
+        status: "pending",
+        start_planned: input.start,
+        end_planned: input.end,
+        is_manual_block: true,
+        manual_title: input.title,
+        manual_color: input.color ?? null,
+        manual_scope_type: input.scopeType,
+        manual_scope_id: Number(input.scopeId),
+      };
+
+      const { data: createdTask, error: insTaskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .insert(insertTask)
+        .select("*")
+        .single();
+      if (insTaskErr) throw insTaskErr;
+
+      const taskId = Number((createdTask as any).id);
+      const { data: existingLock, error: existingLockErr } = await supabaseAdmin
+        .from("locks")
+        .select("id")
+        .eq("plan_id", planId)
+        .eq("task_id", taskId)
+        .eq("lock_type", "time")
+        .maybeSingle();
+      if (existingLockErr) throw existingLockErr;
+
+      if (existingLock?.id) {
+        const { error: updLockErr } = await supabaseAdmin
+          .from("locks")
+          .update({
+            locked_start: input.start,
+            locked_end: input.end,
+            created_by: "manual",
+            reason: "manual_block",
+          })
+          .eq("id", Number(existingLock.id));
+        if (updLockErr) throw updLockErr;
+      } else {
+        const { error: insLockErr } = await supabaseAdmin
+          .from("locks")
+          .insert({
+            plan_id: planId,
+            task_id: taskId,
+            lock_type: "time",
+            locked_start: input.start,
+            locked_end: input.end,
+            created_by: "manual",
+            reason: "manual_block",
+          });
+        if (insLockErr) throw insLockErr;
+      }
+
+      return res.status(201).json({ success: true, task: createdTask });
+    } catch (err: any) {
+      if (err?.name === "ZodError") {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot create manual block" });
+    }
+  });
+
 
   // Engine Integration
   // ✅ DEBUG: ver exactamente qué recibe el motor (EngineInput)

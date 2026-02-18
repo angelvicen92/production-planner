@@ -420,11 +420,22 @@ export async function buildEngineInput(
         const dependsOnTaskId =
           dependsOnTaskIds.length > 0 ? dependsOnTaskIds[0] : null;
 
+        const isManualBlock = (t.is_manual_block ?? t.isManualBlock ?? false) === true;
+        const manualScopeType = (t.manual_scope_type ?? t.manualScopeType ?? null) as string | null;
+        const manualScopeIdRaw = t.manual_scope_id ?? t.manualScopeId ?? null;
+        const manualScopeId = manualScopeIdRaw == null ? null : Number(manualScopeIdRaw);
+        const effectiveContestantId =
+          isManualBlock && manualScopeType === "contestant" && Number.isFinite(manualScopeId as any)
+            ? Number(manualScopeId)
+            : contestantId;
+
         return {
           id: t.id,
           planId: t.plan_id ?? t.planId,
           templateId,
-          templateName: (tpl?.name ?? t.template?.name ?? null) as string | null,
+          templateName: (isManualBlock
+            ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "BLOQUEO")
+            : (tpl?.name ?? t.template?.name ?? null)) as string | null,
           
           resourceRequirements: normalizeResourceRequirements(
             (tpl as any)?.resourceRequirements ??
@@ -433,11 +444,13 @@ export async function buildEngineInput(
           ),
 
           zoneId: (t.zone_id ?? t.zoneId ?? null) as number | null,
-          spaceId: (t.space_id ?? t.spaceId ?? null) as number | null,
+          spaceId: isManualBlock && manualScopeType === "space" && Number.isFinite(manualScopeId as any)
+            ? Number(manualScopeId)
+            : ((t.space_id ?? t.spaceId ?? null) as number | null),
 
-          contestantId,
-          contestantName: contestantId
-            ? (contestantNameById.get(contestantId) ?? null)
+          contestantId: effectiveContestantId,
+          contestantName: effectiveContestantId
+            ? (contestantNameById.get(effectiveContestantId) ?? null)
             : null,
           status: t.status,
           itinerantTeamId:
@@ -463,6 +476,8 @@ export async function buildEngineInput(
 
         startPlanned: t.start_planned ?? t.startPlanned ?? null,
         endPlanned: t.end_planned ?? t.endPlanned ?? null,
+        lockedStart: t.start_planned ?? t.startPlanned ?? null,
+        lockedEnd: t.end_planned ?? t.endPlanned ?? null,
         startReal: t.start_real ?? t.startReal ?? null,
         endReal: t.end_real ?? t.endReal ?? null,
 
