@@ -16,6 +16,7 @@ import { addIncident, getIncidents, toggleResolved } from "@/lib/war-room-store"
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { formatRange, hhmmToMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
+import { QueryState } from "@/components/query-state";
 
 export default function WarRoomPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
@@ -115,8 +116,7 @@ export default function WarRoomPage() {
 
   const spacesByZone = (zoneId: string) => (data.spaces || []).filter((space: any) => String(space.zoneId) === String(zoneId));
 
-  if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
-  if (plansError) return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
+  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryState isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
 
   return (
     <Layout>
@@ -137,10 +137,20 @@ export default function WarRoomPage() {
         </div>
 
         {(isLoading || error) && (
-          <section className="rounded-lg border bg-card p-4 text-sm">
-            {isLoading ? "Cargando datos operativos..." : "No se pudieron cargar datos operativos."}
-            {error && <Button className="ml-2" size="sm" variant="outline" onClick={() => refetch()}>Reintentar</Button>}
-          </section>
+          <QueryState
+            isLoading={isLoading}
+            isError={Boolean(error)}
+            error={error}
+            loadingText="Cargando datos operativos..."
+            onRetry={() => {
+              if (selected?.id) {
+                queryClient.cancelQueries({ queryKey: [buildUrl(api.plans.get.path, { id: selected.id })] });
+                queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/tasks`] });
+                queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/locks`] });
+              }
+              refetch();
+            }}
+          />
         )}
 
         {!selected && <div className="rounded-lg border bg-card p-4 text-sm">Selecciona un plan para operar.</div>}

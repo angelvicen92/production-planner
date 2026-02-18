@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/api";
 import { pickDefaultPlan } from "@/lib/plan-default";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { addIncident } from "@/lib/war-room-store";
+import { QueryState } from "@/components/query-state";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
 import { useProductionClock } from "@/hooks/use-production-clock";
@@ -309,11 +310,23 @@ export default function DashboardPage() {
     [data.spaces, selectedZoneId],
   );
 
-  if (plansLoading) {
-    return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
-  }
-  if (plansError) {
-    return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
+  if (plansLoading || plansError) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <QueryState
+            isLoading={plansLoading}
+            isError={Boolean(plansError)}
+            error={plansError}
+            loadingText="Cargando planes..."
+            onRetry={() => {
+              queryClient.cancelQueries({ queryKey: [api.plans.list.path] });
+              refetchPlans();
+            }}
+          />
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -347,12 +360,19 @@ export default function DashboardPage() {
           {!plans.length && <div className="mt-3 text-sm">No hay planes. <Link href="/plans" className="text-primary underline">Ir a planes</Link></div>}
         </div>
 
-        {error ? (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4">
-            {(error as any)?.status === 401 || (error as any)?.status === 403 ? "No tienes permisos" : "No se pudo cargar el dashboard"}
-            <Button className="ml-3" size="sm" variant="outline" onClick={() => refetch()}>Reintentar</Button>
-          </div>
-        ) : null}
+        <QueryState
+          isError={Boolean(error)}
+          error={error}
+          errorTitle="No se pudo cargar el dashboard."
+          onRetry={() => {
+            if (planId) {
+              queryClient.cancelQueries({ queryKey: [buildUrl(api.plans.get.path, { id: planId })] });
+              queryClient.cancelQueries({ queryKey: [`/api/plans/${planId}/tasks`] });
+              queryClient.cancelQueries({ queryKey: [`/api/plans/${planId}/locks`] });
+            }
+            refetch();
+          }}
+        />
 
         {!selectedPlan ? null : (
           <>
@@ -465,7 +485,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        {isLoading && <div className="text-sm text-muted-foreground">Cargando datos operativos…</div>}
+        {isLoading && <QueryState isLoading loadingText="Cargando datos operativos..." />}
       </div>
 
       <Dialog open={!!locationDialogTask} onOpenChange={(open) => !open && setLocationDialogTask(null)}>

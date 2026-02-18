@@ -63,10 +63,33 @@ export function usePlan(id: number) {
           filter: `plan_id=eq.${id}`
         },
         invalidateDebounced
-      )
-      .subscribe();
+      );
+
+    const ensureSubscribed = () => {
+      const state = (channel as any)?.state;
+      if (state === 'joined' || state === 'joining') return;
+      supabase.realtime.connect();
+      channel.subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          invalidateDebounced();
+        }
+      });
+    };
+
+    const onFocus = () => ensureSubscribed();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        ensureSubscribed();
+      }
+    };
+
+    ensureSubscribed();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (invalidateTimeoutRef.current) {
         clearTimeout(invalidateTimeoutRef.current);
         invalidateTimeoutRef.current = null;

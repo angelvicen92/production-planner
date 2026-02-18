@@ -1,4 +1,5 @@
 import { Layout } from "@/components/layout";
+import { QueryState } from "@/components/query-state";
 import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
@@ -611,6 +612,7 @@ export default function PlanDetailsPage() {
     data: plan,
     isLoading: planLoading,
     error: planQueryError,
+    refetch: refetchPlan,
   } = usePlan(id);
 
   const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
@@ -1141,30 +1143,24 @@ export default function PlanDetailsPage() {
     setTimeLockDialog({ open: true, task, start, end });
   };
 
-  if (planLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (planError) {
+  if (planLoading || planError) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh] px-4">
-          <Alert variant="destructive" className="max-w-xl w-full">
-            <AlertTitle>No se pudo cargar el plan</AlertTitle>
-            <AlertDescription>{planError}</AlertDescription>
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" onClick={() => setLocation("/plans")}>
-                Volver
-              </Button>
-              <Button onClick={() => window.location.reload()}>Reintentar</Button>
-            </div>
-          </Alert>
+          <div className="w-full max-w-xl space-y-3">
+            <QueryState
+              isLoading={planLoading}
+              isError={Boolean(planError)}
+              error={planQueryError}
+              loadingText="Cargando plan..."
+              errorTitle="No se pudo cargar el plan."
+              onRetry={() => {
+                queryClient.cancelQueries({ queryKey: planQueryKey(id) });
+                refetchPlan();
+              }}
+            />
+            <Button variant="outline" onClick={() => setLocation("/plans")}>Volver</Button>
+          </div>
         </div>
       </Layout>
     );
