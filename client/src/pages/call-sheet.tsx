@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
+import { buildUrl, api } from "@shared/routes";
+import { QueryState } from "@/components/query-state";
 import { Layout } from "@/components/layout";
 import { usePlans } from "@/hooks/use-plans";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
@@ -32,6 +35,8 @@ export default function CallSheetPage() {
   const [printMode, setPrintMode] = useState(false);
   const [pdfHelpOpen, setPdfHelpOpen] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
@@ -178,8 +183,7 @@ export default function CallSheetPage() {
     } catch {}
   };
 
-  if (plansLoading) return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
-  if (plansError) return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
+  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryState isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
 
   if (!plans.length) {
     return (
@@ -223,9 +227,21 @@ export default function CallSheetPage() {
         </div>
 
         {(isLoading || error) && (
-          <section className="mb-4 rounded-lg border bg-card p-4 text-sm">
-            {isLoading ? "Cargando datos operativos..." : "No se pudieron cargar datos operativos."}
-            {error && <Button className="ml-2" size="sm" variant="outline" onClick={() => refetch()}>Reintentar</Button>}
+          <section className="mb-4">
+            <QueryState
+              isLoading={isLoading}
+              isError={Boolean(error)}
+              error={error}
+              loadingText="Cargando datos operativos..."
+              onRetry={() => {
+                if (selected?.id) {
+                  queryClient.cancelQueries({ queryKey: [buildUrl(api.plans.get.path, { id: selected.id })] });
+                  queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/tasks`] });
+                  queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/locks`] });
+                }
+                refetch();
+              }}
+            />
           </section>
         )}
 

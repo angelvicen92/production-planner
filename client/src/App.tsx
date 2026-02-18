@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AccessDenied } from "@/components/access-denied";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { useVisibilityRefetch } from "@/hooks/use-visibility-refetch";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, type AppRole } from "@/hooks/use-user-role";
 
@@ -111,6 +112,11 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
   );
 }
 
+function AppLifecycleEffects() {
+  useVisibilityRefetch();
+  return null;
+}
+
 function Router() {
   const { session, authLoading } = useAuth();
 
@@ -146,6 +152,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AppLifecycleEffects />
         <TooltipProvider>
           <Toaster />
           <Router />

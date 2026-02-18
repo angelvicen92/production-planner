@@ -432,6 +432,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const occupiedByItinerant = new Map<number, Interval[]>();
   const lastZoneByContestant = new Map<number, number>();
   const mealIntervals: Interval[] = []; // solo comidas de concursantes (para max simultáneo)
+  let fixedMealCount = 0;
+  let fixedMealMinutesInWindow = 0;
 
   const fixedEndByTaskId = new Map<number, number>();
 
@@ -474,6 +476,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const arr = occupiedByContestant.get(contestantId) ?? [];
       addIntervalSorted(arr, { start: s, end: e, taskId: Number(task.id) });
       occupiedByContestant.set(contestantId, arr);
+
+      if (isMealTask(task)) {
+        addIntervalSorted(mealIntervals, { start: s, end: e, taskId: Number(task.id) });
+        fixedMealCount++;
+        const overlapStart = Math.max(s, mealStart);
+        const overlapEnd = Math.min(e, mealEnd);
+        if (overlapEnd > overlapStart) {
+          fixedMealMinutesInWindow += overlapEnd - overlapStart;
+        }
+      }
     }
 
     const spaceId = Number(task?.spaceId ?? 0);
@@ -1797,13 +1809,25 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return concurrent;
   };
 
-  const getCandidateStarts = (cand: MealTaskCandidate) => {
-    const cOcc = occupiedByContestant.get(cand.contestantId) ?? [];
+  const countConcurrentMealsFrom = (intervals: Interval[], start: number, end: number) => {
+    let concurrent = 0;
+    for (const it of intervals) {
+      if (rangesOverlap(start, end, it.start, it.end)) concurrent++;
+    }
+    return concurrent;
+  };
+
+  const getCandidateStarts = (
+    cand: MealTaskCandidate,
+    contestantOccupation: Map<number, Interval[]>,
+    activeMealIntervals: Interval[],
+  ) => {
+    const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
     const starts: number[] = [];
     for (let start = cand.windowStart; start + contestantMealDuration <= cand.windowEnd; start += GRID) {
       if (findEarliestGap(cOcc, start, contestantMealDuration) !== start) continue;
       const finish = start + contestantMealDuration;
-      if (countConcurrentMeals(start, finish) >= contestantMealMaxSim) continue;
+      if (countConcurrentMealsFrom(activeMealIntervals, start, finish) >= contestantMealMaxSim) continue;
       starts.push(start);
     }
     return starts;
@@ -1821,6 +1845,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
       maxSim: contestantMealMaxSim,
       capacityTheoretical,
       mealsNeeded,
+      fixedMealCount,
+      fixedMealMinutesInWindow,
       isCapacityImpossible: mealsNeeded > capacityTheoretical,
     };
   };
@@ -1835,7 +1861,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (!Number.isFinite(taskId)) continue;
 
     const status = String(task?.status ?? "pending");
-    const isFixed = status === "in_progress" || status === "done";
+    const isFixed =
+      status === "in_progress" ||
+      status === "done" ||
+      lockedTaskIds.has(taskId);
     if (isFixed) continue;
 
     const effWin = getContestantEffectiveWindow(contestantId);
@@ -1875,7 +1904,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       possibleSlots: 0,
       occupancyMinutes,
     };
-    candidate.possibleSlots = getCandidateStarts(candidate).length;
+    candidate.possibleSlots = getCandidateStarts(candidate, occupiedByContestant, mealIntervals).length;
     pendingMealCandidates.push(candidate);
   }
 
@@ -1886,75 +1915,141 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return a.taskId - b.taskId;
   });
 
-  for (const cand of pendingMealCandidates) {
-    const candidateStarts = getCandidateStarts(cand);
-    if (!candidateStarts.length) {
-      const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
-      const restrictiveContestants = [...pendingMealCandidates]
-        .sort((a, b) => {
-          if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
-          if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
-          return b.occupancyMinutes - a.occupancyMinutes;
-        })
-        .slice(0, 3)
-        .map((x) => ({
-          contestantId: x.contestantId,
-          contestantName: x.contestantName,
-          windowStart: toHHMM(x.windowStart),
-          windowEnd: toHHMM(x.windowEnd),
-          windowMinutes: x.windowMinutes,
-          possibleSlots: x.possibleSlots,
-        }));
-
-      const diagnostic = {
-        ...baseDiagnostic,
-        restrictiveContestants,
-      };
-
-      const capacityMsg = diagnostic.isCapacityImpossible
-        ? `Con estos parámetros es imposible: hacen falta ${diagnostic.mealsNeeded} comidas y la capacidad máxima teórica es ${diagnostic.capacityTheoretical}. Sugerencias: aumenta el máximo simultáneo, amplía la ventana de comida o reduce la duración.`
-        : `Teóricamente cabría por capacidad, pero no se pudo por restricciones de disponibilidad/ocupación. Top restrictivos: ${restrictiveContestants.map((x) => `${x.contestantName}: ${x.windowStart}–${x.windowEnd}`).join(', ')}.`;
-
-      return {
-        feasible: false,
-        reasons: [{
-          code: "MEAL_CONTESTANT_NO_FIT",
-          message:
-            `No se pudo encajar la comida de "${cand.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}). ${capacityMsg}` +
-            (String(cand.task?.templateName ?? "").trim()
-              ? ` (Tarea: "${String(cand.task.templateName).trim()}").`
-              : ""),
-          taskId: cand.taskId,
-          diagnostic,
-        }],
-      } as any;
+  const cloneOccupiedByContestant = () => {
+    const cloned = new Map<number, Interval[]>();
+    for (const [k, v] of occupiedByContestant.entries()) {
+      cloned.set(k, v.map((it) => ({ ...it })));
     }
+    return cloned;
+  };
 
-    let bestStart = candidateStarts[0];
-    let bestConcurrent = Number.POSITIVE_INFINITY;
-    for (const start of candidateStarts) {
+  const mulberry32 = (seed: number) => {
+    let t = seed >>> 0;
+    return () => {
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+
+  const pickMealStart = (
+    cand: MealTaskCandidate,
+    candidateStarts: number[],
+    strategyAttempt: number,
+    activeMealIntervals: Interval[],
+  ) => {
+    const scored = candidateStarts.map((start) => {
       const finish = start + contestantMealDuration;
-      const concurrent = countConcurrentMeals(start, finish);
-      if (concurrent < bestConcurrent || (concurrent === bestConcurrent && start < bestStart)) {
-        bestConcurrent = concurrent;
-        bestStart = start;
-      }
+      const concurrent = countConcurrentMealsFrom(activeMealIntervals, start, finish);
+      const edgeDistance = Math.min(start - cand.windowStart, cand.windowEnd - finish);
+      return { start, concurrent, edgeDistance };
+    });
+
+    if (strategyAttempt === 1) {
+      scored.sort((a, b) => a.concurrent - b.concurrent || a.start - b.start);
+      return scored[0].start;
     }
 
-    const cOcc = occupiedByContestant.get(cand.contestantId) ?? [];
-    const finish = bestStart + contestantMealDuration;
-    addIntervalSorted(cOcc, { start: bestStart, end: finish, taskId: cand.taskId });
-    occupiedByContestant.set(cand.contestantId, cOcc);
-    addIntervalSorted(mealIntervals, { start: bestStart, end: finish, taskId: cand.taskId });
+    if (strategyAttempt === 2) {
+      scored.sort((a, b) => a.concurrent - b.concurrent || b.edgeDistance - a.edgeDistance || a.start - b.start);
+      return scored[0].start;
+    }
 
-    plannedTasks.push({
-      taskId: cand.taskId,
-      startPlanned: toHHMM(bestStart),
-      endPlanned: toHHMM(finish),
-      assignedSpace: null,
-      assignedResources: [],
-    });
-    plannedEndByTaskId.set(cand.taskId, finish);
+    scored.sort((a, b) => a.concurrent - b.concurrent || b.edgeDistance - a.edgeDistance || a.start - b.start);
+    const topN = Math.max(1, Math.min(6, scored.length));
+    const rand = mulberry32(9973 * strategyAttempt + cand.taskId * 31 + cand.contestantId * 17);
+    const idx = Math.floor(rand() * topN);
+    return scored[idx].start;
+  };
+
+  const tryScheduleMeals = (strategyAttempt: number) => {
+    const contestantOccupation = cloneOccupiedByContestant();
+    const activeMealIntervals = mealIntervals.map((it) => ({ ...it }));
+    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
+
+    for (const cand of pendingMealCandidates) {
+      const candidateStarts = getCandidateStarts(cand, contestantOccupation, activeMealIntervals);
+      if (!candidateStarts.length) {
+        return { ok: false as const, failingCandidate: cand };
+      }
+
+      const bestStart = pickMealStart(cand, candidateStarts, strategyAttempt, activeMealIntervals);
+      const finish = bestStart + contestantMealDuration;
+
+      const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
+      addIntervalSorted(cOcc, { start: bestStart, end: finish, taskId: cand.taskId });
+      contestantOccupation.set(cand.contestantId, cOcc);
+      addIntervalSorted(activeMealIntervals, { start: bestStart, end: finish, taskId: cand.taskId });
+
+      assignments.push({ cand, start: bestStart, end: finish });
+    }
+
+    return { ok: true as const, assignments };
+  };
+
+  const mealAttempts = 5;
+  let mealSolved = false;
+  let failingMealCandidate: MealTaskCandidate | null = null;
+  for (let attempt = 1; attempt <= mealAttempts; attempt++) {
+    const out = tryScheduleMeals(attempt);
+    if (out.ok) {
+      for (const row of out.assignments) {
+        plannedTasks.push({
+          taskId: row.cand.taskId,
+          startPlanned: toHHMM(row.start),
+          endPlanned: toHHMM(row.end),
+          assignedSpace: null,
+          assignedResources: [],
+        });
+        plannedEndByTaskId.set(row.cand.taskId, row.end);
+      }
+      mealSolved = true;
+      break;
+    }
+    failingMealCandidate = out.failingCandidate;
+  }
+
+  if (!mealSolved && failingMealCandidate) {
+    const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
+    const restrictiveContestants = [...pendingMealCandidates]
+      .sort((a, b) => {
+        if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+        if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
+        return b.occupancyMinutes - a.occupancyMinutes;
+      })
+      .slice(0, 3)
+      .map((x) => ({
+        contestantId: x.contestantId,
+        contestantName: x.contestantName,
+        windowStart: toHHMM(x.windowStart),
+        windowEnd: toHHMM(x.windowEnd),
+        windowMinutes: x.windowMinutes,
+        possibleSlots: x.possibleSlots,
+      }));
+
+    const diagnostic = {
+      ...baseDiagnostic,
+      restrictiveContestants,
+    };
+
+    const capacityMsg = diagnostic.isCapacityImpossible
+      ? `Con estos parámetros es imposible: hacen falta ${diagnostic.mealsNeeded} comidas y la capacidad máxima teórica es ${diagnostic.capacityTheoretical}. Comidas fijas: ${diagnostic.fixedMealCount} (consumen ${diagnostic.fixedMealMinutesInWindow} min en ventana).`
+      : `Teóricamente cabría por capacidad (${diagnostic.mealsNeeded}/${diagnostic.capacityTheoretical}), pero falló por distribución/ocupación. Top restrictivos: ${restrictiveContestants.map((x) => `${x.contestantName}: ${x.windowStart}–${x.windowEnd}`).join(', ')}. Comidas fijas: ${diagnostic.fixedMealCount} (consumen ${diagnostic.fixedMealMinutesInWindow} min en ventana).`;
+
+    return {
+      feasible: false,
+      reasons: [{
+        code: "MEAL_CONTESTANT_NO_FIT",
+        message:
+          `No se pudo encajar la comida de "${failingMealCandidate.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}) tras ${mealAttempts} intentos. ${capacityMsg}` +
+          (String(failingMealCandidate.task?.templateName ?? "").trim()
+            ? ` (Tarea: "${String(failingMealCandidate.task.templateName).trim()}").`
+            : ""),
+        taskId: failingMealCandidate.taskId,
+        diagnostic,
+      }],
+    } as any;
   }
 
   // Hard rule: un concursante no puede solaparse

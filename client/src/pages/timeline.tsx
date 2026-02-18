@@ -6,23 +6,34 @@ import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planni
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { Loader2, GanttChartSquare } from "lucide-react";
+import { GanttChartSquare } from "lucide-react";
+import { QueryState } from "@/components/query-state";
+import { queryClient } from "@/lib/queryClient";
 
 export default function TimelinePage() {
-  const { data: plans, isLoading: isLoadingPlans } = usePlans();
+  const { data: plans, isLoading: isLoadingPlans, error: plansError, refetch: refetchPlans } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const planId = selectedPlanId ? parseInt(selectedPlanId) : plans?.[0]?.id;
-  const { data: contestants = [], isLoading: isLoadingContestants } = useContestants(planId || 0);
+  const { data: contestants = [], isLoading: isLoadingContestants, error: contestantsError, refetch: refetchContestants } = useContestants(planId || 0);
 
   const selectedPlanSummary = plans?.find(p => p.id === planId);
-  const { data: selectedPlan, isLoading: isLoadingPlan } = usePlan(planId || 0);
+  const { data: selectedPlan, isLoading: isLoadingPlan, error: planError, refetch: refetchPlan } = usePlan(planId || 0);
 
-  if (isLoadingPlans) {
+  if (isLoadingPlans || plansError) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="p-6">
+          <QueryState
+            isLoading={isLoadingPlans}
+            isError={Boolean(plansError)}
+            error={plansError}
+            loadingText="Cargando planes..."
+            onRetry={() => {
+              queryClient.cancelQueries({ queryKey: ["/api/plans"] });
+              refetchPlans();
+            }}
+          />
         </div>
       </Layout>
     );
@@ -86,22 +97,26 @@ export default function TimelinePage() {
               </CardContent>
             </Card>
 
-            {isLoadingPlan ? (
-              <div className="flex items-center justify-center h-48">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : isLoadingContestants ? (
-              <div className="flex items-center justify-center h-48">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : (
+            <QueryState
+              isLoading={isLoadingPlan || isLoadingContestants}
+              isError={Boolean(planError || contestantsError)}
+              error={planError || contestantsError}
+              loadingText="Cargando timeline..."
+              onRetry={() => {
+                if (planId) {
+                  queryClient.cancelQueries({ queryKey: ["/api/plans", planId] });
+                }
+                refetchPlan();
+                refetchContestants();
+              }}
+            >
               <FullscreenPlanningPanel title="Timeline Explorer" viewKey="timeline-explorer" supportsZoom>
                 <PlanningTimeline 
                   plan={(selectedPlan as any) ?? ({ ...selectedPlanSummary, dailyTasks: [] } as any)} 
                   contestants={contestants as any} 
                 />
               </FullscreenPlanningPanel>
-            )}
+            </QueryState>
           </div>
         ) : (
           <Card className="p-12 text-center bg-muted/50">
