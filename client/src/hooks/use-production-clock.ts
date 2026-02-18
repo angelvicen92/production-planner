@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
@@ -32,6 +32,9 @@ export function useProductionClock() {
   const simulatedTime = isValidHHMM(data?.simulatedTime) ? data?.simulatedTime : null;
 
   const [autoNow, setAutoNow] = useState<string | null>(() => toHHMM(new Date()));
+  const [manualNow, setManualNow] = useState<string | null>(simulatedTime);
+  const manualStartRealMsRef = useRef<number>(0);
+  const manualStartMinutesRef = useRef<number>(0);
 
   useEffect(() => {
     if (mode !== "auto") return;
@@ -41,10 +44,31 @@ export function useProductionClock() {
     return () => window.clearInterval(id);
   }, [mode]);
 
-  const nowTime = useMemo(() => {
-    if (mode === "manual") return simulatedTime;
-    return autoNow;
-  }, [mode, simulatedTime, autoNow]);
+  useEffect(() => {
+    if (mode !== "manual" || !simulatedTime) {
+      setManualNow(simulatedTime);
+      return;
+    }
+
+    const [h, m] = simulatedTime.split(":").map((x) => Number(x));
+    const baseMinutes = (h * 60 + m) % (24 * 60);
+    manualStartRealMsRef.current = Date.now();
+    manualStartMinutesRef.current = baseMinutes;
+
+    const tick = () => {
+      const elapsedMinutes = Math.floor((Date.now() - manualStartRealMsRef.current) / 60000);
+      const currentMinutes = (manualStartMinutesRef.current + elapsedMinutes) % (24 * 60);
+      const hh = String(Math.floor(currentMinutes / 60)).padStart(2, "0");
+      const mm = String(currentMinutes % 60).padStart(2, "0");
+      setManualNow(`${hh}:${mm}`);
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [mode, simulatedTime]);
+
+  const nowTime = mode === "manual" ? manualNow : autoNow;
 
   return {
     nowTime: isValidHHMM(nowTime) ? nowTime : null,

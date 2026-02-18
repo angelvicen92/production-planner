@@ -5,6 +5,7 @@ import { api, buildUrl } from "@shared/routes";
 import { planQueryKey } from "@/lib/plan-query-keys";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function usePlans() {
   return useQuery<Plan[]>({
@@ -19,6 +20,10 @@ export function usePlan(id: number) {
   useEffect(() => {
     if (!id) return;
 
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+    };
+
     const channel = supabase
       .channel(`plan-${id}`)
       .on(
@@ -29,9 +34,27 @@ export function usePlan(id: number) {
           table: 'daily_tasks',
           filter: `plan_id=eq.${id}`
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-        }
+        invalidate
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'locks',
+          filter: `plan_id=eq.${id}`
+        },
+        invalidate
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'plan_breaks',
+          filter: `plan_id=eq.${id}`
+        },
+        invalidate
       )
       .subscribe();
 
@@ -47,8 +70,6 @@ export function usePlan(id: number) {
   });
 }
 
-import { useToast } from "@/hooks/use-toast";
-// ...mantén el resto igual
 
 export function useCreatePlan() {
   const queryClient = useQueryClient();

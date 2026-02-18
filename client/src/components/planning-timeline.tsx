@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +128,7 @@ interface PlanningTimelineProps {
     status: "in_progress" | "done" | "interrupted" | "cancelled",
   ) => Promise<void>;
   taskStatusPending?: boolean;
+  lockedTaskIds?: number[];
 }
 
 function taskActionsForStatus(status: string) {
@@ -244,11 +246,15 @@ function TaskStatusMenuTrigger({
     staffAssignments = [],
     onTaskStatusChange,
     taskStatusPending = false,
+    lockedTaskIds = [],
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
   const density = usePlanningDensity();
   const isCompact = density === "compact";
+  const lockedSet = useMemo(() => new Set((lockedTaskIds ?? []).map((id) => Number(id))), [lockedTaskIds]);
+  const isTaskFixed = (task: Task) =>
+    task.status === "in_progress" || task.status === "done" || lockedSet.has(Number(task.id));
 
   // =========================
   // 🎨 Helpers for UI colors
@@ -1340,7 +1346,7 @@ function TaskStatusMenuTrigger({
                                                 }}
                                               >
                                                 <div className="text-[12px] font-bold truncate">
-                                                  {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
                                                   {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1423,7 +1429,7 @@ function TaskStatusMenuTrigger({
                                             }}
                                           >
                                             <div className="text-[12px] font-bold truncate">
-                                              {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                             </div>
                                             <div className="text-[10px] opacity-70">
                                               {task.startPlanned}-
@@ -1653,7 +1659,7 @@ function TaskStatusMenuTrigger({
                                       }}
                                     >
                                       <div className="text-sm font-bold truncate">
-                                        {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                        {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                       </div>
                                       <div className="text-xs opacity-70">
                                         {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -1800,7 +1806,7 @@ function TaskStatusMenuTrigger({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="text-sm font-bold truncate">
-                                  {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                  {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                                 </div>
                                 <div className="text-xs opacity-70">
                                   {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
@@ -2016,7 +2022,7 @@ function TaskStatusMenuTrigger({
                             }}
                           >
                             <span className="text-xs font-bold truncate">
-                              {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                              {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                             </span>
                             <span className="text-[10px] opacity-70">
                               {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
@@ -2025,7 +2031,7 @@ function TaskStatusMenuTrigger({
                           <TooltipContent>
                             <div className="space-y-1 p-1">
                               <p className="font-bold">
-                                {isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
+                                {isTaskFixed(task) ? <Lock className="inline h-3 w-3 mr-1" /> : null}{isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea")}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Ubicación: {getTaskLocationLabel(task)}

@@ -21,7 +21,7 @@ import { buildUrl, api } from "@shared/routes";
 import { useProductionClock } from "@/hooks/use-production-clock";
 
 export default function DashboardPage() {
-  const { data: plans = [], isLoading: plansLoading } = usePlans();
+  const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
   const [locationDialogTask, setLocationDialogTask] = useState<any | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
@@ -311,6 +311,9 @@ export default function DashboardPage() {
 
   if (plansLoading) {
     return <Layout><div className="p-8 text-sm text-muted-foreground">Cargando planes...</div></Layout>;
+  }
+  if (plansError) {
+    return <Layout><div className="p-8 text-sm text-muted-foreground">No se pudieron cargar planes. <Button size="sm" variant="outline" onClick={() => refetchPlans()}>Reintentar</Button></div></Layout>;
   }
 
   return (
