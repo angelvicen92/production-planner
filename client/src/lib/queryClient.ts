@@ -5,6 +5,7 @@ type UnauthorizedBehavior = "returnNull" | "throw";
 
 const shouldRetry = (failureCount: number, error: any) => {
   if (failureCount >= 1) return false;
+  if (error?.name === "AbortError") return false;
   const status = Number(error?.status ?? 0);
   if (status === 401 || status === 403) return false;
   return true;

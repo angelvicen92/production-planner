@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import { getSupabaseClient, supabase } from "@/lib/supabaseClient";
+import { getCachedSession, getSessionSafe, supabase } from "@/lib/supabaseClient";
 import { getLastApiHealth, subscribeApiHealth, triggerGlobalRecovery, type ApiHealthSnapshot } from "@/lib/health-events";
 
 export type HealthColor = "green" | "yellow" | "red";
@@ -16,10 +16,7 @@ export function useHealthStatus() {
   const [lastPingMs, setLastPingMs] = useState<number | null>(null);
 
   const revalidateSession = useCallback(async () => {
-    const client = await getSupabaseClient();
-    const {
-      data: { session },
-    } = await client.auth.getSession();
+    const session = getCachedSession() ?? await getSessionSafe({ timeoutMs: 1_500 });
     setSessionExpired(!session);
     return !session;
   }, []);
