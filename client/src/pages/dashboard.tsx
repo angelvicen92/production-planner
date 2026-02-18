@@ -9,11 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePlans, useGeneratePlan } from "@/hooks/use-plans";
+import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
 import { useMeLinks } from "@/hooks/useMeLinks";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
-import { pickDefaultPlan } from "@/lib/plan-default";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { addIncident } from "@/lib/war-room-store";
 import { QueryState } from "@/components/query-state";
@@ -31,11 +31,9 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const selectedPlan = useMemo(() => {
-    if (!plans.length) return null;
-    const fromUi = plans.find((plan) => String(plan.id) === selectedPlanId);
-    return fromUi || pickDefaultPlan(plans);
-  }, [plans, selectedPlanId]);
+  const { defaultPlanId } = useDefaultPlanId(plans, selectedPlanId);
+
+  const selectedPlan = useMemo(() => plans.find((plan) => plan.id === defaultPlanId) || null, [plans, defaultPlanId]);
 
   const planId = selectedPlan?.id as number | undefined;
   const { data, isLoading, error, refetch } = usePlanOpsData(planId);

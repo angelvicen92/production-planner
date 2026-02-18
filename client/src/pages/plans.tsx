@@ -1,16 +1,21 @@
 import { Layout } from "@/components/layout";
 import { CreatePlanDialog } from "@/components/create-plan-dialog";
 import { usePlans, useDeletePlan } from "@/hooks/use-plans";
+import { useMePreferences, useSetFavoritePlan } from "@/hooks/use-preferences";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, Clock, ArrowRight, Trash2 } from "lucide-react";
+import { Loader2, Calendar, Clock, ArrowRight, Trash2, Star } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
 export default function PlansPage() {
   const { data: plans, isLoading, error } = usePlans();
+  const { data: preferences } = useMePreferences();
+  const setFavoritePlan = useSetFavoritePlan();
   const deletePlan = useDeletePlan();
+
+  const favoritePlanId = preferences?.favoritePlanId ?? null;
 
   const handleDelete = async (planId: number, planDate: string) => {
     const ok = window.confirm(
@@ -72,6 +77,23 @@ export default function PlansPage() {
                     </Badge>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground font-mono">#{plan.id}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const nextPlanId = favoritePlanId === plan.id ? null : plan.id;
+                          setFavoritePlan.mutate(nextPlanId);
+                        }}
+                        title={favoritePlanId === plan.id ? "Quitar favorito" : "Marcar favorito"}
+                      >
+                        <Star
+                          className={`h-4 w-4 ${favoritePlanId === plan.id ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`}
+                        />
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"

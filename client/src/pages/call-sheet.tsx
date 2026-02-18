@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getIncidents } from "@/lib/war-room-store";
 import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
-import { pickDefaultPlan } from "@/lib/plan-default";
+import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { useMeLinks } from "@/hooks/useMeLinks";
 import { useProductionClock } from "@/hooks/use-production-clock";
@@ -39,7 +39,8 @@ export default function CallSheetPage() {
 
   const queryClient = useQueryClient();
 
-  const selected = useMemo(() => plans.find((plan) => String(plan.id) === planId) || pickDefaultPlan(plans), [plans, planId]);
+  const { defaultPlanId } = useDefaultPlanId(plans, planId);
+  const selected = useMemo(() => plans.find((plan) => plan.id === defaultPlanId) || null, [plans, defaultPlanId]);
   const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
   const { links, staffPerson, resourceItem } = useMeLinks(true);
   const { nowTime } = useProductionClock();
