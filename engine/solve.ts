@@ -1777,10 +1777,59 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   // 3) Comidas de concursantes: tareas “comida” CON concursante
+  type MealTaskCandidate = {
+    task: any;
+    taskId: number;
+    contestantId: number;
+    contestantName: string;
+    windowStart: number;
+    windowEnd: number;
+    windowMinutes: number;
+    possibleSlots: number;
+    occupancyMinutes: number;
+  };
+
+  const countConcurrentMeals = (start: number, end: number) => {
+    let concurrent = 0;
+    for (const it of mealIntervals) {
+      if (rangesOverlap(start, end, it.start, it.end)) concurrent++;
+    }
+    return concurrent;
+  };
+
+  const getCandidateStarts = (cand: MealTaskCandidate) => {
+    const cOcc = occupiedByContestant.get(cand.contestantId) ?? [];
+    const starts: number[] = [];
+    for (let start = cand.windowStart; start + contestantMealDuration <= cand.windowEnd; start += GRID) {
+      if (findEarliestGap(cOcc, start, contestantMealDuration) !== start) continue;
+      const finish = start + contestantMealDuration;
+      if (countConcurrentMeals(start, finish) >= contestantMealMaxSim) continue;
+      starts.push(start);
+    }
+    return starts;
+  };
+
+  const getMealDiagnosticBase = (candidates: MealTaskCandidate[]) => {
+    const windowMinutes = Math.max(0, mealEnd - mealStart);
+    const capacityTheoretical = contestantMealMaxSim * Math.floor(windowMinutes / contestantMealDuration);
+    const mealsNeeded = candidates.length;
+    return {
+      windowStart: toHHMM(mealStart),
+      windowEnd: toHHMM(mealEnd),
+      windowMinutes,
+      duration: contestantMealDuration,
+      maxSim: contestantMealMaxSim,
+      capacityTheoretical,
+      mealsNeeded,
+      isCapacityImpossible: mealsNeeded > capacityTheoretical,
+    };
+  };
+
+  const pendingMealCandidates: MealTaskCandidate[] = [];
   for (const task of tasksSorted as any[]) {
     if (!isMealTask(task)) continue;
     const contestantId = getContestantId(task);
-    if (!contestantId) continue; // ✅ solo comidas con concursante
+    if (!contestantId) continue;
 
     const taskId = Number(task?.id);
     if (!Number.isFinite(taskId)) continue;
@@ -1789,85 +1838,123 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const isFixed = status === "in_progress" || status === "done";
     if (isFixed) continue;
 
-    const duration = contestantMealDuration;
-
-    const cOcc = occupiedByContestant.get(contestantId) ?? [];
-    let placed = false;
-
     const effWin = getContestantEffectiveWindow(contestantId);
     if (effWin && effWin.start >= effWin.end) {
       return {
         feasible: false,
-        reasons: [
-          {
-            code: "CONTESTANT_NO_AVAILABILITY",
-            message:
-              `El concursante ${task?.contestantName ?? contestantId} no tiene ventana válida ` +
-              `al aplicar el cruce Plan ∩ Concursante.`,
-            taskId,
-          },
-        ],
+        reasons: [{
+          code: "CONTESTANT_NO_AVAILABILITY",
+          message:
+            `El concursante ${task?.contestantName ?? contestantId} no tiene ventana válida ` +
+            `al aplicar el cruce Plan ∩ Concursante.`,
+          taskId,
+        }],
       } as any;
     }
 
-    const mealWinStart = snapUp(
-      Math.max(mealStart, effWin ? effWin.start : mealStart),
-    );
+    const mealWinStart = snapUp(Math.max(mealStart, effWin ? effWin.start : mealStart));
     const mealWinEnd = Math.min(mealEnd, effWin ? effWin.end : mealEnd);
+    const windowMinutes = Math.max(0, mealWinEnd - mealWinStart);
 
-    for (
-      let start = mealWinStart;
-      start + duration <= mealWinEnd;
-      start += GRID
-    ) {
-      const finish = start + duration;
-
-      // concursante libre
-      if (findEarliestGap(cOcc, start, duration) !== start) continue;
-
-      // max simultáneo comiendo
-      let concurrent = 0;
-      for (const it of mealIntervals) {
-        if (rangesOverlap(start, finish, it.start, it.end)) concurrent++;
-      }
-      if (concurrent >= contestantMealMaxSim) continue;
-
-      // OK -> reservar
-      addIntervalSorted(cOcc, { start, end: finish, taskId });
-      occupiedByContestant.set(contestantId, cOcc);
-      addIntervalSorted(mealIntervals, { start, end: finish, taskId });
-
-      plannedTasks.push({
-        taskId,
-        startPlanned: toHHMM(start),
-        endPlanned: toHHMM(finish),
-        assignedSpace: null,
-        assignedResources: [],
-      });
-      plannedEndByTaskId.set(taskId, finish);
-
-      placed = true;
-      break;
+    const cOcc = occupiedByContestant.get(contestantId) ?? [];
+    let occupancyMinutes = 0;
+    for (const it of cOcc) {
+      const overlapStart = Math.max(it.start, mealWinStart);
+      const overlapEnd = Math.min(it.end, mealWinEnd);
+      if (overlapEnd > overlapStart) occupancyMinutes += overlapEnd - overlapStart;
     }
 
-    if (!placed) {
+    const candidate: MealTaskCandidate = {
+      task,
+      taskId,
+      contestantId,
+      contestantName: String(task?.contestantName ?? `Concursante ${contestantId}`),
+      windowStart: mealWinStart,
+      windowEnd: mealWinEnd,
+      windowMinutes,
+      possibleSlots: 0,
+      occupancyMinutes,
+    };
+    candidate.possibleSlots = getCandidateStarts(candidate).length;
+    pendingMealCandidates.push(candidate);
+  }
+
+  pendingMealCandidates.sort((a, b) => {
+    if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+    if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
+    if (a.occupancyMinutes !== b.occupancyMinutes) return b.occupancyMinutes - a.occupancyMinutes;
+    return a.taskId - b.taskId;
+  });
+
+  for (const cand of pendingMealCandidates) {
+    const candidateStarts = getCandidateStarts(cand);
+    if (!candidateStarts.length) {
+      const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
+      const restrictiveContestants = [...pendingMealCandidates]
+        .sort((a, b) => {
+          if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+          if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
+          return b.occupancyMinutes - a.occupancyMinutes;
+        })
+        .slice(0, 3)
+        .map((x) => ({
+          contestantId: x.contestantId,
+          contestantName: x.contestantName,
+          windowStart: toHHMM(x.windowStart),
+          windowEnd: toHHMM(x.windowEnd),
+          windowMinutes: x.windowMinutes,
+          possibleSlots: x.possibleSlots,
+        }));
+
+      const diagnostic = {
+        ...baseDiagnostic,
+        restrictiveContestants,
+      };
+
+      const capacityMsg = diagnostic.isCapacityImpossible
+        ? `Con estos parámetros es imposible: hacen falta ${diagnostic.mealsNeeded} comidas y la capacidad máxima teórica es ${diagnostic.capacityTheoretical}. Sugerencias: aumenta el máximo simultáneo, amplía la ventana de comida o reduce la duración.`
+        : `Teóricamente cabría por capacidad, pero no se pudo por restricciones de disponibilidad/ocupación. Top restrictivos: ${restrictiveContestants.map((x) => `${x.contestantName}: ${x.windowStart}–${x.windowEnd}`).join(', ')}.`;
+
       return {
         feasible: false,
-        reasons: [
-          {
-            code: "MEAL_CONTESTANT_NO_FIT",
-            message:
-              `No se pudo encajar la comida de "${String(task?.contestantName ?? contestantId)}" ` +
-              `dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) ` +
-              `respetando máximo simultáneo (${contestantMealMaxSim}).` +
-              (String(task?.templateName ?? "").trim()
-                ? ` (Tarea: "${String(task.templateName).trim()}").`
-                : ""),
-            taskId,
-          },
-        ],
+        reasons: [{
+          code: "MEAL_CONTESTANT_NO_FIT",
+          message:
+            `No se pudo encajar la comida de "${cand.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}). ${capacityMsg}` +
+            (String(cand.task?.templateName ?? "").trim()
+              ? ` (Tarea: "${String(cand.task.templateName).trim()}").`
+              : ""),
+          taskId: cand.taskId,
+          diagnostic,
+        }],
       } as any;
     }
+
+    let bestStart = candidateStarts[0];
+    let bestConcurrent = Number.POSITIVE_INFINITY;
+    for (const start of candidateStarts) {
+      const finish = start + contestantMealDuration;
+      const concurrent = countConcurrentMeals(start, finish);
+      if (concurrent < bestConcurrent || (concurrent === bestConcurrent && start < bestStart)) {
+        bestConcurrent = concurrent;
+        bestStart = start;
+      }
+    }
+
+    const cOcc = occupiedByContestant.get(cand.contestantId) ?? [];
+    const finish = bestStart + contestantMealDuration;
+    addIntervalSorted(cOcc, { start: bestStart, end: finish, taskId: cand.taskId });
+    occupiedByContestant.set(cand.contestantId, cOcc);
+    addIntervalSorted(mealIntervals, { start: bestStart, end: finish, taskId: cand.taskId });
+
+    plannedTasks.push({
+      taskId: cand.taskId,
+      startPlanned: toHHMM(bestStart),
+      endPlanned: toHHMM(finish),
+      assignedSpace: null,
+      assignedResources: [],
+    });
+    plannedEndByTaskId.set(cand.taskId, finish);
   }
 
   // Hard rule: un concursante no puede solaparse
