@@ -1988,11 +1988,89 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return { ok: true as const, assignments };
   };
 
+  const hasUniformMealWindow =
+    pendingMealCandidates.length > 0 &&
+    pendingMealCandidates.every(
+      (cand) =>
+        cand.windowStart === pendingMealCandidates[0].windowStart &&
+        cand.windowEnd === pendingMealCandidates[0].windowEnd,
+    );
+
+  const canUseDiscreteSlotPacking =
+    hasUniformMealWindow &&
+    fixedMealCount === 0 &&
+    pendingMealCandidates[0].windowMinutes > 0 &&
+    pendingMealCandidates[0].windowMinutes % contestantMealDuration === 0;
+
+  const tryScheduleMealsDiscreteSlots = () => {
+    if (!pendingMealCandidates.length) return { ok: true as const, assignments: [] };
+
+    const windowStart = pendingMealCandidates[0].windowStart;
+    const windowEnd = pendingMealCandidates[0].windowEnd;
+    const slots: Array<{ start: number; end: number; count: number }> = [];
+    for (
+      let t = windowStart;
+      t + contestantMealDuration <= windowEnd;
+      t += contestantMealDuration
+    ) {
+      slots.push({ start: t, end: t + contestantMealDuration, count: 0 });
+    }
+
+    const contestantOccupation = cloneOccupiedByContestant();
+    const activeMealIntervals = mealIntervals.map((it) => ({ ...it }));
+    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
+
+    for (const cand of pendingMealCandidates) {
+      let pickedSlot: { start: number; end: number; count: number } | null = null;
+
+      for (const slot of slots) {
+        if (slot.count >= contestantMealMaxSim) continue;
+
+        const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
+        if (findEarliestGap(cOcc, slot.start, contestantMealDuration) !== slot.start)
+          continue;
+
+        if (
+          countConcurrentMealsFrom(activeMealIntervals, slot.start, slot.end) >=
+          contestantMealMaxSim
+        ) {
+          continue;
+        }
+
+        pickedSlot = slot;
+        break;
+      }
+
+      if (!pickedSlot) {
+        return { ok: false as const, failingCandidate: cand };
+      }
+
+      pickedSlot.count += 1;
+      const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
+      addIntervalSorted(cOcc, {
+        start: pickedSlot.start,
+        end: pickedSlot.end,
+        taskId: cand.taskId,
+      });
+      contestantOccupation.set(cand.contestantId, cOcc);
+      addIntervalSorted(activeMealIntervals, {
+        start: pickedSlot.start,
+        end: pickedSlot.end,
+        taskId: cand.taskId,
+      });
+
+      assignments.push({ cand, start: pickedSlot.start, end: pickedSlot.end });
+    }
+
+    return { ok: true as const, assignments };
+  };
+
   const mealAttempts = 5;
   let mealSolved = false;
   let failingMealCandidate: MealTaskCandidate | null = null;
-  for (let attempt = 1; attempt <= mealAttempts; attempt++) {
-    const out = tryScheduleMeals(attempt);
+
+  if (canUseDiscreteSlotPacking) {
+    const out = tryScheduleMealsDiscreteSlots();
     if (out.ok) {
       for (const row of out.assignments) {
         plannedTasks.push({
@@ -2005,9 +2083,30 @@ export function generatePlan(input: EngineInput): EngineOutput {
         plannedEndByTaskId.set(row.cand.taskId, row.end);
       }
       mealSolved = true;
-      break;
+    } else {
+      failingMealCandidate = out.failingCandidate;
     }
-    failingMealCandidate = out.failingCandidate;
+  }
+
+  if (!mealSolved) {
+    for (let attempt = 1; attempt <= mealAttempts; attempt++) {
+      const out = tryScheduleMeals(attempt);
+      if (out.ok) {
+        for (const row of out.assignments) {
+          plannedTasks.push({
+            taskId: row.cand.taskId,
+            startPlanned: toHHMM(row.start),
+            endPlanned: toHHMM(row.end),
+            assignedSpace: null,
+            assignedResources: [],
+          });
+          plannedEndByTaskId.set(row.cand.taskId, row.end);
+        }
+        mealSolved = true;
+        break;
+      }
+      failingMealCandidate = out.failingCandidate;
+    }
   }
 
   if (!mealSolved && failingMealCandidate) {
