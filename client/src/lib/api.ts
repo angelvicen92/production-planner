@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "./supabaseClient";
+import { getCachedAccessToken, getSessionSafeWithMeta } from "./supabaseClient";
 import { publishApiHealth } from "./health-events";
 
 export type ApiPermissionError = Error & {
@@ -30,12 +30,13 @@ export async function apiRequest<T>(
 
   logTrace("START", requestId, method, path);
 
-  const supabase = await getSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
+  logSessionTrace(requestId, "SESSION_START");
+  const cachedToken = getCachedAccessToken();
+  const sessionResult = cachedToken
+    ? null
+    : await getSessionSafeWithMeta({ timeoutMs: 1_500 });
+  const token = cachedToken ?? sessionResult?.session?.access_token ?? null;
+  logSessionTrace(requestId, "SESSION_END", sessionResult?.timedOut ? "timeout" : "ok");
 
   let res: Response;
   try {
@@ -177,4 +178,10 @@ function logTrace(
     return;
   }
   console.debug(`${base}${suffix}${extra ? ` · ${extra}` : ""}`);
+}
+
+function logSessionTrace(id: number, phase: "SESSION_START" | "SESSION_END", extra?: string) {
+  if (!import.meta.env.DEV) return;
+  const base = `[apiRequest #${id}] ${phase}`;
+  console.debug(`${base}${extra ? ` ${extra}` : ""}`);
 }
