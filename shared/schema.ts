@@ -222,7 +222,9 @@ export const dailyTasks = pgTable("daily_tasks", {
 
   // Real times (Execution)
   startReal: text("start_real"),
+  startRealSeconds: integer("start_real_seconds"),
   endReal: text("end_real"),
+  endRealSeconds: integer("end_real_seconds"),
   comment1Text: text("comment1_text"),
   comment1Color: text("comment1_color"),
   comment2Text: text("comment2_text"),
