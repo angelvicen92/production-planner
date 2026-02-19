@@ -479,7 +479,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const isFixed =
       status === "in_progress" ||
       status === "done" ||
-      lockedTaskIds.has(Number(task?.id));
+      lockedTaskIds.has(Number(task?.id)) ||
+      Boolean(task?.isManualBlock);
 
     if (!isFixed) continue;
 
@@ -1590,6 +1591,293 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return true;
   };
 
+  // 3) Comidas de concursantes: tareas “comida” CON concursante (antes de no-comida)
+  type MealTaskCandidate = {
+    task: any;
+    taskId: number;
+    contestantId: number;
+    contestantName: string;
+    windowStart: number;
+    windowEnd: number;
+    windowMinutes: number;
+    possibleSlots: number;
+    occupancyMinutes: number;
+    viableStarts: number[];
+  };
+
+  const countConcurrentMealsFrom = (intervals: Interval[], start: number, end: number) => {
+    let concurrent = 0;
+    for (const it of intervals) {
+      if (rangesOverlap(start, end, it.start, it.end)) concurrent++;
+    }
+    return concurrent;
+  };
+
+  const getCandidateStarts = (
+    cand: MealTaskCandidate,
+    contestantOccupation: Map<number, Interval[]>,
+    activeMealIntervals: Interval[],
+  ) => {
+    const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
+    const starts: number[] = [];
+    const latestStart = cand.windowEnd - contestantMealDuration;
+    for (let start = snapUp(cand.windowStart); start <= latestStart; start += GRID) {
+      const end = start + contestantMealDuration;
+      if (findEarliestGap(cOcc, start, contestantMealDuration) !== start) continue;
+      if (countConcurrentMealsFrom(activeMealIntervals, start, end) >= contestantMealMaxSim) continue;
+      starts.push(start);
+    }
+    return starts;
+  };
+
+  const cloneContestantOccupation = () => {
+    const clone = new Map<number, Interval[]>();
+    for (const [k, v] of occupiedByContestant.entries()) {
+      clone.set(k, v.map((it) => ({ ...it })));
+    }
+    return clone;
+  };
+
+  const getMealDiagnosticBase = (candidates: MealTaskCandidate[]) => {
+    const windowMinutes = Math.max(0, mealEnd - mealStart);
+    const capacityTheoretical = Math.floor((windowMinutes * contestantMealMaxSim) / contestantMealDuration);
+    const mealsNeeded = candidates.length;
+    return {
+      windowStart: toHHMM(mealStart),
+      windowEnd: toHHMM(mealEnd),
+      durationMinutes: contestantMealDuration,
+      maxSimultaneous: contestantMealMaxSim,
+      mealsNeeded,
+      capacityTheoretical,
+      fixedMealCount,
+      fixedMealMinutesInWindow,
+      isCapacityImpossible: mealsNeeded > capacityTheoretical,
+    };
+  };
+
+  const pendingMealCandidates: MealTaskCandidate[] = [];
+  for (const task of tasksSorted as any[]) {
+    if (!isMealTask(task)) continue;
+    const contestantId = getContestantId(task);
+    if (!contestantId) continue;
+
+    const taskId = Number(task?.id);
+    if (!Number.isFinite(taskId)) continue;
+
+    const status = String(task?.status ?? 'pending');
+    const isFixed =
+      status === 'in_progress' ||
+      status === 'done' ||
+      lockedTaskIds.has(taskId);
+    if (isFixed) continue;
+
+    const effWin = getContestantEffectiveWindow(contestantId);
+    const mealWinStart = snapUp(Math.max(mealStart, effWin ? effWin.start : mealStart));
+    const mealWinEnd = Math.min(mealEnd, effWin ? effWin.end : mealEnd);
+    const windowMinutes = Math.max(0, mealWinEnd - mealWinStart);
+
+    const cOcc = occupiedByContestant.get(contestantId) ?? [];
+    let occupancyMinutes = 0;
+    for (const it of cOcc) {
+      const overlapStart = Math.max(it.start, mealWinStart);
+      const overlapEnd = Math.min(it.end, mealWinEnd);
+      if (overlapEnd > overlapStart) occupancyMinutes += overlapEnd - overlapStart;
+    }
+
+    const candidate: MealTaskCandidate = {
+      task,
+      taskId,
+      contestantId,
+      contestantName: String(task?.contestantName ?? `concursante ${contestantId}`),
+      windowStart: mealWinStart,
+      windowEnd: mealWinEnd,
+      windowMinutes,
+      possibleSlots: 0,
+      occupancyMinutes,
+      viableStarts: [],
+    };
+    pendingMealCandidates.push(candidate);
+  }
+
+  const mealBaseOccupation = cloneContestantOccupation();
+  for (const candidate of pendingMealCandidates) {
+    candidate.viableStarts = getCandidateStarts(candidate, mealBaseOccupation, mealIntervals);
+    candidate.possibleSlots = candidate.viableStarts.length;
+  }
+
+  const solveMealsByMaxFlow = (candidates: MealTaskCandidate[]) => {
+    const uniqueStarts = Array.from(new Set(candidates.flatMap((c) => c.viableStarts)))
+      .sort((a, b) => {
+        const ca = countConcurrentMealsFrom(mealIntervals, a, a + contestantMealDuration);
+        const cb = countConcurrentMealsFrom(mealIntervals, b, b + contestantMealDuration);
+        if (ca !== cb) return ca - cb;
+        return a - b;
+      });
+
+    const slotIndexByStart = new Map<number, number>();
+    uniqueStarts.forEach((s, idx) => slotIndexByStart.set(s, idx));
+
+    const orderedCandidates = [...candidates].sort((a, b) => {
+      if (a.viableStarts.length !== b.viableStarts.length) return a.viableStarts.length - b.viableStarts.length;
+      if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+      return a.taskId - b.taskId;
+    });
+
+    const nCand = orderedCandidates.length;
+    const nSlots = uniqueStarts.length;
+    const source = 0;
+    const candOffset = 1;
+    const slotOffset = candOffset + nCand;
+    const sink = slotOffset + nSlots;
+    const N = sink + 1;
+
+    type Edge = { to: number; rev: number; cap: number };
+    const graph: Edge[][] = Array.from({ length: N }, () => []);
+    const addEdge = (u: number, v: number, cap: number) => {
+      const fwd: Edge = { to: v, rev: graph[v].length, cap };
+      const rev: Edge = { to: u, rev: graph[u].length, cap: 0 };
+      graph[u].push(fwd);
+      graph[v].push(rev);
+    };
+
+    for (let i = 0; i < nCand; i++) addEdge(source, candOffset + i, 1);
+    for (let i = 0; i < nSlots; i++) addEdge(slotOffset + i, sink, contestantMealMaxSim);
+
+    for (let i = 0; i < nCand; i++) {
+      const cand = orderedCandidates[i];
+      const starts = [...cand.viableStarts].sort((a, b) => {
+        const ca = countConcurrentMealsFrom(mealIntervals, a, a + contestantMealDuration);
+        const cb = countConcurrentMealsFrom(mealIntervals, b, b + contestantMealDuration);
+        if (ca !== cb) return ca - cb;
+        return a - b;
+      });
+      for (const start of starts) {
+        const slotIdx = slotIndexByStart.get(start);
+        if (slotIdx == null) continue;
+        addEdge(candOffset + i, slotOffset + slotIdx, 1);
+      }
+    }
+
+    let flow = 0;
+    while (true) {
+      const prevNode = Array<number>(N).fill(-1);
+      const prevEdge = Array<number>(N).fill(-1);
+      const q: number[] = [source];
+      prevNode[source] = source;
+      for (let qi = 0; qi < q.length; qi++) {
+        const u = q[qi];
+        for (let ei = 0; ei < graph[u].length; ei++) {
+          const e = graph[u][ei];
+          if (e.cap <= 0 || prevNode[e.to] !== -1) continue;
+          prevNode[e.to] = u;
+          prevEdge[e.to] = ei;
+          q.push(e.to);
+          if (e.to === sink) break;
+        }
+        if (prevNode[sink] !== -1) break;
+      }
+      if (prevNode[sink] === -1) break;
+
+      let v = sink;
+      while (v !== source) {
+        const u = prevNode[v];
+        const ei = prevEdge[v];
+        graph[u][ei].cap -= 1;
+        const rev = graph[u][ei].rev;
+        graph[v][rev].cap += 1;
+        v = u;
+      }
+      flow += 1;
+    }
+
+    if (flow < nCand) {
+      const failingCandidate = [...orderedCandidates].sort((a, b) => {
+        if (a.viableStarts.length !== b.viableStarts.length) return a.viableStarts.length - b.viableStarts.length;
+        if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+        return b.occupancyMinutes - a.occupancyMinutes;
+      })[0] ?? null;
+      return { ok: false as const, failingCandidate };
+    }
+
+    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
+    for (let i = 0; i < nCand; i++) {
+      const candNode = candOffset + i;
+      const cand = orderedCandidates[i];
+      for (const e of graph[candNode]) {
+        if (e.to < slotOffset || e.to >= sink) continue;
+        const slotIdx = e.to - slotOffset;
+        const revCap = graph[e.to][e.rev].cap;
+        if (revCap <= 0) continue;
+        const start = uniqueStarts[slotIdx];
+        assignments.push({ cand, start, end: start + contestantMealDuration });
+        break;
+      }
+    }
+
+    return { ok: true as const, assignments };
+  };
+
+  const mealSolve = solveMealsByMaxFlow(pendingMealCandidates);
+  if (!mealSolve.ok) {
+    const failingMealCandidate = mealSolve.failingCandidate;
+    const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
+    const effectiveWindowReason = failingMealCandidate
+      ? Math.max(0, failingMealCandidate.windowEnd - failingMealCandidate.windowStart) < contestantMealDuration
+      : false;
+    const blockingFixed = failingMealCandidate
+      ? (occupiedByContestant.get(failingMealCandidate.contestantId) ?? [])
+          .filter((it) => rangesOverlap(it.start, it.end, failingMealCandidate.windowStart, failingMealCandidate.windowEnd))
+          .slice(0, 5)
+          .map((it) => {
+            const bt = tasks.find((x) => Number(x?.id) === Number(it.taskId));
+            const nm = String(bt?.templateName ?? `Tarea ${it.taskId}`).trim();
+            return `${nm} ${toHHMM(it.start)}–${toHHMM(it.end)}`;
+          })
+      : [];
+
+    return {
+      feasible: false,
+      reasons: [{
+        code: 'MEAL_CONTESTANT_NO_FIT',
+        message:
+          `No se pudo encajar la comida de "${failingMealCandidate?.contestantName ?? 'concursante'}" (${contestantMealDuration} min) dentro de ${toHHMM(mealStart)}–${toHHMM(mealEnd)} respetando máximo simultáneo (${contestantMealMaxSim}). ` +
+          `Motivo principal: ${effectiveWindowReason ? 'ventana efectiva insuficiente' : 'ocupación por tareas fijas/bloqueos'}. ` +
+          (blockingFixed.length ? `Bloqueos: ${blockingFixed.join(', ')}. ` : '') +
+          `Capacidad teórica: ${baseDiagnostic.mealsNeeded}/${baseDiagnostic.capacityTheoretical}.`,
+        taskId: failingMealCandidate?.taskId,
+        diagnostic: {
+          ...baseDiagnostic,
+          failingContestantId: failingMealCandidate?.contestantId ?? null,
+          failingContestantName: failingMealCandidate?.contestantName ?? null,
+          viableSlotsCount: failingMealCandidate?.viableStarts.length ?? 0,
+          failReason: effectiveWindowReason ? 'effective_window_insufficient' : 'fixed_occupation_or_blocks',
+          blockingIntervals: blockingFixed,
+        },
+      }],
+    } as any;
+  }
+
+  for (const row of mealSolve.assignments) {
+    plannedTasks.push({
+      taskId: row.cand.taskId,
+      startPlanned: toHHMM(row.start),
+      endPlanned: toHHMM(row.end),
+      assignedSpace: null,
+      assignedResources: [],
+    });
+    plannedEndByTaskId.set(row.cand.taskId, row.end);
+
+    const cOcc = occupiedByContestant.get(row.cand.contestantId) ?? [];
+    addIntervalSorted(cOcc, { start: row.start, end: row.end, taskId: row.cand.taskId });
+    occupiedByContestant.set(row.cand.contestantId, cOcc);
+    addIntervalSorted(mealIntervals, { start: row.start, end: row.end, taskId: row.cand.taskId });
+
+    const firstStart = firstStartByContestant.get(row.cand.contestantId);
+    if (firstStart == null || row.start < firstStart) firstStartByContestant.set(row.cand.contestantId, row.start);
+    const lastEnd = lastEndByContestant.get(row.cand.contestantId);
+    if (lastEnd == null || row.end > lastEnd) lastEndByContestant.set(row.cand.contestantId, row.end);
+  };
+
   const pendingNonMeal = (tasksSorted as any[]).filter((task) => {
     if (isMealTask(task) || isResourceBreakTask(task)) return false;
 
@@ -1597,7 +1885,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (!Number.isFinite(taskId)) return false;
 
     const status = String(task?.status ?? "pending");
-    const isFixed = status === "in_progress" || status === "done";
+    const isFixed =
+      status === "in_progress" ||
+      status === "done" ||
+      lockedTaskIds.has(taskId) ||
+      Boolean(task?.isManualBlock);
     if (isFixed) return false; // no tocar lo ejecutado
 
     return true;
@@ -1852,409 +2144,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const out = scheduleNonMealTask(task);
     if (out) return out;
-  }
-
-  // 3) Comidas de concursantes: tareas “comida” CON concursante
-  type MealTaskCandidate = {
-    task: any;
-    taskId: number;
-    contestantId: number;
-    contestantName: string;
-    windowStart: number;
-    windowEnd: number;
-    windowMinutes: number;
-    possibleSlots: number;
-    occupancyMinutes: number;
-  };
-
-  const countConcurrentMeals = (start: number, end: number) => {
-    let concurrent = 0;
-    for (const it of mealIntervals) {
-      if (rangesOverlap(start, end, it.start, it.end)) concurrent++;
-    }
-    return concurrent;
-  };
-
-  const countConcurrentMealsFrom = (intervals: Interval[], start: number, end: number) => {
-    let concurrent = 0;
-    for (const it of intervals) {
-      if (rangesOverlap(start, end, it.start, it.end)) concurrent++;
-    }
-    return concurrent;
-  };
-
-  const getCandidateStarts = (
-    cand: MealTaskCandidate,
-    contestantOccupation: Map<number, Interval[]>,
-    activeMealIntervals: Interval[],
-  ) => {
-    const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
-    const starts: number[] = [];
-    for (let start = cand.windowStart; start + contestantMealDuration <= cand.windowEnd; start += GRID) {
-      if (findEarliestGap(cOcc, start, contestantMealDuration) !== start) continue;
-      const finish = start + contestantMealDuration;
-      if (countConcurrentMealsFrom(activeMealIntervals, start, finish) >= contestantMealMaxSim) continue;
-      starts.push(start);
-    }
-    return starts;
-  };
-
-  const getMealDiagnosticBase = (candidates: MealTaskCandidate[]) => {
-    const windowMinutes = Math.max(0, mealEnd - mealStart);
-    const capacityTheoretical = contestantMealMaxSim * Math.floor(windowMinutes / contestantMealDuration);
-    const mealsNeeded = candidates.length;
-    return {
-      windowStart: toHHMM(mealStart),
-      windowEnd: toHHMM(mealEnd),
-      windowMinutes,
-      duration: contestantMealDuration,
-      maxSim: contestantMealMaxSim,
-      capacityTheoretical,
-      mealsNeeded,
-      fixedMealCount,
-      fixedMealMinutesInWindow,
-      isCapacityImpossible: mealsNeeded > capacityTheoretical,
-    };
-  };
-
-  const pendingMealCandidates: MealTaskCandidate[] = [];
-  for (const task of tasksSorted as any[]) {
-    if (!isMealTask(task)) continue;
-    const contestantId = getContestantId(task);
-    if (!contestantId) continue;
-
-    const taskId = Number(task?.id);
-    if (!Number.isFinite(taskId)) continue;
-
-    const status = String(task?.status ?? "pending");
-    const isFixed =
-      status === "in_progress" ||
-      status === "done" ||
-      lockedTaskIds.has(taskId);
-    if (isFixed) continue;
-
-    const effWin = getContestantEffectiveWindow(contestantId);
-    if (effWin && effWin.start >= effWin.end) {
-      return {
-        feasible: false,
-        reasons: [{
-          code: "CONTESTANT_NO_AVAILABILITY",
-          message:
-            `El concursante ${task?.contestantName ?? contestantId} no tiene ventana válida ` +
-            `al aplicar el cruce Plan ∩ Concursante.`,
-          taskId,
-        }],
-      } as any;
-    }
-
-    const mealWinStart = snapUp(Math.max(mealStart, effWin ? effWin.start : mealStart));
-    const mealWinEnd = Math.min(mealEnd, effWin ? effWin.end : mealEnd);
-    const windowMinutes = Math.max(0, mealWinEnd - mealWinStart);
-
-    const cOcc = occupiedByContestant.get(contestantId) ?? [];
-    let occupancyMinutes = 0;
-    for (const it of cOcc) {
-      const overlapStart = Math.max(it.start, mealWinStart);
-      const overlapEnd = Math.min(it.end, mealWinEnd);
-      if (overlapEnd > overlapStart) occupancyMinutes += overlapEnd - overlapStart;
-    }
-
-    const candidate: MealTaskCandidate = {
-      task,
-      taskId,
-      contestantId,
-      contestantName: String(task?.contestantName ?? `Concursante ${contestantId}`),
-      windowStart: mealWinStart,
-      windowEnd: mealWinEnd,
-      windowMinutes,
-      possibleSlots: 0,
-      occupancyMinutes,
-    };
-    candidate.possibleSlots = getCandidateStarts(candidate, occupiedByContestant, mealIntervals).length;
-    pendingMealCandidates.push(candidate);
-  }
-
-  pendingMealCandidates.sort((a, b) => {
-    if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
-    if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
-    if (a.occupancyMinutes !== b.occupancyMinutes) return b.occupancyMinutes - a.occupancyMinutes;
-    return a.taskId - b.taskId;
-  });
-
-  const cloneOccupiedByContestant = () => {
-    const cloned = new Map<number, Interval[]>();
-    for (const [k, v] of occupiedByContestant.entries()) {
-      cloned.set(k, v.map((it) => ({ ...it })));
-    }
-    return cloned;
-  };
-
-  const pickMealStart = (
-    cand: MealTaskCandidate,
-    candidateStarts: number[],
-    strategyAttempt: number,
-    activeMealIntervals: Interval[],
-  ) => {
-    const scored = candidateStarts.map((start) => {
-      const finish = start + contestantMealDuration;
-      const concurrent = countConcurrentMealsFrom(activeMealIntervals, start, finish);
-      const edgeDistance = Math.min(start - cand.windowStart, cand.windowEnd - finish);
-      return { start, concurrent, edgeDistance };
-    });
-
-    if (strategyAttempt === 1) {
-      scored.sort((a, b) => a.concurrent - b.concurrent || a.start - b.start);
-      return scored[0].start;
-    }
-
-    if (strategyAttempt === 2) {
-      scored.sort((a, b) => a.concurrent - b.concurrent || b.edgeDistance - a.edgeDistance || a.start - b.start);
-      return scored[0].start;
-    }
-
-    scored.sort((a, b) => a.concurrent - b.concurrent || b.edgeDistance - a.edgeDistance || a.start - b.start);
-    const topN = Math.max(1, Math.min(6, scored.length));
-    const idx = Math.min(topN - 1, Math.max(0, strategyAttempt - 3));
-    return scored[idx].start;
-  };
-
-  const tryScheduleMeals = (strategyAttempt: number) => {
-    const contestantOccupation = cloneOccupiedByContestant();
-    const activeMealIntervals = mealIntervals.map((it) => ({ ...it }));
-    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
-
-    for (const cand of pendingMealCandidates) {
-      const candidateStarts = getCandidateStarts(cand, contestantOccupation, activeMealIntervals);
-      if (!candidateStarts.length) {
-        return { ok: false as const, failingCandidate: cand };
-      }
-
-      const bestStart = pickMealStart(cand, candidateStarts, strategyAttempt, activeMealIntervals);
-      const finish = bestStart + contestantMealDuration;
-
-      const cOcc = contestantOccupation.get(cand.contestantId) ?? [];
-      addIntervalSorted(cOcc, { start: bestStart, end: finish, taskId: cand.taskId });
-      contestantOccupation.set(cand.contestantId, cOcc);
-      addIntervalSorted(activeMealIntervals, { start: bestStart, end: finish, taskId: cand.taskId });
-
-      assignments.push({ cand, start: bestStart, end: finish });
-    }
-
-    return { ok: true as const, assignments };
-  };
-
-  const hasUniformMealWindow =
-    pendingMealCandidates.length > 0 &&
-    pendingMealCandidates.every(
-      (cand) =>
-        cand.windowStart === pendingMealCandidates[0].windowStart &&
-        cand.windowEnd === pendingMealCandidates[0].windowEnd,
-    );
-
-  const canUseDiscreteSlotPacking =
-    hasUniformMealWindow &&
-    fixedMealCount === 0 &&
-    pendingMealCandidates[0].windowMinutes > 0 &&
-    pendingMealCandidates[0].windowMinutes % contestantMealDuration === 0;
-
-  const tryScheduleMealsDiscreteSlots = () => {
-    if (!pendingMealCandidates.length) return { ok: true as const, assignments: [] };
-
-    const windowStart = pendingMealCandidates[0].windowStart;
-    const windowEnd = pendingMealCandidates[0].windowEnd;
-    const slots: Array<{ start: number; end: number }> = [];
-    for (
-      let t = windowStart;
-      t + contestantMealDuration <= windowEnd;
-      t += contestantMealDuration
-    ) {
-      slots.push({ start: t, end: t + contestantMealDuration });
-    }
-
-    const isMealTaskId = (taskId: number | undefined) => {
-      if (!taskId) return false;
-      const t = taskById.get(Number(taskId));
-      return !!t && isMealTask(t);
-    };
-
-    // Para viabilidad por slot solo usamos ocupación ya existente NO comida.
-    const contestantBaseOccupation = new Map<number, Interval[]>();
-    for (const [contestantId, intervals] of occupiedByContestant.entries()) {
-      contestantBaseOccupation.set(
-        contestantId,
-        intervals
-          .filter((it) => !isMealTaskId(it.taskId))
-          .map((it) => ({ ...it })),
-      );
-    }
-
-    const candidatesWithViableSlots = pendingMealCandidates.map((cand) => {
-      const cOcc = contestantBaseOccupation.get(cand.contestantId) ?? [];
-      const viableSlotIdxs: number[] = [];
-      for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i];
-        if (findEarliestGap(cOcc, slot.start, contestantMealDuration) === slot.start) {
-          viableSlotIdxs.push(i);
-        }
-      }
-      return { cand, viableSlotIdxs };
-    });
-
-    candidatesWithViableSlots.sort((a, b) => {
-      if (a.viableSlotIdxs.length !== b.viableSlotIdxs.length) {
-        return a.viableSlotIdxs.length - b.viableSlotIdxs.length;
-      }
-      return a.cand.taskId - b.cand.taskId;
-    });
-
-    const slotCounts = new Array(slots.length).fill(0);
-    const assignedSlotIdxByTaskId = new Map<number, number>();
-    let restrictiveFail: MealTaskCandidate | null = null;
-    let restrictiveFailViableSlots = Number.POSITIVE_INFINITY;
-
-    const dfs = (idx: number): boolean => {
-      if (idx >= candidatesWithViableSlots.length) return true;
-
-      const row = candidatesWithViableSlots[idx];
-      let triedAny = false;
-
-      for (const slotIdx of row.viableSlotIdxs) {
-        if (slotCounts[slotIdx] >= contestantMealMaxSim) continue;
-        triedAny = true;
-
-        slotCounts[slotIdx] += 1;
-        assignedSlotIdxByTaskId.set(row.cand.taskId, slotIdx);
-        if (dfs(idx + 1)) return true;
-        assignedSlotIdxByTaskId.delete(row.cand.taskId);
-        slotCounts[slotIdx] -= 1;
-      }
-
-      if (!triedAny && row.viableSlotIdxs.length < restrictiveFailViableSlots) {
-        restrictiveFail = row.cand;
-        restrictiveFailViableSlots = row.viableSlotIdxs.length;
-      }
-
-      return false;
-    };
-
-    const solved = dfs(0);
-    if (!solved) {
-      return {
-        ok: false as const,
-        failingCandidate: restrictiveFail ?? candidatesWithViableSlots[0].cand,
-      };
-    }
-
-    const contestantOccupation = cloneOccupiedByContestant();
-    const activeMealIntervals = mealIntervals.map((it) => ({ ...it }));
-    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
-
-    for (const row of pendingMealCandidates) {
-      const slotIdx = assignedSlotIdxByTaskId.get(row.taskId);
-      if (slotIdx === undefined) continue;
-
-      const slot = slots[slotIdx];
-      const cOcc = contestantOccupation.get(row.contestantId) ?? [];
-      addIntervalSorted(cOcc, { start: slot.start, end: slot.end, taskId: row.taskId });
-      contestantOccupation.set(row.contestantId, cOcc);
-      addIntervalSorted(activeMealIntervals, {
-        start: slot.start,
-        end: slot.end,
-        taskId: row.taskId,
-      });
-
-      assignments.push({ cand: row, start: slot.start, end: slot.end });
-    }
-
-    return { ok: true as const, assignments };
-  };
-
-  const mealAttempts = 5;
-  let mealSolved = false;
-  let failingMealCandidate: MealTaskCandidate | null = null;
-  let slotPackingFailed = false;
-
-  if (canUseDiscreteSlotPacking) {
-    const out = tryScheduleMealsDiscreteSlots();
-    if (out.ok) {
-      for (const row of out.assignments) {
-        plannedTasks.push({
-          taskId: row.cand.taskId,
-          startPlanned: toHHMM(row.start),
-          endPlanned: toHHMM(row.end),
-          assignedSpace: null,
-          assignedResources: [],
-        });
-        plannedEndByTaskId.set(row.cand.taskId, row.end);
-      }
-      mealSolved = true;
-    } else {
-      slotPackingFailed = true;
-      failingMealCandidate = out.failingCandidate;
-    }
-  }
-
-  if (!mealSolved) {
-    for (let attempt = 1; attempt <= mealAttempts; attempt++) {
-      const out = tryScheduleMeals(attempt);
-      if (out.ok) {
-        for (const row of out.assignments) {
-          plannedTasks.push({
-            taskId: row.cand.taskId,
-            startPlanned: toHHMM(row.start),
-            endPlanned: toHHMM(row.end),
-            assignedSpace: null,
-            assignedResources: [],
-          });
-          plannedEndByTaskId.set(row.cand.taskId, row.end);
-        }
-        mealSolved = true;
-        break;
-      }
-      failingMealCandidate = out.failingCandidate;
-    }
-  }
-
-  if (!mealSolved && failingMealCandidate) {
-    const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
-    const restrictiveContestants = [...pendingMealCandidates]
-      .sort((a, b) => {
-        if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
-        if (a.possibleSlots !== b.possibleSlots) return a.possibleSlots - b.possibleSlots;
-        return b.occupancyMinutes - a.occupancyMinutes;
-      })
-      .slice(0, 3)
-      .map((x) => ({
-        contestantId: x.contestantId,
-        contestantName: x.contestantName,
-        windowStart: toHHMM(x.windowStart),
-        windowEnd: toHHMM(x.windowEnd),
-        windowMinutes: x.windowMinutes,
-        possibleSlots: x.possibleSlots,
-      }));
-
-    const diagnostic = {
-      ...baseDiagnostic,
-      restrictiveContestants,
-    };
-
-    const capacityMsg = diagnostic.isCapacityImpossible
-      ? `Con estos parámetros es imposible: hacen falta ${diagnostic.mealsNeeded} comidas y la capacidad máxima teórica es ${diagnostic.capacityTheoretical}. Comidas fijas: ${diagnostic.fixedMealCount} (consumen ${diagnostic.fixedMealMinutesInWindow} min en ventana).`
-      : `Teóricamente cabría por capacidad (${diagnostic.mealsNeeded}/${diagnostic.capacityTheoretical}), pero falló por distribución/ocupación. Top restrictivos: ${restrictiveContestants.map((x) => `${x.contestantName}: ${x.windowStart}–${x.windowEnd}`).join(', ')}. Comidas fijas: ${diagnostic.fixedMealCount} (consumen ${diagnostic.fixedMealMinutesInWindow} min en ventana).`;
-
-    return {
-      feasible: false,
-      reasons: [{
-        code: "MEAL_CONTESTANT_NO_FIT",
-        message:
-          `No se pudo encajar la comida de "${failingMealCandidate.contestantName}" dentro de la ventana (${toHHMM(mealStart)}–${toHHMM(mealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}) ${slotPackingFailed ? "en slot packing / matching" : `tras ${mealAttempts} intentos`}. ${capacityMsg}` +
-          (String(failingMealCandidate.task?.templateName ?? "").trim()
-            ? ` (Tarea: "${String(failingMealCandidate.task.templateName).trim()}").`
-            : ""),
-        taskId: failingMealCandidate.taskId,
-        diagnostic,
-      }],
-    } as any;
   }
 
   // Hard rule: un concursante no puede solaparse
