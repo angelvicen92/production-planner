@@ -3334,7 +3334,6 @@ export default function PlanDetailsPage() {
                         end: edit.end,
                       });
                     }
-                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
                     queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({
                       title:
@@ -3342,6 +3341,36 @@ export default function PlanDetailsPage() {
                           ? "Cambios manuales aplicados"
                           : "Sin cambios manuales para aplicar",
                     });
+                  }}
+                  onPersistManualEdits={async ({ edits, primaryTaskId, shiftedTaskIds }) => {
+                    const shifted = new Set((shiftedTaskIds ?? []).map((taskId) => Number(taskId)));
+                    for (const edit of edits) {
+                      const isPrimary = Number(primaryTaskId) === Number(edit.taskId);
+                      if (isPrimary) {
+                        await apiRequest("PATCH", `/api/daily-tasks/${edit.taskId}/time-lock`, {
+                          start: edit.start,
+                          end: edit.end,
+                        });
+                        continue;
+                      }
+                      if (shifted.has(Number(edit.taskId))) {
+                        await apiRequest("PATCH", `/api/daily-tasks/${edit.taskId}/planned-time`, {
+                          startPlanned: edit.start,
+                          endPlanned: edit.end,
+                        });
+                      }
+                    }
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Cambios manuales guardados" });
+                  }}
+                  onValidatePlan={async () => {
+                    const response: any = await apiRequest("POST", `/api/plans/${id}/validate`);
+                    return await response.json();
+                  }}
+                  onGeneratePlan={async () => {
+                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Replanificación lanzada" });
                   }}
                   onCancelManualEdits={async () => {
                     queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
