@@ -1,0 +1,24 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
+import { api, buildUrl } from "@shared/routes";
+
+export type PlanningRun = {
+  id: number;
+  planId: number;
+  status: "running" | "success" | "infeasible" | "error";
+  startedAt: string;
+  updatedAt: string;
+  totalPending: number;
+  plannedCount: number;
+  message: string | null;
+  lastReasons: any[] | null;
+  requestId: string | null;
+};
+
+export function usePlanningRun(planId: number | null) {
+  return useQuery<PlanningRun | null>({
+    queryKey: ["planning-run", planId],
+    enabled: Number.isFinite(planId) && Number(planId) > 0,
+    queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestByPlan.path, { id: Number(planId) })),
+  });
+}

@@ -75,6 +75,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
 import { GeneralOptimizerSettings } from "@/components/general-optimizer-settings";
+import { ControlRoomSettingsCard } from "@/components/control-room-settings";
 import { useTranslation } from "react-i18next";
 import { UsersAdminSettings } from "@/components/settings/users-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -131,6 +132,7 @@ export default function SettingsPage() {
           <TabsContent value="general" className="space-y-4">
             <GeneralProgramSettings />
             <GeneralOptimizerSettings />
+            <ControlRoomSettingsCard />
           </TabsContent>
           <TabsContent value="templates" className="space-y-4">
             <TaskTemplatesSettings />

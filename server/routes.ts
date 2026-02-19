@@ -1641,6 +1641,55 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+
+  app.get(api.controlRoomSettings.get.path, async (_req, res) => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("control_room_settings")
+        .select("*")
+        .eq("id", 1)
+        .single();
+      if (error) throw error;
+
+      return res.json({
+        id: Number(data.id),
+        idleUnexpectedThresholdMin: Number(data.idle_unexpected_threshold_min ?? 5),
+        delayThresholdMin: Number(data.delay_threshold_min ?? 10),
+        nextSoonThresholdMin: Number(data.next_soon_threshold_min ?? 10),
+        enableIdleAlert: Boolean(data.enable_idle_alert),
+        enableDelayAlert: Boolean(data.enable_delay_alert),
+        enableNextSoonAlert: Boolean(data.enable_next_soon_alert),
+        updatedAt: String(data.updated_at),
+      });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch control room settings" });
+    }
+  });
+
+  app.patch(api.controlRoomSettings.update.path, async (req, res) => {
+    try {
+      const admin = await ensureAdmin(req, res);
+      if (!admin.ok) return;
+
+      const body = req.body ?? {};
+      const patch: any = { updated_at: new Date().toISOString() };
+
+      if (body.idleUnexpectedThresholdMin !== undefined) patch.idle_unexpected_threshold_min = Math.max(0, Math.min(180, Number(body.idleUnexpectedThresholdMin)));
+      if (body.delayThresholdMin !== undefined) patch.delay_threshold_min = Math.max(0, Math.min(240, Number(body.delayThresholdMin)));
+      if (body.nextSoonThresholdMin !== undefined) patch.next_soon_threshold_min = Math.max(0, Math.min(240, Number(body.nextSoonThresholdMin)));
+      if (body.enableIdleAlert !== undefined) patch.enable_idle_alert = Boolean(body.enableIdleAlert);
+      if (body.enableDelayAlert !== undefined) patch.enable_delay_alert = Boolean(body.enableDelayAlert);
+      if (body.enableNextSoonAlert !== undefined) patch.enable_next_soon_alert = Boolean(body.enableNextSoonAlert);
+
+      const { error } = await supabaseAdmin.from("control_room_settings").update(patch).eq("id", 1);
+      if (error) throw error;
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Invalid input" });
+    }
+  });
+
   // Optimizer Settings (defaults globales)
   app.get(api.optimizerSettings.get.path, async (_req, res) => {
     try {
@@ -3655,8 +3704,41 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   
+  app.get(api.planningRuns.latestByPlan.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) return res.status(400).json({ message: "Invalid plan id" });
+
+      const { data, error } = await supabaseAdmin
+        .from("planning_runs")
+        .select("*")
+        .eq("plan_id", planId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return res.json(null);
+
+      return res.json({
+        id: Number(data.id),
+        planId: Number(data.plan_id),
+        status: String(data.status),
+        startedAt: String(data.started_at),
+        updatedAt: String(data.updated_at),
+        totalPending: Number(data.total_pending ?? 0),
+        plannedCount: Number(data.planned_count ?? 0),
+        message: data.message ? String(data.message) : null,
+        lastReasons: Array.isArray(data.last_reasons) ? data.last_reasons : null,
+        requestId: data.request_id ? String(data.request_id) : null,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch planning run" });
+    }
+  });
+
   app.post(api.plans.generate.path, async (req, res) => {
     const planId = Number(req.params.id);
+    let planningRunId: number | null = null;
     try {
       const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
         .from("daily_tasks")
@@ -3673,6 +3755,22 @@ function mapDeleteError(err: any, fallback: string) {
             .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
         ),
       );
+
+      const totalPending = pendingTaskIds.length;
+      const { data: runRow, error: runErr } = await supabaseAdmin
+        .from("planning_runs")
+        .insert({
+          plan_id: planId,
+          status: "running",
+          total_pending: totalPending,
+          planned_count: 0,
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      if (runErr) throw runErr;
+      planningRunId = Number(runRow?.id);
 
       if (pendingTaskIds.length > 0) {
         const { data: activeLocks, error: activeLocksErr } = await supabaseAdmin
@@ -3702,12 +3800,6 @@ function mapDeleteError(err: any, fallback: string) {
             .neq("is_manual_block", true);
           if (clearPendingErr) throw clearPendingErr;
         }
-
-        console.info("[GENERATE_PRE_CLEAR]", {
-          planId,
-          pending: pendingTaskIds.length,
-          cleared: taskIdsToClear.length,
-        });
       }
 
       const engineInput = await buildEngineInput(planId, storage);
@@ -3755,52 +3847,70 @@ function mapDeleteError(err: any, fallback: string) {
       };
 
       if (!result.feasible) {
-        const reasons = (result.reasons || []).map((r: any) => enrich(r));
+        const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+        if (planningRunId) {
+          await supabaseAdmin
+            .from("planning_runs")
+            .update({ status: "infeasible", updated_at: new Date().toISOString(), message: "INFEASIBLE", last_reasons: reasons, planned_count: 0 })
+            .eq("id", planningRunId);
+        }
 
         return res.status(422).json({
           message: "INFEASIBLE",
           reasons,
+          runId: planningRunId,
         });
       }
 
-
-      // Aplicar cambios del motor (guardar horas planificadas)
       const planned = (result as any).plannedTasks || [];
       let updated = 0;
 
       for (const p of planned) {
         if (Number((p as any).taskId) < 0) {
           const breakId = Math.abs(Number((p as any).taskId));
-          await storage.savePlannedBreakTimes(
-            planId,
-            breakId,
-            String((p as any).startPlanned),
-            String((p as any).endPlanned),
+          await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
+          updated++;
+        } else {
+          await storage.updatePlannedTimes(
+            p.taskId,
+            p.startPlanned,
+            p.endPlanned,
+            Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
           );
           updated++;
-          continue;
         }
-        await storage.updatePlannedTimes(
-          p.taskId,
-          p.startPlanned,
-          p.endPlanned,
-          Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
-        );
 
-        updated++;
+        if (planningRunId && updated % 5 === 0) {
+          await supabaseAdmin
+            .from("planning_runs")
+            .update({ planned_count: updated, updated_at: new Date().toISOString() })
+            .eq("id", planningRunId);
+        }
+      }
+
+      if (planningRunId) {
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({ status: "success", planned_count: updated, updated_at: new Date().toISOString(), message: null })
+          .eq("id", planningRunId);
       }
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
-      res.json({ success: true, planId, tasksUpdated: updated, warnings });
+      res.json({ success: true, planId, tasksUpdated: updated, warnings, runId: planningRunId });
 
     } catch (e: any) {
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
-      // 404 solo si realmente no existe el plan
+      if (planningRunId) {
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({ status: "error", message: msg, updated_at: new Date().toISOString() })
+          .eq("id", planningRunId);
+      }
+
       if (msg.toLowerCase().includes("not found")) {
         return res.status(404).json({ message: msg });
       }
-      // el resto, 500
-      return res.status(500).json({ message: "ENGINE_ERROR", detail: msg });
+      return res.status(500).json({ message: "ENGINE_ERROR", detail: msg, runId: planningRunId });
     }
 
   });
