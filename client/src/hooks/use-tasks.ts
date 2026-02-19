@@ -133,16 +133,17 @@ export function useUpdateTaskStatus() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ taskId, status, effectiveTimeHHMM }: {
+    mutationFn: ({ taskId, status, effectiveTimeHHMM, effectiveSeconds }: {
       taskId: number;
       planId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
       effectiveTimeHHMM?: string;
+      effectiveSeconds?: number;
     }) =>
       apiRequest(
         "PATCH",
         buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        { status, ...(effectiveTimeHHMM ? { effectiveTimeHHMM } : {}) },
+        { status, ...(effectiveTimeHHMM ? { effectiveTimeHHMM } : {}), ...(Number.isFinite(effectiveSeconds) ? { effectiveSeconds } : {}) },
       ),
     onMutate: async ({ planId, taskId, status }) => {
       const key = planQueryKey(planId);

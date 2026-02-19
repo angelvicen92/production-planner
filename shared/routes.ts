@@ -1397,6 +1397,7 @@ export const api = {
             .string()
             .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
             .optional(),
+          effectiveSeconds: z.number().int().min(0).max(59).optional(),
         })
         .strict(),
       responses: {
@@ -1415,6 +1416,7 @@ export const api = {
             .string()
             .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
             .optional(),
+          effectiveSeconds: z.number().int().min(0).max(59).optional(),
         })
         .strict()
         .optional(),

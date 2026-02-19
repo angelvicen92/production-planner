@@ -14,7 +14,7 @@ function formatElapsedDuration(ms: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function useElapsedSince(startReal?: string | null) {
+export function useElapsedSince(startReal?: string | null, startRealSeconds?: number | null) {
   const { effectiveNow } = useProductionClock();
 
   return useMemo(() => {
@@ -27,11 +27,14 @@ export function useElapsedSince(startReal?: string | null) {
     if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
 
     const start = new Date(effectiveNow);
-    start.setHours(hh, mm, 0, 0);
+    const startSeconds = Number.isFinite(Number(startRealSeconds))
+      ? Math.max(0, Math.min(59, Math.floor(Number(startRealSeconds))))
+      : 0;
+    start.setHours(hh, mm, startSeconds, 0);
 
     const elapsedMs = effectiveNow.getTime() - start.getTime();
     if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return null;
 
     return formatElapsedDuration(elapsedMs);
-  }, [effectiveNow, startReal]);
+  }, [effectiveNow, startReal, startRealSeconds]);
 }

@@ -182,9 +182,24 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   // Lista de tareas que sí entran al solve
-  const tasksForSolve = (tasks as any[]).filter(
-    (t) => !excludedTaskIds.has(Number(t?.id)),
-  );
+  const tasksForSolve = (tasks as any[])
+    .filter((t) => !excludedTaskIds.has(Number(t?.id)))
+    .slice()
+    .sort((a, b) => {
+      const weightA = Number(a?.priority ?? a?.weight ?? 0);
+      const weightB = Number(b?.priority ?? b?.weight ?? 0);
+      const contestantA = Number(a?.contestantId ?? 0);
+      const contestantB = Number(b?.contestantId ?? 0);
+      const templateA = Number(a?.templateId ?? 0);
+      const templateB = Number(b?.templateId ?? 0);
+      const taskA = Number(a?.id ?? 0);
+      const taskB = Number(b?.id ?? 0);
+
+      if (weightB !== weightA) return weightB - weightA;
+      if (contestantA !== contestantB) return contestantA - contestantB;
+      if (templateA !== templateB) return templateA - templateB;
+      return taskA - taskB;
+    });
 
   // ✅ Validación: si una tarea tiene dependencias pero no podemos resolver TODOS sus prereqs -> infeasible
   const missingDeps: any[] = [];
@@ -940,8 +955,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
           {
             code: "CONTESTANT_NO_AVAILABILITY",
             message:
-              `El concursante ${task?.contestantName ?? contestantId} no tiene ventana válida ` +
-              `al aplicar el cruce Plan ∩ Concursante.`,
+              `No se puede planificar "${String(task?.templateName ?? `tarea ${taskId}`)}" para ${task?.contestantName ?? `concursante ${contestantId}`}: ` +
+              `la ventana de disponibilidad es inválida (${toHHMM(effWin.start)}–${toHHMM(effWin.end)}). ` +
+              `Duración: ${duration} min. Jornada del plan: ${toHHMM(startDay)}–${toHHMM(endDay)}. ` +
+              `Fija: manual_block=${Boolean(task?.isManualBlock)}, status=${String(task?.status ?? "pending")}, lock=${String(task?.lockType ?? "none")}.`,
             taskId,
           },
         ],
@@ -979,6 +996,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // ✅ No permitir que la tarea se salga de la ventana efectiva del concursante
       if (effWin && start + duration > effWin.end) {
+        const startsBeforeAvailability = startDay < effWin.start;
         return {
           feasible: false,
           reasons: [
@@ -987,7 +1005,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
               message:
                 `No cabe "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" ` +
                 `para ${task?.contestantName ?? `concursante ${contestantId}`} dentro de su disponibilidad ` +
-                `(${toHHMM(effWin.start)}–${toHHMM(effWin.end)}).`,
+                `(${toHHMM(effWin.start)}–${toHHMM(effWin.end)}). ` +
+                `Duración: ${duration} min. Jornada del plan: ${toHHMM(startDay)}–${toHHMM(endDay)}. ` +
+                `Fija: manual_block=${Boolean(task?.isManualBlock)}, time_lock=${String(task?.lockType ?? "") === "time"}, full_lock=${String(task?.lockType ?? "") === "full"}, status=${String(task?.status ?? "pending")}. ` +
+                (startsBeforeAvailability
+                  ? `workStart (${toHHMM(startDay)}) es anterior a disponibilidad (${toHHMM(effWin.start)}). Sugerencia: o amplía disponibilidad o mueve la tarea a >=${toHHMM(effWin.start)}.`
+                  : ""),
               taskId,
             },
           ],
@@ -1923,16 +1946,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return cloned;
   };
 
-  const mulberry32 = (seed: number) => {
-    let t = seed >>> 0;
-    return () => {
-      t += 0x6D2B79F5;
-      let r = Math.imul(t ^ (t >>> 15), 1 | t);
-      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
-      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-    };
-  };
-
   const pickMealStart = (
     cand: MealTaskCandidate,
     candidateStarts: number[],
@@ -1958,8 +1971,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     scored.sort((a, b) => a.concurrent - b.concurrent || b.edgeDistance - a.edgeDistance || a.start - b.start);
     const topN = Math.max(1, Math.min(6, scored.length));
-    const rand = mulberry32(9973 * strategyAttempt + cand.taskId * 31 + cand.contestantId * 17);
-    const idx = Math.floor(rand() * topN);
+    const idx = Math.min(topN - 1, Math.max(0, strategyAttempt - 3));
     return scored[idx].start;
   };
 

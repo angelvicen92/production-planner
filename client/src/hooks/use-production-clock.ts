@@ -25,6 +25,10 @@ function toHHMM(date: Date): string {
   return formatted.slice(0, 5);
 }
 
+function toSeconds(date: Date): number {
+  return date.getSeconds();
+}
+
 function isValidHHMM(value: unknown): value is string {
   return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
 }
@@ -129,10 +133,12 @@ export function useProductionClock() {
   }, [mode, manualSnapshot, tickMs]);
 
   const nowTime = toHHMM(effectiveNow);
+  const nowSeconds = toSeconds(effectiveNow);
 
   return {
     effectiveNow,
     nowTime,
+    nowSeconds,
     mode,
     isManual: mode === "manual",
     simulatedTime,

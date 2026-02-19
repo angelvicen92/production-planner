@@ -525,6 +525,7 @@ export async function buildEngineInput(
         lockedEnd: isManualBlock
           ? endPlanned
           : (lockForTask?.lockedEnd ?? null),
+        lockType: isManualBlock ? "time" : (lockForTask?.lockType ?? null),
         startReal: t.start_real ?? t.startReal ?? null,
         endReal: t.end_real ?? t.endReal ?? null,
 

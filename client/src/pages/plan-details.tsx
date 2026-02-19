@@ -23,6 +23,8 @@ import {
   Check,
   ChevronsUpDown,
   Lock,
+  Pause,
+  RotateCcw,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -104,15 +106,18 @@ import { cn } from "@/lib/utils";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function ExecutionElapsedTimer({
   status,
   startReal,
+  startRealSeconds,
 }: {
   status?: string | null;
   startReal?: string | null;
+  startRealSeconds?: number | null;
 }) {
-  const elapsed = useElapsedSince(startReal);
+  const elapsed = useElapsedSince(startReal, startRealSeconds);
 
   if (status !== "in_progress" || !startReal || !elapsed) {
     return <span className="text-muted-foreground">—</span>;
@@ -639,7 +644,7 @@ export default function PlanDetailsPage() {
   const generatePlan = useGeneratePlan();
 
   const updatePlan = useUpdatePlan();
-  const { nowTime } = useProductionClock();
+  const { nowTime, nowSeconds } = useProductionClock();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -952,7 +957,20 @@ export default function PlanDetailsPage() {
       const ls = l?.locked_start ?? l?.lockedStart ?? null;
       const le = l?.locked_end ?? l?.lockedEnd ?? null;
       if (!Number.isFinite(tid) || tid <= 0) continue;
-      if ((type === "time" || type === "full") && ls && le) set.add(tid);
+      if (type === "time" && ls && le) set.add(tid);
+    }
+    return set;
+  }, [plan]);
+
+  const fullLockedTaskIds = useMemo(() => {
+    const set = new Set<number>();
+    for (const l of ((plan as any)?.locks ?? []) as any[]) {
+      const tid = Number(l?.task_id ?? l?.taskId);
+      const type = String(l?.lock_type ?? l?.lockType ?? "");
+      const ls = l?.locked_start ?? l?.lockedStart ?? null;
+      const le = l?.locked_end ?? l?.lockedEnd ?? null;
+      if (!Number.isFinite(tid) || tid <= 0) continue;
+      if (type === "full" && ls && le) set.add(tid);
     }
     return set;
   }, [plan]);
@@ -966,6 +984,7 @@ export default function PlanDetailsPage() {
       planId: id,
       status,
       effectiveTimeHHMM: nowTime,
+      effectiveSeconds: nowSeconds,
     };
 
     await updateTaskStatus.mutateAsync(payload);
@@ -2036,6 +2055,7 @@ export default function PlanDetailsPage() {
                                         planId: id,
                                         status: next as any,
                                         effectiveTimeHHMM: nowTime,
+      effectiveSeconds: nowSeconds,
                                       });
                                     }}
                                   >
@@ -2529,6 +2549,7 @@ export default function PlanDetailsPage() {
                                       planId: id,
                                       status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
                                       effectiveTimeHHMM: nowTime,
+      effectiveSeconds: nowSeconds,
                                     });
                                   }}
                                 >
@@ -3170,7 +3191,22 @@ export default function PlanDetailsPage() {
                   staffAssignments={planStaffAssignments as any}
                   onTaskStatusChange={handlePlanningTaskStatusChange}
                   taskStatusPending={updateTaskStatus.isPending}
-                  lockedTaskIds={Array.from(timeLockedTaskIds)}
+                  timeLockedTaskIds={Array.from(timeLockedTaskIds)}
+                  fullLockedTaskIds={Array.from(fullLockedTaskIds)}
+                  onPinTask={async (task) => {
+                    if (!task?.startPlanned || !task?.endPlanned || task?.isManualBlock) return;
+                    await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, {
+                      lockStart: task.startPlanned,
+                      lockEnd: task.endPlanned,
+                    });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Tarea fijada" });
+                  }}
+                  onUnpinTask={async (task) => {
+                    await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, { clear: true });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Fijación eliminada" });
+                  }}
                   onApplyManualEdits={async (edits) => {
                     const taskById = new Map<number, any>(
                       ((plan?.dailyTasks ?? []) as any[]).map((task) => [Number(task?.id), task]),
@@ -3239,11 +3275,13 @@ export default function PlanDetailsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[95px]">Inicio teórico</TableHead>
-                        <TableHead className="w-[95px]">Inicio real</TableHead>
                         <TableHead className="w-[95px]">Fin teórico</TableHead>
+                        <TableHead className="w-[95px]">Inicio real</TableHead>
+                        <TableHead className="w-[95px]">Fin real</TableHead>
                         <TableHead className="w-[95px]">Fin previsto</TableHead>
                         <TableHead className="w-[170px]">Timer</TableHead>
                         <TableHead>Tarea</TableHead>
+                        <TableHead className="w-[170px]">Concursante</TableHead>
                         <TableHead className="w-[220px]">Ubicación</TableHead>
                         <TableHead className="w-[140px]">Estado</TableHead>
                         <TableHead className="w-[260px] text-right">
@@ -3291,6 +3329,10 @@ export default function PlanDetailsPage() {
                               )
                             : null;
 
+                          const contestantName = String(
+                            t?.contestant?.name ?? contestants.find((c: any) => Number(c?.id) === Number(t?.contestantId ?? t?.contestant_id ?? 0))?.name ?? "—",
+                          );
+
                           const location = t?.locationLabel
                             ? String(t.locationLabel)
                             : spaceName
@@ -3311,8 +3353,9 @@ export default function PlanDetailsPage() {
                               }
                             >
                               <TableCell className="font-mono text-xs">{t?.startPlanned ?? "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">{t?.startReal ?? "—"}</TableCell>
                               <TableCell className="font-mono text-xs">{t?.endPlanned ?? "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">{t?.startReal ?? "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">{t?.endReal ?? "—"}</TableCell>
                               <TableCell className="font-mono text-xs">
                                 {status === "done" && t?.endReal
                                   ? t.endReal
@@ -3328,7 +3371,7 @@ export default function PlanDetailsPage() {
                                     : "—"}
                               </TableCell>
                               <TableCell className="font-mono text-xs">
-                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} />
+                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} startRealSeconds={t?.startRealSeconds ?? t?.start_real_seconds ?? null} />
                               </TableCell>
 
                               <TableCell className="font-medium">
@@ -3338,6 +3381,10 @@ export default function PlanDetailsPage() {
                                     ⚠ Sin espacio
                                   </span>
                                 )}
+                              </TableCell>
+
+                              <TableCell className="text-sm text-muted-foreground">
+                                {contestantName}
                               </TableCell>
 
                               <TableCell className="text-sm text-muted-foreground">
@@ -3363,76 +3410,14 @@ export default function PlanDetailsPage() {
                               </TableCell>
 
                               <TableCell className="text-right">
-                                <div className="inline-flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={
-                                      !canStart || updateTaskStatus.isPending
-                                    }
-                                    onClick={() =>
-                                      updateTaskStatus.mutate({
-                                        taskId: Number(t.id),
-                                        planId: id,
-                                        status: "in_progress",
-                                        effectiveTimeHHMM: nowTime,
-                                      } as any)
-                                    }
-                                  >
-                                    Start
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      !canFinish || updateTaskStatus.isPending
-                                    }
-                                    onClick={() =>
-                                      updateTaskStatus.mutate({
-                                        taskId: Number(t.id),
-                                        planId: id,
-                                        status: "done",
-                                        effectiveTimeHHMM: nowTime,
-                                      } as any)
-                                    }
-                                  >
-                                    Finish
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      !canInterrupt ||
-                                      updateTaskStatus.isPending
-                                    }
-                                    onClick={() =>
-                                      updateTaskStatus.mutate({
-                                        taskId: Number(t.id),
-                                        planId: id,
-                                        status: "interrupted",
-                                        effectiveTimeHHMM: nowTime,
-                                      } as any)
-                                    }
-                                  >
-                                    Interrupt
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={status === "pending" || resetTask.isPending}
-                                    onClick={() => {
-                                      const msg = status === "in_progress"
-                                        ? "¿Resetear? Se borrará inicio real."
-                                        : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
-                                      if (!window.confirm(msg)) return;
-                                      resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime });
-                                    }}
-                                  >
-                                    Reset a pendiente
-                                  </Button>
-                                </div>
+                                <TooltipProvider>
+                                  <div className="inline-flex gap-1">
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Start" variant="ghost" size="icon" disabled={!canStart || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "in_progress", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Play className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Start</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Finish" variant="ghost" size="icon" disabled={!canFinish || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "done", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Check className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Finish</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Interrupt" variant="ghost" size="icon" disabled={!canInterrupt || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "interrupted", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Pause className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Interrupt</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={status === "pending" || resetTask.isPending} onClick={() => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; if (!window.confirm(msg)) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
+                                  </div>
+                                </TooltipProvider>
                               </TableCell>
                             </TableRow>
                           );
@@ -3441,7 +3426,7 @@ export default function PlanDetailsPage() {
                       {(plan?.dailyTasks ?? []).length === 0 && (
                         <TableRow>
                           <TableCell
-                            colSpan={9}
+                            colSpan={10}
                             className="text-sm text-muted-foreground"
                           >
                             Aún no hay tareas en este plan.

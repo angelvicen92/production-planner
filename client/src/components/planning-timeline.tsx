@@ -137,7 +137,10 @@ interface PlanningTimelineProps {
     status: "in_progress" | "done" | "interrupted" | "cancelled",
   ) => Promise<void>;
   taskStatusPending?: boolean;
-  lockedTaskIds?: number[];
+  timeLockedTaskIds?: number[];
+  fullLockedTaskIds?: number[];
+  onPinTask?: (task: Task) => Promise<void>;
+  onUnpinTask?: (task: Task) => Promise<void>;
   onApplyManualEdits?: (edits: Array<{ taskId: number; start: string; end: string }>) => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onCreateManualBlock?: () => void;
@@ -165,6 +168,10 @@ function TaskStatusMenuTrigger({
   locationLabel,
   onTaskStatusChange,
   taskStatusPending = false,
+  hasTimeLock = false,
+  canPinTimeLock = false,
+  onPinTask,
+  onUnpinTask,
   className,
   style,
   children,
@@ -180,6 +187,10 @@ function TaskStatusMenuTrigger({
     status: "in_progress" | "done" | "interrupted" | "cancelled",
   ) => Promise<void>;
   taskStatusPending?: boolean;
+  hasTimeLock?: boolean;
+  canPinTimeLock?: boolean;
+  onPinTask?: (task: Task) => Promise<void>;
+  onUnpinTask?: (task: Task) => Promise<void>;
   className: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -245,6 +256,30 @@ function TaskStatusMenuTrigger({
             </DropdownMenuItem>
           ))
         )}
+        <DropdownMenuSeparator />
+        {hasTimeLock ? (
+          <DropdownMenuItem
+            disabled={taskStatusPending}
+            onSelect={(event) => {
+              event.preventDefault();
+              if (!onUnpinTask) return;
+              void onUnpinTask(task).then(() => setOpen(false));
+            }}
+          >
+            Quitar fijación
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            disabled={!canPinTimeLock || taskStatusPending}
+            onSelect={(event) => {
+              event.preventDefault();
+              if (!onPinTask) return;
+              void onPinTask(task).then(() => setOpen(false));
+            }}
+          >
+            📌 Fijar
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -267,7 +302,10 @@ function TaskStatusMenuTrigger({
     staffAssignments = [],
     onTaskStatusChange,
     taskStatusPending = false,
-    lockedTaskIds = [],
+    timeLockedTaskIds = [],
+    fullLockedTaskIds = [],
+    onPinTask,
+    onUnpinTask,
     onApplyManualEdits,
     onCancelManualEdits,
     onCreateManualBlock,
@@ -276,15 +314,23 @@ function TaskStatusMenuTrigger({
   const { nowTime } = useProductionClock();
   const density = usePlanningDensity();
   const isCompact = density === "compact";
-  const timeLockedSet = useMemo(() => new Set((lockedTaskIds ?? []).map((id) => Number(id))), [lockedTaskIds]);
+  const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
+  const fullLockedSet = useMemo(() => new Set((fullLockedTaskIds ?? []).map((id) => Number(id))), [fullLockedTaskIds]);
   const isTaskFixed = (task: Task) =>
-    task.status === "in_progress" || task.status === "done" || timeLockedSet.has(Number(task.id));
+    task.status === "in_progress" || task.status === "done" || fullLockedSet.has(Number(task.id));
 
   const hasTimeLock = (task: Task) =>
     !task.isManualBlock &&
     task.status !== "in_progress" &&
     task.status !== "done" &&
     timeLockedSet.has(Number(task.id));
+
+  const canPinTask = (task: Task) =>
+    !task.isManualBlock &&
+    Boolean(task.startPlanned) &&
+    Boolean(task.endPlanned) &&
+    task.status !== "in_progress" &&
+    task.status !== "done";
 
   const taskPrefixIcon = (task: Task) => {
     if (task.isManualBlock) return "🗒";
@@ -1401,6 +1447,10 @@ function TaskStatusMenuTrigger({
                                                 locationLabel={getTaskLocationLabel(task)}
                                                 onTaskStatusChange={onTaskStatusChange}
                                                 taskStatusPending={taskStatusPending}
+                                                hasTimeLock={hasTimeLock(task)}
+                                                canPinTimeLock={canPinTask(task)}
+                                                onPinTask={onPinTask}
+                                                onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {
@@ -1497,6 +1547,10 @@ function TaskStatusMenuTrigger({
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
                                             taskStatusPending={taskStatusPending}
+                                            hasTimeLock={hasTimeLock(task)}
+                                            canPinTimeLock={canPinTask(task)}
+                                            onPinTask={onPinTask}
+                                            onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {
@@ -1681,6 +1735,10 @@ function TaskStatusMenuTrigger({
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
                                             taskStatusPending={taskStatusPending}
+                                            hasTimeLock={hasTimeLock(task)}
+                                            canPinTimeLock={canPinTask(task)}
+                                            onPinTask={onPinTask}
+                                            onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {
@@ -1758,6 +1816,10 @@ function TaskStatusMenuTrigger({
                                       locationLabel={getTaskLocationLabel(task)}
                                       onTaskStatusChange={onTaskStatusChange}
                                       taskStatusPending={taskStatusPending}
+                                      hasTimeLock={hasTimeLock(task)}
+                                      canPinTimeLock={canPinTask(task)}
+                                      onPinTask={onPinTask}
+                                      onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {
@@ -1915,6 +1977,10 @@ function TaskStatusMenuTrigger({
                             locationLabel={getTaskLocationLabel(task)}
                             onTaskStatusChange={onTaskStatusChange}
                             taskStatusPending={taskStatusPending}
+                            hasTimeLock={hasTimeLock(task)}
+                            canPinTimeLock={canPinTask(task)}
+                            onPinTask={onPinTask}
+                            onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {
@@ -2237,6 +2303,10 @@ function TaskStatusMenuTrigger({
                             locationLabel={getTaskLocationLabel(task)}
                             onTaskStatusChange={onTaskStatusChange}
                             taskStatusPending={taskStatusPending}
+                            hasTimeLock={hasTimeLock(task)}
+                            canPinTimeLock={canPinTask(task)}
+                            onPinTask={onPinTask}
+                            onUnpinTask={onUnpinTask}
                             draggable={manualMode && !isApplying && !isTaskFixed(task)}
                             onDragStart={(event) => {
                               if (!(manualMode && !isApplying) || isTaskFixed(task)) {

@@ -30,6 +30,14 @@ function isValidHHMM(value: unknown): value is string {
   return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
 }
 
+function coerceSecond(value: unknown): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const sec = Math.floor(n);
+  if (sec < 0 || sec > 59) return null;
+  return sec;
+}
+
 export interface IStorage {
   // Plans
   getPlans(): Promise<Plan[]>;
@@ -49,6 +57,7 @@ export interface IStorage {
     updates: {
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
       effectiveTimeHHMM?: string;
+      effectiveSeconds?: number;
     },
     userId: string,
   ): Promise<DailyTask>;
@@ -1247,7 +1256,9 @@ export class SupabaseStorage implements IStorage {
       startPlanned: t.start_planned ?? null,
       endPlanned: t.end_planned ?? null,
       startReal: t.start_real ?? null,
+      startRealSeconds: t.start_real_seconds ?? null,
       endReal: t.end_real ?? null,
+      endRealSeconds: t.end_real_seconds ?? null,
       createdAt: t.created_at ?? null,
       // ✅ recursos asignados por el planificador (motor) (plan_resource_items.id[])
       assignedResources: t.assigned_resource_ids ?? null,
@@ -1472,16 +1483,25 @@ export class SupabaseStorage implements IStorage {
     const effectiveTime = isValidHHMM(updates?.effectiveTimeHHMM)
       ? updates.effectiveTimeHHMM
       : getEuropeMadridTimeHHMM();
+    const effectiveSeconds = coerceSecond(updates?.effectiveSeconds);
 
     const nextStartReal =
       updates?.status === "in_progress" && !task.start_real
         ? effectiveTime
         : (task.start_real ?? null);
+    const nextStartRealSeconds =
+      updates?.status === "in_progress" && !task.start_real
+        ? effectiveSeconds
+        : (task.start_real_seconds ?? null);
 
     const nextEndReal =
       ["done", "interrupted", "cancelled"].includes(String(updates?.status)) && !task.end_real
         ? effectiveTime
         : (task.end_real ?? null);
+    const nextEndRealSeconds =
+      ["done", "interrupted", "cancelled"].includes(String(updates?.status)) && !task.end_real
+        ? effectiveSeconds
+        : (task.end_real_seconds ?? null);
 
     // 3. Update status
     const { data: updated, error: updateError } = await supabaseAdmin
@@ -1490,6 +1510,8 @@ export class SupabaseStorage implements IStorage {
         status: updates.status,
         start_real: nextStartReal,
         end_real: nextEndReal,
+        start_real_seconds: nextStartRealSeconds,
+        end_real_seconds: nextEndRealSeconds,
       })
       .eq("id", taskId)
       .select()
@@ -1581,6 +1603,8 @@ export class SupabaseStorage implements IStorage {
       status: "pending",
       start_real: null,
       end_real: null,
+      start_real_seconds: null,
+      end_real_seconds: null,
     };
 
     if (resetFromExecutedStatus && task.is_manual_block !== true) {
