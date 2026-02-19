@@ -3101,7 +3101,8 @@ function mapDeleteError(err: any, fallback: string) {
         return withPermissionDenied(res);
       }
 
-      const updated: any = await storage.resetTask(taskId, user.id);
+      const input = api.dailyTasks.reset.input.parse(req.body ?? {});
+      const updated: any = await storage.resetTask(taskId, user.id, input?.effectiveTimeHHMM);
 
       return res.json({
         id: updated.id,
@@ -3291,13 +3292,42 @@ function mapDeleteError(err: any, fallback: string) {
       const planId = Number((task as any).plan_id);
 
       if (input.clear) {
-        const { error: delErr } = await supabaseAdmin
+        const executionLockReasonPrefix = "Execution lock";
+        const { data: lockRows, error: lockRowsErr } = await supabaseAdmin
           .from("locks")
-          .delete()
+          .select("id, lock_type, reason")
           .eq("plan_id", planId)
           .eq("task_id", taskId)
-          .eq("lock_type", "time");
-        if (delErr) throw delErr;
+          .in("lock_type", ["time", "full"]);
+        if (lockRowsErr) throw lockRowsErr;
+
+        const lockIdsToDelete = (lockRows ?? [])
+          .filter((lock: any) => {
+            const lockType = String(lock?.lock_type ?? "");
+            if (lockType === "time") return true;
+            if (lockType !== "full") return false;
+            return String(lock?.reason ?? "").startsWith(executionLockReasonPrefix);
+          })
+          .map((lock: any) => Number(lock?.id))
+          .filter((id: number) => Number.isFinite(id) && id > 0);
+
+        let locksCleared = 0;
+        let clearedExecutionFull = false;
+
+        if (lockIdsToDelete.length > 0) {
+          const { data: deletedLocks, error: delErr } = await supabaseAdmin
+            .from("locks")
+            .delete()
+            .in("id", lockIdsToDelete)
+            .select("id, lock_type, reason");
+          if (delErr) throw delErr;
+          locksCleared = (deletedLocks ?? []).length;
+          clearedExecutionFull = (deletedLocks ?? []).some(
+            (lock: any) =>
+              String(lock?.lock_type ?? "") === "full" &&
+              String(lock?.reason ?? "").startsWith(executionLockReasonPrefix),
+          );
+        }
 
         const { error: clrTaskErr } = await supabaseAdmin
           .from("daily_tasks")
@@ -3305,7 +3335,7 @@ function mapDeleteError(err: any, fallback: string) {
           .eq("id", taskId);
         if (clrTaskErr) throw clrTaskErr;
 
-        return res.json({ success: true, cleared: true });
+        return res.json({ success: true, cleared: true, locksCleared, clearedExecutionFull });
       }
 
       const lockedStart = input.lockedStart ?? input.start ?? null;
@@ -3620,6 +3650,52 @@ function mapDeleteError(err: any, fallback: string) {
   app.post(api.plans.generate.path, async (req, res) => {
     const planId = Number(req.params.id);
     try {
+      const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id, status, is_manual_block")
+        .eq("plan_id", planId)
+        .eq("status", "pending");
+      if (pendingTasksErr) throw pendingTasksErr;
+
+      const pendingTaskIds = Array.from(
+        new Set(
+          (pendingTasks ?? [])
+            .filter((task: any) => task?.is_manual_block !== true && String(task?.status ?? "") === "pending")
+            .map((task: any) => Number(task?.id))
+            .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
+        ),
+      );
+
+      if (pendingTaskIds.length > 0) {
+        const { data: activeLocks, error: activeLocksErr } = await supabaseAdmin
+          .from("locks")
+          .select("task_id, lock_type, locked_start, locked_end")
+          .eq("plan_id", planId)
+          .in("task_id", pendingTaskIds)
+          .in("lock_type", ["time", "full"])
+          .not("locked_start", "is", null)
+          .not("locked_end", "is", null);
+        if (activeLocksErr) throw activeLocksErr;
+
+        const lockedTaskIds = new Set<number>(
+          (activeLocks ?? [])
+            .map((lock: any) => Number(lock?.task_id))
+            .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
+        );
+
+        const taskIdsToClear = pendingTaskIds.filter((taskId) => !lockedTaskIds.has(taskId));
+
+        if (taskIdsToClear.length > 0) {
+          const { error: clearPendingErr } = await supabaseAdmin
+            .from("daily_tasks")
+            .update({ start_planned: null, end_planned: null })
+            .in("id", taskIdsToClear)
+            .eq("status", "pending")
+            .eq("is_manual_block", false);
+          if (clearPendingErr) throw clearPendingErr;
+        }
+      }
+
       const engineInput = await buildEngineInput(planId, storage);
       const result = generatePlan(engineInput);
       const details = await storage.getPlanFullDetails(planId);

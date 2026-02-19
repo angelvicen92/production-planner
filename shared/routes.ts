@@ -1393,6 +1393,10 @@ export const api = {
             "interrupted",
             "cancelled",
           ]),
+          effectiveTimeHHMM: z
+            .string()
+            .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
+            .optional(),
         })
         .strict(),
       responses: {
@@ -1405,6 +1409,15 @@ export const api = {
     reset: {
       method: "POST" as const,
       path: "/api/tasks/:id/reset",
+      input: z
+        .object({
+          effectiveTimeHHMM: z
+            .string()
+            .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
+            .optional(),
+        })
+        .strict()
+        .optional(),
       responses: {
         200: z.custom<typeof dailyTasks.$inferSelect>(),
         400: errorSchemas.validation,
