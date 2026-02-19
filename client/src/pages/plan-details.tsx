@@ -865,6 +865,7 @@ export default function PlanDetailsPage() {
   const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
+  const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(null);
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
@@ -1096,51 +1097,36 @@ export default function PlanDetailsPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!planningInProgress || !id) return;
-
-    const tick = async () => {
-      try {
-        const freshPlan = await queryClient.fetchQuery({ queryKey: planQueryKey(id), staleTime: 0 });
-        const tasks = (freshPlan as any)?.dailyTasks ?? [];
-        const plannedCount = tasks.filter((t: any) => Boolean(t?.startPlanned || t?.start_planned)).length;
-        const totalPending = tasks.filter((t: any) => String(t?.status ?? "pending") === "pending").length;
-        const totalCount = totalPending > 0 ? totalPending : Math.max(tasks.length, 1);
-        const percentage = Math.min(100, Math.round((plannedCount / totalCount) * 100));
-        setPlanningProgress((prev) => ({
-          plannedCount,
-          totalCount,
-          percentage,
-          indeterminate: prev.plannedCount === plannedCount,
-        }));
-      } catch {
-        setPlanningProgress((prev) => ({ ...prev, indeterminate: true }));
-      }
-    };
-
-    tick();
-    const timer = window.setInterval(tick, 700);
-    return () => window.clearInterval(timer);
-  }, [planningInProgress, id, queryClient]);
-
-  useEffect(() => {
     const run = planningRunQ.data;
     if (!run) return;
+
     if (run.status === "running") {
       setPlanningInProgress(true);
-      const total = Math.max(1, Number(run.totalPending ?? 0));
-      const planned = Math.max(0, Number(run.plannedCount ?? 0));
-      setPlanningProgress({
-        plannedCount: planned,
-        totalCount: total,
-        percentage: Math.min(100, Math.round((planned / total) * 100)),
-        indeterminate: false,
-      });
-      return;
+      if (expectedPlanningRunId == null) {
+        setExpectedPlanningRunId(Number(run.id));
+      }
     }
-    if (planningInProgress) {
+
+    const total = Math.max(1, Number(run.totalPending ?? 0));
+    const planned = Math.max(0, Number(run.plannedCount ?? 0));
+    setPlanningProgress({
+      plannedCount: planned,
+      totalCount: total,
+      percentage: Math.min(100, Math.round((planned / total) * 100)),
+      indeterminate: run.status !== "running",
+    });
+
+    if (expectedPlanningRunId == null) return;
+    if (Number(run.id) !== Number(expectedPlanningRunId)) return;
+
+    if (run.status !== "running") {
       setPlanningInProgress(false);
+      setExpectedPlanningRunId(null);
+      if (run.status === "infeasible") {
+        setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [] });
+      }
     }
-  }, [planningRunQ.data, planningInProgress]);
+  }, [planningRunQ.data, expectedPlanningRunId]);
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
@@ -1333,23 +1319,50 @@ export default function PlanDetailsPage() {
 
   const handleGenerate = () => {
     setPlanningInProgress(true);
+    setExpectedPlanningRunId(null);
     setPlanningProgress({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
 
-    generatePlan.mutate(id, {
-      onSuccess: (data: any) => {
-        setPlanningInProgress(false);
-        const warnings = data?.warnings ?? [];
-        if (Array.isArray(warnings) && warnings.length > 0) {
-          setConfigDialog({ open: true, reasons: warnings });
-        }
-      },
-      onError: (err: any) => {
-        setPlanningInProgress(false);
-        if (err?.reasons) {
-          setErrorDialog({ open: true, reasons: err.reasons });
-        }
-      },
-    });
+    void (async () => {
+      await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+      await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+
+      generatePlan.mutate(id, {
+        onSuccess: async (data: any) => {
+          setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
+          await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+          await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+          await refetchPlan();
+          await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+          await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+
+          const warnings = data?.warnings ?? [];
+          if (Array.isArray(warnings) && warnings.length > 0) {
+            setConfigDialog({ open: true, reasons: warnings });
+          }
+
+          const latestRun = queryClient.getQueryData(["planning-run", id]) as any;
+          const isExpectedRun = Number.isFinite(Number(data?.runId))
+            ? Number(latestRun?.id) === Number(data?.runId)
+            : true;
+          if (isExpectedRun && latestRun?.status !== "running") {
+            setPlanningInProgress(false);
+            setExpectedPlanningRunId(null);
+          }
+          if (isExpectedRun && latestRun?.status === "infeasible") {
+            setErrorDialog({ open: true, reasons: Array.isArray(latestRun?.lastReasons) ? latestRun.lastReasons : [] });
+          }
+        },
+        onError: async (err: any) => {
+          await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+          await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+          setPlanningInProgress(false);
+          setExpectedPlanningRunId(null);
+          if (err?.reasons) {
+            setErrorDialog({ open: true, reasons: err.reasons });
+          }
+        },
+      });
+    })();
   };
 
   function goToTask(taskId?: number | null) {
