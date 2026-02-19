@@ -136,6 +136,7 @@ function Router() {
       <Route path="/plans">{() => <ProtectedRoute component={PlansPage} />}</Route>
 
       <Route path="/plans/:id">{() => <ProtectedRoute component={PlanDetailsPage} />}</Route>
+      <Route path="/control-room">{() => <ProtectedRoute component={ControlRoomPage} />}</Route>
       <Route path="/plans/:planId/control-room">{() => <ProtectedRoute component={ControlRoomPage} />}</Route>
 
       <Route path="/timeline">{() => <ProtectedRoute component={TimelinePage} />}</Route>
