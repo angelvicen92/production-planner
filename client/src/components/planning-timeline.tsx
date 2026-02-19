@@ -16,6 +16,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -183,6 +184,10 @@ function TaskStatusMenuTrigger({
   style,
   children,
   onClick,
+  laneId,
+  manualMode = false,
+  canManualMove = false,
+  onStartManualMove,
 }: {
   task: Task;
   contestantName: string;
@@ -200,6 +205,10 @@ function TaskStatusMenuTrigger({
   style?: CSSProperties;
   children: ReactNode;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  laneId?: string;
+  manualMode?: boolean;
+  canManualMove?: boolean;
+  onStartManualMove?: (task: Task, laneId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
@@ -228,68 +237,97 @@ function TaskStatusMenuTrigger({
     setOpen(false);
   };
 
-  if (!onTaskStatusChange) {
-    return triggerButton;
-  }
-
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        {triggerButton}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel className="space-y-1">
-          <p className="truncate">{task.template?.name || "Tarea"}</p>
-          <p className="text-[11px] font-normal text-muted-foreground truncate">
-            {contestantName || "—"} · {summaryTime}
-          </p>
-          <p className="text-[11px] font-normal text-muted-foreground truncate">
-            {locationLabel || "—"}
-          </p>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {actions.length === 0 ? (
-          <DropdownMenuItem disabled>Sin acciones</DropdownMenuItem>
-        ) : (
-          actions.map((action) => (
-            <DropdownMenuItem
-              key={action}
-              disabled={taskStatusPending}
-              onSelect={(event) => {
+    <Tooltip>
+      <div className="relative">
+        <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="absolute right-1 top-1 z-20 h-5 w-5 rounded bg-background/70 text-xs leading-none hover:bg-background"
+              onClick={(event) => {
                 event.preventDefault();
-                void handleSelect(action);
+                event.stopPropagation();
               }}
             >
-              {actionLabel(action)}
-            </DropdownMenuItem>
-          ))
-        )}
-        <DropdownMenuSeparator />
-        {hasTimeLock ? (
-          <DropdownMenuItem
-            disabled={taskStatusPending}
-            onSelect={(event) => {
-              event.preventDefault();
-              if (!onUnpinTask) return;
-              void onUnpinTask(task).then(() => setOpen(false));
-            }}
-          >
-            Quitar fijación
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem
-            disabled={!canPinTimeLock || taskStatusPending}
-            onSelect={(event) => {
-              event.preventDefault();
-              if (!onPinTask) return;
-              void onPinTask(task).then(() => setOpen(false));
-            }}
-          >
-            📌 Fijar
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              ⋮
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <DropdownMenuLabel className="space-y-1">
+              <p className="truncate">{task.template?.name || "Tarea"}</p>
+              <p className="text-[11px] font-normal text-muted-foreground truncate">
+                {contestantName || "—"} · {summaryTime}
+              </p>
+              <p className="text-[11px] font-normal text-muted-foreground truncate">
+                {locationLabel || "—"}
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {!onTaskStatusChange || actions.length === 0 ? (
+              <DropdownMenuItem disabled>Sin acciones</DropdownMenuItem>
+            ) : (
+              actions.map((action) => (
+                <DropdownMenuItem
+                  key={action}
+                  disabled={taskStatusPending}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    void handleSelect(action);
+                  }}
+                >
+                  {actionLabel(action)}
+                </DropdownMenuItem>
+              ))
+            )}
+            <DropdownMenuSeparator />
+            {hasTimeLock ? (
+              <DropdownMenuItem
+                disabled={taskStatusPending}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  if (!onUnpinTask) return;
+                  void onUnpinTask(task).then(() => setOpen(false));
+                }}
+              >
+                Quitar fijación
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={!canPinTimeLock || taskStatusPending}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  if (!onPinTask) return;
+                  void onPinTask(task).then(() => setOpen(false));
+                }}
+              >
+                📌 Fijar
+              </DropdownMenuItem>
+            )}
+            {manualMode && canManualMove && laneId ? (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onStartManualMove?.(task, laneId);
+                  setOpen(false);
+                }}
+              >
+                Mover (manual)
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <TooltipContent>
+        <div className="space-y-1 p-1">
+          <p className="font-bold truncate">{task.template?.name || "Tarea"}</p>
+          <p className="text-xs text-muted-foreground truncate">{contestantName || "—"} · {summaryTime}</p>
+          <p className="text-xs text-muted-foreground truncate">{locationLabel || "—"}</p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -356,14 +394,15 @@ function TaskStatusMenuTrigger({
   };
 
   const [manualMode, setManualMode] = useState(false);
-  const [taskSortMode, setTaskSortMode] = useState(false);
+  const [taskSortArmed, setTaskSortArmed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
   const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
-  const [manualSelectedTaskId, setManualSelectedTaskId] = useState<number | null>(null);
+  const [manualMove, setManualMove] = useState<null | { taskId: number; laneId: string }>(null);
+  const manualMoveStartRef = useRef<number | null>(null);
   const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
@@ -372,6 +411,14 @@ function TaskStatusMenuTrigger({
     return mapped;
   }, [dailyTasks]);
 
+
+
+  const startManualMove = (task: Task, laneId: string) => {
+    if (!manualMode || !canSelectManualTask(task)) return;
+    const edit = pendingManualEdits[Number(task.id)];
+    manualMoveStartRef.current = timeToMinutes(edit?.start ?? task.startPlanned ?? workStart ?? "09:00");
+    setManualMove({ taskId: Number(task.id), laneId: String(laneId) });
+  };
 
   const clearWarningLater = (taskId: number) => {
     window.setTimeout(() => {
@@ -455,7 +502,7 @@ function TaskStatusMenuTrigger({
   };
 
   const handleTaskCardClick = (event: MouseEvent<HTMLButtonElement>, task: Task) => {
-    if (viewMode === "contestants" && taskSortMode) {
+    if (viewMode === "contestants" && taskSortArmed) {
       event.preventDefault();
       event.stopPropagation();
       setContestantSort({
@@ -463,30 +510,28 @@ function TaskStatusMenuTrigger({
         templateId: Number(task.templateId),
         templateName: task.template?.name || "Tarea",
       });
+      setTaskSortArmed(false);
       return;
-    }
-
-    if (manualMode && canSelectManualTask(task)) {
-      event.preventDefault();
-      event.stopPropagation();
-      setManualSelectedTaskId(Number(task.id));
     }
   };
 
-  const handleLaneManualPlace = (event: MouseEvent<HTMLDivElement>, laneTasks: Task[]) => {
-    if (!manualMode || isApplying || manualSelectedTaskId === null) return;
-    const selectedTask = laneTasks.find((t) => Number(t.id) === Number(manualSelectedTaskId));
-    if (!selectedTask || !canSelectManualTask(selectedTask)) return;
-
+  const handleManualMoveMouse = (event: MouseEvent<HTMLDivElement>) => {
+    if (!manualMode || !manualMove) return;
     const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
     const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;
     const rawStart = startMin + ratio * duration;
-    const snapStart = Math.round(rawStart / 5) * 5;
+    manualMoveStartRef.current = Math.round(rawStart / 5) * 5;
+  };
+
+  const applyManualMoveDrop = (laneTasks: Task[]) => {
+    if (!manualMode || isApplying || !manualMove || manualMoveStartRef.current === null) return;
+    const selectedTask = laneTasks.find((t) => Number(t.id) === Number(manualMove.taskId));
+    if (!selectedTask || !canSelectManualTask(selectedTask)) return;
 
     const { nextEdits, shiftedIds, clampedStart } = applyCascadeMove({
       laneTasks,
       movedTask: selectedTask,
-      nextStart: snapStart,
+      nextStart: manualMoveStartRef.current,
     });
 
     shiftedTaskIdsRef.current = shiftedIds;
@@ -517,6 +562,9 @@ function TaskStatusMenuTrigger({
         clearWarningLater(Number(selectedTask.id));
       }
     }
+
+    setManualMove(null);
+    manualMoveStartRef.current = null;
   };
 
   // =========================
@@ -1622,11 +1670,15 @@ function TaskStatusMenuTrigger({
                                                 canPinTimeLock={canPinTask(task)}
                                                 onPinTask={onPinTask}
                                                 onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                                   task.status === "in_progress"
                                                     ? "ring-2 ring-green-500"
                                                     : "",
@@ -1713,11 +1765,15 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1892,11 +1948,15 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                                         task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1964,11 +2024,15 @@ function TaskStatusMenuTrigger({
                                       canPinTimeLock={canPinTask(task)}
                                       onPinTask={onPinTask}
                                       onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                                         task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                         task.status === "in_progress"
                                           ? "ring-2 ring-green-500"
                                           : "",
@@ -2116,11 +2180,15 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               task.status === "in_progress" ? "ring-2 ring-green-500" : "",
                               task.status === "done" ? "opacity-80" : "",
                             )}
@@ -2201,7 +2269,7 @@ function TaskStatusMenuTrigger({
                         return;
                       }
                       setManualMode(next);
-                      if (!next) setManualSelectedTaskId(null);
+                      if (!next) { setManualMove(null); manualMoveStartRef.current = null; }
                     }}
                     disabled={isApplying}
                   />
@@ -2211,23 +2279,19 @@ function TaskStatusMenuTrigger({
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
                     <Button
                       size="sm"
-                      variant={taskSortMode ? "default" : "outline"}
-                      onClick={() => setTaskSortMode((prev) => {
-                        const next = !prev;
-                        if (!next) setContestantSort({ mode: "name" });
-                        return next;
-                      })}
+                      variant={taskSortArmed ? "default" : "outline"}
+                      onClick={() => setTaskSortArmed((prev) => !prev)}
                     >
-                      Orden por tarea
+                      {taskSortArmed ? "Click en una tarea…" : "Orden por tarea"}
                     </Button>
-                    {taskSortMode ? (
-                      <span className="text-xs text-muted-foreground">Click en una tarea para ordenar</span>
+                    {taskSortArmed ? (
+                      <span className="text-xs text-muted-foreground">Click en una tarea…</span>
                     ) : null}
                     <span className="text-xs">
-                      Orden: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
+                      Orden actual: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
                     </span>
                     {contestantSort.mode === "task" ? (
-                      <Button size="sm" variant="ghost" onClick={() => setContestantSort({ mode: "name" })}>Reset</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setContestantSort({ mode: "name" }); setTaskSortArmed(false); }}>Ordenar por nombre</Button>
                     ) : null}
                   </div>
                 ) : null}
@@ -2253,14 +2317,15 @@ function TaskStatusMenuTrigger({
                     }}>Aplicar cambios</Button>
                     <Button size="sm" variant="outline" disabled={isApplying} onClick={async () => {
                       setPendingManualEdits({});
-                      setManualSelectedTaskId(null);
+                      setManualMove(null);
+                      manualMoveStartRef.current = null;
                       await onCancelManualEdits?.();
                     }}>Cancelar cambios</Button>
                     <Button size="sm" variant="secondary" disabled={isApplying} onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
-                    {manualSelectedTaskId !== null ? (
+                    {manualMove !== null ? (
                       <div className="rounded border bg-background px-2 py-1 text-xs">
-                        Tarea seleccionada: {taskById.get(Number(manualSelectedTaskId))?.template?.name ?? `#${manualSelectedTaskId}`} (click en la fila para colocar)
-                        <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={() => setManualSelectedTaskId(null)}>Deseleccionar</Button>
+                        Moviendo: {taskById.get(Number(manualMove.taskId))?.template?.name ?? `#${manualMove.taskId}`} — click para soltar
+                        <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={() => { setManualMove(null); manualMoveStartRef.current = null; }}>Cancelar</Button>
                       </div>
                     ) : null}
                   </div>
@@ -2284,7 +2349,8 @@ function TaskStatusMenuTrigger({
                           const validation = await onValidatePlan?.();
                           if (validation) setValidationResult(validation);
                           setPendingManualEdits({});
-                          setManualSelectedTaskId(null);
+                          setManualMove(null);
+                      manualMoveStartRef.current = null;
                           setManualMode(false);
                           setManualExitDialogOpen(false);
                         } finally {
@@ -2300,7 +2366,8 @@ function TaskStatusMenuTrigger({
                       disabled={isApplying}
                       onClick={async () => {
                         setPendingManualEdits({});
-                        setManualSelectedTaskId(null);
+                        setManualMove(null);
+                      manualMoveStartRef.current = null;
                         shiftedTaskIdsRef.current = [];
                         lastManualEditedPrimaryTaskIdRef.current = null;
                         await onCancelManualEdits?.();
@@ -2413,7 +2480,12 @@ function TaskStatusMenuTrigger({
                   </div>
                   <div
                     className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}
-                    onMouseDown={(event) => handleLaneManualPlace(event, lane.tasks)}
+                    onMouseMove={handleManualMoveMouse}
+                    onMouseDown={() => {
+                      if (manualMove && lane.tasks.some((t) => Number(t.id) === Number(manualMove.taskId))) {
+                        applyManualMoveDrop(lane.tasks);
+                      }
+                    }}
                   >
                     {/* Grid 5 min (like PDF) */}
                     <div className="absolute inset-0 pointer-events-none z-0">
@@ -2462,13 +2534,14 @@ function TaskStatusMenuTrigger({
                     {/* Tasks */}
                     {lane.tasks.map((task) => {
                       if (!task.startPlanned || !task.endPlanned) return null;
-                      const tStart = timeToMinutes(task.startPlanned);
+                      const tStart = manualMove?.taskId === Number(task.id) && manualMoveStartRef.current !== null
+                        ? manualMoveStartRef.current
+                        : timeToMinutes(task.startPlanned);
                       const tEnd = timeToMinutes(task.endPlanned);
                       const tDur = tEnd - tStart;
 
                       return (
-                        <Tooltip key={task.id}>
-                          <TaskStatusMenuTrigger
+                        <TaskStatusMenuTrigger key={task.id}
                             task={task}
                             contestantName={
                               contestantNameById[Number(task.contestantId)] ?? "—"
@@ -2480,11 +2553,15 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
+                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            manualMode={manualMode}
+                            canManualMove={canSelectManualTask(task)}
+                            onStartManualMove={startManualMove}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
-                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
+                                                  manualMove?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
                               viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
@@ -2514,112 +2591,6 @@ function TaskStatusMenuTrigger({
                               {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                             </span>
                           </TaskStatusMenuTrigger>
-                          <TooltipContent>
-                            <div className="space-y-1 p-1">
-                              <p className="font-bold">
-                                {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Ubicación: {getTaskLocationLabel(task)}
-                              </p>
-                              {dependencyWarnings[Number(task.id)] ? (
-                                <p className="text-xs text-amber-600">
-                                  Aviso: puede romper dependencia con “{dependencyWarnings[Number(task.id)]?.prereqTaskName}” (termina a {dependencyWarnings[Number(task.id)]?.prereqEnd})
-                                </p>
-                              ) : null}
-                              {/* ✅ Recursos asignados por el planificador (motor) */}
-                              {(() => {
-                                const assignedRaw =
-                                  (task as any)?.assignedResources ??
-                                  (task as any)?.assigned_resource_ids ??
-                                  null;
-
-                                const assigned = Array.isArray(assignedRaw)
-                                  ? (assignedRaw as any[])
-                                  : [];
-
-                                const assignedIds = assigned
-                                  .map((id) => Number(id))
-                                  .filter((n) => Number.isFinite(n) && n > 0);
-
-                                const names = assignedIds
-                                  .map(
-                                    (id) =>
-                                      planResourceItemNameById[Number(id)],
-                                  )
-                                  .filter(Boolean);
-
-                                const planificadorText =
-                                  names.length > 0
-                                    ? names.join(" · ")
-                                    : assignedIds.length > 0
-                                      ? `IDs: ${assignedIds.join(", ")}`
-                                      : "—";
-
-                                // Fallback informativo: recursos del plató (zona) (NO es lo asignado por el motor)
-                                const zidRaw = (task as any)?.zoneId;
-                                const zid = Number(zidRaw);
-                                const priIds =
-                                  Number.isFinite(zid) && zid > 0
-                                    ? (zoneResourceAssignments[zid] ?? [])
-                                    : [];
-
-                                const zoneNames = (priIds ?? [])
-                                  .map(
-                                    (id) =>
-                                      planResourceItemNameById[Number(id)],
-                                  )
-                                  .filter(Boolean);
-
-                                return (
-                                  <>
-                                    <p className="text-xs text-muted-foreground">
-                                      Recursos (planificador):{" "}
-                                      {planificadorText}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Recursos (plató):{" "}
-                                      {zoneNames.length
-                                        ? zoneNames.join(" · ")
-                                        : "—"}
-                                    </p>
-                                  </>
-                                );
-                              })()}
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
-                                  {task.status}
-                                </Badge>
-                                {isOverdueTask(task) ? (
-                                  <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
-                                ) : null}
-                                {isRunningLateTask(task) ? (
-                                  <Badge variant="destructive" className="text-[10px]">Running late</Badge>
-                                ) : null}
-                                {task.camerasOverride && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[10px]"
-                                  >
-                                    🎥 {task.camerasOverride}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-[10px] mt-1 font-mono">
-                                Planned: {task.startPlanned} - {task.endPlanned}
-                              </p>
-                              {(task.startReal || task.endReal) && (
-                                <p className="text-[10px] font-mono">
-                                  Real: {task.startReal || "—"} -{" "}
-                                  {task.endReal || "—"}
-                                </p>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
                       );
                     })}
                   </div>

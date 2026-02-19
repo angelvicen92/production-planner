@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Clock3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 type ProgramSettings = {
   id: number;
@@ -19,11 +20,13 @@ type ProgramSettings = {
   mealTaskTemplateName: string;
   clockMode: "auto" | "manual";
   simulatedTime: string | null;
+  simulatedSetAt?: string | null;
 };
 
 export function GeneralProgramSettings() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { nowTime } = useProductionClock();
 
   const { data, isLoading, error } = useQuery<ProgramSettings>({
     queryKey: [api.programSettings.get.path],
@@ -206,6 +209,13 @@ export function GeneralProgramSettings() {
             ) : null}
           </div>
 
+
+            {(draft?.clockMode ?? "auto") === "manual" ? (
+              <div className="col-span-2 text-xs text-muted-foreground">
+                Hora simulada actual: {nowTime} · Hora real: {new Date().toTimeString().slice(0, 5)}
+              </div>
+            ) : null}
+
           <div className="col-span-2">
             <Label>Nombre de la tarea que representa “comida” (default)</Label>
             <Input
@@ -253,7 +263,7 @@ export function GeneralProgramSettings() {
               });
             }}
           >
-            Guardar
+            {(draft?.clockMode ?? "auto") === "manual" ? "Guardar y fijar hora" : "Guardar"}
           </button>
         </div>
 

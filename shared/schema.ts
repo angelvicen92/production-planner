@@ -37,6 +37,7 @@ export const programSettings = pgTable("program_settings", {
   itinerantMealBreakMinutes: integer("itinerant_meal_break_minutes").notNull().default(45),
   clockMode: text("clock_mode").notNull().default("auto"),
   simulatedTime: text("simulated_time"),
+  simulatedSetAt: timestamp("simulated_set_at", { withTimezone: true }),
 });
 
 export const planBreaks = pgTable("plan_breaks", {

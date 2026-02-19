@@ -1600,6 +1600,7 @@ function mapDeleteError(err: any, fallback: string) {
           typeof data.simulated_time === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(data.simulated_time)
             ? data.simulated_time
             : null,
+        simulatedSetAt: data.simulated_set_at ? new Date(data.simulated_set_at).toISOString() : null,
       });
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch program settings" });
@@ -1627,6 +1628,14 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.clockMode !== undefined) patch.clock_mode = input.clockMode;
       if (input.simulatedTime !== undefined) patch.simulated_time = input.simulatedTime;
+
+      if (input.clockMode === "manual" && input.simulatedTime) {
+        patch.simulated_set_at = new Date().toISOString();
+      }
+      if (input.clockMode === "auto") {
+        patch.simulated_time = null;
+        patch.simulated_set_at = null;
+      }
 
       const { error } = await supabaseAdmin
         .from("program_settings")
