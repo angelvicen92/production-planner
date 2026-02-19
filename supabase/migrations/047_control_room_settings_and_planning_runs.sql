@@ -1,4 +1,4 @@
--- 046_control_room_settings_and_planning_runs.sql
+-- 047_control_room_settings_and_planning_runs.sql
 
 CREATE TABLE IF NOT EXISTS public.control_room_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
