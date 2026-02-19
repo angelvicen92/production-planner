@@ -1705,119 +1705,149 @@ export function generatePlan(input: EngineInput): EngineOutput {
     candidate.possibleSlots = candidate.viableStarts.length;
   }
 
-  const solveMealsByMaxFlow = (candidates: MealTaskCandidate[]) => {
-    const uniqueStarts = Array.from(new Set(candidates.flatMap((c) => c.viableStarts)))
-      .sort((a, b) => {
-        const ca = countConcurrentMealsFrom(mealIntervals, a, a + contestantMealDuration);
-        const cb = countConcurrentMealsFrom(mealIntervals, b, b + contestantMealDuration);
-        if (ca !== cb) return ca - cb;
-        return a - b;
-      });
-
-    const slotIndexByStart = new Map<number, number>();
-    uniqueStarts.forEach((s, idx) => slotIndexByStart.set(s, idx));
-
+  const solveMealsByBacktracking = (
+    candidates: MealTaskCandidate[],
+    mealIntervalsFixed: Interval[],
+    maxSim: number,
+    duration: number,
+    grid: number,
+  ) => {
     const orderedCandidates = [...candidates].sort((a, b) => {
       if (a.viableStarts.length !== b.viableStarts.length) return a.viableStarts.length - b.viableStarts.length;
       if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
+      if (a.occupancyMinutes !== b.occupancyMinutes) return b.occupancyMinutes - a.occupancyMinutes;
       return a.taskId - b.taskId;
     });
 
-    const nCand = orderedCandidates.length;
-    const nSlots = uniqueStarts.length;
-    const source = 0;
-    const candOffset = 1;
-    const slotOffset = candOffset + nCand;
-    const sink = slotOffset + nSlots;
-    const N = sink + 1;
+    const totalBuckets = Math.max(0, Math.ceil((mealEnd - mealStart) / grid));
+    const occ = Array<number>(totalBuckets).fill(0);
+    const bucketIdx = (t: number) => Math.floor((t - mealStart) / grid);
+    const bucketTime = (idx: number) => mealStart + idx * grid;
 
-    type Edge = { to: number; rev: number; cap: number };
-    const graph: Edge[][] = Array.from({ length: N }, () => []);
-    const addEdge = (u: number, v: number, cap: number) => {
-      const fwd: Edge = { to: v, rev: graph[v].length, cap };
-      const rev: Edge = { to: u, rev: graph[u].length, cap: 0 };
-      graph[u].push(fwd);
-      graph[v].push(rev);
+    const addIntervalToBuckets = (start: number, end: number, delta: number) => {
+      const from = Math.max(start, mealStart);
+      const to = Math.min(end, mealEnd);
+      if (to <= from) return;
+      for (let t = from; t < to; t += grid) {
+        const idx = bucketIdx(t);
+        if (idx < 0 || idx >= totalBuckets) continue;
+        occ[idx] += delta;
+      }
     };
 
-    for (let i = 0; i < nCand; i++) addEdge(source, candOffset + i, 1);
-    for (let i = 0; i < nSlots; i++) addEdge(slotOffset + i, sink, contestantMealMaxSim);
+    for (const it of mealIntervalsFixed) addIntervalToBuckets(it.start, it.end, 1);
 
-    for (let i = 0; i < nCand; i++) {
-      const cand = orderedCandidates[i];
-      const starts = [...cand.viableStarts].sort((a, b) => {
-        const ca = countConcurrentMealsFrom(mealIntervals, a, a + contestantMealDuration);
-        const cb = countConcurrentMealsFrom(mealIntervals, b, b + contestantMealDuration);
-        if (ca !== cb) return ca - cb;
+    for (const cand of orderedCandidates) {
+      const preferredStarts = [...cand.viableStarts].sort((a, b) => {
+        let sumA = 0;
+        let sumB = 0;
+        for (let t = a; t < a + duration; t += grid) {
+          const idx = bucketIdx(t);
+          if (idx >= 0 && idx < totalBuckets) sumA += occ[idx];
+        }
+        for (let t = b; t < b + duration; t += grid) {
+          const idx = bucketIdx(t);
+          if (idx >= 0 && idx < totalBuckets) sumB += occ[idx];
+        }
+        if (sumA !== sumB) return sumA - sumB;
         return a - b;
       });
-      for (const start of starts) {
-        const slotIdx = slotIndexByStart.get(start);
-        if (slotIdx == null) continue;
-        addEdge(candOffset + i, slotOffset + slotIdx, 1);
-      }
+      cand.viableStarts = preferredStarts;
     }
 
-    let flow = 0;
-    while (true) {
-      const prevNode = Array<number>(N).fill(-1);
-      const prevEdge = Array<number>(N).fill(-1);
-      const q: number[] = [source];
-      prevNode[source] = source;
-      for (let qi = 0; qi < q.length; qi++) {
-        const u = q[qi];
-        for (let ei = 0; ei < graph[u].length; ei++) {
-          const e = graph[u][ei];
-          if (e.cap <= 0 || prevNode[e.to] !== -1) continue;
-          prevNode[e.to] = u;
-          prevEdge[e.to] = ei;
-          q.push(e.to);
-          if (e.to === sink) break;
+    const fits = (start: number) => {
+      for (let t = start; t < start + duration; t += grid) {
+        const idx = bucketIdx(t);
+        if (idx < 0 || idx >= totalBuckets) return false;
+        if (occ[idx] + 1 > maxSim) return false;
+      }
+      return true;
+    };
+
+    const applyStart = (start: number) => addIntervalToBuckets(start, start + duration, 1);
+    const undoStart = (start: number) => addIntervalToBuckets(start, start + duration, -1);
+
+    let failingCandidate: MealTaskCandidate | null = null;
+    let failingOccSnapshot: number[] | null = null;
+    const assignments = new Map<number, number>();
+
+    const findCandidateWithNoSlot = (fromIdx: number) => {
+      for (let j = fromIdx; j < orderedCandidates.length; j++) {
+        const candidate = orderedCandidates[j];
+        let hasSome = false;
+        for (const s of candidate.viableStarts) {
+          if (fits(s)) {
+            hasSome = true;
+            break;
+          }
         }
-        if (prevNode[sink] !== -1) break;
+        if (!hasSome) return candidate;
       }
-      if (prevNode[sink] === -1) break;
+      return null;
+    };
 
-      let v = sink;
-      while (v !== source) {
-        const u = prevNode[v];
-        const ei = prevEdge[v];
-        graph[u][ei].cap -= 1;
-        const rev = graph[u][ei].rev;
-        graph[v][rev].cap += 1;
-        v = u;
-      }
-      flow += 1;
-    }
-
-    if (flow < nCand) {
-      const failingCandidate = [...orderedCandidates].sort((a, b) => {
-        if (a.viableStarts.length !== b.viableStarts.length) return a.viableStarts.length - b.viableStarts.length;
-        if (a.windowMinutes !== b.windowMinutes) return a.windowMinutes - b.windowMinutes;
-        return b.occupancyMinutes - a.occupancyMinutes;
-      })[0] ?? null;
-      return { ok: false as const, failingCandidate };
-    }
-
-    const assignments: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
-    for (let i = 0; i < nCand; i++) {
-      const candNode = candOffset + i;
+    const dfs = (i: number): boolean => {
+      if (i >= orderedCandidates.length) return true;
       const cand = orderedCandidates[i];
-      for (const e of graph[candNode]) {
-        if (e.to < slotOffset || e.to >= sink) continue;
-        const slotIdx = e.to - slotOffset;
-        const revCap = graph[e.to][e.rev].cap;
-        if (revCap <= 0) continue;
-        const start = uniqueStarts[slotIdx];
-        assignments.push({ cand, start, end: start + contestantMealDuration });
-        break;
+      for (const start of cand.viableStarts) {
+        if (!fits(start)) continue;
+        assignments.set(cand.taskId, start);
+        applyStart(start);
+
+        const blockedNext = findCandidateWithNoSlot(i + 1);
+        if (!blockedNext) {
+          if (dfs(i + 1)) return true;
+        } else if (!failingCandidate) {
+          failingCandidate = blockedNext;
+          failingOccSnapshot = [...occ];
+        }
+
+        undoStart(start);
+        assignments.delete(cand.taskId);
       }
+
+      if (!failingCandidate) {
+        failingCandidate = cand;
+        failingOccSnapshot = [...occ];
+      }
+      return false;
+    };
+
+    const ok = dfs(0);
+    if (!ok) {
+      const fallbackFailing = orderedCandidates[0] ?? null;
+      return {
+        ok: false as const,
+        failingCandidate: failingCandidate ?? fallbackFailing,
+        occSnapshot: failingOccSnapshot ?? [...occ],
+        blockedBuckets: (failingOccSnapshot ?? occ)
+          .map((v, idx) => ({ idx, v }))
+          .filter((x) => x.v >= maxSim)
+          .slice(0, 5)
+          .map((x) => toHHMM(bucketTime(x.idx))),
+      };
     }
 
-    return { ok: true as const, assignments };
+    const resolved: Array<{ cand: MealTaskCandidate; start: number; end: number }> = [];
+    for (const cand of orderedCandidates) {
+      const start = assignments.get(cand.taskId);
+      if (start == null) continue;
+      resolved.push({ cand, start, end: start + duration });
+    }
+    resolved.sort((a, b) => {
+      if (a.start !== b.start) return a.start - b.start;
+      return a.cand.taskId - b.cand.taskId;
+    });
+    return { ok: true as const, assignments: resolved };
   };
 
-  const mealSolve = solveMealsByMaxFlow(pendingMealCandidates);
+  const mealSolve = solveMealsByBacktracking(
+    pendingMealCandidates,
+    mealIntervals,
+    contestantMealMaxSim,
+    contestantMealDuration,
+    GRID,
+  );
   if (!mealSolve.ok) {
     const failingMealCandidate = mealSolve.failingCandidate;
     const baseDiagnostic = getMealDiagnosticBase(pendingMealCandidates);
@@ -1834,6 +1864,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
             return `${nm} ${toHHMM(it.start)}–${toHHMM(it.end)}`;
           })
       : [];
+    const blockedByCapacity = failingMealCandidate
+      ? (mealSolve.occSnapshot ?? [])
+          .map((v, idx) => ({ v, time: mealStart + idx * GRID }))
+          .filter(({ v, time }) =>
+            v >= contestantMealMaxSim &&
+            time >= failingMealCandidate.windowStart &&
+            time < failingMealCandidate.windowEnd,
+          )
+          .slice(0, 5)
+          .map(({ time }) => toHHMM(time))
+      : ((mealSolve as any)?.blockedBuckets ?? []);
 
     return {
       feasible: false,
@@ -1842,6 +1883,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
         message:
           `No se pudo encajar la comida de "${failingMealCandidate?.contestantName ?? 'concursante'}" (${contestantMealDuration} min) dentro de ${toHHMM(mealStart)}–${toHHMM(mealEnd)} respetando máximo simultáneo (${contestantMealMaxSim}). ` +
           `Motivo principal: ${effectiveWindowReason ? 'ventana efectiva insuficiente' : 'ocupación por tareas fijas/bloqueos'}. ` +
+          (blockedByCapacity.length ? `Capacidad al límite en: ${blockedByCapacity.join(', ')}. ` : '') +
           (blockingFixed.length ? `Bloqueos: ${blockingFixed.join(', ')}. ` : '') +
           `Capacidad teórica: ${baseDiagnostic.mealsNeeded}/${baseDiagnostic.capacityTheoretical}.`,
         taskId: failingMealCandidate?.taskId,
@@ -1851,6 +1893,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
           failingContestantName: failingMealCandidate?.contestantName ?? null,
           viableSlotsCount: failingMealCandidate?.viableStarts.length ?? 0,
           failReason: effectiveWindowReason ? 'effective_window_insufficient' : 'fixed_occupation_or_blocks',
+          blockedByCapacity,
           blockingIntervals: blockingFixed,
         },
       }],
@@ -1877,6 +1920,47 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const lastEnd = lastEndByContestant.get(row.cand.contestantId);
     if (lastEnd == null || row.end > lastEnd) lastEndByContestant.set(row.cand.contestantId, row.end);
   };
+
+  const validateMealSimultaneity = () => {
+    const totalBuckets = Math.max(0, Math.ceil((mealEnd - mealStart) / GRID));
+    const occ = Array<number>(totalBuckets).fill(0);
+    for (const it of mealIntervals) {
+      const from = Math.max(it.start, mealStart);
+      const to = Math.min(it.end, mealEnd);
+      for (let t = from; t < to; t += GRID) {
+        const idx = Math.floor((t - mealStart) / GRID);
+        if (idx < 0 || idx >= totalBuckets) continue;
+        occ[idx] += 1;
+        if (occ[idx] > contestantMealMaxSim) {
+          return {
+            ok: false as const,
+            bucket: t,
+            count: occ[idx],
+          };
+        }
+      }
+    }
+    return { ok: true as const };
+  };
+
+  const mealCapacityValidation = validateMealSimultaneity();
+  if (!mealCapacityValidation.ok) {
+    return {
+      feasible: false,
+      reasons: [{
+        code: 'MEAL_CONTESTANT_NO_FIT',
+        message:
+          `Violación interna de simultaneidad en comidas a las ${toHHMM(mealCapacityValidation.bucket)}: ` +
+          `${mealCapacityValidation.count} > máximo ${contestantMealMaxSim}.`,
+        diagnostic: {
+          failReason: 'post_assignment_capacity_violation',
+          bucket: toHHMM(mealCapacityValidation.bucket),
+          count: mealCapacityValidation.count,
+          maxSimultaneous: contestantMealMaxSim,
+        },
+      }],
+    } as any;
+  }
 
   const pendingNonMeal = (tasksSorted as any[]).filter((task) => {
     if (isMealTask(task) || isResourceBreakTask(task)) return false;
