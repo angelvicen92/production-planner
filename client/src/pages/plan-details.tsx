@@ -1367,6 +1367,9 @@ export default function PlanDetailsPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setLocation(`/plans/${id}/control-room`)}>
+              Control Room
+            </Button>
             <Button
               size="lg"
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"

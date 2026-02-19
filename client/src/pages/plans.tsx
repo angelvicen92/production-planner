@@ -130,12 +130,17 @@ export default function PlansPage() {
                     </div>
                   </div>
                   
-                  <Link href={`/plans/${plan.id}`}>
-                    <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                      Ver detalles
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Link href={`/plans/${plan.id}`}>
+                      <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        Ver detalles
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
+                    <Link href={`/plans/${plan.id}/control-room`}>
+                      <Button variant="outline" className="w-full">Control Room</Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}

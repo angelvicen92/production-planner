@@ -3360,7 +3360,7 @@ function mapDeleteError(err: any, fallback: string) {
         .select("id, lock_type")
         .eq("plan_id", planId)
         .eq("task_id", taskId)
-        .in("lock_type", ["time", "full"])
+        .eq("lock_type", "time")
         .limit(1)
         .maybeSingle();
       if (existingErr) throw existingErr;
@@ -3699,9 +3699,15 @@ function mapDeleteError(err: any, fallback: string) {
             .update({ start_planned: null, end_planned: null })
             .in("id", taskIdsToClear)
             .eq("status", "pending")
-            .eq("is_manual_block", false);
+            .neq("is_manual_block", true);
           if (clearPendingErr) throw clearPendingErr;
         }
+
+        console.info("[GENERATE_PRE_CLEAR]", {
+          planId,
+          pending: pendingTaskIds.length,
+          cleared: taskIdsToClear.length,
+        });
       }
 
       const engineInput = await buildEngineInput(planId, storage);
