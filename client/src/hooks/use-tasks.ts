@@ -133,15 +133,16 @@ export function useUpdateTaskStatus() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ taskId, status }: {
+    mutationFn: ({ taskId, status, effectiveTimeHHMM }: {
       taskId: number;
       planId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
+      effectiveTimeHHMM?: string;
     }) =>
       apiRequest(
         "PATCH",
         buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        { status },
+        { status, ...(effectiveTimeHHMM ? { effectiveTimeHHMM } : {}) },
       ),
     onMutate: async ({ planId, taskId, status }) => {
       const key = planQueryKey(planId);
@@ -188,8 +189,8 @@ export function useResetTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ taskId }: { taskId: number; planId: number }) =>
-      apiRequest("POST", buildUrl(api.dailyTasks.reset.path, { id: taskId })),
+    mutationFn: ({ taskId, effectiveTimeHHMM }: { taskId: number; planId: number; effectiveTimeHHMM?: string }) =>
+      apiRequest("POST", buildUrl(api.dailyTasks.reset.path, { id: taskId }), effectiveTimeHHMM ? { effectiveTimeHHMM } : {}),
     onMutate: async ({ planId, taskId }) => {
       const key = planQueryKey(planId);
       await queryClient.cancelQueries({ queryKey: key });

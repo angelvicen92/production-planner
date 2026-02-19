@@ -103,6 +103,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
+import { useProductionClock } from "@/hooks/use-production-clock";
 
 function ExecutionElapsedTimer({
   status,
@@ -638,6 +639,7 @@ export default function PlanDetailsPage() {
   const generatePlan = useGeneratePlan();
 
   const updatePlan = useUpdatePlan();
+  const { nowTime } = useProductionClock();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -963,6 +965,7 @@ export default function PlanDetailsPage() {
       taskId: Number(task?.id),
       planId: id,
       status,
+      effectiveTimeHHMM: nowTime,
     };
 
     await updateTaskStatus.mutateAsync(payload);
@@ -2032,6 +2035,7 @@ export default function PlanDetailsPage() {
                                         taskId: t.id,
                                         planId: id,
                                         status: next as any,
+                                        effectiveTimeHHMM: nowTime,
                                       });
                                     }}
                                   >
@@ -2524,6 +2528,7 @@ export default function PlanDetailsPage() {
                                       taskId: task.id,
                                       planId: id,
                                       status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
+                                      effectiveTimeHHMM: nowTime,
                                     });
                                   }}
                                 >
@@ -3369,6 +3374,7 @@ export default function PlanDetailsPage() {
                                         taskId: Number(t.id),
                                         planId: id,
                                         status: "in_progress",
+                                        effectiveTimeHHMM: nowTime,
                                       } as any)
                                     }
                                   >
@@ -3386,6 +3392,7 @@ export default function PlanDetailsPage() {
                                         taskId: Number(t.id),
                                         planId: id,
                                         status: "done",
+                                        effectiveTimeHHMM: nowTime,
                                       } as any)
                                     }
                                   >
@@ -3404,6 +3411,7 @@ export default function PlanDetailsPage() {
                                         taskId: Number(t.id),
                                         planId: id,
                                         status: "interrupted",
+                                        effectiveTimeHHMM: nowTime,
                                       } as any)
                                     }
                                   >
@@ -3419,7 +3427,7 @@ export default function PlanDetailsPage() {
                                         ? "¿Resetear? Se borrará inicio real."
                                         : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
                                       if (!window.confirm(msg)) return;
-                                      resetTask.mutate({ taskId: Number(t.id), planId: id });
+                                      resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime });
                                     }}
                                   >
                                     Reset a pendiente

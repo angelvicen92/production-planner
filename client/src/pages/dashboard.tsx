@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ taskId, status }: any) =>
-      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status }),
+      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, effectiveTimeHHMM: nowTime }),
     onSettled: async () => invalidateOpsData(planId),
     onError: () => {
       toast({ title: "No se pudo actualizar", description: "La tarea no cambió de estado.", variant: "destructive" });
@@ -111,7 +111,7 @@ export default function DashboardPage() {
 
 
   const resetTask = useMutation({
-    mutationFn: async ({ taskId }: { taskId: number }) => apiRequest("POST", `/api/tasks/${taskId}/reset`),
+    mutationFn: async ({ taskId, effectiveTimeHHMM }: { taskId: number; effectiveTimeHHMM?: string }) => apiRequest("POST", `/api/tasks/${taskId}/reset`, effectiveTimeHHMM ? { effectiveTimeHHMM } : {}),
     onSettled: async () => invalidateOpsData(planId),
     onError: () => {
       toast({ title: "No se pudo resetear", description: "La tarea no volvió a pendiente.", variant: "destructive" });
@@ -154,7 +154,7 @@ export default function DashboardPage() {
       : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
 
     if (!window.confirm(confirmMessage)) return;
-    resetTask.mutate({ taskId: Number(task.id) });
+    resetTask.mutate({ taskId: Number(task.id), effectiveTimeHHMM: nowTime });
   };
 
   const today = new Date().toISOString().slice(0, 10);

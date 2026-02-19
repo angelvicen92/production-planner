@@ -48,10 +48,11 @@ export interface IStorage {
     taskId: number,
     updates: {
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
+      effectiveTimeHHMM?: string;
     },
     userId: string,
   ): Promise<DailyTask>;
-  resetTask(taskId: number, userId: string): Promise<DailyTask>;
+  resetTask(taskId: number, userId: string, effectiveTimeHHMM?: string): Promise<DailyTask>;
 
   // Templates
   getTaskTemplates(): Promise<TaskTemplate[]>;
@@ -1468,17 +1469,9 @@ export class SupabaseStorage implements IStorage {
       }
     }
 
-    const { data: settings, error: settingsErr } = await supabaseAdmin
-      .from("program_settings")
-      .select("clock_mode,simulated_time")
-      .eq("id", 1)
-      .maybeSingle();
-    if (settingsErr) throw settingsErr;
-
-    const effectiveTime =
-      settings?.clock_mode === "manual" && isValidHHMM(settings?.simulated_time)
-        ? settings.simulated_time
-        : getEuropeMadridTimeHHMM();
+    const effectiveTime = isValidHHMM(updates?.effectiveTimeHHMM)
+      ? updates.effectiveTimeHHMM
+      : getEuropeMadridTimeHHMM();
 
     const nextStartReal =
       updates?.status === "in_progress" && !task.start_real
@@ -1530,7 +1523,7 @@ export class SupabaseStorage implements IStorage {
     return updated as DailyTask;
   }
 
-  async resetTask(taskId: number, userId: string): Promise<DailyTask> {
+  async resetTask(taskId: number, userId: string, effectiveTimeHHMM?: string): Promise<DailyTask> {
     const { data: task, error: fetchError } = await supabaseAdmin
       .from("daily_tasks")
       .select("*")
@@ -1543,13 +1536,61 @@ export class SupabaseStorage implements IStorage {
     const previousStartReal = task.start_real ?? null;
     const previousEndReal = task.end_real ?? null;
 
+    const executionLockReasonPrefix = "Execution lock";
+
+    const { data: taskLocks, error: locksErr } = await supabaseAdmin
+      .from("locks")
+      .select("id, lock_type, reason")
+      .eq("plan_id", Number(task.plan_id))
+      .eq("task_id", taskId)
+      .in("lock_type", ["time", "full"]);
+
+    if (locksErr) throw locksErr;
+
+    const resetFromExecutedStatus = ["in_progress", "done"].includes(previousStatus);
+    const lockIdsToDelete = (taskLocks ?? [])
+      .filter((lock: any) => {
+        const lockType = String(lock?.lock_type ?? "");
+        if (lockType === "time") return true;
+        if (lockType !== "full") return false;
+        const reason = String(lock?.reason ?? "");
+        return reason.startsWith(executionLockReasonPrefix) || resetFromExecutedStatus;
+      })
+      .map((lock: any) => Number(lock?.id))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
+
+    let locksCleared = 0;
+    let clearedExecutionFull = false;
+
+    if (lockIdsToDelete.length > 0) {
+      const { data: deletedLocks, error: delLocksErr } = await supabaseAdmin
+        .from("locks")
+        .delete()
+        .in("id", lockIdsToDelete)
+        .select("id, lock_type, reason");
+      if (delLocksErr) throw delLocksErr;
+      locksCleared = (deletedLocks ?? []).length;
+      clearedExecutionFull = (deletedLocks ?? []).some(
+        (lock: any) =>
+          String(lock?.lock_type ?? "") === "full" &&
+          String(lock?.reason ?? "").startsWith(executionLockReasonPrefix),
+      );
+    }
+
+    const updatePatch: any = {
+      status: "pending",
+      start_real: null,
+      end_real: null,
+    };
+
+    if (resetFromExecutedStatus && task.is_manual_block !== true) {
+      updatePatch.start_planned = null;
+      updatePatch.end_planned = null;
+    }
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("daily_tasks")
-      .update({
-        status: "pending",
-        start_real: null,
-        end_real: null,
-      })
+      .update(updatePatch)
       .eq("id", taskId)
       .select()
       .single();
@@ -1561,7 +1602,7 @@ export class SupabaseStorage implements IStorage {
       task_id: task.id,
       status: "pending",
       changed_by: userId ?? null,
-      time_real: getEuropeMadridTimeHHMM(),
+      time_real: isValidHHMM(effectiveTimeHHMM) ? effectiveTimeHHMM : getEuropeMadridTimeHHMM(),
     });
 
     if (eventErr) throw eventErr;
@@ -1574,6 +1615,14 @@ export class SupabaseStorage implements IStorage {
       previousEndReal,
       userId: userId ?? null,
       timestamp: new Date().toISOString(),
+    });
+
+    console.info("[TASK_RESET_LOCK_CLEANUP]", {
+      taskId: task.id,
+      planId: task.plan_id,
+      locksDeletedCount: locksCleared,
+      clearedExecutionFull,
+      resetFromExecutedStatus,
     });
 
     return updated as DailyTask;
