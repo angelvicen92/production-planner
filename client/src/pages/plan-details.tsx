@@ -2626,7 +2626,18 @@ export default function PlanDetailsPage() {
                       (Opcional) Crear una tarea global sin pasar por la ficha.
                     </p>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Fijas: {timeLockedTaskIds.size}</Badge>
+                      {timeLockedTaskIds.size > 0 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="secondary">Locks (time): {timeLockedTaskIds.size}</Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Hay tareas con time-lock guardado en el plan.
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Badge variant="secondary">Locks (time): {timeLockedTaskIds.size}</Badge>
+                      )}
                       <Button
                         variant={showLockedOnly ? "default" : "outline"}
                         size="sm"
