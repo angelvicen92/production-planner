@@ -246,6 +246,10 @@ function TaskStatusMenuTrigger({
             <button
               type="button"
               className="absolute right-1 top-1 z-20 h-5 w-5 rounded bg-background/70 text-xs leading-none hover:bg-background"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -402,7 +406,7 @@ function TaskStatusMenuTrigger({
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
   const [manualMove, setManualMove] = useState<null | { taskId: number; laneId: string }>(null);
-  const manualMoveStartRef = useRef<number | null>(null);
+  const [manualMoveStart, setManualMoveStart] = useState<number | null>(null);
   const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
@@ -416,7 +420,7 @@ function TaskStatusMenuTrigger({
   const startManualMove = (task: Task, laneId: string) => {
     if (!manualMode || !canSelectManualTask(task)) return;
     const edit = pendingManualEdits[Number(task.id)];
-    manualMoveStartRef.current = timeToMinutes(edit?.start ?? task.startPlanned ?? workStart ?? "09:00");
+    setManualMoveStart(timeToMinutes(edit?.start ?? task.startPlanned ?? workStart ?? "09:00"));
     setManualMove({ taskId: Number(task.id), laneId: String(laneId) });
   };
 
@@ -520,18 +524,18 @@ function TaskStatusMenuTrigger({
     const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
     const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;
     const rawStart = startMin + ratio * duration;
-    manualMoveStartRef.current = Math.round(rawStart / 5) * 5;
+    setManualMoveStart(Math.round(rawStart / 5) * 5);
   };
 
   const applyManualMoveDrop = (laneTasks: Task[]) => {
-    if (!manualMode || isApplying || !manualMove || manualMoveStartRef.current === null) return;
+    if (!manualMode || isApplying || !manualMove || manualMoveStart === null) return;
     const selectedTask = laneTasks.find((t) => Number(t.id) === Number(manualMove.taskId));
     if (!selectedTask || !canSelectManualTask(selectedTask)) return;
 
     const { nextEdits, shiftedIds, clampedStart } = applyCascadeMove({
       laneTasks,
       movedTask: selectedTask,
-      nextStart: manualMoveStartRef.current,
+      nextStart: manualMoveStart,
     });
 
     shiftedTaskIdsRef.current = shiftedIds;
@@ -564,7 +568,7 @@ function TaskStatusMenuTrigger({
     }
 
     setManualMove(null);
-    manualMoveStartRef.current = null;
+    setManualMoveStart(null);
   };
 
   // =========================
@@ -1670,7 +1674,7 @@ function TaskStatusMenuTrigger({
                                                 canPinTimeLock={canPinTask(task)}
                                                 onPinTask={onPinTask}
                                                 onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId={String(sp.id)}
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
@@ -1765,7 +1769,7 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId="unlocated"
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
@@ -1948,7 +1952,7 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId={String(sp.id)}
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
@@ -2024,7 +2028,7 @@ function TaskStatusMenuTrigger({
                                       canPinTimeLock={canPinTask(task)}
                                       onPinTask={onPinTask}
                                       onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId="unlocated"
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
@@ -2180,7 +2184,7 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId={String(resourceKey)}
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
@@ -2269,7 +2273,7 @@ function TaskStatusMenuTrigger({
                         return;
                       }
                       setManualMode(next);
-                      if (!next) { setManualMove(null); manualMoveStartRef.current = null; }
+                      if (!next) { setManualMove(null); setManualMoveStart(null); }
                     }}
                     disabled={isApplying}
                   />
@@ -2318,14 +2322,14 @@ function TaskStatusMenuTrigger({
                     <Button size="sm" variant="outline" disabled={isApplying} onClick={async () => {
                       setPendingManualEdits({});
                       setManualMove(null);
-                      manualMoveStartRef.current = null;
+                      setManualMoveStart(null);
                       await onCancelManualEdits?.();
                     }}>Cancelar cambios</Button>
                     <Button size="sm" variant="secondary" disabled={isApplying} onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
                     {manualMove !== null ? (
                       <div className="rounded border bg-background px-2 py-1 text-xs">
                         Moviendo: {taskById.get(Number(manualMove.taskId))?.template?.name ?? `#${manualMove.taskId}`} — click para soltar
-                        <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={() => { setManualMove(null); manualMoveStartRef.current = null; }}>Cancelar</Button>
+                        <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={() => { setManualMove(null); setManualMoveStart(null); }}>Cancelar</Button>
                       </div>
                     ) : null}
                   </div>
@@ -2350,7 +2354,7 @@ function TaskStatusMenuTrigger({
                           if (validation) setValidationResult(validation);
                           setPendingManualEdits({});
                           setManualMove(null);
-                      manualMoveStartRef.current = null;
+                      setManualMoveStart(null);
                           setManualMode(false);
                           setManualExitDialogOpen(false);
                         } finally {
@@ -2367,7 +2371,7 @@ function TaskStatusMenuTrigger({
                       onClick={async () => {
                         setPendingManualEdits({});
                         setManualMove(null);
-                      manualMoveStartRef.current = null;
+                      setManualMoveStart(null);
                         shiftedTaskIdsRef.current = [];
                         lastManualEditedPrimaryTaskIdRef.current = null;
                         await onCancelManualEdits?.();
@@ -2479,10 +2483,13 @@ function TaskStatusMenuTrigger({
                     })()}
                   </div>
                   <div
-                    className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}
+                    className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20", manualMove ? "cursor-grabbing" : undefined)}
                     onMouseMove={handleManualMoveMouse}
-                    onMouseDown={() => {
-                      if (manualMove && lane.tasks.some((t) => Number(t.id) === Number(manualMove.taskId))) {
+                    onMouseDown={(event) => {
+                      if (!manualMove) return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (lane.tasks.some((t) => Number(t.id) === Number(manualMove.taskId))) {
                         applyManualMoveDrop(lane.tasks);
                       }
                     }}
@@ -2534,8 +2541,8 @@ function TaskStatusMenuTrigger({
                     {/* Tasks */}
                     {lane.tasks.map((task) => {
                       if (!task.startPlanned || !task.endPlanned) return null;
-                      const tStart = manualMove?.taskId === Number(task.id) && manualMoveStartRef.current !== null
-                        ? manualMoveStartRef.current
+                      const tStart = manualMove?.taskId === Number(task.id) && manualMoveStart !== null
+                        ? manualMoveStart
                         : timeToMinutes(task.startPlanned);
                       const tEnd = timeToMinutes(task.endPlanned);
                       const tDur = tEnd - tStart;
@@ -2553,7 +2560,7 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
-                            laneId={String((task as any).spaceId ?? (task as any).contestantId ?? (task as any).zoneId ?? task.id)}
+                            laneId={String(id)}
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
