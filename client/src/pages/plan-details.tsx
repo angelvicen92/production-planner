@@ -111,6 +111,34 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 
+const HHMM_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function hasValidHHMM(value: unknown): boolean {
+  return typeof value === "string" && HHMM_REGEX.test(value.trim());
+}
+
+function isTaskPlanned(task: any): boolean {
+  const start = task?.startPlanned ?? task?.start_planned;
+  const end = task?.endPlanned ?? task?.end_planned;
+  return hasValidHHMM(start) && hasValidHHMM(end);
+}
+
+function computePlanningProgress(tasks: any[], capAt99: boolean) {
+  const pendingTasks = tasks.filter(
+    (task: any) => String(task?.status ?? "pending") === "pending",
+  );
+  const totalCount = pendingTasks.length;
+  const plannedCount = pendingTasks.filter((task: any) => isTaskPlanned(task)).length;
+  const percentage =
+    totalCount > 0 ? Math.floor((plannedCount / totalCount) * 100) : 0;
+
+  return {
+    totalCount,
+    plannedCount,
+    percentage: capAt99 ? Math.min(99, percentage) : Math.min(100, percentage),
+  };
+}
+
 function ExecutionElapsedTimer({
   status,
   startReal,
@@ -866,7 +894,7 @@ export default function PlanDetailsPage() {
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
   const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(null);
-  const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
+  const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0 });
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
@@ -1107,26 +1135,48 @@ export default function PlanDetailsPage() {
       }
     }
 
-    const total = Math.max(1, Number(run.totalPending ?? 0));
-    const planned = Math.max(0, Number(run.plannedCount ?? 0));
-    setPlanningProgress({
-      plannedCount: planned,
-      totalCount: total,
-      percentage: Math.min(100, Math.round((planned / total) * 100)),
-      indeterminate: run.status !== "running",
-    });
-
     if (expectedPlanningRunId == null) return;
     if (Number(run.id) !== Number(expectedPlanningRunId)) return;
 
     if (run.status !== "running") {
+      const finalProgress = computePlanningProgress((plan?.dailyTasks ?? []) as any[], false);
+      setPlanningProgress(finalProgress);
       setPlanningInProgress(false);
       setExpectedPlanningRunId(null);
+
+      const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
+      toast({
+        title:
+          finalProgress.percentage === 100
+            ? "Planificación completa (100%)"
+            : `Planificación parcial (${finalProgress.percentage}%)`,
+        description:
+          finalProgress.percentage === 100
+            ? `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas.`
+            : `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas · ${unplannedCount} sin planificar.`,
+      });
+
       if (run.status === "infeasible") {
         setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [] });
       }
     }
-  }, [planningRunQ.data, expectedPlanningRunId]);
+  }, [planningRunQ.data, expectedPlanningRunId, plan?.dailyTasks, toast]);
+
+  useEffect(() => {
+    if (!planningInProgress) return;
+
+    const updateProgress = () => {
+      const progress = computePlanningProgress((plan?.dailyTasks ?? []) as any[], true);
+      setPlanningProgress(progress);
+    };
+
+    updateProgress();
+    const timer = window.setInterval(updateProgress, 400);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [planningInProgress, plan?.dailyTasks]);
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
@@ -1320,7 +1370,7 @@ export default function PlanDetailsPage() {
   const handleGenerate = () => {
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
-    setPlanningProgress({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
+    setPlanningProgress(computePlanningProgress((plan?.dailyTasks ?? []) as any[], true));
 
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
@@ -3626,14 +3676,14 @@ export default function PlanDetailsPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Planificando…
+                Planificando… {planningProgress.percentage}%
               </DialogTitle>
               <DialogDescription>
-                {planningProgress.indeterminate ? "Calculando avance…" : `${planningProgress.plannedCount} / ${planningProgress.totalCount} tareas`}
+                {planningProgress.plannedCount} / {planningProgress.totalCount} tareas planificadas
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <Progress value={planningProgress.indeterminate ? 35 : planningProgress.percentage} className={cn("h-2", planningProgress.indeterminate ? "animate-pulse" : "")} />
+              <Progress value={planningProgress.percentage} className="h-2" />
               <p className="text-xs text-muted-foreground">
                 {planningRunQ.data?.phase === "clearing_pending"
                   ? "Limpiando pendientes"
