@@ -58,6 +58,22 @@ export const errorSchemas = {
 };
 
 export const api = {
+  controlRoomSettings: {
+    get: {
+      method: "GET" as const,
+      path: "/api/control-room-settings",
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/control-room-settings",
+    },
+  },
+  planningRuns: {
+    latestByPlan: {
+      method: "GET" as const,
+      path: "/api/plans/:id/planning-runs/latest",
+    },
+  },
   // Staff catalog (Producción / Redacción)
   staffPeople: {
     list: {

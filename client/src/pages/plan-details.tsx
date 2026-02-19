@@ -109,6 +109,7 @@ import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { usePlanningRun } from "@/hooks/use-planning-run";
 
 function ExecutionElapsedTimer({
   status,
@@ -644,6 +645,7 @@ export default function PlanDetailsPage() {
   const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
 
   const generatePlan = useGeneratePlan();
+  const planningRunQ = usePlanningRun(id);
 
   const updatePlan = useUpdatePlan();
   const { nowTime, nowSeconds } = useProductionClock();
@@ -864,7 +866,6 @@ export default function PlanDetailsPage() {
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
-  const [lastGenerateResult, setLastGenerateResult] = useState<any | null>(null);
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
@@ -1095,16 +1096,6 @@ export default function PlanDetailsPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!Number.isFinite(id) || id <= 0) return;
-    try {
-      const raw = window.sessionStorage.getItem(`planning:lastResult:${id}`);
-      setLastGenerateResult(raw ? JSON.parse(raw) : null);
-    } catch {
-      setLastGenerateResult(null);
-    }
-  }, [id]);
-
-  useEffect(() => {
     if (!planningInProgress || !id) return;
 
     const tick = async () => {
@@ -1131,6 +1122,26 @@ export default function PlanDetailsPage() {
     return () => window.clearInterval(timer);
   }, [planningInProgress, id, queryClient]);
 
+  useEffect(() => {
+    const run = planningRunQ.data;
+    if (!run) return;
+    if (run.status === "running") {
+      setPlanningInProgress(true);
+      const total = Math.max(1, Number(run.totalPending ?? 0));
+      const planned = Math.max(0, Number(run.plannedCount ?? 0));
+      setPlanningProgress({
+        plannedCount: planned,
+        totalCount: total,
+        percentage: Math.min(100, Math.round((planned / total) * 100)),
+        indeterminate: false,
+      });
+      return;
+    }
+    if (planningInProgress) {
+      setPlanningInProgress(false);
+    }
+  }, [planningRunQ.data, planningInProgress]);
+
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
       (t: any) => String(t?.status ?? "pending") === "pending" && (!t?.startPlanned || !t?.endPlanned),
@@ -1139,14 +1150,14 @@ export default function PlanDetailsPage() {
 
   const reasonsByTaskId = useMemo(() => {
     const map = new Map<number, string>();
-    const reasons = Array.isArray(lastGenerateResult?.reasons) ? lastGenerateResult.reasons : [];
+    const reasons = Array.isArray(planningRunQ.data?.lastReasons) ? planningRunQ.data?.lastReasons : [];
     for (const reason of reasons) {
       const taskId = Number(reason?.taskId ?? reason?.task_id);
       if (!Number.isFinite(taskId) || map.has(taskId)) continue;
       map.set(taskId, formatInfeasibleReason(reason));
     }
     return map;
-  }, [lastGenerateResult, formatInfeasibleReason]);
+  }, [planningRunQ.data?.lastReasons, formatInfeasibleReason]);
 
   const openTaskFromUnplanned = (task: any) => {
     const tid = Number(task?.id);
@@ -1327,11 +1338,6 @@ export default function PlanDetailsPage() {
     generatePlan.mutate(id, {
       onSuccess: (data: any) => {
         setPlanningInProgress(false);
-        setLastGenerateResult(data ?? null);
-        try {
-          window.sessionStorage.setItem(`planning:lastResult:${id}`, JSON.stringify(data ?? null));
-        } catch {}
-
         const warnings = data?.warnings ?? [];
         if (Array.isArray(warnings) && warnings.length > 0) {
           setConfigDialog({ open: true, reasons: warnings });
