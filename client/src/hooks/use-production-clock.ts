@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
@@ -6,14 +6,8 @@ import { apiRequest } from "@/lib/api";
 type ProgramSettingsClock = {
   clockMode?: "auto" | "manual";
   simulatedTime?: string | null;
+  simulatedSetAt?: string | null;
 };
-
-type ManualClockSnapshot = {
-  manualBaseHHMM: string;
-  manualSetAtMs: number;
-};
-
-const MANUAL_CLOCK_STORAGE_KEY = "production-clock-manual-state";
 
 function toHHMM(date: Date): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -33,39 +27,6 @@ function isValidHHMM(value: unknown): value is string {
   return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
 }
 
-function parseStoredManualSnapshot(): ManualClockSnapshot | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(MANUAL_CLOCK_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<ManualClockSnapshot>;
-    if (!isValidHHMM(parsed.manualBaseHHMM) || !Number.isFinite(parsed.manualSetAtMs)) {
-      return null;
-    }
-    return {
-      manualBaseHHMM: parsed.manualBaseHHMM,
-      manualSetAtMs: Number(parsed.manualSetAtMs),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function persistManualSnapshot(snapshot: ManualClockSnapshot | null) {
-  if (typeof window === "undefined") return;
-
-  try {
-    if (!snapshot) {
-      window.localStorage.removeItem(MANUAL_CLOCK_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(MANUAL_CLOCK_STORAGE_KEY, JSON.stringify(snapshot));
-  } catch {
-    // no-op
-  }
-}
-
 function manualBaseDateFromHHMM(hhmm: string): Date {
   const [h, m] = hhmm.split(":").map((value) => Number(value));
   const base = new Date();
@@ -81,56 +42,23 @@ export function useProductionClock() {
 
   const mode = data?.clockMode === "manual" ? "manual" : "auto";
   const simulatedTime = isValidHHMM(data?.simulatedTime) ? data?.simulatedTime : null;
+  const simulatedSetAt = typeof data?.simulatedSetAt === "string" ? Date.parse(data.simulatedSetAt) : NaN;
   const [tickMs, setTickMs] = useState<number>(() => Date.now());
-  const [manualSnapshot, setManualSnapshot] = useState<ManualClockSnapshot | null>(() => parseStoredManualSnapshot());
 
   useEffect(() => {
     const id = window.setInterval(() => setTickMs(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (mode !== "manual" || !simulatedTime) {
-      setManualSnapshot(null);
-      persistManualSnapshot(null);
-      return;
-    }
-
-    setManualSnapshot((current) => {
-      if (current?.manualBaseHHMM === simulatedTime) return current;
-      const next = {
-        manualBaseHHMM: simulatedTime,
-        manualSetAtMs: Date.now(),
-      };
-      persistManualSnapshot(next);
-      return next;
-    });
-  }, [mode, simulatedTime]);
-
-  const setManualNow = useCallback((hhmm: string) => {
-    if (!isValidHHMM(hhmm)) return;
-    const next = {
-      manualBaseHHMM: hhmm,
-      manualSetAtMs: Date.now(),
-    };
-    setManualSnapshot(next);
-    persistManualSnapshot(next);
-  }, []);
-
-  const clearManualNow = useCallback(() => {
-    setManualSnapshot(null);
-    persistManualSnapshot(null);
-  }, []);
-
   const effectiveNow = useMemo(() => {
-    if (mode !== "manual" || !manualSnapshot) {
+    if (mode !== "manual" || !simulatedTime || !Number.isFinite(simulatedSetAt)) {
       return new Date(tickMs);
     }
 
-    const manualBaseDate = manualBaseDateFromHHMM(manualSnapshot.manualBaseHHMM);
-    const deltaMs = tickMs - manualSnapshot.manualSetAtMs;
+    const manualBaseDate = manualBaseDateFromHHMM(simulatedTime);
+    const deltaMs = tickMs - simulatedSetAt;
     return new Date(manualBaseDate.getTime() + Math.max(0, deltaMs));
-  }, [mode, manualSnapshot, tickMs]);
+  }, [mode, simulatedTime, simulatedSetAt, tickMs]);
 
   const nowTime = toHHMM(effectiveNow);
   const nowSeconds = toSeconds(effectiveNow);
@@ -142,8 +70,6 @@ export function useProductionClock() {
     mode,
     isManual: mode === "manual",
     simulatedTime,
-    setManualNow,
-    clearManualNow,
     isLoading,
     error,
   };
