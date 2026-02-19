@@ -14,6 +14,7 @@ import {
   Play,
   Loader2,
   AlertTriangle,
+  AlertCircle,
   LayoutList,
   GanttChartSquare,
   ChevronDown,
@@ -107,6 +108,7 @@ import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 function ExecutionElapsedTimer({
   status,
@@ -857,6 +859,12 @@ export default function PlanDetailsPage() {
     "tasks" | "planning" | "resources" | "execution"
   >("tasks");
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
+  const [unplannedDialogOpen, setUnplannedDialogOpen] = useState(false);
+  const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
+  const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
+  const [planningInProgress, setPlanningInProgress] = useState(false);
+  const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
+  const [lastGenerateResult, setLastGenerateResult] = useState<any | null>(null);
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
@@ -1086,6 +1094,79 @@ export default function PlanDetailsPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!Number.isFinite(id) || id <= 0) return;
+    try {
+      const raw = window.sessionStorage.getItem(`planning:lastResult:${id}`);
+      setLastGenerateResult(raw ? JSON.parse(raw) : null);
+    } catch {
+      setLastGenerateResult(null);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!planningInProgress || !id) return;
+
+    const tick = async () => {
+      try {
+        const freshPlan = await queryClient.fetchQuery({ queryKey: planQueryKey(id), staleTime: 0 });
+        const tasks = (freshPlan as any)?.dailyTasks ?? [];
+        const plannedCount = tasks.filter((t: any) => Boolean(t?.startPlanned || t?.start_planned)).length;
+        const totalPending = tasks.filter((t: any) => String(t?.status ?? "pending") === "pending").length;
+        const totalCount = totalPending > 0 ? totalPending : Math.max(tasks.length, 1);
+        const percentage = Math.min(100, Math.round((plannedCount / totalCount) * 100));
+        setPlanningProgress((prev) => ({
+          plannedCount,
+          totalCount,
+          percentage,
+          indeterminate: prev.plannedCount === plannedCount,
+        }));
+      } catch {
+        setPlanningProgress((prev) => ({ ...prev, indeterminate: true }));
+      }
+    };
+
+    tick();
+    const timer = window.setInterval(tick, 700);
+    return () => window.clearInterval(timer);
+  }, [planningInProgress, id, queryClient]);
+
+  const unplannedTasks = useMemo(() => {
+    return (plan?.dailyTasks ?? []).filter(
+      (t: any) => String(t?.status ?? "pending") === "pending" && (!t?.startPlanned || !t?.endPlanned),
+    );
+  }, [plan?.dailyTasks]);
+
+  const reasonsByTaskId = useMemo(() => {
+    const map = new Map<number, string>();
+    const reasons = Array.isArray(lastGenerateResult?.reasons) ? lastGenerateResult.reasons : [];
+    for (const reason of reasons) {
+      const taskId = Number(reason?.taskId ?? reason?.task_id);
+      if (!Number.isFinite(taskId) || map.has(taskId)) continue;
+      map.set(taskId, formatInfeasibleReason(reason));
+    }
+    return map;
+  }, [lastGenerateResult, formatInfeasibleReason]);
+
+  const openTaskFromUnplanned = (task: any) => {
+    const tid = Number(task?.id);
+    const contestantId = Number(task?.contestantId ?? task?.contestant_id);
+    setUnplannedFocusTaskId(Number.isFinite(tid) ? tid : null);
+    setUnplannedDialogOpen(false);
+    setActiveTab("tasks");
+    setTasksShowUnplannedOnly(false);
+
+    const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
+    if (!contestant) return;
+    setSelectedContestant(contestant);
+    setHighlightTaskId(tid);
+
+    window.setTimeout(() => {
+      const el = document.querySelector(`[data-task-id="${tid}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 280);
+  };
+
   function coachLabelFor(vocalCoachPlanResourceItemId: any) {
     const idNum = Number(vocalCoachPlanResourceItemId);
     if (!Number.isFinite(idNum) || idNum <= 0) return "Sin coach";
@@ -1240,15 +1321,25 @@ export default function PlanDetailsPage() {
   };
 
   const handleGenerate = () => {
+    setPlanningInProgress(true);
+    setPlanningProgress({ plannedCount: 0, totalCount: 0, percentage: 0, indeterminate: true });
+
     generatePlan.mutate(id, {
       onSuccess: (data: any) => {
+        setPlanningInProgress(false);
+        setLastGenerateResult(data ?? null);
+        try {
+          window.sessionStorage.setItem(`planning:lastResult:${id}`, JSON.stringify(data ?? null));
+        } catch {}
+
         const warnings = data?.warnings ?? [];
         if (Array.isArray(warnings) && warnings.length > 0) {
           setConfigDialog({ open: true, reasons: warnings });
         }
       },
       onError: (err: any) => {
-        if (err.reasons) {
+        setPlanningInProgress(false);
+        if (err?.reasons) {
           setErrorDialog({ open: true, reasons: err.reasons });
         }
       },
@@ -1303,6 +1394,7 @@ export default function PlanDetailsPage() {
 
     // 5) Abre la ficha (modal) del concursante
     setSelectedContestant(contestant);
+    setHighlightTaskId(tid);
 
     // 6) Espera a que el modal renderice y resalta la fila de la tarea
     setTimeout(() => {
@@ -1367,9 +1459,6 @@ export default function PlanDetailsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setLocation(`/plans/${id}/control-room`)}>
-              Control Room
-            </Button>
             <Button
               size="lg"
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
@@ -2031,9 +2120,12 @@ export default function PlanDetailsPage() {
                             )
                             // Daily tasks asignadas
                             .map((t: any) => (
-                              <TableRow key={t.id} data-ta={t.id}>
+                              <TableRow key={t.id} data-ta={t.id} data-task-id={t.id} className={highlightTaskId === Number(t.id) ? "border-red-300 bg-red-50/60" : undefined}>
                                 <TableCell className="font-medium">
                                   <div className="flex items-center gap-2">
+                                    {highlightTaskId === Number(t.id) ? (
+                                      <AlertCircle className="h-4 w-4 text-red-600" aria-label="Tarea resaltada" />
+                                    ) : null}
                                     {isMissingSpace(t) && (
                                       <span
                                         className="text-destructive"
@@ -3019,19 +3111,9 @@ export default function PlanDetailsPage() {
                     size="sm"
                     className="bg-amber-50/60"
                     title="Tareas pending sin inicio/fin planificado"
-                    onClick={() => {
-                      setActiveTab("tasks");
-                      setTasksShowUnplannedOnly(true);
-                    }}
+                    onClick={() => setUnplannedDialogOpen(true)}
                   >
-                    Pendientes sin planificar:{" "}
-                    {
-                      (plan.dailyTasks ?? []).filter(
-                        (t: any) =>
-                          String(t?.status ?? "pending") === "pending" &&
-                          (!t?.startPlanned || !t?.endPlanned),
-                      ).length
-                    }
+                    Pendientes sin planificar: {unplannedTasks.length}
                   </Button>
                 </div>
               </div>
@@ -3443,6 +3525,61 @@ export default function PlanDetailsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={unplannedDialogOpen} onOpenChange={setUnplannedDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Pendientes sin planificar</DialogTitle>
+              <DialogDescription>
+                Tareas pendientes sin franja horaria planificada.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[60vh] overflow-auto">
+              {unplannedTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hay tareas pendientes sin planificar.</p>
+              ) : (
+                unplannedTasks.map((task: any) => {
+                  const contestantId = Number(task?.contestantId ?? task?.contestant_id);
+                  const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
+                  const taskId = Number(task?.id);
+                  const reason = reasonsByTaskId.get(taskId) || "Sin detalle (replanifica para ver motivos).";
+                  return (
+                    <div key={taskId} className={cn("rounded-md border p-3", unplannedFocusTaskId === taskId ? "border-red-300" : "") }>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="font-medium">{task?.template?.name || `Template #${task?.templateId}`}</div>
+                          <div className="text-sm text-muted-foreground">{contestant?.name || `Concursante #${contestantId}`}</div>
+                          <div className="text-xs text-muted-foreground">Motivo: {reason}</div>
+                        </div>
+                        <Button type="button" size="sm" onClick={() => openTaskFromUnplanned(task)}>
+                          Ir
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={planningInProgress} onOpenChange={() => {}}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Planificando…
+              </DialogTitle>
+              <DialogDescription>
+                {planningProgress.indeterminate ? "Calculando avance…" : `${planningProgress.plannedCount} / ${planningProgress.totalCount} tareas`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Progress value={planningProgress.indeterminate ? 35 : planningProgress.percentage} className={cn("h-2", planningProgress.indeterminate ? "animate-pulse" : "")} />
+              <p className="text-xs text-muted-foreground">El proceso se cerrará automáticamente al terminar.</p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="sm:max-w-lg">

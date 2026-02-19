@@ -5,6 +5,7 @@ import {
   GanttChartSquare,
   FileText,
   ShieldAlert,
+  Monitor,
   Settings, 
   LogOut,
   Menu,
@@ -55,6 +56,7 @@ export function Layout({ children }: LayoutProps) {
     { name: "Timeline", href: "/timeline", icon: GanttChartSquare },
     { name: "Call Sheet", href: "/call-sheet", icon: FileText },
     { name: "War Room", href: "/war-room", icon: ShieldAlert },
+    { name: "Control Room", href: "/control-room", icon: Monitor },
     ...(role === "admin" ? [{ name: "Settings", href: "/settings", icon: Settings }] : []),
   ];
 

@@ -137,9 +137,6 @@ export default function PlansPage() {
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
-                    <Link href={`/plans/${plan.id}/control-room`}>
-                      <Button variant="outline" className="w-full">Control Room</Button>
-                    </Link>
                   </div>
                 </CardContent>
               </Card>

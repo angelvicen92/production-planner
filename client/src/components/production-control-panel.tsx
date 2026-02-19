@@ -1,5 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertTriangle, ArrowDown, Pause, Play, TrendingDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type TaskLike = any;
 
@@ -15,6 +18,10 @@ type ZoneSummary = {
   idleMin: number;
   deviationAvgMin: number;
   alerts: string[];
+  statusLevel: "ok" | "active" | "warning" | "danger";
+  hasUnexpectedIdle: boolean;
+  delayedInProgress: boolean;
+  nextStartsSoon: boolean;
 };
 
 function parseHHMMToMinutes(value?: string | null): number | null {
@@ -176,7 +183,31 @@ export function ProductionControlPanel({
       nextStartsSoon ? "Próxima en breve" : null,
     ].filter((v): v is string => Boolean(v));
 
-    return { zoneId: group.zoneId, zoneName: group.zoneName, currentTasks, lastDone, nextPlanned, workedMin, plannedWorkMin, windowMin, idleMin, deviationAvgMin, alerts };
+    const statusLevel: ZoneSummary["statusLevel"] = delayedInProgress
+      ? "danger"
+      : currentTasks.length > 0
+        ? "active"
+        : hasUnexpectedIdle
+          ? "warning"
+          : "ok";
+
+    return {
+      zoneId: group.zoneId,
+      zoneName: group.zoneName,
+      currentTasks,
+      lastDone,
+      nextPlanned,
+      workedMin,
+      plannedWorkMin,
+      windowMin,
+      idleMin,
+      deviationAvgMin,
+      alerts,
+      statusLevel,
+      hasUnexpectedIdle,
+      delayedInProgress,
+      nextStartsSoon,
+    };
   });
 
   const activeZones = zoneSummaries.filter((z) => z.currentTasks.length > 0).length;
@@ -221,11 +252,25 @@ export function ProductionControlPanel({
             : 0;
 
           return (
-            <Card key={`${zone.zoneId ?? "none"}-${zone.zoneName}`}>
+            <Card key={`${zone.zoneId ?? "none"}-${zone.zoneName}`} className={cn(
+                zone.statusLevel === "active" && "border-green-500/40 bg-green-500/5",
+                zone.statusLevel === "warning" && "border-amber-500/40 bg-amber-500/5",
+                zone.statusLevel === "danger" && "border-red-500/40 bg-red-500/5",
+              )}>
               <CardHeader>
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle>{zone.zoneName}</CardTitle>
-                  <Badge variant={zone.currentTasks.length ? "default" : "secondary"}>{zone.currentTasks.length ? "Activo" : "Parado"}</Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant={zone.currentTasks.length ? "default" : "secondary"} aria-label={zone.currentTasks.length ? "Plató activo" : "Plató parado"}>
+                          {zone.currentTasks.length ? <Play className="mr-1 h-3 w-3 text-green-600" /> : <Pause className="mr-1 h-3 w-3 text-muted-foreground" />}
+                          {zone.currentTasks.length ? "Activo" : "Parado"}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>{zone.currentTasks.length ? "Hay tareas en ejecución" : "Sin tareas en ejecución"}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -268,7 +313,18 @@ export function ProductionControlPanel({
 
                 {zone.alerts.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {zone.alerts.map((alert) => <Badge key={alert} variant="destructive">{alert}</Badge>)}
+                    {zone.delayedInProgress ? (
+                      <Badge variant="destructive" className="flex items-center gap-1" aria-label="Retraso detectado">
+                        <TrendingDown className="h-3 w-3 text-red-200" />
+                        <ArrowDown className="h-3 w-3 text-red-200" /> Retraso
+                      </Badge>
+                    ) : null}
+                    {zone.hasUnexpectedIdle ? (
+                      <Badge variant="outline" className="border-amber-500/40 text-amber-700" aria-label="Idle inesperado">
+                        <AlertTriangle className="mr-1 h-3 w-3 text-amber-600" /> Idle inesperado
+                      </Badge>
+                    ) : null}
+                    {zone.nextStartsSoon ? <Badge className="bg-blue-500 hover:bg-blue-500" aria-label="Próxima tarea en breve">Próxima en breve</Badge> : null}
                   </div>
                 ) : null}
               </CardContent>
