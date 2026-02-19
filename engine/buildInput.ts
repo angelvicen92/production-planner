@@ -395,6 +395,11 @@ export async function buildEngineInput(
         optimizer?.heuristics?.contestantStayInZone,
         optimizer?.contestantStayInZoneLevel,
       ),
+      contestantTotalSpan: resolveWeight(
+        optimizer?.optimizationMode,
+        optimizer?.heuristics?.contestantTotalSpan,
+        optimizer?.contestantTotalSpanLevel,
+      ),
     },
 
           tasks: [

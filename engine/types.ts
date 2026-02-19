@@ -173,7 +173,8 @@ export interface EngineInput {
     | "contestantCompact"
     | "groupBySpaceTemplateMatch"
     | "groupBySpaceActive"
-    | "contestantStayInZone",
+    | "contestantStayInZone"
+    | "contestantTotalSpan",
     number
   >>;
 

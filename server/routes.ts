@@ -1716,6 +1716,7 @@ function mapDeleteError(err: any, fallback: string) {
 
         // ✅ compactar concursantes
         contestantCompactLevel: settings.contestantCompactLevel,
+        contestantTotalSpanLevel: settings.contestantTotalSpanLevel,
       });
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch optimizer settings" });
@@ -1746,6 +1747,7 @@ function mapDeleteError(err: any, fallback: string) {
       const hzGroupingActive = normalizeHeuristicPatch("groupBySpaceActive");
       const hzCompact = normalizeHeuristicPatch("contestantCompact");
       const hzStayInZone = normalizeHeuristicPatch("contestantStayInZone");
+      const hzTotalSpan = normalizeHeuristicPatch("contestantTotalSpan");
 
       // niveles nuevos
       if (input.mainZonePriorityLevel !== undefined) {
@@ -1762,6 +1764,10 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.contestantStayInZoneLevel !== undefined) {
         patch.contestant_stay_in_zone_level = Math.max(0, Math.min(3, Number(input.contestantStayInZoneLevel)));
+      }
+
+      if (input.contestantTotalSpanLevel !== undefined) {
+        patch.contestant_total_span_level = Math.max(0, Math.min(3, Number(input.contestantTotalSpanLevel)));
       }
 
       // ✅ modos del plató principal
@@ -1823,6 +1829,13 @@ function mapDeleteError(err: any, fallback: string) {
         patch.contestant_stay_in_zone_advanced_value = hzStayInZone.advancedValue;
       } else if (input.contestantStayInZoneLevel !== undefined) {
         patch.contestant_stay_in_zone_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.contestantStayInZoneLevel)))] ?? 0;
+      }
+
+      if (input.heuristics?.contestantTotalSpan) {
+        patch.contestant_total_span_level = hzTotalSpan.basicLevel;
+        patch.contestant_total_span_advanced_value = hzTotalSpan.advancedValue;
+      } else if (input.contestantTotalSpanLevel !== undefined) {
+        patch.contestant_total_span_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.contestantTotalSpanLevel)))] ?? 0;
       }
 
       const { error } = await supabaseAdmin
@@ -3728,6 +3741,9 @@ function mapDeleteError(err: any, fallback: string) {
         totalPending: Number(data.total_pending ?? 0),
         plannedCount: Number(data.planned_count ?? 0),
         message: data.message ? String(data.message) : null,
+        phase: data.phase ? String(data.phase) : null,
+        lastTaskId: data.last_task_id == null ? null : Number(data.last_task_id),
+        lastTaskName: data.last_task_name ? String(data.last_task_name) : null,
         lastReasons: Array.isArray(data.last_reasons) ? data.last_reasons : null,
         requestId: data.request_id ? String(data.request_id) : null,
       });
@@ -3764,6 +3780,7 @@ function mapDeleteError(err: any, fallback: string) {
           status: "running",
           total_pending: totalPending,
           planned_count: 0,
+          phase: "clearing_pending",
           started_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -3802,7 +3819,20 @@ function mapDeleteError(err: any, fallback: string) {
         }
       }
 
+      if (planningRunId) {
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({ phase: "building_input", updated_at: new Date().toISOString() })
+          .eq("id", planningRunId);
+      }
+
       const engineInput = await buildEngineInput(planId, storage);
+      if (planningRunId) {
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({ phase: "solving", updated_at: new Date().toISOString() })
+          .eq("id", planningRunId);
+      }
       const result = generatePlan(engineInput);
       const details = await storage.getPlanFullDetails(planId);
       const templates = await storage.getTaskTemplates();
@@ -3881,9 +3911,19 @@ function mapDeleteError(err: any, fallback: string) {
         }
 
         if (planningRunId && updated % 5 === 0) {
+          const currentTaskId = Number((p as any)?.taskId ?? NaN);
+          const taskName = Number.isFinite(currentTaskId)
+            ? enrich({ taskId: currentTaskId }).taskName ?? null
+            : null;
           await supabaseAdmin
             .from("planning_runs")
-            .update({ planned_count: updated, updated_at: new Date().toISOString() })
+            .update({
+              planned_count: updated,
+              phase: "persisting",
+              last_task_id: Number.isFinite(currentTaskId) ? currentTaskId : null,
+              last_task_name: taskName,
+              updated_at: new Date().toISOString(),
+            })
             .eq("id", planningRunId);
         }
       }
@@ -3891,7 +3931,7 @@ function mapDeleteError(err: any, fallback: string) {
       if (planningRunId) {
         await supabaseAdmin
           .from("planning_runs")
-          .update({ status: "success", planned_count: updated, updated_at: new Date().toISOString(), message: null })
+          .update({ status: "success", planned_count: updated, phase: null, updated_at: new Date().toISOString(), message: null })
           .eq("id", planningRunId);
       }
 

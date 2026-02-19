@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import { Plan, InsertPlan, DailyTask } from "@shared/schema";
+import { Plan, PlanSummary, InsertPlan, DailyTask } from "@shared/schema";
 import { api, buildUrl } from "@shared/routes";
 import { planQueryKey } from "@/lib/plan-query-keys";
 import { useEffect, useRef } from "react";
@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 
 export function usePlans() {
-  return useQuery<Plan[]>({
+  return useQuery<PlanSummary[]>({
     queryKey: [api.plans.list.path],
     queryFn: () => apiRequest("GET", api.plans.list.path)
   });

@@ -11,6 +11,9 @@ export type PlanningRun = {
   totalPending: number;
   plannedCount: number;
   message: string | null;
+  phase: string | null;
+  lastTaskId: number | null;
+  lastTaskName: string | null;
   lastReasons: any[] | null;
   requestId: string | null;
 };

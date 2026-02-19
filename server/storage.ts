@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabase";
 import {
   Plan,
+  PlanSummary,
   InsertPlan,
   DailyTask,
   InsertDailyTask,
@@ -40,7 +41,7 @@ function coerceSecond(value: unknown): number | null {
 
 export interface IStorage {
   // Plans
-  getPlans(): Promise<Plan[]>;
+  getPlans(): Promise<PlanSummary[]>;
   getPlan(id: number): Promise<Plan | undefined>;
   createPlan(plan: InsertPlan): Promise<Plan>;
   deletePlan(planId: number): Promise<boolean>;
@@ -135,6 +136,7 @@ export interface IStorage {
 
     // ✅ compactar concursantes
     contestantCompactLevel: number; // 0..3
+    contestantTotalSpanLevel: number; // 0..3
   }>;
 
   // Resources (per plan, 1 a 1)
@@ -322,17 +324,42 @@ export class SupabaseStorage implements IStorage {
       .eq("id", breakId);
     if (error) throw error;
   }
-  async getPlans(): Promise<Plan[]> {
-    const { data, error } = await supabaseAdmin.from("plans").select("*");
+  async getPlans(): Promise<PlanSummary[]> {
+    const { data, error } = await supabaseAdmin
+      .from("plan_summaries")
+      .select("*")
+      .order("date", { ascending: false });
     if (error) throw error;
-    return data as Plan[];
+
+    return (data ?? []).map((row: any) => ({
+      id: Number(row?.id),
+      date: row?.date,
+      status: String(row?.status ?? "draft"),
+      workStart: String(row?.work_start ?? ""),
+      workEnd: String(row?.work_end ?? ""),
+      mealStart: "12:00",
+      mealEnd: "16:00",
+      contestantMealDurationMinutes: 75,
+      contestantMealMaxSimultaneous: 10,
+      camerasAvailable: 0,
+      contestantsCount: row?.contestants_count == null ? null : Number(row.contestants_count),
+      tasksTotal: row?.tasks_total == null ? null : Number(row.tasks_total),
+      tasksPlanned: row?.tasks_planned == null ? null : Number(row.tasks_planned),
+      firstTaskStart: row?.first_task_start ?? null,
+      lastTaskEnd: row?.last_task_end ?? null,
+      minutesTasksTotal: row?.minutes_tasks_total == null ? null : Number(row.minutes_tasks_total),
+      availableMinutes: row?.available_minutes == null ? null : Number(row.available_minutes),
+      realSpanMinutes: row?.real_span_minutes == null ? null : Number(row.real_span_minutes),
+      occupancyAvailablePct: row?.occupancy_available_pct == null ? null : Number(row.occupancy_available_pct),
+      occupancyRealPct: row?.occupancy_real_pct == null ? null : Number(row.occupancy_real_pct),
+    })) as PlanSummary[];
   }
 
   async getOptimizerSettings() {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value",
       )
       .eq("id", 1)
       .single();
@@ -353,6 +380,9 @@ export class SupabaseStorage implements IStorage {
     );
     const contestantStayInZoneLevel = clampBasicLevel(
       (data as any)?.contestant_stay_in_zone_level ?? 0,
+    );
+    const contestantTotalSpanLevel = clampBasicLevel(
+      (data as any)?.contestant_total_span_level ?? 0,
     );
 
     const heuristics = {
@@ -388,6 +418,12 @@ export class SupabaseStorage implements IStorage {
           (data as any)?.contestant_stay_in_zone_advanced_value,
         ),
       }, contestantStayInZoneLevel),
+      contestantTotalSpan: normalizeHeuristicSetting({
+        basicLevel: contestantTotalSpanLevel,
+        advancedValue: clampAdvancedValue(
+          (data as any)?.contestant_total_span_advanced_value,
+        ),
+      }, contestantTotalSpanLevel),
     } as const;
 
     return {
@@ -415,6 +451,7 @@ export class SupabaseStorage implements IStorage {
 
       // ✅ compactar concursantes
       contestantCompactLevel,
+      contestantTotalSpanLevel,
     };
   }
 

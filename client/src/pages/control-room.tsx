@@ -102,6 +102,15 @@ export default function ControlRoomPage() {
   const run = planningRunQ.data;
   const showPlanning = run?.status === "running";
   const planningProgress = run && run.totalPending > 0 ? Math.min(100, (run.plannedCount / run.totalPending) * 100) : 0;
+  const phaseLabel = run?.phase === "clearing_pending"
+    ? "Limpiando pendientes"
+    : run?.phase === "building_input"
+      ? "Construyendo entrada"
+      : run?.phase === "solving"
+        ? "Resolviendo"
+        : run?.phase === "persisting"
+          ? "Persistiendo"
+          : "Procesando";
 
   return (
     <Layout>
@@ -146,6 +155,9 @@ export default function ControlRoomPage() {
         {showPlanning ? (
           <div className="rounded-lg border p-4 bg-blue-500/5 border-blue-500/30 space-y-2">
             <div className="text-sm font-medium">Planificando… {run?.plannedCount ?? 0} / {run?.totalPending ?? 0}</div>
+            <div className="text-xs text-muted-foreground">
+              {phaseLabel}{run?.lastTaskName ? ` · Última: ${run.lastTaskName}` : ""}
+            </div>
             <Progress value={planningProgress} />
           </div>
         ) : null}
