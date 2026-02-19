@@ -23,5 +23,10 @@ export function usePlanningRun(planId: number | null) {
     queryKey: ["planning-run", planId],
     enabled: Number.isFinite(planId) && Number(planId) > 0,
     queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestByPlan.path, { id: Number(planId) })),
+    refetchInterval: (query) => {
+      const run = query.state.data as PlanningRun | null | undefined;
+      return run?.status === "running" ? 700 : false;
+    },
+    refetchOnWindowFocus: true,
   });
 }
