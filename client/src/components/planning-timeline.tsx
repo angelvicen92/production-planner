@@ -210,6 +210,20 @@ function TaskStatusMenuTrigger({
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
 
+  const triggerButton = (
+    <button
+      type="button"
+      className={cn(className, "text-left")}
+      style={style}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDoubleClick={onDoubleClick}
+    >
+      {children}
+    </button>
+  );
+
   const summaryTime =
     task.startReal || task.endReal
       ? `${task.startReal ?? "—"}–${task.endReal ?? "—"}`
@@ -223,21 +237,14 @@ function TaskStatusMenuTrigger({
     setOpen(false);
   };
 
+  if (!onTaskStatusChange) {
+    return triggerButton;
+  }
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(className, "text-left")}
-          style={style}
-          disabled={!onTaskStatusChange}
-          draggable={draggable}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDoubleClick={onDoubleClick}
-        >
-          {children}
-        </button>
+        {triggerButton}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
         <DropdownMenuLabel className="space-y-1">
@@ -1500,7 +1507,7 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(sp.id) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
@@ -1607,7 +1614,7 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(unlocatedCol.id) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
@@ -1802,7 +1809,7 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(sp.id) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
@@ -1890,7 +1897,7 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(unlocatedCol.id) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
@@ -2058,7 +2065,7 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(resourceKey) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
