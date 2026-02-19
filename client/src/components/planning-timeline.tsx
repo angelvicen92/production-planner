@@ -142,6 +142,13 @@ interface PlanningTimelineProps {
   onPinTask?: (task: Task) => Promise<void>;
   onUnpinTask?: (task: Task) => Promise<void>;
   onApplyManualEdits?: (edits: Array<{ taskId: number; start: string; end: string }>) => Promise<void>;
+  onPersistManualEdits?: (payload: {
+    edits: Array<{ taskId: number; start: string; end: string }>;
+    primaryTaskId: number | null;
+    shiftedTaskIds: number[];
+  }) => Promise<void>;
+  onValidatePlan?: () => Promise<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>;
+  onGeneratePlan?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onCreateManualBlock?: () => void;
 }
@@ -178,6 +185,7 @@ function TaskStatusMenuTrigger({
   draggable = false,
   onDragStart,
   onDragEnd,
+  onDoubleClick,
 }: {
   task: Task;
   contestantName: string;
@@ -197,6 +205,7 @@ function TaskStatusMenuTrigger({
   draggable?: boolean;
   onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
   onDragEnd?: () => void;
+  onDoubleClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
@@ -225,6 +234,7 @@ function TaskStatusMenuTrigger({
           draggable={draggable}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
+          onDoubleClick={onDoubleClick}
         >
           {children}
         </button>
@@ -307,6 +317,9 @@ function TaskStatusMenuTrigger({
     onPinTask,
     onUnpinTask,
     onApplyManualEdits,
+    onPersistManualEdits,
+    onValidatePlan,
+    onGeneratePlan,
     onCancelManualEdits,
     onCreateManualBlock,
     }: PlanningTimelineProps) {
@@ -346,9 +359,14 @@ function TaskStatusMenuTrigger({
 
   const [manualMode, setManualMode] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
+  const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string }> } | null>(null);
+  const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
   const dragStateRef = useRef<{ taskId: number; laneId: string } | null>(null);
+  const lastDraggedTaskIdRef = useRef<number | null>(null);
+  const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
     const mapped = new Map<number, Task>();
     for (const t of (dailyTasks ?? [])) mapped.set(Number(t.id), t);
@@ -870,14 +888,39 @@ function TaskStatusMenuTrigger({
       });
     });
 
-    return Object.entries(grouped)
+    const entries = Object.entries(grouped)
       .filter(([key, lane]) => lane.tasks.length > 0 || key !== "none")
       .sort((a, b) => {
         if (a[0] === "none") return 1;
         if (b[0] === "none") return -1;
         return a[1].name.localeCompare(b[1].name);
       });
-  }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces]);
+
+    if (contestantSort.mode !== "task") return entries;
+    const targetTemplateId = Number(contestantSort.templateId);
+    return entries
+      .map((entry) => {
+        const earliestStart = entry[1].tasks
+          .filter((task) => Number(task.templateId) === targetTemplateId && Boolean(task.startPlanned))
+          .map((task) => timeToMinutes(String(task.startPlanned)))
+          .sort((a, b) => a - b)[0];
+        return {
+          entry,
+          earliestStart: Number.isFinite(earliestStart) ? Number(earliestStart) : null,
+        };
+      })
+      .sort((a, b) => {
+        if (a.entry[0] === "none") return 1;
+        if (b.entry[0] === "none") return -1;
+        if (a.earliestStart !== null && b.earliestStart !== null) {
+          return a.earliestStart - b.earliestStart || a.entry[1].name.localeCompare(b.entry[1].name);
+        }
+        if (a.earliestStart !== null) return -1;
+        if (b.earliestStart !== null) return 1;
+        return a.entry[1].name.localeCompare(b.entry[1].name);
+      })
+      .map((row) => row.entry);
+  }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces, contestantSort]);
 
   if (!workStart || !workEnd) {
     return (
@@ -1457,10 +1500,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -1557,10 +1607,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -1745,10 +1802,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -1826,10 +1890,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -1987,10 +2058,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(task.contestantId ?? task.spaceId ?? task.zoneId ?? "manual") };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2066,9 +2144,30 @@ function TaskStatusMenuTrigger({
 
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Switch checked={manualMode} onCheckedChange={(v) => setManualMode(Boolean(v))} disabled={isApplying} />
+                  <Switch
+                    checked={manualMode}
+                    onCheckedChange={(v) => {
+                      const next = Boolean(v);
+                      if (!next && manualMode && Object.keys(pendingManualEdits).length > 0) {
+                        setManualExitDialogOpen(true);
+                        return;
+                      }
+                      setManualMode(next);
+                    }}
+                    disabled={isApplying}
+                  />
                   <span className="text-sm">Modo manual</span>
                 </div>
+                {viewMode === "contestants" ? (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
+                    <span className="text-xs">
+                      Orden: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
+                    </span>
+                    {contestantSort.mode === "task" ? (
+                      <Button size="sm" variant="ghost" onClick={() => setContestantSort({ mode: "name" })}>Reset</Button>
+                    ) : null}
+                  </div>
+                ) : null}
                 {manualMode ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/40">
                     <span className="text-xs">{isApplying ? `Aplicando cambios (${Object.keys(pendingManualEdits).length})…` : `Modo manual: ${Object.keys(pendingManualEdits).length} cambios`}</span>
@@ -2077,12 +2176,18 @@ function TaskStatusMenuTrigger({
                       if (edits.length === 0) return;
                       setIsApplying(true);
                       try {
-                        await onApplyManualEdits?.(edits);
+                        if (onPersistManualEdits) {
+                          await onPersistManualEdits({ edits, primaryTaskId: lastDraggedTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+                          const validation = await onValidatePlan?.();
+                          if (validation) setValidationResult(validation);
+                        } else {
+                          await onApplyManualEdits?.(edits);
+                        }
                         setPendingManualEdits({});
                       } finally {
                         setIsApplying(false);
                       }
-                    }}>Aplicar y replanificar</Button>
+                    }}>Aplicar cambios</Button>
                     <Button size="sm" variant="outline" disabled={isApplying} onClick={async () => {
                       setPendingManualEdits({});
                       await onCancelManualEdits?.();
@@ -2091,6 +2196,71 @@ function TaskStatusMenuTrigger({
                   </div>
                 ) : null}
               </div>
+
+              {manualExitDialogOpen ? (
+                <Card className="mb-3 p-3 border-amber-400/40 bg-amber-50/40">
+                  <p className="text-sm font-medium">Hay cambios manuales pendientes.</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={isApplying}
+                      onClick={async () => {
+                        const edits = Object.entries(pendingManualEdits).map(([taskId, v]) => ({ taskId: Number(taskId), start: v.start, end: v.end }));
+                        setIsApplying(true);
+                        try {
+                          if (edits.length > 0) {
+                            await onPersistManualEdits?.({ edits, primaryTaskId: lastDraggedTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+                          }
+                          const validation = await onValidatePlan?.();
+                          if (validation) setValidationResult(validation);
+                          setPendingManualEdits({});
+                          setManualMode(false);
+                          setManualExitDialogOpen(false);
+                        } finally {
+                          setIsApplying(false);
+                        }
+                      }}
+                    >
+                      Mantener cambios y validar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isApplying}
+                      onClick={async () => {
+                        setPendingManualEdits({});
+                        shiftedTaskIdsRef.current = [];
+                        lastDraggedTaskIdRef.current = null;
+                        await onCancelManualEdits?.();
+                        setManualMode(false);
+                        setManualExitDialogOpen(false);
+                      }}
+                    >
+                      Descartar cambios
+                    </Button>
+                  </div>
+                </Card>
+              ) : null}
+
+              {validationResult && !validationResult.feasible ? (
+                <Card className="mb-3 p-3 border-red-300/50 bg-red-50/40">
+                  <p className="text-sm font-semibold">Plan no factible</p>
+                  <ul className="text-xs mt-1 list-disc ml-5 space-y-0.5">
+                    {(validationResult.reasons ?? []).slice(0, 5).map((r, idx) => (
+                      <li key={idx}>{r?.message || "Conflicto de planificación"}</li>
+                    ))}
+                  </ul>
+                  <div className="mt-2">
+                    <Button size="sm" onClick={() => void onGeneratePlan?.()}>
+                      Replanificar ahora
+                    </Button>
+                  </div>
+                </Card>
+              ) : null}
+
+              {validationResult?.feasible ? (
+                <p className="mb-3 text-xs text-green-700">Validación OK. Se mantienen los cambios manuales.</p>
+              ) : null}
 
               {/* Lanes */}
               {lanes.map(([id, lane]) => (
@@ -2198,22 +2368,43 @@ function TaskStatusMenuTrigger({
 
                       const peers = lane.tasks
                         .filter((x) => Number(x.id) !== Number(task.id))
-                        .map((x) => ({ s: x.startPlanned ? timeToMinutes(x.startPlanned) : null, e: x.endPlanned ? timeToMinutes(x.endPlanned) : null }))
-                        .filter((x) => x.s !== null && x.e !== null) as Array<{ s: number; e: number }>;
-                      peers.sort((a, b) => a.s - b.s);
-                      for (const peer of peers) {
-                        if (nextEnd <= peer.s || nextStart >= peer.e) continue;
-                        nextStart = peer.e;
-                        nextEnd = nextStart + taskDur;
-                      }
+                        .map((x) => {
+                          const edit = pendingManualEdits[Number(x.id)];
+                          const s = edit?.start ?? x.startPlanned;
+                          const e = edit?.end ?? x.endPlanned;
+                          return { id: Number(x.id), s: s ? timeToMinutes(s) : null, e: e ? timeToMinutes(e) : null };
+                        })
+                        .filter((x) => x.s !== null && x.e !== null) as Array<{ id: number; s: number; e: number }>;
+                      peers.sort((a, b) => a.s - b.s || a.id - b.id);
 
-                      setPendingManualEdits((prev) => ({
-                        ...prev,
+                      const nextEdits: Record<number, { start: string; end: string }> = {
                         [Number(task.id)]: {
                           start: minutesToHHMM(nextStart),
                           end: minutesToHHMM(nextEnd),
                         },
-                      }));
+                      };
+                      const shiftedIds: number[] = [];
+                      let cursor = nextEnd;
+                      for (const peer of peers) {
+                        if (peer.e <= nextStart) continue;
+                        if (peer.s >= cursor) {
+                          cursor = peer.e;
+                          continue;
+                        }
+                        const dur = Math.max(5, peer.e - peer.s);
+                        const shiftedStart = Math.max(startMin, Math.min(endMin - dur, cursor));
+                        const shiftedEnd = shiftedStart + dur;
+                        nextEdits[peer.id] = {
+                          start: minutesToHHMM(shiftedStart),
+                          end: minutesToHHMM(shiftedEnd),
+                        };
+                        shiftedIds.push(peer.id);
+                        cursor = shiftedEnd;
+                      }
+
+                      shiftedTaskIdsRef.current = shiftedIds;
+                      lastDraggedTaskIdRef.current = Number(task.id);
+                      setPendingManualEdits((prev) => ({ ...prev, ...nextEdits }));
 
                       const dependsOnTaskIds = Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [];
                       if (dependsOnTaskIds.length > 0) {
@@ -2313,10 +2504,17 @@ function TaskStatusMenuTrigger({
                                 event.preventDefault();
                                 return;
                               }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: "manual" };
+                              dragStateRef.current = { taskId: Number(task.id), laneId: String(id) };
                             }}
                             onDragEnd={() => {
                               dragStateRef.current = null;
+                            }}
+                            onDoubleClick={() => {
+                              setContestantSort({
+                                mode: "task",
+                                templateId: Number(task.templateId),
+                                templateName: task.template?.name || "Tarea",
+                              });
                             }}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",

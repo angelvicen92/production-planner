@@ -3332,6 +3332,49 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
 
+
+  app.patch("/api/daily-tasks/:id/planned-time", async (req, res) => {
+    try {
+      const taskId = Number(req.params.id);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return res.status(400).json({ message: "Invalid task id" });
+      }
+
+      const input = z
+        .object({
+          startPlanned: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
+          endPlanned: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
+        })
+        .strict()
+        .parse(req.body ?? {});
+
+      if (input.endPlanned <= input.startPlanned) {
+        return res.status(400).json({ message: "endPlanned must be greater than startPlanned" });
+      }
+
+      const { data: task, error: taskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (taskErr) throw taskErr;
+      if (!task) return res.status(404).json({ message: "Task not found" });
+
+      const { error: updTaskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .update({ start_planned: input.startPlanned, end_planned: input.endPlanned })
+        .eq("id", taskId);
+      if (updTaskErr) throw updTaskErr;
+
+      return res.json({ success: true, taskId, startPlanned: input.startPlanned, endPlanned: input.endPlanned });
+    } catch (err: any) {
+      if (err?.name === "ZodError") {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot update planned time" });
+    }
+  });
+
   app.patch("/api/daily-tasks/:id/time-lock", async (req, res) => {
     try {
       const taskId = Number(req.params.id);
@@ -3752,6 +3795,69 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  const buildReasonEnricher = async (planId: number) => {
+    const details = await storage.getPlanFullDetails(planId);
+    const templates = await storage.getTaskTemplates();
+    const spaces = await storage.getSpaces();
+    const zones = await storage.getZones();
+    const contestants = await storage.getContestantsByPlan(planId);
+    const tasks = details?.tasks ?? [];
+
+    const taskById = new Map<number, any>((tasks as any[]).map((t: any) => [Number(t.id), t]));
+    const tplById = new Map<number, any>((templates as any[]).map((t: any) => [Number(t.id), t]));
+    const zoneById = new Map<number, any>((zones as any[]).map((z: any) => [Number(z.id), z]));
+    const spaceById = new Map<number, any>((spaces as any[]).map((sp: any) => [Number(sp.id), sp]));
+    const contestantById = new Map<number, any>((contestants as any[]).map((c: any) => [Number(c.id), c]));
+
+    return (raw: any) => {
+      const w = typeof raw === "string" ? { message: raw } : { ...(raw ?? {}) };
+      const task = Number.isFinite(Number(w.taskId)) ? taskById.get(Number(w.taskId)) : null;
+      const templateId = Number(w.templateId ?? task?.template_id ?? task?.templateId ?? NaN);
+      const contestantId = Number(w.contestantId ?? task?.contestant_id ?? task?.contestantId ?? NaN);
+      const zoneId = Number(w.zoneId ?? task?.zone_id ?? task?.zoneId ?? NaN);
+      const spaceId = Number(w.spaceId ?? task?.space_id ?? task?.spaceId ?? NaN);
+
+      const templateName = Number.isFinite(templateId) ? String(tplById.get(templateId)?.name ?? "") : "";
+      const contestantName = Number.isFinite(contestantId) ? String(contestantById.get(contestantId)?.name ?? "") : "";
+      const zoneName = Number.isFinite(zoneId) ? String(zoneById.get(zoneId)?.name ?? "") : "";
+      const spaceName = Number.isFinite(spaceId) ? String(spaceById.get(spaceId)?.name ?? "") : "";
+      const taskName = task ? `${templateName || task?.template?.name || 'Tarea'}${contestantName ? ` (${contestantName})` : ""}` : undefined;
+
+      return {
+        ...w,
+        taskName: w.taskName ?? taskName,
+        templateName: w.templateName ?? (templateName || undefined),
+        contestantName: w.contestantName ?? (contestantName || undefined),
+        zoneName: w.zoneName ?? (zoneName || undefined),
+        spaceName: w.spaceName ?? (spaceName || undefined),
+        message:
+          w.message ||
+          [taskName, zoneName ? `Plató: ${zoneName}` : "", spaceName ? `Espacio: ${spaceName}` : ""]
+            .filter(Boolean)
+            .join(" · "),
+      };
+    };
+  };
+
+  app.post("/api/plans/:id/validate", async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const engineInput = await buildEngineInput(planId, storage);
+      const result = generatePlan(engineInput);
+      if (result.feasible) return res.json({ feasible: true });
+
+      const enrich = await buildReasonEnricher(planId);
+      const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+      return res.json({ feasible: false, reasons });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message || "Validation failed" });
+    }
+  });
+
   app.post(api.plans.generate.path, async (req, res) => {
     const planId = Number(req.params.id);
     let planningRunId: number | null = null;
@@ -3834,47 +3940,7 @@ function mapDeleteError(err: any, fallback: string) {
           .eq("id", planningRunId);
       }
       const result = generatePlan(engineInput);
-      const details = await storage.getPlanFullDetails(planId);
-      const templates = await storage.getTaskTemplates();
-      const spaces = await storage.getSpaces();
-      const zones = await storage.getZones();
-      const contestants = await storage.getContestantsByPlan(planId);
-      const tasks = details?.tasks ?? [];
-
-      const taskById = new Map<number, any>((tasks as any[]).map((t: any) => [Number(t.id), t]));
-      const tplById = new Map<number, any>((templates as any[]).map((t: any) => [Number(t.id), t]));
-      const zoneById = new Map<number, any>((zones as any[]).map((z: any) => [Number(z.id), z]));
-      const spaceById = new Map<number, any>((spaces as any[]).map((sp: any) => [Number(sp.id), sp]));
-      const contestantById = new Map<number, any>((contestants as any[]).map((c: any) => [Number(c.id), c]));
-
-      const enrich = (raw: any) => {
-        const w = typeof raw === "string" ? { message: raw } : { ...(raw ?? {}) };
-        const task = Number.isFinite(Number(w.taskId)) ? taskById.get(Number(w.taskId)) : null;
-        const templateId = Number(w.templateId ?? task?.template_id ?? task?.templateId ?? NaN);
-        const contestantId = Number(w.contestantId ?? task?.contestant_id ?? task?.contestantId ?? NaN);
-        const zoneId = Number(w.zoneId ?? task?.zone_id ?? task?.zoneId ?? NaN);
-        const spaceId = Number(w.spaceId ?? task?.space_id ?? task?.spaceId ?? NaN);
-
-        const templateName = Number.isFinite(templateId) ? String(tplById.get(templateId)?.name ?? "") : "";
-        const contestantName = Number.isFinite(contestantId) ? String(contestantById.get(contestantId)?.name ?? "") : "";
-        const zoneName = Number.isFinite(zoneId) ? String(zoneById.get(zoneId)?.name ?? "") : "";
-        const spaceName = Number.isFinite(spaceId) ? String(spaceById.get(spaceId)?.name ?? "") : "";
-        const taskName = task ? `${templateName || task?.template?.name || 'Tarea'}${contestantName ? ` (${contestantName})` : ""}` : undefined;
-
-        return {
-          ...w,
-          taskName: w.taskName ?? taskName,
-          templateName: w.templateName ?? (templateName || undefined),
-          contestantName: w.contestantName ?? (contestantName || undefined),
-          zoneName: w.zoneName ?? (zoneName || undefined),
-          spaceName: w.spaceName ?? (spaceName || undefined),
-          message:
-            w.message ||
-            [taskName, zoneName ? `Plató: ${zoneName}` : "", spaceName ? `Espacio: ${spaceName}` : ""]
-              .filter(Boolean)
-              .join(" · "),
-        };
-      };
+      const enrich = await buildReasonEnricher(planId);
 
       if (!result.feasible) {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
