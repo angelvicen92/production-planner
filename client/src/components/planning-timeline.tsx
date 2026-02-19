@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -182,10 +182,7 @@ function TaskStatusMenuTrigger({
   className,
   style,
   children,
-  draggable = false,
-  onDragStart,
-  onDragEnd,
-  onDoubleClick,
+  onClick,
 }: {
   task: Task;
   contestantName: string;
@@ -202,10 +199,7 @@ function TaskStatusMenuTrigger({
   className: string;
   style?: CSSProperties;
   children: ReactNode;
-  draggable?: boolean;
-  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
-  onDragEnd?: () => void;
-  onDoubleClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
@@ -215,10 +209,7 @@ function TaskStatusMenuTrigger({
       type="button"
       className={cn(className, "text-left")}
       style={style}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDoubleClick={onDoubleClick}
+      onClick={onClick}
     >
       {children}
     </button>
@@ -365,14 +356,15 @@ function TaskStatusMenuTrigger({
   };
 
   const [manualMode, setManualMode] = useState(false);
+  const [taskSortMode, setTaskSortMode] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
   const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
-  const dragStateRef = useRef<{ taskId: number; laneId: string } | null>(null);
-  const lastDraggedTaskIdRef = useRef<number | null>(null);
+  const [manualSelectedTaskId, setManualSelectedTaskId] = useState<number | null>(null);
+  const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
     const mapped = new Map<number, Task>();
@@ -396,6 +388,135 @@ function TaskStatusMenuTrigger({
     const hh = String(Math.floor(clamped / 60)).padStart(2, "0");
     const mm = String(clamped % 60).padStart(2, "0");
     return `${hh}:${mm}`;
+  };
+
+
+  const canSelectManualTask = (task: Task) => {
+    if (!manualMode || isApplying) return false;
+    if (task.status === "in_progress" || task.status === "done") return false;
+    if (task.isManualBlock) return false;
+    if (isTaskFixed(task)) return false;
+    return true;
+  };
+
+  const applyCascadeMove = ({
+    laneTasks,
+    movedTask,
+    nextStart,
+  }: {
+    laneTasks: Task[];
+    movedTask: Task;
+    nextStart: number;
+  }) => {
+    const currentStart = movedTask.startPlanned ? timeToMinutes(movedTask.startPlanned) : nextStart;
+    const currentEnd = movedTask.endPlanned ? timeToMinutes(movedTask.endPlanned) : currentStart + 30;
+    const taskDur = Math.max(5, currentEnd - currentStart);
+    const clampedStart = Math.max(startMin, Math.min(endMin - taskDur, nextStart));
+    const nextEnd = clampedStart + taskDur;
+
+    const peers = laneTasks
+      .filter((x) => Number(x.id) !== Number(movedTask.id))
+      .map((x) => {
+        const edit = pendingManualEdits[Number(x.id)];
+        const s = edit?.start ?? x.startPlanned;
+        const e = edit?.end ?? x.endPlanned;
+        return { id: Number(x.id), s: s ? timeToMinutes(s) : null, e: e ? timeToMinutes(e) : null };
+      })
+      .filter((x) => x.s !== null && x.e !== null) as Array<{ id: number; s: number; e: number }>;
+    peers.sort((a, b) => a.s - b.s || a.id - b.id);
+
+    const nextEdits: Record<number, { start: string; end: string }> = {
+      [Number(movedTask.id)]: {
+        start: minutesToHHMM(clampedStart),
+        end: minutesToHHMM(nextEnd),
+      },
+    };
+    const shiftedIds: number[] = [];
+    let cursor = nextEnd;
+
+    for (const peer of peers) {
+      if (peer.e <= clampedStart) continue;
+      if (peer.s >= cursor) {
+        cursor = peer.e;
+        continue;
+      }
+      const dur = Math.max(5, peer.e - peer.s);
+      const shiftedStart = Math.max(startMin, Math.min(endMin - dur, cursor));
+      const shiftedEnd = shiftedStart + dur;
+      nextEdits[peer.id] = {
+        start: minutesToHHMM(shiftedStart),
+        end: minutesToHHMM(shiftedEnd),
+      };
+      shiftedIds.push(peer.id);
+      cursor = shiftedEnd;
+    }
+
+    return { nextEdits, shiftedIds, clampedStart };
+  };
+
+  const handleTaskCardClick = (event: MouseEvent<HTMLButtonElement>, task: Task) => {
+    if (viewMode === "contestants" && taskSortMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      setContestantSort({
+        mode: "task",
+        templateId: Number(task.templateId),
+        templateName: task.template?.name || "Tarea",
+      });
+      return;
+    }
+
+    if (manualMode && canSelectManualTask(task)) {
+      event.preventDefault();
+      event.stopPropagation();
+      setManualSelectedTaskId(Number(task.id));
+    }
+  };
+
+  const handleLaneManualPlace = (event: MouseEvent<HTMLDivElement>, laneTasks: Task[]) => {
+    if (!manualMode || isApplying || manualSelectedTaskId === null) return;
+    const selectedTask = laneTasks.find((t) => Number(t.id) === Number(manualSelectedTaskId));
+    if (!selectedTask || !canSelectManualTask(selectedTask)) return;
+
+    const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const ratio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0;
+    const rawStart = startMin + ratio * duration;
+    const snapStart = Math.round(rawStart / 5) * 5;
+
+    const { nextEdits, shiftedIds, clampedStart } = applyCascadeMove({
+      laneTasks,
+      movedTask: selectedTask,
+      nextStart: snapStart,
+    });
+
+    shiftedTaskIdsRef.current = shiftedIds;
+    lastManualEditedPrimaryTaskIdRef.current = Number(selectedTask.id);
+    setPendingManualEdits((prev) => ({ ...prev, ...nextEdits }));
+
+    const dependsOnTaskIds = Array.isArray(selectedTask.dependsOnTaskIds) ? selectedTask.dependsOnTaskIds : [];
+    if (dependsOnTaskIds.length > 0) {
+      let maxPrereqEnd = -1;
+      let prereqTaskName = "";
+      for (const depId of dependsOnTaskIds) {
+        const prereq = taskById.get(Number(depId));
+        if (!prereq) continue;
+        const prereqEnd = prereq.lockedEnd ?? prereq.endPlanned ?? null;
+        if (!prereqEnd) continue;
+        const prereqEndMin = timeToMinutes(prereqEnd);
+        if (prereqEndMin > maxPrereqEnd) {
+          maxPrereqEnd = prereqEndMin;
+          prereqTaskName = prereq.template?.name || `#${depId}`;
+        }
+      }
+      if (maxPrereqEnd >= 0 && clampedStart < maxPrereqEnd) {
+        const prereqEnd = minutesToHHMM(maxPrereqEnd);
+        setDependencyWarnings((prev) => ({
+          ...prev,
+          [Number(selectedTask.id)]: { prereqTaskName, prereqEnd },
+        }));
+        clearWarningLater(Number(selectedTask.id));
+      }
+    }
   };
 
   // =========================
@@ -1501,27 +1622,11 @@ function TaskStatusMenuTrigger({
                                                 canPinTimeLock={canPinTask(task)}
                                                 onPinTask={onPinTask}
                                                 onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(sp.id) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                                   task.status === "in_progress"
                                                     ? "ring-2 ring-green-500"
                                                     : "",
@@ -1608,27 +1713,11 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(unlocatedCol.id) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1803,27 +1892,11 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(sp.id) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                                         task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                               task.status === "in_progress"
                                                 ? "ring-2 ring-green-500"
                                                 : "",
@@ -1891,27 +1964,11 @@ function TaskStatusMenuTrigger({
                                       canPinTimeLock={canPinTask(task)}
                                       onPinTask={onPinTask}
                                       onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(unlocatedCol.id) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                                         task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                         task.status === "in_progress"
                                           ? "ring-2 ring-green-500"
                                           : "",
@@ -2059,27 +2116,11 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(resourceKey) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               task.status === "in_progress" ? "ring-2 ring-green-500" : "",
                               task.status === "done" ? "opacity-80" : "",
                             )}
@@ -2160,6 +2201,7 @@ function TaskStatusMenuTrigger({
                         return;
                       }
                       setManualMode(next);
+                      if (!next) setManualSelectedTaskId(null);
                     }}
                     disabled={isApplying}
                   />
@@ -2167,6 +2209,20 @@ function TaskStatusMenuTrigger({
                 </div>
                 {viewMode === "contestants" ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
+                    <Button
+                      size="sm"
+                      variant={taskSortMode ? "default" : "outline"}
+                      onClick={() => setTaskSortMode((prev) => {
+                        const next = !prev;
+                        if (!next) setContestantSort({ mode: "name" });
+                        return next;
+                      })}
+                    >
+                      Orden por tarea
+                    </Button>
+                    {taskSortMode ? (
+                      <span className="text-xs text-muted-foreground">Click en una tarea para ordenar</span>
+                    ) : null}
                     <span className="text-xs">
                       Orden: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
                     </span>
@@ -2184,7 +2240,7 @@ function TaskStatusMenuTrigger({
                       setIsApplying(true);
                       try {
                         if (onPersistManualEdits) {
-                          await onPersistManualEdits({ edits, primaryTaskId: lastDraggedTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+                          await onPersistManualEdits({ edits, primaryTaskId: lastManualEditedPrimaryTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
                           const validation = await onValidatePlan?.();
                           if (validation) setValidationResult(validation);
                         } else {
@@ -2197,9 +2253,16 @@ function TaskStatusMenuTrigger({
                     }}>Aplicar cambios</Button>
                     <Button size="sm" variant="outline" disabled={isApplying} onClick={async () => {
                       setPendingManualEdits({});
+                      setManualSelectedTaskId(null);
                       await onCancelManualEdits?.();
                     }}>Cancelar cambios</Button>
                     <Button size="sm" variant="secondary" disabled={isApplying} onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
+                    {manualSelectedTaskId !== null ? (
+                      <div className="rounded border bg-background px-2 py-1 text-xs">
+                        Tarea seleccionada: {taskById.get(Number(manualSelectedTaskId))?.template?.name ?? `#${manualSelectedTaskId}`} (click en la fila para colocar)
+                        <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={() => setManualSelectedTaskId(null)}>Deseleccionar</Button>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -2216,11 +2279,12 @@ function TaskStatusMenuTrigger({
                         setIsApplying(true);
                         try {
                           if (edits.length > 0) {
-                            await onPersistManualEdits?.({ edits, primaryTaskId: lastDraggedTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+                            await onPersistManualEdits?.({ edits, primaryTaskId: lastManualEditedPrimaryTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
                           }
                           const validation = await onValidatePlan?.();
                           if (validation) setValidationResult(validation);
                           setPendingManualEdits({});
+                          setManualSelectedTaskId(null);
                           setManualMode(false);
                           setManualExitDialogOpen(false);
                         } finally {
@@ -2236,8 +2300,9 @@ function TaskStatusMenuTrigger({
                       disabled={isApplying}
                       onClick={async () => {
                         setPendingManualEdits({});
+                        setManualSelectedTaskId(null);
                         shiftedTaskIdsRef.current = [];
-                        lastDraggedTaskIdRef.current = null;
+                        lastManualEditedPrimaryTaskIdRef.current = null;
                         await onCancelManualEdits?.();
                         setManualMode(false);
                         setManualExitDialogOpen(false);
@@ -2348,97 +2413,7 @@ function TaskStatusMenuTrigger({
                   </div>
                   <div
                     className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20")}
-                    onDragOver={(e) => {
-                      if (!manualMode || isApplying) return;
-                      e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      if (!manualMode || isApplying) return;
-                      const dragging = dragStateRef.current;
-                      if (!dragging) return;
-                      e.preventDefault();
-                      const task = taskById.get(Number(dragging.taskId));
-                      if (!task?.startPlanned || !task?.endPlanned) return;
-                      if (task.status === "in_progress" || task.status === "done") return;
-                      if (task.isManualBlock) return;
-                      if (String(dragging.laneId) !== String(id)) return;
-
-                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                      const ratio = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
-                      const rawStart = startMin + ratio * duration;
-                      const snapStart = Math.round(rawStart / 5) * 5;
-                      const currentStart = timeToMinutes(task.startPlanned);
-                      const currentEnd = timeToMinutes(task.endPlanned);
-                      const taskDur = Math.max(5, currentEnd - currentStart);
-                      let nextStart = Math.max(startMin, Math.min(endMin - taskDur, snapStart));
-                      let nextEnd = nextStart + taskDur;
-
-                      const peers = lane.tasks
-                        .filter((x) => Number(x.id) !== Number(task.id))
-                        .map((x) => {
-                          const edit = pendingManualEdits[Number(x.id)];
-                          const s = edit?.start ?? x.startPlanned;
-                          const e = edit?.end ?? x.endPlanned;
-                          return { id: Number(x.id), s: s ? timeToMinutes(s) : null, e: e ? timeToMinutes(e) : null };
-                        })
-                        .filter((x) => x.s !== null && x.e !== null) as Array<{ id: number; s: number; e: number }>;
-                      peers.sort((a, b) => a.s - b.s || a.id - b.id);
-
-                      const nextEdits: Record<number, { start: string; end: string }> = {
-                        [Number(task.id)]: {
-                          start: minutesToHHMM(nextStart),
-                          end: minutesToHHMM(nextEnd),
-                        },
-                      };
-                      const shiftedIds: number[] = [];
-                      let cursor = nextEnd;
-                      for (const peer of peers) {
-                        if (peer.e <= nextStart) continue;
-                        if (peer.s >= cursor) {
-                          cursor = peer.e;
-                          continue;
-                        }
-                        const dur = Math.max(5, peer.e - peer.s);
-                        const shiftedStart = Math.max(startMin, Math.min(endMin - dur, cursor));
-                        const shiftedEnd = shiftedStart + dur;
-                        nextEdits[peer.id] = {
-                          start: minutesToHHMM(shiftedStart),
-                          end: minutesToHHMM(shiftedEnd),
-                        };
-                        shiftedIds.push(peer.id);
-                        cursor = shiftedEnd;
-                      }
-
-                      shiftedTaskIdsRef.current = shiftedIds;
-                      lastDraggedTaskIdRef.current = Number(task.id);
-                      setPendingManualEdits((prev) => ({ ...prev, ...nextEdits }));
-
-                      const dependsOnTaskIds = Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [];
-                      if (dependsOnTaskIds.length > 0) {
-                        let maxPrereqEnd = -1;
-                        let prereqTaskName = "";
-                        for (const depId of dependsOnTaskIds) {
-                          const prereq = taskById.get(Number(depId));
-                          if (!prereq) continue;
-                          const prereqEnd = prereq.lockedEnd ?? prereq.endPlanned ?? null;
-                          if (!prereqEnd) continue;
-                          const endMin = timeToMinutes(prereqEnd);
-                          if (endMin > maxPrereqEnd) {
-                            maxPrereqEnd = endMin;
-                            prereqTaskName = prereq.template?.name || `#${depId}`;
-                          }
-                        }
-                        if (maxPrereqEnd >= 0 && nextStart < maxPrereqEnd) {
-                          const prereqEnd = minutesToHHMM(maxPrereqEnd);
-                          setDependencyWarnings((prev) => ({
-                            ...prev,
-                            [Number(task.id)]: { prereqTaskName, prereqEnd },
-                          }));
-                          clearWarningLater(Number(task.id));
-                        }
-                      }
-                      dragStateRef.current = null;
-                    }}
+                    onMouseDown={(event) => handleLaneManualPlace(event, lane.tasks)}
                   >
                     {/* Grid 5 min (like PDF) */}
                     <div className="absolute inset-0 pointer-events-none z-0">
@@ -2505,27 +2480,11 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
-                            draggable={manualMode && !isApplying && !isTaskFixed(task)}
-                            onDragStart={(event) => {
-                              if (!(manualMode && !isApplying) || isTaskFixed(task)) {
-                                event.preventDefault();
-                                return;
-                              }
-                              dragStateRef.current = { taskId: Number(task.id), laneId: String(id) };
-                            }}
-                            onDragEnd={() => {
-                              dragStateRef.current = null;
-                            }}
-                            onDoubleClick={() => {
-                              setContestantSort({
-                                mode: "task",
-                                templateId: Number(task.templateId),
-                                templateName: task.template?.name || "Tarea",
-                              });
-                            }}
+                            onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
+                                                  manualSelectedTaskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
                               viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
