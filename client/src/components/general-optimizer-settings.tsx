@@ -33,6 +33,7 @@ type OptimizerSettings = {
   mainZoneOptKeepBusy: boolean;
   contestantCompactLevel: number;
   contestantStayInZoneLevel: number;
+  contestantTotalSpanLevel: number;
 };
 
 const heuristicKeys: OptimizerHeuristicKey[] = [
@@ -42,6 +43,7 @@ const heuristicKeys: OptimizerHeuristicKey[] = [
   "groupBySpaceTemplateMatch",
   "groupBySpaceActive",
   "contestantStayInZone",
+  "contestantTotalSpan",
 ];
 
 const strongLabelValue = mapBasicToAdvanced(3);
@@ -558,6 +560,49 @@ export function GeneralOptimizerSettings() {
           <div className="text-xs text-muted-foreground">
             Bonus suave por permanecer en la misma zona; no bloquea cambios de plató.
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Tiempo total concursante en grabación</Label>
+          {localMode === "basic" ? (
+            <Select
+              value={String(localHeuristics.contestantTotalSpan.basicLevel)}
+              disabled={isSaving}
+              onValueChange={async (v) => {
+                const basicLevel = clampBasicLevel(Number(v));
+                await setBasicHeuristic({ contestantTotalSpan: { basicLevel } });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Apagado</SelectItem>
+                <SelectItem value="1">Suave</SelectItem>
+                <SelectItem value="2">Medio</SelectItem>
+                <SelectItem value="3">Fuerte</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="space-y-1">
+              <Slider
+                min={0}
+                max={10}
+                step={1}
+                disabled={isSaving}
+                value={[localHeuristics.contestantTotalSpan.advancedValue]}
+                onValueChange={(arr) => {
+                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                  setAdvancedHeuristicLocal({ contestantTotalSpan: { advancedValue } });
+                }}
+                onValueCommit={async (arr) => {
+                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                  await commitAdvancedHeuristic({ contestantTotalSpan: { advancedValue } });
+                }}
+              />
+              <div className="text-xs">Valor: {localHeuristics.contestantTotalSpan.advancedValue}</div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

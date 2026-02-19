@@ -446,6 +446,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const occupiedByZoneMeal = new Map<number, Interval[]>(); // bloqueos de “comida plató”
   const occupiedByItinerant = new Map<number, Interval[]>();
   const lastZoneByContestant = new Map<number, number>();
+  const lastEndByZone = new Map<number, number>();
+  const lastEndByContestant = new Map<number, number>();
+  const firstStartByContestant = new Map<number, number>();
   const mealIntervals: Interval[] = []; // solo comidas de concursantes (para max simultáneo)
   let fixedMealCount = 0;
   let fixedMealMinutesInWindow = 0;
@@ -491,6 +494,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const arr = occupiedByContestant.get(contestantId) ?? [];
       addIntervalSorted(arr, { start: s, end: e, taskId: Number(task.id) });
       occupiedByContestant.set(contestantId, arr);
+
+      const firstStart = firstStartByContestant.get(contestantId);
+      if (firstStart == null || s < firstStart) firstStartByContestant.set(contestantId, s);
+      const lastEnd = lastEndByContestant.get(contestantId);
+      if (lastEnd == null || e > lastEnd) lastEndByContestant.set(contestantId, e);
 
       if (isMealTask(task)) {
         addIntervalSorted(mealIntervals, { start: s, end: e, taskId: Number(task.id) });
@@ -874,6 +882,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const groupingActiveSpaceWeights = [0, 50, 200, 600];
   const contestantCompactWeights = [0, 800, 3_000, 9_000];
   const contestantStayInZoneWeights = [0, 600, 1_200, 2_000, 3_000, 4_500, 6_000, 7_500, 9_000, 10_500, 12_000];
+  const contestantTotalSpanWeights = [0, 200, 400, 650, 900, 1_200, 1_600, 2_000, 2_400, 2_900, 3_500];
 
   const weightFromInput = (key: keyof NonNullable<(typeof input)["optimizerWeights"]>, fallback: number) => {
     const raw = (input as any)?.optimizerWeights?.[key];
@@ -905,13 +914,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
   const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
+  const effectiveContestantTotalSpanWeight = contestantTotalSpanWeights[Math.round(weightFromInput("contestantTotalSpan", 0))] ?? 0;
 
   // “memoria” simple para intentar hacer bloques por espacio+tipo
   const lastTemplateBySpace = new Map<number, number>();
 
   // ✅ memoria para compactar por zona/concursante
-  const lastEndByZone = new Map<number, number>();
-  const lastEndByContestant = new Map<number, number>();
 
   const depsSatisfied = (task: any) => {
     const depIds = getDepTaskIds(task);
@@ -1278,6 +1286,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const cId = getContestantId(task);
       if (cId) {
         lastEndByContestant.set(cId, finish);
+        const firstStart = firstStartByContestant.get(cId);
+        if (firstStart == null || start < firstStart) firstStartByContestant.set(cId, start);
         if (zId) lastZoneByContestant.set(cId, zId);
       }
 
@@ -1572,6 +1582,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
     lastEndByZone.set(zoneId, finish);
     if (contestantId) {
       lastEndByContestant.set(contestantId, finish);
+      const firstStart = firstStartByContestant.get(contestantId);
+      if (firstStart == null || start < firstStart) firstStartByContestant.set(contestantId, start);
       lastZoneByContestant.set(contestantId, zoneId);
     }
 
@@ -1661,6 +1673,20 @@ export function generatePlan(input: EngineInput): EngineOutput {
         const cId = getContestantId(t);
         if (cId && zone && lastZoneByContestant.get(cId) === zone) {
           s += effectiveContestantStayInZoneWeight;
+        }
+      }
+
+      if (effectiveContestantTotalSpanWeight > 0) {
+        const cId = getContestantId(t);
+        if (cId) {
+          const firstStart = firstStartByContestant.get(cId);
+          const lastEnd = lastEndByContestant.get(cId);
+          if (Number.isFinite(firstStart) && Number.isFinite(lastEnd) && Number(lastEnd) >= Number(firstStart)) {
+            const openSpan = Math.min(240, Math.max(0, Number(lastEnd) - Number(firstStart)));
+            s += openSpan * effectiveContestantTotalSpanWeight;
+          } else if (firstStartByContestant.size > 0) {
+            s -= Math.round(effectiveContestantTotalSpanWeight * 8);
+          }
         }
       }
 
@@ -1789,6 +1815,23 @@ export function generatePlan(input: EngineInput): EngineOutput {
           sa += effectiveContestantStayInZoneWeight;
         if (bC && bZone && lastZoneByContestant.get(bC) === bZone)
           sb += effectiveContestantStayInZoneWeight;
+      }
+
+      if (effectiveContestantTotalSpanWeight > 0) {
+        const scoreTotalSpan = (task: any) => {
+          const cId = getContestantId(task);
+          if (!cId) return 0;
+          const firstStart = firstStartByContestant.get(cId);
+          const lastEnd = lastEndByContestant.get(cId);
+          if (Number.isFinite(firstStart) && Number.isFinite(lastEnd) && Number(lastEnd) >= Number(firstStart)) {
+            const openSpan = Math.min(240, Math.max(0, Number(lastEnd) - Number(firstStart)));
+            return openSpan * effectiveContestantTotalSpanWeight;
+          }
+          if (firstStartByContestant.size > 0) return -Math.round(effectiveContestantTotalSpanWeight * 8);
+          return 0;
+        };
+        sa += scoreTotalSpan(a);
+        sb += scoreTotalSpan(b);
       }
 
       // desempate estable: respeta orden original de topo-sort

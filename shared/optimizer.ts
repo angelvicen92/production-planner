@@ -5,6 +5,7 @@ export const optimizerHeuristicKeys = [
   "groupBySpaceTemplateMatch",
   "groupBySpaceActive",
   "contestantStayInZone",
+  "contestantTotalSpan",
 ] as const;
 
 export type OptimizerHeuristicKey = (typeof optimizerHeuristicKeys)[number];

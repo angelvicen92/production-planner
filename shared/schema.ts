@@ -74,6 +74,8 @@ export const optimizerSettings = pgTable("optimizer_settings", {
   groupingAdvancedValue: integer("grouping_advanced_value").notNull().default(6),
   contestantCompactAdvancedValue: integer("contestant_compact_advanced_value").notNull().default(0),
   contestantStayInZoneAdvancedValue: integer("contestant_stay_in_zone_advanced_value").notNull().default(0),
+  contestantTotalSpanLevel: integer("contestant_total_span_level").notNull().default(0),
+  contestantTotalSpanAdvancedValue: integer("contestant_total_span_advanced_value"),
 
   // ✅ nuevos modos del plató principal (se pueden combinar)
   mainZoneOptFinishEarly: boolean("main_zone_opt_finish_early").notNull().default(true),
@@ -280,6 +282,19 @@ export const insertDailyTaskSchema = createInsertSchema(dailyTasks).omit({ id: t
 export const insertLockSchema = createInsertSchema(locks).omit({ id: true });
 
 export type Plan = typeof plans.$inferSelect;
+
+export type PlanSummary = Plan & {
+  contestantsCount?: number | null;
+  tasksTotal?: number | null;
+  tasksPlanned?: number | null;
+  firstTaskStart?: string | null;
+  lastTaskEnd?: string | null;
+  minutesTasksTotal?: number | null;
+  availableMinutes?: number | null;
+  realSpanMinutes?: number | null;
+  occupancyAvailablePct?: number | null;
+  occupancyRealPct?: number | null;
+};
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 
 export type DailyTask = typeof dailyTasks.$inferSelect;

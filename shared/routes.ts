@@ -903,6 +903,7 @@ export const api = {
 
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3),
+          contestantTotalSpanLevel: z.number().int().min(0).max(3),
         }),
       },
     },
@@ -948,6 +949,7 @@ export const api = {
 
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3).optional(),
+          contestantTotalSpanLevel: z.number().int().min(0).max(3).optional(),
         })
         .strict(),
       responses: {

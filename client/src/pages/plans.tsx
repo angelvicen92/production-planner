@@ -9,6 +9,12 @@ import { Loader2, Calendar, Clock, ArrowRight, Trash2, Star } from "lucide-react
 import { Link } from "wouter";
 import { format } from "date-fns";
 
+function formatPct(value: unknown): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${n.toFixed(1)}%`;
+}
+
 export default function PlansPage() {
   const { data: plans, isLoading, error } = usePlans();
   const { data: preferences } = useMePreferences();
@@ -119,7 +125,7 @@ export default function PlansPage() {
                     {format(new Date(plan.date), "MMMM d, yyyy")}
                   </CardTitle>
                   <CardDescription>
-                    Horario del día
+                    Resumen del plan
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -127,6 +133,21 @@ export default function PlansPage() {
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="mr-2 h-4 w-4" />
                       {plan.workStart} - {plan.workEnd}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Concursantes: {plan.contestantsCount ?? "—"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Tareas: {plan.tasksPlanned ?? "—"}/{plan.tasksTotal ?? "—"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Horario día: {plan.workStart || "—"} - {plan.workEnd || "—"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Horario real: {plan.firstTaskStart ?? "—"} - {plan.lastTaskEnd ?? "—"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Ocupación: {formatPct(plan.occupancyAvailablePct)} (jornada) / {formatPct(plan.occupancyRealPct)} (real)
                     </div>
                   </div>
                   

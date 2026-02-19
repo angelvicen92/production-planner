@@ -3549,13 +3549,23 @@ export default function PlanDetailsPage() {
                   const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
                   const taskId = Number(task?.id);
                   const reason = reasonsByTaskId.get(taskId) || "Sin detalle (replanifica para ver motivos).";
+                  const tags: string[] = [];
+                  if (task?.isManualBlock || task?.is_manual_block) tags.push("manual_block");
+                  if (task?.lockType === "time" || task?.lock_type === "time") tags.push("time_lock");
+                  if (task?.lockType === "full" || task?.lock_type === "full") tags.push("full_lock");
+                  tags.push(`status:${String(task?.status ?? "pending")}`);
                   return (
                     <div key={taskId} className={cn("rounded-md border p-3", unplannedFocusTaskId === taskId ? "border-red-300" : "") }>
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">
                           <div className="font-medium">{task?.template?.name || `Template #${task?.templateId}`}</div>
-                          <div className="text-sm text-muted-foreground">{contestant?.name || `Concursante #${contestantId}`}</div>
+                          <div className="text-sm text-muted-foreground">{contestant?.name || (Number.isFinite(contestantId) ? `Concursante #${contestantId}` : "(sin concursante)")}</div>
                           <div className="text-xs text-muted-foreground">Motivo: {reason}</div>
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {tags.map((tag) => (
+                              <Badge key={`${taskId}-${tag}`} variant="outline" className="text-[10px]">{tag}</Badge>
+                            ))}
+                          </div>
                         </div>
                         <Button type="button" size="sm" onClick={() => openTaskFromUnplanned(task)}>
                           Ir
@@ -3582,6 +3592,18 @@ export default function PlanDetailsPage() {
             </DialogHeader>
             <div className="space-y-3">
               <Progress value={planningProgress.indeterminate ? 35 : planningProgress.percentage} className={cn("h-2", planningProgress.indeterminate ? "animate-pulse" : "")} />
+              <p className="text-xs text-muted-foreground">
+                {planningRunQ.data?.phase === "clearing_pending"
+                  ? "Limpiando pendientes"
+                  : planningRunQ.data?.phase === "building_input"
+                    ? "Construyendo entrada"
+                    : planningRunQ.data?.phase === "solving"
+                      ? "Resolviendo"
+                      : planningRunQ.data?.phase === "persisting"
+                        ? "Persistiendo"
+                        : "Procesando"}
+                {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}
+              </p>
               <p className="text-xs text-muted-foreground">El proceso se cerrará automáticamente al terminar.</p>
             </div>
           </DialogContent>
