@@ -20,6 +20,7 @@ import TimelinePage from "@/pages/timeline";
 import SettingsPage from "@/pages/settings";
 import CallSheetPage from "@/pages/call-sheet";
 import WarRoomPage from "@/pages/war-room";
+import ControlRoomPage from "@/pages/control-room";
 import NotFound from "@/pages/not-found";
 
 function FullScreenLoader() {
@@ -135,6 +136,7 @@ function Router() {
       <Route path="/plans">{() => <ProtectedRoute component={PlansPage} />}</Route>
 
       <Route path="/plans/:id">{() => <ProtectedRoute component={PlanDetailsPage} />}</Route>
+      <Route path="/plans/:planId/control-room">{() => <ProtectedRoute component={ControlRoomPage} />}</Route>
 
       <Route path="/timeline">{() => <ProtectedRoute component={TimelinePage} />}</Route>
       <Route path="/call-sheet">{() => <ProtectedRoute component={CallSheetPage} />}</Route>
