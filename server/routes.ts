@@ -3957,6 +3957,7 @@ function mapDeleteError(err: any, fallback: string) {
     return (raw: any) => {
       const w = typeof raw === "string" ? { message: raw } : { ...(raw ?? {}) };
       const task = Number.isFinite(Number(w.taskId)) ? taskById.get(Number(w.taskId)) : null;
+      const otherTask = Number.isFinite(Number(w.otherTaskId)) ? taskById.get(Number(w.otherTaskId)) : null;
       const templateId = Number(w.templateId ?? task?.template_id ?? task?.templateId ?? NaN);
       const contestantId = Number(w.contestantId ?? task?.contestant_id ?? task?.contestantId ?? NaN);
       const zoneId = Number(w.zoneId ?? task?.zone_id ?? task?.zoneId ?? NaN);
@@ -3967,10 +3968,16 @@ function mapDeleteError(err: any, fallback: string) {
       const zoneName = Number.isFinite(zoneId) ? String(zoneById.get(zoneId)?.name ?? "") : "";
       const spaceName = Number.isFinite(spaceId) ? String(spaceById.get(spaceId)?.name ?? "") : "";
       const taskName = task ? `${templateName || task?.template?.name || 'Tarea'}${contestantName ? ` (${contestantName})` : ""}` : undefined;
+      const otherTemplateId = Number(w.otherTemplateId ?? otherTask?.template_id ?? otherTask?.templateId ?? NaN);
+      const otherContestantId = Number(w.otherContestantId ?? otherTask?.contestant_id ?? otherTask?.contestantId ?? NaN);
+      const otherTemplateName = Number.isFinite(otherTemplateId) ? String(tplById.get(otherTemplateId)?.name ?? "") : "";
+      const otherContestantName = Number.isFinite(otherContestantId) ? String(contestantById.get(otherContestantId)?.name ?? "") : "";
+      const otherTaskName = otherTask ? `${otherTemplateName || otherTask?.template?.name || 'Tarea'}${otherContestantName ? ` (${otherContestantName})` : ""}` : undefined;
 
       return {
         ...w,
         taskName: w.taskName ?? taskName,
+        otherTaskName: w.otherTaskName ?? otherTaskName,
         templateName: w.templateName ?? (templateName || undefined),
         contestantName: w.contestantName ?? (contestantName || undefined),
         zoneName: w.zoneName ?? (zoneName || undefined),
@@ -4000,28 +4007,157 @@ function mapDeleteError(err: any, fallback: string) {
 
       const engineInput = await buildEngineInput(planId, storage);
       if (mode === "as_is") {
-        const { data: taskRows, error: taskErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .select("id, status, is_manual_block, start_planned, end_planned")
-          .eq("plan_id", planId);
-        if (taskErr) throw taskErr;
+        const toMinutes = (value: string | null | undefined) => {
+          if (!value) return null;
+          const [hhRaw, mmRaw] = String(value).split(":");
+          const hh = Number(hhRaw);
+          const mm = Number(mmRaw);
+          if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+          return hh * 60 + mm;
+        };
 
-        const virtualLocks = (taskRows ?? [])
-          .filter((task: any) => {
-            const status = String(task?.status ?? "pending");
-            if (status === "done" || status === "in_progress" || status === "cancelled") return false;
-            if (task?.is_manual_block === true) return false;
-            return Boolean(task?.start_planned) && Boolean(task?.end_planned);
-          })
+        const fmtTask = (task: any) => {
+          const name = String(task?.templateName ?? "Tarea").trim() || "Tarea";
+          const contestant = String(task?.contestantName ?? "").trim();
+          const time = task?.startPlanned && task?.endPlanned ? ` ${task.startPlanned}–${task.endPlanned}` : "";
+          return contestant ? `${name} (${contestant})${time}` : `${name}${time}`;
+        };
+
+        const hasHardLock = (task: any) => {
+          const status = String(task?.status ?? "pending");
+          if (status === "done" || status === "in_progress") return true;
+          return Boolean(task?.lockedStart) && Boolean(task?.lockedEnd);
+        };
+
+        const overlapping = (a: any, b: any) => {
+          const aStart = toMinutes(a?.startPlanned);
+          const aEnd = toMinutes(a?.endPlanned);
+          const bStart = toMinutes(b?.startPlanned);
+          const bEnd = toMinutes(b?.endPlanned);
+          if (aStart === null || aEnd === null || bStart === null || bEnd === null) return false;
+          return aStart < bEnd && bStart < aEnd;
+        };
+
+        const nowReasons: any[] = [];
+        const plannedTasksNow = (engineInput.tasks ?? []).filter((task: any) => {
+          const status = String(task?.status ?? "pending");
+          if (status === "cancelled") return false;
+          if (!task?.startPlanned || !task?.endPlanned) return false;
+          return true;
+        });
+
+        const workStart = toMinutes(engineInput.workDay?.start);
+        const workEnd = toMinutes(engineInput.workDay?.end);
+        const mealStart = toMinutes(engineInput.meal?.start);
+        const mealEnd = toMinutes(engineInput.meal?.end);
+
+        for (const task of plannedTasksNow) {
+          const start = toMinutes(task?.startPlanned);
+          const end = toMinutes(task?.endPlanned);
+          if (start === null || end === null || end <= start) {
+            nowReasons.push({
+              code: "invalid_timeslot",
+              taskId: Number(task.id),
+              message: `La tarea ${fmtTask(task)} tiene un horario inválido.`,
+            });
+            continue;
+          }
+          if (workStart !== null && workEnd !== null && (start < workStart || end > workEnd)) {
+            nowReasons.push({
+              code: "outside_work_hours",
+              taskId: Number(task.id),
+              message: `La tarea ${fmtTask(task)} queda fuera del horario base ${engineInput.workDay.start}–${engineInput.workDay.end}.`,
+            });
+          }
+          if (mealStart !== null && mealEnd !== null && start < mealEnd && mealStart < end) {
+            nowReasons.push({
+              code: "crosses_meal",
+              taskId: Number(task.id),
+              message: `La tarea ${fmtTask(task)} cruza la franja de comida ${engineInput.meal.start}–${engineInput.meal.end}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < plannedTasksNow.length; i += 1) {
+          const a = plannedTasksNow[i];
+          for (let j = i + 1; j < plannedTasksNow.length; j += 1) {
+            const b = plannedTasksNow[j];
+            if (!overlapping(a, b)) continue;
+
+            const contestantA = Number(a?.contestantId ?? NaN);
+            const contestantB = Number(b?.contestantId ?? NaN);
+            if (Number.isFinite(contestantA) && contestantA > 0 && contestantA === contestantB) {
+              const fixedConflict = hasHardLock(a) && hasHardLock(b);
+              nowReasons.push({
+                code: fixedConflict ? "fixed_conflict" : "contestant_overlap",
+                taskId: Number(a.id),
+                otherTaskId: Number(b.id),
+                contestantId: contestantA,
+                message: fixedConflict
+                  ? `Conflicto entre tareas fijadas: ${fmtTask(a)} y ${fmtTask(b)} se solapan para el mismo concursante. Debes quitar el fijado de al menos una.`
+                  : `Solape de concursante: ${fmtTask(a)} y ${fmtTask(b)} se pisan en el mismo carril.`,
+              });
+            }
+
+            const spaceA = Number(a?.spaceId ?? NaN);
+            const spaceB = Number(b?.spaceId ?? NaN);
+            if (Number.isFinite(spaceA) && spaceA > 0 && spaceA === spaceB) {
+              const fixedConflict = hasHardLock(a) && hasHardLock(b);
+              nowReasons.push({
+                code: fixedConflict ? "fixed_conflict" : "space_overlap",
+                taskId: Number(a.id),
+                otherTaskId: Number(b.id),
+                spaceId: spaceA,
+                message: fixedConflict
+                  ? `Conflicto entre tareas fijadas: ${fmtTask(a)} y ${fmtTask(b)} se solapan en el mismo espacio. Debes quitar el fijado de al menos una.`
+                  : `Solape de espacio: ${fmtTask(a)} y ${fmtTask(b)} ocupan el mismo espacio al mismo tiempo.`,
+              });
+            }
+          }
+        }
+
+        for (const task of plannedTasksNow) {
+          const depTaskIds = Array.isArray(task?.dependsOnTaskIds) ? task.dependsOnTaskIds : [];
+          if (depTaskIds.length === 0) continue;
+          const taskStart = toMinutes(task?.startPlanned);
+          if (taskStart === null) continue;
+          for (const depTaskIdRaw of depTaskIds) {
+            const depTaskId = Number(depTaskIdRaw);
+            if (!Number.isFinite(depTaskId) || depTaskId <= 0) continue;
+            const depTask = plannedTasksNow.find((x: any) => Number(x.id) === depTaskId);
+            if (!depTask) continue;
+            const depEnd = toMinutes(depTask?.endPlanned);
+            if (depEnd === null) continue;
+            if (taskStart < depEnd) {
+              const fixedConflict = hasHardLock(task) && hasHardLock(depTask);
+              nowReasons.push({
+                code: fixedConflict ? "fixed_conflict" : "dependency_violation",
+                taskId: Number(task.id),
+                otherTaskId: Number(depTask.id),
+                message: fixedConflict
+                  ? `Conflicto entre tareas fijadas: ${fmtTask(task)} arranca antes de que termine su prerequisito ${fmtTask(depTask)}. Debes quitar el fijado de al menos una.`
+                  : `Dependencia incumplida: ${fmtTask(task)} arranca antes de que termine ${fmtTask(depTask)}.`,
+              });
+            }
+          }
+        }
+
+        if (nowReasons.length > 0) {
+          const enrich = await buildReasonEnricher(planId);
+          const reasons = nowReasons.slice(0, 100).map((r: any) => enrich(r));
+          return res.json({ feasible: false, reasons });
+        }
+
+        const virtualLocks = plannedTasksNow
           .map((task: any) => ({
             id: -Number(task.id),
             planId,
             taskId: Number(task.id),
             lockType: "time" as const,
-            lockedStart: String(task.start_planned),
-            lockedEnd: String(task.end_planned),
+            lockedStart: String(task.startPlanned),
+            lockedEnd: String(task.endPlanned),
             lockedResourceId: null,
-            source: "planned_time_virtual",
+            source: "as_is_planned_time",
           }));
 
         const lockByTaskId = new Map<number, any>();
