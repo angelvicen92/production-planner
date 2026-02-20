@@ -308,7 +308,6 @@ function TaskStatusMenuTrigger({
         if (manualMode) {
           suppressNextClickRef.current = true;
           event.preventDefault();
-          event.stopPropagation();
         }
       }}
     >
@@ -633,6 +632,19 @@ function TaskStatusMenuTrigger({
     } finally {
       setIsPostApplyChecking(false);
     }
+  };
+
+  const closeValidationFeedback = () => {
+    setValidationResult(null);
+    setPostApplyDialog(null);
+  };
+
+  const discardManualChangesAndCloseValidation = async () => {
+    clearManualDraftState();
+    await onReloadPlanTasks?.();
+    await onCancelManualEdits?.();
+    setManualMode(false);
+    closeValidationFeedback();
   };
 
   // =========================
@@ -2447,7 +2459,10 @@ function TaskStatusMenuTrigger({
 
               {validationResult && !validationResult.feasible ? (
                 <Card className="mb-3 p-3 border-red-300/50 bg-red-50/40">
-                  <p className="text-sm font-semibold">Plan no factible</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Plan no factible</p>
+                    <Button size="sm" variant="ghost" onClick={closeValidationFeedback}>Cerrar</Button>
+                  </div>
                   <ul className="text-xs mt-1 list-disc ml-5 space-y-0.5">
                     {(validationResult.reasons ?? []).slice(0, 5).map((r, idx) => (
                       <li key={idx}>
@@ -2462,8 +2477,14 @@ function TaskStatusMenuTrigger({
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-2">
-                    <Button size="sm" onClick={() => void onGeneratePlan?.()}>
+                  <div className="mt-2 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => void discardManualChangesAndCloseValidation()}>
+                      Descartar cambios
+                    </Button>
+                    <Button size="sm" onClick={async () => {
+                      await onGeneratePlan?.();
+                      closeValidationFeedback();
+                    }}>
                       Replanificar ahora
                     </Button>
                   </div>
@@ -2499,26 +2520,20 @@ function TaskStatusMenuTrigger({
                     </ul>
                   </div>
                   <DialogFooter className="gap-2 sm:justify-between">
-                    <Button variant="outline" onClick={() => setPostApplyDialog(null)}>Cerrar</Button>
+                    <Button variant="outline" onClick={closeValidationFeedback}>Cerrar</Button>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={async () => {
-                          clearManualDraftState();
-                          await onReloadPlanTasks?.();
-                          await onCancelManualEdits?.();
-                          setManualMode(false);
-                          setPostApplyDialog(null);
-                        }}
+                        onClick={() => void discardManualChangesAndCloseValidation()}
                       >
-                        Deshacer cambios
+                        Descartar cambios
                       </Button>
                       <Button
                         onClick={async () => {
                           await onGeneratePlan?.();
                           clearManualDraftState();
                           setManualMode(false);
-                          setPostApplyDialog(null);
+                          closeValidationFeedback();
                         }}
                       >
                         Mantener cambios y replanificar
