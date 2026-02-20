@@ -886,6 +886,8 @@ export default function PlanDetailsPage() {
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [locksDialogOpen, setLocksDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetPending, setResetPending] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
     task: any | null;
@@ -1181,6 +1183,27 @@ export default function PlanDetailsPage() {
     }
     return map;
   }, [planningRunQ.data?.lastReasons, formatInfeasibleReason]);
+
+  const onResetPlan = async (mode: "partial" | "total") => {
+    setResetPending(true);
+    try {
+      const result = await apiRequest<any>("POST", `/api/plans/${id}/reset`, { mode });
+      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+      setResetDialogOpen(false);
+      toast({
+        title: mode === "partial" ? "Reset parcial completado" : "Reset total completado",
+        description: `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "No se pudo resetear el planning",
+        description: err?.message || "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      setResetPending(false);
+    }
+  };
 
   const openTaskFromUnplanned = (task: any) => {
     const tid = Number(task?.id);
@@ -3088,12 +3111,20 @@ export default function PlanDetailsPage() {
                       const contestantId = Number(task?.contestantId ?? task?.contestant_id);
                       const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
                       const lockType = String(lock?.type ?? lock?.lockType ?? lock?.lock_type ?? "time");
+                      const hasExecution =
+                        task?.status === "in_progress" ||
+                        task?.status === "done" ||
+                        Boolean(task?.startReal) ||
+                        Boolean(task?.endReal);
                       return (
                         <div key={`${taskId}-${idx}`} className="rounded-md border p-2 text-sm">
                           <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
-                          <div><span className="font-medium">Tipo:</span> {lockType}</div>
-                          <div><span className="font-medium">Inicio/fin:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
                           <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
+                          <div><span className="font-medium">Tipo lock:</span> {lockType}</div>
+                          <div><span className="font-medium">Inicio/fin lock:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
+                          {hasExecution ? (
+                            <div><span className="font-medium">Ejecución real:</span> sí ({task?.status ?? "—"})</div>
+                          ) : null}
                         </div>
                       );
                     })
@@ -3101,12 +3132,14 @@ export default function PlanDetailsPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setLocksDialogOpen(false)}>Cerrar</Button>
-                  <Button variant="destructive" onClick={() => {
-                    setLocksDialogOpen(false);
-                    setClearTimeLocksDialogOpen(true);
-                  }}>
-                    Limpiar time locks
-                  </Button>
+                  {timeLockedTaskIds.size > 0 ? (
+                    <Button variant="destructive" onClick={() => {
+                      setLocksDialogOpen(false);
+                      setClearTimeLocksDialogOpen(true);
+                    }}>
+                      Limpiar locks de tiempo
+                    </Button>
+                  ) : null}
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -3131,6 +3164,29 @@ export default function PlanDetailsPage() {
                     }}
                   >
                     Liberar todas
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reset del planning</DialogTitle>
+                  <DialogDescription>
+                    Reset parcial limpia solo tareas no ejecutadas y sin lock fijo. Reset total limpia todo lo no ejecutado y elimina locks de esas tareas.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                  Las tareas en estado in_progress o done no se tocan.
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={resetPending}>Cancelar</Button>
+                  <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>
+                    {resetPending ? "Procesando..." : "Reset parcial"}
+                  </Button>
+                  <Button variant="destructive" onClick={() => void onResetPlan("total")} disabled={resetPending}>
+                    {resetPending ? "Procesando..." : "Reset total"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -3220,14 +3276,127 @@ export default function PlanDetailsPage() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    onClick={() => setLocksDialogOpen(true)}
+                  >
+                    Locks: {((plan as any)?.locks ?? []).length}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="bg-amber-50/60"
                     title="Tareas pending sin inicio/fin planificado"
                     onClick={() => setUnplannedDialogOpen(true)}
                   >
                     Pendientes sin planificar: {unplannedTasks.length}
                   </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setResetDialogOpen(true)}
+                  >
+                    Reset
+                  </Button>
                 </div>
               </div>
+
+              <Dialog open={locksDialogOpen} onOpenChange={setLocksDialogOpen}>
+                <DialogContent className="sm:max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Locks del plan</DialogTitle>
+                    <DialogDescription>Detalle de fijaciones registradas en el plan actual.</DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                    {(((plan as any)?.locks ?? []) as any[]).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No hay locks guardados.</p>
+                    ) : (
+                      (((plan as any)?.locks ?? []) as any[]).map((lock: any, idx: number) => {
+                        const taskId = Number(lock?.taskId ?? lock?.task_id);
+                        const task = ((plan?.dailyTasks ?? []) as any[]).find((t: any) => Number(t?.id) === taskId) as any;
+                        const contestantId = Number(task?.contestantId ?? task?.contestant_id);
+                        const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
+                        const lockType = String(lock?.type ?? lock?.lockType ?? lock?.lock_type ?? "time");
+                        const hasExecution =
+                          task?.status === "in_progress" ||
+                          task?.status === "done" ||
+                          Boolean(task?.startReal) ||
+                          Boolean(task?.endReal);
+                        return (
+                          <div key={`${taskId}-${idx}`} className="rounded-md border p-2 text-sm">
+                            <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
+                            <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
+                            <div><span className="font-medium">Tipo lock:</span> {lockType}</div>
+                            <div><span className="font-medium">Inicio/fin lock:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
+                            {hasExecution ? (
+                              <div><span className="font-medium">Ejecución real:</span> sí ({task?.status ?? "—"})</div>
+                            ) : null}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setLocksDialogOpen(false)}>Cerrar</Button>
+                    {timeLockedTaskIds.size > 0 ? (
+                      <Button variant="destructive" onClick={() => {
+                        setLocksDialogOpen(false);
+                        setClearTimeLocksDialogOpen(true);
+                      }}>
+                        Limpiar locks de tiempo
+                      </Button>
+                    ) : null}
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={clearTimeLocksDialogOpen} onOpenChange={setClearTimeLocksDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Liberar todas las fijaciones horarias</DialogTitle>
+                    <DialogDescription>
+                      Esto liberará fijaciones horarias (time locks) de tareas pendientes. No toca in_progress/done ni manual_blocks.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setClearTimeLocksDialogOpen(false)}>Cancelar</Button>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        await apiRequest("DELETE", buildUrl(api.plans.clearTimeLocks.path, { id }));
+                        queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                        setClearTimeLocksDialogOpen(false);
+                        toast({ title: "Fijaciones horarias liberadas" });
+                      }}
+                    >
+                      Liberar todas
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Reset del planning</DialogTitle>
+                    <DialogDescription>
+                      Reset parcial limpia solo tareas no ejecutadas y sin lock fijo. Reset total limpia todo lo no ejecutado y elimina locks de esas tareas.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                    Las tareas en estado in_progress o done no se tocan.
+                  </div>
+                  <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={resetPending}>Cancelar</Button>
+                    <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>
+                      {resetPending ? "Procesando..." : "Reset parcial"}
+                    </Button>
+                    <Button variant="destructive" onClick={() => void onResetPlan("total")} disabled={resetPending}>
+                      {resetPending ? "Procesando..." : "Reset total"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {timelineView === "spaces" && (
                 <Card className="p-3">
@@ -3456,7 +3625,7 @@ export default function PlanDetailsPage() {
                     toast({ title: "Cambios manuales guardados" });
                   }}
                   onValidatePlan={async () => {
-                    return await apiRequest("POST", `/api/plans/${id}/validate`);
+                    return await apiRequest("POST", `/api/plans/${id}/validate`, { mode: "as_is" });
                   }}
                   onGeneratePlan={async () => {
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
