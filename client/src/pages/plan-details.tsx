@@ -111,31 +111,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 
-const HHMM_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-function hasValidHHMM(value: unknown): boolean {
-  return typeof value === "string" && HHMM_REGEX.test(value.trim());
-}
-
-function isTaskPlanned(task: any): boolean {
-  const start = task?.startPlanned ?? task?.start_planned;
-  const end = task?.endPlanned ?? task?.end_planned;
-  return hasValidHHMM(start) && hasValidHHMM(end);
-}
-
-function computePlanningProgress(tasks: any[], capAt99: boolean) {
-  const pendingTasks = tasks.filter(
-    (task: any) => String(task?.status ?? "pending") === "pending",
-  );
-  const totalCount = pendingTasks.length;
-  const plannedCount = pendingTasks.filter((task: any) => isTaskPlanned(task)).length;
-  const percentage =
-    totalCount > 0 ? Math.floor((plannedCount / totalCount) * 100) : 0;
+function getRunProgress(args: {
+  plannedCount: number;
+  totalPending: number;
+  status?: string | null;
+}) {
+  const pct = args.totalPending > 0
+    ? Math.floor((args.plannedCount / args.totalPending) * 100)
+    : 0;
 
   return {
-    totalCount,
-    plannedCount,
-    percentage: capAt99 ? Math.min(99, percentage) : Math.min(100, percentage),
+    plannedCount: args.plannedCount,
+    totalCount: args.totalPending,
+    percentage: args.status === "running" ? Math.min(99, pct) : Math.min(100, pct),
   };
 }
 
@@ -1138,8 +1126,22 @@ export default function PlanDetailsPage() {
     if (expectedPlanningRunId == null) return;
     if (Number(run.id) !== Number(expectedPlanningRunId)) return;
 
+    if (Number.isFinite(run.plannedCount) && Number.isFinite(run.totalPending)) {
+      setPlanningProgress(
+        getRunProgress({
+          plannedCount: Number(run.plannedCount),
+          totalPending: Number(run.totalPending),
+          status: run.status,
+        }),
+      );
+    }
+
     if (run.status !== "running") {
-      const finalProgress = computePlanningProgress((plan?.dailyTasks ?? []) as any[], false);
+      const finalProgress = getRunProgress({
+        plannedCount: Number(run.plannedCount ?? 0),
+        totalPending: Number(run.totalPending ?? 0),
+        status: run.status,
+      });
       setPlanningProgress(finalProgress);
       setPlanningInProgress(false);
       setExpectedPlanningRunId(null);
@@ -1160,23 +1162,7 @@ export default function PlanDetailsPage() {
         setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [] });
       }
     }
-  }, [planningRunQ.data, expectedPlanningRunId, plan?.dailyTasks, toast]);
-
-  useEffect(() => {
-    if (!planningInProgress) return;
-
-    const updateProgress = () => {
-      const progress = computePlanningProgress((plan?.dailyTasks ?? []) as any[], true);
-      setPlanningProgress(progress);
-    };
-
-    updateProgress();
-    const timer = window.setInterval(updateProgress, 400);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [planningInProgress, plan?.dailyTasks]);
+  }, [planningRunQ.data, expectedPlanningRunId, toast]);
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
@@ -1370,7 +1356,14 @@ export default function PlanDetailsPage() {
   const handleGenerate = () => {
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
-    setPlanningProgress(computePlanningProgress((plan?.dailyTasks ?? []) as any[], true));
+    const totalToPlan = ((plan?.dailyTasks ?? []) as any[]).filter((task: any) => {
+      const taskId = Number(task?.id);
+      if (String(task?.status ?? "pending") !== "pending") return false;
+      if (task?.isManualBlock === true || task?.is_manual_block === true) return false;
+      if (!Number.isFinite(taskId) || taskId <= 0) return false;
+      return !timeLockedTaskIds.has(taskId) && !fullLockedTaskIds.has(taskId);
+    }).length;
+    setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 0 });
 
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
