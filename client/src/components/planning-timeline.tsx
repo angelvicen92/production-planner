@@ -188,6 +188,8 @@ function TaskStatusMenuTrigger({
   manualMode = false,
   canManualMove = false,
   onStartManualMove,
+  taskSortArmed = false,
+  canOpenMenuFromCard = true,
 }: {
   task: Task;
   contestantName: string;
@@ -209,16 +211,25 @@ function TaskStatusMenuTrigger({
   manualMode?: boolean;
   canManualMove?: boolean;
   onStartManualMove?: (task: Task, laneId: string) => void;
+  taskSortArmed?: boolean;
+  canOpenMenuFromCard?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
+
+  const handleCardClick = (event: MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event);
+    if (event.defaultPrevented) return;
+    if (taskSortArmed || !canOpenMenuFromCard) return;
+    setOpen(true);
+  };
 
   const triggerButton = (
     <button
       type="button"
       className={cn(className, "text-left")}
       style={style}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {children}
     </button>
@@ -247,8 +258,8 @@ function TaskStatusMenuTrigger({
               type="button"
               className="absolute right-1 top-1 z-20 h-5 w-5 rounded bg-background/70 text-xs leading-none hover:bg-background"
               onClick={(event) => {
-                event.preventDefault();
                 event.stopPropagation();
+                setOpen(true);
               }}
             >
               ⋮
@@ -1674,6 +1685,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -1769,6 +1782,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -1952,6 +1967,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2028,6 +2045,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2184,6 +2203,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2557,6 +2578,8 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             canManualMove={canSelectManualTask(task)}
                             onStartManualMove={startManualMove}
+                            taskSortArmed={taskSortArmed}
+                            canOpenMenuFromCard={manualMove === null}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
