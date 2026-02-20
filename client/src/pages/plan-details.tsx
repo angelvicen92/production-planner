@@ -885,6 +885,7 @@ export default function PlanDetailsPage() {
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0 });
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
+  const [locksDialogOpen, setLocksDialogOpen] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
     task: any | null;
@@ -2619,18 +2620,16 @@ export default function PlanDetailsPage() {
                       (Opcional) Crear una tarea global sin pasar por la ficha.
                     </p>
                     <div className="flex items-center gap-2">
-                      {timeLockedTaskIds.size > 0 ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-auto px-2 py-1" onClick={() => setLocksDialogOpen(true)}>
                             <Badge variant="secondary">Locks (time): {timeLockedTaskIds.size}</Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Hay tareas con time-lock guardado en el plan.
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <Badge variant="secondary">Locks (time): {timeLockedTaskIds.size}</Badge>
-                      )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Ver detalle de locks guardados en el plan.
+                        </TooltipContent>
+                      </Tooltip>
                       <Button
                         variant={showLockedOnly ? "default" : "outline"}
                         size="sm"
@@ -3072,6 +3071,45 @@ export default function PlanDetailsPage() {
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
+            <Dialog open={locksDialogOpen} onOpenChange={setLocksDialogOpen}>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Locks del plan</DialogTitle>
+                  <DialogDescription>Detalle de fijaciones registradas en el plan actual.</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                  {(((plan as any)?.locks ?? []) as any[]).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay locks guardados.</p>
+                  ) : (
+                    (((plan as any)?.locks ?? []) as any[]).map((lock: any, idx: number) => {
+                      const taskId = Number(lock?.taskId ?? lock?.task_id);
+                      const task = ((plan?.dailyTasks ?? []) as any[]).find((t: any) => Number(t?.id) === taskId) as any;
+                      const contestantId = Number(task?.contestantId ?? task?.contestant_id);
+                      const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
+                      const lockType = String(lock?.type ?? lock?.lockType ?? lock?.lock_type ?? "time");
+                      return (
+                        <div key={`${taskId}-${idx}`} className="rounded-md border p-2 text-sm">
+                          <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
+                          <div><span className="font-medium">Tipo:</span> {lockType}</div>
+                          <div><span className="font-medium">Inicio/fin:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
+                          <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setLocksDialogOpen(false)}>Cerrar</Button>
+                  <Button variant="destructive" onClick={() => {
+                    setLocksDialogOpen(false);
+                    setClearTimeLocksDialogOpen(true);
+                  }}>
+                    Limpiar time locks
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Dialog open={clearTimeLocksDialogOpen} onOpenChange={setClearTimeLocksDialogOpen}>
               <DialogContent>
@@ -3683,7 +3721,9 @@ export default function PlanDetailsPage() {
                 Planificando… {planningProgress.percentage}%
               </DialogTitle>
               <DialogDescription>
-                {planningProgress.plannedCount} / {planningProgress.totalCount} tareas planificadas
+                {Math.min(planningProgress.plannedCount, planningProgress.totalCount)} / {planningProgress.totalCount} pendientes en este run
+                <br />
+                Total tareas del plan: {plan?.dailyTasks?.length ?? 0}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -3696,8 +3736,10 @@ export default function PlanDetailsPage() {
                     : planningRunQ.data?.phase === "solving"
                       ? "Resolviendo"
                       : planningRunQ.data?.phase === "persisting"
-                        ? "Persistiendo"
-                        : "Procesando"}
+                        ? "Persistiendo..."
+                        : planningRunQ.data && planningProgress.plannedCount > planningProgress.totalCount
+                          ? "Persistiendo..."
+                          : "Procesando"}
                 {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}
               </p>
               <p className="text-xs text-muted-foreground">El proceso se cerrará automáticamente al terminar.</p>
