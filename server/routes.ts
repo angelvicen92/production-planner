@@ -3887,7 +3887,25 @@ function mapDeleteError(err: any, fallback: string) {
         ),
       );
 
-      const totalPending = pendingTaskIds.length;
+      const { data: activeLocks, error: activeLocksErr } = await supabaseAdmin
+        .from("locks")
+        .select("task_id, lock_type, locked_start, locked_end")
+        .eq("plan_id", planId)
+        .in("task_id", pendingTaskIds)
+        .in("lock_type", ["time", "full"])
+        .not("locked_start", "is", null)
+        .not("locked_end", "is", null);
+      if (activeLocksErr) throw activeLocksErr;
+
+      const lockedTaskIds = new Set<number>(
+        (activeLocks ?? [])
+          .map((lock: any) => Number(lock?.task_id))
+          .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
+      );
+
+      // total_pending must match only pending tasks that the solver is allowed to re-plan.
+      const taskIdsToSolve = pendingTaskIds.filter((taskId) => !lockedTaskIds.has(taskId));
+      const totalPending = taskIdsToSolve.length;
       const { data: runRow, error: runErr } = await supabaseAdmin
         .from("planning_runs")
         .insert({
@@ -3904,34 +3922,14 @@ function mapDeleteError(err: any, fallback: string) {
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
 
-      if (pendingTaskIds.length > 0) {
-        const { data: activeLocks, error: activeLocksErr } = await supabaseAdmin
-          .from("locks")
-          .select("task_id, lock_type, locked_start, locked_end")
-          .eq("plan_id", planId)
-          .in("task_id", pendingTaskIds)
-          .in("lock_type", ["time", "full"])
-          .not("locked_start", "is", null)
-          .not("locked_end", "is", null);
-        if (activeLocksErr) throw activeLocksErr;
-
-        const lockedTaskIds = new Set<number>(
-          (activeLocks ?? [])
-            .map((lock: any) => Number(lock?.task_id))
-            .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
-        );
-
-        const taskIdsToClear = pendingTaskIds.filter((taskId) => !lockedTaskIds.has(taskId));
-
-        if (taskIdsToClear.length > 0) {
-          const { error: clearPendingErr } = await supabaseAdmin
-            .from("daily_tasks")
-            .update({ start_planned: null, end_planned: null })
-            .in("id", taskIdsToClear)
-            .eq("status", "pending")
-            .neq("is_manual_block", true);
-          if (clearPendingErr) throw clearPendingErr;
-        }
+      if (taskIdsToSolve.length > 0) {
+        const { error: clearPendingErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .update({ start_planned: null, end_planned: null })
+          .in("id", taskIdsToSolve)
+          .eq("status", "pending")
+          .neq("is_manual_block", true);
+        if (clearPendingErr) throw clearPendingErr;
       }
 
       if (planningRunId) {
