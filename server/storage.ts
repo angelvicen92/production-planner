@@ -1608,12 +1608,7 @@ export class SupabaseStorage implements IStorage {
 
     const resetFromExecutedStatus = ["in_progress", "done"].includes(previousStatus);
     const lockIdsToDelete = (taskLocks ?? [])
-      .filter((lock: any) => {
-        const lockType = String(lock?.lock_type ?? "");
-        if (lockType !== "full") return false;
-        const reason = String(lock?.reason ?? "");
-        return reason.startsWith(executionLockReasonPrefix) || resetFromExecutedStatus;
-      })
+      .filter((lock: any) => String(lock?.lock_type ?? "") === "full")
       .map((lock: any) => Number(lock?.id))
       .filter((id: number) => Number.isFinite(id) && id > 0);
 

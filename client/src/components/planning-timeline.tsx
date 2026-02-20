@@ -5,12 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -321,18 +316,15 @@ function TaskStatusMenuTrigger({
         setOpen(nextOpen);
       }}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
-        </TooltipTrigger>
-        <PopoverContent
-          className="w-72 p-0"
-          side="top"
-          align="center"
-          sideOffset={6}
-          avoidCollisions
-          collisionPadding={12}
-        >
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+      <PopoverContent
+        className="w-72 p-0"
+        side="top"
+        align="center"
+        sideOffset={6}
+        avoidCollisions
+        collisionPadding={12}
+      >
           <div className="space-y-1 border-b p-2">
             <p className="truncate text-sm font-medium">{task.template?.name || "Tarea"}</p>
             <p className="text-[11px] font-normal text-muted-foreground truncate">
@@ -394,15 +386,7 @@ function TaskStatusMenuTrigger({
               </button>
             )}
           </div>
-        </PopoverContent>
-        <TooltipContent>
-          <div className="space-y-1 p-1">
-            <p className="font-bold truncate">{task.template?.name || "Tarea"}</p>
-            <p className="text-xs text-muted-foreground truncate">{contestantName || "—"} · {summaryTime}</p>
-            <p className="text-xs text-muted-foreground truncate">{locationLabel || "—"}</p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
+      </PopoverContent>
     </Popover>
   );
 }

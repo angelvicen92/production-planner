@@ -3128,6 +3128,9 @@ export default function PlanDetailsPage() {
                       const contestantId = Number(task?.contestantId ?? task?.contestant_id);
                       const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
                       const lockType = String(lock?.type ?? lock?.lockType ?? lock?.lock_type ?? "time");
+                      const lockReason = String(lock?.reason ?? "");
+                      const isExecutionLock = lockType === "full" && lockReason.toLowerCase().includes("execution lock");
+                      const lockTypeLabel = isExecutionLock ? "execution" : lockType;
                       const hasExecution =
                         task?.status === "in_progress" ||
                         task?.status === "done" ||
@@ -3137,7 +3140,14 @@ export default function PlanDetailsPage() {
                         <div key={`${taskId}-${idx}`} className="rounded-md border p-2 text-sm">
                           <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
                           <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
-                          <div><span className="font-medium">Tipo lock:</span> {lockType}</div>
+                          <div>
+                            <span className="font-medium">Tipo lock:</span> {lockTypeLabel}
+                            {isExecutionLock ? (
+                              <span className="ml-2 text-xs text-muted-foreground" title="Bloqueo automático por ejecución (in_progress/done). Se elimina al resetear ejecución.">
+                                ℹ️
+                              </span>
+                            ) : null}
+                          </div>
                           <div><span className="font-medium">Inicio/fin lock:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
                           {hasExecution ? (
                             <div><span className="font-medium">Ejecución real:</span> sí ({task?.status ?? "—"})</div>
@@ -3334,6 +3344,9 @@ export default function PlanDetailsPage() {
                         const contestantId = Number(task?.contestantId ?? task?.contestant_id);
                         const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
                         const lockType = String(lock?.type ?? lock?.lockType ?? lock?.lock_type ?? "time");
+                        const lockReason = String(lock?.reason ?? "");
+                        const isExecutionLock = lockType === "full" && lockReason.toLowerCase().includes("execution lock");
+                        const lockTypeLabel = isExecutionLock ? "execution" : lockType;
                         const hasExecution =
                           task?.status === "in_progress" ||
                           task?.status === "done" ||
@@ -3343,7 +3356,14 @@ export default function PlanDetailsPage() {
                           <div key={`${taskId}-${idx}`} className="rounded-md border p-2 text-sm">
                             <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
                             <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
-                            <div><span className="font-medium">Tipo lock:</span> {lockType}</div>
+                            <div>
+                              <span className="font-medium">Tipo lock:</span> {lockTypeLabel}
+                              {isExecutionLock ? (
+                                <span className="ml-2 text-xs text-muted-foreground" title="Bloqueo automático por ejecución (in_progress/done). Se elimina al resetear ejecución.">
+                                  ℹ️
+                                </span>
+                              ) : null}
+                            </div>
                             <div><span className="font-medium">Origen:</span> {String(lock?.source ?? "(sin source)")}</div>
                             <div><span className="font-medium">Inicio/fin lock:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
                             {hasExecution ? (
@@ -3579,8 +3599,8 @@ export default function PlanDetailsPage() {
                   onPinTask={async (task) => {
                     if (!task?.startPlanned || !task?.endPlanned || task?.isManualBlock) return;
                     await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, {
-                      lockStart: task.startPlanned,
-                      lockEnd: task.endPlanned,
+                      start: task.startPlanned,
+                      end: task.endPlanned,
                     });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Tarea fijada" });
