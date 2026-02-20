@@ -342,6 +342,7 @@ export class SupabaseStorage implements IStorage {
       contestantMealDurationMinutes: 75,
       contestantMealMaxSimultaneous: 10,
       camerasAvailable: 0,
+      isFavorite: false,
       contestantsCount: row?.contestants_count == null ? null : Number(row.contestants_count),
       tasksTotal: row?.tasks_total == null ? null : Number(row.tasks_total),
       tasksPlanned: row?.tasks_planned == null ? null : Number(row.tasks_planned),

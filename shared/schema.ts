@@ -25,6 +25,7 @@ export const plans = pgTable("plans", {
 
   camerasAvailable: integer("cameras_available").notNull().default(0),
   status: text("status").notNull().default('draft'),
+  isFavorite: boolean("is_favorite").notNull().default(false),
 });
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {

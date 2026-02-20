@@ -255,25 +255,16 @@ function mapDeleteError(err: any, fallback: string) {
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
       const { data, error } = await supabaseAdmin
-        .from("user_preferences")
-        .select("favorite_plan_id")
-        .eq("user_id", userId)
+        .from("plans")
+        .select("id")
+        .eq("is_favorite", true)
+        .order("id", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
 
-      const favoritePlanId = data?.favorite_plan_id ? Number(data.favorite_plan_id) : null;
-      if (favoritePlanId) {
-        const canAccess = await ensureUserCanAccessPlan(userId, favoritePlanId);
-        if (!canAccess) {
-          const { error: clearError } = await supabaseAdmin
-            .from("user_preferences")
-            .upsert({ user_id: userId, favorite_plan_id: null, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-          if (clearError) throw clearError;
-          return res.json({ favoritePlanId: null });
-        }
-      }
-
+      const favoritePlanId = data?.id ? Number(data.id) : null;
       return res.json({ favoritePlanId });
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch preferences" });
@@ -284,6 +275,11 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const userId = (req as any)?.user?.id as string | undefined;
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const role = await getUserRole(userId);
+      if (role !== "admin" && role !== "production") {
+        return withPermissionDenied(res);
+      }
 
       const payload = z
         .object({
@@ -298,13 +294,19 @@ function mapDeleteError(err: any, fallback: string) {
         }
       }
 
-      const { error } = await supabaseAdmin
-        .from("user_preferences")
-        .upsert(
-          { user_id: userId, favorite_plan_id: payload.planId, updated_at: new Date().toISOString() },
-          { onConflict: "user_id" },
-        );
-      if (error) throw error;
+      const { error: clearErr } = await supabaseAdmin
+        .from("plans")
+        .update({ is_favorite: false })
+        .eq("is_favorite", true);
+      if (clearErr) throw clearErr;
+
+      if (payload.planId !== null) {
+        const { error: markErr } = await supabaseAdmin
+          .from("plans")
+          .update({ is_favorite: true })
+          .eq("id", payload.planId);
+        if (markErr) throw markErr;
+      }
 
       return res.json({ favoritePlanId: payload.planId });
     } catch (err: any) {
@@ -3491,12 +3493,6 @@ function mapDeleteError(err: any, fallback: string) {
           );
         }
 
-        const { error: clrTaskErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .update({ start_planned: null, end_planned: null })
-          .eq("id", taskId);
-        if (clrTaskErr) throw clrTaskErr;
-
         return res.json({ success: true, cleared: true, locksCleared, clearedExecutionFull });
       }
 
@@ -3597,16 +3593,6 @@ function mapDeleteError(err: any, fallback: string) {
         .eq("plan_id", planId)
         .eq("lock_type", "time");
       if (delErr) throw delErr;
-
-      if (taskIds.length > 0) {
-        const { error: updErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .update({ start_planned: null, end_planned: null })
-          .in("id", taskIds)
-          .not("status", "in", "(in_progress,done)")
-          .eq("is_manual_block", false);
-        if (updErr) throw updErr;
-      }
 
       return res.json({ clearedCount: taskIds.length });
     } catch (err: any) {
