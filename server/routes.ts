@@ -3575,6 +3575,103 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
 
+  app.post("/api/plans/:id/reset", async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const input = z.object({ mode: z.enum(["partial", "total"]) }).parse(req.body ?? {});
+
+      const { data: planRow, error: planErr } = await supabaseAdmin
+        .from("plans")
+        .select("id")
+        .eq("id", planId)
+        .maybeSingle();
+      if (planErr) throw planErr;
+      if (!planRow) return res.status(404).json({ message: "Plan not found" });
+
+      const { data: taskRows, error: tasksErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id, status, is_manual_block, start_real, end_real")
+        .eq("plan_id", planId);
+      if (tasksErr) throw tasksErr;
+
+      const { data: lockRows, error: lockErr } = await supabaseAdmin
+        .from("locks")
+        .select("id, task_id, lock_type")
+        .eq("plan_id", planId);
+      if (lockErr) throw lockErr;
+
+      const lockTypeByTaskId = new Map<number, Set<string>>();
+      for (const lock of lockRows ?? []) {
+        const taskId = Number((lock as any)?.task_id);
+        const lockType = String((lock as any)?.lock_type ?? "");
+        if (!Number.isFinite(taskId) || taskId <= 0 || !lockType) continue;
+        const set = lockTypeByTaskId.get(taskId) ?? new Set<string>();
+        set.add(lockType);
+        lockTypeByTaskId.set(taskId, set);
+      }
+
+      const candidateTaskIds = (taskRows ?? [])
+        .map((task: any) => {
+          const taskId = Number(task?.id);
+          if (!Number.isFinite(taskId) || taskId <= 0) return null;
+          const status = String(task?.status ?? "pending");
+          if (status === "in_progress" || status === "done") return null;
+
+          if (input.mode === "partial") {
+            if (task?.is_manual_block === true) return null;
+            const lockTypes = lockTypeByTaskId.get(taskId);
+            if (lockTypes?.has("time") || lockTypes?.has("full")) return null;
+          }
+
+          return taskId;
+        })
+        .filter((taskId: number | null): taskId is number => Number.isFinite(taskId));
+
+      if (candidateTaskIds.length === 0) {
+        return res.json({ ok: true, clearedTasksCount: 0, clearedLocksCount: 0 });
+      }
+
+      const updatePayload: any = { start_planned: null, end_planned: null };
+      if (input.mode === "total") {
+        updatePayload.start_real = null;
+        updatePayload.end_real = null;
+      }
+
+      const { error: updErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .update(updatePayload)
+        .in("id", candidateTaskIds)
+        .not("status", "in", "(in_progress,done)");
+      if (updErr) throw updErr;
+
+      const lockTypesToDelete = input.mode === "total" ? ["time", "full"] : ["time"];
+      const { data: deletedLocks, error: delErr } = await supabaseAdmin
+        .from("locks")
+        .delete()
+        .eq("plan_id", planId)
+        .in("task_id", candidateTaskIds)
+        .in("lock_type", lockTypesToDelete)
+        .select("id");
+      if (delErr) throw delErr;
+
+      return res.json({
+        ok: true,
+        clearedTasksCount: candidateTaskIds.length,
+        clearedLocksCount: (deletedLocks ?? []).length,
+      });
+    } catch (err: any) {
+      if (err?.name === "ZodError") {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot reset plan" });
+    }
+  });
+
+
   app.post("/api/plans/:id/manual-block", async (req, res) => {
     try {
       const planId = Number(req.params.id);
@@ -3855,7 +3952,53 @@ function mapDeleteError(err: any, fallback: string) {
         return res.status(400).json({ message: "Invalid plan id" });
       }
 
+      const validateModeSchema = z.object({ mode: z.enum(["as_is", "replan"]).optional() }).partial();
+      const bodyParsed = validateModeSchema.safeParse(req.body ?? {});
+      const queryParsed = validateModeSchema.safeParse(req.query ?? {});
+      const mode = (bodyParsed.success ? bodyParsed.data.mode : undefined)
+        ?? (queryParsed.success ? queryParsed.data.mode : undefined)
+        ?? "as_is";
+
       const engineInput = await buildEngineInput(planId, storage);
+      if (mode === "as_is") {
+        const { data: taskRows, error: taskErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .select("id, status, is_manual_block, start_planned, end_planned")
+          .eq("plan_id", planId);
+        if (taskErr) throw taskErr;
+
+        const virtualLocks = (taskRows ?? [])
+          .filter((task: any) => {
+            const status = String(task?.status ?? "pending");
+            if (status === "done" || status === "in_progress" || status === "cancelled") return false;
+            if (task?.is_manual_block === true) return false;
+            return Boolean(task?.start_planned) && Boolean(task?.end_planned);
+          })
+          .map((task: any) => ({
+            id: -Number(task.id),
+            planId,
+            taskId: Number(task.id),
+            lockType: "time" as const,
+            lockedStart: String(task.start_planned),
+            lockedEnd: String(task.end_planned),
+            lockedResourceId: null,
+            source: "planned_time_virtual",
+          }));
+
+        const lockByTaskId = new Map<number, any>();
+        for (const lock of (engineInput.locks ?? []) as any[]) {
+          const taskId = Number(lock?.taskId);
+          if (!Number.isFinite(taskId) || taskId <= 0) continue;
+          lockByTaskId.set(taskId, lock);
+        }
+        for (const lock of virtualLocks) {
+          if (!lockByTaskId.has(lock.taskId)) {
+            lockByTaskId.set(lock.taskId, lock);
+          }
+        }
+        engineInput.locks = Array.from(lockByTaskId.values());
+      }
+
       const result = generatePlan(engineInput);
       if (result.feasible) return res.json({ feasible: true });
 
