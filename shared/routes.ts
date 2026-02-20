@@ -323,6 +323,12 @@ export const api = {
     generate: {
       method: "POST" as const,
       path: "/api/plans/:id/generate",
+      input: z
+        .object({
+          mode: z.enum(["full", "only_unplanned"]).optional(),
+        })
+        .strict()
+        .optional(),
       responses: {
         200: z.object({
           success: z.boolean(),

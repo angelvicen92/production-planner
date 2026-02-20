@@ -1393,7 +1393,7 @@ export default function PlanDetailsPage() {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
 
-      generatePlan.mutate(id, {
+      generatePlan.mutate({ id, mode: "full" }, {
         onSuccess: async (data: any) => {
           setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
           await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
@@ -1558,7 +1558,24 @@ export default function PlanDetailsPage() {
               )}
               {generatePlan.isPending
                 ? "Planificando..."
-                : "Generar Planificación"}
+                : "Generar/Recalcular"}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setPlanningInProgress(true);
+                setExpectedPlanningRunId(null);
+                void generatePlan.mutate({ id, mode: "only_unplanned" }, {
+                  onSettled: () => {
+                    setPlanningInProgress(false);
+                    void queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                  },
+                });
+              }}
+              disabled={generatePlan.isPending}
+            >
+              Planificar pendientes
             </Button>
             <Button variant="outline" onClick={openEdit}>
               Editar día
@@ -3062,7 +3079,7 @@ export default function PlanDetailsPage() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={async () => {
-                                      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, { clear: true });
+                                      await apiRequest("DELETE", `/api/daily-tasks/${task.id}/lock`);
                                       queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                       toast({ title: "Fijación eliminada" });
                                     }}
@@ -3327,6 +3344,7 @@ export default function PlanDetailsPage() {
                             <div><span className="font-medium">Task:</span> #{Number.isFinite(taskId) ? taskId : "—"} · {task?.template?.name ?? "(sin nombre)"}</div>
                             <div><span className="font-medium">Concursante:</span> {contestant?.name ?? (Number.isFinite(contestantId) ? `#${contestantId}` : "—")}</div>
                             <div><span className="font-medium">Tipo lock:</span> {lockType}</div>
+                            <div><span className="font-medium">Origen:</span> {String(lock?.source ?? "(sin source)")}</div>
                             <div><span className="font-medium">Inicio/fin lock:</span> {String(lock?.locked_start ?? lock?.lockedStart ?? "—")} → {String(lock?.locked_end ?? lock?.lockedEnd ?? "—")}</div>
                             {hasExecution ? (
                               <div><span className="font-medium">Ejecución real:</span> sí ({task?.status ?? "—"})</div>
@@ -3568,7 +3586,7 @@ export default function PlanDetailsPage() {
                     toast({ title: "Tarea fijada" });
                   }}
                   onUnpinTask={async (task) => {
-                    await apiRequest("PATCH", `/api/daily-tasks/${task.id}/time-lock`, { clear: true });
+                    await apiRequest("DELETE", `/api/daily-tasks/${task.id}/lock`);
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Fijación eliminada" });
                   }}
@@ -3628,7 +3646,7 @@ export default function PlanDetailsPage() {
                     return await apiRequest("POST", `/api/plans/${id}/validate`, { mode: "as_is" });
                   }}
                   onGeneratePlan={async () => {
-                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
+                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode: "full" });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Replanificación lanzada" });
                   }}

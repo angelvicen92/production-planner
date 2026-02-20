@@ -401,7 +401,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
             <Button asChild variant="outline"><Link href={`/plans/${selectedPlan?.id || ""}`}>Abrir plan</Link></Button>
-            <Button onClick={() => selectedPlan?.id && generate.mutate(selectedPlan.id)} disabled={!selectedPlan?.id || generate.isPending}>
+            <Button onClick={() => selectedPlan?.id && generate.mutate({ id: selectedPlan.id, mode: "full" })} disabled={!selectedPlan?.id || generate.isPending}>
               <Sparkles className="mr-2 h-4 w-4" /> Generar/Recalcular
             </Button>
             <Button variant="outline" onClick={() => refetch()} disabled={!selectedPlan?.id}>
