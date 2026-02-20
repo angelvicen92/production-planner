@@ -3456,13 +3456,15 @@ export default function PlanDetailsPage() {
                     toast({ title: "Cambios manuales guardados" });
                   }}
                   onValidatePlan={async () => {
-                    const response: any = await apiRequest("POST", `/api/plans/${id}/validate`);
-                    return await response.json();
+                    return await apiRequest("POST", `/api/plans/${id}/validate`);
                   }}
                   onGeneratePlan={async () => {
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }));
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Replanificación lanzada" });
+                  }}
+                  onReloadPlanTasks={async () => {
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                   }}
                   onCancelManualEdits={async () => {
                     queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
