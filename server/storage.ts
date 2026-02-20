@@ -1610,7 +1610,6 @@ export class SupabaseStorage implements IStorage {
     const lockIdsToDelete = (taskLocks ?? [])
       .filter((lock: any) => {
         const lockType = String(lock?.lock_type ?? "");
-        if (lockType === "time") return true;
         if (lockType !== "full") return false;
         const reason = String(lock?.reason ?? "");
         return reason.startsWith(executionLockReasonPrefix) || resetFromExecutedStatus;
@@ -1643,11 +1642,6 @@ export class SupabaseStorage implements IStorage {
       start_real_seconds: null,
       end_real_seconds: null,
     };
-
-    if (resetFromExecutedStatus && task.is_manual_block !== true) {
-      updatePatch.start_planned = null;
-      updatePatch.end_planned = null;
-    }
 
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("daily_tasks")

@@ -314,110 +314,96 @@ function TaskStatusMenuTrigger({
   };
 
   return (
-    <Tooltip>
-      <div className="relative">
-        <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
-        <Popover open={open} onOpenChange={(nextOpen) => {
-          if (nextOpen && (taskSortArmed || !canOpenMenuFromCard)) return;
-          setOpen(nextOpen);
-        }}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="absolute right-1 top-1 z-20 h-5 w-5 rounded bg-background/70 text-xs leading-none hover:bg-background"
-              onMouseDown={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (taskSortArmed || !canOpenMenuFromCard) return;
-                setOpen(true);
-              }}
-            >
-              ⋮
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-72 p-0"
-            side="top"
-            align="center"
-            sideOffset={6}
-            avoidCollisions
-            collisionPadding={12}
-          >
-            <div className="space-y-1 border-b p-2">
-              <p className="truncate text-sm font-medium">{task.template?.name || "Tarea"}</p>
-              <p className="text-[11px] font-normal text-muted-foreground truncate">
-                {contestantName || "—"} · {summaryTime}
-              </p>
-              <p className="text-[11px] font-normal text-muted-foreground truncate">
-                {locationLabel || "—"}
-              </p>
-            </div>
-            <div className="p-1">
-              {!onTaskStatusChange || actions.length === 0 ? (
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen && (taskSortArmed || !canOpenMenuFromCard)) return;
+        setOpen(nextOpen);
+      }}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+        </TooltipTrigger>
+        <PopoverContent
+          className="w-72 p-0"
+          side="top"
+          align="center"
+          sideOffset={6}
+          avoidCollisions
+          collisionPadding={12}
+        >
+          <div className="space-y-1 border-b p-2">
+            <p className="truncate text-sm font-medium">{task.template?.name || "Tarea"}</p>
+            <p className="text-[11px] font-normal text-muted-foreground truncate">
+              {contestantName || "—"} · {summaryTime}
+            </p>
+            <p className="text-[11px] font-normal text-muted-foreground truncate">
+              {locationLabel || "—"}
+            </p>
+          </div>
+          <div className="p-1">
+            {!onTaskStatusChange || actions.length === 0 ? (
+              <button
+                type="button"
+                className="w-full rounded px-2 py-1 text-left text-sm text-muted-foreground"
+                disabled
+              >
+                Sin acciones
+              </button>
+            ) : (
+              actions.map((action) => (
                 <button
-                  type="button"
-                  className="w-full rounded px-2 py-1 text-left text-sm text-muted-foreground"
-                  disabled
-                >
-                  Sin acciones
-                </button>
-              ) : (
-                actions.map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
-                    disabled={taskStatusPending}
-                    onClick={() => {
-                      void handleSelect(action);
-                    }}
-                  >
-                    {actionLabel(action)}
-                  </button>
-                ))
-              )}
-            </div>
-            <div className="border-t p-1">
-              {hasTimeLock ? (
-                <button
+                  key={action}
                   type="button"
                   className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
                   disabled={taskStatusPending}
                   onClick={() => {
-                    if (!onUnpinTask) return;
-                    void onUnpinTask(task).then(() => setOpen(false));
+                    void handleSelect(action);
                   }}
                 >
-                  Quitar fijación
+                  {actionLabel(action)}
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
-                  disabled={!canPinTimeLock || taskStatusPending}
-                  onClick={() => {
-                    if (!onPinTask) return;
-                    void onPinTask(task).then(() => setOpen(false));
-                  }}
-                >
-                  📌 Fijar
-                </button>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      <TooltipContent>
-        <div className="space-y-1 p-1">
-          <p className="font-bold truncate">{task.template?.name || "Tarea"}</p>
-          <p className="text-xs text-muted-foreground truncate">{contestantName || "—"} · {summaryTime}</p>
-          <p className="text-xs text-muted-foreground truncate">{locationLabel || "—"}</p>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+              ))
+            )}
+          </div>
+          <div className="border-t p-1">
+            {hasTimeLock ? (
+              <button
+                type="button"
+                className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
+                disabled={taskStatusPending}
+                onClick={() => {
+                  if (!onUnpinTask) return;
+                  void onUnpinTask(task).then(() => setOpen(false));
+                }}
+              >
+                Quitar fijación
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
+                disabled={!canPinTimeLock || taskStatusPending}
+                onClick={() => {
+                  if (!onPinTask) return;
+                  void onPinTask(task).then(() => setOpen(false));
+                }}
+              >
+                📌 Fijar
+              </button>
+            )}
+          </div>
+        </PopoverContent>
+        <TooltipContent>
+          <div className="space-y-1 p-1">
+            <p className="font-bold truncate">{task.template?.name || "Tarea"}</p>
+            <p className="text-xs text-muted-foreground truncate">{contestantName || "—"} · {summaryTime}</p>
+            <p className="text-xs text-muted-foreground truncate">{locationLabel || "—"}</p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </Popover>
   );
 }
 

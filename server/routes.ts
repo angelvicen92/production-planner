@@ -2949,6 +2949,15 @@ function mapDeleteError(err: any, fallback: string) {
             lockType: String(l.lock_type ?? l.lockType ?? "time"),
             lockedStart: l.locked_start ?? l.lockedStart ?? null,
             lockedEnd: l.locked_end ?? l.lockedEnd ?? null,
+            source:
+              l.source ??
+              (String(l?.reason ?? "").startsWith("Execution lock")
+                ? "execution"
+                : String(l?.created_by ?? "") === "manual"
+                  ? "manual_move"
+                  : String(l?.reason ?? "") === "fixed_by_user"
+                    ? "user_pin"
+                    : "(sin source)"),
           })),
         });
       } catch (e: any) {
@@ -3384,6 +3393,37 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.delete("/api/daily-tasks/:id/lock", async (req, res) => {
+    try {
+      const taskId = Number(req.params.id);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return res.status(400).json({ message: "Invalid task id" });
+      }
+
+      const { data: task, error: taskErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id, plan_id")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (taskErr) throw taskErr;
+      if (!task) return res.status(404).json({ message: "Task not found" });
+
+      const planId = Number((task as any).plan_id);
+      const { data: deleted, error: delErr } = await supabaseAdmin
+        .from("locks")
+        .delete()
+        .eq("plan_id", planId)
+        .eq("task_id", taskId)
+        .in("lock_type", ["time", "full"])
+        .select("id");
+      if (delErr) throw delErr;
+
+      return res.json({ ok: true, deleted: (deleted ?? []).length });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Cannot clear lock" });
+    }
+  });
+
   app.patch("/api/daily-tasks/:id/time-lock", async (req, res) => {
     try {
       const taskId = Number(req.params.id);
@@ -3796,7 +3836,6 @@ function mapDeleteError(err: any, fallback: string) {
       }
 
       const engineInput = await buildEngineInput(planId, storage);
-
       const tasks = Array.isArray((engineInput as any)?.tasks) ? (engineInput as any).tasks : [];
       const sample = tasks.slice(0, 25).map((t: any) => ({
         id: t.id,
@@ -4014,6 +4053,11 @@ function mapDeleteError(err: any, fallback: string) {
     const planId = Number(req.params.id);
     let planningRunId: number | null = null;
     try {
+      const input = z
+        .object({ mode: z.enum(["full", "only_unplanned"]).optional() })
+        .strict()
+        .parse(req.body ?? {});
+      const mode = input.mode ?? "full";
       const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
         .from("daily_tasks")
         .select("id, status, is_manual_block")
@@ -4047,7 +4091,23 @@ function mapDeleteError(err: any, fallback: string) {
       );
 
       // total_pending must match only pending tasks that the solver is allowed to re-plan.
-      const taskIdsToSolve = pendingTaskIds.filter((taskId) => !lockedTaskIds.has(taskId));
+      let taskIdsToSolve = pendingTaskIds.filter((taskId) => !lockedTaskIds.has(taskId));
+      if (mode === "only_unplanned") {
+        const { data: pendingRows, error: pendingRowsErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .select("id, start_planned, end_planned")
+          .eq("plan_id", planId)
+          .in("id", taskIdsToSolve);
+        if (pendingRowsErr) throw pendingRowsErr;
+
+        const plannedPendingIds = new Set<number>(
+          (pendingRows ?? [])
+            .filter((row: any) => Boolean(row?.start_planned) && Boolean(row?.end_planned))
+            .map((row: any) => Number(row?.id))
+            .filter((taskId: number) => Number.isFinite(taskId) && taskId > 0),
+        );
+        taskIdsToSolve = taskIdsToSolve.filter((taskId) => !plannedPendingIds.has(taskId));
+      }
       const totalPending = taskIdsToSolve.length;
       const { data: runRow, error: runErr } = await supabaseAdmin
         .from("planning_runs")
@@ -4065,7 +4125,7 @@ function mapDeleteError(err: any, fallback: string) {
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
 
-      if (taskIdsToSolve.length > 0) {
+      if (mode === "full" && taskIdsToSolve.length > 0) {
         const { error: clearPendingErr } = await supabaseAdmin
           .from("daily_tasks")
           .update({ start_planned: null, end_planned: null })
@@ -4083,6 +4143,44 @@ function mapDeleteError(err: any, fallback: string) {
       }
 
       const engineInput = await buildEngineInput(planId, storage);
+      if (mode === "only_unplanned") {
+        const { data: taskRows, error: taskErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .select("id, status, is_manual_block, start_planned, end_planned")
+          .eq("plan_id", planId);
+        if (taskErr) throw taskErr;
+
+        const virtualLocks = (taskRows ?? [])
+          .filter((task: any) => {
+            const status = String(task?.status ?? "pending");
+            if (status === "done" || status === "in_progress" || status === "cancelled") return false;
+            if (task?.is_manual_block === true) return false;
+            return Boolean(task?.start_planned) && Boolean(task?.end_planned);
+          })
+          .map((task: any) => ({
+            id: -Number(task.id),
+            planId,
+            taskId: Number(task.id),
+            lockType: "time" as const,
+            lockedStart: String(task.start_planned),
+            lockedEnd: String(task.end_planned),
+            lockedResourceId: null,
+            source: "planned_time_virtual",
+          }));
+
+        const lockByTaskId = new Map<number, any>();
+        for (const lock of (engineInput.locks ?? []) as any[]) {
+          const taskId = Number(lock?.taskId);
+          if (!Number.isFinite(taskId) || taskId <= 0) continue;
+          lockByTaskId.set(taskId, lock);
+        }
+        for (const lock of virtualLocks) {
+          if (!lockByTaskId.has(lock.taskId)) {
+            lockByTaskId.set(lock.taskId, lock);
+          }
+        }
+        engineInput.locks = Array.from(lockByTaskId.values());
+      }
       if (planningRunId) {
         await supabaseAdmin
           .from("planning_runs")
