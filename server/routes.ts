@@ -797,15 +797,78 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const input = api.staffDefaults.assignments.saveAll.input.parse(req.body);
 
-      const rows = (input.assignments ?? []).map((a) => ({
-        staff_role: a.staffRole,
-        staff_person_id: Number(a.staffPersonId),
-        scope_type: a.scopeType,
-        zone_id: a.scopeType === "zone" ? Number(a.zoneId) : null,
-        space_id: a.scopeType === "space" ? Number(a.spaceId) : null,
-        reality_team_code: a.scopeType === "reality_team" ? (a.realityTeamCode ?? null) : null,
-        itinerant_team_id: a.scopeType === "itinerant_team" ? Number(a.itinerantTeamId) : null,
-      }));
+      const rows = (input.assignments ?? []).map((a, idx) => {
+        const staffPersonId = Number(a.staffPersonId);
+        if (!Number.isFinite(staffPersonId) || staffPersonId <= 0) {
+          throw new Error(`Invalid staffPersonId at assignment index ${idx}`);
+        }
+
+        if (a.scopeType === "zone") {
+          const zoneId = Number(a.zoneId);
+          if (!Number.isFinite(zoneId) || zoneId <= 0) {
+            throw new Error(`Missing/invalid zoneId for zone assignment at index ${idx}`);
+          }
+          return {
+            staff_role: a.staffRole,
+            staff_person_id: staffPersonId,
+            scope_type: "zone",
+            zone_id: zoneId,
+            space_id: null,
+            reality_team_code: null,
+            itinerant_team_id: null,
+          };
+        }
+
+        if (a.scopeType === "space") {
+          const spaceId = Number(a.spaceId);
+          if (!Number.isFinite(spaceId) || spaceId <= 0) {
+            throw new Error(`Missing/invalid spaceId for space assignment at index ${idx}`);
+          }
+          return {
+            staff_role: a.staffRole,
+            staff_person_id: staffPersonId,
+            scope_type: "space",
+            zone_id: null,
+            space_id: spaceId,
+            reality_team_code: null,
+            itinerant_team_id: null,
+          };
+        }
+
+        if (a.scopeType === "reality_team") {
+          const realityTeamCode = String(a.realityTeamCode ?? "").trim();
+          if (realityTeamCode.length === 0) {
+            throw new Error(`Missing/invalid realityTeamCode for reality_team assignment at index ${idx}`);
+          }
+          return {
+            staff_role: a.staffRole,
+            staff_person_id: staffPersonId,
+            scope_type: "reality_team",
+            zone_id: null,
+            space_id: null,
+            reality_team_code: realityTeamCode,
+            itinerant_team_id: null,
+          };
+        }
+
+        if (a.scopeType === "itinerant_team") {
+          const itinerantTeamId = Number(a.itinerantTeamId);
+          if (!Number.isFinite(itinerantTeamId) || itinerantTeamId <= 0) {
+            throw new Error(`Missing/invalid itinerantTeamId for itinerant_team assignment at index ${idx}`);
+          }
+          return {
+            staff_role: a.staffRole,
+            staff_person_id: staffPersonId,
+            scope_type: "itinerant_team",
+            zone_id: null,
+            space_id: null,
+            reality_team_code: null,
+            itinerant_team_id: itinerantTeamId,
+          };
+        }
+
+        throw new Error(`Invalid scopeType at assignment index ${idx}`);
+      });
 
       const { error: delErr } = await supabaseAdmin
         .from("staff_assignment_defaults")
