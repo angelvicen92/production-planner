@@ -18,6 +18,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { useProductionClock } from "@/hooks/use-production-clock";
@@ -151,6 +159,7 @@ interface PlanningTimelineProps {
   }) => Promise<void>;
   onValidatePlan?: () => Promise<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>;
   onGeneratePlan?: () => Promise<void>;
+  onReloadPlanTasks?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onCreateManualBlock?: () => void;
 }
@@ -422,6 +431,7 @@ function TaskStatusMenuTrigger({
     onPersistManualEdits,
     onValidatePlan,
     onGeneratePlan,
+    onReloadPlanTasks,
     onCancelManualEdits,
     onCreateManualBlock,
     }: PlanningTimelineProps) {
@@ -464,6 +474,8 @@ function TaskStatusMenuTrigger({
   const [taskSortArmed, setTaskSortArmed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
+  const [postApplyDialog, setPostApplyDialog] = useState<null | { feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>(null);
+  const [isPostApplyChecking, setIsPostApplyChecking] = useState(false);
   const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
@@ -511,6 +523,10 @@ function TaskStatusMenuTrigger({
     const rawStart = startMin + (x / rect.width) * duration;
     const snapped = Math.round(rawStart / 5) * 5;
     const clamped = Math.max(startMin, Math.min(endMin - manualDrag.durationMinutes, snapped));
+    if (manualMode && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("[manual-drag] pointermove", { laneId: String(laneId), clamped });
+    }
     setManualDragPreviewStart(clamped);
   };
 
@@ -573,6 +589,39 @@ function TaskStatusMenuTrigger({
       });
       setTaskSortArmed(false);
       return;
+    }
+  };
+
+  const clearManualDraftState = () => {
+    setPendingManualEdits({});
+    setManualDrag(null);
+    setManualDragPreviewStart(null);
+    shiftedTaskIdsRef.current = [];
+    lastManualEditedPrimaryTaskIdRef.current = null;
+  };
+
+  const persistAndValidateManualChanges = async (edits: Array<{ taskId: number; start: string; end: string }>) => {
+    await onPersistManualEdits?.({ edits, primaryTaskId: lastManualEditedPrimaryTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+    setIsPostApplyChecking(true);
+    try {
+      const validation = await onValidatePlan?.();
+      if (!validation) {
+        clearManualDraftState();
+        setManualMode(false);
+        toast({ title: "Cambios aplicados" });
+        return;
+      }
+      setValidationResult(validation);
+      if (!validation.feasible) {
+        setPostApplyDialog({ feasible: false, reasons: validation.reasons ?? [] });
+        return;
+      }
+      toast({ title: "Cambios aplicados. Plan factible." });
+      clearManualDraftState();
+      setManualMode(false);
+      setPostApplyDialog(null);
+    } finally {
+      setIsPostApplyChecking(false);
     }
   };
 
@@ -2208,6 +2257,7 @@ function TaskStatusMenuTrigger({
                                   ? "rgb(34 197 94)"
                                   : taskBaseColor(task),
                               color: taskTextColor(task),
+                              pointerEvents: "auto",
                             }}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -2307,31 +2357,27 @@ function TaskStatusMenuTrigger({
                 {manualMode ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/40">
                     <span className="text-xs">{isApplying ? `Aplicando cambios (${Object.keys(pendingManualEdits).length})…` : `Modo manual: ${Object.keys(pendingManualEdits).length} cambios`}</span>
-                    <Button size="sm" variant="default" disabled={isApplying} onClick={async () => {
+                    <Button size="sm" variant="default" disabled={isApplying || isPostApplyChecking} onClick={async () => {
                       const edits = Object.entries(pendingManualEdits).map(([taskId, v]) => ({ taskId: Number(taskId), start: v.start, end: v.end }));
                       if (edits.length === 0) { toast({ title: "No hay cambios manuales" }); return; }
                       setIsApplying(true);
                       try {
                         if (onPersistManualEdits) {
-                          await onPersistManualEdits({ edits, primaryTaskId: lastManualEditedPrimaryTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
-                          const validation = await onValidatePlan?.();
-                          if (validation) setValidationResult(validation);
+                          await persistAndValidateManualChanges(edits);
                         } else {
                           await onApplyManualEdits?.(edits);
+                          clearManualDraftState();
                         }
-                        setPendingManualEdits({});
                       } finally {
                         setIsApplying(false);
                       }
-                    }}>Aplicar cambios</Button>
-                    <Button size="sm" variant="outline" disabled={isApplying} onClick={async () => {
+                    }}>{isPostApplyChecking ? "Validando…" : "Aplicar cambios"}</Button>
+                    <Button size="sm" variant="outline" disabled={isApplying || isPostApplyChecking} onClick={async () => {
                       if (Object.keys(pendingManualEdits).length === 0) {
                         toast({ title: "No hay cambios que cancelar" });
                         return;
                       }
-                      setPendingManualEdits({});
-                      setManualDrag(null);
-                      setManualDragPreviewStart(null);
+                      clearManualDraftState();
                       await onCancelManualEdits?.();
                     }}>Cancelar cambios</Button>
                     <Button size="sm" variant="secondary" disabled={isApplying} onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
@@ -2356,15 +2402,14 @@ function TaskStatusMenuTrigger({
                         const edits = Object.entries(pendingManualEdits).map(([taskId, v]) => ({ taskId: Number(taskId), start: v.start, end: v.end }));
                         setIsApplying(true);
                         try {
-                          if (edits.length > 0) {
-                            await onPersistManualEdits?.({ edits, primaryTaskId: lastManualEditedPrimaryTaskIdRef.current, shiftedTaskIds: shiftedTaskIdsRef.current });
+                          if (edits.length > 0 && onPersistManualEdits) {
+                            await persistAndValidateManualChanges(edits);
+                          } else {
+                            const validation = await onValidatePlan?.();
+                            if (validation) setValidationResult(validation);
+                            clearManualDraftState();
+                            setManualMode(false);
                           }
-                          const validation = await onValidatePlan?.();
-                          if (validation) setValidationResult(validation);
-                          setPendingManualEdits({});
-                          setManualDrag(null);
-                      setManualDragPreviewStart(null);
-                          setManualMode(false);
                           setManualExitDialogOpen(false);
                         } finally {
                           setIsApplying(false);
@@ -2378,11 +2423,7 @@ function TaskStatusMenuTrigger({
                       variant="outline"
                       disabled={isApplying}
                       onClick={async () => {
-                        setPendingManualEdits({});
-                        setManualDrag(null);
-                      setManualDragPreviewStart(null);
-                        shiftedTaskIdsRef.current = [];
-                        lastManualEditedPrimaryTaskIdRef.current = null;
+                        clearManualDraftState();
                         await onCancelManualEdits?.();
                         setManualMode(false);
                         setManualExitDialogOpen(false);
@@ -2413,6 +2454,52 @@ function TaskStatusMenuTrigger({
               {validationResult?.feasible ? (
                 <p className="mb-3 text-xs text-green-700">Validación OK. Se mantienen los cambios manuales.</p>
               ) : null}
+
+              <Dialog open={Boolean(postApplyDialog && !postApplyDialog.feasible)} onOpenChange={(open) => { if (!open) setPostApplyDialog(null); }}>
+                <DialogContent className="max-w-xl">
+                  <DialogHeader>
+                    <DialogTitle>Plan no factible tras aplicar cambios</DialogTitle>
+                    <DialogDescription>
+                      Se guardaron los cambios manuales, pero la validación devolvió conflictos.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-64 overflow-auto rounded border bg-muted/20 p-3">
+                    <ul className="text-sm list-disc pl-5 space-y-1">
+                      {(postApplyDialog?.reasons ?? []).slice(0, 10).map((r, idx) => (
+                        <li key={idx}>{r?.message || "Conflicto de planificación"}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <DialogFooter className="gap-2 sm:justify-between">
+                    <Button variant="outline" onClick={() => setPostApplyDialog(null)}>Cerrar</Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          clearManualDraftState();
+                          await onReloadPlanTasks?.();
+                          await onCancelManualEdits?.();
+                          setManualMode(false);
+                          setPostApplyDialog(null);
+                        }}
+                      >
+                        Deshacer cambios
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          await onGeneratePlan?.();
+                          clearManualDraftState();
+                          setManualMode(false);
+                          setPostApplyDialog(null);
+                        }}
+                      >
+                        Mantener cambios y replanificar
+                      </Button>
+                    </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
 
               {/* Lanes */}
               {lanes.map(([id, lane]) => (
@@ -2546,11 +2633,19 @@ function TaskStatusMenuTrigger({
                     {/* Tasks */}
                     {lane.tasks.map((task) => {
                       if (!task.startPlanned || !task.endPlanned) return null;
-                      const tStart = manualDrag?.taskId === Number(task.id) && manualDragPreviewStart !== null
+                      const edit = pendingManualEdits[Number(task.id)];
+                      const baseStart = timeToMinutes(edit?.start ?? task.startPlanned);
+                      const baseEnd = timeToMinutes(edit?.end ?? task.endPlanned);
+                      const isDraggingThis = manualDrag?.taskId === Number(task.id);
+                      const effectiveStart = isDraggingThis && manualDragPreviewStart !== null
                         ? manualDragPreviewStart
-                        : timeToMinutes(task.startPlanned);
-                      const tEnd = timeToMinutes(task.endPlanned);
-                      const tDur = tEnd - tStart;
+                        : baseStart;
+                      const effectiveEnd = isDraggingThis && manualDrag?.durationMinutes != null
+                        ? (effectiveStart + manualDrag.durationMinutes)
+                        : baseEnd;
+                      const tStart = effectiveStart;
+                      const tEnd = effectiveEnd;
+                      const tDur = Math.max(5, tEnd - tStart);
 
                       return (
                         <TaskStatusMenuTrigger key={task.id}
@@ -2572,7 +2667,10 @@ function TaskStatusMenuTrigger({
                             onPointerDown={(event) => {
                               if (!manualMode || !canSelectManualTask(task) || isApplying) return;
                               event.preventDefault();
-                              event.stopPropagation();
+                              if (manualMode && import.meta.env.DEV) {
+                                // eslint-disable-next-line no-console
+                                console.log("[manual-drag] pointerdown", { taskId: Number(task.id), laneId: String(id) });
+                              }
                               const cardRect = event.currentTarget.getBoundingClientRect();
                               const edit = pendingManualEdits[Number(task.id)];
                               const currentStart = timeToMinutes(edit?.start ?? task.startPlanned ?? workStart ?? "09:00");
@@ -2621,6 +2719,7 @@ function TaskStatusMenuTrigger({
                                   ? "rgb(34 197 94)"
                                   : taskBaseColor(task),
                               color: taskTextColor(task),
+                              pointerEvents: "auto",
                             }}
                           >
                             <span className="text-xs font-bold truncate">
