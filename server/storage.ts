@@ -1022,24 +1022,132 @@ export class SupabaseStorage implements IStorage {
 
       const { data: staffAsgDefs, error: sadErr } = await supabaseAdmin
         .from("staff_assignment_defaults")
-        .select("staff_role, staff_person_id, scope_type, zone_id, space_id, reality_team_code");
+        .select("id, staff_role, staff_person_id, scope_type, zone_id, space_id, reality_team_code, itinerant_team_id");
       if (sadErr) throw sadErr;
 
       if ((staffAsgDefs ?? []).length > 0) {
-        const rows = (staffAsgDefs ?? []).map((a: any) => ({
-          plan_id: data.id,
-          staff_role: a.staff_role,
-          staff_person_id: Number(a.staff_person_id),
-          scope_type: a.scope_type,
-          zone_id: a.zone_id ?? null,
-          space_id: a.space_id ?? null,
-          reality_team_code: a.reality_team_code ?? null,
-        }));
+        const rows: any[] = [];
 
-        const { error: insErr } = await supabaseAdmin
-          .from("plan_staff_assignments")
-          .insert(rows);
-        if (insErr) throw insErr;
+        for (const a of staffAsgDefs ?? []) {
+          const staffPersonId = Number((a as any).staff_person_id);
+          if (!Number.isFinite(staffPersonId) || staffPersonId <= 0) {
+            console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+              id: (a as any)?.id ?? null,
+              reason: "invalid_staff_person_id",
+              row: a,
+            });
+            continue;
+          }
+
+          if ((a as any).scope_type === "zone") {
+            const zoneId = Number((a as any).zone_id);
+            if (!Number.isFinite(zoneId) || zoneId <= 0) {
+              console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+                id: (a as any)?.id ?? null,
+                reason: "invalid_zone_scope",
+                row: a,
+              });
+              continue;
+            }
+
+            rows.push({
+              plan_id: data.id,
+              staff_role: (a as any).staff_role,
+              staff_person_id: staffPersonId,
+              scope_type: "zone",
+              zone_id: zoneId,
+              space_id: null,
+              reality_team_code: null,
+              itinerant_team_id: null,
+            });
+            continue;
+          }
+
+          if ((a as any).scope_type === "space") {
+            const spaceId = Number((a as any).space_id);
+            if (!Number.isFinite(spaceId) || spaceId <= 0) {
+              console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+                id: (a as any)?.id ?? null,
+                reason: "invalid_space_scope",
+                row: a,
+              });
+              continue;
+            }
+
+            rows.push({
+              plan_id: data.id,
+              staff_role: (a as any).staff_role,
+              staff_person_id: staffPersonId,
+              scope_type: "space",
+              zone_id: null,
+              space_id: spaceId,
+              reality_team_code: null,
+              itinerant_team_id: null,
+            });
+            continue;
+          }
+
+          if ((a as any).scope_type === "reality_team") {
+            const realityTeamCode = String((a as any).reality_team_code ?? "").trim();
+            if (realityTeamCode.length === 0) {
+              console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+                id: (a as any)?.id ?? null,
+                reason: "invalid_reality_team_scope",
+                row: a,
+              });
+              continue;
+            }
+
+            rows.push({
+              plan_id: data.id,
+              staff_role: (a as any).staff_role,
+              staff_person_id: staffPersonId,
+              scope_type: "reality_team",
+              zone_id: null,
+              space_id: null,
+              reality_team_code: realityTeamCode,
+              itinerant_team_id: null,
+            });
+            continue;
+          }
+
+          if ((a as any).scope_type === "itinerant_team") {
+            const itinerantTeamId = Number((a as any).itinerant_team_id);
+            if (!Number.isFinite(itinerantTeamId) || itinerantTeamId <= 0) {
+              console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+                id: (a as any)?.id ?? null,
+                reason: "invalid_itinerant_team_scope",
+                row: a,
+              });
+              continue;
+            }
+
+            rows.push({
+              plan_id: data.id,
+              staff_role: (a as any).staff_role,
+              staff_person_id: staffPersonId,
+              scope_type: "itinerant_team",
+              zone_id: null,
+              space_id: null,
+              reality_team_code: null,
+              itinerant_team_id: itinerantTeamId,
+            });
+            continue;
+          }
+
+          console.warn("[createPlan] Skipping invalid staff_assignment_default", {
+            id: (a as any)?.id ?? null,
+            reason: "invalid_scope_type",
+            row: a,
+          });
+        }
+
+        if (rows.length > 0) {
+          const { error: insErr } = await supabaseAdmin
+            .from("plan_staff_assignments")
+            .insert(rows);
+          if (insErr) throw insErr;
+        }
       }
     } catch (e: any) {
       await supabaseAdmin.from("plans").delete().eq("id", data.id);
