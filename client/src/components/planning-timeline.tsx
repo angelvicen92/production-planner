@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -274,11 +274,23 @@ function TaskStatusMenuTrigger({
   canOpenMenuFromCard?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const suppressNextClickRef = useRef(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
+
+  useEffect(() => {
+    if (manualMode && open) setOpen(false);
+  }, [manualMode, open]);
 
   const handleCardClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
     if (event.defaultPrevented) return;
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (manualMode) return;
     if (taskSortArmed || !canOpenMenuFromCard) return;
     setOpen(true);
   };
@@ -289,7 +301,16 @@ function TaskStatusMenuTrigger({
       className={cn(className, "text-left")}
       style={style}
       onClick={handleCardClick}
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+      }}
+      onPointerUp={(event) => {
+        if (manualMode) {
+          suppressNextClickRef.current = true;
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
     >
       {children}
     </button>
@@ -312,6 +333,10 @@ function TaskStatusMenuTrigger({
     <Popover
       open={open}
       onOpenChange={(nextOpen) => {
+        if (manualMode) {
+          if (open) setOpen(false);
+          return;
+        }
         if (nextOpen && (taskSortArmed || !canOpenMenuFromCard)) return;
         setOpen(nextOpen);
       }}
@@ -461,7 +486,7 @@ function TaskStatusMenuTrigger({
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
   const [postApplyDialog, setPostApplyDialog] = useState<null | { feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>(null);
   const [isPostApplyChecking, setIsPostApplyChecking] = useState(false);
-  const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string }> } | null>(null);
+  const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
   const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
@@ -2425,7 +2450,16 @@ function TaskStatusMenuTrigger({
                   <p className="text-sm font-semibold">Plan no factible</p>
                   <ul className="text-xs mt-1 list-disc ml-5 space-y-0.5">
                     {(validationResult.reasons ?? []).slice(0, 5).map((r, idx) => (
-                      <li key={idx}>{r?.message || "Conflicto de planificación"}</li>
+                      <li key={idx}>
+                        <div>{r?.message || "Conflicto de planificación"}</div>
+                        {(r?.taskName || r?.otherTaskName) ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            {r?.taskName ? `Tarea A: ${r.taskName}` : ""}
+                            {r?.taskName && r?.otherTaskName ? " · " : ""}
+                            {r?.otherTaskName ? `Tarea B: ${r.otherTaskName}` : ""}
+                          </div>
+                        ) : null}
+                      </li>
                     ))}
                   </ul>
                   <div className="mt-2">
@@ -2451,7 +2485,16 @@ function TaskStatusMenuTrigger({
                   <div className="max-h-64 overflow-auto rounded border bg-muted/20 p-3">
                     <ul className="text-sm list-disc pl-5 space-y-1">
                       {(postApplyDialog?.reasons ?? []).slice(0, 10).map((r, idx) => (
-                        <li key={idx}>{r?.message || "Conflicto de planificación"}</li>
+                        <li key={idx}>
+                          <div>{r?.message || "Conflicto de planificación"}</div>
+                          {(r?.taskName || r?.otherTaskName) ? (
+                            <div className="text-xs text-muted-foreground">
+                              {r?.taskName ? `Tarea A: ${r.taskName}` : ""}
+                              {r?.taskName && r?.otherTaskName ? " · " : ""}
+                              {r?.otherTaskName ? `Tarea B: ${r.otherTaskName}` : ""}
+                            </div>
+                          ) : null}
+                        </li>
                       ))}
                     </ul>
                   </div>
