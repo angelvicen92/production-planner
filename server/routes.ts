@@ -3793,14 +3793,26 @@ function mapDeleteError(err: any, fallback: string) {
       if (tplErr) throw tplErr;
       let manualTemplateId = Number(manualTemplate?.id ?? NaN);
       if (!Number.isFinite(manualTemplateId) || manualTemplateId <= 0) {
-        const { data: fallbackTpl, error: fallbackTplErr } = await supabaseAdmin
+        const { data: createdManualTemplate, error: createTplErr } = await supabaseAdmin
           .from("task_templates")
+          .insert({
+            name: "manual_block",
+            abbrev: "BLOCK",
+            default_duration: 15,
+            default_cameras: 0,
+            requires_auxiliar: false,
+            requires_coach: false,
+            requires_presenter: false,
+            exclusive_auxiliar: false,
+            has_dependency: false,
+            itinerant_team_requirement: "none",
+            ui_color: "#FCD34D",
+            ui_color_secondary: "#FCD34D",
+          })
           .select("id")
-          .order("id", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        if (fallbackTplErr) throw fallbackTplErr;
-        manualTemplateId = Number((fallbackTpl as any)?.id ?? NaN);
+          .single();
+        if (createTplErr) throw createTplErr;
+        manualTemplateId = Number((createdManualTemplate as any)?.id ?? NaN);
       }
       if (!Number.isFinite(manualTemplateId) || manualTemplateId <= 0) {
         return res.status(400).json({ message: "No task template available for manual block" });
@@ -4099,6 +4111,8 @@ function mapDeleteError(err: any, fallback: string) {
         const workEnd = toMinutes(engineInput.workDay?.end);
         const mealStart = toMinutes(engineInput.meal?.start);
         const mealEnd = toMinutes(engineInput.meal?.end);
+        const mealTemplateId = Number(engineInput.mealTaskTemplateId ?? NaN);
+        const mealTemplateName = String(engineInput.mealTaskTemplateName ?? "").trim().toLowerCase();
 
         for (const task of plannedTasksNow) {
           const start = toMinutes(task?.startPlanned);
@@ -4119,10 +4133,22 @@ function mapDeleteError(err: any, fallback: string) {
             });
           }
           if (mealStart !== null && mealEnd !== null && start < mealEnd && mealStart < end) {
+            const isContainedByMealWindow = start >= mealStart && end <= mealEnd;
+            const taskTemplateId = Number(task?.templateId ?? NaN);
+            const taskTemplateName = String(task?.templateName ?? "").trim().toLowerCase();
+            const isMealTask =
+              (Number.isFinite(mealTemplateId) && mealTemplateId > 0 && taskTemplateId === mealTemplateId)
+              || (mealTemplateName.length > 0 && taskTemplateName === mealTemplateName)
+              || taskTemplateName === "comida";
+            if (!isMealTask && isContainedByMealWindow) {
+              continue;
+            }
             nowReasons.push({
-              code: "crosses_meal",
+              code: isMealTask ? "meal_outside_window" : "crosses_meal",
               taskId: Number(task.id),
-              message: `La tarea ${fmtTask(task)} cruza la franja de comida ${engineInput.meal.start}–${engineInput.meal.end}.`,
+              message: isMealTask
+                ? `La tarea de comida ${fmtTask(task)} debe quedar contenida en ${engineInput.meal.start}–${engineInput.meal.end}.`
+                : `La tarea ${fmtTask(task)} cruza la franja de comida ${engineInput.meal.start}–${engineInput.meal.end}.`,
             });
           }
         }

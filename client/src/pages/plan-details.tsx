@@ -911,6 +911,10 @@ export default function PlanDetailsPage() {
     title: "Bloqueo manual",
     color: "#FCD34D",
   });
+  const [manualDraftBlockIds, setManualDraftBlockIds] = useState<number[]>([]);
+  const [manualEditsSnapshot, setManualEditsSnapshot] = useState<
+    Record<number, { startPlanned: string; endPlanned: string; hadTimeLock: boolean; lockStart: string | null; lockEnd: string | null }>
+  >({});
 
 
   useEffect(() => {
@@ -3642,6 +3646,36 @@ export default function PlanDetailsPage() {
                     });
                   }}
                   onPersistManualEdits={async ({ edits, primaryTaskId, shiftedTaskIds }) => {
+                    const locksByTaskId = new Map<number, any>();
+                    for (const l of ((plan as any)?.locks ?? []) as any[]) {
+                      const tid = Number(l?.task_id ?? l?.taskId);
+                      const type = String(l?.lock_type ?? l?.lockType ?? "");
+                      const ls = l?.locked_start ?? l?.lockedStart ?? null;
+                      const le = l?.locked_end ?? l?.lockedEnd ?? null;
+                      if (!Number.isFinite(tid) || tid <= 0) continue;
+                      if (type === "time" && ls && le) {
+                        locksByTaskId.set(tid, { lockStart: String(ls), lockEnd: String(le) });
+                      }
+                    }
+                    setManualEditsSnapshot((prev) => {
+                      const next = { ...prev };
+                      for (const edit of edits) {
+                        const taskId = Number(edit.taskId);
+                        if (next[taskId]) continue;
+                        const task = ((plan?.dailyTasks ?? []) as any[]).find((t) => Number(t?.id) === taskId);
+                        const startPlanned = String(task?.startPlanned ?? task?.start_planned ?? edit.start);
+                        const endPlanned = String(task?.endPlanned ?? task?.end_planned ?? edit.end);
+                        const lock = locksByTaskId.get(taskId) ?? null;
+                        next[taskId] = {
+                          startPlanned,
+                          endPlanned,
+                          hadTimeLock: Boolean(lock?.lockStart && lock?.lockEnd),
+                          lockStart: lock?.lockStart ?? null,
+                          lockEnd: lock?.lockEnd ?? null,
+                        };
+                      }
+                      return next;
+                    });
                     const shifted = new Set((shiftedTaskIds ?? []).map((taskId) => Number(taskId)));
                     for (const edit of edits) {
                       const isPrimary = Number(primaryTaskId) === Number(edit.taskId);
@@ -3663,11 +3697,18 @@ export default function PlanDetailsPage() {
                     toast({ title: "Cambios manuales guardados" });
                   }}
                   onValidatePlan={async () => {
-                    return await apiRequest("POST", `/api/plans/${id}/validate`, { mode: "as_is" });
+                    const validation = await apiRequest<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>("POST", `/api/plans/${id}/validate`, { mode: "as_is" });
+                    if (validation?.feasible) {
+                      setManualDraftBlockIds([]);
+                      setManualEditsSnapshot({});
+                    }
+                    return validation;
                   }}
                   onGeneratePlan={async () => {
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode: "full" });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    setManualDraftBlockIds([]);
+                    setManualEditsSnapshot({});
                     toast({ title: "Replanificación lanzada" });
                   }}
                   onReloadPlanTasks={async () => {
@@ -3675,6 +3716,37 @@ export default function PlanDetailsPage() {
                   }}
                   onCancelManualEdits={async () => {
                     queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                  }}
+                  onDiscardManualEditsAndReload={async () => {
+                    for (const [taskIdRaw, snap] of Object.entries(manualEditsSnapshot)) {
+                      const taskId = Number(taskIdRaw);
+                      if (!Number.isFinite(taskId) || taskId <= 0) continue;
+                      await apiRequest("PATCH", `/api/daily-tasks/${taskId}/planned-time`, {
+                        startPlanned: snap.startPlanned,
+                        endPlanned: snap.endPlanned,
+                      });
+                      if (snap.hadTimeLock && snap.lockStart && snap.lockEnd) {
+                        await apiRequest("PATCH", `/api/daily-tasks/${taskId}/time-lock`, {
+                          start: snap.lockStart,
+                          end: snap.lockEnd,
+                        });
+                      } else {
+                        await apiRequest("DELETE", `/api/daily-tasks/${taskId}/lock`);
+                      }
+                    }
+                    for (const blockId of manualDraftBlockIds) {
+                      await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: blockId }));
+                    }
+                    setManualDraftBlockIds([]);
+                    setManualEditsSnapshot({});
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                  }}
+                  pendingManualBlocksCount={manualDraftBlockIds.length}
+                  onDeleteManualBlock={async (task) => {
+                    await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: Number(task.id) }));
+                    setManualDraftBlockIds((prev) => prev.filter((x) => x !== Number(task.id)));
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Bloqueo eliminado" });
                   }}
                   onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true }))}
                 />
@@ -4352,7 +4424,7 @@ export default function PlanDetailsPage() {
                   toast({ title: "Datos inválidos", variant: "destructive" });
                   return;
                 }
-                await apiRequest("POST", `/api/plans/${id}/manual-block`, {
+                const created = await apiRequest<any>("POST", `/api/plans/${id}/manual-block`, {
                   scopeType: manualBlockDialog.scopeType,
                   scopeId,
                   start: manualBlockDialog.start,
@@ -4360,7 +4432,11 @@ export default function PlanDetailsPage() {
                   title: manualBlockDialog.title,
                   color: manualBlockDialog.color,
                 });
-                queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                const blockId = Number(created?.task?.id ?? NaN);
+                if (Number.isFinite(blockId) && blockId > 0) {
+                  setManualDraftBlockIds((prev) => (prev.includes(blockId) ? prev : [...prev, blockId]));
+                }
+                await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                 toast({ title: "Bloqueo creado" });
                 setManualBlockDialog((prev) => ({ ...prev, open: false }));
               }}>Guardar</Button>

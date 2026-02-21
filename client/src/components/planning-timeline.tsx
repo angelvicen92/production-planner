@@ -149,7 +149,10 @@ interface PlanningTimelineProps {
   onGeneratePlan?: () => Promise<void>;
   onReloadPlanTasks?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
+  onDiscardManualEditsAndReload?: () => Promise<void> | void;
   onCreateManualBlock?: () => void;
+  pendingManualBlocksCount?: number;
+  onDeleteManualBlock?: (task: Task) => Promise<void> | void;
 }
 
 function taskActionsForStatus(status: string) {
@@ -442,7 +445,10 @@ function TaskStatusMenuTrigger({
     onGeneratePlan,
     onReloadPlanTasks,
     onCancelManualEdits,
+    onDiscardManualEditsAndReload,
     onCreateManualBlock,
+    pendingManualBlocksCount = 0,
+    onDeleteManualBlock,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
@@ -639,12 +645,17 @@ function TaskStatusMenuTrigger({
     setPostApplyDialog(null);
   };
 
-  const discardManualChangesAndCloseValidation = async () => {
+  const discardManualEditsAndReload = async () => {
     clearManualDraftState();
-    await onReloadPlanTasks?.();
-    await onCancelManualEdits?.();
+    if (onDiscardManualEditsAndReload) {
+      await onDiscardManualEditsAndReload();
+    } else {
+      await onReloadPlanTasks?.();
+      await onCancelManualEdits?.();
+    }
     setManualMode(false);
     closeValidationFeedback();
+    setManualExitDialogOpen(false);
   };
 
   // =========================
@@ -2345,7 +2356,7 @@ function TaskStatusMenuTrigger({
                     checked={manualMode}
                     onCheckedChange={(v) => {
                       const next = Boolean(v);
-                      if (!next && manualMode && Object.keys(pendingManualEdits).length > 0) {
+                      if (!next && manualMode && (Object.keys(pendingManualEdits).length > 0 || pendingManualBlocksCount > 0)) {
                         setManualExitDialogOpen(true);
                         return;
                       }
@@ -2378,10 +2389,10 @@ function TaskStatusMenuTrigger({
                 ) : null}
                 {manualMode ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/40">
-                    <span className="text-xs">{isApplying ? `Aplicando cambios (${Object.keys(pendingManualEdits).length})…` : `Modo manual: ${Object.keys(pendingManualEdits).length} cambios`}</span>
+                    <span className="text-xs">{isApplying ? `Aplicando cambios (${Object.keys(pendingManualEdits).length + pendingManualBlocksCount})…` : `Modo manual: ${Object.keys(pendingManualEdits).length} movimientos · ${pendingManualBlocksCount} bloqueos`}</span>
                     <Button size="sm" variant="default" disabled={isApplying || isPostApplyChecking} onClick={async () => {
                       const edits = Object.entries(pendingManualEdits).map(([taskId, v]) => ({ taskId: Number(taskId), start: v.start, end: v.end }));
-                      if (edits.length === 0) { toast({ title: "No hay cambios manuales" }); return; }
+                      if (edits.length === 0 && pendingManualBlocksCount === 0) { toast({ title: "No hay cambios manuales" }); return; }
                       setIsApplying(true);
                       try {
                         if (onPersistManualEdits) {
@@ -2395,12 +2406,11 @@ function TaskStatusMenuTrigger({
                       }
                     }}>{isPostApplyChecking ? "Validando…" : "Aplicar cambios"}</Button>
                     <Button size="sm" variant="outline" disabled={isApplying || isPostApplyChecking} onClick={async () => {
-                      if (Object.keys(pendingManualEdits).length === 0) {
+                      if (Object.keys(pendingManualEdits).length === 0 && pendingManualBlocksCount === 0) {
                         toast({ title: "No hay cambios que cancelar" });
                         return;
                       }
-                      clearManualDraftState();
-                      await onCancelManualEdits?.();
+                      await discardManualEditsAndReload();
                     }}>Cancelar cambios</Button>
                     <Button size="sm" variant="secondary" disabled={isApplying} onClick={() => onCreateManualBlock?.()}>Añadir comentario/bloqueo</Button>
                     {manualDrag !== null ? (
@@ -2445,10 +2455,7 @@ function TaskStatusMenuTrigger({
                       variant="outline"
                       disabled={isApplying}
                       onClick={async () => {
-                        clearManualDraftState();
-                        await onCancelManualEdits?.();
-                        setManualMode(false);
-                        setManualExitDialogOpen(false);
+                        await discardManualEditsAndReload();
                       }}
                     >
                       Descartar cambios
@@ -2478,7 +2485,7 @@ function TaskStatusMenuTrigger({
                     ))}
                   </ul>
                   <div className="mt-2 flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => void discardManualChangesAndCloseValidation()}>
+                    <Button size="sm" variant="outline" onClick={() => void discardManualEditsAndReload()}>
                       Descartar cambios
                     </Button>
                     <Button size="sm" onClick={async () => {
@@ -2524,7 +2531,7 @@ function TaskStatusMenuTrigger({
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={() => void discardManualChangesAndCloseValidation()}
+                        onClick={() => void discardManualEditsAndReload()}
                       >
                         Descartar cambios
                       </Button>
@@ -2734,6 +2741,14 @@ function TaskStatusMenuTrigger({
                               if (manualDrag) {
                                 event.preventDefault();
                                 event.stopPropagation();
+                                return;
+                              }
+                              if (manualMode && task.isManualBlock) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                if (window.confirm(`¿Eliminar bloqueo \"${taskDisplayName(task)}\"?`)) {
+                                  void onDeleteManualBlock?.(task);
+                                }
                                 return;
                               }
                               handleTaskCardClick(event, task);
