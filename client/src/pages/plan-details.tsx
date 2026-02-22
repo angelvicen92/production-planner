@@ -111,6 +111,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 
+function normalizeHexColor(value: unknown): string | null {
+  const raw = String(value ?? "").trim();
+  if (!/^#([0-9a-fA-F]{6})$/.test(raw)) return null;
+  return raw.toUpperCase();
+}
+
 function getRunProgress(args: {
   plannedCount: number;
   totalPending: number;
@@ -887,6 +893,8 @@ export default function PlanDetailsPage() {
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [locksDialogOpen, setLocksDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [manualBlockSaving, setManualBlockSaving] = useState(false);
+  const [replanPending, setReplanPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
@@ -3707,6 +3715,7 @@ export default function PlanDetailsPage() {
                   onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" = "full") => {
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                     setManualDraftBlockIds([]);
                     setManualEditsSnapshot({});
                     toast({ title: mode === "full" ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
@@ -4415,8 +4424,8 @@ export default function PlanDetailsPage() {
               <div className="space-y-2"><Label>Color</Label><ColorSwatchPicker value={manualBlockDialog.color} onChange={(v) => setManualBlockDialog((prev) => ({ ...prev, color: v }))} /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setManualBlockDialog((prev) => ({ ...prev, open: false }))}>Cancelar</Button>
-              <Button onClick={async () => {
+              <Button variant="outline" onClick={() => setManualBlockDialog((prev) => ({ ...prev, open: false }))} disabled={manualBlockSaving}>Cancelar</Button>
+              <Button disabled={manualBlockSaving} onClick={async () => {
                 const scopeId = Number(manualBlockDialog.scopeId);
                 const startMin = parseHHMMToMinutes(manualBlockDialog.start);
                 const endMin = parseHHMMToMinutes(manualBlockDialog.end);
@@ -4424,13 +4433,15 @@ export default function PlanDetailsPage() {
                   toast({ title: "Datos inválidos", variant: "destructive" });
                   return;
                 }
+                setManualBlockSaving(true);
+                try {
                 const created = await apiRequest<any>("POST", `/api/plans/${id}/manual-block`, {
                   scopeType: manualBlockDialog.scopeType,
                   scopeId,
                   start: manualBlockDialog.start,
                   end: manualBlockDialog.end,
                   title: manualBlockDialog.title,
-                  color: manualBlockDialog.color,
+                  color: normalizeHexColor(manualBlockDialog.color),
                 });
                 const blockId = Number(created?.task?.id ?? NaN);
                 if (Number.isFinite(blockId) && blockId > 0) {
@@ -4439,7 +4450,10 @@ export default function PlanDetailsPage() {
                 await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                 toast({ title: "Bloqueo creado" });
                 setManualBlockDialog((prev) => ({ ...prev, open: false }));
-              }}>Guardar</Button>
+                } finally {
+                  setManualBlockSaving(false);
+                }
+              }}>{manualBlockSaving ? "Guardando…" : "Guardar"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

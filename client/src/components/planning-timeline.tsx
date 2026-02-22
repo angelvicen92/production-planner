@@ -88,6 +88,8 @@ interface PlanningTimelineProps {
       itinerantTeamId: number | null;
       lockedStart?: string | null;
       lockedEnd?: string | null;
+      plannedStart?: string | null;
+      plannedEnd?: string | null;
     }>;
   };
   contestants: Contestant[];
@@ -819,14 +821,16 @@ function TaskStatusMenuTrigger({
 
   const timelineTasks = useMemo(() => {
     const breakTasks = (viewMode === "contestants" ? [] : breaks)
-      .filter((b) => b.lockedStart && b.lockedEnd)
+      .filter((b: any) => (b.plannedStart ?? b.lockedStart) && (b.plannedEnd ?? b.lockedEnd))
       .map((b) => ({
         id: -Number(b.id),
         templateId: -1,
         contestantId: null,
         status: "done",
-        startPlanned: b.lockedStart ?? null,
-        endPlanned: b.lockedEnd ?? null,
+        startPlanned: (b as any).plannedStart ?? b.lockedStart ?? null,
+        endPlanned: (b as any).plannedEnd ?? b.lockedEnd ?? null,
+        lockedStart: b.lockedStart ?? null,
+        lockedEnd: b.lockedEnd ?? null,
         template: { name: "COMIDA", abbrev: "BREAK", uiColor: "#d6d3d1" },
         spaceId: b.spaceId,
         zoneId: null,
@@ -1090,11 +1094,11 @@ function TaskStatusMenuTrigger({
       grouped["unlocated"] = { name: "Sin ubicación", tasks: [] };
 
       (filteredDailyTasksByStage ?? []).forEach((task) => {
-        if (task.breakKind === "itinerant_meal" && task.itinerantTeamId) {
+        if (task.itinerantTeamId) {
           const key = `it-team-${Number(task.itinerantTeamId)}`;
           if (!grouped[key]) grouped[key] = { name: `Equipo ${task.itinerantTeamId}`, tasks: [] };
           grouped[key].tasks.push(task);
-          return;
+          if (task.breakKind === "itinerant_meal") return;
         }
 
         if (task.spaceId) {

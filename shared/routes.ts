@@ -911,6 +911,12 @@ export const api = {
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3),
           contestantTotalSpanLevel: z.number().int().min(0).max(3),
+          arrivalTaskTemplateName: z.string(),
+          departureTaskTemplateName: z.string(),
+          arrivalGroupingTarget: z.number().int().min(0).max(100),
+          departureGroupingTarget: z.number().int().min(0).max(100),
+          vanCapacity: z.number().int().min(0).max(100),
+          weightArrivalDepartureGrouping: z.number().int().min(0).max(10),
         }),
       },
     },
@@ -957,6 +963,12 @@ export const api = {
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3).optional(),
           contestantTotalSpanLevel: z.number().int().min(0).max(3).optional(),
+          arrivalTaskTemplateName: z.string().max(120).optional(),
+          departureTaskTemplateName: z.string().max(120).optional(),
+          arrivalGroupingTarget: z.number().int().min(0).max(100).optional(),
+          departureGroupingTarget: z.number().int().min(0).max(100).optional(),
+          vanCapacity: z.number().int().min(0).max(100).optional(),
+          weightArrivalDepartureGrouping: z.number().int().min(0).max(10).optional(),
         })
         .strict(),
       responses: {

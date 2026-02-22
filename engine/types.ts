@@ -174,9 +174,16 @@ export interface EngineInput {
     | "groupBySpaceTemplateMatch"
     | "groupBySpaceActive"
     | "contestantStayInZone"
-    | "contestantTotalSpan",
+    | "contestantTotalSpan"
+    | "arrivalDepartureGrouping",
     number
   >>;
+
+  arrivalTaskTemplateName?: string;
+  departureTaskTemplateName?: string;
+  arrivalGroupingTarget?: number;
+  departureGroupingTarget?: number;
+  vanCapacity?: number;
 
   // v-next: resources, spaces, zones, availability
 }

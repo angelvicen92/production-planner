@@ -1791,6 +1791,12 @@ function mapDeleteError(err: any, fallback: string) {
         // ✅ compactar concursantes
         contestantCompactLevel: settings.contestantCompactLevel,
         contestantTotalSpanLevel: settings.contestantTotalSpanLevel,
+        arrivalTaskTemplateName: settings.arrivalTaskTemplateName,
+        departureTaskTemplateName: settings.departureTaskTemplateName,
+        arrivalGroupingTarget: settings.arrivalGroupingTarget,
+        departureGroupingTarget: settings.departureGroupingTarget,
+        vanCapacity: settings.vanCapacity,
+        weightArrivalDepartureGrouping: settings.weightArrivalDepartureGrouping,
       });
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch optimizer settings" });
@@ -1856,6 +1862,13 @@ function mapDeleteError(err: any, fallback: string) {
         const lvl = Math.max(0, Math.min(3, Number(input.contestantCompactLevel)));
         patch.contestant_compact_level = lvl;
       }
+
+      if (input.arrivalTaskTemplateName !== undefined) patch.arrival_task_template_name = String(input.arrivalTaskTemplateName ?? "").trim();
+      if (input.departureTaskTemplateName !== undefined) patch.departure_task_template_name = String(input.departureTaskTemplateName ?? "").trim();
+      if (input.arrivalGroupingTarget !== undefined) patch.arrival_grouping_target = Math.max(0, Number(input.arrivalGroupingTarget));
+      if (input.departureGroupingTarget !== undefined) patch.departure_grouping_target = Math.max(0, Number(input.departureGroupingTarget));
+      if (input.vanCapacity !== undefined) patch.van_capacity = Math.max(0, Number(input.vanCapacity));
+      if (input.weightArrivalDepartureGrouping !== undefined) patch.weight_arrival_departure_grouping = Math.max(0, Math.min(10, Number(input.weightArrivalDepartureGrouping)));
 
       // legacy booleans (si llegan, también actualizan niveles por defecto)
       if (input.prioritizeMainZone !== undefined) {
@@ -3007,6 +3020,8 @@ function mapDeleteError(err: any, fallback: string) {
             latestEnd: b.latest_end ?? null,
             lockedStart: b.locked_start ?? null,
             lockedEnd: b.locked_end ?? null,
+            plannedStart: b.planned_start ?? null,
+            plannedEnd: b.planned_end ?? null,
           })),
           locks: (full.locks || []).map((l: any) => ({
             id: Number(l.id),
@@ -3520,6 +3535,12 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.clear) {
         const executionLockReasonPrefix = "Execution lock";
+
+function normalizeHexColor(value: unknown): string | null {
+  const raw = String(value ?? "").trim();
+  if (!/^#([0-9a-fA-F]{6})$/.test(raw)) return null;
+  return raw.toUpperCase();
+}
         const { data: lockRows, error: lockRowsErr } = await supabaseAdmin
           .from("locks")
           .select("id, lock_type, reason")
@@ -3720,6 +3741,14 @@ function mapDeleteError(err: any, fallback: string) {
         })
         .filter((taskId: number | null): taskId is number => Number.isFinite(taskId));
 
+      if (input.mode === "partial") {
+        await supabaseAdmin.from("plan_breaks").update({ planned_start: null, planned_end: null }).eq("plan_id", planId);
+      }
+      if (input.mode === "total") {
+        await supabaseAdmin.from("plan_breaks").update({ planned_start: null, planned_end: null, locked_start: null, locked_end: null }).eq("plan_id", planId);
+        await supabaseAdmin.from("daily_tasks").delete().eq("plan_id", planId).eq("is_manual_block", true);
+      }
+
       if (candidateTaskIds.length === 0) {
         return res.json({ ok: true, clearedTasksCount: 0, clearedLocksCount: 0 });
       }
@@ -3759,6 +3788,12 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot reset plan" });
     }
   });
+
+  const normalizeManualHexColor = (value: unknown): string | null => {
+    const raw = String(value ?? "").trim();
+    if (!/^#([0-9a-fA-F]{6})$/.test(raw)) return null;
+    return raw.toUpperCase();
+  };
 
 
   app.post("/api/plans/:id/manual-block", async (req, res) => {
@@ -3829,7 +3864,7 @@ function mapDeleteError(err: any, fallback: string) {
         end_planned: input.end,
         is_manual_block: true,
         manual_title: input.title,
-        manual_color: input.color ?? null,
+        manual_color: normalizeManualHexColor(input.color),
         manual_scope_type: input.scopeType,
         manual_scope_id: Number(input.scopeId),
       };
@@ -3877,12 +3912,48 @@ function mapDeleteError(err: any, fallback: string) {
         if (insLockErr) throw insLockErr;
       }
 
+      try {
+        const engineInput = await buildEngineInput(planId, storage);
+        const result = generatePlan(engineInput);
+        if (result.feasible) {
+          const planned = (result as any).plannedTasks || [];
+          for (const p of planned) {
+            if (Number((p as any).taskId) < 0) {
+              const breakId = Math.abs(Number((p as any).taskId));
+              await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
+            } else {
+              await storage.updatePlannedTimes(p.taskId, p.startPlanned, p.endPlanned, Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : []);
+            }
+          }
+        }
+      } catch (_e) {}
+
       return res.status(201).json({ success: true, task: createdTask });
     } catch (err: any) {
       if (err?.name === "ZodError") {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
       }
       return res.status(400).json({ message: err?.message || "Cannot create manual block" });
+    }
+  });
+
+  app.patch("/api/daily-tasks/:id/manual-block", async (req, res) => {
+    try {
+      const taskId = Number(req.params.id);
+      const input = z.object({ title: z.string().max(120).optional().nullable(), color: z.string().optional().nullable() }).strict().parse(req.body ?? {});
+      const { data: task, error: tErr } = await supabaseAdmin.from("daily_tasks").select("id, status, is_manual_block").eq("id", taskId).maybeSingle();
+      if (tErr) throw tErr;
+      if (!task) return res.status(404).json({ message: "Task not found" });
+      if (task.is_manual_block !== true) return res.status(400).json({ message: "Not a manual block" });
+      if (task.status === "in_progress" || task.status === "done") return res.status(400).json({ message: "Cannot edit running/done manual block" });
+      const patch: any = {};
+      if (input.title !== undefined) patch.manual_title = input.title ? String(input.title).trim() : null;
+      if (input.color !== undefined) patch.manual_color = normalizeManualHexColor(input.color);
+      const { error: uErr } = await supabaseAdmin.from("daily_tasks").update(patch).eq("id", taskId);
+      if (uErr) throw uErr;
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ message: err?.message || "Cannot update manual block" });
     }
   });
 
