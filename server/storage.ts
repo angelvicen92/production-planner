@@ -190,25 +190,20 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end, meal_task_template_id, meal_task_template_name")
+      .select("id, meal_start, meal_end")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
 
     const deriveMealBreakDuration = async (): Promise<number> => {
-      const explicitMealTemplateId = Number((plan as any)?.meal_task_template_id ?? NaN);
-      if (Number.isFinite(explicitMealTemplateId) && explicitMealTemplateId > 0) {
-        const { data: tplById, error: tplByIdErr } = await supabaseAdmin
-          .from("task_templates")
-          .select("default_duration")
-          .eq("id", explicitMealTemplateId)
-          .maybeSingle();
-        if (tplByIdErr) throw tplByIdErr;
-        const durationById = Number((tplById as any)?.default_duration ?? NaN);
-        if (Number.isFinite(durationById) && durationById > 0) return durationById;
-      }
+      const { data: settings, error: settingsErr } = await supabaseAdmin
+        .from("program_settings")
+        .select("meal_task_template_name, space_meal_break_minutes")
+        .eq("id", 1)
+        .maybeSingle();
+      if (settingsErr) throw settingsErr;
 
-      const mealTemplateName = String((plan as any)?.meal_task_template_name ?? "").trim();
+      const mealTemplateName = String((settings as any)?.meal_task_template_name ?? "").trim();
       if (mealTemplateName) {
         const { data: tplByName, error: tplByNameErr } = await supabaseAdmin
           .from("task_templates")
@@ -230,19 +225,10 @@ export class SupabaseStorage implements IStorage {
         .order("id", { ascending: true });
       if (mealTaskRowErr) throw mealTaskRowErr;
 
-      const mealNameNorm = String((plan as any)?.meal_task_template_name ?? "").trim().toLowerCase();
-      const explicitMealTemplateIdForRows = Number((plan as any)?.meal_task_template_id ?? NaN);
+      const mealNameNorm = mealTemplateName.toLowerCase();
       const candidateDurations = (mealTaskRow ?? [])
-        .filter((row: any) => {
-          const templateId = Number(row?.template_id ?? NaN);
-          if (Number.isFinite(explicitMealTemplateIdForRows) && explicitMealTemplateIdForRows > 0) {
-            return templateId === explicitMealTemplateIdForRows;
-          }
-          if (mealNameNorm) {
-            return String(row?.template?.name ?? "").trim().toLowerCase() === mealNameNorm;
-          }
-          return false;
-        })
+        .filter((row: any) => mealNameNorm
+          && String(row?.template?.name ?? "").trim().toLowerCase() === mealNameNorm)
         .map((row: any) => {
           const durationOverride = Number(row?.duration_override ?? NaN);
           if (Number.isFinite(durationOverride) && durationOverride > 0) return durationOverride;
@@ -252,11 +238,6 @@ export class SupabaseStorage implements IStorage {
         .filter((d: number) => Number.isFinite(d) && d > 0);
       if (candidateDurations.length > 0) return Math.round(candidateDurations[0]);
 
-      const { data: settings } = await supabaseAdmin
-        .from("program_settings")
-        .select("space_meal_break_minutes")
-        .eq("id", 1)
-        .maybeSingle();
       const fallback = Number((settings as any)?.space_meal_break_minutes ?? 45);
       return Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 45;
     };
@@ -2505,7 +2486,6 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getPlanFullDetails(planId: number) {
-    await this.syncPlanMealBreaks(planId);
     const plan = await this.getPlan(planId);
     if (!plan) return undefined;
 
