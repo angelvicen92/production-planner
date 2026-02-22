@@ -146,7 +146,7 @@ interface PlanningTimelineProps {
     shiftedTaskIds: number[];
   }) => Promise<void>;
   onValidatePlan?: () => Promise<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>;
-  onGeneratePlan?: (mode?: "full" | "only_unplanned") => Promise<void>;
+  onGeneratePlan?: (mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks") => Promise<void>;
   onReloadPlanTasks?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onDiscardManualEditsAndReload?: () => Promise<void> | void;
@@ -2513,7 +2513,7 @@ function TaskStatusMenuTrigger({
                       if (isPostApplyWorking) return;
                       setIsPostApplyWorking(true);
                       try {
-                        await onGeneratePlan?.("only_unplanned");
+                        await onGeneratePlan?.("replan_pending_respecting_locks");
                         closeValidationFeedback();
                       } finally {
                         setIsPostApplyWorking(false);
@@ -2573,7 +2573,7 @@ function TaskStatusMenuTrigger({
                           if (isPostApplyWorking) return;
                           setIsPostApplyWorking(true);
                           try {
-                            await onGeneratePlan?.("only_unplanned");
+                            await onGeneratePlan?.("replan_pending_respecting_locks");
                             clearManualDraftState();
                             setManualMode(false);
                             closeValidationFeedback();

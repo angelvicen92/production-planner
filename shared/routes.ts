@@ -325,7 +325,7 @@ export const api = {
       path: "/api/plans/:id/generate",
       input: z
         .object({
-          mode: z.enum(["full", "only_unplanned"]).optional(),
+          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks"]).optional(),
         })
         .strict()
         .optional(),
