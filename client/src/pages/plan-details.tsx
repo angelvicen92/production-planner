@@ -3704,12 +3704,12 @@ export default function PlanDetailsPage() {
                     }
                     return validation;
                   }}
-                  onGeneratePlan={async () => {
-                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode: "full" });
+                  onGeneratePlan={async (mode = "full") => {
+                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     setManualDraftBlockIds([]);
                     setManualEditsSnapshot({});
-                    toast({ title: "Replanificación lanzada" });
+                    toast({ title: mode === "only_unplanned" ? "Replanificación parcial lanzada" : "Replanificación lanzada" });
                   }}
                   onReloadPlanTasks={async () => {
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });

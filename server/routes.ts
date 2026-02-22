@@ -4140,6 +4140,9 @@ function mapDeleteError(err: any, fallback: string) {
               (Number.isFinite(mealTemplateId) && mealTemplateId > 0 && taskTemplateId === mealTemplateId)
               || (mealTemplateName.length > 0 && taskTemplateName === mealTemplateName)
               || taskTemplateName === "comida";
+            if (isMealTask && isContainedByMealWindow) {
+              continue;
+            }
             if (!isMealTask && isContainedByMealWindow) {
               continue;
             }

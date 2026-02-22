@@ -146,7 +146,7 @@ interface PlanningTimelineProps {
     shiftedTaskIds: number[];
   }) => Promise<void>;
   onValidatePlan?: () => Promise<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>;
-  onGeneratePlan?: () => Promise<void>;
+  onGeneratePlan?: (mode?: "full" | "only_unplanned") => Promise<void>;
   onReloadPlanTasks?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onDiscardManualEditsAndReload?: () => Promise<void> | void;
@@ -244,6 +244,7 @@ function TaskStatusMenuTrigger({
   canPinTimeLock = false,
   onPinTask,
   onUnpinTask,
+  onDeleteManualBlock,
   className,
   style,
   children,
@@ -266,6 +267,7 @@ function TaskStatusMenuTrigger({
   canPinTimeLock?: boolean;
   onPinTask?: (task: Task) => Promise<void>;
   onUnpinTask?: (task: Task) => Promise<void>;
+  onDeleteManualBlock?: (task: Task) => Promise<void> | void;
   className: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -387,7 +389,20 @@ function TaskStatusMenuTrigger({
             )}
           </div>
           <div className="border-t p-1">
-            {hasTimeLock ? (
+            {task.isManualBlock ? (
+              <button
+                type="button"
+                className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
+                disabled={taskStatusPending}
+                onClick={() => {
+                  if (!onDeleteManualBlock) return;
+                  if (!window.confirm("¿Eliminar bloqueo?")) return;
+                  void Promise.resolve(onDeleteManualBlock(task)).then(() => setOpen(false));
+                }}
+              >
+                Eliminar bloqueo
+              </button>
+            ) : hasTimeLock ? (
               <button
                 type="button"
                 className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
@@ -491,6 +506,7 @@ function TaskStatusMenuTrigger({
   const [manualExitDialogOpen, setManualExitDialogOpen] = useState(false);
   const [postApplyDialog, setPostApplyDialog] = useState<null | { feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>(null);
   const [isPostApplyChecking, setIsPostApplyChecking] = useState(false);
+  const [isPostApplyWorking, setIsPostApplyWorking] = useState(false);
   const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
@@ -1761,6 +1777,7 @@ function TaskStatusMenuTrigger({
                                                 canPinTimeLock={canPinTask(task)}
                                                 onPinTask={onPinTask}
                                                 onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId={String(sp.id)}
                             manualMode={manualMode}
                             taskSortArmed={taskSortArmed}
@@ -1856,6 +1873,7 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId="unlocated"
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
@@ -2039,6 +2057,7 @@ function TaskStatusMenuTrigger({
                                             canPinTimeLock={canPinTask(task)}
                                             onPinTask={onPinTask}
                                             onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId={String(sp.id)}
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
@@ -2115,6 +2134,7 @@ function TaskStatusMenuTrigger({
                                       canPinTimeLock={canPinTask(task)}
                                       onPinTask={onPinTask}
                                       onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId="unlocated"
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
@@ -2271,6 +2291,7 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId={String(resourceKey)}
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
@@ -2488,9 +2509,15 @@ function TaskStatusMenuTrigger({
                     <Button size="sm" variant="outline" onClick={() => void discardManualEditsAndReload()}>
                       Descartar cambios
                     </Button>
-                    <Button size="sm" onClick={async () => {
-                      await onGeneratePlan?.();
-                      closeValidationFeedback();
+                    <Button size="sm" disabled={isPostApplyWorking} onClick={async () => {
+                      if (isPostApplyWorking) return;
+                      setIsPostApplyWorking(true);
+                      try {
+                        await onGeneratePlan?.("only_unplanned");
+                        closeValidationFeedback();
+                      } finally {
+                        setIsPostApplyWorking(false);
+                      }
                     }}>
                       Replanificar ahora
                     </Button>
@@ -2527,23 +2554,42 @@ function TaskStatusMenuTrigger({
                     </ul>
                   </div>
                   <DialogFooter className="gap-2 sm:justify-between">
-                    <Button variant="outline" onClick={closeValidationFeedback}>Cerrar</Button>
+                    <Button variant="outline" onClick={closeValidationFeedback} disabled={isPostApplyWorking}>Cerrar</Button>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={() => void discardManualEditsAndReload()}
+                        disabled={isPostApplyWorking}
+                        onClick={() => {
+                          if (isPostApplyWorking) return;
+                          setIsPostApplyWorking(true);
+                          void discardManualEditsAndReload().finally(() => setIsPostApplyWorking(false));
+                        }}
                       >
                         Descartar cambios
                       </Button>
                       <Button
+                        disabled={isPostApplyWorking}
                         onClick={async () => {
-                          await onGeneratePlan?.();
-                          clearManualDraftState();
-                          setManualMode(false);
-                          closeValidationFeedback();
+                          if (isPostApplyWorking) return;
+                          setIsPostApplyWorking(true);
+                          try {
+                            await onGeneratePlan?.("only_unplanned");
+                            clearManualDraftState();
+                            setManualMode(false);
+                            closeValidationFeedback();
+                            await onReloadPlanTasks?.();
+                          } catch (error: any) {
+                            toast({
+                              variant: "destructive",
+                              title: "No se pudo replanificar",
+                              description: String(error?.message ?? "Inténtalo de nuevo."),
+                            });
+                          } finally {
+                            setIsPostApplyWorking(false);
+                          }
                         }}
                       >
-                        Mantener cambios y replanificar
+                        {isPostApplyWorking ? "Procesando…" : "Mantener cambios y replanificar"}
                       </Button>
                     </div>
                   </DialogFooter>
@@ -2710,6 +2756,7 @@ function TaskStatusMenuTrigger({
                             canPinTimeLock={canPinTask(task)}
                             onPinTask={onPinTask}
                             onUnpinTask={onUnpinTask}
+                                                onDeleteManualBlock={onDeleteManualBlock}
                             laneId={String(id)}
                             manualMode={manualMode}
                             taskSortArmed={taskSortArmed}
