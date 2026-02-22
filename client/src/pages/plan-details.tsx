@@ -1173,7 +1173,7 @@ export default function PlanDetailsPage() {
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
-      (t: any) => String(t?.status ?? "pending") === "pending" && (!t?.startPlanned || !t?.endPlanned),
+      (t: any) => String(t?.status ?? "pending") === "pending" && t?.isManualBlock !== true && t?.is_manual_block !== true && (!t?.startPlanned || !t?.endPlanned),
     );
   }, [plan?.dailyTasks]);
 
@@ -2730,7 +2730,7 @@ export default function PlanDetailsPage() {
                           (plan.dailyTasks ?? [])
                             .filter((task: any) =>
                               tasksShowUnplannedOnly
-                                ? String(task?.status ?? "pending") === "pending" && (!task?.startPlanned || !task?.endPlanned)
+                                ? String(task?.status ?? "pending") === "pending" && task?.isManualBlock !== true && task?.is_manual_block !== true && (!task?.startPlanned || !task?.endPlanned)
                                 : true,
                             )
                             .filter((task: any) =>
@@ -3704,12 +3704,12 @@ export default function PlanDetailsPage() {
                     }
                     return validation;
                   }}
-                  onGeneratePlan={async (mode = "full") => {
+                  onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" = "full") => {
                     await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     setManualDraftBlockIds([]);
                     setManualEditsSnapshot({});
-                    toast({ title: mode === "only_unplanned" ? "Replanificación parcial lanzada" : "Replanificación lanzada" });
+                    toast({ title: mode === "full" ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
                   }}
                   onReloadPlanTasks={async () => {
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });

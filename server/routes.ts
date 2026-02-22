@@ -4268,7 +4268,7 @@ function mapDeleteError(err: any, fallback: string) {
     let planningRunId: number | null = null;
     try {
       const input = z
-        .object({ mode: z.enum(["full", "only_unplanned"]).optional() })
+        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks"]).optional() })
         .strict()
         .parse(req.body ?? {});
       const mode = input.mode ?? "full";
@@ -4339,7 +4339,7 @@ function mapDeleteError(err: any, fallback: string) {
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
 
-      if (mode === "full" && taskIdsToSolve.length > 0) {
+      if ((mode === "full" || mode === "replan_pending_respecting_locks") && taskIdsToSolve.length > 0) {
         const { error: clearPendingErr } = await supabaseAdmin
           .from("daily_tasks")
           .update({ start_planned: null, end_planned: null })

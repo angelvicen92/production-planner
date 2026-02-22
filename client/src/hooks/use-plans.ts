@@ -133,7 +133,7 @@ export function useCreatePlan() {
 export function useGeneratePlan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, mode }: { id: number; mode?: "full" | "only_unplanned" }) =>
+    mutationFn: ({ id, mode }: { id: number; mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" }) =>
       apiRequest("POST", buildUrl(api.plans.generate.path, { id }), mode ? { mode } : undefined),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) });

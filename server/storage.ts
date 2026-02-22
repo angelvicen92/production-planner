@@ -190,19 +190,80 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end")
+      .select("id, meal_start, meal_end, meal_task_template_id, meal_task_template_name")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
 
-    const { data: settings } = await supabaseAdmin
-      .from("program_settings")
-      .select("space_meal_break_minutes, itinerant_meal_break_minutes")
-      .eq("id", 1)
-      .maybeSingle();
+    const deriveMealBreakDuration = async (): Promise<number> => {
+      const explicitMealTemplateId = Number((plan as any)?.meal_task_template_id ?? NaN);
+      if (Number.isFinite(explicitMealTemplateId) && explicitMealTemplateId > 0) {
+        const { data: tplById, error: tplByIdErr } = await supabaseAdmin
+          .from("task_templates")
+          .select("default_duration")
+          .eq("id", explicitMealTemplateId)
+          .maybeSingle();
+        if (tplByIdErr) throw tplByIdErr;
+        const durationById = Number((tplById as any)?.default_duration ?? NaN);
+        if (Number.isFinite(durationById) && durationById > 0) return durationById;
+      }
 
-    const spaceDuration = Math.max(1, Number((settings as any)?.space_meal_break_minutes ?? 45));
-    const itinerantDuration = Math.max(1, Number((settings as any)?.itinerant_meal_break_minutes ?? 45));
+      const mealTemplateName = String((plan as any)?.meal_task_template_name ?? "").trim();
+      if (mealTemplateName) {
+        const { data: tplByName, error: tplByNameErr } = await supabaseAdmin
+          .from("task_templates")
+          .select("default_duration")
+          .ilike("name", mealTemplateName)
+          .order("id", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (tplByNameErr) throw tplByNameErr;
+        const durationByName = Number((tplByName as any)?.default_duration ?? NaN);
+        if (Number.isFinite(durationByName) && durationByName > 0) return durationByName;
+      }
+
+      const { data: mealTaskRow, error: mealTaskRowErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("duration_override, template_id, template:task_templates(name, default_duration)")
+        .eq("plan_id", planId)
+        .eq("is_manual_block", false)
+        .order("id", { ascending: true });
+      if (mealTaskRowErr) throw mealTaskRowErr;
+
+      const mealNameNorm = String((plan as any)?.meal_task_template_name ?? "").trim().toLowerCase();
+      const explicitMealTemplateIdForRows = Number((plan as any)?.meal_task_template_id ?? NaN);
+      const candidateDurations = (mealTaskRow ?? [])
+        .filter((row: any) => {
+          const templateId = Number(row?.template_id ?? NaN);
+          if (Number.isFinite(explicitMealTemplateIdForRows) && explicitMealTemplateIdForRows > 0) {
+            return templateId === explicitMealTemplateIdForRows;
+          }
+          if (mealNameNorm) {
+            return String(row?.template?.name ?? "").trim().toLowerCase() === mealNameNorm;
+          }
+          return false;
+        })
+        .map((row: any) => {
+          const durationOverride = Number(row?.duration_override ?? NaN);
+          if (Number.isFinite(durationOverride) && durationOverride > 0) return durationOverride;
+          const defaultDuration = Number(row?.template?.default_duration ?? NaN);
+          return Number.isFinite(defaultDuration) && defaultDuration > 0 ? defaultDuration : NaN;
+        })
+        .filter((d: number) => Number.isFinite(d) && d > 0);
+      if (candidateDurations.length > 0) return Math.round(candidateDurations[0]);
+
+      const { data: settings } = await supabaseAdmin
+        .from("program_settings")
+        .select("space_meal_break_minutes")
+        .eq("id", 1)
+        .maybeSingle();
+      const fallback = Number((settings as any)?.space_meal_break_minutes ?? 45);
+      return Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 45;
+    };
+
+    const mealBreakDuration = await deriveMealBreakDuration();
+    const spaceDuration = Math.max(1, mealBreakDuration);
+    const itinerantDuration = Math.max(1, mealBreakDuration);
 
     const mealStart = String((plan as any)?.meal_start ?? "12:00");
     const mealEnd = String((plan as any)?.meal_end ?? "16:00");
