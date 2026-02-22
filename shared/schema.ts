@@ -52,6 +52,8 @@ export const planBreaks = pgTable("plan_breaks", {
   latestEnd: text("latest_end"),
   lockedStart: text("locked_start"),
   lockedEnd: text("locked_end"),
+  plannedStart: text("planned_start"),
+  plannedEnd: text("planned_end"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -85,6 +87,12 @@ export const optimizerSettings = pgTable("optimizer_settings", {
 
   // ✅ compactar concursantes (0..3)
   contestantCompactLevel: integer("contestant_compact_level").notNull().default(0),
+  arrivalTaskTemplateName: text("arrival_task_template_name"),
+  departureTaskTemplateName: text("departure_task_template_name"),
+  arrivalGroupingTarget: integer("arrival_grouping_target").notNull().default(0),
+  departureGroupingTarget: integer("departure_grouping_target").notNull().default(0),
+  vanCapacity: integer("van_capacity").notNull().default(0),
+  weightArrivalDepartureGrouping: integer("weight_arrival_departure_grouping").notNull().default(0),
 });
 
 // 2. zones
@@ -92,6 +100,8 @@ export const zones = pgTable("zones", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   uiColor: text("ui_color"),
+  mealStartPreferred: text("meal_start_preferred"),
+  mealEndPreferred: text("meal_end_preferred"),
 });
 
 // 3. spaces
@@ -101,7 +111,7 @@ export const spaces = pgTable("spaces", {
   abbrev: text("abbrev"),
   zoneId: integer("zone_id").notNull().references(() => zones.id),
   priorityLevel: integer("priority_level").notNull().default(1),
-  parentSpaceId: integer("parent_space_id").references(() => spaces.id),
+  parentSpaceId: integer("parent_space_id").references((): any => spaces.id),
 });
 
 // 4. resources
@@ -164,7 +174,7 @@ export const taskTemplates = pgTable("task_templates", {
 
   // ✅ Dependencias entre task templates
   hasDependency: boolean("has_dependency").notNull().default(false),
-  dependsOnTemplateId: integer("depends_on_template_id").references(() => taskTemplates.id),
+  dependsOnTemplateId: integer("depends_on_template_id").references((): any => taskTemplates.id),
 
   // ✅ NUEVO: múltiples dependencias (array de ids de template)
   dependsOnTemplateIds: jsonb("depends_on_template_ids").$type<number[]>(),
@@ -174,7 +184,7 @@ export const taskTemplates = pgTable("task_templates", {
 
   // Default location (optional)
   zoneId: integer("zone_id").references(() => zones.id),
-  spaceId: integer("space_id").references(() => spaces.id),
+  spaceId: integer("space_id").references((): any => spaces.id),
 });
 
 // 6.5 contestants (global catalog for now)
@@ -207,7 +217,7 @@ export const contestants = pgTable("contestants", {
 export const dailyTasks = pgTable("daily_tasks", {
   id: serial("id").primaryKey(),
   planId: integer("plan_id").notNull().references(() => plans.id),
-  templateId: integer("template_id").notNull().references(() => taskTemplates.id),
+  templateId: integer("template_id").notNull().references((): any => taskTemplates.id),
   contestantId: integer("contestant_id").references(() => contestants.id),
   durationOverride: integer("duration_override"),
   camerasOverride: integer("cameras_override"),
@@ -215,7 +225,7 @@ export const dailyTasks = pgTable("daily_tasks", {
 
   // Location (override per task)
   zoneId: integer("zone_id").references(() => zones.id),
-  spaceId: integer("space_id").references(() => spaces.id),
+  spaceId: integer("space_id").references((): any => spaces.id),
 
   // If referenced space/zone was deleted, backend will set this label
   locationLabel: text("location_label"),

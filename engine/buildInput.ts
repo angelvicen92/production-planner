@@ -80,6 +80,15 @@ export async function buildEngineInput(
 
 
   const zoneIdBySpaceId: Record<number, number> = {};
+  const zonePreferredMealWindow = new Map<number, { start: string | null; end: string | null }>();
+  const zones = await storage.getZones();
+  for (const z of (zones as any[]) ?? []) {
+    const zid = Number((z as any)?.id);
+    if (!Number.isFinite(zid) || zid <= 0) continue;
+    const start = ((z as any)?.meal_start_preferred ?? (z as any)?.mealStartPreferred ?? null) as string | null;
+    const end = ((z as any)?.meal_end_preferred ?? (z as any)?.mealEndPreferred ?? null) as string | null;
+    zonePreferredMealWindow.set(zid, { start, end });
+  }
   for (const s of (allSpaces as any[]) ?? []) {
     const sid = Number((s as any)?.id);
     const zid = Number((s as any)?.zone_id ?? (s as any)?.zoneId ?? NaN);
@@ -363,6 +372,11 @@ export async function buildEngineInput(
     optimizerMainZoneOptKeepBusy: optimizer?.mainZoneOptKeepBusy !== false,
     optimizerContestantCompactLevel: optimizer?.contestantCompactLevel ?? 0,
     optimizerContestantStayInZoneLevel: optimizer?.contestantStayInZoneLevel ?? 0,
+    arrivalTaskTemplateName: String((optimizer as any)?.arrivalTaskTemplateName ?? ""),
+    departureTaskTemplateName: String((optimizer as any)?.departureTaskTemplateName ?? ""),
+    arrivalGroupingTarget: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),
+    departureGroupingTarget: Number((optimizer as any)?.departureGroupingTarget ?? 0),
+    vanCapacity: Number((optimizer as any)?.vanCapacity ?? 0),
 
     optimizerWeights: {
       mainZoneFinishEarly: resolveWeight(
@@ -394,6 +408,11 @@ export async function buildEngineInput(
         optimizer?.optimizationMode,
         optimizer?.heuristics?.contestantStayInZone,
         optimizer?.contestantStayInZoneLevel,
+      ),
+      arrivalDepartureGrouping: resolveWeight(
+        optimizer?.optimizationMode,
+        (optimizer as any)?.heuristics?.arrivalDepartureGrouping,
+        (optimizer as any)?.weightArrivalDepartureGrouping,
       ),
       contestantTotalSpan: resolveWeight(
         optimizer?.optimizationMode,
@@ -557,9 +576,29 @@ export async function buildEngineInput(
               breakKind: String(b.kind),
               itinerantTeamId:
                 b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
-              fixedWindowStart: String(b.earliest_start ?? p.meal_start ?? p.mealStart),
-              fixedWindowEnd: String(b.latest_end ?? p.meal_end ?? p.mealEnd),
+              fixedWindowStart: (() => {
+                const spaceId = b.space_id == null ? null : Number(b.space_id);
+                const zid = spaceId == null ? null : (zoneIdBySpaceId[spaceId] ?? null);
+                const pref = zid == null ? null : zonePreferredMealWindow.get(zid) ?? null;
+                const globalStart = String(b.earliest_start ?? p.meal_start ?? p.mealStart);
+                const preferredStart = pref?.start ? String(pref.start) : null;
+                if (!preferredStart) return globalStart;
+                return preferredStart > globalStart ? preferredStart : globalStart;
+              })(),
+              fixedWindowEnd: (() => {
+                const spaceId = b.space_id == null ? null : Number(b.space_id);
+                const zid = spaceId == null ? null : (zoneIdBySpaceId[spaceId] ?? null);
+                const pref = zid == null ? null : zonePreferredMealWindow.get(zid) ?? null;
+                const globalEnd = String(b.latest_end ?? p.meal_end ?? p.mealEnd);
+                const preferredEnd = pref?.end ? String(pref.end) : null;
+                if (!preferredEnd) return globalEnd;
+                return preferredEnd < globalEnd ? preferredEnd : globalEnd;
+              })(),
               durationOverrideMin: Number(b.duration_minutes ?? 45),
+              startPlanned: b.planned_start ?? null,
+              endPlanned: b.planned_end ?? null,
+              lockedStart: b.locked_start ?? null,
+              lockedEnd: b.locked_end ?? null,
               assignedResourceIds: [],
             })),
           ],

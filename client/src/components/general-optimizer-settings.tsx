@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 
 type HeuristicSetting = { basicLevel: number; advancedValue: number };
 type OptimizerHeuristics = Record<OptimizerHeuristicKey, HeuristicSetting>;
@@ -34,6 +35,12 @@ type OptimizerSettings = {
   contestantCompactLevel: number;
   contestantStayInZoneLevel: number;
   contestantTotalSpanLevel: number;
+  arrivalTaskTemplateName: string;
+  departureTaskTemplateName: string;
+  arrivalGroupingTarget: number;
+  departureGroupingTarget: number;
+  vanCapacity: number;
+  weightArrivalDepartureGrouping: number;
 };
 
 const heuristicKeys: OptimizerHeuristicKey[] = [
@@ -603,6 +610,19 @@ export function GeneralOptimizerSettings() {
               <div className="text-xs">Valor: {localHeuristics.contestantTotalSpan.advancedValue}</div>
             </div>
           )}
+        </div>
+
+
+        <div className="space-y-3 rounded-md border p-3">
+          <div className="text-sm font-medium">Transporte (Llegada/Salida)</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1"><Label>Plantilla Llegada</Label><Input value={draft.arrivalTaskTemplateName ?? ""} disabled={isSaving} onChange={async (e) => { const v=e.target.value; const next={...draft,arrivalTaskTemplateName:v}; setDraft(next); await patchSettings({arrivalTaskTemplateName:v}); }} /></div>
+            <div className="space-y-1"><Label>Plantilla Salida</Label><Input value={draft.departureTaskTemplateName ?? ""} disabled={isSaving} onChange={async (e) => { const v=e.target.value; const next={...draft,departureTaskTemplateName:v}; setDraft(next); await patchSettings({departureTaskTemplateName:v}); }} /></div>
+            <div className="space-y-1"><Label>Objetivo agrupación llegada</Label><Input type="number" value={draft.arrivalGroupingTarget ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,arrivalGroupingTarget:v}; setDraft(next); await patchSettings({arrivalGroupingTarget:v}); }} /></div>
+            <div className="space-y-1"><Label>Objetivo agrupación salida</Label><Input type="number" value={draft.departureGroupingTarget ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,departureGroupingTarget:v}; setDraft(next); await patchSettings({departureGroupingTarget:v}); }} /></div>
+            <div className="space-y-1"><Label>Capacidad furgoneta</Label><Input type="number" value={draft.vanCapacity ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,vanCapacity:v}; setDraft(next); await patchSettings({vanCapacity:v}); }} /></div>
+            <div className="space-y-1"><Label>Peso agrupación (0-10)</Label><Input type="number" value={draft.weightArrivalDepartureGrouping ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Math.min(10,Number(e.target.value)||0)); const next={...draft,weightArrivalDepartureGrouping:v}; setDraft(next); await patchSettings({weightArrivalDepartureGrouping:v}); }} /></div>
+          </div>
         </div>
       </CardContent>
     </Card>

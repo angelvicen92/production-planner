@@ -111,6 +111,8 @@ export interface IStorage {
 
   syncPlanMealBreaks(planId: number): Promise<void>;
   savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
+  lockBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
+  clearBreakLock(planId: number, breakId: number): Promise<void>;
 
   // Optimizer Settings (global)
   getOptimizerSettings(): Promise<{
@@ -137,6 +139,12 @@ export interface IStorage {
     // ✅ compactar concursantes
     contestantCompactLevel: number; // 0..3
     contestantTotalSpanLevel: number; // 0..3
+    arrivalTaskTemplateName: string;
+    departureTaskTemplateName: string;
+    arrivalGroupingTarget: number;
+    departureGroupingTarget: number;
+    vanCapacity: number;
+    weightArrivalDepartureGrouping: number;
   }>;
 
   // Resources (per plan, 1 a 1)
@@ -349,16 +357,26 @@ export class SupabaseStorage implements IStorage {
   async savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void> {
     const { data: current, error: readError } = await supabaseAdmin
       .from("plan_breaks")
-      .select("locked_start, locked_end")
+      .select("planned_start, planned_end")
       .eq("plan_id", planId)
       .eq("id", breakId)
       .maybeSingle();
     if (readError) throw readError;
 
-    const currentStart = (current as any)?.locked_start ?? null;
-    const currentEnd = (current as any)?.locked_end ?? null;
+    const currentStart = (current as any)?.planned_start ?? null;
+    const currentEnd = (current as any)?.planned_end ?? null;
     if (currentStart === start && currentEnd === end) return;
 
+    const { error } = await supabaseAdmin
+      .from("plan_breaks")
+      .update({ planned_start: start, planned_end: end })
+      .eq("plan_id", planId)
+      .eq("id", breakId);
+    if (error) throw error;
+  }
+
+
+  async lockBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void> {
     const { error } = await supabaseAdmin
       .from("plan_breaks")
       .update({ locked_start: start, locked_end: end })
@@ -366,6 +384,16 @@ export class SupabaseStorage implements IStorage {
       .eq("id", breakId);
     if (error) throw error;
   }
+
+  async clearBreakLock(planId: number, breakId: number): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from("plan_breaks")
+      .update({ locked_start: null, locked_end: null })
+      .eq("plan_id", planId)
+      .eq("id", breakId);
+    if (error) throw error;
+  }
+
   async getPlans(): Promise<PlanSummary[]> {
     const { data, error } = await supabaseAdmin
       .from("plan_summaries")
@@ -402,7 +430,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, van_capacity, weight_arrival_departure_grouping",
       )
       .eq("id", 1)
       .single();
@@ -495,6 +523,12 @@ export class SupabaseStorage implements IStorage {
       // ✅ compactar concursantes
       contestantCompactLevel,
       contestantTotalSpanLevel,
+      arrivalTaskTemplateName: String((data as any)?.arrival_task_template_name ?? ""),
+      departureTaskTemplateName: String((data as any)?.departure_task_template_name ?? ""),
+      arrivalGroupingTarget: Math.max(0, Number((data as any)?.arrival_grouping_target ?? 0) || 0),
+      departureGroupingTarget: Math.max(0, Number((data as any)?.departure_grouping_target ?? 0) || 0),
+      vanCapacity: Math.max(0, Number((data as any)?.van_capacity ?? 0) || 0),
+      weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number((data as any)?.weight_arrival_departure_grouping ?? 0) || 0)),
     };
   }
 
