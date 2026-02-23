@@ -4454,7 +4454,7 @@ export default function PlanDetailsPage() {
                 <div className="space-y-2"><Label>Fin</Label><Input type="time" step={60} value={manualBlockDialog.end} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, end: e.target.value }))} /></div>
               </div>
               <div className="space-y-2"><Label>Título</Label><Input value={manualBlockDialog.title} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, title: e.target.value }))} /></div>
-              <div className="space-y-2"><Label>Color</Label><ColorSwatchPicker value={manualBlockDialog.color} onChange={(v) => setManualBlockDialog((prev) => ({ ...prev, color: v }))} /></div>
+              <div className="space-y-2"><Label>Color</Label><ColorSwatchPicker value={manualBlockDialog.color} onChange={(v) => setManualBlockDialog((prev) => ({ ...prev, color: normalizeHexColor(v) ?? prev.color }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setManualBlockDialog((prev) => ({ ...prev, open: false }))} disabled={manualBlockSaving}>Cancelar</Button>
@@ -4468,7 +4468,11 @@ export default function PlanDetailsPage() {
                 }
                 setManualBlockSaving(true);
                 try {
-                const selectedColor = normalizeHexColor(manualBlockDialog.color) ?? "#38BDF8";
+                const selectedColor = normalizeHexColor(manualBlockDialog.color);
+                if (!selectedColor) {
+                  toast({ title: "Color inválido (#RRGGBB)", variant: "destructive" });
+                  return;
+                }
                 const created = await apiRequest<any>("POST", `/api/plans/${id}/manual-block`, {
                   scopeType: manualBlockDialog.scopeType,
                   scopeId,
@@ -4477,9 +4481,29 @@ export default function PlanDetailsPage() {
                   title: manualBlockDialog.title,
                   color: selectedColor,
                 });
+                const createdTask = created?.task ?? null;
                 const blockId = Number(created?.task?.id ?? NaN);
+                const serverManualColor = normalizeHexColor(createdTask?.manualColor ?? createdTask?.manual_color ?? null);
                 if (Number.isFinite(blockId) && blockId > 0) {
                   setManualDraftBlockIds((prev) => (prev.includes(blockId) ? prev : [...prev, blockId]));
+                  if (createdTask && serverManualColor) {
+                    queryClient.setQueryData<any>(planQueryKey(id), (prev: any) => {
+                      if (!prev || !Array.isArray(prev.dailyTasks)) return prev;
+                      const prevTasks = prev.dailyTasks as any[];
+                      const exists = prevTasks.some((t) => Number(t?.id) === blockId);
+                      const nextTask = {
+                        ...createdTask,
+                        manualColor: serverManualColor,
+                        manual_color: serverManualColor,
+                      };
+                      return {
+                        ...prev,
+                        dailyTasks: exists
+                          ? prevTasks.map((t) => (Number(t?.id) === blockId ? { ...t, ...nextTask } : t))
+                          : [...prevTasks, nextTask],
+                      };
+                    });
+                  }
                 }
                 await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                 await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
