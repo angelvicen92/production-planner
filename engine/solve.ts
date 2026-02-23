@@ -496,6 +496,34 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return t;
   };
 
+  const findEarliestGapAllowingOverlap = (
+    arr: Interval[],
+    earliest: number,
+    duration: number,
+    allowOverlap: (intervalTaskId: number) => boolean,
+  ) => {
+    let t = earliest;
+    const allowedOverlaps = new Set<number>();
+    for (const it of arr) {
+      if (t + duration <= it.start) return t;
+      if (t < it.end) {
+        const intervalTaskId = Number(it?.taskId ?? NaN);
+        if (
+          Number.isFinite(intervalTaskId) &&
+          intervalTaskId > 0 &&
+          allowOverlap(intervalTaskId)
+        ) {
+          allowedOverlaps.add(intervalTaskId);
+          if (allowedOverlaps.size <= 1) continue;
+        }
+
+        t = it.end;
+        allowedOverlaps.clear();
+      }
+    }
+    return t;
+  };
+
   const rangesOverlap = (
     aStart: number,
     aEnd: number,
@@ -1010,6 +1038,28 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const taskItinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     const transportTask = isArrivalTask(task) || isDepartureTask(task);
+    const canUseItinerantWrapOverlap = Boolean(
+      Number(task?.itinerantTeamId ?? 0) > 0 && contestantId && spaceId,
+    );
+
+    const canWrapOverlapWithTaskId = (intervalTaskId: number) => {
+      if (!canUseItinerantWrapOverlap) return false;
+      if (!Number.isFinite(intervalTaskId) || intervalTaskId <= 0) return false;
+      if (intervalTaskId === taskId) return false;
+      const otherTask = taskById.get(Number(intervalTaskId));
+      if (!otherTask || Boolean(otherTask?.isManualBlock)) return false;
+
+      const otherContestantId = getContestantId(otherTask);
+      const otherSpaceId = getSpaceId(otherTask);
+      if (!otherContestantId || !otherSpaceId) return false;
+
+      return (
+        Number(otherContestantId) === Number(contestantId) &&
+        Number(otherSpaceId) === Number(spaceId) &&
+        (Number(otherTask?.itinerantTeamId ?? 0) > 0 || Number(task?.itinerantTeamId ?? 0) > 0)
+      );
+    };
+
     if (!spaceId && !transportTask) {
       return null;
     }
@@ -1041,6 +1091,37 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     if (effWin) start = snapUp(Math.max(start, effWin.start));
 
+    if (canUseItinerantWrapOverlap && contestantId && spaceId) {
+      const cOcc = occupiedByContestant.get(contestantId) ?? [];
+      let bestWrapInterval: Interval | null = null;
+      let bestWrapDistance = Number.POSITIVE_INFINITY;
+
+      for (const it of cOcc) {
+        const intervalTaskId = Number(it?.taskId ?? NaN);
+        if (!Number.isFinite(intervalTaskId) || intervalTaskId <= 0) continue;
+        if (intervalTaskId === taskId) continue;
+        const otherTask = taskById.get(intervalTaskId);
+        if (!otherTask || Boolean(otherTask?.isManualBlock)) continue;
+        if (Number(getSpaceId(otherTask) ?? 0) !== Number(spaceId)) continue;
+        const distance = Math.abs(it.start - start);
+        if (distance < bestWrapDistance) {
+          bestWrapDistance = distance;
+          bestWrapInterval = it;
+        }
+      }
+
+      if (bestWrapInterval) {
+        const durA = duration;
+        const durB = Math.max(5, bestWrapInterval.end - bestWrapInterval.start);
+        const padding = durA > durB ? Math.floor((durA - durB) / 2) : 0;
+        const alignedStart = durA > durB
+          ? snapUp(bestWrapInterval.start - padding)
+          : snapUp(bestWrapInterval.start);
+        const boundedStart = effWin ? Math.max(alignedStart, effWin.start) : alignedStart;
+        start = snapUp(Math.max(start, startDay, boundedStart));
+      }
+    }
+
     // bucle de búsqueda (avanzando GRID) hasta encajar con todas las restricciones
     const maxIter = 20000; // defensivo
     let iter = 0;
@@ -1048,7 +1129,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
     while (iter++ < maxIter) {
       // 2.1) Espacio: hueco libre en space
       const spaceOcc = spaceId ? (occupiedBySpace.get(spaceId) ?? []) : [];
-      let candidate = spaceId ? findEarliestGap(spaceOcc, start, duration) : start;
+      let candidate = spaceId
+        ? (canUseItinerantWrapOverlap
+          ? findEarliestGapAllowingOverlap(
+            spaceOcc,
+            start,
+            duration,
+            canWrapOverlapWithTaskId,
+          )
+          : findEarliestGap(spaceOcc, start, duration))
+        : start;
 
       // 2.2) Bloqueo por comida de plató (zona): NO se puede solapar
       if (zoneId) {
@@ -1059,7 +1149,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
       // 2.3) Concursante: hueco libre
       if (contestantId) {
         const cOcc = occupiedByContestant.get(contestantId) ?? [];
-        candidate = findEarliestGap(cOcc, candidate, duration);
+        candidate = canUseItinerantWrapOverlap
+          ? findEarliestGapAllowingOverlap(
+            cOcc,
+            candidate,
+            duration,
+            canWrapOverlapWithTaskId,
+          )
+          : findEarliestGap(cOcc, candidate, duration);
       }
 
       // 2.4) Si movimos candidate, re-chequeamos (porque al mover por concursante podemos caer en espacio ocupado, etc.)
@@ -2376,13 +2473,30 @@ export function generatePlan(input: EngineInput): EngineOutput {
   byContestant.forEach((list, contestantId) => {
     list.sort((a, b) => a.start - b.start);
 
-    for (let i = 1; i < list.length; i++) {
-      const prev = list[i - 1];
+    for (let i = 0; i < list.length; i++) {
       const curr = list[i];
+      const active = list.filter((x, idx) => idx < i && x.end > curr.start);
+      if (!active.length) continue;
 
+      const currTask = tasks.find((x) => x.id === curr.taskId) as any;
+
+      if (active.length >= 2) {
+        const name =
+          (currTask as any)?.contestantName ??
+          byTaskId.get(curr.taskId)?.contestantName ??
+          null;
+        overlaps.push({
+          code: "CONTESTANT_OVERLAP",
+          message:
+            `Solape múltiple de concursante${name ? ` (${name})` : ` (ID ${contestantId})`}: ` +
+            `hay 3 o más tareas coincidiendo alrededor de ${toHHMM(curr.start)}.`,
+        });
+        continue;
+      }
+
+      const prev = active[0];
       if (curr.start < prev.end) {
         const prevTask = tasks.find((x) => x.id === prev.taskId) as any;
-        const currTask = tasks.find((x) => x.id === curr.taskId) as any;
         const allowWrapOverlap = Boolean(
           prevTask && currTask &&
           Number(prevTask?.contestantId ?? 0) === Number(currTask?.contestantId ?? 0) &&
@@ -2390,9 +2504,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
           Number(prevTask?.spaceId ?? 0) === Number(currTask?.spaceId ?? 0) &&
           (Number(prevTask?.itinerantTeamId ?? 0) > 0 || Number(currTask?.itinerantTeamId ?? 0) > 0)
         );
-        if (allowWrapOverlap) {
-          continue;
-        }
+        if (allowWrapOverlap && active.length === 1) continue;
+
         // Nombre (preferimos el del input, y si no, el del byTaskId)
         const prevTaskRow = tasks.find((x) => x.id === prev.taskId);
         const name =
