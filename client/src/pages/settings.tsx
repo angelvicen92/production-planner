@@ -2232,6 +2232,7 @@ function TaskTemplatesSettings() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formData, setFormData] = useState<any>({
     name: "",
+    abbrev: "",
     defaultDuration: 30,
     defaultCameras: 0,
     defaultComment1Color: null,
@@ -2373,6 +2374,7 @@ function TaskTemplatesSettings() {
     setEditData({
       id: Number(tpl.id),
       name: String(tpl.name ?? ""),
+      abbrev: String(tpl.abbrev ?? ""),
       defaultDuration: Number(
         tpl.defaultDuration ?? tpl.default_duration ?? 30,
       ),
@@ -2454,6 +2456,7 @@ function TaskTemplatesSettings() {
 
   const validateDraft = (d: any) => {
     if (!String(d?.name ?? "").trim()) return "Name is required";
+    if (String(d?.abbrev ?? "").trim().length > 32) return "La abreviatura no puede superar 32 caracteres.";
     if (
       Boolean(d?.hasDependency) &&
       (d?.dependsOnTemplateIds?.length ?? 0) === 0
@@ -2557,6 +2560,7 @@ function TaskTemplatesSettings() {
         id: editingId,
         patch: {
           name: String(editData.name ?? "").trim(),
+          abbrev: String(editData.abbrev ?? "").trim() || null,
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
           defaultComment1Color: String(editData.defaultComment1Color ?? "").trim() || null,
@@ -2673,6 +2677,14 @@ function TaskTemplatesSettings() {
                   }
                 />
                 <Input
+                  placeholder="Abreviatura (ej. ENTR)"
+                  maxLength={32}
+                  value={String(formData.abbrev ?? "")}
+                  onChange={(e) =>
+                    setFormData((p: any) => ({ ...p, abbrev: e.target.value.slice(0, 32) }))
+                  }
+                />
+                <Input
                   type="number"
                   value={formData.defaultDuration}
                   onChange={(e) =>
@@ -2698,7 +2710,7 @@ function TaskTemplatesSettings() {
                 />
                 <Button
                   onClick={() =>
-                    createTask.mutate(formData as any, {
+                    createTask.mutate({ ...formData, abbrev: String(formData.abbrev ?? "").trim() || null } as any, {
                       onSuccess: () => setIsAddOpen(false),
                     })
                   }
@@ -2769,7 +2781,7 @@ function TaskTemplatesSettings() {
                             {tpl.name ?? `#${tpl.id}`}
                           </p>
                           <p className="text-xs text-muted-foreground leading-4">
-                            Duración: {Number.isFinite(durationMin) ? durationMin : "—"} min · Plató: {zoneName} · Espacio: {spaceName}
+                            Duración: {Number.isFinite(durationMin) ? durationMin : "—"} min · Abrv: {String(curr?.abbrev ?? "").trim() || "—"} · Plató: {zoneName} · Espacio: {spaceName}
                           </p>
                         </div>
                       )}
@@ -2822,6 +2834,20 @@ function TaskTemplatesSettings() {
                             }))
                           }
                           placeholder="30"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Abreviatura</Label>
+                        <Input
+                          value={String(editData?.abbrev ?? "")}
+                          maxLength={32}
+                          onChange={(e) =>
+                            setEditData((p: any) => ({
+                              ...p,
+                              abbrev: e.target.value.slice(0, 32),
+                            }))
+                          }
+                          placeholder="ENTR"
                         />
                       </div>
                       <div className="space-y-1">
