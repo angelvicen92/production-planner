@@ -378,6 +378,7 @@ function mapDeleteError(err: any, fallback: string) {
         users: payload,
         nextPage: users.length >= perPage ? page + 1 : null,
       });
+
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch admin users" });
     }
@@ -497,6 +498,7 @@ function mapDeleteError(err: any, fallback: string) {
           resourceItemId: parsed.resourceItemId ?? null,
         },
       });
+
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot update user links" });
     }
@@ -606,6 +608,7 @@ function mapDeleteError(err: any, fallback: string) {
         roleType: data.role_type === "editorial" ? "editorial" : "production",
         isActive: Boolean(data.is_active),
       });
+
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Invalid input" });
     }
@@ -638,6 +641,7 @@ function mapDeleteError(err: any, fallback: string) {
         roleType: data.role_type === "editorial" ? "editorial" : "production",
         isActive: Boolean(data.is_active),
       });
+
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot update staff person" });
     }
@@ -714,6 +718,7 @@ function mapDeleteError(err: any, fallback: string) {
         isActive: Boolean(data.is_active),
         orderIndex: Number(data.order_index ?? 0),
       });
+
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot create itinerant team" });
     }
@@ -1698,6 +1703,7 @@ function mapDeleteError(err: any, fallback: string) {
             : null,
         simulatedSetAt: data.simulated_set_at ? new Date(data.simulated_set_at).toISOString() : null,
       });
+
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch program settings" });
     }
@@ -1766,6 +1772,7 @@ function mapDeleteError(err: any, fallback: string) {
         enableNextSoonAlert: Boolean(data.enable_next_soon_alert),
         updatedAt: String(data.updated_at),
       });
+
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch control room settings" });
     }
@@ -1829,6 +1836,7 @@ function mapDeleteError(err: any, fallback: string) {
         vanCapacity: settings.vanCapacity,
         weightArrivalDepartureGrouping: settings.weightArrivalDepartureGrouping,
       });
+
     } catch (err: any) {
       res.status(500).json({ message: err?.message || "Failed to fetch optimizer settings" });
     }
@@ -3275,6 +3283,7 @@ function mapDeleteError(err: any, fallback: string) {
         durationOverride: updated.duration_override ?? updated.durationOverride ?? null,
         camerasOverride: updated.cameras_override ?? updated.camerasOverride ?? null,
       });
+
     } catch (err: any) {
       if (err?.name === "ZodError") {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
@@ -3314,6 +3323,7 @@ function mapDeleteError(err: any, fallback: string) {
         durationOverride: updated.duration_override ?? updated.durationOverride ?? null,
         camerasOverride: updated.cameras_override ?? updated.camerasOverride ?? null,
       });
+
     } catch (err: any) {
       if ((String(err?.message || "")).toLowerCase().includes("not found")) {
         return res.status(404).json({ message: "Task not found" });
@@ -3452,6 +3462,7 @@ function mapDeleteError(err: any, fallback: string) {
         comment2Text: updated.comment2_text ?? null,
         comment2Color: updated.comment2_color ?? null,
       });
+
     } catch (err: any) {
       if (err?.name === "ZodError") {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
@@ -3846,6 +3857,7 @@ function normalizeHexColor(value: unknown): string | null {
         clearedManualBlocks,
         clearedManualBlockLocks,
       });
+
     } catch (err: any) {
       if (err?.name === "ZodError") {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
@@ -3977,29 +3989,32 @@ function normalizeHexColor(value: unknown): string | null {
         if (insLockErr) throw insLockErr;
       }
 
-      try {
-        const engineInput = await buildEngineInput(planId, storage);
-        const result = generatePlan(engineInput);
-        if (result.feasible) {
+      setImmediate(async () => {
+        try {
+          const engineInput = await buildEngineInput(planId, storage);
+          const result = generatePlan(engineInput);
+          if (!result.feasible) return;
           const planned = (result as any).plannedTasks || [];
           for (const p of planned) {
             if (Number((p as any).taskId) < 0) {
               const breakId = Math.abs(Number((p as any).taskId));
               await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
-            } else {
-              const persisted = await storage.updatePlannedTimes(
-                p.taskId,
-                p.startPlanned,
-                p.endPlanned,
-                Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
-              );
-              if (!persisted.updated) {
-                console.debug("[manual-block/replan] skipped protected task", { taskId: Number((p as any).taskId) });
-              }
+              continue;
+            }
+            const persisted = await storage.updatePlannedTimes(
+              p.taskId,
+              p.startPlanned,
+              p.endPlanned,
+              Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
+            );
+            if (!persisted.updated) {
+              console.debug("[manual-block/replan] skipped protected task", { taskId: Number((p as any).taskId) });
             }
           }
+        } catch (backgroundError) {
+          console.warn("[manual-block/replan] background replan failed", backgroundError);
         }
-      } catch (_e) {}
+      });
 
       return res.status(201).json({ success: true, task: createdTask });
     } catch (err: any) {
@@ -4056,6 +4071,7 @@ function normalizeHexColor(value: unknown): string | null {
         tasksCount: tasks.length,
         sample,
       });
+
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Debug failed" });
     }
@@ -4083,6 +4099,7 @@ function normalizeHexColor(value: unknown): string | null {
           ? (engineInput as any).planResourceItems.length
           : null,
       });
+
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Debug failed" });
     }
@@ -4140,6 +4157,7 @@ function normalizeHexColor(value: unknown): string | null {
         lastReasons: Array.isArray(data.last_reasons) ? data.last_reasons : null,
         requestId: data.request_id ? String(data.request_id) : null,
       });
+
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to fetch planning run" });
     }

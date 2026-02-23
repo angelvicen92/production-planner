@@ -907,7 +907,7 @@ export default function PlanDetailsPage() {
     color: string;
   }>({
     open: false,
-    scopeType: "space",
+    scopeType: "contestant",
     scopeId: "",
     start: "10:00",
     end: "10:30",
@@ -1011,6 +1011,29 @@ export default function PlanDetailsPage() {
     return set;
   }, [plan]);
 
+  const showActionError = (title: string, err: any) => {
+    const message = String(err?.message || "Inténtalo de nuevo.");
+    const reasons = Array.isArray(err?.reasons) ? err.reasons : [];
+    const reasonMessage = reasons.length > 0
+      ? reasons
+          .slice(0, 3)
+          .map((reason: any) => String(reason?.message || reason?.reason || reason))
+          .join(" · ")
+      : null;
+    toast({
+      title,
+      description: reasonMessage ? `${message} · ${reasonMessage}` : message,
+      variant: "destructive",
+    });
+    setActionErrorDialog({
+      open: true,
+      title,
+      message: reasonMessage ? `${message}
+
+${reasonMessage}` : message,
+    });
+  };
+
   const handlePlanningTaskStatusChange = async (
     task: any,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
@@ -1023,7 +1046,16 @@ export default function PlanDetailsPage() {
       effectiveSeconds: nowSeconds,
     };
 
-    await updateTaskStatus.mutateAsync(payload);
+    try {
+      await updateTaskStatus.mutateAsync(payload);
+    } catch (err: any) {
+      if (status === "in_progress" && String(err?.message || "").includes("espacio ya tiene otra tarea en curso")) {
+        showActionError("No se puede iniciar: este espacio ya tiene otra tarea en curso", err);
+      } else {
+        showActionError("No se pudo actualizar la tarea", err);
+      }
+      throw err;
+    }
   };
 
   function handleCreateContestant() {
@@ -1066,6 +1098,12 @@ export default function PlanDetailsPage() {
   }>({
     open: false,
     reasons: [],
+  });
+
+  const [actionErrorDialog, setActionErrorDialog] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: "No se pudo completar la acción",
+    message: "",
   });
 
   useEffect(() => {
@@ -3782,10 +3820,18 @@ export default function PlanDetailsPage() {
                   onPatchManualBlock={async (taskId: number, patch: { title?: string | null; color?: string | null }) => {
                     await patchManualBlock(taskId, patch);
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Bloqueo actualizado" });
                   }}
-                  onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true }))}
+                  onSetManualBlockDuration={async (task: any, durationMinutes: number) => {
+                    const start = String(task?.startPlanned ?? task?.start_planned ?? "");
+                    const startMin = parseHHMMToMinutes(start);
+                    if (startMin == null) throw new Error("Bloqueo manual sin hora de inicio");
+                    const end = minutesToHHMM(startMin + Math.max(5, Math.round(durationMinutes)));
+                    await apiRequest("PATCH", `/api/daily-tasks/${Number(task.id)}/time-lock`, { start, end });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Duración actualizada" });
+                  }}
+                  onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true, scopeType: "contestant", scopeId: "" }))}
                 />
               </div>
               </FullscreenPlanningPanel>
@@ -4413,6 +4459,18 @@ export default function PlanDetailsPage() {
             </div>
           </DialogContent>
         </Dialog>
+        <Dialog open={actionErrorDialog.open} onOpenChange={(open) => setActionErrorDialog((prev) => ({ ...prev, open }))}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{actionErrorDialog.title}</DialogTitle>
+              <DialogDescription className="whitespace-pre-wrap">{actionErrorDialog.message}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setActionErrorDialog((prev) => ({ ...prev, open: false }))}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog
           open={manualBlockDialog.open}
           onOpenChange={(open) => setManualBlockDialog((prev) => ({ ...prev, open }))}
@@ -4505,10 +4563,11 @@ export default function PlanDetailsPage() {
                     });
                   }
                 }
-                await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                 toast({ title: "Bloqueo creado" });
                 setManualBlockDialog((prev) => ({ ...prev, open: false }));
+                } catch (err: any) {
+                  showActionError("No se pudo crear el bloqueo", err);
                 } finally {
                   setManualBlockSaving(false);
                 }
