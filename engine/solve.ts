@@ -92,6 +92,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
       .toLowerCase();
     return mealName.length > 0 && taskTemplateName === mealName;
   };
+  const arrivalTemplateName = String((input as any)?.arrivalTaskTemplateName ?? "").trim().toLowerCase();
+  const departureTemplateName = String((input as any)?.departureTaskTemplateName ?? "").trim().toLowerCase();
+  const vanCapacity = Math.max(0, Number((input as any)?.vanCapacity ?? 0));
+  const arrivalGroupingTarget = Math.max(0, Number((input as any)?.arrivalGroupingTarget ?? 0));
+  const departureGroupingTarget = Math.max(0, Number((input as any)?.departureGroupingTarget ?? 0));
+  const arrivalDepartureWeight = Number((input as any)?.optimizerWeights?.arrivalDepartureGrouping ?? 0);
+  const arrivalBatchingEnabled = Boolean(arrivalTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && arrivalGroupingTarget > 0);
+  const departureBatchingEnabled = Boolean(departureTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && departureGroupingTarget > 0);
+
+  const isArrivalTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === arrivalTemplateName;
+  const isDepartureTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === departureTemplateName;
 
   // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
   for (const task of tasks as any[]) {
@@ -349,6 +360,58 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const tasksSorted = sortedIds
     .map((id) => (tasksForSolve as any[]).find((t) => Number(t.id) === id))
     .filter(Boolean) as any[];
+  const forcedStartByTaskId = new Map<number, number>();
+  const forcedEndByTaskId = new Map<number, number>();
+  const availabilityByContestant = ((input as any)?.contestantAvailabilityById ?? {}) as Record<number, { start: string; end: string }>;
+
+  const toAvailStart = (contestantId: number | null) => {
+    if (!contestantId) return startDay;
+    const av = availabilityByContestant[contestantId];
+    return av?.start ? Math.max(startDay, toMinutes(av.start)) : startDay;
+  };
+  const toAvailEnd = (contestantId: number | null) => {
+    if (!contestantId) return endDay;
+    const av = availabilityByContestant[contestantId];
+    return av?.end ? Math.min(endDay, toMinutes(av.end)) : endDay;
+  };
+
+  if (arrivalBatchingEnabled) {
+    const target = Math.min(vanCapacity, arrivalGroupingTarget);
+    const arrivals = tasksSorted
+      .filter((t) => isArrivalTask(t) && String(t?.status ?? "pending") === "pending")
+      .sort((a, b) => toAvailStart(getContestantId(a)) - toAvailStart(getContestantId(b)));
+    for (let i = 0; i < arrivals.length; i += target) {
+      const batch = arrivals.slice(i, i + target);
+      if (!batch.length) continue;
+      let commonStart = Math.ceil(Math.max(...batch.map((t) => toAvailStart(getContestantId(t)))) / 5) * 5;
+      for (let step = 0; step < 48; step++) {
+        const fits = batch.every((t) => {
+          const dur = Math.max(5, Math.floor(Number(t.durationOverrideMin ?? 30)));
+          return commonStart + dur <= toAvailEnd(getContestantId(t));
+        });
+        if (fits) break;
+        commonStart += 5;
+      }
+      for (const t of batch) {
+        forcedStartByTaskId.set(Number(t.id), commonStart);
+      }
+    }
+  }
+
+  if (departureBatchingEnabled) {
+    const target = Math.min(vanCapacity, departureGroupingTarget);
+    const departures = tasksSorted
+      .filter((t) => isDepartureTask(t) && String(t?.status ?? "pending") === "pending")
+      .sort((a, b) => toAvailEnd(getContestantId(b)) - toAvailEnd(getContestantId(a)));
+    for (let i = 0; i < departures.length; i += target) {
+      const batch = departures.slice(i, i + target);
+      if (!batch.length) continue;
+      const commonEnd = Math.floor(Math.min(...batch.map((t) => toAvailEnd(getContestantId(t)))) / 5) * 5;
+      for (const t of batch) {
+        forcedEndByTaskId.set(Number(t.id), commonEnd);
+      }
+    }
+  }
   if (!Array.isArray(tasksForSolve) || tasksForSolve.length === 0) {
     reasons.push({
       code: "VALIDATION_ERROR",
@@ -815,7 +878,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const end = start + duration;
       addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
       occupiedBySpace.set(spaceId, occ);
-      plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: spaceId, assignedResources: [] });
+      plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: spaceId ?? null, assignedResources: [] });
       continue;
     }
 
@@ -946,14 +1009,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const zoneId = getZoneId(task);
     const taskItinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
-    // requisito mínimo para bloquear espacio (tu app es “requiere 1 espacio”)
-    if (!spaceId) {
-      // si faltase, ya lo filtras como REQUIRES_CONFIGURATION arriba
+    const transportTask = isArrivalTask(task) || isDepartureTask(task);
+    if (!spaceId && !transportTask) {
       return null;
     }
 
     // earliest por horario + deps
     let start = snapUp(Math.max(startDay, depsEnd(task)));
+    const forcedStart = forcedStartByTaskId.get(taskId);
+    const forcedEnd = forcedEndByTaskId.get(taskId);
+    if (Number.isFinite(forcedStart)) start = snapUp(Math.max(start, Number(forcedStart)));
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
     const effWin = getContestantEffectiveWindow(contestantId);
@@ -982,8 +1047,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     while (iter++ < maxIter) {
       // 2.1) Espacio: hueco libre en space
-      const spaceOcc = occupiedBySpace.get(spaceId) ?? [];
-      let candidate = findEarliestGap(spaceOcc, start, duration);
+      const spaceOcc = spaceId ? (occupiedBySpace.get(spaceId) ?? []) : [];
+      let candidate = spaceId ? findEarliestGap(spaceOcc, start, duration) : start;
 
       // 2.2) Bloqueo por comida de plató (zona): NO se puede solapar
       if (zoneId) {
@@ -1026,7 +1091,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
         } as any;
       }
 
-      const finish = start + duration;
+      const finish = Number.isFinite(forcedEnd) ? Number(forcedEnd) : start + duration;
+      if (finish <= start) {
+        start = snapUp(start + GRID);
+        continue;
+      }
       if (finish > endDay) {
         return {
           feasible: false,
@@ -1064,7 +1133,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const rr = (task as any)?.resourceRequirements ?? null;
 
       const ignoreSpacePool = shouldIgnoreSpacePool(task);
-      const spacePool = ignoreSpacePool ? [] : getSpacePool(spaceId);
+      const spacePool = ignoreSpacePool || !spaceId ? [] : getSpacePool(spaceId);
       const zonePool = Number.isFinite(Number(zoneId))
         ? (zoneResourceAssignments[Number(zoneId)] ?? [])
         : [];
@@ -1245,8 +1314,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
       assigned.push(...extraComponentsToAdd);
 
       // ✅ reservar intervalos
-      addIntervalSorted(spaceOcc, { start, end: finish, taskId });
-      occupiedBySpace.set(spaceId, spaceOcc);
+      if (spaceId) {
+        addIntervalSorted(spaceOcc, { start, end: finish, taskId });
+        occupiedBySpace.set(spaceId, spaceOcc);
+      }
       if (taskItinerantTeamId) {
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         addIntervalSorted(teamOcc, { start, end: finish, taskId });
@@ -1269,14 +1340,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
         taskId,
         startPlanned: toHHMM(start),
         endPlanned: toHHMM(finish),
-        assignedSpace: spaceId,
+        assignedSpace: spaceId ?? null,
         assignedResources: assigned,
       });
       plannedEndByTaskId.set(taskId, finish);
 
       // ✅ memoria para agrupar tareas iguales en el mismo espacio
       const tplId = Number(task?.templateId ?? 0);
-      if (Number.isFinite(tplId) && tplId > 0)
+      if (Number.isFinite(tplId) && tplId > 0 && spaceId)
         lastTemplateBySpace.set(spaceId, tplId);
 
       // ✅ memoria para “sin huecos” por zona
@@ -1435,7 +1506,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const rr = (task as any)?.resourceRequirements ?? null;
     const ignoreSpacePool = shouldIgnoreSpacePool(task);
-    const spacePool = ignoreSpacePool ? [] : getSpacePool(spaceId);
+    const spacePool = ignoreSpacePool || !spaceId ? [] : getSpacePool(spaceId);
     const zonePool = Number.isFinite(Number(zoneId))
       ? (zoneResourceAssignments[Number(zoneId)] ?? [])
       : [];
@@ -1572,7 +1643,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       taskId,
       startPlanned: toHHMM(start),
       endPlanned: toHHMM(finish),
-      assignedSpace: spaceId,
+      assignedSpace: spaceId ?? null,
       assignedResources: assigned,
     });
     plannedEndByTaskId.set(taskId, finish);
@@ -2310,10 +2381,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const curr = list[i];
 
       if (curr.start < prev.end) {
+        const prevTask = tasks.find((x) => x.id === prev.taskId) as any;
+        const currTask = tasks.find((x) => x.id === curr.taskId) as any;
+        const allowWrapOverlap = Boolean(
+          prevTask && currTask &&
+          Number(prevTask?.contestantId ?? 0) === Number(currTask?.contestantId ?? 0) &&
+          Number(prevTask?.spaceId ?? 0) > 0 &&
+          Number(prevTask?.spaceId ?? 0) === Number(currTask?.spaceId ?? 0) &&
+          (Number(prevTask?.itinerantTeamId ?? 0) > 0 || Number(currTask?.itinerantTeamId ?? 0) > 0)
+        );
+        if (allowWrapOverlap) {
+          continue;
+        }
         // Nombre (preferimos el del input, y si no, el del byTaskId)
-        const prevTask = tasks.find((x) => x.id === prev.taskId);
+        const prevTaskRow = tasks.find((x) => x.id === prev.taskId);
         const name =
-          (prevTask as any)?.contestantName ??
+          (prevTaskRow as any)?.contestantName ??
           byTaskId.get(prev.taskId)?.contestantName ??
           null;
 
