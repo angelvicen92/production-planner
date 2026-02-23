@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { HealthIndicator } from "@/components/health-indicator";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRole } from "@/hooks/use-user-role";
+import { useMePreferences } from "@/hooks/use-preferences";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -56,17 +57,17 @@ export function Layout({ children }: LayoutProps) {
     }
   });
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const collapseHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverOpenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearCollapseHoverTimeout = () => {
-    if (!collapseHoverTimeoutRef.current) return;
-    clearTimeout(collapseHoverTimeoutRef.current);
-    collapseHoverTimeoutRef.current = null;
+  const clearHoverOpenTimeout = () => {
+    if (!hoverOpenTimeoutRef.current) return;
+    clearTimeout(hoverOpenTimeoutRef.current);
+    hoverOpenTimeoutRef.current = null;
   };
 
   useEffect(() => {
     return () => {
-      clearCollapseHoverTimeout();
+      clearHoverOpenTimeout();
     };
   }, []);
 
@@ -80,8 +81,12 @@ export function Layout({ children }: LayoutProps) {
     });
   };
 
-  const effectiveCollapsed =
-    isSidebarCollapsed && (isSidebarPinned || !isSidebarHovered);
+  const effectiveCollapsed = isSidebarCollapsed && (isSidebarPinned || !isSidebarHovered);
+  const { data: preferences } = useMePreferences();
+  const favoritePlanId = Number(preferences?.favoritePlanId);
+  const plansHref = Number.isFinite(favoritePlanId) && favoritePlanId > 0
+    ? `/plans/${favoritePlanId}`
+    : "/plans";
 
   const [location] = useLocation();
   const { signOut, user } = useAuth();
@@ -89,13 +94,16 @@ export function Layout({ children }: LayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Plans", href: "/plans", icon: CalendarDays },
+    { name: "Plans", href: plansHref, icon: CalendarDays },
     { name: "Timeline", href: "/timeline", icon: GanttChartSquare },
     { name: "Call Sheet", href: "/call-sheet", icon: FileText },
     { name: "War Room", href: "/war-room", icon: ShieldAlert },
     { name: "Control Room", href: "/control-room", icon: Monitor },
     ...(role === "admin" ? [{ name: "Settings", href: "/settings", icon: Settings }] : []),
   ];
+
+  const shouldOverlayDesktop = isSidebarCollapsed && !isSidebarPinned && isSidebarHovered;
+  const desktopMainPaddingClass = isSidebarPinned && !isSidebarCollapsed ? "lg:pl-64" : "lg:pl-16";
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,21 +123,21 @@ export function Layout({ children }: LayoutProps) {
         <aside
           onMouseEnter={() => {
             if (isSidebarCollapsed && !isSidebarPinned) {
-              clearCollapseHoverTimeout();
-              setIsSidebarHovered(true);
+              clearHoverOpenTimeout();
+              hoverOpenTimeoutRef.current = setTimeout(() => {
+                setIsSidebarHovered(true);
+                hoverOpenTimeoutRef.current = null;
+              }, 1000);
             }
           }}
           onMouseLeave={() => {
             if (isSidebarCollapsed && !isSidebarPinned) {
-              clearCollapseHoverTimeout();
-              collapseHoverTimeoutRef.current = setTimeout(() => {
-                setIsSidebarHovered(false);
-                collapseHoverTimeoutRef.current = null;
-              }, 200);
+              clearHoverOpenTimeout();
+              setIsSidebarHovered(false);
             }
           }}
           className={cn(
-            "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transform transition-all duration-200 ease-in-out lg:relative lg:translate-x-0 flex flex-col",
+            "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transform transition-all duration-200 ease-in-out lg:translate-x-0 flex flex-col",
             // móvil: siempre ancho completo
             "w-64",
             // desktop: colapsable
@@ -183,9 +191,11 @@ export function Layout({ children }: LayoutProps) {
           {/* Nav */}
           <nav className={cn("flex-1 px-4 space-y-1", effectiveCollapsed ? "lg:px-2" : "")}>
             {navigation.map((item) => {
-              const isActive =
-                location === item.href ||
-                (item.href !== "/" && location.startsWith(item.href));
+              const isPlansItem = item.name === "Plans";
+              const isActive = isPlansItem
+                ? location.startsWith("/plans")
+                : location === item.href ||
+                  (item.href !== "/" && location.startsWith(item.href));
 
               return (
                 <Link key={item.name} href={item.href}>
@@ -256,11 +266,11 @@ export function Layout({ children }: LayoutProps) {
         </aside>
 
 
+        {shouldOverlayDesktop ? <div className="hidden lg:block fixed inset-0 z-40 bg-background/40" /> : null}
+
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-background p-4 md:p-8">
-          <div className="max-w-7xl mx-auto animate-in fade-in duration-500 slide-in-from-bottom-4">
-            {children}
-          </div>
+        <main className={cn("flex-1 overflow-y-auto bg-background px-4 py-4 md:px-6 md:py-8 transition-[padding] duration-200", desktopMainPaddingClass)}>
+          <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">{children}</div>
         </main>
       </div>
     </div>

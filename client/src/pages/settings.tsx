@@ -97,7 +97,7 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
         </div>
 
-        <Tabs defaultValue="templates" className="space-y-4">
+        <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
             <TabsTrigger value="general" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
