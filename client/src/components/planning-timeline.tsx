@@ -503,6 +503,7 @@ function TaskStatusMenuTrigger({
   const { toast } = useToast();
   const density = usePlanningDensity();
   const isCompact = density === "compact";
+  const isPdf = density === "pdf";
   const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
   const fullLockedSet = useMemo(() => new Set((fullLockedTaskIds ?? []).map((id) => Number(id))), [fullLockedTaskIds]);
   const isTaskFixed = (task: Task) =>
@@ -530,7 +531,7 @@ function TaskStatusMenuTrigger({
 
   const taskDisplayName = (task: Task) => {
     if (task.isManualBlock) return task.manualTitle ?? task.template?.name ?? "Bloqueo";
-    return isCompact ? compactTaskLabel(task) : (task.template?.name || "Tarea");
+    return isCompact || isPdf ? compactTaskLabel(task) : (task.template?.name || "Tarea");
   };
 
   const [manualMode, setManualMode] = useState(false);
@@ -1624,11 +1625,11 @@ function TaskStatusMenuTrigger({
                   // Render
                   return (
                     <div className="space-y-6">
-                      {spaceVerticalMode === "timeline" ? (
+                      {spaceVerticalMode === "timeline" || spaceVerticalMode === "list" ? (
                         // ✅ TIMELINE vertical: columna horas + bloques por plató con espacios en columnas
                         <div className="flex gap-4">
                           {/* columna horas (una sola vez) */}
-                          <div className="w-16 text-[10px] text-muted-foreground pt-10">
+                          <div className={cn("w-16 text-[10px] text-muted-foreground", spaceVerticalMode === "list" ? "pt-7" : "pt-10")}>
                             {timeLabels.map((tl) => (
                               <div
                                 key={tl.min}
@@ -1651,7 +1652,7 @@ function TaskStatusMenuTrigger({
                               {zoneColsToShow.map((zc) => (
                                 <div key={zc.zoneId} className="shrink-0 w-max">
                                   <div
-                                    className="font-semibold mb-2 px-2 py-1 rounded-md border"
+                                    className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}
                             style={{
                                       backgroundColor: hexToRgba(zc.zoneColor, 0.22) ?? undefined,
                                       borderColor: zc.zoneColor ?? undefined,
@@ -1697,10 +1698,10 @@ function TaskStatusMenuTrigger({
                                     {zc.spaces.map((sp) => (
                                       <div
                                         key={`${zc.zoneId}-${sp.name}`}
-                                        className="w-[200px]"
+                                        className={cn(spaceVerticalMode === "list" ? "w-[160px]" : "w-[200px]")}
                                       >
                                         <div
-                                          className="text-xs font-medium mb-2 truncate px-2 py-1 rounded-md border"
+                                          className={cn("font-medium mb-2 truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}
                                           style={{
                                             backgroundColor: hexToRgba(zc.zoneColor, 0.12) ?? undefined,
                                             borderColor: zc.zoneColor ?? undefined,
@@ -1767,7 +1768,7 @@ function TaskStatusMenuTrigger({
                                         </div>
 
                                         <div
-                                          className="relative border rounded-lg bg-muted/5 overflow-hidden"
+                                          className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
                                           style={{ height: totalHeightPx }}
                                         >
                                           {/* líneas cada 5 min */}
@@ -1858,7 +1859,8 @@ function TaskStatusMenuTrigger({
                             onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                                 className={cn(
-                                                  "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                                  "absolute border cursor-pointer z-10",
+                                                  spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                                   task.status === "in_progress"
@@ -1879,7 +1881,7 @@ function TaskStatusMenuTrigger({
                                                       : taskBaseColor(task),
                                                 }}
                                               >
-                                                <div className="text-[12px] font-bold truncate">
+                                                <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>
                                                   {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}{dependencyWarnings[Number(task.id)] ? <span className="ml-1">⚠</span> : null}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
@@ -1907,7 +1909,7 @@ function TaskStatusMenuTrigger({
                                       Sin ubicación
                                     </div>
                                     <div
-                                      className="relative border rounded-lg bg-muted/5 overflow-hidden"
+                                      className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
                                       style={{ height: totalHeightPx }}
                                     >
                                       {clampedNowMin !== null ? (
@@ -1955,7 +1957,8 @@ function TaskStatusMenuTrigger({
                             onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
-                                              "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
+                                              "absolute border cursor-pointer z-10",
+                                                  spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                                               task.status === "in_progress"
@@ -1976,12 +1979,11 @@ function TaskStatusMenuTrigger({
                                                   : taskBaseColor(task),
                                             }}
                                           >
-                                            <div className="text-[12px] font-bold truncate">
+                                            <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>
                                               {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                             </div>
                                             <div className="text-[10px] opacity-70">
-                                              {task.startPlanned}-
-                                              {task.endPlanned}
+                                              {isCompact || isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                             </div>
                                           </TaskStatusMenuTrigger>
                                         );
@@ -2000,7 +2002,7 @@ function TaskStatusMenuTrigger({
                             {zoneColsToShow.map((zc) => (
                               <div key={zc.zoneId} className="shrink-0 w-max">
                                 <div
-                                  className="font-semibold mb-2 px-2 py-1 rounded-md border"
+                                  className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}
                                   style={{
                                     backgroundColor: hexToRgba(zc.zoneColor, 0.22) ?? undefined,
                                     borderColor: zc.zoneColor ?? undefined,
@@ -2046,10 +2048,10 @@ function TaskStatusMenuTrigger({
                                   {zc.spaces.map((sp) => (
                                     <div
                                       key={`${zc.zoneId}-${sp.name}`}
-                                      className="w-[200px]"
+                                      className={cn(spaceVerticalMode === "list" ? "w-[160px]" : "w-[200px]")}
                                     >
                                       <div
-                                        className="text-xs font-medium mb-2 truncate px-2 py-1 rounded-md border"
+                                        className={cn("font-medium mb-2 truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}
                                         style={{
                                           backgroundColor: hexToRgba(zc.zoneColor, 0.12) ?? undefined,
                                           borderColor: zc.zoneColor ?? undefined,
@@ -2819,7 +2821,7 @@ function TaskStatusMenuTrigger({
                     })()}
                   </div>
                   <div
-                    className={cn("flex-1 relative", viewMode === "contestants" ? "h-12" : "h-20", manualDrag ? "cursor-grabbing" : undefined)}
+                    className={cn("flex-1 relative", viewMode === "contestants" ? (isPdf ? "h-9" : "h-12") : "h-20", manualDrag ? "cursor-grabbing" : undefined)}
                     onPointerMove={(event) => handleLanePointerMove(event, String(id))}
                     onPointerUp={() => {
                       if (!manualDrag || manualDrag.laneId !== String(id)) return;
@@ -2952,12 +2954,15 @@ function TaskStatusMenuTrigger({
                               handleTaskCardClick(event, task);
                             }}
                             className={cn(
-                              "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
+                              "absolute border flex flex-col justify-center overflow-hidden cursor-pointer transition-all",
+                              isPdf ? "px-1 shadow-none" : "px-2 shadow-sm hover:scale-[1.02]",
                               isBackgroundTask ? "z-0 opacity-40 pointer-events-none" : "z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
-                              viewMode === "contestants" ? "top-0.5 h-11 rounded-md" : "top-4 h-12 rounded-lg",
+                              viewMode === "contestants"
+                                ? (isPdf ? "top-0 h-full rounded-none" : "top-0.5 h-11 rounded-md")
+                                : "top-4 h-12 rounded-lg",
                               task.status === "in_progress"
                                 ? "ring-2 ring-green-500"
                                 : "",
@@ -2979,11 +2984,11 @@ function TaskStatusMenuTrigger({
                               pointerEvents: isBackgroundTask ? "none" : "auto",
                             }}
                           >
-                            <span className="text-xs font-bold truncate">
+                            <span className={cn("font-bold truncate", isPdf ? "text-[10px]" : "text-xs")}>
                               {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                             </span>
-                            <span className="text-[10px] opacity-70">
-                              {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
+                            <span className={cn("opacity-70", isPdf ? "text-[9px]" : "text-[10px]")}>
+                              {isCompact || isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                             </span>
                           </TaskStatusMenuTrigger>
                       );
