@@ -537,7 +537,8 @@ function TaskStatusMenuTrigger({
 
   const isWrappedItinerantOverlay = (task: Task, laneTasks: Task[]) => {
     if (viewMode !== "contestants") return false;
-    if (!Number.isFinite(Number(task?.itinerantTeamId ?? NaN))) return false;
+    const itinerantTeamId = Number(task?.itinerantTeamId ?? NaN);
+    if (!Number.isFinite(itinerantTeamId) || itinerantTeamId <= 0) return false;
     const spaceId = Number(task?.spaceId ?? NaN);
     if (!Number.isFinite(spaceId) || spaceId <= 0) return false;
     const taskStart = timeToMinutes(task.startPlanned ?? "00:00");
@@ -550,6 +551,24 @@ function TaskStatusMenuTrigger({
       const otherEnd = timeToMinutes(other.endPlanned);
       return taskStart < otherEnd && otherStart < taskEnd;
     });
+  };
+
+  const splitContestantLaneTasksByLayer = (laneTasks: Task[]) => {
+    if (viewMode !== "contestants") {
+      return { backgroundTasks: [] as Task[], foregroundTasks: laneTasks };
+    }
+    const backgroundIds = new Set<number>();
+    for (const task of laneTasks) {
+      if (!isWrappedItinerantOverlay(task, laneTasks)) continue;
+      backgroundIds.add(Number(task.id));
+    }
+    const backgroundTasks: Task[] = [];
+    const foregroundTasks: Task[] = [];
+    for (const task of laneTasks) {
+      if (backgroundIds.has(Number(task.id))) backgroundTasks.push(task);
+      else foregroundTasks.push(task);
+    }
+    return { backgroundTasks, foregroundTasks };
   };
 
   const clearWarningLater = (taskId: number) => {
@@ -2825,7 +2844,11 @@ function TaskStatusMenuTrigger({
                     ) : null}
 
                     {/* Tasks */}
-                    {lane.tasks.map((task) => {
+                    {(() => {
+                      const { backgroundTasks, foregroundTasks } = splitContestantLaneTasksByLayer(lane.tasks);
+                      const layeredTasks = [...backgroundTasks, ...foregroundTasks];
+                      return layeredTasks.map((task) => {
+                      const isBackgroundTask = backgroundTasks.some((x) => Number(x.id) === Number(task.id));
                       if (!task.startPlanned || !task.endPlanned) return null;
                       const edit = pendingManualEdits[Number(task.id)];
                       const baseStart = timeToMinutes(edit?.start ?? task.startPlanned);
@@ -2903,7 +2926,7 @@ function TaskStatusMenuTrigger({
                             }}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                              isWrappedItinerantOverlay(task, lane.tasks) ? "z-0 opacity-45" : "z-10",
+                              isBackgroundTask ? "z-0 opacity-40" : "z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
@@ -2937,7 +2960,8 @@ function TaskStatusMenuTrigger({
                             </span>
                           </TaskStatusMenuTrigger>
                       );
-                    })}
+                    });
+                    })()}
                   </div>
                 </div>
               ))}
