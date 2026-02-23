@@ -20,7 +20,6 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { Trash2 } from "lucide-react";
 
 interface Task {
   id: number;
@@ -323,32 +322,6 @@ function TaskStatusMenuTrigger({
         }
       }}
     >
-      {task.isManualBlock && onDeleteManualBlock ? (
-        <span
-          role="button"
-          tabIndex={0}
-          className="absolute right-1 top-1 z-20 rounded-sm bg-background/80 p-1 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const ok = window.confirm("¿Eliminar bloqueo manual?");
-            if (!ok) return;
-            void Promise.resolve(onDeleteManualBlock(task));
-          }}
-          aria-label="Eliminar bloqueo manual"
-          title="Eliminar bloqueo manual"
-          onKeyDown={(event) => {
-            if (event.key !== "Enter" && event.key !== " ") return;
-            event.preventDefault();
-            event.stopPropagation();
-            const ok = window.confirm("¿Eliminar bloqueo manual?");
-            if (!ok) return;
-            void Promise.resolve(onDeleteManualBlock(task));
-          }}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </span>
-      ) : null}
       {children}
     </button>
   );
@@ -570,6 +543,32 @@ function TaskStatusMenuTrigger({
   const [manualDragPreviewStart, setManualDragPreviewStart] = useState<number | null>(null);
   const [manualBlockEditor, setManualBlockEditor] = useState<null | { task: Task; title: string; color: string }>(null);
   const [manualBlockEditorBusy, setManualBlockEditorBusy] = useState(false);
+  const spacesTimelineRootRef = useRef<HTMLDivElement | null>(null);
+  const spacesFirstLaneRef = useRef<HTMLDivElement | null>(null);
+  const [spacesHeaderOffsetPx, setSpacesHeaderOffsetPx] = useState(40);
+
+  useEffect(() => {
+    if (viewMode !== "spaces") return;
+    if (!spacesTimelineRootRef.current || !spacesFirstLaneRef.current) return;
+
+    const updateOffset = () => {
+      if (!spacesTimelineRootRef.current || !spacesFirstLaneRef.current) return;
+      const rootRect = spacesTimelineRootRef.current.getBoundingClientRect();
+      const laneRect = spacesFirstLaneRef.current.getBoundingClientRect();
+      const next = Math.max(0, Math.round(laneRect.top - rootRect.top));
+      setSpacesHeaderOffsetPx(next);
+    };
+
+    updateOffset();
+    const observer = new ResizeObserver(updateOffset);
+    observer.observe(spacesTimelineRootRef.current);
+    observer.observe(spacesFirstLaneRef.current);
+    window.addEventListener("resize", updateOffset);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateOffset);
+    };
+  }, [viewMode, (dailyTasks ?? []).length, spaceVerticalMode]);
   const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
@@ -1363,6 +1362,9 @@ function TaskStatusMenuTrigger({
         .toLowerCase();
       return mealName.length > 0 && n === mealName;
     };
+    const isBreakTask = (t: Task) => t.breakKind === "space_meal" || t.breakKind === "itinerant_meal";
+    const isManualBlockTask = (t: Task) => t.isManualBlock === true;
+    const isRealTask = (t: Task) => !isBreakTask(t) && !isManualBlockTask(t);
 
     // Agrupar por zona -> espacio, orden cronológico
     const zonesById = new Map<number, string>();
@@ -1592,6 +1594,7 @@ function TaskStatusMenuTrigger({
                     if (Number.isFinite(itinerantTeamId) && itinerantTeamId > 0) {
                       const itinerary = itinerantColById.get(itinerantTeamId);
                       if (itinerary) {
+                        if (isManualBlockTask(t)) return;
                         itinerary.tasks.push(t);
                         return;
                       }
@@ -1607,7 +1610,7 @@ function TaskStatusMenuTrigger({
                         const zc = zoneCols.find(
                           (z) => z.zoneId === hit.zoneId,
                         );
-                        if (zc) zc.spaces[hit.idx].tasks.push(t);
+                        if (zc && !isManualBlockTask(t)) zc.spaces[hit.idx].tasks.push(t);
                         return;
                       }
                     }
@@ -1624,11 +1627,11 @@ function TaskStatusMenuTrigger({
                           name: "(sin espacio)",
                           tasks: [],
                         };
-                      zoneOnlyCols[nz].tasks.push(t);
+                      if (!isManualBlockTask(t)) zoneOnlyCols[nz].tasks.push(t);
                       return;
                     }
 
-                    unlocatedCol.tasks.push(t);
+                    if (!isManualBlockTask(t)) unlocatedCol.tasks.push(t);
                   });
 
                   // Insertar "(sin espacio)" al final de cada plató si hay tasks
@@ -1655,26 +1658,29 @@ function TaskStatusMenuTrigger({
                   itinerantCols.forEach((team) => sortTasks(team.tasks));
                   sortTasks(unlocatedCol.tasks);
 
-                  const itinerantColsToShow = itinerantCols.filter((team) => team.tasks.length > 0);
+                  const itinerantColsToShow = itinerantCols.filter((team) => team.tasks.some(isRealTask));
 
                   // Filtrar platós vacíos (no mostrar bloques sin tareas)
                   const zoneColsToShow = zoneCols
                     .map((zc) => ({
                       ...zc,
-                      spaces: zc.spaces.filter((sp) => sp.tasks.length > 0),
+                      spaces: zc.spaces.filter((sp) => sp.tasks.some(isRealTask)),
                     }))
                     .filter((zc) => zc.spaces.length > 0);
 
-                  const showUnlocated = unlocatedCol.tasks.length > 0;
+                  const showUnlocated = unlocatedCol.tasks.some(isRealTask);
 
                   // Render
                   return (
                     <div className="space-y-6">
                       {spaceVerticalMode === "timeline" || spaceVerticalMode === "list" ? (
                         // ✅ TIMELINE vertical: columna horas + bloques por plató con espacios en columnas
-                        <div className="flex gap-4">
+                        <div className="flex gap-4" ref={spacesTimelineRootRef}>
                           {/* columna horas (una sola vez) */}
-                          <div className={cn("w-16 text-[10px] text-muted-foreground", spaceVerticalMode === "list" ? "pt-7" : "pt-10")}>
+                          <div
+                            className="w-16 text-[10px] text-muted-foreground"
+                            style={{ paddingTop: spacesHeaderOffsetPx }}
+                          >
                             {timeLabels.map((tl) => (
                               <div
                                 key={tl.min}
@@ -1740,7 +1746,7 @@ function TaskStatusMenuTrigger({
                                   </div>
 
                                   <div className="flex gap-2">
-                                    {zc.spaces.map((sp) => (
+                                    {zc.spaces.map((sp, spIndex) => (
                                       <div
                                         key={`${zc.zoneId}-${sp.name}`}
                                         className={cn(spaceVerticalMode === "list" ? "w-[160px]" : "w-[200px]")}
@@ -1814,7 +1820,8 @@ function TaskStatusMenuTrigger({
 
                                         <div
                                           className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
-                                          style={{ height: totalHeightPx }}
+                                          ref={spIndex === 0 && zc.zoneId === zoneColsToShow[0]?.zoneId ? spacesFirstLaneRef : undefined}
+                                          style={{ height: totalHeightPx + spacesHeaderOffsetPx, paddingTop: spacesHeaderOffsetPx }}
                                         >
                                           {/* líneas cada 5 min */}
                                           <div className="absolute inset-0 pointer-events-none">
@@ -1836,7 +1843,7 @@ function TaskStatusMenuTrigger({
                                                         ? "border-border/25"
                                                         : "border-border/10",
                                                   )}
-                                                  style={{ top: m * pxPerMin }}
+                                                  style={{ top: spacesHeaderOffsetPx + (m * pxPerMin) }}
                                                 />
                                               );
                                             })}
@@ -1848,9 +1855,7 @@ function TaskStatusMenuTrigger({
                                               <div
                                                 className="absolute left-0 right-0 bg-orange-100/30 dark:bg-orange-900/10 border-y border-orange-200/20"
                                                 style={{
-                                                  top:
-                                                    (mealStartMin - startMin) *
-                                                    pxPerMin,
+                                                  top: spacesHeaderOffsetPx + ((mealStartMin - startMin) * pxPerMin),
                                                   height:
                                                     (mealEndMin -
                                                       mealStartMin) *
@@ -1862,7 +1867,7 @@ function TaskStatusMenuTrigger({
                                           {clampedNowMin !== null ? (
                                             <div
                                               className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
-                                              style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
+                                              style={{ top: `${spacesHeaderOffsetPx + ((clampedNowMin - startMin) * pxPerMin)}px` }}
                                             />
                                           ) : null}
 
@@ -1874,7 +1879,7 @@ function TaskStatusMenuTrigger({
                                               ? timeToMinutes(task.endPlanned)
                                               : tStart;
                                             const top =
-                                              (tStart - startMin) * pxPerMin;
+                                              spacesHeaderOffsetPx + ((tStart - startMin) * pxPerMin);
                                             const height = Math.max(
                                               18,
                                               (tEnd - tStart) * pxPerMin,
@@ -2018,12 +2023,12 @@ function TaskStatusMenuTrigger({
                                     </div>
                                     <div
                                       className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
-                                      style={{ height: totalHeightPx }}
+                                      style={{ height: totalHeightPx + spacesHeaderOffsetPx, paddingTop: spacesHeaderOffsetPx }}
                                     >
                                       {clampedNowMin !== null ? (
                                         <div
                                           className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
-                                          style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
+                                          style={{ top: `${spacesHeaderOffsetPx + ((clampedNowMin - startMin) * pxPerMin)}px` }}
                                         />
                                       ) : null}
 
@@ -2035,7 +2040,7 @@ function TaskStatusMenuTrigger({
                                           ? timeToMinutes(task.endPlanned)
                                           : tStart;
                                         const top =
-                                          (tStart - startMin) * pxPerMin;
+                                          spacesHeaderOffsetPx + ((tStart - startMin) * pxPerMin);
                                         const height = Math.max(
                                           18,
                                           (tEnd - tStart) * pxPerMin,
@@ -2101,6 +2106,23 @@ function TaskStatusMenuTrigger({
                                 </div>
                               ) : null}
                             </div>
+                          </div>
+
+                          <div
+                            className="w-16 shrink-0 text-[10px] text-muted-foreground"
+                            style={{ paddingTop: spacesHeaderOffsetPx }}
+                          >
+                            {timeLabels.map((tl) => (
+                              <div
+                                key={`right-${tl.min}`}
+                                className="relative"
+                                style={{ height: 60 * pxPerMin }}
+                              >
+                                <div className="absolute right-0" style={{ top: 0 }}>
+                                  {tl.label}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ) : (

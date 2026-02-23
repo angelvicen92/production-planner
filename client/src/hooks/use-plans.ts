@@ -101,6 +101,20 @@ export function usePlan(id: number) {
   return useQuery<Plan & { dailyTasks?: DailyTask[] }>({
     queryKey: planQueryKey(id),
     queryFn: () => apiRequest("GET", buildUrl(api.plans.get.path, { id })),
+    select: (plan: any) => {
+      if (!plan || typeof plan !== "object") return plan;
+      const dailyTasks = Array.isArray(plan.dailyTasks)
+        ? plan.dailyTasks.map((task: any) => ({
+            ...task,
+            isManualBlock: task?.isManualBlock ?? task?.is_manual_block ?? false,
+            manualTitle: task?.manualTitle ?? task?.manual_title ?? null,
+            manualColor: task?.manualColor ?? task?.manual_color ?? null,
+            manualScopeType: task?.manualScopeType ?? task?.manual_scope_type ?? null,
+            manualScopeId: task?.manualScopeId ?? task?.manual_scope_id ?? null,
+          }))
+        : plan.dailyTasks;
+      return { ...plan, dailyTasks };
+    },
     enabled: !!id,
   });
 }
