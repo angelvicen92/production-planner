@@ -1595,7 +1595,7 @@ export class SupabaseStorage implements IStorage {
     startPlanned: string,
     endPlanned: string,
     assignedResourceIds?: number[] | null,
-  ) {
+  ): Promise<{ updated: true; task: any } | { updated: false; reason: "status_locked" }> {
     const ids = Array.isArray(assignedResourceIds)
       ? assignedResourceIds
           .map((n) => Number(n))
@@ -1611,11 +1611,15 @@ export class SupabaseStorage implements IStorage {
         assigned_resource_ids: ids.length > 0 ? ids : null,
       })
       .eq("id", taskId)
-      .select()
-      .single();
+      .not("status", "in", "(in_progress,done)")
+      .select();
 
     if (error) throw error;
-    return data as any;
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row) {
+      return { updated: false, reason: "status_locked" };
+    }
+    return { updated: true, task: row };
   }
 
   async updateAssignedResources(taskId: number, assignedResourceIds: number[]) {

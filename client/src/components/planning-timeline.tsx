@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface Task {
   id: number;
@@ -155,6 +156,7 @@ interface PlanningTimelineProps {
   onCreateManualBlock?: () => void;
   pendingManualBlocksCount?: number;
   onDeleteManualBlock?: (task: Task) => Promise<void> | void;
+  onPatchManualBlock?: (taskId: number, patch: { title?: string | null; color?: string | null }) => Promise<void> | void;
 }
 
 function taskActionsForStatus(status: string) {
@@ -256,6 +258,7 @@ function TaskStatusMenuTrigger({
   manualMode = false,
   taskSortArmed = false,
   canOpenMenuFromCard = true,
+  onEditManualBlock,
 }: {
   task: Task;
   contestantName: string;
@@ -279,6 +282,7 @@ function TaskStatusMenuTrigger({
   manualMode?: boolean;
   taskSortArmed?: boolean;
   canOpenMenuFromCard?: boolean;
+  onEditManualBlock?: (task: Task) => void;
 }) {
   const [open, setOpen] = useState(false);
   const suppressNextClickRef = useRef(false);
@@ -397,9 +401,8 @@ function TaskStatusMenuTrigger({
                 className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
                 disabled={taskStatusPending}
                 onClick={() => {
-                  if (!onDeleteManualBlock) return;
-                  if (!window.confirm("¿Eliminar bloqueo?")) return;
-                  void Promise.resolve(onDeleteManualBlock(task)).then(() => setOpen(false));
+                  onEditManualBlock?.(task);
+                  setOpen(false);
                 }}
               >
                 Eliminar bloqueo
@@ -466,6 +469,7 @@ function TaskStatusMenuTrigger({
     onCreateManualBlock,
     pendingManualBlocksCount = 0,
     onDeleteManualBlock,
+    onPatchManualBlock,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
@@ -521,6 +525,8 @@ function TaskStatusMenuTrigger({
     pointerOffsetPx: number;
   }>(null);
   const [manualDragPreviewStart, setManualDragPreviewStart] = useState<number | null>(null);
+  const [manualBlockEditor, setManualBlockEditor] = useState<null | { task: Task; title: string; color: string }>(null);
+  const [manualBlockEditorBusy, setManualBlockEditorBusy] = useState(false);
   const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
@@ -528,6 +534,23 @@ function TaskStatusMenuTrigger({
     for (const t of (dailyTasks ?? [])) mapped.set(Number(t.id), t);
     return mapped;
   }, [dailyTasks]);
+
+  const isWrappedItinerantOverlay = (task: Task, laneTasks: Task[]) => {
+    if (viewMode !== "contestants") return false;
+    if (!Number.isFinite(Number(task?.itinerantTeamId ?? NaN))) return false;
+    const spaceId = Number(task?.spaceId ?? NaN);
+    if (!Number.isFinite(spaceId) || spaceId <= 0) return false;
+    const taskStart = timeToMinutes(task.startPlanned ?? "00:00");
+    const taskEnd = timeToMinutes(task.endPlanned ?? "00:00");
+    return laneTasks.some((other) => {
+      if (Number(other.id) === Number(task.id)) return false;
+      if (Number(other?.spaceId ?? NaN) !== spaceId) return false;
+      if (!other.startPlanned || !other.endPlanned) return false;
+      const otherStart = timeToMinutes(other.startPlanned);
+      const otherEnd = timeToMinutes(other.endPlanned);
+      return taskStart < otherEnd && otherStart < taskEnd;
+    });
+  };
 
   const clearWarningLater = (taskId: number) => {
     window.setTimeout(() => {
@@ -1786,6 +1809,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                                 className={cn(
                                                   "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -1882,6 +1906,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "absolute left-2 right-2 rounded-lg border shadow-sm px-2 py-1 cursor-pointer z-10",
@@ -2066,6 +2091,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                             className={cn(
                                               "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2143,6 +2169,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                                       className={cn(
                                         "rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2300,6 +2327,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                                                         taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
                               "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
@@ -2533,6 +2561,72 @@ function TaskStatusMenuTrigger({
                 <p className="mb-3 text-xs text-green-700">Validación OK. Se mantienen los cambios manuales.</p>
               ) : null}
 
+              <Dialog open={Boolean(manualBlockEditor)} onOpenChange={(open) => { if (!open && !manualBlockEditorBusy) setManualBlockEditor(null); }}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Editar bloqueo manual</DialogTitle>
+                    <DialogDescription>Ajusta título/color o elimina el bloqueo desde aquí.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Título</p>
+                      <Input
+                        value={manualBlockEditor?.title ?? ""}
+                        disabled={manualBlockEditorBusy}
+                        onChange={(e) => setManualBlockEditor((prev) => prev ? { ...prev, title: e.target.value } : prev)}
+                        placeholder="Bloqueo"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Color</p>
+                      <Input
+                        type="color"
+                        value={manualBlockEditor?.color ?? "#38BDF8"}
+                        disabled={manualBlockEditorBusy}
+                        onChange={(e) => setManualBlockEditor((prev) => prev ? { ...prev, color: e.target.value } : prev)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter className="sm:justify-between gap-2">
+                    <Button
+                      variant="destructive"
+                      disabled={manualBlockEditorBusy}
+                      onClick={async () => {
+                        if (!manualBlockEditor?.task || !onDeleteManualBlock) return;
+                        if (!window.confirm("¿Eliminar bloqueo manual?")) return;
+                        setManualBlockEditorBusy(true);
+                        try {
+                          await onDeleteManualBlock(manualBlockEditor.task);
+                          setManualBlockEditor(null);
+                        } finally {
+                          setManualBlockEditorBusy(false);
+                        }
+                      }}
+                    >
+                      {manualBlockEditorBusy ? "Eliminando..." : "Eliminar bloqueo"}
+                    </Button>
+                    <Button
+                      disabled={manualBlockEditorBusy}
+                      onClick={async () => {
+                        if (!manualBlockEditor?.task || !onPatchManualBlock) return;
+                        setManualBlockEditorBusy(true);
+                        try {
+                          await onPatchManualBlock(Number(manualBlockEditor.task.id), {
+                            title: manualBlockEditor.title,
+                            color: manualBlockEditor.color,
+                          });
+                          setManualBlockEditor(null);
+                        } finally {
+                          setManualBlockEditorBusy(false);
+                        }
+                      }}
+                    >
+                      {manualBlockEditorBusy ? "Guardando..." : "Guardar cambios"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={Boolean(postApplyDialog && !postApplyDialog.feasible)} onOpenChange={(open) => { if (!open) setPostApplyDialog(null); }}>
                 <DialogContent className="max-w-xl">
                   <DialogHeader>
@@ -2765,6 +2859,7 @@ function TaskStatusMenuTrigger({
                             manualMode={manualMode}
                             taskSortArmed={taskSortArmed}
                             canOpenMenuFromCard={manualDrag === null}
+                            onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
                             onPointerDown={(event) => {
                               if (!manualMode || !canSelectManualTask(task) || isApplying) return;
                               event.preventDefault();
@@ -2797,15 +2892,18 @@ function TaskStatusMenuTrigger({
                               if (manualMode && task.isManualBlock) {
                                 event.preventDefault();
                                 event.stopPropagation();
-                                if (window.confirm(`¿Eliminar bloqueo \"${taskDisplayName(task)}\"?`)) {
-                                  void onDeleteManualBlock?.(task);
-                                }
+                                setManualBlockEditor({
+                                  task,
+                                  title: task.manualTitle ?? task.template?.name ?? "Bloqueo",
+                                  color: task.manualColor ?? "#38BDF8",
+                                });
                                 return;
                               }
                               handleTaskCardClick(event, task);
                             }}
                             className={cn(
-                              "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02] z-10",
+                              "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
+                              isWrappedItinerantOverlay(task, lane.tasks) ? "z-0 opacity-45" : "z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",

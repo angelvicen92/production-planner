@@ -3922,7 +3922,15 @@ function normalizeHexColor(value: unknown): string | null {
               const breakId = Math.abs(Number((p as any).taskId));
               await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
             } else {
-              await storage.updatePlannedTimes(p.taskId, p.startPlanned, p.endPlanned, Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : []);
+              const persisted = await storage.updatePlannedTimes(
+                p.taskId,
+                p.startPlanned,
+                p.endPlanned,
+                Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
+              );
+              if (!persisted.updated) {
+                console.debug("[manual-block/replan] skipped protected task", { taskId: Number((p as any).taskId) });
+              }
             }
           }
         }
@@ -4500,12 +4508,16 @@ function normalizeHexColor(value: unknown): string | null {
           await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
           updated++;
         } else {
-          await storage.updatePlannedTimes(
+          const persisted = await storage.updatePlannedTimes(
             p.taskId,
             p.startPlanned,
             p.endPlanned,
             Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
           );
+          if (!persisted.updated) {
+            console.debug("[generate] skipped protected task", { taskId: Number((p as any).taskId) });
+            continue;
+          }
           updated++;
         }
 

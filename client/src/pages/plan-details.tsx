@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
+import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
 
 import {
@@ -1389,7 +1390,9 @@ export default function PlanDetailsPage() {
     setEditOpen(true);
   };
 
-  const handleGenerate = () => {
+  const isAbortLikeError = (err: any) => err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("aborted");
+
+  const handleGenerate = async () => {
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
     const totalToPlan = ((plan?.dailyTasks ?? []) as any[]).filter((task: any) => {
@@ -1401,47 +1404,38 @@ export default function PlanDetailsPage() {
     }).length;
     setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 0 });
 
-    void (async () => {
+    try {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-
-      generatePlan.mutate({ id, mode: "full" }, {
-        onSuccess: async (data: any) => {
-          setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
-          await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-          await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-          await refetchPlan();
-          await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
-          await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-
-          const warnings = data?.warnings ?? [];
-          if (Array.isArray(warnings) && warnings.length > 0) {
-            setConfigDialog({ open: true, reasons: warnings });
-          }
-
-          const latestRun = queryClient.getQueryData(["planning-run", id]) as any;
-          const isExpectedRun = Number.isFinite(Number(data?.runId))
-            ? Number(latestRun?.id) === Number(data?.runId)
-            : true;
-          if (isExpectedRun && latestRun?.status !== "running") {
-            setPlanningInProgress(false);
-            setExpectedPlanningRunId(null);
-          }
-          if (isExpectedRun && latestRun?.status === "infeasible") {
-            setErrorDialog({ open: true, reasons: Array.isArray(latestRun?.lastReasons) ? latestRun.lastReasons : [] });
-          }
-        },
-        onError: async (err: any) => {
-          await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
-          await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-          setPlanningInProgress(false);
-          setExpectedPlanningRunId(null);
-          if (err?.reasons) {
-            setErrorDialog({ open: true, reasons: err.reasons });
-          }
-        },
-      });
-    })();
+      const data: any = await generatePlan.mutateAsync({ id, mode: "full" });
+      setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
+      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+      await refetchPlan();
+      await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+      await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+      const warnings = data?.warnings ?? [];
+      if (Array.isArray(warnings) && warnings.length > 0) {
+        setConfigDialog({ open: true, reasons: warnings });
+      }
+    } catch (err: any) {
+      await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+      await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+      if (isAbortLikeError(err)) {
+        toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
+        await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+        const refreshed: any = queryClient.getQueryData(planQueryKey(id));
+        const hasPlanned = Array.isArray(refreshed?.dailyTasks) && refreshed.dailyTasks.some((t: any) => t?.startPlanned && t?.endPlanned);
+        if (hasPlanned) {
+          toast({ title: "Planificación completada", description: "Se recuperó el estado tras refrescar." });
+        }
+      } else if (err?.reasons) {
+        setErrorDialog({ open: true, reasons: err.reasons });
+      }
+    } finally {
+      setPlanningInProgress(false);
+      setExpectedPlanningRunId(null);
+    }
   };
 
   function goToTask(taskId?: number | null) {
@@ -1560,7 +1554,7 @@ export default function PlanDetailsPage() {
             <Button
               size="lg"
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
-              onClick={handleGenerate}
+              onClick={() => { void handleGenerate(); }}
               disabled={generatePlan.isPending}
             >
               {generatePlan.isPending ? (
@@ -1578,12 +1572,20 @@ export default function PlanDetailsPage() {
               onClick={() => {
                 setPlanningInProgress(true);
                 setExpectedPlanningRunId(null);
-                void generatePlan.mutate({ id, mode: "only_unplanned" }, {
-                  onSettled: () => {
+                void (async () => {
+                  try {
+                    await generatePlan.mutateAsync({ id, mode: "only_unplanned" });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                  } catch (err: any) {
+                    if (isAbortLikeError(err)) {
+                      toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
+                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    }
+                  } finally {
                     setPlanningInProgress(false);
-                    void queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                  },
-                });
+                  }
+                })();
               }}
               disabled={generatePlan.isPending}
             >
@@ -3589,6 +3591,8 @@ export default function PlanDetailsPage() {
                 viewKey={`plan-${id}-${timelineView}-${spaceVerticalMode}`}
                 supportsZoom
               >
+                <div className="relative">
+                {(planningInProgress || generatePlan.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
                 <PlanningTimeline
                   plan={plan as any}
                   contestants={contestants as any}
@@ -3713,12 +3717,26 @@ export default function PlanDetailsPage() {
                     return validation;
                   }}
                   onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" = "full") => {
-                    await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
-                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                    setManualDraftBlockIds([]);
-                    setManualEditsSnapshot({});
-                    toast({ title: mode === "full" ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
+                    try {
+                      await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
+                      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                      setManualDraftBlockIds([]);
+                      setManualEditsSnapshot({});
+                      toast({ title: mode === "full" ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
+                    } catch (err: any) {
+                      if (isAbortLikeError(err)) {
+                        toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
+                        await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                        const refreshed: any = queryClient.getQueryData(planQueryKey(id));
+                        const hasPlanned = Array.isArray(refreshed?.dailyTasks) && refreshed.dailyTasks.some((t: any) => t?.startPlanned && t?.endPlanned);
+                        if (hasPlanned) {
+                          toast({ title: "Replanificación completada", description: "Se recuperó el estado tras refrescar." });
+                          return;
+                        }
+                      }
+                      throw err;
+                    }
                   }}
                   onReloadPlanTasks={async () => {
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
@@ -3757,8 +3775,15 @@ export default function PlanDetailsPage() {
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Bloqueo eliminado" });
                   }}
+                  onPatchManualBlock={async (taskId: number, patch: { title?: string | null; color?: string | null }) => {
+                    await patchManualBlock(taskId, patch);
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    toast({ title: "Bloqueo actualizado" });
+                  }}
                   onCreateManualBlock={() => setManualBlockDialog((prev) => ({ ...prev, open: true }))}
                 />
+              </div>
               </FullscreenPlanningPanel>
             </div>
           </TabsContent>
