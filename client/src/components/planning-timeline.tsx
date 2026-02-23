@@ -2926,7 +2926,7 @@ function TaskStatusMenuTrigger({
                             }}
                             className={cn(
                               "absolute border shadow-sm flex flex-col justify-center px-2 overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                              isBackgroundTask ? "z-0 opacity-40" : "z-10",
+                              isBackgroundTask ? "z-0 opacity-40 pointer-events-none" : "z-10",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               pendingManualEdits[Number(task.id)] ? "ring-2 ring-blue-500" : "",
@@ -2949,7 +2949,7 @@ function TaskStatusMenuTrigger({
                                   ? "rgb(34 197 94)"
                                   : taskBaseColor(task),
                               color: taskTextColor(task),
-                              pointerEvents: "auto",
+                              pointerEvents: isBackgroundTask ? "none" : "auto",
                             }}
                           >
                             <span className="text-xs font-bold truncate">
