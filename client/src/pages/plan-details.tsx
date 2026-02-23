@@ -876,7 +876,11 @@ export default function PlanDetailsPage() {
 
   const [activeTab, setActiveTab] = useState<
     "tasks" | "planning" | "resources" | "execution"
-  >("tasks");
+  >(() => {
+    if (typeof window === "undefined") return "tasks";
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return tab === "planning" || tab === "resources" || tab === "execution" ? tab : "tasks";
+  });
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
   const [unplannedDialogOpen, setUnplannedDialogOpen] = useState(false);
   const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
