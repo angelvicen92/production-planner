@@ -543,32 +543,6 @@ function TaskStatusMenuTrigger({
   const [manualDragPreviewStart, setManualDragPreviewStart] = useState<number | null>(null);
   const [manualBlockEditor, setManualBlockEditor] = useState<null | { task: Task; title: string; color: string }>(null);
   const [manualBlockEditorBusy, setManualBlockEditorBusy] = useState(false);
-  const spacesTimelineRootRef = useRef<HTMLDivElement | null>(null);
-  const spacesFirstLaneRef = useRef<HTMLDivElement | null>(null);
-  const [spacesHeaderOffsetPx, setSpacesHeaderOffsetPx] = useState(40);
-
-  useEffect(() => {
-    if (viewMode !== "spaces") return;
-    if (!spacesTimelineRootRef.current || !spacesFirstLaneRef.current) return;
-
-    const updateOffset = () => {
-      if (!spacesTimelineRootRef.current || !spacesFirstLaneRef.current) return;
-      const rootRect = spacesTimelineRootRef.current.getBoundingClientRect();
-      const laneRect = spacesFirstLaneRef.current.getBoundingClientRect();
-      const next = Math.max(0, Math.round(laneRect.top - rootRect.top));
-      setSpacesHeaderOffsetPx(next);
-    };
-
-    updateOffset();
-    const observer = new ResizeObserver(updateOffset);
-    observer.observe(spacesTimelineRootRef.current);
-    observer.observe(spacesFirstLaneRef.current);
-    window.addEventListener("resize", updateOffset);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateOffset);
-    };
-  }, [viewMode, (dailyTasks ?? []).length, spaceVerticalMode]);
   const lastManualEditedPrimaryTaskIdRef = useRef<number | null>(null);
   const shiftedTaskIdsRef = useRef<number[]>([]);
   const taskById = useMemo(() => {
@@ -1675,11 +1649,11 @@ function TaskStatusMenuTrigger({
                     <div className="space-y-6">
                       {spaceVerticalMode === "timeline" || spaceVerticalMode === "list" ? (
                         // ✅ TIMELINE vertical: columna horas + bloques por plató con espacios en columnas
-                        <div className="flex gap-4" ref={spacesTimelineRootRef}>
+                        <div className="flex gap-4" >
                           {/* columna horas (una sola vez) */}
                           <div
                             className="w-16 text-[10px] text-muted-foreground"
-                            style={{ paddingTop: spacesHeaderOffsetPx }}
+                            
                           >
                             {timeLabels.map((tl) => (
                               <div
@@ -1820,8 +1794,8 @@ function TaskStatusMenuTrigger({
 
                                         <div
                                           className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
-                                          ref={spIndex === 0 && zc.zoneId === zoneColsToShow[0]?.zoneId ? spacesFirstLaneRef : undefined}
-                                          style={{ height: totalHeightPx + spacesHeaderOffsetPx, paddingTop: spacesHeaderOffsetPx }}
+                                          
+                                          style={{ height: totalHeightPx }}
                                         >
                                           {/* líneas cada 5 min */}
                                           <div className="absolute inset-0 pointer-events-none">
@@ -1843,7 +1817,7 @@ function TaskStatusMenuTrigger({
                                                         ? "border-border/25"
                                                         : "border-border/10",
                                                   )}
-                                                  style={{ top: spacesHeaderOffsetPx + (m * pxPerMin) }}
+                                                  style={{ top: m * pxPerMin }}
                                                 />
                                               );
                                             })}
@@ -1855,7 +1829,7 @@ function TaskStatusMenuTrigger({
                                               <div
                                                 className="absolute left-0 right-0 bg-orange-100/30 dark:bg-orange-900/10 border-y border-orange-200/20"
                                                 style={{
-                                                  top: spacesHeaderOffsetPx + ((mealStartMin - startMin) * pxPerMin),
+                                                  top: (mealStartMin - startMin) * pxPerMin,
                                                   height:
                                                     (mealEndMin -
                                                       mealStartMin) *
@@ -1867,7 +1841,7 @@ function TaskStatusMenuTrigger({
                                           {clampedNowMin !== null ? (
                                             <div
                                               className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
-                                              style={{ top: `${spacesHeaderOffsetPx + ((clampedNowMin - startMin) * pxPerMin)}px` }}
+                                              style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
                                             />
                                           ) : null}
 
@@ -1879,7 +1853,7 @@ function TaskStatusMenuTrigger({
                                               ? timeToMinutes(task.endPlanned)
                                               : tStart;
                                             const top =
-                                              spacesHeaderOffsetPx + ((tStart - startMin) * pxPerMin);
+                                              ((tStart - startMin) * pxPerMin);
                                             const height = Math.max(
                                               18,
                                               (tEnd - tStart) * pxPerMin,
@@ -2023,12 +1997,12 @@ function TaskStatusMenuTrigger({
                                     </div>
                                     <div
                                       className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")}
-                                      style={{ height: totalHeightPx + spacesHeaderOffsetPx, paddingTop: spacesHeaderOffsetPx }}
+                                      style={{ height: totalHeightPx }}
                                     >
                                       {clampedNowMin !== null ? (
                                         <div
                                           className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
-                                          style={{ top: `${spacesHeaderOffsetPx + ((clampedNowMin - startMin) * pxPerMin)}px` }}
+                                          style={{ top: `${(clampedNowMin - startMin) * pxPerMin}px` }}
                                         />
                                       ) : null}
 
@@ -2040,7 +2014,7 @@ function TaskStatusMenuTrigger({
                                           ? timeToMinutes(task.endPlanned)
                                           : tStart;
                                         const top =
-                                          spacesHeaderOffsetPx + ((tStart - startMin) * pxPerMin);
+                                          ((tStart - startMin) * pxPerMin);
                                         const height = Math.max(
                                           18,
                                           (tEnd - tStart) * pxPerMin,
@@ -2110,7 +2084,7 @@ function TaskStatusMenuTrigger({
 
                           <div
                             className="w-16 shrink-0 text-[10px] text-muted-foreground"
-                            style={{ paddingTop: spacesHeaderOffsetPx }}
+                            
                           >
                             {timeLabels.map((tl) => (
                               <div
