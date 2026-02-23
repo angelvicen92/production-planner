@@ -933,7 +933,7 @@ function StaffDefaultsSettings() {
           </CardHeader>
 
           <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {(itinerantTeams ?? []).map((team: any) => (
+            {(Array.isArray(itinerantTeams) ? itinerantTeams : []).map((team: any) => (
               <Card key={team.id} className="border-border/60">
                 <CardHeader className="pb-3">
                   <div className="font-medium">{team.name}</div>
@@ -1613,7 +1613,7 @@ function ZonesSpacesSettings() {
                 // fondo muy suave: mismo color con alpha bajo
                 const zoneBgColor = zoneBorderColor
                   ? `${zoneBorderColor}1A` // ~10% de opacidad en hex
-                  : null;
+                  : undefined;
 
                 return (
                   <div
@@ -2722,13 +2722,9 @@ function TaskTemplatesSettings() {
             : null;
           const zoneName = String(zone?.name ?? "").trim() || "Sin asignar";
           const spaceName = String(space?.name ?? "").trim() || "—";
-          const zoneColor =
-            String(zone?.uiColor ?? zone?.ui_color ?? "").trim() || "#e2e8f0";
           const durationMin = Number(
             curr?.defaultDuration ?? curr?.default_duration ?? NaN,
           );
-          const primary =
-            String(curr?.uiColor ?? curr?.ui_color ?? "").trim() || "#94a3b8";
           const secondary = String(
             curr?.uiColorSecondary ?? curr?.ui_color_secondary ?? "",
           ).trim();
@@ -2738,16 +2734,18 @@ function TaskTemplatesSettings() {
               <CardHeader className="py-2 px-3 sm:px-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1 flex items-stretch gap-2">
-                    <div
-                      className="w-1.5 rounded-sm"
-                      style={{ backgroundColor: primary }}
-                      aria-hidden="true"
-                    />
-                    <div
-                      className="w-1.5 rounded-sm"
-                      style={{ backgroundColor: zoneColor }}
-                      aria-hidden="true"
-                    />
+                    <div className="flex items-start gap-1 pt-1">
+                      <span
+                        className="h-4 w-4 rounded-sm border border-black"
+                        style={{ backgroundColor: normalizeColorToHex(isEditing ? editData?.uiColorInput : curr?.uiColor ?? curr?.ui_color ?? null) ?? "#ffffff" }}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className="h-4 w-4 rounded-sm border border-black"
+                        style={{ backgroundColor: normalizeColorToHex(isEditing ? editData?.uiColorSecondaryInput : curr?.uiColorSecondary ?? curr?.ui_color_secondary ?? null) ?? "#ffffff" }}
+                        aria-hidden="true"
+                      />
+                    </div>
                     <div
                       className="flex-1 rounded-md px-2.5 py-1.5"
                       style={{

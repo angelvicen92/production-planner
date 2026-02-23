@@ -1,9 +1,27 @@
 import { Input } from "@/components/ui/input";
 import { useRef } from "react";
 
+export function normalizeHexColor(input: string | undefined | null): string | null {
+  const raw = String(input ?? "").trim();
+  const shortHex = raw.match(/^#([\da-fA-F]{3})$/);
+  if (shortHex) {
+    return `#${shortHex[1]
+      .split("")
+      .map((char) => `${char}${char}`)
+      .join("")
+      .toUpperCase()}`;
+  }
+
+  const fullHex = raw.match(/^#([\da-fA-F]{6})$/);
+  if (fullHex) {
+    return `#${fullHex[1].toUpperCase()}`;
+  }
+
+  return null;
+}
+
 function normalizeColor(value?: string | null, fallback = "#64748b") {
-  const v = String(value ?? "").trim();
-  return /^#([0-9a-fA-F]{6})$/.test(v) ? v : fallback;
+  return normalizeHexColor(value) ?? normalizeHexColor(fallback) ?? "#64748B";
 }
 
 export function ColorSwatchPicker({
@@ -38,9 +56,9 @@ export function ColorSwatchPicker({
       />
       <Input
         className="h-8 w-28"
-        value={value ?? ""}
+        value={normalizeHexColor(value) ?? safeColor}
         placeholder="#RRGGBB"
-        onChange={(e) => onChange(e.currentTarget.value)}
+        onChange={(e) => onChange(normalizeHexColor(e.currentTarget.value) ?? safeColor)}
       />
     </div>
   );

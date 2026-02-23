@@ -105,18 +105,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { ColorSwatchPicker } from "@/components/color-swatch-picker";
+import { ColorSwatchPicker, normalizeHexColor } from "@/components/color-swatch-picker";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
-
-function normalizeHexColor(value: unknown): string | null {
-  const raw = String(value ?? "").trim();
-  if (!/^#([0-9a-fA-F]{6})$/.test(raw)) return null;
-  return raw.toUpperCase();
-}
 
 function getRunProgress(args: {
   plannedCount: number;
@@ -1202,10 +1196,17 @@ export default function PlanDetailsPage() {
     try {
       const result = await apiRequest<any>("POST", `/api/plans/${id}/reset`, { mode });
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+      if (mode === "total") {
+        setManualDraftBlockIds([]);
+        setManualEditsSnapshot({});
+      }
       setResetDialogOpen(false);
       toast({
         title: mode === "partial" ? "Reset parcial completado" : "Reset total completado",
-        description: `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)}`,
+        description: mode === "total"
+          ? `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)} · Bloqueos manuales: ${Number(result?.clearedManualBlocks ?? 0)} · Locks de bloqueos: ${Number(result?.clearedManualBlockLocks ?? 0)}`
+          : `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)}`,
       });
     } catch (err: any) {
       toast({
@@ -3773,6 +3774,7 @@ export default function PlanDetailsPage() {
                     await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: Number(task.id) }));
                     setManualDraftBlockIds((prev) => prev.filter((x) => x !== Number(task.id)));
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                     toast({ title: "Bloqueo eliminado" });
                   }}
                   onPatchManualBlock={async (taskId: number, patch: { title?: string | null; color?: string | null }) => {
@@ -4466,13 +4468,14 @@ export default function PlanDetailsPage() {
                   start: manualBlockDialog.start,
                   end: manualBlockDialog.end,
                   title: manualBlockDialog.title,
-                  color: normalizeHexColor(manualBlockDialog.color),
+                  color: normalizeHexColor(manualBlockDialog.color) ?? "#38BDF8",
                 });
                 const blockId = Number(created?.task?.id ?? NaN);
                 if (Number.isFinite(blockId) && blockId > 0) {
                   setManualDraftBlockIds((prev) => (prev.includes(blockId) ? prev : [...prev, blockId]));
                 }
                 await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                 toast({ title: "Bloqueo creado" });
                 setManualBlockDialog((prev) => ({ ...prev, open: false }));
                 } finally {

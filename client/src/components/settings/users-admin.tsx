@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 
 type RoleKey = "admin" | "production" | "aux" | "viewer";
 
@@ -104,6 +104,25 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (user: AdminUser) => {
+      await apiRequest("DELETE", `/api/admin/users/${user.id}`);
+      return user;
+    },
+    onSuccess: async (user) => {
+      toast({ title: `Usuario ${user.email || user.id} eliminado` });
+      await qc.invalidateQueries({ queryKey: ["adminUsers"] });
+      await qc.refetchQueries({ queryKey: ["adminUsers"] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "No se pudo eliminar el usuario",
+        description: err?.message || "Intenta de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const rows = usersQ.data?.users ?? [];
 
   const filteredRows = useMemo(() => rows.filter((user) => {
@@ -166,11 +185,12 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
               <TableHead>Vincular a Recurso</TableHead>
               <TableHead>Último login</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRows.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-sm text-muted-foreground">Sin resultados</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-sm text-muted-foreground">Sin resultados</TableCell></TableRow>
             ) : filteredRows.map((user) => {
               const draft = getDraft(user);
               const dirty = draft.roleKey !== user.roleKey
@@ -223,6 +243,22 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
                       >Guardar</Button>
                       {isSaving ? <Badge variant="outline">guardando</Badge> : dirty ? <Badge variant="secondary">pendiente</Badge> : <Badge variant="outline">guardado</Badge>}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive"
+                      disabled={deleteUser.isPending || user.id === currentUserId}
+                      onClick={() => {
+                        const ok = window.confirm(`¿Eliminar usuario ${user.email || user.id}? Esta acción es irreversible.`);
+                        if (!ok) return;
+                        deleteUser.mutate(user);
+                      }}
+                      title={user.id === currentUserId ? "No puedes eliminar tu propio usuario" : "Eliminar usuario"}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
