@@ -20,6 +20,7 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Trash2 } from "lucide-react";
 
 interface Task {
   id: number;
@@ -309,7 +310,7 @@ function TaskStatusMenuTrigger({
   const triggerButton = (
     <button
       type="button"
-      className={cn(className, "text-left")}
+      className={cn(className, "group text-left")}
       style={style}
       onClick={handleCardClick}
       onPointerDown={(event) => {
@@ -322,6 +323,32 @@ function TaskStatusMenuTrigger({
         }
       }}
     >
+      {task.isManualBlock && onDeleteManualBlock ? (
+        <span
+          role="button"
+          tabIndex={0}
+          className="absolute right-1 top-1 z-20 rounded-sm bg-background/80 p-1 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const ok = window.confirm("¿Eliminar bloqueo manual?");
+            if (!ok) return;
+            void Promise.resolve(onDeleteManualBlock(task));
+          }}
+          aria-label="Eliminar bloqueo manual"
+          title="Eliminar bloqueo manual"
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            event.stopPropagation();
+            const ok = window.confirm("¿Eliminar bloqueo manual?");
+            if (!ok) return;
+            void Promise.resolve(onDeleteManualBlock(task));
+          }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </span>
+      ) : null}
       {children}
     </button>
   );
@@ -405,7 +432,7 @@ function TaskStatusMenuTrigger({
                   setOpen(false);
                 }}
               >
-                Eliminar bloqueo
+                Editar bloqueo
               </button>
             ) : hasTimeLock ? (
               <button

@@ -383,6 +383,37 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.delete("/api/admin/users/:userId", async (req, res) => {
+    try {
+      const auth = await ensureAdmin(req, res);
+      if (!auth.ok) return;
+
+      const userId = String(req.params.userId ?? "").trim();
+      if (!userId) return res.status(400).json({ message: "Invalid user id" });
+      if (userId === auth.userId) {
+        return res.status(400).json({ message: "No puedes eliminar tu propio usuario." });
+      }
+
+      const cleanupTables = ["user_entity_links", "user_roles"];
+      for (const tableName of cleanupTables) {
+        const { error } = await supabaseAdmin.from(tableName).delete().eq("user_id", userId);
+        if (error) throw error;
+      }
+
+      const deleted = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (deleted.error) {
+        return res.status(500).json({
+          message: deleted.error.message || "Cannot delete auth user",
+          status: (deleted.error as any)?.status ?? 500,
+        });
+      }
+
+      return res.json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Cannot delete user" });
+    }
+  });
+
   app.patch("/api/admin/users/:userId/role", async (req, res) => {
     try {
       const auth = await ensureAdmin(req, res);
@@ -3741,16 +3772,48 @@ function normalizeHexColor(value: unknown): string | null {
         })
         .filter((taskId: number | null): taskId is number => Number.isFinite(taskId));
 
+      let clearedManualBlocks = 0;
+      let clearedManualBlockLocks = 0;
+
       if (input.mode === "partial") {
         await supabaseAdmin.from("plan_breaks").update({ planned_start: null, planned_end: null }).eq("plan_id", planId);
       }
       if (input.mode === "total") {
         await supabaseAdmin.from("plan_breaks").update({ planned_start: null, planned_end: null, locked_start: null, locked_end: null }).eq("plan_id", planId);
-        await supabaseAdmin.from("daily_tasks").delete().eq("plan_id", planId).eq("is_manual_block", true);
+
+        const manualBlockIds = (taskRows ?? [])
+          .map((task: any) => (task?.is_manual_block === true ? Number(task?.id) : Number.NaN))
+          .filter((taskId): taskId is number => Number.isFinite(taskId) && taskId > 0);
+
+        if (manualBlockIds.length > 0) {
+          const { data: deletedManualLocks, error: delManualLocksErr } = await supabaseAdmin
+            .from("locks")
+            .delete()
+            .eq("plan_id", planId)
+            .in("task_id", manualBlockIds)
+            .select("id");
+          if (delManualLocksErr) throw delManualLocksErr;
+          clearedManualBlockLocks = (deletedManualLocks ?? []).length;
+
+          const { data: deletedManualBlocks, error: delManualBlocksErr } = await supabaseAdmin
+            .from("daily_tasks")
+            .delete()
+            .eq("plan_id", planId)
+            .eq("is_manual_block", true)
+            .select("id");
+          if (delManualBlocksErr) throw delManualBlocksErr;
+          clearedManualBlocks = (deletedManualBlocks ?? []).length;
+        }
       }
 
       if (candidateTaskIds.length === 0) {
-        return res.json({ ok: true, clearedTasksCount: 0, clearedLocksCount: 0 });
+        return res.json({
+          ok: true,
+          clearedTasksCount: 0,
+          clearedLocksCount: 0,
+          clearedManualBlocks,
+          clearedManualBlockLocks,
+        });
       }
 
       const updatePayload: any = { start_planned: null, end_planned: null };
@@ -3780,6 +3843,8 @@ function normalizeHexColor(value: unknown): string | null {
         ok: true,
         clearedTasksCount: candidateTaskIds.length,
         clearedLocksCount: (deletedLocks ?? []).length,
+        clearedManualBlocks,
+        clearedManualBlockLocks,
       });
     } catch (err: any) {
       if (err?.name === "ZodError") {
@@ -4219,18 +4284,16 @@ function normalizeHexColor(value: unknown): string | null {
               (Number.isFinite(mealTemplateId) && mealTemplateId > 0 && taskTemplateId === mealTemplateId)
               || (mealTemplateName.length > 0 && taskTemplateName === mealTemplateName)
               || taskTemplateName === "comida";
-            if (isMealTask && isContainedByMealWindow) {
+            if (!isMealTask || (task as any)?.isManualBlock === true || (task as any)?.is_manual_block === true) {
               continue;
             }
-            if (!isMealTask && isContainedByMealWindow) {
+            if (isContainedByMealWindow) {
               continue;
             }
             nowReasons.push({
-              code: isMealTask ? "meal_outside_window" : "crosses_meal",
+              code: "meal_outside_window",
               taskId: Number(task.id),
-              message: isMealTask
-                ? `La tarea de comida ${fmtTask(task)} debe quedar contenida en ${engineInput.meal.start}–${engineInput.meal.end}.`
-                : `La tarea ${fmtTask(task)} cruza la franja de comida ${engineInput.meal.start}–${engineInput.meal.end}.`,
+              message: `La tarea de comida ${fmtTask(task)} debe quedar contenida en ${engineInput.meal.start}–${engineInput.meal.end}.`,
             });
           }
         }
