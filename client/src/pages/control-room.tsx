@@ -15,6 +15,7 @@ import { usePlan, usePlans } from "@/hooks/use-plans";
 import { useSpaces, useZones } from "@/hooks/use-spaces";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { useContestants, useTaskTemplates } from "@/hooks/use-tasks";
+import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
 import { usePlanRealtime } from "@/hooks/use-plan-realtime";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 import { useControlRoomSettings } from "@/hooks/use-control-room-settings";
@@ -63,6 +64,7 @@ export default function ControlRoomPage() {
   const { data: plan, isLoading: planLoading, error: planError } = usePlan(effectivePlanId ?? 0);
   const { data: contestants = [] } = useContestants(effectivePlanId ?? 0);
   const { data: templates = [] } = useTaskTemplates();
+  const { data: itinerantTeams = [] } = useItinerantTeams();
   const planningRunQ = usePlanningRun(effectivePlanId);
 
   const { realtimeConnected, realtimeFailed } = usePlanRealtime({ planId: effectivePlanId });
@@ -170,6 +172,7 @@ export default function ControlRoomPage() {
             spaces={spaces as any[]}
             contestants={contestants}
             templates={templates}
+            itinerantTeams={itinerantTeams as any[]}
             nowTime={nowTime}
             nowSeconds={nowSeconds}
             settings={settings}
