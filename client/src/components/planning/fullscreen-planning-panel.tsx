@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Minus, Plus, Minimize2, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type DensityMode = "normal" | "compact";
+type DensityMode = "normal" | "compact" | "pdf";
 
 interface FullscreenPlanningPanelProps {
   title?: string;
@@ -22,7 +22,9 @@ const ZOOM_STEP = 10;
 const getStoredDensity = (): DensityMode => {
   if (typeof window === "undefined") return "normal";
   const raw = localStorage.getItem("planning-density");
-  return raw === "compact" ? "compact" : "normal";
+  if (raw === "compact") return "compact";
+  if (raw === "pdf") return "pdf";
+  return "normal";
 };
 
 export const PlanningDensityContext = createContext<DensityMode>("normal");
@@ -118,6 +120,7 @@ export function FullscreenPlanningPanel({
           <div className="flex items-center gap-1 rounded-md border p-1">
             <Button variant={density === "normal" ? "default" : "ghost"} size="sm" onClick={() => setDensity("normal")}>Normal</Button>
             <Button variant={density === "compact" ? "default" : "ghost"} size="sm" onClick={() => setDensity("compact")}>Compacto</Button>
+            <Button variant={density === "pdf" ? "default" : "ghost"} size="sm" onClick={() => setDensity("pdf")}>PDF</Button>
           </div>
 
           <div className="flex items-center gap-1 rounded-md border px-1 py-1">

@@ -111,6 +111,26 @@
     line-height: 1rem;
   }
 
+  .planning-panel[data-density="pdf"] {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  .planning-panel[data-density="pdf"] .planning-density-row {
+    padding: 0.25rem;
+  }
+
+  .planning-panel[data-density="pdf"] [class*="py-2"] {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .planning-panel[data-density="pdf"] [class*="text-xs"] {
+    font-size: 0.62rem;
+    line-height: 0.85rem;
+  }
+
+
   .planning-panel[data-planning-zoom-enabled="true"] [data-planning-zoom-target] {
     transform: scale(var(--planning-zoom, 1));
     transform-origin: top left;
