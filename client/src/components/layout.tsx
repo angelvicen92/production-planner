@@ -15,7 +15,7 @@ import {
   Pin,
   PinOff,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HealthIndicator } from "@/components/health-indicator";
@@ -56,6 +56,19 @@ export function Layout({ children }: LayoutProps) {
     }
   });
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const collapseHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCollapseHoverTimeout = () => {
+    if (!collapseHoverTimeoutRef.current) return;
+    clearTimeout(collapseHoverTimeoutRef.current);
+    collapseHoverTimeoutRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      clearCollapseHoverTimeout();
+    };
+  }, []);
 
   const toggleSidebarPinned = () => {
     setIsSidebarPinned((v) => {
@@ -101,10 +114,19 @@ export function Layout({ children }: LayoutProps) {
         {/* Sidebar */}
         <aside
           onMouseEnter={() => {
-            if (isSidebarCollapsed && !isSidebarPinned) setIsSidebarHovered(true);
+            if (isSidebarCollapsed && !isSidebarPinned) {
+              clearCollapseHoverTimeout();
+              setIsSidebarHovered(true);
+            }
           }}
           onMouseLeave={() => {
-            if (isSidebarCollapsed && !isSidebarPinned) setIsSidebarHovered(false);
+            if (isSidebarCollapsed && !isSidebarPinned) {
+              clearCollapseHoverTimeout();
+              collapseHoverTimeoutRef.current = setTimeout(() => {
+                setIsSidebarHovered(false);
+                collapseHoverTimeoutRef.current = null;
+              }, 200);
+            }
           }}
           className={cn(
             "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transform transition-all duration-200 ease-in-out lg:relative lg:translate-x-0 flex flex-col",

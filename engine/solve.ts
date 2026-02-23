@@ -104,6 +104,35 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const isArrivalTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === arrivalTemplateName;
   const isDepartureTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === departureTemplateName;
 
+  const isProtectedWrapTask = (task: any) => {
+    if (!task) return false;
+    if (isArrivalTask(task) || isDepartureTask(task) || isMealTask(task)) return true;
+    const breakKind = String(task?.breakKind ?? "").trim().toLowerCase();
+    if (breakKind.length > 0) return true;
+    const templateName = String(task?.templateName ?? "").trim().toLowerCase();
+    return templateName === "break";
+  };
+
+  const canAllowContestantWrapOverlap = (leftTask: any, rightTask: any) => {
+    if (!leftTask || !rightTask) return false;
+    if (Boolean(leftTask?.isManualBlock) || Boolean(rightTask?.isManualBlock)) return false;
+    if (isProtectedWrapTask(leftTask) || isProtectedWrapTask(rightTask)) return false;
+
+    const leftContestantId = getContestantId(leftTask);
+    const rightContestantId = getContestantId(rightTask);
+    const leftSpaceId = getSpaceId(leftTask);
+    const rightSpaceId = getSpaceId(rightTask);
+    const leftItinerantTeamId = Number(leftTask?.itinerantTeamId ?? 0);
+    const rightItinerantTeamId = Number(rightTask?.itinerantTeamId ?? 0);
+
+    if (!leftContestantId || !rightContestantId || !leftSpaceId || !rightSpaceId) return false;
+    if (Number(leftContestantId) !== Number(rightContestantId)) return false;
+    if (Number(leftSpaceId) !== Number(rightSpaceId)) return false;
+    if (leftItinerantTeamId > 0 && rightItinerantTeamId > 0) return false;
+
+    return leftItinerantTeamId > 0 || rightItinerantTeamId > 0;
+  };
+
   // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
   for (const task of tasks as any[]) {
     const id = Number(task?.id);
@@ -1047,17 +1076,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
       if (!Number.isFinite(intervalTaskId) || intervalTaskId <= 0) return false;
       if (intervalTaskId === taskId) return false;
       const otherTask = taskById.get(Number(intervalTaskId));
-      if (!otherTask || Boolean(otherTask?.isManualBlock)) return false;
-
-      const otherContestantId = getContestantId(otherTask);
-      const otherSpaceId = getSpaceId(otherTask);
-      if (!otherContestantId || !otherSpaceId) return false;
-
-      return (
-        Number(otherContestantId) === Number(contestantId) &&
-        Number(otherSpaceId) === Number(spaceId) &&
-        (Number(otherTask?.itinerantTeamId ?? 0) > 0 || Number(task?.itinerantTeamId ?? 0) > 0)
-      );
+      if (!otherTask) return false;
+      return canAllowContestantWrapOverlap(task, otherTask);
     };
 
     if (!spaceId && !transportTask) {
@@ -2497,13 +2517,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const prev = active[0];
       if (curr.start < prev.end) {
         const prevTask = tasks.find((x) => x.id === prev.taskId) as any;
-        const allowWrapOverlap = Boolean(
-          prevTask && currTask &&
-          Number(prevTask?.contestantId ?? 0) === Number(currTask?.contestantId ?? 0) &&
-          Number(prevTask?.spaceId ?? 0) > 0 &&
-          Number(prevTask?.spaceId ?? 0) === Number(currTask?.spaceId ?? 0) &&
-          (Number(prevTask?.itinerantTeamId ?? 0) > 0 || Number(currTask?.itinerantTeamId ?? 0) > 0)
-        );
+        const allowWrapOverlap = canAllowContestantWrapOverlap(prevTask, currTask);
         if (allowWrapOverlap && active.length === 1) continue;
 
         // Nombre (preferimos el del input, y si no, el del byTaskId)
