@@ -1951,7 +1951,8 @@ export default function PlanDetailsPage() {
                             onChange={(e) =>
                               setEditAvailStartLocal(e.target.value)
                             }
-                            placeholder="HH:MM"
+                            type="time"
+                            step={60}
                             onBlur={() => {
                               if (!selectedContestant?.id) return;
 
@@ -2021,7 +2022,8 @@ export default function PlanDetailsPage() {
                             onChange={(e) =>
                               setEditAvailEndLocal(e.target.value)
                             }
-                            placeholder="HH:MM"
+                            type="time"
+                            step={60}
                             onBlur={() => {
                               if (!selectedContestant?.id) return;
 
@@ -4082,7 +4084,8 @@ export default function PlanDetailsPage() {
                   onChange={(e) =>
                     setEdit((p) => ({ ...p, workStart: e.target.value }))
                   }
-                  placeholder="09:00"
+                  type="time"
+                  step={60}
                 />
               </div>
               <div className="space-y-2">
@@ -4092,7 +4095,8 @@ export default function PlanDetailsPage() {
                   onChange={(e) =>
                     setEdit((p) => ({ ...p, workEnd: e.target.value }))
                   }
-                  placeholder="21:00"
+                  type="time"
+                  step={60}
                 />
               </div>
 
@@ -4103,7 +4107,8 @@ export default function PlanDetailsPage() {
                   onChange={(e) =>
                     setEdit((p) => ({ ...p, mealStart: e.target.value }))
                   }
-                  placeholder="14:00"
+                  type="time"
+                  step={60}
                 />
               </div>
               <div className="space-y-2">
@@ -4113,7 +4118,8 @@ export default function PlanDetailsPage() {
                   onChange={(e) =>
                     setEdit((p) => ({ ...p, mealEnd: e.target.value }))
                   }
-                  placeholder="15:00"
+                  type="time"
+                  step={60}
                 />
               </div>
               <div className="space-y-2">
@@ -4444,8 +4450,8 @@ export default function PlanDetailsPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2"><Label>Inicio</Label><Input value={manualBlockDialog.start} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, start: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>Fin</Label><Input value={manualBlockDialog.end} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, end: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>Inicio</Label><Input type="time" step={60} value={manualBlockDialog.start} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, start: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>Fin</Label><Input type="time" step={60} value={manualBlockDialog.end} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, end: e.target.value }))} /></div>
               </div>
               <div className="space-y-2"><Label>Título</Label><Input value={manualBlockDialog.title} onChange={(e) => setManualBlockDialog((prev) => ({ ...prev, title: e.target.value }))} /></div>
               <div className="space-y-2"><Label>Color</Label><ColorSwatchPicker value={manualBlockDialog.color} onChange={(v) => setManualBlockDialog((prev) => ({ ...prev, color: v }))} /></div>
@@ -4462,13 +4468,14 @@ export default function PlanDetailsPage() {
                 }
                 setManualBlockSaving(true);
                 try {
+                const selectedColor = normalizeHexColor(manualBlockDialog.color) ?? "#38BDF8";
                 const created = await apiRequest<any>("POST", `/api/plans/${id}/manual-block`, {
                   scopeType: manualBlockDialog.scopeType,
                   scopeId,
                   start: manualBlockDialog.start,
                   end: manualBlockDialog.end,
                   title: manualBlockDialog.title,
-                  color: normalizeHexColor(manualBlockDialog.color) ?? "#38BDF8",
+                  color: selectedColor,
                 });
                 const blockId = Number(created?.task?.id ?? NaN);
                 if (Number.isFinite(blockId) && blockId > 0) {
@@ -4503,6 +4510,8 @@ export default function PlanDetailsPage() {
               <div className="space-y-2">
                 <Label>Inicio</Label>
                 <Input
+                  type="time"
+                  step={60}
                   value={timeLockDialog.start}
                   onChange={(e) =>
                     setTimeLockDialog((prev) => ({ ...prev, start: e.target.value }))
@@ -4513,6 +4522,8 @@ export default function PlanDetailsPage() {
               <div className="space-y-2">
                 <Label>Fin</Label>
                 <Input
+                  type="time"
+                  step={60}
                   value={timeLockDialog.end}
                   onChange={(e) =>
                     setTimeLockDialog((prev) => ({ ...prev, end: e.target.value }))

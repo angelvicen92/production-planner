@@ -423,17 +423,33 @@ function TaskStatusMenuTrigger({
           </div>
           <div className="border-t p-1">
             {task.isManualBlock ? (
-              <button
-                type="button"
-                className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
-                disabled={taskStatusPending}
-                onClick={() => {
-                  onEditManualBlock?.(task);
-                  setOpen(false);
-                }}
-              >
-                Editar bloqueo
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
+                  disabled={taskStatusPending}
+                  onClick={() => {
+                    onEditManualBlock?.(task);
+                    setOpen(false);
+                  }}
+                >
+                  Editar bloqueo
+                </button>
+                <button
+                  type="button"
+                  className="w-full rounded px-2 py-1 text-left text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  disabled={taskStatusPending}
+                  onClick={() => {
+                    if (!onDeleteManualBlock) return;
+                    const ok = window.confirm("¿Eliminar bloqueo manual?");
+                    if (!ok) return;
+                    void Promise.resolve(onDeleteManualBlock(task));
+                    setOpen(false);
+                  }}
+                >
+                  Eliminar bloqueo
+                </button>
+              </>
             ) : hasTimeLock ? (
               <button
                 type="button"
@@ -502,7 +518,6 @@ function TaskStatusMenuTrigger({
   const { nowTime } = useProductionClock();
   const { toast } = useToast();
   const density = usePlanningDensity();
-  const isCompact = density === "compact";
   const isPdf = density === "pdf";
   const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
   const fullLockedSet = useMemo(() => new Set((fullLockedTaskIds ?? []).map((id) => Number(id))), [fullLockedTaskIds]);
@@ -531,7 +546,7 @@ function TaskStatusMenuTrigger({
 
   const taskDisplayName = (task: Task) => {
     if (task.isManualBlock) return task.manualTitle ?? task.template?.name ?? "Bloqueo";
-    return isCompact || isPdf ? compactTaskLabel(task) : (task.template?.name || "Tarea");
+    return isPdf ? compactTaskLabel(task) : (task.template?.name || "Tarea");
   };
 
   const [manualMode, setManualMode] = useState(false);
@@ -1496,6 +1511,11 @@ function TaskStatusMenuTrigger({
                     zoneColor?: string | null;
                     spaces: SpaceCol[];
                   };
+                  type ItinerantCol = {
+                    teamId: number;
+                    teamName: string;
+                    tasks: Task[];
+                  };
 
                   const zonesById2 = new Map<number, string>();
                   (filteredZones ?? []).forEach((z: any) =>
@@ -1542,6 +1562,20 @@ function TaskStatusMenuTrigger({
                   // Añadir columna "(sin espacio)" dentro del plató si hace falta
                   const zoneOnlyCols: Record<number, SpaceCol> = {};
 
+                  const itinerantCols: ItinerantCol[] = (itinerantTeams ?? [])
+                    .map((team: any) => ({
+                      teamId: Number(team?.id),
+                      teamName: String(team?.name ?? team?.code ?? `Equipo #${team?.id ?? "—"}`),
+                      tasks: [] as Task[],
+                      orderIndex: Number(team?.orderIndex ?? team?.order_index ?? Number.MAX_SAFE_INTEGER),
+                    }))
+                    .filter((team) => Number.isFinite(team.teamId) && team.teamId > 0)
+                    .sort((a: any, b: any) => (a.orderIndex - b.orderIndex) || a.teamName.localeCompare(b.teamName))
+                    .map(({ orderIndex: _orderIndex, ...team }) => team as ItinerantCol);
+                  const itinerantColById = new Map<number, ItinerantCol>(
+                    itinerantCols.map((team) => [team.teamId, team]),
+                  );
+
                   // Columna global "Sin ubicación"
                   const unlocatedCol: SpaceCol = {
                     id: null,
@@ -1554,6 +1588,14 @@ function TaskStatusMenuTrigger({
                     const sid =
                       (t as any).spaceId ?? (t as any).space_id ?? null;
                     const zid = (t as any).zoneId ?? (t as any).zone_id ?? null;
+                    const itinerantTeamId = Number((t as any).itinerantTeamId ?? (t as any).itinerant_team_id ?? NaN);
+                    if (Number.isFinite(itinerantTeamId) && itinerantTeamId > 0) {
+                      const itinerary = itinerantColById.get(itinerantTeamId);
+                      if (itinerary) {
+                        itinerary.tasks.push(t);
+                        return;
+                      }
+                    }
 
                     if (
                       sid !== null &&
@@ -1610,7 +1652,10 @@ function TaskStatusMenuTrigger({
                   zoneCols.forEach((zc) =>
                     zc.spaces.forEach((sp) => sortTasks(sp.tasks)),
                   );
+                  itinerantCols.forEach((team) => sortTasks(team.tasks));
                   sortTasks(unlocatedCol.tasks);
+
+                  const itinerantColsToShow = itinerantCols.filter((team) => team.tasks.length > 0);
 
                   // Filtrar platós vacíos (no mostrar bloques sin tareas)
                   const zoneColsToShow = zoneCols
@@ -1885,7 +1930,7 @@ function TaskStatusMenuTrigger({
                                                   {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}{dependencyWarnings[Number(task.id)] ? <span className="ml-1">⚠</span> : null}
                                                 </div>
                                                 <div className="text-[10px] opacity-70">
-                                                  {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
+                                                  {isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                                 </div>
                                               {task.comment1Text ? (<div className="text-[10px] truncate" style={{ color: task.comment1Color || undefined }}>{task.comment1Text}</div>) : null}
                                                 {task.comment2Text ? (<div className="text-[10px] truncate" style={{ color: task.comment2Color || undefined }}>{task.comment2Text}</div>) : null}
@@ -1898,6 +1943,69 @@ function TaskStatusMenuTrigger({
                                   </div>
                                 </div>
                               ))}
+
+                              {itinerantColsToShow.length > 0 ? (
+                                <div className="shrink-0 w-max">
+                                  <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
+                                    <div className="leading-5">Itinerantes</div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {itinerantColsToShow.map((team) => {
+                                      const prod = (staffAssignments ?? [])
+                                        .filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "production")
+                                        .map((a) => a.staffPersonName)
+                                        .filter(Boolean);
+                                      const edit = (staffAssignments ?? [])
+                                        .filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "editorial")
+                                        .map((a) => a.staffPersonName)
+                                        .filter(Boolean);
+                                      return (
+                                        <div key={`it-timeline-${team.teamId}`} className={cn(spaceVerticalMode === "list" ? "w-[160px]" : "w-[200px]")}>
+                                          <div className={cn("font-medium mb-2 truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md") }>
+                                            <div className="leading-4">{team.teamName}</div>
+                                            <div className="mt-1 space-y-0.5">
+                                              <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Prod:</span> {prod.length ? prod.join(" · ") : "—"}</div>
+                                              <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Red:</span> {edit.length ? edit.join(" · ") : "—"}</div>
+                                            </div>
+                                          </div>
+                                          <div className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")} style={{ height: totalHeightPx }}>
+                                            {team.tasks.map((task) => {
+                                              const tStart = task.startPlanned ? timeToMinutes(task.startPlanned) : startMin;
+                                              const tEnd = task.endPlanned ? timeToMinutes(task.endPlanned) : tStart;
+                                              const top = (tStart - startMin) * pxPerMin;
+                                              const height = Math.max(18, (tEnd - tStart) * pxPerMin);
+                                              return (
+                                                <TaskStatusMenuTrigger key={task.id} task={task}
+                                                  contestantName={contestantNameById[Number(task.contestantId)] ?? "—"}
+                                                  locationLabel={getTaskLocationLabel(task)}
+                                                  onTaskStatusChange={onTaskStatusChange}
+                                                  taskStatusPending={taskStatusPending}
+                                                  hasTimeLock={hasTimeLock(task)}
+                                                  canPinTimeLock={canPinTask(task)}
+                                                  onPinTask={onPinTask}
+                                                  onUnpinTask={onUnpinTask}
+                                                  onDeleteManualBlock={onDeleteManualBlock}
+                                                  laneId={`it-team-${team.teamId}`}
+                                                  manualMode={manualMode}
+                                                  taskSortArmed={taskSortArmed}
+                                                  canOpenMenuFromCard={manualDrag === null}
+                                                  onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
+                                                  onClick={(event) => handleTaskCardClick(event, task)}
+                                                  className={cn("absolute border cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "", task.status === "done" ? "opacity-80" : "", isApplying ? "pointer-events-none opacity-85" : "")}
+                                                  style={{ top, height, backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
+                                                >
+                                                  <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>{taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}</div>
+                                                  <div className="text-[10px] opacity-70">{isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}</div>
+                                                </TaskStatusMenuTrigger>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ) : null}
 
                               {showUnlocated ? (
                                 <div className="min-w-[260px] shrink-0">
@@ -1983,7 +2091,7 @@ function TaskStatusMenuTrigger({
                                               {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                             </div>
                                             <div className="text-[10px] opacity-70">
-                                              {isCompact || isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
+                                              {isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                             </div>
                                           </TaskStatusMenuTrigger>
                                         );
@@ -2190,6 +2298,57 @@ function TaskStatusMenuTrigger({
                               </div>
                             ))}
 
+                            {itinerantColsToShow.length > 0 ? (
+                              <div className="shrink-0 w-max">
+                                <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
+                                  <div className="leading-5">Itinerantes</div>
+                                </div>
+                                <div className="flex gap-2">
+                                  {itinerantColsToShow.map((team) => {
+                                    const prod = (staffAssignments ?? []).filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "production").map((a) => a.staffPersonName).filter(Boolean);
+                                    const edit = (staffAssignments ?? []).filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "editorial").map((a) => a.staffPersonName).filter(Boolean);
+                                    return (
+                                      <div key={`it-list-${team.teamId}`} className={cn(spaceVerticalMode === "list" ? "w-[160px]" : "w-[200px]")}>
+                                        <div className={cn("font-medium mb-2 truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}>
+                                          <div className="leading-4">{team.teamName}</div>
+                                          <div className="mt-1 space-y-0.5">
+                                            <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Prod:</span> {prod.length ? prod.join(" · ") : "—"}</div>
+                                            <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Red:</span> {edit.length ? edit.join(" · ") : "—"}</div>
+                                          </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                          {team.tasks.map((task) => (
+                                            <TaskStatusMenuTrigger key={task.id} task={task}
+                                              contestantName={contestantNameById[Number(task.contestantId)] ?? "—"}
+                                              locationLabel={getTaskLocationLabel(task)}
+                                              onTaskStatusChange={onTaskStatusChange}
+                                              taskStatusPending={taskStatusPending}
+                                              hasTimeLock={hasTimeLock(task)}
+                                              canPinTimeLock={canPinTask(task)}
+                                              onPinTask={onPinTask}
+                                              onUnpinTask={onUnpinTask}
+                                              onDeleteManualBlock={onDeleteManualBlock}
+                                              laneId={`it-team-${team.teamId}`}
+                                              manualMode={manualMode}
+                                              taskSortArmed={taskSortArmed}
+                                              canOpenMenuFromCard={manualDrag === null}
+                                              onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8" })}
+                                              onClick={(event) => handleTaskCardClick(event, task)}
+                                              className={cn("rounded-lg border shadow-sm px-3 py-2 cursor-pointer", task.isManualBlock ? "border-dashed border-sky-500/80" : "", manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "")}
+                                              style={{ backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
+                                            >
+                                              <div className="text-sm font-bold truncate">{taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}</div>
+                                              <div className="text-xs opacity-70">{isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}</div>
+                                            </TaskStatusMenuTrigger>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ) : null}
+
                             {showUnlocated ? (
                               <div className="min-w-[260px]">
                                 <div className="font-semibold mb-2">
@@ -2239,7 +2398,7 @@ function TaskStatusMenuTrigger({
                                         {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                       </div>
                                       <div className="text-xs opacity-70">
-                                        {isCompact ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
+                                        {isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                                       </div>
                                     </TaskStatusMenuTrigger>
                                   ))}
@@ -2988,7 +3147,7 @@ function TaskStatusMenuTrigger({
                               {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                             </span>
                             <span className={cn("opacity-70", isPdf ? "text-[9px]" : "text-[10px]")}>
-                              {isCompact || isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
+                              {isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
                             </span>
                           </TaskStatusMenuTrigger>
                       );
