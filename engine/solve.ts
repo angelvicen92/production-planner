@@ -67,6 +67,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (!spaceZoneById.has(sid)) spaceZoneById.set(sid, zid);
   }
 
+  const groupingZoneIdSet = new Set<number>(
+    (Array.isArray((input as any)?.groupingZoneIds) ? (input as any).groupingZoneIds : [])
+      .map((v: any) => Number(v))
+      .filter((n: number) => Number.isFinite(n) && n > 0),
+  );
+
+  const isGroupingEnabledForZone = (zoneId: number | null | undefined) =>
+    Number.isFinite(Number(zoneId)) && groupingZoneIdSet.has(Number(zoneId));
+
+  const getZoneIdForSpace = (spaceId: number | null | undefined) => {
+    const sid = Number(spaceId);
+    if (!Number.isFinite(sid) || sid <= 0) return null;
+    const zid = spaceZoneById.get(sid);
+    return Number.isFinite(Number(zid)) && Number(zid) > 0 ? Number(zid) : null;
+  };
+
   // ✅ NUEVO: tareas que requieren configuración (no rompen el solve, se excluyen)
   const warnings: { code: string; message: string; taskId?: number }[] = [];
   const excludedTaskIds = new Set<number>();
@@ -1075,30 +1091,41 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return { key, level, minChain };
   };
 
-  const scoreMinimizeChangesBonus = (spaceId: number, tplId: number) => {
+  const scoreMinimizeChangesBonus = (spaceId: number, tplId: number, options?: { pendingByTemplate?: Map<number, number> | null }) => {
     const cfg = getGroupingConfigForSpace(spaceId);
     if (!cfg) return 0;
+
+    const zoneId = getZoneIdForSpace(spaceId);
+    if (!isGroupingEnabledForZone(zoneId)) return 0;
+
     const lastTpl = lastTemplateByKey.get(cfg.key) ?? null;
     const levelFactor = cfg.level / 10;
-    let bonus = 0;
-    const baseMatch = effectiveGroupingMatchWeight > 0 ? effectiveGroupingMatchWeight : 3000;
-    const baseActive = effectiveGroupingActiveSpaceWeight > 0 ? effectiveGroupingActiveSpaceWeight : 240;
+    let score = 0;
+
+    const pendingByTemplate = options?.pendingByTemplate ?? null;
+    const pendingSameTemplate = Math.max(0, Number(pendingByTemplate?.get(tplId) ?? 0));
+    const shouldKeepActiveTemplate =
+      lastTpl !== null &&
+      pendingByTemplate instanceof Map &&
+      Math.max(0, Number(pendingByTemplate.get(lastTpl) ?? 0)) > 0;
 
     if (lastTpl !== null && lastTpl === tplId) {
       const currentStreakRaw = streakByKey.get(cfg.key)?.streakCount ?? 1;
       const currentStreak = Math.max(1, Number(currentStreakRaw));
-      const mult =
-        currentStreak < cfg.minChain
-          ? 1
-          : cfg.minChain / Math.max(currentStreak, cfg.minChain);
-      bonus += baseMatch * levelFactor * mult;
+      const chainProgress = Math.min(2.8, 1 + (currentStreak - 1) * 0.35);
+      score += effectiveGroupingMatchWeight * levelFactor * chainProgress;
+      if (pendingSameTemplate > 0) {
+        score += effectiveGroupingMatchWeight * levelFactor * Math.min(2.2, 0.7 + pendingSameTemplate * 0.35);
+      }
+    } else if (lastTpl !== null && shouldKeepActiveTemplate) {
+      score -= effectiveGroupingMatchWeight * levelFactor * 1.35;
     }
 
     if (lastTemplateByKey.has(cfg.key)) {
-      bonus += baseActive * levelFactor;
+      score += effectiveGroupingActiveSpaceWeight * levelFactor;
     }
 
-    return Math.round(Number.isFinite(bonus) ? bonus : 0);
+    return Math.round(Number.isFinite(score) ? score : 0);
   };
 
   const rememberSpaceTemplate = (spaceId: number | null | undefined, tplId: number | null | undefined) => {
@@ -2244,11 +2271,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return true;
   });
   
-  // ✅ protección global: el “gap fill” no puede intentarse indefinidamente
-  // (si se alcanza el límite, se sigue el solver normal)
-  let gapFillTries = 0;
-  const MAX_GAP_FILL_TRIES = 80;
-
 
   const plannedByTaskId = new Map<number, any>();
   const rebuildPlannedByTask = () => {
@@ -2633,6 +2655,21 @@ export function generatePlan(input: EngineInput): EngineOutput {
       continue;
     }
 
+    const pendingTemplateCountsByGroupingKey = new Map<string, Map<number, number>>();
+    for (const pendingTask of pendingNonMeal as any[]) {
+      const pendingSpace = getSpaceId(pendingTask);
+      if (!pendingSpace) continue;
+      const pendingCfg = getGroupingConfigForSpace(pendingSpace);
+      if (!pendingCfg) continue;
+      const pendingZoneId = getZoneId(pendingTask) ?? getZoneIdForSpace(pendingSpace);
+      if (!isGroupingEnabledForZone(pendingZoneId)) continue;
+      const pendingTpl = Number(pendingTask?.templateId ?? 0);
+      if (!Number.isFinite(pendingTpl) || pendingTpl <= 0) continue;
+      const byTpl = pendingTemplateCountsByGroupingKey.get(pendingCfg.key) ?? new Map<number, number>();
+      byTpl.set(pendingTpl, (byTpl.get(pendingTpl) ?? 0) + 1);
+      pendingTemplateCountsByGroupingKey.set(pendingCfg.key, byTpl);
+    }
+
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
     const scoreTaskForSelection = (t: any) => {
       const space = getSpaceId(t) ?? 0;
@@ -2665,7 +2702,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
       // 4) Agrupar tareas iguales en el mismo contenedor de agrupación + contenedor activo
       if (optGroupingLevel > 0 && space) {
         const gcfg = getGroupingConfigForSpace(space);
-        if (gcfg) {
+        const groupingZoneId = zone ?? getZoneIdForSpace(space);
+        if (gcfg && isGroupingEnabledForZone(groupingZoneId)) {
           const lastTpl = lastTemplateByKey.get(gcfg.key) ?? null;
           if (lastTpl !== null && lastTpl === tpl) s += effectiveGroupingMatchWeight;
           if (lastTemplateByKey.has(gcfg.key)) s += effectiveGroupingActiveSpaceWeight;
@@ -2674,7 +2712,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // 4.b) Minimizar cambios por espacio/zona (config local)
       if (space) {
-        s += scoreMinimizeChangesBonus(space, tpl);
+        const gcfg = getGroupingConfigForSpace(space);
+        const pendingByTemplate = gcfg ? pendingTemplateCountsByGroupingKey.get(gcfg.key) ?? null : null;
+        s += scoreMinimizeChangesBonus(space, tpl, { pendingByTemplate });
       }
 
       // 5) Mantener concursante en el mismo plató (heurística blanda)
@@ -2710,54 +2750,47 @@ export function generatePlan(input: EngineInput): EngineOutput {
       optMainZoneId &&
       lastEndByZone.has(optMainZoneId)
     ) {
-      // ✅ cap global: si ya hemos intentado demasiadas veces, desactivamos gap-fill
-      if (gapFillTries >= MAX_GAP_FILL_TRIES) {
-        // no hacemos continue; dejamos que siga el flujo normal (ready.sort + scheduleNonMealTask)
-      } else {
-        gapFillTries++;
+      const gap = getMainZoneGap();
+      if (gap) {
+        const gapCandidates = ready.filter((t) => {
+          const zid = getZoneId(t);
+          const sid = getSpaceId(t);
+          return zid === optMainZoneId && sid === gap.spaceId;
+        });
 
-        const gap = getMainZoneGap();
-        if (gap) {
-          const gapCandidates = ready.filter((t) => {
-            const zid = getZoneId(t);
-            const sid = getSpaceId(t);
-            return zid === optMainZoneId && sid === gap.spaceId;
-          });
+        // Orden estable: usa el MISMO scoring global que ready.sort
+        gapCandidates.sort((a, b) => {
+          const sa = scoreTaskForSelection(a);
+          const sb = scoreTaskForSelection(b);
 
-          // Orden estable: usa el MISMO scoring global que ready.sort
-          gapCandidates.sort((a, b) => {
-            const sa = scoreTaskForSelection(a);
-            const sb = scoreTaskForSelection(b);
+          const oa = originalOrder.get(Number(a?.id)) ?? 0;
+          const ob = originalOrder.get(Number(b?.id)) ?? 0;
 
-            const oa = originalOrder.get(Number(a?.id)) ?? 0;
-            const ob = originalOrder.get(Number(b?.id)) ?? 0;
+          if (sb !== sa) return sb - sa;
+          return oa - ob;
+        });
 
-            if (sb !== sa) return sb - sa;
-            return oa - ob;
-          });
+        let placedInGap = false;
+        for (const cand of gapCandidates) {
+          const ok = tryPlaceTaskInExactWindow(
+            cand,
+            gap.spaceId,
+            gap.zoneId,
+            gap.gapStart,
+            gap.gapEnd,
+          );
+          if (!ok) continue;
 
-          let placedInGap = false;
-          for (const cand of gapCandidates) {
-            const ok = tryPlaceTaskInExactWindow(
-              cand,
-              gap.spaceId,
-              gap.zoneId,
-              gap.gapStart,
-              gap.gapEnd,
-            );
-            if (!ok) continue;
+          const idx = pendingNonMeal.findIndex(
+            (x) => Number(x?.id) === Number(cand?.id),
+          );
+          if (idx >= 0) pendingNonMeal.splice(idx, 1);
 
-            const idx = pendingNonMeal.findIndex(
-              (x) => Number(x?.id) === Number(cand?.id),
-            );
-            if (idx >= 0) pendingNonMeal.splice(idx, 1);
-
-            placedInGap = true;
-            break;
-          }
-
-          if (placedInGap) continue; // vuelve al while (recalcula ready/score)
+          placedInGap = true;
+          break;
         }
+
+        if (placedInGap) continue; // vuelve al while (recalcula ready/score)
       }
     }
 
@@ -2805,22 +2838,32 @@ export function generatePlan(input: EngineInput): EngineOutput {
         const gB = bSpace ? getGroupingConfigForSpace(bSpace) : null;
         const lastA = gA ? (lastTemplateByKey.get(gA.key) ?? null) : null;
         const lastB = gB ? (lastTemplateByKey.get(gB.key) ?? null) : null;
+        const zoneA = aZone ?? getZoneIdForSpace(aSpace);
+        const zoneB = bZone ?? getZoneIdForSpace(bSpace);
 
-        if (gA && lastA !== null && lastA === aTpl)
+        if (gA && isGroupingEnabledForZone(zoneA) && lastA !== null && lastA === aTpl)
           sa += effectiveGroupingMatchWeight;
-        if (gB && lastB !== null && lastB === bTpl)
+        if (gB && isGroupingEnabledForZone(zoneB) && lastB !== null && lastB === bTpl)
           sb += effectiveGroupingMatchWeight;
 
         // pequeño premio por seguir trabajando en un contenedor “ya activo”
-        if (gA && lastTemplateByKey.has(gA.key))
+        if (gA && isGroupingEnabledForZone(zoneA) && lastTemplateByKey.has(gA.key))
           sa += effectiveGroupingActiveSpaceWeight;
-        if (gB && lastTemplateByKey.has(gB.key))
+        if (gB && isGroupingEnabledForZone(zoneB) && lastTemplateByKey.has(gB.key))
           sb += effectiveGroupingActiveSpaceWeight;
       }
 
       // 4.b) Minimizar cambios por espacio/zona (config local)
-      if (aSpace) sa += scoreMinimizeChangesBonus(aSpace, aTpl);
-      if (bSpace) sb += scoreMinimizeChangesBonus(bSpace, bTpl);
+      if (aSpace) {
+        const gA = getGroupingConfigForSpace(aSpace);
+        const pendingA = gA ? pendingTemplateCountsByGroupingKey.get(gA.key) ?? null : null;
+        sa += scoreMinimizeChangesBonus(aSpace, aTpl, { pendingByTemplate: pendingA });
+      }
+      if (bSpace) {
+        const gB = getGroupingConfigForSpace(bSpace);
+        const pendingB = gB ? pendingTemplateCountsByGroupingKey.get(gB.key) ?? null : null;
+        sb += scoreMinimizeChangesBonus(bSpace, bTpl, { pendingByTemplate: pendingB });
+      }
 
       // 5) Mantener concursante en el mismo plató (solo bonus, sin penalización)
       if (effectiveContestantStayInZoneWeight > 0) {
