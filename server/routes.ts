@@ -1928,10 +1928,16 @@ function mapDeleteError(err: any, fallback: string) {
 
       // new schema heuristic values (without breaking legacy payloads)
       if (input.heuristics?.mainZoneFinishEarly || input.heuristics?.mainZoneKeepBusy) {
-        const best = hzMainFinishEarly.basicLevel >= hzMainKeepBusy.basicLevel ? hzMainFinishEarly : hzMainKeepBusy;
-        patch.main_zone_priority_level = best.basicLevel;
-        patch.main_zone_priority_advanced_value = Math.max(hzMainFinishEarly.advancedValue, hzMainKeepBusy.advancedValue);
-        patch.prioritize_main_zone = best.basicLevel > 0;
+        patch.main_zone_finish_early_level = hzMainFinishEarly.basicLevel;
+        patch.main_zone_finish_early_advanced_value = hzMainFinishEarly.advancedValue;
+        patch.main_zone_keep_busy_level = hzMainKeepBusy.basicLevel;
+        patch.main_zone_keep_busy_advanced_value = hzMainKeepBusy.advancedValue;
+
+        const legacyLevel = Math.max(hzMainFinishEarly.basicLevel, hzMainKeepBusy.basicLevel);
+        const legacyAdvanced = Math.max(hzMainFinishEarly.advancedValue, hzMainKeepBusy.advancedValue);
+        patch.main_zone_priority_level = legacyLevel;
+        patch.main_zone_priority_advanced_value = legacyAdvanced;
+        patch.prioritize_main_zone = legacyLevel > 0;
       } else if (input.mainZonePriorityLevel !== undefined) {
         patch.main_zone_priority_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.mainZonePriorityLevel)))] ?? 0;
       }
@@ -3020,6 +3026,8 @@ function mapDeleteError(err: any, fallback: string) {
             p.contestant_meal_duration_minutes ?? p.contestantMealDurationMinutes ?? 75,
           contestantMealMaxSimultaneous:
             p.contestant_meal_max_simultaneous ?? p.contestantMealMaxSimultaneous ?? 10,
+          spaceMealBreakMinutes:
+            p.space_meal_break_minutes ?? p.spaceMealBreakMinutes ?? null,
 
           camerasAvailable: p.cameras_available ?? p.camerasAvailable ?? 0,
 

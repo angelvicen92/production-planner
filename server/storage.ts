@@ -203,59 +203,25 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end")
+      .select("id, meal_start, meal_end, space_meal_break_minutes")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
 
-    const deriveMealBreakDuration = async (): Promise<number> => {
-      const { data: settings, error: settingsErr } = await supabaseAdmin
-        .from("program_settings")
-        .select("meal_task_template_name, space_meal_break_minutes")
-        .eq("id", 1)
-        .maybeSingle();
-      if (settingsErr) throw settingsErr;
+    const { data: settings, error: settingsErr } = await supabaseAdmin
+      .from("program_settings")
+      .select("space_meal_break_minutes")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settingsErr) throw settingsErr;
 
-      const mealTemplateName = String((settings as any)?.meal_task_template_name ?? "").trim();
-      if (mealTemplateName) {
-        const { data: tplByName, error: tplByNameErr } = await supabaseAdmin
-          .from("task_templates")
-          .select("default_duration")
-          .ilike("name", mealTemplateName)
-          .order("id", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        if (tplByNameErr) throw tplByNameErr;
-        const durationByName = Number((tplByName as any)?.default_duration ?? NaN);
-        if (Number.isFinite(durationByName) && durationByName > 0) return durationByName;
-      }
-
-      const { data: mealTaskRow, error: mealTaskRowErr } = await supabaseAdmin
-        .from("daily_tasks")
-        .select("duration_override, template_id, template:task_templates(name, default_duration)")
-        .eq("plan_id", planId)
-        .eq("is_manual_block", false)
-        .order("id", { ascending: true });
-      if (mealTaskRowErr) throw mealTaskRowErr;
-
-      const mealNameNorm = mealTemplateName.toLowerCase();
-      const candidateDurations = (mealTaskRow ?? [])
-        .filter((row: any) => mealNameNorm
-          && String(row?.template?.name ?? "").trim().toLowerCase() === mealNameNorm)
-        .map((row: any) => {
-          const durationOverride = Number(row?.duration_override ?? NaN);
-          if (Number.isFinite(durationOverride) && durationOverride > 0) return durationOverride;
-          const defaultDuration = Number(row?.template?.default_duration ?? NaN);
-          return Number.isFinite(defaultDuration) && defaultDuration > 0 ? defaultDuration : NaN;
-        })
-        .filter((d: number) => Number.isFinite(d) && d > 0);
-      if (candidateDurations.length > 0) return Math.round(candidateDurations[0]);
-
-      const fallback = Number((settings as any)?.space_meal_break_minutes ?? 45);
-      return Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 45;
-    };
-
-    const mealBreakDuration = await deriveMealBreakDuration();
+    const planBreakDuration = Number((plan as any)?.space_meal_break_minutes ?? NaN);
+    const programBreakDuration = Number((settings as any)?.space_meal_break_minutes ?? NaN);
+    const mealBreakDuration = Number.isFinite(planBreakDuration) && planBreakDuration > 0
+      ? Math.round(planBreakDuration)
+      : Number.isFinite(programBreakDuration) && programBreakDuration > 0
+        ? Math.round(programBreakDuration)
+        : 45;
     const spaceDuration = Math.max(1, mealBreakDuration);
     const itinerantDuration = Math.max(1, mealBreakDuration);
 
@@ -435,7 +401,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, van_capacity, weight_arrival_departure_grouping",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, main_zone_finish_early_level, main_zone_finish_early_advanced_value, main_zone_keep_busy_level, main_zone_keep_busy_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, van_capacity, weight_arrival_departure_grouping",
       )
       .eq("id", 1)
       .single();
@@ -459,19 +425,32 @@ export class SupabaseStorage implements IStorage {
     );
     const contestantTotalSpanLevel = 0;
 
+    const legacyMainZoneLevel = mainZonePriorityLevel;
+    const legacyMainZoneAdvanced = clampAdvancedValue(
+      (data as any)?.main_zone_priority_advanced_value,
+    );
+    const finishEarlyLevelRaw = (data as any)?.main_zone_finish_early_level;
+    const finishEarlyAdvancedRaw = (data as any)?.main_zone_finish_early_advanced_value;
+    const keepBusyLevelRaw = (data as any)?.main_zone_keep_busy_level;
+    const keepBusyAdvancedRaw = (data as any)?.main_zone_keep_busy_advanced_value;
+
     const heuristics = {
       mainZoneFinishEarly: normalizeHeuristicSetting({
-        basicLevel: mainZonePriorityLevel,
-        advancedValue: clampAdvancedValue(
-          (data as any)?.main_zone_priority_advanced_value,
+        basicLevel: clampBasicLevel(
+          finishEarlyLevelRaw == null ? legacyMainZoneLevel : finishEarlyLevelRaw,
         ),
-      }, mainZonePriorityLevel),
+        advancedValue: clampAdvancedValue(
+          finishEarlyAdvancedRaw == null ? legacyMainZoneAdvanced : finishEarlyAdvancedRaw,
+        ),
+      }, legacyMainZoneLevel),
       mainZoneKeepBusy: normalizeHeuristicSetting({
-        basicLevel: mainZonePriorityLevel,
-        advancedValue: clampAdvancedValue(
-          (data as any)?.main_zone_priority_advanced_value,
+        basicLevel: clampBasicLevel(
+          keepBusyLevelRaw == null ? legacyMainZoneLevel : keepBusyLevelRaw,
         ),
-      }, mainZonePriorityLevel),
+        advancedValue: clampAdvancedValue(
+          keepBusyAdvancedRaw == null ? legacyMainZoneAdvanced : keepBusyAdvancedRaw,
+        ),
+      }, legacyMainZoneLevel),
       contestantCompact: normalizeHeuristicSetting({
         basicLevel: contestantCompactLevel,
         advancedValue: clampAdvancedValue(
@@ -1992,6 +1971,8 @@ export class SupabaseStorage implements IStorage {
     if (typeof patch.contestantMealMaxSimultaneous === "number")
       safe.contestant_meal_max_simultaneous =
         patch.contestantMealMaxSimultaneous;
+    if (Object.prototype.hasOwnProperty.call(patch, "spaceMealBreakMinutes"))
+      safe.space_meal_break_minutes = patch.spaceMealBreakMinutes == null ? null : Number(patch.spaceMealBreakMinutes);
 
     const { data, error } = await supabaseAdmin
       .from("plans")

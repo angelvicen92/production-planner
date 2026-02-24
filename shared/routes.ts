@@ -35,6 +35,7 @@ export const updatePlanSchema = z
 
     contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
     contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
+    spaceMealBreakMinutes: z.number().int().min(1).max(240).nullable().optional(),
 
     camerasAvailable: z.number().int().min(0).max(20).optional(),
   })

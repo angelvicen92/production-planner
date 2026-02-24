@@ -18,6 +18,7 @@ type ProgramSettings = {
   mealEnd: string;
   contestantMealDurationMinutes: number;
   contestantMealMaxSimultaneous: number;
+  spaceMealBreakMinutes: number;
   mealTaskTemplateName: string;
   clockMode: "auto" | "manual";
   simulatedTime: string | null;
@@ -168,6 +169,26 @@ export function GeneralProgramSettings() {
               }
             />
           </div>
+
+          <div>
+            <Label>Duración descanso comida platós/equipos (min, default)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={240}
+              value={draft?.spaceMealBreakMinutes ?? 45}
+              onChange={(e) =>
+                setDraft((p) =>
+                  p
+                    ? {
+                        ...p,
+                        spaceMealBreakMinutes: Number(e.target.value),
+                      }
+                    : p,
+                )
+              }
+            />
+          </div>
           <div className="col-span-2 space-y-2 rounded-lg border p-3">
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -262,6 +283,7 @@ export function GeneralProgramSettings() {
                   draft.contestantMealDurationMinutes,
                 contestantMealMaxSimultaneous:
                   draft.contestantMealMaxSimultaneous,
+                spaceMealBreakMinutes: draft.spaceMealBreakMinutes,
                 mealTaskTemplateName: draft.mealTaskTemplateName,
                 clockMode: draft.clockMode,
                 simulatedTime: draft.clockMode === "manual" ? (draft.simulatedTime ?? "09:00") : null,

@@ -1124,6 +1124,7 @@ ${reasonMessage}` : message,
     mealEnd: "",
     contestantMealDurationMinutes: 75,
     contestantMealMaxSimultaneous: 10,
+    spaceMealBreakMinutes: "",
     camerasAvailable: 0,
   });
 
@@ -1150,6 +1151,7 @@ ${reasonMessage}` : message,
       mealEnd: plan.mealEnd || "",
       contestantMealDurationMinutes: plan.contestantMealDurationMinutes ?? 75,
       contestantMealMaxSimultaneous: plan.contestantMealMaxSimultaneous ?? 10,
+      spaceMealBreakMinutes: plan.spaceMealBreakMinutes == null ? "" : String(plan.spaceMealBreakMinutes),
       camerasAvailable: plan.camerasAvailable ?? 0,
     });
   }, [editOpen, plan]);
@@ -1459,6 +1461,7 @@ ${reasonMessage}` : message,
       mealEnd: plan.mealEnd || "",
       contestantMealDurationMinutes: plan.contestantMealDurationMinutes ?? 75,
       contestantMealMaxSimultaneous: plan.contestantMealMaxSimultaneous ?? 10,
+      spaceMealBreakMinutes: plan.spaceMealBreakMinutes == null ? "" : String(plan.spaceMealBreakMinutes),
       camerasAvailable: plan.camerasAvailable ?? 0,
     });
     setEditOpen(true);
@@ -4239,6 +4242,23 @@ ${reasonMessage}` : message,
                   }
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label>Duración descanso comida platós/equipos (min)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={240}
+                  placeholder="(usa default)"
+                  value={edit.spaceMealBreakMinutes}
+                  onChange={(e) =>
+                    setEdit((p) => ({
+                      ...p,
+                      spaceMealBreakMinutes: e.target.value,
+                    }))
+                  }
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -4248,7 +4268,10 @@ ${reasonMessage}` : message,
               <Button
                 onClick={() => {
                   updatePlan.mutate(
-                    { id, patch: edit },
+                    { id, patch: {
+                      ...edit,
+                      spaceMealBreakMinutes: String(edit.spaceMealBreakMinutes).trim() === "" ? null : Number(edit.spaceMealBreakMinutes),
+                    } },
                     {
                       onSuccess: () => {
                         toast({ title: "Plan updated" });
