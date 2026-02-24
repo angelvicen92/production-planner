@@ -167,8 +167,11 @@ export interface EngineInput {
   optimizerContestantCompactLevel?: number;
   optimizerContestantStayInZoneLevel?: number;
 
-  // Configuración final por espacio para minimizar cambios de actividad
-  // Key: spaceId -> { level (1..10), minChain (1..50) }
+  // Configuración final por espacio hoja para agrupación (resuelta por contenedor)
+  // Key: leaf spaceId -> { key: S:<id>|Z:<id>, level (1..10), minChain (1..50) }
+  groupingBySpaceId?: Record<number, { key: string; level: number; minChain: number }>;
+
+  // Compat legacy
   minimizeChangesBySpace?: Record<number, { level: number; minChain: number }>;
 
   optimizerWeights?: Partial<Record<

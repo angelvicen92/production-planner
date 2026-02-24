@@ -1037,36 +1037,38 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
   const effectiveContestantTotalSpanWeight = contestantTotalSpanWeights[Math.round(weightFromInput("contestantTotalSpan", 0))] ?? 0;
 
-  // “memoria” simple para intentar hacer bloques por espacio+tipo
-  const lastTemplateBySpace = new Map<number, number>();
-  const streakBySpace = new Map<number, { templateId: number; streakCount: number }>();
-  const minimizeChangesBySpaceInput =
-    ((input as any)?.minimizeChangesBySpace ?? {}) as Record<
+  // “memoria” por clave de contenedor de agrupación (espacio hoja, ancestro o zona)
+  const lastTemplateByKey = new Map<string, number>();
+  const streakByKey = new Map<string, { templateId: number; streakCount: number }>();
+  const groupingBySpaceIdInput =
+    (((input as any)?.groupingBySpaceId ?? (input as any)?.minimizeChangesBySpace ?? {}) as Record<
       number,
-      { level: number; minChain: number }
-    >;
+      { key?: string; level: number; minChain: number }
+    >);
 
-  const getMinimizeConfigForSpace = (spaceId: number | null | undefined) => {
+  const getGroupingConfigForSpace = (spaceId: number | null | undefined) => {
     if (!spaceId || !Number.isFinite(Number(spaceId))) return null;
-    const raw = minimizeChangesBySpaceInput[Number(spaceId)] ?? null;
+    const raw = groupingBySpaceIdInput[Number(spaceId)] ?? null;
     if (!raw || typeof raw !== "object") return null;
     const level = Math.max(0, Math.min(10, Math.floor(Number((raw as any).level ?? 0))));
     const minChain = Math.max(1, Math.min(50, Math.floor(Number((raw as any).minChain ?? 4))));
     if (level <= 0) return null;
-    return { level, minChain };
+    const keyRaw = String((raw as any).key ?? `S:${Number(spaceId)}`).trim();
+    const key = keyRaw || `S:${Number(spaceId)}`;
+    return { key, level, minChain };
   };
 
   const scoreMinimizeChangesBonus = (spaceId: number, tplId: number) => {
-    const cfg = getMinimizeConfigForSpace(spaceId);
+    const cfg = getGroupingConfigForSpace(spaceId);
     if (!cfg) return 0;
-    const lastTpl = lastTemplateBySpace.get(spaceId) ?? null;
+    const lastTpl = lastTemplateByKey.get(cfg.key) ?? null;
     const levelFactor = cfg.level / 10;
     let bonus = 0;
     const baseMatch = effectiveGroupingMatchWeight > 0 ? effectiveGroupingMatchWeight : 3000;
     const baseActive = effectiveGroupingActiveSpaceWeight > 0 ? effectiveGroupingActiveSpaceWeight : 240;
 
     if (lastTpl !== null && lastTpl === tplId) {
-      const currentStreakRaw = streakBySpace.get(spaceId)?.streakCount ?? 1;
+      const currentStreakRaw = streakByKey.get(cfg.key)?.streakCount ?? 1;
       const currentStreak = Math.max(1, Number(currentStreakRaw));
       const mult =
         currentStreak < cfg.minChain
@@ -1075,7 +1077,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       bonus += baseMatch * levelFactor * mult;
     }
 
-    if (lastTemplateBySpace.has(spaceId)) {
+    if (lastTemplateByKey.has(cfg.key)) {
       bonus += baseActive * levelFactor;
     }
 
@@ -1087,14 +1089,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const sid = Number(spaceId);
     const tid = Number(tplId);
     if (!Number.isFinite(sid) || sid <= 0 || !Number.isFinite(tid) || tid <= 0) return;
+    const cfg = getGroupingConfigForSpace(sid);
+    if (!cfg) return;
 
-    const prev = streakBySpace.get(sid);
+    const prev = streakByKey.get(cfg.key);
     if (prev && prev.templateId === tid) {
-      streakBySpace.set(sid, { templateId: tid, streakCount: prev.streakCount + 1 });
+      streakByKey.set(cfg.key, { templateId: tid, streakCount: prev.streakCount + 1 });
     } else {
-      streakBySpace.set(sid, { templateId: tid, streakCount: 1 });
+      streakByKey.set(cfg.key, { templateId: tid, streakCount: 1 });
     }
-    lastTemplateBySpace.set(sid, tid);
+    lastTemplateByKey.set(cfg.key, tid);
   };
 
   // ✅ memoria para compactar por zona/concursante
@@ -2279,12 +2283,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (cId && lastEndByContestant.has(cId)) s += effectiveContestantCompactWeight;
       }
 
-      // 4) Agrupar tareas iguales en el mismo espacio + espacio activo
-      if (optGroupingLevel > 0) {
-        const lastTpl = space ? (lastTemplateBySpace.get(space) ?? null) : null;
-
-        if (space && lastTpl !== null && lastTpl === tpl) s += effectiveGroupingMatchWeight;
-        if (space && lastTemplateBySpace.has(space)) s += effectiveGroupingActiveSpaceWeight;
+      // 4) Agrupar tareas iguales en el mismo contenedor de agrupación + contenedor activo
+      if (optGroupingLevel > 0 && space) {
+        const gcfg = getGroupingConfigForSpace(space);
+        if (gcfg) {
+          const lastTpl = lastTemplateByKey.get(gcfg.key) ?? null;
+          if (lastTpl !== null && lastTpl === tpl) s += effectiveGroupingMatchWeight;
+          if (lastTemplateByKey.has(gcfg.key)) s += effectiveGroupingActiveSpaceWeight;
+        }
       }
 
       // 4.b) Minimizar cambios por espacio/zona (config local)
@@ -2414,20 +2420,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (bC && lastEndByContestant.has(bC)) sb += effectiveContestantCompactWeight;
       }
 
-      // 4) Agrupar tareas iguales dentro del mismo espacio (según nivel)
+      // 4) Agrupar tareas iguales dentro del mismo contenedor de agrupación (según nivel)
       if (optGroupingLevel > 0) {
-        const lastA = aSpace ? (lastTemplateBySpace.get(aSpace) ?? null) : null;
-        const lastB = bSpace ? (lastTemplateBySpace.get(bSpace) ?? null) : null;
+        const gA = aSpace ? getGroupingConfigForSpace(aSpace) : null;
+        const gB = bSpace ? getGroupingConfigForSpace(bSpace) : null;
+        const lastA = gA ? (lastTemplateByKey.get(gA.key) ?? null) : null;
+        const lastB = gB ? (lastTemplateByKey.get(gB.key) ?? null) : null;
 
-        if (aSpace && lastA !== null && lastA === aTpl)
+        if (gA && lastA !== null && lastA === aTpl)
           sa += effectiveGroupingMatchWeight;
-        if (bSpace && lastB !== null && lastB === bTpl)
+        if (gB && lastB !== null && lastB === bTpl)
           sb += effectiveGroupingMatchWeight;
 
-        // pequeño premio por seguir trabajando en un espacio “ya activo”
-        if (aSpace && lastTemplateBySpace.has(aSpace))
+        // pequeño premio por seguir trabajando en un contenedor “ya activo”
+        if (gA && lastTemplateByKey.has(gA.key))
           sa += effectiveGroupingActiveSpaceWeight;
-        if (bSpace && lastTemplateBySpace.has(bSpace))
+        if (gB && lastTemplateByKey.has(gB.key))
           sb += effectiveGroupingActiveSpaceWeight;
       }
 

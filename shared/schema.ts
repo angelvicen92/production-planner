@@ -104,6 +104,8 @@ export const zones = pgTable("zones", {
   mealEndPreferred: text("meal_end_preferred"),
   minimizeChangesLevel: integer("minimize_changes_level").notNull().default(0),
   minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
+  groupingLevel: integer("grouping_level").notNull().default(0),
+  groupingMinChain: integer("grouping_min_chain").notNull().default(4),
 });
 
 // 3. spaces
@@ -116,6 +118,11 @@ export const spaces = pgTable("spaces", {
   parentSpaceId: integer("parent_space_id").references((): any => spaces.id),
   minimizeChangesLevel: integer("minimize_changes_level").notNull().default(0),
   minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
+  groupingLevel: integer("grouping_level").notNull().default(0),
+  groupingMinChain: integer("grouping_min_chain").notNull().default(4),
+  groupingApplyToDescendants: boolean("grouping_apply_to_descendants")
+    .notNull()
+    .default(false),
 });
 
 // 4. resources

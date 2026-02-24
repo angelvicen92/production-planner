@@ -1253,15 +1253,16 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const [editingZoneId, setEditingZoneId] = useState<number | null>(null);
   const [editingZoneName, setEditingZoneName] = useState("");
   const [editingZoneColor, setEditingZoneColor] = useState<string>("");
-  const [editingZoneMinimizeLevel, setEditingZoneMinimizeLevel] = useState<number>(0);
-  const [editingZoneMinChain, setEditingZoneMinChain] = useState<number>(4);
+  const [editingZoneGroupingLevel, setEditingZoneGroupingLevel] = useState<number>(0);
+  const [editingZoneGroupingMinChain, setEditingZoneGroupingMinChain] = useState<number>(4);
 
   const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
   const [editingSpace, setEditingSpace] = useState<{
     name: string;
     priorityLevel: number;
-    minimizeChangesLevel: number;
-    minimizeChangesMinChain: number;
+    groupingLevel: number;
+    groupingMinChain: number;
+    groupingApplyToDescendants: boolean;
   } | null>(null);
 
   if (zonesLoading || spacesLoading) {
@@ -1286,8 +1287,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
   const allZones = ((zones || []) as any[]).map((z: any) => ({
     ...z,
-    minimizeChangesLevel: Number(z?.minimizeChangesLevel ?? z?.minimize_changes_level ?? 0),
-    minimizeChangesMinChain: Number(z?.minimizeChangesMinChain ?? z?.minimize_changes_min_chain ?? 4),
+    groupingLevel: Number(z?.groupingLevel ?? z?.grouping_level ?? z?.minimizeChangesLevel ?? z?.minimize_changes_level ?? 0),
+    groupingMinChain: Number(z?.groupingMinChain ?? z?.grouping_min_chain ?? z?.minimizeChangesMinChain ?? z?.minimize_changes_min_chain ?? 4),
   }));
   const allSpaces = ((spaces || []) as any[])
     .map((s: any) => {
@@ -1310,8 +1311,9 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         zoneId,
         parentSpaceId,
         priorityLevel,
-        minimizeChangesLevel: Number(s.minimizeChangesLevel ?? s.minimize_changes_level ?? 0),
-        minimizeChangesMinChain: Number(s.minimizeChangesMinChain ?? s.minimize_changes_min_chain ?? 4),
+        groupingLevel: Number(s.groupingLevel ?? s.grouping_level ?? s.minimizeChangesLevel ?? s.minimize_changes_level ?? 0),
+        groupingMinChain: Number(s.groupingMinChain ?? s.grouping_min_chain ?? s.minimizeChangesMinChain ?? s.minimize_changes_min_chain ?? 4),
+        groupingApplyToDescendants: Boolean(s.groupingApplyToDescendants ?? s.grouping_apply_to_descendants ?? false),
       };
     })
     // defensivo: si algo viene roto, mejor excluirlo que romper el árbol
@@ -1407,11 +1409,11 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 type="number"
                 min={0}
                 max={10}
-                title="Minimiza cambios de actividad en este espacio"
-                value={editingSpace?.minimizeChangesLevel ?? 0}
+                title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor"
+                value={editingSpace?.groupingLevel ?? 0}
                 onChange={(e) =>
                   setEditingSpace((p) =>
-                    p ? { ...p, minimizeChangesLevel: Number(e.target.value) } : p,
+                    p ? { ...p, groupingLevel: Number(e.target.value) } : p,
                   )
                 }
               />
@@ -1420,15 +1422,28 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 type="number"
                 min={1}
                 max={50}
-                title="Mínimo de encadenamientos antes de reducir bonus"
-                disabled={(editingSpace?.minimizeChangesLevel ?? 0) <= 0}
-                value={editingSpace?.minimizeChangesMinChain ?? 4}
+                title="Mínimo encadenamientos"
+                disabled={(editingSpace?.groupingLevel ?? 0) <= 0}
+                value={editingSpace?.groupingMinChain ?? 4}
                 onChange={(e) =>
                   setEditingSpace((p) =>
-                    p ? { ...p, minimizeChangesMinChain: Number(e.target.value) } : p,
+                    p ? { ...p, groupingMinChain: Number(e.target.value) } : p,
                   )
                 }
               />
+              <label className="flex items-center gap-2 text-xs text-muted-foreground" title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor">
+                <input
+                  type="checkbox"
+                  disabled={(editingSpace?.groupingLevel ?? 0) <= 0}
+                  checked={Boolean(editingSpace?.groupingApplyToDescendants ?? false)}
+                  onChange={(e) =>
+                    setEditingSpace((p) =>
+                      p ? { ...p, groupingApplyToDescendants: e.target.checked } : p,
+                    )
+                  }
+                />
+                Aplicar también a subespacios
+              </label>
               <Button
                 size="sm"
                 onClick={() => {
@@ -1438,8 +1453,9 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     patch: {
                       name: editingSpace.name,
                       priorityLevel: editingSpace.priorityLevel,
-                      minimizeChangesLevel: Math.max(0, Math.min(10, Math.floor(Number(editingSpace.minimizeChangesLevel) || 0))),
-                      minimizeChangesMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingSpace.minimizeChangesMinChain) || 4))),
+                      groupingLevel: Math.max(0, Math.min(10, Math.floor(Number(editingSpace.groupingLevel) || 0))),
+                      groupingMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingSpace.groupingMinChain) || 4))),
+                      groupingApplyToDescendants: Boolean(editingSpace.groupingApplyToDescendants),
                     },
                   });
                   setEditingSpaceId(null);
@@ -1465,8 +1481,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
               <div className="w-24 text-sm text-muted-foreground">
                 P{node.priorityLevel ?? 1}
               </div>
-              <div className="w-40 text-xs text-muted-foreground" title="Agrupa tareas iguales consecutivas antes de cambiar">
-                Min cambios: {Number(node.minimizeChangesLevel ?? 0)}/10
+              <div className="w-40 text-xs text-muted-foreground" title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor">
+                Agrupar tareas: {Number(node.groupingLevel ?? 0)}/10
               </div>
               <Button
                 size="sm"
@@ -1476,8 +1492,9 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   setEditingSpace({
                     name: node.name ?? "",
                     priorityLevel: Number(node.priorityLevel ?? 1),
-                    minimizeChangesLevel: Number(node.minimizeChangesLevel ?? 0),
-                    minimizeChangesMinChain: Number(node.minimizeChangesMinChain ?? 4),
+                    groupingLevel: Number(node.groupingLevel ?? 0),
+                    groupingMinChain: Number(node.groupingMinChain ?? 4),
+                    groupingApplyToDescendants: Boolean(node.groupingApplyToDescendants ?? false),
                   });
                 }}
               >
@@ -1703,19 +1720,19 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                               type="number"
                               min={0}
                               max={10}
-                              title="Agrupa tareas iguales consecutivas antes de cambiar"
-                              value={editingZoneMinimizeLevel}
-                              onChange={(e) => setEditingZoneMinimizeLevel(Number(e.target.value))}
+                              title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor"
+                              value={editingZoneGroupingLevel}
+                              onChange={(e) => setEditingZoneGroupingLevel(Number(e.target.value))}
                             />
                             <Input
                               className="w-28"
                               type="number"
                               min={1}
                               max={50}
-                              disabled={editingZoneMinimizeLevel <= 0}
+                              disabled={editingZoneGroupingLevel <= 0}
                               title="Mínimo de encadenamientos"
-                              value={editingZoneMinChain}
-                              onChange={(e) => setEditingZoneMinChain(Number(e.target.value))}
+                              value={editingZoneGroupingMinChain}
+                              onChange={(e) => setEditingZoneGroupingMinChain(Number(e.target.value))}
                             />
 
                             <Button
@@ -1726,8 +1743,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                   id: z.id,
                                   name: editingZoneName.trim(),
                                   uiColor: editingZoneColor || null,
-                                  minimizeChangesLevel: Math.max(0, Math.min(10, Math.floor(Number(editingZoneMinimizeLevel) || 0))),
-                                  minimizeChangesMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingZoneMinChain) || 4))),
+                                  groupingLevel: Math.max(0, Math.min(10, Math.floor(Number(editingZoneGroupingLevel) || 0))),
+                                  groupingMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingZoneGroupingMinChain) || 4))),
                                 });
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
@@ -1760,8 +1777,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                     (z as any).ui_color ??
                                     "",
                                 );
-                                setEditingZoneMinimizeLevel(Number((z as any).minimizeChangesLevel ?? (z as any).minimize_changes_level ?? 0));
-                                setEditingZoneMinChain(Number((z as any).minimizeChangesMinChain ?? (z as any).minimize_changes_min_chain ?? 4));
+                                setEditingZoneGroupingLevel(Number((z as any).groupingLevel ?? (z as any).grouping_level ?? (z as any).minimizeChangesLevel ?? (z as any).minimize_changes_level ?? 0));
+                                setEditingZoneGroupingMinChain(Number((z as any).groupingMinChain ?? (z as any).grouping_min_chain ?? (z as any).minimizeChangesMinChain ?? (z as any).minimize_changes_min_chain ?? 4));
                               }}
                             >
                               Edit

@@ -81,13 +81,15 @@ export async function buildEngineInput(
 
   const zoneIdBySpaceId: Record<number, number> = {};
   const zonePreferredMealWindow = new Map<number, { start: string | null; end: string | null }>();
-  const minimizeChangesBySpace: Record<number, { level: number; minChain: number }> = {};
+  const groupingBySpaceId: Record<number, { key: string; level: number; minChain: number }> = {};
   const clamp = (v: unknown, min: number, max: number, fallback: number) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return fallback;
     return Math.max(min, Math.min(max, Math.floor(n)));
   };
-  const zoneMinimizeMap = new Map<number, { level: number; minChain: number }>();
+  const zoneGroupingMap = new Map<number, { level: number; minChain: number }>();
+  const spaceMeta = new Map<number, { zoneId: number | null; parentSpaceId: number | null; groupingLevel: number; groupingMinChain: number; groupingApplyToDescendants: boolean }>();
+
   const zones = await storage.getZones();
   for (const z of (zones as any[]) ?? []) {
     const zid = Number((z as any)?.id);
@@ -96,32 +98,66 @@ export async function buildEngineInput(
     const end = ((z as any)?.meal_end_preferred ?? (z as any)?.mealEndPreferred ?? null) as string | null;
     zonePreferredMealWindow.set(zid, { start, end });
 
-    const zoneLevel = clamp((z as any)?.minimize_changes_level ?? (z as any)?.minimizeChangesLevel, 0, 10, 0);
-    const zoneMinChain = clamp((z as any)?.minimize_changes_min_chain ?? (z as any)?.minimizeChangesMinChain, 1, 50, 4);
-    zoneMinimizeMap.set(zid, { level: zoneLevel, minChain: zoneMinChain });
+    const zoneLevel = clamp((z as any)?.grouping_level ?? (z as any)?.groupingLevel ?? (z as any)?.minimize_changes_level ?? (z as any)?.minimizeChangesLevel, 0, 10, 0);
+    const zoneMinChain = clamp((z as any)?.grouping_min_chain ?? (z as any)?.groupingMinChain ?? (z as any)?.minimize_changes_min_chain ?? (z as any)?.minimizeChangesMinChain, 1, 50, 4);
+    zoneGroupingMap.set(zid, { level: zoneLevel, minChain: zoneMinChain });
   }
+
   for (const s of (allSpaces as any[]) ?? []) {
     const sid = Number((s as any)?.id);
+    if (!Number.isFinite(sid) || sid <= 0) continue;
+
     const zid = Number((s as any)?.zone_id ?? (s as any)?.zoneId ?? NaN);
-    if (Number.isFinite(sid) && sid > 0 && Number.isFinite(zid) && zid > 0) {
-      zoneIdBySpaceId[sid] = zid;
+    const parentRaw = (s as any)?.parent_space_id ?? (s as any)?.parentSpaceId ?? null;
+    const parentIdNum = Number(parentRaw);
 
-      const spaceLevel = clamp((s as any)?.minimize_changes_level ?? (s as any)?.minimizeChangesLevel, 0, 10, 0);
-      const spaceMinChain = clamp((s as any)?.minimize_changes_min_chain ?? (s as any)?.minimizeChangesMinChain, 1, 50, 4);
+    const zoneId = Number.isFinite(zid) && zid > 0 ? zid : null;
+    if (zoneId) zoneIdBySpaceId[sid] = zoneId;
 
-      if (spaceLevel > 0) {
-        minimizeChangesBySpace[sid] = { level: spaceLevel, minChain: spaceMinChain };
-      } else {
-        const zoneCfg = zoneMinimizeMap.get(zid);
-        if (zoneCfg && zoneCfg.level > 0) {
-          minimizeChangesBySpace[sid] = {
-            level: clamp(zoneCfg.level, 0, 10, 0),
-            minChain: clamp(zoneCfg.minChain, 1, 50, 4),
-          };
-        }
+    spaceMeta.set(sid, {
+      zoneId,
+      parentSpaceId: Number.isFinite(parentIdNum) && parentIdNum > 0 ? parentIdNum : null,
+      groupingLevel: clamp((s as any)?.grouping_level ?? (s as any)?.groupingLevel ?? (s as any)?.minimize_changes_level ?? (s as any)?.minimizeChangesLevel, 0, 10, 0),
+      groupingMinChain: clamp((s as any)?.grouping_min_chain ?? (s as any)?.groupingMinChain ?? (s as any)?.minimize_changes_min_chain ?? (s as any)?.minimizeChangesMinChain, 1, 50, 4),
+      groupingApplyToDescendants: Boolean((s as any)?.grouping_apply_to_descendants ?? (s as any)?.groupingApplyToDescendants ?? false),
+    });
+  }
+
+  const resolveGroupingForSpace = (spaceId: number): { key: string; level: number; minChain: number } | null => {
+    const self = spaceMeta.get(spaceId);
+    if (!self) return null;
+
+    if (self.groupingLevel > 0) {
+      return { key: `S:${spaceId}`, level: self.groupingLevel, minChain: self.groupingMinChain };
+    }
+
+    let cursor = self.parentSpaceId;
+    let hops = 0;
+    while (cursor && hops < 30) {
+      hops += 1;
+      const anc = spaceMeta.get(cursor);
+      if (!anc) break;
+      if (anc.groupingLevel > 0 && anc.groupingApplyToDescendants) {
+        return { key: `S:${cursor}`, level: anc.groupingLevel, minChain: anc.groupingMinChain };
+      }
+      cursor = anc.parentSpaceId;
+    }
+
+    if (self.zoneId) {
+      const zcfg = zoneGroupingMap.get(self.zoneId);
+      if (zcfg && zcfg.level > 0) {
+        return { key: `Z:${self.zoneId}`, level: zcfg.level, minChain: zcfg.minChain };
       }
     }
+
+    return null;
+  };
+
+  for (const sid of spaceMeta.keys()) {
+    const cfg = resolveGroupingForSpace(sid);
+    if (cfg) groupingBySpaceId[sid] = cfg;
   }
+
 
   const zoneResourceTypeRequirements =
     (await storage.getZoneResourceTypeRequirementsForPlan(planId)) ?? {};
@@ -381,7 +417,8 @@ export async function buildEngineInput(
     spaceResourceAssignments,
     spaceParentById,
     spaceNameById,
-    minimizeChangesBySpace,
+    groupingBySpaceId,
+    minimizeChangesBySpace: Object.fromEntries(Object.entries(groupingBySpaceId).map(([k, v]) => [Number(k), { level: v.level, minChain: v.minChain }])),
     zoneResourceTypeRequirements,
     spaceResourceTypeRequirements,
         planResourceItems,

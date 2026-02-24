@@ -1048,6 +1048,8 @@ export const api = {
             .optional(),
           minimizeChangesLevel: z.number().int().min(0).max(10).optional(),
           minimizeChangesMinChain: z.number().int().min(1).max(50).optional(),
+          groupingLevel: z.union([z.number(), z.string()]).optional(),
+          groupingMinChain: z.union([z.number(), z.string()]).optional(),
         })
         .strict(),
       responses: {
@@ -1180,6 +1182,9 @@ export const api = {
           abbrev: z.string().max(32).nullable().optional(),
           minimizeChangesLevel: z.number().int().min(0).max(10).optional(),
           minimizeChangesMinChain: z.number().int().min(1).max(50).optional(),
+          groupingLevel: z.union([z.number(), z.string()]).optional(),
+          groupingMinChain: z.union([z.number(), z.string()]).optional(),
+          groupingApplyToDescendants: z.union([z.boolean(), z.number(), z.string()]).optional(),
         })
         .strict(),
       responses: {

@@ -73,7 +73,7 @@ export interface IStorage {
   // Zones (Platós)
   getZones(): Promise<any[]>;
   createZone(input: { name: string }): Promise<any>;
-  updateZone(id: number, input: { name: string; uiColor?: string | null; minimizeChangesLevel?: number; minimizeChangesMinChain?: number }): Promise<any>;
+  updateZone(id: number, input: { name: string; uiColor?: string | null; minimizeChangesLevel?: number; minimizeChangesMinChain?: number; groupingLevel?: unknown; groupingMinChain?: unknown }): Promise<any>;
 
   // Spaces (hierarchy)
   getSpaces(): Promise<any[]>;
@@ -92,6 +92,8 @@ export interface IStorage {
       parentSpaceId?: number | null;
       minimizeChangesLevel?: number;
       minimizeChangesMinChain?: number;
+      groupingLevel?: unknown;
+      groupingMinChain?: unknown;
     },
   ): Promise<any>;
 
@@ -1339,6 +1341,8 @@ export class SupabaseStorage implements IStorage {
       uiColor?: string | null;
       minimizeChangesLevel?: number;
       minimizeChangesMinChain?: number;
+      groupingLevel?: unknown;
+      groupingMinChain?: unknown;
     },
   ) {
     const clamp = (v: unknown, min: number, max: number, fallback: number) => {
@@ -1356,6 +1360,12 @@ export class SupabaseStorage implements IStorage {
     }
     if (Object.prototype.hasOwnProperty.call(input, "minimizeChangesMinChain")) {
       upd.minimize_changes_min_chain = clamp(input.minimizeChangesMinChain, 1, 50, 4);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "groupingLevel")) {
+      upd.grouping_level = clamp(input.groupingLevel, 0, 10, 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "groupingMinChain")) {
+      upd.grouping_min_chain = clamp(input.groupingMinChain, 1, 50, 4);
     }
 
     const { data, error } = await supabaseAdmin
@@ -1385,6 +1395,9 @@ export class SupabaseStorage implements IStorage {
       abbrev: s.abbrev ?? null,
       minimizeChangesLevel: s.minimize_changes_level ?? 0,
       minimizeChangesMinChain: s.minimize_changes_min_chain ?? 4,
+      groupingLevel: s.grouping_level ?? 0,
+      groupingMinChain: s.grouping_min_chain ?? 4,
+      groupingApplyToDescendants: Boolean(s.grouping_apply_to_descendants ?? false),
     }));
   }
 
@@ -1447,6 +1460,9 @@ export class SupabaseStorage implements IStorage {
       abbrev: data.abbrev ?? null,
       minimizeChangesLevel: data.minimize_changes_level ?? 0,
       minimizeChangesMinChain: data.minimize_changes_min_chain ?? 4,
+      groupingLevel: data.grouping_level ?? 0,
+      groupingMinChain: data.grouping_min_chain ?? 4,
+      groupingApplyToDescendants: Boolean(data.grouping_apply_to_descendants ?? false),
     };
   }
 
@@ -1472,6 +1488,25 @@ export class SupabaseStorage implements IStorage {
       const n = clamp(patch.minimizeChangesMinChain, 1, 50);
       if (n !== null) upd.minimize_changes_min_chain = n;
     }
+    if (Object.prototype.hasOwnProperty.call(patch, "groupingLevel")) {
+      const n = clamp(patch.groupingLevel, 0, 10);
+      upd.grouping_level = n === null ? 0 : n;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "groupingMinChain")) {
+      const n = clamp(patch.groupingMinChain, 1, 50);
+      upd.grouping_min_chain = n === null ? 4 : n;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "groupingApplyToDescendants")) {
+      const raw = patch.groupingApplyToDescendants;
+      if (typeof raw === "boolean") upd.grouping_apply_to_descendants = raw;
+      else if (typeof raw === "number") upd.grouping_apply_to_descendants = raw !== 0;
+      else if (typeof raw === "string") {
+        const v = raw.trim().toLowerCase();
+        upd.grouping_apply_to_descendants = v === "true" || v === "1" || v === "yes" || v === "on";
+      } else {
+        upd.grouping_apply_to_descendants = false;
+      }
+    }
 
     const { data, error } = await supabaseAdmin
       .from("spaces")
@@ -1490,6 +1525,9 @@ export class SupabaseStorage implements IStorage {
       abbrev: data.abbrev ?? null,
       minimizeChangesLevel: data.minimize_changes_level ?? 0,
       minimizeChangesMinChain: data.minimize_changes_min_chain ?? 4,
+      groupingLevel: data.grouping_level ?? 0,
+      groupingMinChain: data.grouping_min_chain ?? 4,
+      groupingApplyToDescendants: Boolean(data.grouping_apply_to_descendants ?? false),
     };
   }
 
