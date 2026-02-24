@@ -248,6 +248,9 @@ export const dailyTasks = pgTable("daily_tasks", {
   // Real times (Execution)
   startReal: text("start_real"),
   startRealSeconds: integer("start_real_seconds"),
+  pausedTotalSeconds: integer("paused_total_seconds").notNull().default(0),
+  pausedAtSeconds: integer("paused_at_seconds"),
+  pausedAtHHMM: text("paused_at_hhmm"),
   endReal: text("end_real"),
   endRealSeconds: integer("end_real_seconds"),
   comment1Text: text("comment1_text"),

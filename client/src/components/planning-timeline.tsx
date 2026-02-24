@@ -150,7 +150,7 @@ interface PlanningTimelineProps {
     shiftedTaskIds: number[];
   }) => Promise<void>;
   onValidatePlan?: () => Promise<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> }>;
-  onGeneratePlan?: (mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks") => Promise<void>;
+  onGeneratePlan?: (mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending") => Promise<void>;
   onReloadPlanTasks?: () => Promise<void>;
   onCancelManualEdits?: () => Promise<void> | void;
   onDiscardManualEditsAndReload?: () => Promise<void> | void;

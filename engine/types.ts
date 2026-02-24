@@ -228,8 +228,30 @@ export interface InfeasibleReason {
   };
 }
 
+export interface EngineOutputWarning {
+  code: string;
+  message: string;
+  taskId?: number;
+}
+
+export interface EngineOutputUnplanned {
+  taskId: number;
+  reason: InfeasibleReason;
+}
+
 export interface EngineOutput {
+  // Deprecated: use `complete`
   feasible: boolean;
+  complete: boolean;
+  hardFeasible: boolean;
+  plannedTasks: Array<{
+    taskId: number;
+    startPlanned: string;
+    endPlanned: string;
+    assignedResources?: number[];
+  }>;
+  warnings?: EngineOutputWarning[];
+  unplanned?: EngineOutputUnplanned[];
   schedule?: TaskOutput[];
   reasons?: InfeasibleReason[];
 }
