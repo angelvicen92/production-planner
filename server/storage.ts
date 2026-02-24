@@ -143,6 +143,7 @@ export interface IStorage {
     // ✅ compactar concursantes
     contestantCompactLevel: number; // 0..3
     contestantTotalSpanLevel: number; // 0..3
+    groupingZoneIds: number[];
     arrivalTaskTemplateName: string;
     departureTaskTemplateName: string;
     arrivalGroupingTarget: number;
@@ -434,7 +435,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, van_capacity, weight_arrival_departure_grouping",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, van_capacity, weight_arrival_departure_grouping",
       )
       .eq("id", 1)
       .single();
@@ -527,6 +528,7 @@ export class SupabaseStorage implements IStorage {
       // ✅ compactar concursantes
       contestantCompactLevel,
       contestantTotalSpanLevel,
+      groupingZoneIds: Array.isArray((data as any)?.grouping_zone_ids) ? (data as any).grouping_zone_ids.map((v: any) => Number(v)).filter((v: number) => Number.isInteger(v) && v > 0) : [],
       arrivalTaskTemplateName: String((data as any)?.arrival_task_template_name ?? ""),
       departureTaskTemplateName: String((data as any)?.departure_task_template_name ?? ""),
       arrivalGroupingTarget: Math.max(0, Number((data as any)?.arrival_grouping_target ?? 0) || 0),

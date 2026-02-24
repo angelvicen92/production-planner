@@ -911,6 +911,7 @@ export const api = {
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3),
           contestantTotalSpanLevel: z.number().int().min(0).max(3),
+          groupingZoneIds: z.array(z.number().int().positive()),
           arrivalTaskTemplateName: z.string(),
           departureTaskTemplateName: z.string(),
           arrivalGroupingTarget: z.number().int().min(0).max(100),
@@ -963,6 +964,7 @@ export const api = {
           // ✅ nuevo: mantener concursante en el mismo plató
           contestantStayInZoneLevel: z.number().int().min(0).max(3).optional(),
           contestantTotalSpanLevel: z.number().int().min(0).max(3).optional(),
+          groupingZoneIds: z.array(z.number().int().positive()).optional(),
           arrivalTaskTemplateName: z.string().max(120).optional(),
           departureTaskTemplateName: z.string().max(120).optional(),
           arrivalGroupingTarget: z.number().int().min(0).max(100).optional(),

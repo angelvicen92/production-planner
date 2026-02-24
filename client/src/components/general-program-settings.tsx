@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProductionClock } from "@/hooks/use-production-clock";
@@ -218,31 +219,35 @@ export function GeneralProgramSettings() {
 
           <div className="col-span-2">
             <Label>Nombre de la tarea que representa “comida” (default)</Label>
-            <Input
-              type="text"
-              value={draft?.mealTaskTemplateName ?? "Comer"}
-              onChange={(e) =>
-                setDraft((p) =>
-                  p ? { ...p, mealTaskTemplateName: e.target.value } : p,
-                )
+            <Select
+              value={draft?.mealTaskTemplateName ?? ""}
+              onValueChange={(value) =>
+                setDraft((p) => (p ? { ...p, mealTaskTemplateName: value } : p))
               }
-              placeholder="Comer"
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona plantilla" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((t: any) => (
+                  <SelectItem key={t.id} value={String(t.name)}>
+                    {String(t.name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              Debe coincidir con el nombre de un Task Template (ej: “Sodexo”).
-              Se usa para auto-crear la tarea al crear concursantes.
+              Se guarda por nombre por compatibilidad.
             </p>
-            {
-              mealName.length > 0 && templatesQ.isLoading ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Comprobando si existe el Task Template…
-                </p>
-              ) : mealName.length > 0 && !mealTemplateExists ? (
-                <p className="text-xs text-destructive mt-1">
-                  ⚠️ No existe ninguna Plantilla de Tarea llamada “{mealName}”. Si creas
-                  concursantes, no se auto-creará la tarea de comida “{mealName}”. Debes crear una Plantilla de Tarea con este nombre.
-                </p>
-              ) : null}
+            {mealName.length > 0 && templatesQ.isLoading ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Comprobando si existe el Task Template…
+              </p>
+            ) : mealName.length > 0 && !mealTemplateExists ? (
+              <p className="text-xs text-destructive mt-1">
+                ⚠️ No existe ninguna Plantilla de Tarea llamada “{mealName}”.
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex justify-end">
