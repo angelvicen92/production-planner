@@ -205,6 +205,19 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const taskById = new Map<number, any>();
   for (const t of tasks as any[]) taskById.set(Number(t?.id), t);
 
+  const templatesByContestant = new Map<number, Set<number>>();
+  for (const t of tasks as any[]) {
+    const cid = Number(t?.contestantId ?? t?.contestant_id ?? 0);
+    const tplId = Number(t?.templateId ?? t?.template_id ?? 0);
+    if (!Number.isFinite(cid) || cid <= 0) continue;
+    if (!Number.isFinite(tplId) || tplId <= 0) continue;
+
+    if (!templatesByContestant.has(cid)) {
+      templatesByContestant.set(cid, new Set<number>());
+    }
+    templatesByContestant.get(cid)?.add(tplId);
+  }
+
   // 2) Si una tarea depende de otra excluida, también se excluye (en cascada)
   let changed = true;
   while (changed) {
@@ -279,6 +292,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     if (!depTplIds.length) continue;
 
+    const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
+    const existingTplIds = contestantId > 0
+      ? (templatesByContestant.get(contestantId) ?? new Set<number>())
+      : new Set<number>();
+
     // templates ya resueltos por tasks reales existentes
     const resolvedTplIds = new Set<number>();
     for (const depTaskId of depTaskIds) {
@@ -288,12 +306,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
     }
 
     const missingTplIds = depTplIds.filter(
-      (tplId) => !resolvedTplIds.has(Number(tplId)),
+      (tplId) =>
+        existingTplIds.has(Number(tplId)) &&
+        !resolvedTplIds.has(Number(tplId)),
     );
     if (!missingTplIds.length) continue;
 
     const contestantName = String(task?.contestantName ?? "").trim();
-    const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
     const who = contestantName
       ? `"${contestantName}"`
       : contestantId
