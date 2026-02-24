@@ -154,6 +154,7 @@ export interface EngineInput {
   optimizerMainZoneId?: number | null;
   optimizerPrioritizeMainZone?: boolean;
   optimizerGroupBySpaceAndTemplate?: boolean;
+  groupingZoneIds: number[];
 
   // ✅ niveles amigables (0=Off, 1=Suave, 2=Medio, 3=Fuerte)
   optimizerMainZonePriorityLevel?: number;

@@ -90,6 +90,19 @@ export async function buildEngineInput(
     return Math.max(min, Math.min(max, Math.floor(n)));
   };
   const zoneGroupingMap = new Map<number, { level: number; minChain: number }>();
+  const groupingZoneIds: number[] = Array.from(
+    new Set<number>(
+      (Array.isArray((optimizer as any)?.groupingZoneIds)
+        ? (optimizer as any).groupingZoneIds
+        : Array.isArray((optimizer as any)?.grouping_zone_ids)
+          ? (optimizer as any).grouping_zone_ids
+          : []
+      )
+        .map((v: any) => Number(v))
+        .filter((n: number) => Number.isFinite(n) && n > 0),
+    ),
+  );
+
   const spaceMeta = new Map<number, { zoneId: number | null; parentSpaceId: number | null; groupingLevel: number; groupingMinChain: number; groupingApplyToDescendants: boolean }>();
 
   const zones = await storage.getZones();
@@ -431,6 +444,8 @@ export async function buildEngineInput(
     optimizerMainZoneId: optimizer?.mainZoneId ?? null,
     optimizerPrioritizeMainZone: optimizer?.prioritizeMainZone === true,
     optimizerGroupBySpaceAndTemplate: optimizer?.groupBySpaceAndTemplate !== false,
+
+    groupingZoneIds,
 
     optimizerMainZonePriorityLevel: optimizer?.mainZonePriorityLevel ?? (optimizer?.prioritizeMainZone ? 2 : 0),
     optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizer?.groupBySpaceAndTemplate !== false ? 2 : 0),
