@@ -1031,6 +1031,18 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const effectiveKeepBusyWeight = optMainZoneOptKeepBusy
     ? Math.round(weightFromInput("mainZoneKeepBusy", keepBusyWeight / 90_000) * 90_000)
     : 0;
+  const mainZoneKeepBusyStrength = Math.max(
+    0,
+    Math.min(
+      10,
+      Math.round(
+        weightFromInput(
+          "mainZoneKeepBusy",
+          optMainZoneLevel <= 0 ? 0 : optMainZoneLevel === 1 ? 4 : optMainZoneLevel === 2 ? 7 : 10,
+        ),
+      ),
+    ),
+  );
   const effectiveGroupingMatchWeight = Math.round(weightFromInput("groupBySpaceTemplateMatch", groupingMatchWeight / 3_000) * 3_000);
   const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
@@ -2238,6 +2250,208 @@ export function generatePlan(input: EngineInput): EngineOutput {
   let gapFillTries = 0;
   const MAX_GAP_FILL_TRIES = 80;
 
+
+  const plannedByTaskId = new Map<number, any>();
+  const rebuildPlannedByTask = () => {
+    plannedByTaskId.clear();
+    for (const p of plannedTasks as any[]) {
+      plannedByTaskId.set(Number(p.taskId), p);
+    }
+  };
+  rebuildPlannedByTask();
+
+  const isImmovableTask = (task: any) => {
+    const taskId = Number(task?.id);
+    const status = String(task?.status ?? "pending");
+    return (
+      status === "in_progress" ||
+      status === "done" ||
+      Boolean(task?.isManualBlock) ||
+      lockedTaskIds.has(taskId)
+    );
+  };
+
+  const removeTaskFromOccupancy = (task: any, planned: any) => {
+    const taskId = Number(task?.id);
+    const start = toMinutes(String(planned?.startPlanned));
+    const end = toMinutes(String(planned?.endPlanned));
+    const contestantId = getContestantId(task);
+    const spaceId = getSpaceId(task);
+    const zoneId = getZoneId(task);
+
+    const pull = (arr: Interval[] | undefined) => (arr ?? []).filter((it) => Number(it.taskId) !== taskId || it.start !== start || it.end !== end);
+
+    if (contestantId) occupiedByContestant.set(contestantId, pull(occupiedByContestant.get(contestantId)));
+    if (spaceId) occupiedBySpace.set(spaceId, pull(occupiedBySpace.get(spaceId)));
+    if (zoneId) occupiedByZoneMeal.set(zoneId, pull(occupiedByZoneMeal.get(zoneId)));
+    for (const pid of Array.isArray(planned?.assignedResources) ? planned.assignedResources : []) {
+      occupiedByResource.set(Number(pid), pull(occupiedByResource.get(Number(pid))));
+    }
+  };
+
+  const canPlaceTaskAtWithCurrentOccupancy = (task: any, planned: any, start: number) => {
+    const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+    const finish = start + duration;
+    const contestantId = getContestantId(task);
+    const spaceId = getSpaceId(task);
+    const zoneId = getZoneId(task);
+    if (!spaceId || !zoneId) return null;
+
+    const earliestByDeps = snapUp(Math.max(startDay, depsEnd(task)));
+    if (start < earliestByDeps) return null;
+
+    const effWin = getContestantEffectiveWindow(contestantId);
+    if (effWin) {
+      if (start < effWin.start || finish > effWin.end) return null;
+    }
+    if (finish > endDay) return null;
+
+    const spaceOcc = occupiedBySpace.get(spaceId) ?? [];
+    if (findEarliestGap(spaceOcc, start, duration) !== start) return null;
+    const zoneOcc = occupiedByZoneMeal.get(zoneId) ?? [];
+    if (findEarliestGap(zoneOcc, start, duration) !== start) return null;
+
+    if (contestantId) {
+      const cOcc = occupiedByContestant.get(contestantId) ?? [];
+      if (findEarliestGap(cOcc, start, duration) !== start) return null;
+    }
+
+    const assigned = Array.isArray(planned?.assignedResources) ? planned.assignedResources.map((v:any)=>Number(v)).filter((v:number)=>Number.isFinite(v)&&v>0) : [];
+    for (const pid of assigned) {
+      const rOcc = occupiedByResource.get(pid) ?? [];
+      if (findEarliestGap(rOcc, start, duration) !== start) return null;
+    }
+
+    return { start, end: finish, assigned };
+  };
+
+  const addTaskToOccupancy = (task: any, placement: { start: number; end: number; assigned: number[] }) => {
+    const taskId = Number(task?.id);
+    const contestantId = getContestantId(task);
+    const spaceId = getSpaceId(task);
+    const zoneId = getZoneId(task);
+
+    if (contestantId) {
+      const arr = occupiedByContestant.get(contestantId) ?? [];
+      addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
+      occupiedByContestant.set(contestantId, arr);
+    }
+    if (spaceId) {
+      const arr = occupiedBySpace.get(spaceId) ?? [];
+      addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
+      occupiedBySpace.set(spaceId, arr);
+    }
+    if (zoneId) {
+      const arr = occupiedByZoneMeal.get(zoneId) ?? [];
+      addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
+      occupiedByZoneMeal.set(zoneId, arr);
+    }
+    for (const pid of placement.assigned) {
+      const arr = occupiedByResource.get(pid) ?? [];
+      addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
+      occupiedByResource.set(pid, arr);
+    }
+  };
+
+  const runMainZoneNoIdlePass = () => {
+    if (!optMainZoneId || !optMainZoneOptKeepBusy || mainZoneKeepBusyStrength < 9) return;
+
+    rebuildPlannedByTask();
+    const targetSpaces = Array.from(spaceZoneById.entries())
+      .filter(([, zid]) => Number(zid) === Number(optMainZoneId))
+      .map(([sid]) => Number(sid));
+
+    const blockers = new Set<string>();
+
+    for (const spaceId of targetSpaces) {
+      const spaceTasks = (plannedTasks as any[])
+        .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
+        .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
+        .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
+
+      if (spaceTasks.length <= 1) continue;
+
+      let leftCursor = toMinutes(spaceTasks[0].p.startPlanned);
+      for (const row of spaceTasks) {
+        const planned = row.p;
+        const task = row.task;
+        const oldStart = toMinutes(planned.startPlanned);
+        if (isImmovableTask(task)) {
+          leftCursor = Math.max(leftCursor, toMinutes(planned.endPlanned));
+          blockers.add("tasks locked");
+          continue;
+        }
+
+        removeTaskFromOccupancy(task, planned);
+
+        let placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, snapUp(Math.min(leftCursor, oldStart)));
+        if (!placed) {
+          const earliest = findEarliestGap(occupiedBySpace.get(spaceId) ?? [], snapUp(Math.min(leftCursor, oldStart)), Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30))));
+          if (earliest <= oldStart) placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, earliest);
+        }
+
+        if (!placed) {
+          placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, oldStart);
+          blockers.add("resource/availability constraints");
+        }
+
+        if (placed) {
+          planned.startPlanned = toHHMM(placed.start);
+          planned.endPlanned = toHHMM(placed.end);
+          addTaskToOccupancy(task, placed);
+          leftCursor = Math.max(leftCursor, placed.end);
+        }
+      }
+    }
+
+    const remainingGaps: Array<{ spaceId: number; start: number; end: number }> = [];
+    for (const spaceId of targetSpaces) {
+      const entries = (plannedTasks as any[])
+        .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
+        .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
+        .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
+      for (let i = 1; i < entries.length; i++) {
+        const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
+        const nextStart = toMinutes(entries[i].p.startPlanned);
+        if (nextStart - prevEnd > 1) remainingGaps.push({ spaceId, start: prevEnd, end: nextStart });
+      }
+    }
+
+    if (remainingGaps.length > 0) {
+      reasons.push({
+        code: "MAIN_ZONE_NO_IDLE_NOT_ACHIEVABLE",
+        message: `No se pudo garantizar “sin tiempos muertos” en el plató principal por restricciones: ${Array.from(blockers).join(", ") || "ventanas concursantes/recursos/bloqueos"}.`,
+      });
+    }
+
+    if (mainZoneKeepBusyStrength >= 10 && remainingGaps.length > 0) {
+      // start gating simple: no iniciar antes de la primera cadena continua en cada espacio
+      for (const spaceId of targetSpaces) {
+        const entries = (plannedTasks as any[])
+          .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
+          .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
+          .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
+        if (entries.length <= 1) continue;
+        let pivot = 0;
+        for (let i = 1; i < entries.length; i++) {
+          const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
+          const nextStart = toMinutes(entries[i].p.startPlanned);
+          if (nextStart - prevEnd > 1) pivot = i;
+        }
+        if (pivot <= 0) continue;
+        const shiftTo = toMinutes(entries[pivot].p.startPlanned);
+        for (let i = 0; i < pivot; i++) {
+          const t = entries[i].task;
+          if (isImmovableTask(t)) continue;
+          const p = entries[i].p;
+          const dur = toMinutes(p.endPlanned) - toMinutes(p.startPlanned);
+          p.startPlanned = toHHMM(shiftTo);
+          p.endPlanned = toHHMM(shiftTo + dur);
+        }
+      }
+    }
+  };
+
   while (pendingNonMeal.length) {
     const ready = pendingNonMeal.filter((t) => depsSatisfied(t));
     if (!ready.length) {
@@ -2501,6 +2715,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
     }
     if (out?.feasible === false) return out;
   }
+
+  runMainZoneNoIdlePass();
 
   // Hard rule: un concursante no puede solaparse
   // (Validamos sobre la planificación resultante, y devolvemos razones operativas)

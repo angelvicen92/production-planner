@@ -1423,7 +1423,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 type="number"
                 min={0}
                 max={10}
-                title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor"
+                title="Agrupa tareas iguales consecutivas. No garantiza eliminación de huecos."
                 value={editingSpace?.groupingLevel ?? 0}
                 onChange={(e) =>
                   setEditingSpace((p) =>
@@ -1445,7 +1445,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   )
                 }
               />
-              <label className="flex items-center gap-2 text-xs text-muted-foreground" title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground" title="Agrupa tareas iguales consecutivas. No garantiza eliminación de huecos.">
                 <input
                   type="checkbox"
                   disabled={(editingSpace?.groupingLevel ?? 0) <= 0}
@@ -1456,7 +1456,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     )
                   }
                 />
-                Aplicar también a subespacios
+                Aplicar a subespacios (heredar)
               </label>
               <Button
                 size="sm"
@@ -1495,8 +1495,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
               <div className="w-24 text-sm text-muted-foreground">
                 P{node.priorityLevel ?? 1}
               </div>
-              <div className="w-40 text-xs text-muted-foreground" title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor">
-                Agrupar tareas: {Number(node.groupingLevel ?? 0)}/10
+              <div className="w-40 text-xs text-muted-foreground" title="Agrupa tareas iguales consecutivas. No garantiza eliminación de huecos.">
+                Agrupar por actividad (menos cambios): {Number(node.groupingLevel ?? 0)}/10
               </div>
               <Button
                 size="sm"
@@ -1739,7 +1739,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                               type="number"
                               min={0}
                               max={10}
-                              title="Intenta encadenar tareas iguales antes de cambiar dentro de este contenedor"
+                              title="Agrupa tareas iguales consecutivas. No garantiza eliminación de huecos."
                               value={editingZoneGroupingLevel}
                               onChange={(e) => setEditingZoneGroupingLevel(Number(e.target.value))}
                             />
