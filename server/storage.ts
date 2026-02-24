@@ -670,6 +670,54 @@ export class SupabaseStorage implements IStorage {
       // No bloqueamos la creación del concursante si falla la tarea
     }
 
+    // ✅ Auto-crear tareas por templates marcadas para creación automática al crear concursante
+    try {
+      const { data: autoTemplates, error: autoTemplatesErr } = await supabaseAdmin
+        .from("task_templates")
+        .select("id")
+        .eq("auto_create_on_contestant_create", true);
+
+      if (autoTemplatesErr) throw autoTemplatesErr;
+
+      const templateIds = ((autoTemplates as any[]) ?? [])
+        .map((row: any) => Number(row?.id))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+
+      if (templateIds.length > 0) {
+        const uniqueTemplateIds = Array.from(new Set(templateIds));
+        const { data: existing, error: existingErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .select("template_id")
+          .eq("plan_id", planId)
+          .eq("contestant_id", createdContestant.id)
+          .in("template_id", uniqueTemplateIds);
+
+        if (existingErr) throw existingErr;
+
+        const existingSet = new Set<number>();
+        for (const row of (existing as any[]) ?? []) {
+          const tid = Number((row as any)?.template_id);
+          if (Number.isFinite(tid) && tid > 0) existingSet.add(tid);
+        }
+
+        for (const templateId of uniqueTemplateIds) {
+          if (existingSet.has(templateId)) continue;
+
+          await this.createDailyTask({
+            planId,
+            templateId,
+            contestantId: createdContestant.id,
+            durationOverride: null,
+            camerasOverride: null,
+            status: "pending",
+          } as any);
+        }
+      }
+    } catch (e) {
+      console.error("[AUTO CREATE CONTESTANT TEMPLATES] error", e);
+      // No bloqueamos la creación del concursante si falla el auto-create
+    }
+
     // ✅ Auto-crear tareas por Vocal Coach (si ya viene asignado al crear concursante)
     try {
       const priId = Number(createdContestant.vocalCoachPlanResourceItemId);
@@ -2025,6 +2073,10 @@ export class SupabaseStorage implements IStorage {
 
       defaultDuration: t.default_duration ?? t.defaultDuration ?? null,
       defaultCameras: t.default_cameras ?? t.defaultCameras ?? 0,
+      autoCreateOnContestantCreate:
+        t.auto_create_on_contestant_create ??
+        t.autoCreateOnContestantCreate ??
+        false,
 
       // ✅ Dependencias (multi): preferimos depends_on_template_ids (jsonb array)
       // Fallback defensivo: si viene el campo viejo, lo envolvemos en array.
@@ -2097,6 +2149,8 @@ export class SupabaseStorage implements IStorage {
         ? template.resourceRequirements
         : null,
       default_cameras: template.defaultCameras ?? 0,
+      auto_create_on_contestant_create:
+        template.autoCreateOnContestantCreate ?? false,
       abbrev: template.abbrev ?? null,
       default_comment1_color: template.defaultComment1Color ?? null,
       default_comment2_color: template.defaultComment2Color ?? null,
@@ -2154,6 +2208,8 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      autoCreateOnContestantCreate:
+        (data as any).auto_create_on_contestant_create ?? false,
       abbrev: (data as any).abbrev ?? null,
       defaultComment1Color: (data as any).default_comment1_color ?? null,
       defaultComment2Color: (data as any).default_comment2_color ?? null,
@@ -2220,6 +2276,10 @@ export class SupabaseStorage implements IStorage {
       safe.default_duration = patch.defaultDuration;
     if (typeof patch.defaultCameras === "number")
       safe.default_cameras = patch.defaultCameras;
+    if (typeof patch.autoCreateOnContestantCreate === "boolean") {
+      safe.auto_create_on_contestant_create =
+        patch.autoCreateOnContestantCreate;
+    }
     if (patch.abbrev === null || typeof patch.abbrev === "string") safe.abbrev = patch.abbrev;
     if (patch.defaultComment1Color === null || typeof patch.defaultComment1Color === "string") safe.default_comment1_color = patch.defaultComment1Color;
     if (patch.defaultComment2Color === null || typeof patch.defaultComment2Color === "string") safe.default_comment2_color = patch.defaultComment2Color;
@@ -2336,6 +2396,8 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      autoCreateOnContestantCreate:
+        (data as any).auto_create_on_contestant_create ?? false,
       abbrev: (data as any).abbrev ?? null,
       defaultComment1Color: (data as any).default_comment1_color ?? null,
       defaultComment2Color: (data as any).default_comment2_color ?? null,

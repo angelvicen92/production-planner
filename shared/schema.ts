@@ -164,6 +164,7 @@ export const taskTemplates = pgTable("task_templates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   defaultDuration: integer("default_duration").notNull(), // minutes
+  autoCreateOnContestantCreate: boolean("auto_create_on_contestant_create").notNull().default(false),
   requiresAuxiliar: boolean("requires_auxiliar").notNull().default(false),
   requiresCoach: boolean("requires_coach").notNull().default(false),
   requiresPresenter: boolean("requires_presenter").notNull().default(false),

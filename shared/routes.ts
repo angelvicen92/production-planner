@@ -1337,6 +1337,7 @@ export const api = {
 
       zoneId: z.number().int().positive().nullable().optional(),
       spaceId: z.number().int().positive().nullable().optional(),
+      autoCreateOnContestantCreate: z.boolean().optional(),
       })
       .strict(),
       responses: {
@@ -1392,6 +1393,7 @@ export const api = {
 
       zoneId: z.number().int().positive().nullable().optional(),
       spaceId: z.number().int().positive().nullable().optional(),
+      autoCreateOnContestantCreate: z.boolean().optional(),
       })
       .strict(),
       responses: {

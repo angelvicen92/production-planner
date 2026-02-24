@@ -2348,6 +2348,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     dependsOnTemplateIds: [],
     itinerantTeamRequirement: "none",
     itinerantTeamId: null,
+    autoCreateOnContestantCreate: false,
   });
 
   const [editData, setEditData] = useState<any | null>(null);
@@ -2503,6 +2504,11 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         tpl.defaultDuration ?? tpl.default_duration ?? 30,
       ),
       defaultCameras: Number(tpl.defaultCameras ?? tpl.default_cameras ?? 0),
+      autoCreateOnContestantCreate: Boolean(
+        tpl.autoCreateOnContestantCreate ??
+          tpl.auto_create_on_contestant_create ??
+          false,
+      ),
       defaultComment1Color: tpl.defaultComment1Color ?? tpl.default_comment1_color ?? null,
       defaultComment2Color: tpl.defaultComment2Color ?? tpl.default_comment2_color ?? null,
       zoneId: tpl.zoneId ?? tpl.zone_id ?? null,
@@ -2785,6 +2791,9 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           abbrev: String(editData.abbrev ?? "").trim() || null,
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          autoCreateOnContestantCreate: Boolean(
+            editData.autoCreateOnContestantCreate,
+          ),
           defaultComment1Color: String(editData.defaultComment1Color ?? "").trim() || null,
           defaultComment2Color: String(editData.defaultComment2Color ?? "").trim() || null,
           zoneId: editData.zoneId ?? null,
@@ -2935,6 +2944,21 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     setFormData((p: any) => ({ ...p, defaultComment2Color: e.target.value || null }))
                   }
                 />
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="task-template-auto-create-on-contestant-create"
+                    checked={Boolean(formData.autoCreateOnContestantCreate)}
+                    onCheckedChange={(checked) =>
+                      setFormData((p: any) => ({
+                        ...p,
+                        autoCreateOnContestantCreate: checked === true,
+                      }))
+                    }
+                  />
+                  <Label htmlFor="task-template-auto-create-on-contestant-create">
+                    Auto-crear al crear concursante
+                  </Label>
+                </div>
                 <Button
                   onClick={() =>
                     createTask.mutate({ ...formData, abbrev: String(formData.abbrev ?? "").trim() || null } as any, {
@@ -3008,7 +3032,14 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                             {tpl.name ?? `#${tpl.id}`}
                           </p>
                           <p className="text-xs text-muted-foreground leading-4">
-                            Duración: {Number.isFinite(durationMin) ? durationMin : "—"} min · Abrv: {String(curr?.abbrev ?? "").trim() || "—"} · Plató: {zoneName} · Espacio: {spaceName}
+                            Duración: {Number.isFinite(durationMin) ? durationMin : "—"} min · Abrv: {String(curr?.abbrev ?? "").trim() || "—"} · Plató: {zoneName} · Espacio: {spaceName}{" "}
+                            {Boolean(
+                              curr?.autoCreateOnContestantCreate ??
+                                curr?.auto_create_on_contestant_create ??
+                                false,
+                            )
+                              ? "· Auto-create"
+                              : ""}
                           </p>
                         </div>
                       )}
@@ -3156,6 +3187,21 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-task-template-auto-create-${editData?.id ?? tpl.id}`}
+                        checked={Boolean(editData?.autoCreateOnContestantCreate)}
+                        onCheckedChange={(checked) =>
+                          setEditData((p: any) => ({
+                            ...p,
+                            autoCreateOnContestantCreate: checked === true,
+                          }))
+                        }
+                      />
+                      <Label htmlFor={`edit-task-template-auto-create-${editData?.id ?? tpl.id}`}>
+                        Auto-crear al crear concursante
+                      </Label>
                     </div>
                   </section>
 
