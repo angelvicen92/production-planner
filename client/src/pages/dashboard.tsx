@@ -13,6 +13,7 @@ import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
 import { useMeLinks } from "@/hooks/useMeLinks";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { apiRequest } from "@/lib/api";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
 import { addIncident } from "@/lib/war-room-store";
@@ -67,6 +68,7 @@ export default function DashboardPage() {
   const generate = useGeneratePlan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
 
   const { defaultPlanId } = useDefaultPlanId(plans, selectedPlanId);
 
@@ -132,8 +134,15 @@ export default function DashboardPage() {
     },
   });
 
-  const runQuickAction = (taskId: number, action: "start" | "interrupt" | "done") => {
-    if (action === "interrupt" && !window.confirm("¿Interrumpir esta tarea?")) return;
+  const runQuickAction = async (taskId: number, action: "start" | "interrupt" | "done") => {
+    if (action === "interrupt") {
+      const ok = await confirm({
+        title: "Interrumpir tarea",
+        description: "La tarea pasará a estado interrumpido.",
+        confirmText: "Interrumpir",
+      });
+      if (!ok) return;
+    }
 
     const payloadByAction = {
       start: { status: "in_progress" },
@@ -145,7 +154,7 @@ export default function DashboardPage() {
   };
 
 
-  const runResetAction = (task: any) => {
+  const runResetAction = async (task: any) => {
     const status = String(task?.status ?? "pending");
     if (status === "pending") return;
 
@@ -153,7 +162,12 @@ export default function DashboardPage() {
       ? "¿Resetear? Se borrará inicio real."
       : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`;
 
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: "Resetear tarea",
+      description: confirmMessage,
+      confirmText: "Resetear",
+    });
+    if (!ok) return;
     resetTask.mutate({ taskId: Number(task.id), effectiveTimeHHMM: nowTime });
   };
 

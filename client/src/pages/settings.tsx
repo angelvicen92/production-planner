@@ -80,6 +80,7 @@ import { useTranslation } from "react-i18next";
 import { UsersAdminSettings } from "@/components/settings/users-admin";
 import { useAuth } from "@/hooks/use-auth";
 import { QueryGuard } from "@/components/QueryGuard";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -167,6 +168,7 @@ export default function SettingsPage() {
 
 function StaffPeopleSettings() {
   const { t } = useTranslation();
+  const confirmDialog = useConfirm();
   const { data, isLoading, error } = useStaffPeople();
   const create = useCreateStaffPerson();
   const update = useUpdateStaffPerson();
@@ -370,8 +372,13 @@ function StaffPeopleSettings() {
                             size="sm"
                             disabled={remove.isPending}
                             title="Eliminar"
-                            onClick={() => {
-                              if (!confirm(`¿Eliminar ${String(p?.name ?? "este elemento")}? Esta acción no se puede deshacer`)) return;
+                            onClick={async () => {
+                              const ok = await confirmDialog({
+                                title: "Eliminar persona",
+                                description: `¿Eliminar ${String(p?.name ?? "este elemento")}? Esta acción no se puede deshacer`,
+                                confirmText: "Eliminar",
+                              });
+                              if (!ok) return;
                               remove.mutate(Number(p.id));
                             }}
                           >
@@ -396,6 +403,7 @@ function ItinerantTeamsSettings() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const confirmDialog = useConfirm();
 
   const { data: teams = [], isLoading, error } = useItinerantTeams();
   const deleteTeam = useDeleteItinerantTeam();
@@ -493,8 +501,13 @@ function ItinerantTeamsSettings() {
                   variant="outline"
                   disabled={deleteTeam.isPending}
                   title="Eliminar"
-                  onClick={() => {
-                    if (!confirm(`¿Eliminar ${String(t?.name ?? "este elemento")}? Esta acción no se puede deshacer`)) return;
+                  onClick={async () => {
+                    const ok = await confirmDialog({
+                      title: "Eliminar equipo",
+                      description: `¿Eliminar ${String(t?.name ?? "este elemento")}? Esta acción no se puede deshacer`,
+                      confirmText: "Eliminar",
+                    });
+                    if (!ok) return;
                     deleteTeam.mutate(Number(t.id), {
                       onSuccess: () => toast({ title: "Eliminado" }),
                       onError: (err: any) =>
@@ -984,6 +997,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const updateSpace = useUpdateSpace();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const confirmDialog = useConfirm();
 
   // === Recursos por ZONA/PLATÓ (defaults globales) ===
   const [resourcesZoneId, setResourcesZoneId] = useState<number | null>(null);
@@ -1548,9 +1562,14 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 size="sm"
                 variant="outline"
                 disabled={children.length > 0 || deleteSpace.isPending}
-                onClick={() => {
+                onClick={async () => {
                   if (children.length > 0) return;
-                  if (!confirm("¿Eliminar este espacio? Esta acción no se puede deshacer")) return;
+                  const ok = await confirmDialog({
+                    title: "Eliminar espacio",
+                    description: "¿Eliminar este espacio? Esta acción no se puede deshacer",
+                    confirmText: "Eliminar",
+                  });
+                  if (!ok) return;
                   deleteSpace.mutate(node.id);
                 }}
                 title={
@@ -1802,15 +1821,15 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 (spacesByZone.get(z.id)?.length ?? 0) > 0 ||
                                 deleteZone.isPending
                               }
-                              onClick={() => {
+                              onClick={async () => {
                                 if ((spacesByZone.get(z.id)?.length ?? 0) > 0)
                                   return;
-                                if (
-                                  !confirm(
-                                    "¿Eliminar este plató? Esta acción no se puede deshacer",
-                                  )
-                                )
-                                  return;
+                                const ok = await confirmDialog({
+                                  title: "Eliminar plató",
+                                  description: "¿Eliminar este plató? Esta acción no se puede deshacer",
+                                  confirmText: "Eliminar",
+                                });
+                                if (!ok) return;
                                 deleteZone.mutate(z.id);
                               }}
                               title={
@@ -2307,6 +2326,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const updateTask = useUpdateTaskTemplate();
   const deleteTask = useDeleteTaskTemplate();
   const { toast } = useToast();
+  const confirmDialog = useConfirm();
   const qc = useQueryClient();
   const { role } = useUserRole(true);
   const canEditDependencies = role === "admin";
@@ -2842,8 +2862,13 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+  const handleDelete = async (id: number) => {
+    const ok = await confirmDialog({
+      title: "Delete template",
+      description: "Are you sure you want to delete this template?",
+      confirmText: "Delete",
+    });
+    if (!ok) return;
     deleteTask.mutate(id);
   };
 

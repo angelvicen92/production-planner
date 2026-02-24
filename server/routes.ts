@@ -4564,7 +4564,8 @@ function normalizeHexColor(value: unknown): string | null {
       const result = generatePlan(engineInput);
       const enrich = await buildReasonEnricher(planId);
 
-      if (!result.feasible) {
+      const planned = (result as any).plannedTasks || [];
+      if (!result.feasible && planned.length === 0) {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
         if (planningRunId) {
           await supabaseAdmin
@@ -4580,7 +4581,6 @@ function normalizeHexColor(value: unknown): string | null {
         });
       }
 
-      const planned = (result as any).plannedTasks || [];
       let updated = 0;
 
       for (const p of planned) {
@@ -4628,7 +4628,17 @@ function normalizeHexColor(value: unknown): string | null {
       }
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
-      res.json({ success: true, planId, tasksUpdated: updated, warnings, runId: planningRunId });
+      const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+      res.json({
+        success: true,
+        feasible: !!result.feasible,
+        planId,
+        tasksUpdated: updated,
+        warnings,
+        reasons,
+        unplanned: (result as any).unplanned ?? [],
+        runId: planningRunId,
+      });
 
     } catch (e: any) {
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";

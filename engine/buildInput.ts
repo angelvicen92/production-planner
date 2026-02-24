@@ -57,11 +57,13 @@ export async function buildEngineInput(
 
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
+      const existingSpaceIds = new Set<number>();
       const spaceParentById: Record<number, number | null> = {};
       const spaceNameById: Record<number, string> = {};
       for (const s of (allSpaces as any[]) ?? []) {
         const id = Number((s as any)?.id);
         if (!Number.isFinite(id) || id <= 0) continue;
+        existingSpaceIds.add(id);
 
     const parentRaw =
       (s as any)?.parent_space_id ?? (s as any)?.parentSpaceId ?? null;
@@ -557,6 +559,11 @@ export async function buildEngineInput(
           isManualBlock && manualScopeType === "contestant" && Number.isFinite(manualScopeId as any)
             ? Number(manualScopeId)
             : contestantId;
+        const rawSpaceId = isManualBlock && manualScopeType === "space" && Number.isFinite(manualScopeId as any)
+          ? Number(manualScopeId)
+          : ((t.space_id ?? t.spaceId ?? null) as number | null);
+        const normalizedSpaceId = Number(rawSpaceId);
+        const hasInvalidSpace = Number.isFinite(normalizedSpaceId) && normalizedSpaceId > 0 && !existingSpaceIds.has(normalizedSpaceId);
 
         return {
           id: t.id,
@@ -575,9 +582,14 @@ export async function buildEngineInput(
               ),
 
           zoneId: (t.zone_id ?? t.zoneId ?? null) as number | null,
-          spaceId: isManualBlock && manualScopeType === "space" && Number.isFinite(manualScopeId as any)
-            ? Number(manualScopeId)
-            : ((t.space_id ?? t.spaceId ?? null) as number | null),
+          spaceId: hasInvalidSpace ? null : rawSpaceId,
+          _invalidSpaceId: hasInvalidSpace ? normalizedSpaceId : null,
+          _unplannedHint: hasInvalidSpace
+            ? {
+                code: "MISSING_SPACE",
+                message: "El espacio asignado fue eliminado o no existe.",
+              }
+            : null,
 
           contestantId: effectiveContestantId,
           contestantName: effectiveContestantId
