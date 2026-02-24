@@ -359,7 +359,7 @@ export function GeneralOptimizerSettings() {
               await saveSimpleField({ mainZoneOptFinishEarly }, nextDraft);
             }}
           />
-          <div className="text-sm">Terminar cuanto antes</div>
+          <div className="text-sm">Plató principal: terminar cuanto antes</div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -372,11 +372,16 @@ export function GeneralOptimizerSettings() {
               await saveSimpleField({ mainZoneOptKeepBusy }, nextDraft);
             }}
           />
-          <div className="text-sm">Sin huecos entre tareas</div>
+          <div
+            className="text-sm"
+            title="Modo dirección intenta que el plató principal funcione en bloque continuo; puede retrasar el inicio para evitar huecos."
+          >
+            Plató principal: sin tiempos muertos (modo dirección)
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Prioridad del plató principal</Label>
+          <Label>Plató principal: prioridad operativa</Label>
           {localMode === "basic" ? (
             <Select
               value={String(mainZoneBasic)}
@@ -429,7 +434,7 @@ export function GeneralOptimizerSettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Agrupar tareas iguales en el mismo espacio</Label>
+          <Label title="Agrupa tareas iguales consecutivas. No garantiza eliminación de huecos.">Agrupar por actividad (menos cambios)</Label>
           {localMode === "basic" ? (
             <Select
               value={String(groupingBasic)}
