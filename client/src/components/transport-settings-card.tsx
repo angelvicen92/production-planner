@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
@@ -18,11 +18,17 @@ type TransportSettings = {
   weightArrivalDepartureGrouping: number;
 };
 
+const DEBOUNCE_MS = 500;
+
 export function TransportSettingsCard() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [draft, setDraft] = useState<TransportSettings | null>(null);
+
+  const debounceTimerRef = useRef<number | null>(null);
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef<Partial<TransportSettings> | null>(null);
 
   const settingsQ = useQuery<any>({
     queryKey: [api.optimizerSettings.get.path],
@@ -38,16 +44,32 @@ export function TransportSettingsCard() {
     setDraft({
       arrivalTaskTemplateName: String(settingsQ.data.arrivalTaskTemplateName ?? ""),
       departureTaskTemplateName: String(settingsQ.data.departureTaskTemplateName ?? ""),
-      arrivalGroupingTarget: Number(settingsQ.data.arrivalGroupingTarget ?? 0),
-      departureGroupingTarget: Number(settingsQ.data.departureGroupingTarget ?? 0),
-      vanCapacity: Number(settingsQ.data.vanCapacity ?? 0),
-      weightArrivalDepartureGrouping: Number(settingsQ.data.weightArrivalDepartureGrouping ?? 0),
+      arrivalGroupingTarget: Math.max(0, Number(settingsQ.data.arrivalGroupingTarget ?? 0) || 0),
+      departureGroupingTarget: Math.max(0, Number(settingsQ.data.departureGroupingTarget ?? 0) || 0),
+      vanCapacity: Math.max(0, Number(settingsQ.data.vanCapacity ?? 0) || 0),
+      weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number(settingsQ.data.weightArrivalDepartureGrouping ?? 0) || 0)),
     });
   }, [settingsQ.data]);
 
-  const patch = async (payload: Partial<TransportSettings>, next: TransportSettings) => {
-    setDraft(next);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const patchNow = async (payload: Partial<TransportSettings>) => {
+    if (Object.keys(payload).length === 0) return;
+
+    if (isSavingRef.current) {
+      pendingSaveRef.current = { ...(pendingSaveRef.current ?? {}), ...payload };
+      return;
+    }
+
     setIsSaving(true);
+    isSavingRef.current = true;
+
     try {
       await apiRequest("PATCH", api.optimizerSettings.update.path, payload);
       qc.invalidateQueries({ queryKey: [api.optimizerSettings.get.path] });
@@ -56,6 +78,30 @@ export function TransportSettingsCard() {
       toast({ title: "No se pudo guardar", description: err?.message || "Error desconocido", variant: "destructive" });
     } finally {
       setIsSaving(false);
+      isSavingRef.current = false;
+
+      if (pendingSaveRef.current) {
+        const queued = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+        await patchNow(queued);
+      }
+    }
+  };
+
+  const scheduleSave = (payload: Partial<TransportSettings>) => {
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      debounceTimerRef.current = null;
+      void patchNow(payload);
+    }, DEBOUNCE_MS);
+  };
+
+  const flushDebouncedSave = () => {
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
   };
 
@@ -73,6 +119,7 @@ export function TransportSettingsCard() {
     <Card>
       <CardHeader>
         <CardTitle>Transporte</CardTitle>
+        {isSaving ? <p className="text-xs text-muted-foreground">Guardando…</p> : null}
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
@@ -80,10 +127,10 @@ export function TransportSettingsCard() {
           <Select
             value={draft.arrivalTaskTemplateName || "none"}
             disabled={isSaving}
-            onValueChange={async (value) => {
+            onValueChange={(value) => {
               const arrivalTaskTemplateName = value === "none" ? "" : value;
-              const next = { ...draft, arrivalTaskTemplateName };
-              await patch({ arrivalTaskTemplateName }, next);
+              setDraft((prev) => (prev ? { ...prev, arrivalTaskTemplateName } : prev));
+              scheduleSave({ arrivalTaskTemplateName });
             }}
           >
             <SelectTrigger><SelectValue placeholder="Selecciona plantilla" /></SelectTrigger>
@@ -99,10 +146,10 @@ export function TransportSettingsCard() {
           <Select
             value={draft.departureTaskTemplateName || "none"}
             disabled={isSaving}
-            onValueChange={async (value) => {
+            onValueChange={(value) => {
               const departureTaskTemplateName = value === "none" ? "" : value;
-              const next = { ...draft, departureTaskTemplateName };
-              await patch({ departureTaskTemplateName }, next);
+              setDraft((prev) => (prev ? { ...prev, departureTaskTemplateName } : prev));
+              scheduleSave({ departureTaskTemplateName });
             }}
           >
             <SelectTrigger><SelectValue placeholder="Selecciona plantilla" /></SelectTrigger>
@@ -113,10 +160,70 @@ export function TransportSettingsCard() {
           </Select>
         </div>
 
-        <div className="space-y-1"><Label>Objetivo agrupación llegada</Label><Input type="number" value={draft.arrivalGroupingTarget} disabled={isSaving} onChange={async (e)=>{ const arrivalGroupingTarget=Math.max(0,Number(e.target.value)||0); const next={...draft,arrivalGroupingTarget}; await patch({arrivalGroupingTarget}, next); }} /></div>
-        <div className="space-y-1"><Label>Objetivo agrupación salida</Label><Input type="number" value={draft.departureGroupingTarget} disabled={isSaving} onChange={async (e)=>{ const departureGroupingTarget=Math.max(0,Number(e.target.value)||0); const next={...draft,departureGroupingTarget}; await patch({departureGroupingTarget}, next); }} /></div>
-        <div className="space-y-1"><Label>Capacidad furgoneta</Label><Input type="number" value={draft.vanCapacity} disabled={isSaving} onChange={async (e)=>{ const vanCapacity=Math.max(0,Number(e.target.value)||0); const next={...draft,vanCapacity}; await patch({vanCapacity}, next); }} /></div>
-        <div className="space-y-1"><Label>Peso agrupación (0-10)</Label><Input type="number" value={draft.weightArrivalDepartureGrouping} disabled={isSaving} onChange={async (e)=>{ const weightArrivalDepartureGrouping=Math.max(0,Math.min(10,Number(e.target.value)||0)); const next={...draft,weightArrivalDepartureGrouping}; await patch({weightArrivalDepartureGrouping}, next); }} /></div>
+        <div className="space-y-1">
+          <Label>Objetivo agrupación llegada</Label>
+          <Input
+            type="number"
+            value={draft.arrivalGroupingTarget}
+            disabled={isSaving}
+            onChange={(e) => {
+              const arrivalGroupingTarget = Math.max(0, Number(e.target.value) || 0);
+              setDraft((prev) => (prev ? { ...prev, arrivalGroupingTarget } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ arrivalGroupingTarget: draft.arrivalGroupingTarget });
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Objetivo agrupación salida</Label>
+          <Input
+            type="number"
+            value={draft.departureGroupingTarget}
+            disabled={isSaving}
+            onChange={(e) => {
+              const departureGroupingTarget = Math.max(0, Number(e.target.value) || 0);
+              setDraft((prev) => (prev ? { ...prev, departureGroupingTarget } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ departureGroupingTarget: draft.departureGroupingTarget });
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Capacidad furgoneta</Label>
+          <Input
+            type="number"
+            value={draft.vanCapacity}
+            disabled={isSaving}
+            onChange={(e) => {
+              const vanCapacity = Math.max(0, Number(e.target.value) || 0);
+              setDraft((prev) => (prev ? { ...prev, vanCapacity } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ vanCapacity: draft.vanCapacity });
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Peso agrupación (0-10)</Label>
+          <Input
+            type="number"
+            value={draft.weightArrivalDepartureGrouping}
+            disabled={isSaving}
+            onChange={(e) => {
+              const weightArrivalDepartureGrouping = Math.max(0, Math.min(10, Number(e.target.value) || 0));
+              setDraft((prev) => (prev ? { ...prev, weightArrivalDepartureGrouping } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ weightArrivalDepartureGrouping: draft.weightArrivalDepartureGrouping });
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   );

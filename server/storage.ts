@@ -457,9 +457,7 @@ export class SupabaseStorage implements IStorage {
     const contestantStayInZoneLevel = clampBasicLevel(
       (data as any)?.contestant_stay_in_zone_level ?? 0,
     );
-    const contestantTotalSpanLevel = clampBasicLevel(
-      (data as any)?.contestant_total_span_level ?? 0,
-    );
+    const contestantTotalSpanLevel = 0;
 
     const heuristics = {
       mainZoneFinishEarly: normalizeHeuristicSetting({
@@ -495,11 +493,9 @@ export class SupabaseStorage implements IStorage {
         ),
       }, contestantStayInZoneLevel),
       contestantTotalSpan: normalizeHeuristicSetting({
-        basicLevel: contestantTotalSpanLevel,
-        advancedValue: clampAdvancedValue(
-          (data as any)?.contestant_total_span_advanced_value,
-        ),
-      }, contestantTotalSpanLevel),
+        basicLevel: 0,
+        advancedValue: 0,
+      }, 0),
     } as const;
 
     return {
