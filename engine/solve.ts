@@ -2353,6 +2353,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
   };
 
   const runMainZoneNoIdlePass = () => {
+    // NOTE: este pase aplica dos estrategias en zona principal:
+    // 1) compactación a la izquierda (no-idle), y
+    // 2) start gating con desplazamiento a la derecha de bloques previos a tareas inmovibles.
     if (!optMainZoneId || !optMainZoneOptKeepBusy || mainZoneKeepBusyStrength < 9) return;
 
     rebuildPlannedByTask();
@@ -2412,8 +2415,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       }
     }
 
-    const startGatingWarnings = new Set<string>();
-    const maxRightShiftMinutes = 60;
+    const startGatingWarnings: Array<{ spaceId: number; reason: string }> = [];
 
     for (const spaceId of targetSpaces) {
       const entries = (plannedTasks as any[])
@@ -2450,49 +2452,48 @@ export function generatePlan(input: EngineInput): EngineOutput {
         );
         const totalDuration = durations.reduce((acc, d) => acc + d, 0);
         const oldFirstStart = toMinutes(String(block[0].p.startPlanned));
-        const maxShift = Math.min(maxRightShiftMinutes, gapMinutes);
+        const targetFirstStart = gapEnd - totalDuration;
+        const rawRequiredShift = targetFirstStart - oldFirstStart;
+        const requiredShift = rawRequiredShift - (rawRequiredShift % GRID);
+
+        if (requiredShift < GRID) continue;
 
         let moved = false;
-        for (let shift = maxShift - (maxShift % GRID); shift >= GRID; shift -= GRID) {
-          const targetFirstStart = gapEnd - totalDuration;
-          const requiredShift = targetFirstStart - oldFirstStart;
-          if (requiredShift < GRID || requiredShift > shift) continue;
+        for (const row of block) removeTaskFromOccupancy(row.task, row.p);
 
-          for (const row of block) removeTaskFromOccupancy(row.task, row.p);
+        const snapshots = block.map(({ p }) => ({
+          p,
+          oldStart: String(p.startPlanned),
+          oldEnd: String(p.endPlanned),
+          assigned: Array.isArray(p?.assignedResources)
+            ? p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+            : [],
+        }));
 
-          const snapshots = block.map(({ p }) => ({
-            p,
-            oldStart: String(p.startPlanned),
-            oldEnd: String(p.endPlanned),
-            assigned: Array.isArray(p?.assignedResources)
-              ? p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
-              : [],
-          }));
+        const placements: Array<{ row: { p: any; task: any }; start: number; end: number; assigned: number[] }> = [];
+        let ok = true;
+        let cursorStart = targetFirstStart;
 
-          const placements: Array<{ row: { p: any; task: any }; start: number; end: number; assigned: number[] }> = [];
-          let ok = true;
-          let cursorStart = targetFirstStart;
-
-          for (const row of block) {
-            const placed = canPlaceTaskAtWithCurrentOccupancy(row.task, row.p, cursorStart);
-            if (!placed) {
-              ok = false;
-              break;
-            }
-            placements.push({ row, ...placed });
-            addTaskToOccupancy(row.task, placed);
-            cursorStart = placed.end;
-          }
-
-          if (ok) {
-            for (const placement of placements) {
-              placement.row.p.startPlanned = toHHMM(placement.start);
-              placement.row.p.endPlanned = toHHMM(placement.end);
-            }
-            moved = true;
+        for (const row of block) {
+          const placed = canPlaceTaskAtWithCurrentOccupancy(row.task, row.p, cursorStart);
+          if (!placed) {
+            ok = false;
             break;
           }
+          placements.push({ row, ...placed });
+          addTaskToOccupancy(row.task, placed);
+          cursorStart = placed.end;
+        }
 
+        if (ok) {
+          for (const placement of placements) {
+            placement.row.p.startPlanned = toHHMM(placement.start);
+            placement.row.p.endPlanned = toHHMM(placement.end);
+          }
+          moved = true;
+        }
+
+        if (!ok) {
           for (const placement of placements) {
             removeTaskFromOccupancy(placement.row.task, placement.row.p);
           }
@@ -2508,7 +2509,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
         }
 
         if (!moved) {
-          startGatingWarnings.add(`space:${spaceId}`);
+          startGatingWarnings.push({
+            spaceId,
+            reason: `no se pudo mover un bloque ${requiredShift} min (grid ${GRID}) sin romper dependencias/ventanas/recursos/ocupación`,
+          });
         }
       }
     }
@@ -2533,11 +2537,15 @@ export function generatePlan(input: EngineInput): EngineOutput {
       });
     }
 
-    if (startGatingWarnings.size > 0) {
+    if (startGatingWarnings.length > 0) {
+      const sample = startGatingWarnings
+        .slice(0, 3)
+        .map((w) => `espacio ${w.spaceId}: ${w.reason}`)
+        .join("; ");
       warnings.push({
         code: "MAIN_ZONE_START_GATING_LIMITED",
         message:
-          "Se detectaron huecos internos antes de tareas inmovibles en el plató principal, pero no fue posible desplazar bloques sin violar dependencias/ventanas/recursos.",
+          `Se detectaron huecos internos antes de tareas inmovibles en el plató principal, pero no fue posible desplazar bloques sin violar restricciones. Causas típicas: dependencias, ventanas de concursantes, recursos o ocupación de espacio. Ejemplos: ${sample}.`,
       });
     }
   };
