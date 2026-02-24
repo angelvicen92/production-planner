@@ -81,6 +81,13 @@ export async function buildEngineInput(
 
   const zoneIdBySpaceId: Record<number, number> = {};
   const zonePreferredMealWindow = new Map<number, { start: string | null; end: string | null }>();
+  const minimizeChangesBySpace: Record<number, { level: number; minChain: number }> = {};
+  const clamp = (v: unknown, min: number, max: number, fallback: number) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.floor(n)));
+  };
+  const zoneMinimizeMap = new Map<number, { level: number; minChain: number }>();
   const zones = await storage.getZones();
   for (const z of (zones as any[]) ?? []) {
     const zid = Number((z as any)?.id);
@@ -88,12 +95,31 @@ export async function buildEngineInput(
     const start = ((z as any)?.meal_start_preferred ?? (z as any)?.mealStartPreferred ?? null) as string | null;
     const end = ((z as any)?.meal_end_preferred ?? (z as any)?.mealEndPreferred ?? null) as string | null;
     zonePreferredMealWindow.set(zid, { start, end });
+
+    const zoneLevel = clamp((z as any)?.minimize_changes_level ?? (z as any)?.minimizeChangesLevel, 0, 10, 0);
+    const zoneMinChain = clamp((z as any)?.minimize_changes_min_chain ?? (z as any)?.minimizeChangesMinChain, 1, 50, 4);
+    zoneMinimizeMap.set(zid, { level: zoneLevel, minChain: zoneMinChain });
   }
   for (const s of (allSpaces as any[]) ?? []) {
     const sid = Number((s as any)?.id);
     const zid = Number((s as any)?.zone_id ?? (s as any)?.zoneId ?? NaN);
     if (Number.isFinite(sid) && sid > 0 && Number.isFinite(zid) && zid > 0) {
       zoneIdBySpaceId[sid] = zid;
+
+      const spaceLevel = clamp((s as any)?.minimize_changes_level ?? (s as any)?.minimizeChangesLevel, 0, 10, 0);
+      const spaceMinChain = clamp((s as any)?.minimize_changes_min_chain ?? (s as any)?.minimizeChangesMinChain, 1, 50, 4);
+
+      if (spaceLevel > 0) {
+        minimizeChangesBySpace[sid] = { level: spaceLevel, minChain: spaceMinChain };
+      } else {
+        const zoneCfg = zoneMinimizeMap.get(zid);
+        if (zoneCfg && zoneCfg.level > 0) {
+          minimizeChangesBySpace[sid] = {
+            level: clamp(zoneCfg.level, 0, 10, 0),
+            minChain: clamp(zoneCfg.minChain, 1, 50, 4),
+          };
+        }
+      }
     }
   }
 
@@ -355,6 +381,7 @@ export async function buildEngineInput(
     spaceResourceAssignments,
     spaceParentById,
     spaceNameById,
+    minimizeChangesBySpace,
     zoneResourceTypeRequirements,
     spaceResourceTypeRequirements,
         planResourceItems,

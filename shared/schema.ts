@@ -102,6 +102,8 @@ export const zones = pgTable("zones", {
   uiColor: text("ui_color"),
   mealStartPreferred: text("meal_start_preferred"),
   mealEndPreferred: text("meal_end_preferred"),
+  minimizeChangesLevel: integer("minimize_changes_level").notNull().default(0),
+  minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
 });
 
 // 3. spaces
@@ -112,6 +114,8 @@ export const spaces = pgTable("spaces", {
   zoneId: integer("zone_id").notNull().references(() => zones.id),
   priorityLevel: integer("priority_level").notNull().default(1),
   parentSpaceId: integer("parent_space_id").references((): any => spaces.id),
+  minimizeChangesLevel: integer("minimize_changes_level").notNull().default(0),
+  minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
 });
 
 // 4. resources

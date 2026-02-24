@@ -1046,6 +1046,8 @@ export const api = {
             .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/)
             .nullable()
             .optional(),
+          minimizeChangesLevel: z.number().int().min(0).max(10).optional(),
+          minimizeChangesMinChain: z.number().int().min(1).max(50).optional(),
         })
         .strict(),
       responses: {
@@ -1176,6 +1178,8 @@ export const api = {
           priorityLevel: z.number().int().min(1).max(5).optional(),
           parentSpaceId: z.number().int().positive().nullable().optional(),
           abbrev: z.string().max(32).nullable().optional(),
+          minimizeChangesLevel: z.number().int().min(0).max(10).optional(),
+          minimizeChangesMinChain: z.number().int().min(1).max(50).optional(),
         })
         .strict(),
       responses: {
