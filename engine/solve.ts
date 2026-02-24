@@ -282,7 +282,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
       return taskA - taskB;
     });
 
-  // ✅ Validación: si una tarea tiene dependencias pero no podemos resolver TODOS sus prereqs -> infeasible
+  // Validación de dependencias:
+  // - Si la tarea pertenece a un concursante: solo exigimos orden para las plantillas
+  //   que realmente existen en ese concursante (dependencias "soft").
+  // - Si la tarea NO pertenece a un concursante: mantenemos validación estricta
+  //   (todas las dependencias deben resolverse).
   const missingDeps: any[] = [];
 
   const tplNameById = ((input as any)?.taskTemplateNameById ?? {}) as Record<
@@ -321,11 +325,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
       if (Number.isFinite(depTplId)) resolvedTplIds.add(depTplId);
     }
 
-    const missingTplIds = depTplIds.filter(
-      (tplId) =>
-        existingTplIds.has(Number(tplId)) &&
-        !resolvedTplIds.has(Number(tplId)),
-    );
+    const missingTplIds =
+      contestantId > 0
+        ? depTplIds.filter(
+            (tplId) =>
+              existingTplIds.has(Number(tplId)) &&
+              !resolvedTplIds.has(Number(tplId)),
+          )
+        : depTplIds.filter((tplId) => !resolvedTplIds.has(Number(tplId)));
     if (!missingTplIds.length) continue;
 
     const contestantName = String(task?.contestantName ?? "").trim();
