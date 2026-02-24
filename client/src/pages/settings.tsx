@@ -2258,8 +2258,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     abbrev: "",
     defaultDuration: 30,
     defaultCameras: 0,
-    defaultComment1Color: null,
-    defaultComment2Color: null,
     zoneId: null,
     spaceId: null,
     uiColor: "#94a3b8",
@@ -2429,8 +2427,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           tpl.auto_create_on_contestant_create ??
           false,
       ),
-      defaultComment1Color: tpl.defaultComment1Color ?? tpl.default_comment1_color ?? null,
-      defaultComment2Color: tpl.defaultComment2Color ?? tpl.default_comment2_color ?? null,
       zoneId: tpl.zoneId ?? tpl.zone_id ?? null,
       spaceId: tpl.spaceId ?? tpl.space_id ?? null,
       uiColorInput: String(tpl.uiColor ?? tpl.ui_color ?? ""),
@@ -2711,8 +2707,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           autoCreateOnContestantCreate: Boolean(
             editData.autoCreateOnContestantCreate,
           ),
-          defaultComment1Color: String(editData.defaultComment1Color ?? "").trim() || null,
-          defaultComment2Color: String(editData.defaultComment2Color ?? "").trim() || null,
           zoneId: editData.zoneId ?? null,
           spaceId: editData.spaceId ?? null,
           uiColor: normalizedUiColor,
@@ -2844,20 +2838,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                       ...p,
                       defaultDuration: Number(e.target.value),
                     }))
-                  }
-                />
-                <Input
-                  placeholder="Color comentario 1 (default)"
-                  value={String(formData.defaultComment1Color ?? "")}
-                  onChange={(e) =>
-                    setFormData((p: any) => ({ ...p, defaultComment1Color: e.target.value || null }))
-                  }
-                />
-                <Input
-                  placeholder="Color comentario 2 (default)"
-                  value={String(formData.defaultComment2Color ?? "")}
-                  onChange={(e) =>
-                    setFormData((p: any) => ({ ...p, defaultComment2Color: e.target.value || null }))
                   }
                 />
                 <div className="flex items-center space-x-2">
@@ -2993,7 +2973,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
               </CardHeader>
               {isEditing && (
                 <CardContent className="p-4 space-y-3">
-                  <section className="space-y-3">
+                  <section className="space-y-2">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Básico</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="space-y-1">
@@ -3003,29 +2983,44 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           type="number"
                           value={editData?.defaultDuration ?? 30}
                           onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              defaultDuration: Number(e.target.value),
-                            }))
+                            setEditData((p: any) => ({ ...p, defaultDuration: Number(e.target.value) }))
                           }
                           placeholder="30"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label>Abreviatura</Label>
+                        <Label>Abrev</Label>
                         <Input
                           className="h-9"
                           value={String(editData?.abbrev ?? "")}
                           maxLength={32}
                           onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              abbrev: e.target.value.slice(0, 32),
-                            }))
+                            setEditData((p: any) => ({ ...p, abbrev: e.target.value.slice(0, 32) }))
                           }
                           placeholder="ENTR"
                         />
                       </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            id={`edit-task-template-auto-create-${editData?.id ?? tpl.id}`}
+                            checked={Boolean(editData?.autoCreateOnContestantCreate)}
+                            onCheckedChange={(checked) =>
+                              setEditData((p: any) => ({
+                                ...p,
+                                autoCreateOnContestantCreate: checked === true,
+                              }))
+                            }
+                          />
+                          Auto-crear
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Asignación</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label>Plató</Label>
                         <Select
@@ -3056,10 +3051,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                         <Select
                           value={String(editData?.spaceId ?? "none")}
                           onValueChange={(v) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              spaceId: v === "none" ? null : Number(v),
-                            }))
+                            setEditData((p: any) => ({ ...p, spaceId: v === "none" ? null : Number(v) }))
                           }
                         >
                           <SelectTrigger className="h-9">
@@ -3067,310 +3059,224 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Sin espacio</SelectItem>
-                            {(
-                              spacesByZone.get(
-                                Number(editData?.zoneId ?? -1),
-                              ) ?? []
-                            ).map((s: any) => (
-                              <SelectItem key={s.id} value={String(s.id)}>
-                                {s?.name ?? `Espacio #${s?.id ?? "—"}`}
+                            {(spacesByZone.get(Number(editData?.zoneId ?? -1)) ?? []).map((sp: any) => (
+                              <SelectItem key={sp.id} value={String(sp.id)}>
+                                {sp?.name ?? `Espacio #${sp?.id ?? "—"}`}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`edit-task-template-auto-create-${editData?.id ?? tpl.id}`}
-                        checked={Boolean(editData?.autoCreateOnContestantCreate)}
-                        onCheckedChange={(checked) =>
-                          setEditData((p: any) => ({
-                            ...p,
-                            autoCreateOnContestantCreate: checked === true,
-                          }))
-                        }
-                      />
-                      <Label htmlFor={`edit-task-template-auto-create-${editData?.id ?? tpl.id}`}>
-                        Auto-crear al crear concursante
-                      </Label>
-                    </div>
                   </section>
 
-                  <section className="space-y-3">
+                  <section className="space-y-2">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Recursos</p>
-                    {resourceTypesQ.isLoading ? (
-                      <p className="text-xs text-muted-foreground">Cargando recursos…</p>
-                    ) : null}
-                    {resourceTypesQ.error ? (
-                      <p className="text-xs text-destructive">No se pudieron cargar los recursos.</p>
-                    ) : null}
-                    <div className="rounded-md border p-3"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
-                      <div className="space-y-2 rounded-md border p-3">
-                        <label className="flex items-center gap-2">
-                          <Checkbox
-                            checked={!!editData?.requiresCoach}
-                            onCheckedChange={(v) =>
-                              setEditData((p: any) => ({
-                                ...p,
-                                requiresCoach: Boolean(v),
-                                coachMode: p?.coachMode ?? "any",
-                                coachResourceItemId:
-                                  p?.coachResourceItemId ?? (Number(vocalCoachItems?.[0]?.id ?? NaN) || null),
-                              }))
-                            }
-                          />
-                          Requiere Vocal Coach
-                        </label>
-                        {!!editData?.requiresCoach && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <Label>Modo</Label>
-                              <Select
-                                value={String(editData?.coachMode ?? "any")}
-                                onValueChange={(v) =>
-                                  setEditData((p: any) => ({
-                                    ...p,
-                                    coachMode: v === "specific" ? "specific" : "any",
-                                  }))
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecciona modo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="any">Cualquiera</SelectItem>
-                                  <SelectItem value="specific">Específico</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            {editData?.coachMode === "specific" && (
+                    {resourceTypesQ.isLoading ? <p className="text-xs text-muted-foreground">Cargando recursos…</p> : null}
+                    {resourceTypesQ.error ? <p className="text-xs text-destructive">No se pudieron cargar los recursos.</p> : null}
+                    <div className="rounded-md border p-3 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                        <div className="space-y-2 rounded-md border p-3">
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!editData?.requiresCoach}
+                              onCheckedChange={(v) =>
+                                setEditData((p: any) => ({
+                                  ...p,
+                                  requiresCoach: Boolean(v),
+                                  coachMode: p?.coachMode ?? "any",
+                                  coachResourceItemId:
+                                    p?.coachResourceItemId ?? (Number(vocalCoachItems?.[0]?.id ?? NaN) || null),
+                                }))
+                              }
+                            />
+                            Requiere Vocal Coach
+                          </label>
+                          {!!editData?.requiresCoach && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label>Coach</Label>
+                                <Label>Modo</Label>
                                 <Select
-                                  value={String(editData?.coachResourceItemId ?? "none")}
+                                  value={String(editData?.coachMode ?? "any")}
                                   onValueChange={(v) =>
-                                    setEditData((p: any) => ({
-                                      ...p,
-                                      coachResourceItemId: v === "none" ? null : Number(v),
-                                    }))
+                                    setEditData((p: any) => ({ ...p, coachMode: v === "specific" ? "specific" : "any" }))
                                   }
-                                  disabled={vocalCoachItems.length === 0}
                                 >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder={vocalCoachItems.length ? "Selecciona coach" : "No hay coaches configurados"} />
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Selecciona modo" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {vocalCoachItems.length === 0 && (
-                                      <SelectItem value="none">Sin coaches</SelectItem>
-                                    )}
-                                    {vocalCoachItems.map((item: any) => (
-                                      <SelectItem key={item.id} value={String(item.id)}>
-                                        {item?.name ?? `Coach #${item?.id ?? "—"}`}
-                                      </SelectItem>
-                                    ))}
+                                    <SelectItem value="any">Cualquiera</SelectItem>
+                                    <SelectItem value="specific">Específico</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
-                            )}
+                              {editData?.coachMode === "specific" && (
+                                <div className="space-y-1">
+                                  <Label>Coach</Label>
+                                  <Select
+                                    value={String(editData?.coachResourceItemId ?? "none")}
+                                    onValueChange={(v) =>
+                                      setEditData((p: any) => ({ ...p, coachResourceItemId: v === "none" ? null : Number(v) }))
+                                    }
+                                    disabled={vocalCoachItems.length === 0}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder={vocalCoachItems.length ? "Selecciona coach" : "No hay coaches configurados"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {vocalCoachItems.length === 0 && <SelectItem value="none">Sin coaches</SelectItem>}
+                                      {vocalCoachItems.map((item: any) => (
+                                        <SelectItem key={item.id} value={String(item.id)}>
+                                          {item?.name ?? `Coach #${item?.id ?? "—"}`}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {!Number.isFinite(vocalCoachTypeId) && (
+                            <p className="text-xs text-muted-foreground">No se encontró el tipo de recurso “Vocal Coach”.</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <label className="flex items-center gap-2">
+                          <Checkbox
+                            checked={!!editData?.requiresItinerantTeam}
+                            onCheckedChange={(v) =>
+                              setEditData((p: any) => ({
+                                ...p,
+                                requiresItinerantTeam: Boolean(v),
+                                allowedItinerantTeamIds: Boolean(v) ? (p?.allowedItinerantTeamIds ?? []) : [],
+                              }))
+                            }
+                          />
+                          Requiere equipo itinerante
+                        </label>
+                        {!!editData?.requiresItinerantTeam && (
+                          <div className="rounded-md border p-3 space-y-2">
+                            <p className="text-xs text-muted-foreground">Selecciona 1 para fijar equipo específico; selecciona varios para permitir alternativas.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {(itinerantTeams as any[]).map((team: any) => {
+                                const teamId = Number(team?.id);
+                                const checked = (editData?.allowedItinerantTeamIds ?? []).includes(teamId);
+                                return (
+                                  <label key={team?.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(v) =>
+                                        setEditData((p: any) => {
+                                          const set = new Set<number>((p?.allowedItinerantTeamIds ?? []).map((id: unknown) => Number(id)));
+                                          if (v === true) set.add(teamId);
+                                          else set.delete(teamId);
+                                          return {
+                                            ...p,
+                                            allowedItinerantTeamIds: Array.from(set).filter((id: number) => Number.isFinite(id) && id > 0),
+                                          };
+                                        })
+                                      }
+                                    />
+                                    {team?.name ?? team?.code ?? `Equipo #${team?.id ?? "—"}`}
+                                  </label>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
-                        {!Number.isFinite(vocalCoachTypeId) && (
-                          <p className="text-xs text-muted-foreground">
-                            No se encontró el tipo de recurso “Vocal Coach”.
-                          </p>
-                        )}
                       </div>
-                    </div></div>
-                    <div className="space-y-2 text-sm">
-                      <label className="flex items-center gap-2">
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dependencias</p>
+                    <div className="rounded-md border p-3 space-y-2">
+                      <label className="flex items-center gap-2 text-sm">
                         <Checkbox
-                          checked={!!editData?.requiresItinerantTeam}
+                          checked={!!editData?.hasDependency}
+                          disabled={!canEditDependencies}
                           onCheckedChange={(v) =>
                             setEditData((p: any) => ({
                               ...p,
-                              requiresItinerantTeam: Boolean(v),
-                              allowedItinerantTeamIds: Boolean(v)
-                                ? (p?.allowedItinerantTeamIds ?? [])
-                                : [],
+                              hasDependency: Boolean(v),
+                              dependsOnTemplateIds: Boolean(v) ? (p?.dependsOnTemplateIds ?? []) : [],
                             }))
                           }
                         />
-                        Requiere equipo itinerante
+                        Esta plantilla depende de otras
                       </label>
-                      {!!editData?.requiresItinerantTeam && (
-                        <div className="space-y-2 rounded-md border p-3">
-                          <p className="text-xs text-muted-foreground">
-                            Selecciona 1 para fijar equipo específico; selecciona varios para permitir alternativas.
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {(itinerantTeams as any[]).map((team: any) => {
-                              const teamId = Number(team?.id);
-                              const checked = (
-                                editData?.allowedItinerantTeamIds ?? []
-                              ).includes(teamId);
+                      {!canEditDependencies && <p className="text-xs text-muted-foreground">Solo admin puede editar dependencias.</p>}
+
+                      {!!editData?.hasDependency && (
+                        <div className="max-h-[220px] overflow-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {(templates ?? [])
+                            .filter((x: any) => Number(x?.id) !== Number(editData?.id))
+                            .map((x: any, idx: number) => {
+                              const checked = (editData?.dependsOnTemplateIds ?? []).includes(Number(x?.id));
                               return (
-                                <label
-                                  key={team?.id}
-                                  className="flex items-center gap-2"
-                                >
+                                <label className="flex items-center gap-2 text-sm" key={x?.id ?? `dep-${idx}`}>
                                   <Checkbox
                                     checked={checked}
+                                    disabled={!canEditDependencies}
                                     onCheckedChange={(v) =>
                                       setEditData((p: any) => {
-                                        const set = new Set<number>(
-                                          (p?.allowedItinerantTeamIds ?? []).map((id: unknown) => Number(id)),
-                                        );
-                                        if (v === true) set.add(teamId);
-                                        else set.delete(teamId);
-                                        return {
-                                          ...p,
-                                          allowedItinerantTeamIds: Array.from(set).filter(
-                                            (id: number) => Number.isFinite(id) && id > 0,
-                                          ),
-                                        };
+                                        const set = new Set(p?.dependsOnTemplateIds ?? []);
+                                        if (v === true) set.add(Number(x?.id));
+                                        else set.delete(Number(x?.id));
+                                        return { ...p, dependsOnTemplateIds: Array.from(set) };
                                       })
                                     }
                                   />
-                                  {team?.name ?? team?.code ?? `Equipo #${team?.id ?? "—"}`}
+                                  {x?.name ?? `Template #${x?.id ?? "—"}`}
                                 </label>
                               );
                             })}
-                          </div>
-                          {(editData?.allowedItinerantTeamIds?.length ?? 0) === 0 && (
-                            <p className="text-xs text-amber-600">
-                              Selecciona al menos uno o desactiva este requisito.
-                            </p>
-                          )}
-                          {(editData?.allowedItinerantTeamIds?.length ?? 0) > 1 && (
-                            <p className="text-xs text-amber-600">
-                              El motor aún no restringe por subconjunto; guardaremos esta selección para futura compatibilidad.
-                            </p>
-                          )}
                         </div>
                       )}
+
+                      <div className="space-y-2 border-t pt-2">
+                        <p className="text-sm font-medium">Dependen de esta plantilla</p>
+                        <div className="max-h-[220px] overflow-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {(templates ?? [])
+                            .filter((x: any) => Number(x?.id) !== Number(editData?.id))
+                            .map((x: any, idx: number) => {
+                              const dependentId = Number(x?.id);
+                              const checked = (editData?.inverseDepsDraft ?? []).includes(dependentId);
+                              return (
+                                <label className="flex items-center gap-2 text-sm" key={x?.id ?? `inv-dep-${idx}`}>
+                                  <Checkbox
+                                    checked={checked}
+                                    disabled={!canEditDependencies}
+                                    onCheckedChange={(v) =>
+                                      setEditData((p: any) => {
+                                        const set = new Set<number>(
+                                          (p?.inverseDepsDraft ?? [])
+                                            .map((id: unknown) => Number(id))
+                                            .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(p?.id)),
+                                        );
+                                        if (v === true) set.add(dependentId);
+                                        else set.delete(dependentId);
+                                        return { ...p, inverseDepsDraft: Array.from(set) };
+                                      })
+                                    }
+                                  />
+                                  {x?.name ?? `Template #${x?.id ?? "—"}`}
+                                </label>
+                              );
+                            })}
+                        </div>
+                      </div>
                     </div>
                   </section>
 
-                  <section className="space-y-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dependencias</p>
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={!!editData?.hasDependency}
-                        disabled={!canEditDependencies}
-                        onCheckedChange={(v) =>
-                          setEditData((p: any) => ({
-                            ...p,
-                            hasDependency: Boolean(v),
-                            dependsOnTemplateIds: Boolean(v)
-                              ? (p?.dependsOnTemplateIds ?? [])
-                              : [],
-                          }))
-                        }
-                      />
-                      Esta plantilla depende de otras
-                    </label>
-                    {!canEditDependencies && (
-                      <p className="text-xs text-muted-foreground">
-                        Solo admin puede editar dependencias.
-                      </p>
-                    )}
-
-                    {!!editData?.hasDependency && (
-                      <div className="max-h-[220px] overflow-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {(templates ?? [])
-                          .filter(
-                            (x: any) => Number(x?.id) !== Number(editData?.id),
-                          )
-                          .map((x: any, idx: number) => {
-                            const checked = (
-                              editData?.dependsOnTemplateIds ?? []
-                            ).includes(Number(x?.id));
-                            return (
-                              <label
-                                className="flex items-center gap-2 text-sm"
-                                key={x?.id ?? `dep-${idx}`}
-                              >
-                                <Checkbox
-                                  checked={checked}
-                                  disabled={!canEditDependencies}
-                                  onCheckedChange={(v) =>
-                                    setEditData((p: any) => {
-                                      const set = new Set(
-                                        p?.dependsOnTemplateIds ?? [],
-                                      );
-                                      if (v === true) set.add(Number(x?.id));
-                                      else set.delete(Number(x?.id));
-                                      return {
-                                        ...p,
-                                        dependsOnTemplateIds: Array.from(set),
-                                      };
-                                    })
-                                  }
-                                />
-                                {x?.name ?? `Template #${x?.id ?? "—"}`}
-                              </label>
-                            );
-                          })}
-                      </div>
-                    )}
-
-                    <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-3">
-                      <p className="text-sm font-medium">Dependen de esta plantilla</p>
-                      <p className="text-xs text-muted-foreground">
-                        Marcar aquí hace que la otra plantilla tenga como prerequisito a esta.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {(templates ?? [])
-                          .filter((x: any) => Number(x?.id) !== Number(editData?.id))
-                          .map((x: any, idx: number) => {
-                            const dependentId = Number(x?.id);
-                            const checked = (
-                              editData?.inverseDepsDraft ?? []
-                            ).includes(dependentId);
-                            return (
-                              <label
-                                className="flex items-center gap-2 text-sm"
-                                key={x?.id ?? `inv-dep-${idx}`}
-                              >
-                                <Checkbox
-                                  checked={checked}
-                                  disabled={!canEditDependencies}
-                                  onCheckedChange={(v) =>
-                                    setEditData((p: any) => {
-                                      const set = new Set<number>(
-                                        (p?.inverseDepsDraft ?? [])
-                                          .map((id: unknown) => Number(id))
-                                          .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(p?.id)),
-                                      );
-                                      if (v === true) set.add(dependentId);
-                                      else set.delete(dependentId);
-                                      return {
-                                        ...p,
-                                        inverseDepsDraft: Array.from(set),
-                                      };
-                                    })
-                                  }
-                                />
-                                {x?.name ?? `Template #${x?.id ?? "—"}`}
-                              </label>
-                            );
-                          })}
-                      </div>
-                      {(templates ?? []).filter((x: any) => Number(x?.id) !== Number(editData?.id)).length === 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          No hay otras plantillas disponibles.
-                        </p>
-                      )}
-                    </div>
-                  </section>
-
-                  <section className="space-y-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Color</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-2">
+                  <section className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Colores</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-md border p-3">
+                      <div className="space-y-1">
                         <Label>Tarea</Label>
-                        <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
+                        <div className="flex items-center gap-2">
                           <Input
                             type="color"
                             value={getColorPickerValue(editData?.uiColorInput)}
@@ -3382,10 +3288,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 uiColorError: null,
                               }))
                             }
-                            className="h-9 w-14 p-1"
+                            className="h-9 w-12 p-1"
                           />
                           <Input
-                            className="font-mono h-9 max-w-[160px]"
+                            className="font-mono h-9 w-32"
                             value={String(editData?.uiColorInput ?? "")}
                             onChange={(e) =>
                               setEditData((p: any) => {
@@ -3395,24 +3301,19 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                   ...p,
                                   uiColorInput: raw,
                                   uiColor: normalized,
-                                  uiColorError:
-                                    raw.trim() && !normalized
-                                      ? "Color inválido"
-                                      : null,
+                                  uiColorError: raw.trim() && !normalized ? "Color inválido" : null,
                                 };
                               })
                             }
                             placeholder="#RRGGBB"
                           />
                         </div>
-                        {editData?.uiColorError && (
-                          <p className="text-xs text-destructive">{editData.uiColorError}</p>
-                        )}
+                        {editData?.uiColorError && <p className="text-xs text-destructive">{editData.uiColorError}</p>}
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <Label>Plató</Label>
-                        <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
+                        <div className="flex items-center gap-2">
                           <Input
                             type="color"
                             value={getColorPickerValue(editData?.uiColorSecondaryInput)}
@@ -3424,10 +3325,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 uiColorSecondaryError: null,
                               }))
                             }
-                            className="h-9 w-14 p-1"
+                            className="h-9 w-12 p-1"
                           />
                           <Input
-                            className="font-mono h-9 max-w-[160px]"
+                            className="font-mono h-9 w-32"
                             value={String(editData?.uiColorSecondaryInput ?? "")}
                             onChange={(e) =>
                               setEditData((p: any) => {
@@ -3437,52 +3338,14 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                   ...p,
                                   uiColorSecondaryInput: raw,
                                   uiColorSecondary: normalized,
-                                  uiColorSecondaryError:
-                                    raw.trim() && !normalized
-                                      ? "Color inválido"
-                                      : null,
+                                  uiColorSecondaryError: raw.trim() && !normalized ? "Color inválido" : null,
                                 };
                               })
                             }
                             placeholder="#RRGGBB"
                           />
                         </div>
-                        {editData?.uiColorSecondaryError && (
-                          <p className="text-xs text-destructive">
-                            {editData.uiColorSecondaryError}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label>Comentario 1</Label>
-                        <Input
-                          className="font-mono h-9 max-w-[160px]"
-                          value={String(editData?.defaultComment1Color ?? "")}
-                          onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              defaultComment1Color: e.target.value || null,
-                            }))
-                          }
-                          placeholder="#RRGGBB"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Comentario 2</Label>
-                        <Input
-                          className="font-mono h-9 max-w-[160px]"
-                          value={String(editData?.defaultComment2Color ?? "")}
-                          onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              defaultComment2Color: e.target.value || null,
-                            }))
-                          }
-                          placeholder="#RRGGBB"
-                        />
+                        {editData?.uiColorSecondaryError && <p className="text-xs text-destructive">{editData.uiColorSecondaryError}</p>}
                       </div>
                     </div>
                   </section>
