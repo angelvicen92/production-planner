@@ -12,6 +12,7 @@ function toHHMM(mins: number) {
 
 export function generatePlan(input: EngineInput): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
+  const unplanned: { taskId: number; reason: { code: string; message: string; taskId?: number; details?: any } }[] = [];
 
   if (!input?.planId)
     reasons.push({ code: "VALIDATION_ERROR", message: "Falta planId." });
@@ -391,6 +392,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
     .filter(Boolean) as any[];
   const forcedStartByTaskId = new Map<number, number>();
   const forcedEndByTaskId = new Map<number, number>();
+  const startDay = toMinutes(input.workDay.start);
+  const endDay = toMinutes(input.workDay.end);
+  const mealStart = toMinutes(input.meal.start);
+  const mealEnd = toMinutes(input.meal.end);
   const availabilityByContestant = ((input as any)?.contestantAvailabilityById ?? {}) as Record<number, { start: string; end: string }>;
 
   const toAvailStart = (contestantId: number | null) => {
@@ -451,11 +456,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   if (reasons.length) return { feasible: false, reasons };
-
-  const startDay = toMinutes(input.workDay.start);
-  const endDay = toMinutes(input.workDay.end);
-  const mealStart = toMinutes(input.meal.start);
-  const mealEnd = toMinutes(input.meal.end);
 
   // ✅ Disponibilidad por concursante: usar la ventana más restrictiva (plan ∩ concursante)
   const contestantAvailabilityById = ((input as any)
@@ -1142,7 +1142,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
     };
 
     if (!spaceId && !transportTask) {
-      return null;
+      const invalidSpaceId = Number(task?._invalidSpaceId ?? NaN);
+      return {
+        scheduled: false,
+        reason: {
+          code: "MISSING_SPACE",
+          taskId,
+          message: Number.isFinite(invalidSpaceId) && invalidSpaceId > 0
+            ? `No se puede planificar "${String(task?.templateName ?? `tarea ${taskId}`)}" porque su espacio fue eliminado o no existe.`
+            : `No se puede planificar "${String(task?.templateName ?? `tarea ${taskId}`)}" porque no tiene espacio asignado.`,
+        },
+      } as any;
     }
 
     // earliest por horario + deps
@@ -1153,22 +1163,24 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
     const effWin = getContestantEffectiveWindow(contestantId);
-    if (effWin && effWin.start >= effWin.end) {
-      return {
-        feasible: false,
-        reasons: [
-          {
+      if (effWin && effWin.start >= effWin.end) {
+        return {
+          scheduled: false,
+          reason: {
             code: "CONTESTANT_NO_AVAILABILITY",
             message:
-              `No se puede planificar "${String(task?.templateName ?? `tarea ${taskId}`)}" para ${task?.contestantName ?? `concursante ${contestantId}`}: ` +
-              `la ventana de disponibilidad es inválida (${toHHMM(effWin.start)}–${toHHMM(effWin.end)}). ` +
-              `Duración: ${duration} min. Jornada del plan: ${toHHMM(startDay)}–${toHHMM(endDay)}. ` +
-              `Fija: manual_block=${Boolean(task?.isManualBlock)}, status=${String(task?.status ?? "pending")}, lock=${String(task?.lockType ?? "none")}.`,
+              `No se puede planificar "${String(task?.templateName ?? `tarea ${taskId}`)}" porque la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`} no es válida.`,
             taskId,
+            details: {
+              availabilityStart: toHHMM(effWin.start),
+              availabilityEnd: toHHMM(effWin.end),
+              workDayStart: toHHMM(startDay),
+              workDayEnd: toHHMM(endDay),
+              duration,
+            },
           },
-        ],
-      } as any;
-    }
+        } as any;
+      }
 
     if (effWin) start = snapUp(Math.max(start, effWin.start));
 
@@ -1250,22 +1262,21 @@ export function generatePlan(input: EngineInput): EngineOutput {
       if (effWin && start + duration > effWin.end) {
         const startsBeforeAvailability = startDay < effWin.start;
         return {
-          feasible: false,
-          reasons: [
-            {
-              code: "CONTESTANT_NOT_AVAILABLE",
-              message:
-                `No cabe "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" ` +
-                `para ${task?.contestantName ?? `concursante ${contestantId}`} dentro de su disponibilidad ` +
-                `(${toHHMM(effWin.start)}–${toHHMM(effWin.end)}). ` +
-                `Duración: ${duration} min. Jornada del plan: ${toHHMM(startDay)}–${toHHMM(endDay)}. ` +
-                `Fija: manual_block=${Boolean(task?.isManualBlock)}, time_lock=${String(task?.lockType ?? "") === "time"}, full_lock=${String(task?.lockType ?? "") === "full"}, status=${String(task?.status ?? "pending")}. ` +
-                (startsBeforeAvailability
-                  ? `workStart (${toHHMM(startDay)}) es anterior a disponibilidad (${toHHMM(effWin.start)}). Sugerencia: o amplía disponibilidad o mueve la tarea a >=${toHHMM(effWin.start)}.`
-                  : ""),
-              taskId,
+          scheduled: false,
+          reason: {
+            code: "CONTESTANT_NOT_AVAILABLE",
+            message:
+              `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`,
+            taskId,
+            details: {
+              availabilityStart: toHHMM(effWin.start),
+              availabilityEnd: toHHMM(effWin.end),
+              workDayStart: toHHMM(startDay),
+              workDayEnd: toHHMM(endDay),
+              duration,
+              startsBeforeAvailability,
             },
-          ],
+          },
         } as any;
       }
 
@@ -1276,14 +1287,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
       }
       if (finish > endDay) {
         return {
-          feasible: false,
-          reasons: [
-            {
-              code: "NO_TIME",
-              message: "No cabe todo dentro del horario del día.",
-              taskId,
-            },
-          ],
+          scheduled: false,
+          reason: {
+            code: "NO_TIME",
+            message: "No queda tiempo suficiente en la jornada para esta tarea.",
+            taskId,
+          },
         } as any;
       }
 
@@ -1540,19 +1549,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (zId) lastZoneByContestant.set(cId, zId);
       }
 
-      return null; // ✅ tarea colocada
+      return { scheduled: true } as any; // ✅ tarea colocada
     }
 
     return {
-      feasible: false,
-      reasons: [
-        {
-          code: "MAX_ITER",
-          message:
-            "No se pudo encajar una tarea tras demasiados intentos (protección defensiva).",
-          taskId: Number(task?.id),
-        },
-      ],
+      scheduled: false,
+      reason: {
+        code: "MAX_ITER",
+        message:
+          "No se pudo encontrar hueco para esta tarea tras muchos intentos. Revisa bloqueos y disponibilidad.",
+        taskId: Number(task?.id),
+      },
     } as any;
   };
 
@@ -2240,18 +2247,19 @@ export function generatePlan(input: EngineInput): EngineOutput {
           !plannedEndByTaskId.has(Number(x)) &&
           !fixedEndByTaskId.has(Number(x)),
       );
-      return {
-        feasible: false,
-        reasons: [
-          {
-            code: "DEPENDENCY_NOT_SCHEDULED",
-            message:
-              `Hay tareas cuyos prerequisitos no se han podido planificar (posible ciclo o datos incoherentes). ` +
-              `Tarea: ${String(t?.templateName ?? `tarea ${t?.id}`)}. Prerequisitos pendientes: ${depIds.join(", ") || "?"}.`,
-            taskId: Number(t?.id),
-          },
-        ],
-      } as any;
+      const taskId = Number(t?.id);
+      const hardLocked = lockedTaskIds.has(taskId) || Number.isFinite(forcedStartByTaskId.get(taskId)) || Number.isFinite(forcedEndByTaskId.get(taskId));
+      const reason = {
+        code: "DEPENDENCY_NOT_SCHEDULED",
+        message:
+          `No se puede planificar "${String(t?.templateName ?? `tarea ${t?.id}`)}" porque faltan tareas previas requeridas.`,
+        taskId,
+        details: { missingDependencyTaskIds: depIds },
+      };
+      if (hardLocked) return { feasible: false, reasons: [reason] } as any;
+      unplanned.push({ taskId, reason });
+      pendingNonMeal.splice(0, 1);
+      continue;
     }
 
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
@@ -2486,8 +2494,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
     );
     if (idx >= 0) pendingNonMeal.splice(idx, 1);
 
-    const out = scheduleNonMealTask(task);
-    if (out) return out;
+    const out = scheduleNonMealTask(task) as any;
+    if (out?.scheduled === false && out?.reason) {
+      unplanned.push({ taskId: Number(task?.id), reason: out.reason });
+      continue;
+    }
+    if (out?.feasible === false) return out;
   }
 
   // Hard rule: un concursante no puede solaparse
@@ -2731,8 +2743,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   return {
-    feasible: true,
+    feasible: unplanned.length === 0,
     plannedTasks,
     warnings,
+    unplanned,
+    reasons: unplanned.map((x) => x.reason),
   } as any;
 }

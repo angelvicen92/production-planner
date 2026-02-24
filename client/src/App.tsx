@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog";
 import { AccessDenied } from "@/components/access-denied";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { useVisibilityRecovery } from "@/hooks/use-visibility-recovery";
@@ -157,8 +158,10 @@ function App() {
       <AuthProvider>
         <AppLifecycleEffects />
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <ConfirmDialogProvider>
+            <Toaster />
+            <Router />
+          </ConfirmDialogProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

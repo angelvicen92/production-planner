@@ -111,6 +111,7 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 function getRunProgress(args: {
   plannedCount: number;
@@ -667,6 +668,7 @@ export default function PlanDetailsPage() {
   const updatePlan = useUpdatePlan();
   const { nowTime, nowSeconds } = useProductionClock();
   const { toast } = useToast();
+  const confirmDialog = useConfirm();
   const queryClient = useQueryClient();
 
   const { data: contestants = [] } = useContestants(id);
@@ -3150,7 +3152,12 @@ ${reasonMessage}` : message,
                                       variant="ghost"
                                       size="sm"
                                       onClick={async () => {
-                                        if (!confirm("Delete this task?")) return;
+                                        const ok = await confirmDialog({
+                                          title: "Eliminar tarea",
+                                          description: "¿Eliminar esta tarea?",
+                                          confirmText: "Eliminar",
+                                        });
+                                        if (!ok) return;
                                         await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: task.id }));
                                         queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                                         toast({ title: "Task deleted" });
@@ -4009,7 +4016,7 @@ ${reasonMessage}` : message,
                                     <Tooltip><TooltipTrigger asChild><Button aria-label="Start" variant="ghost" size="icon" disabled={!canStart || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "in_progress", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Play className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Start</TooltipContent></Tooltip>
                                     <Tooltip><TooltipTrigger asChild><Button aria-label="Finish" variant="ghost" size="icon" disabled={!canFinish || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "done", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Check className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Finish</TooltipContent></Tooltip>
                                     <Tooltip><TooltipTrigger asChild><Button aria-label="Interrupt" variant="ghost" size="icon" disabled={!canInterrupt || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "interrupted", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Pause className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Interrupt</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={status === "pending" || resetTask.isPending} onClick={() => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; if (!window.confirm(msg)) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={status === "pending" || resetTask.isPending} onClick={async () => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; const ok = await confirmDialog({ title: "Resetear tarea", description: msg, confirmText: "Resetear" }); if (!ok) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
                                   </div>
                                 </TooltipProvider>
                               </TableCell>
@@ -4670,6 +4677,7 @@ type PlanResourceItemRow = {
 
 function PlanResourcesTab({ planId }: { planId: number }) {
   const { toast } = useToast();
+  const confirmDialog = useConfirm();
   const [rows, setRows] = useState<PlanResourceItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -5925,8 +5933,12 @@ function PlanResourcesTab({ planId }: { planId: number }) {
                     <button
                       className="text-sm text-red-600 hover:underline ml-auto"
                       onClick={async () => {
-                        if (!confirm("¿Eliminar este recurso adhoc del plan?"))
-                          return;
+                        const ok = await confirmDialog({
+                          title: "Eliminar recurso",
+                          description: "¿Eliminar este recurso adhoc del plan?",
+                          confirmText: "Eliminar",
+                        });
+                        if (!ok) return;
 
                         try {
                           await apiRequest(

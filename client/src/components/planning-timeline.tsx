@@ -20,6 +20,7 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Task {
   id: number;
@@ -289,6 +290,7 @@ function TaskStatusMenuTrigger({
 }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const confirm = useConfirm();
   const suppressNextClickRef = useRef(false);
   const actions = taskActionsForStatus(task.status ?? "pending");
 
@@ -450,9 +452,13 @@ function TaskStatusMenuTrigger({
                   type="button"
                   className="w-full rounded px-2 py-1 text-left text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   disabled={taskStatusPending}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!onDeleteManualBlock) return;
-                    const ok = window.confirm("¿Eliminar bloqueo manual?");
+                    const ok = await confirm({
+                      title: "Eliminar bloqueo manual",
+                      description: "¿Eliminar bloqueo manual?",
+                      confirmText: "Eliminar",
+                    });
                     if (!ok) return;
                     Promise.resolve(onDeleteManualBlock(task))
                       .then(() => setOpen(false))
@@ -543,6 +549,7 @@ function TaskStatusMenuTrigger({
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const density = usePlanningDensity();
   const isPdf = density === "pdf";
   const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
@@ -956,6 +963,7 @@ function TaskStatusMenuTrigger({
   }, [breaks, dailyTasks, pendingManualEdits, viewMode]);
 
   const filteredDailyTasksByStage = useMemo(() => {
+    if (viewMode === "contestants") return timelineTasks ?? [];
     if (selectedStageIdsSet.size === 0) return timelineTasks ?? [];
     return (timelineTasks ?? []).filter((task) => {
       const taskZoneId = Number(task?.zoneId);
@@ -968,7 +976,7 @@ function TaskStatusMenuTrigger({
       const spaceZoneId = Number(space?.zoneId);
       return Number.isFinite(spaceZoneId) && selectedStageIdsSet.has(spaceZoneId);
     });
-  }, [timelineTasks, spaces, selectedStageIdsSet]);
+  }, [timelineTasks, spaces, selectedStageIdsSet, viewMode]);
 
   const selectedResourceKeys = useMemo(
     () => (resourceFilterIds ?? []).map((id) => String(id ?? "")).filter((id) => id.length > 0),
@@ -2870,7 +2878,12 @@ function TaskStatusMenuTrigger({
                       disabled={manualBlockEditorBusy}
                       onClick={async () => {
                         if (!manualBlockEditor?.task || !onDeleteManualBlock) return;
-                        if (!window.confirm("¿Eliminar bloqueo manual?")) return;
+                        const ok = await confirm({
+                          title: "Eliminar bloqueo manual",
+                          description: "¿Eliminar bloqueo manual?",
+                          confirmText: "Eliminar",
+                        });
+                        if (!ok) return;
                         setManualBlockEditorBusy(true);
                         try {
                           await onDeleteManualBlock(manualBlockEditor.task);

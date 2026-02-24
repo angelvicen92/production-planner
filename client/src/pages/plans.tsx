@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Calendar, Clock, ArrowRight, Trash2, Star } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 function formatPct(value: unknown): string {
   const n = Number(value);
@@ -20,13 +21,16 @@ export default function PlansPage() {
   const { data: preferences } = useMePreferences();
   const setFavoritePlan = useSetFavoritePlan();
   const deletePlan = useDeletePlan();
+  const confirm = useConfirm();
 
   const favoritePlanId = preferences?.favoritePlanId ?? null;
 
   const handleDelete = async (planId: number, planDate: string) => {
-    const ok = window.confirm(
-      `¿Borrar este plan (${format(new Date(planDate), "MMMM d, yyyy")})?\n\nNo se podrá recuperar.`
-    );
+    const ok = await confirm({
+      title: "Eliminar plan",
+      description: `¿Borrar este plan (${format(new Date(planDate), "MMMM d, yyyy")})? No se podrá recuperar.`,
+      confirmText: "Eliminar",
+    });
     if (!ok) return;
 
     deletePlan.mutate(planId);

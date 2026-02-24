@@ -12,6 +12,7 @@ import { useSpaces, useZones } from "@/hooks/use-spaces";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ type ResourceType = {
 
 export function ResourcesList() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [types, setTypes] = useState<ResourceType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +186,12 @@ export function ResourcesList() {
   }
 
   async function deleteItem(itemId: number) {
-    if (!confirm("¿Eliminar esta unidad? Esta acción no se puede deshacer")) return;
+    const ok = await confirm({
+      title: "Eliminar unidad",
+      description: "¿Eliminar esta unidad? Esta acción no se puede deshacer",
+      confirmText: "Eliminar",
+    });
+    if (!ok) return;
 
     try {
       await apiRequest("DELETE", `/api/resource-items/${itemId}`);
@@ -209,7 +216,12 @@ export function ResourcesList() {
 
 
   async function deleteType(typeId: number, typeName: string) {
-    if (!confirm(`¿Eliminar ${typeName}? Esta acción no se puede deshacer`)) return;
+    const ok = await confirm({
+      title: "Eliminar tipo",
+      description: `¿Eliminar ${typeName}? Esta acción no se puede deshacer`,
+      confirmText: "Eliminar",
+    });
+    if (!ok) return;
 
     try {
       await apiRequest("DELETE", `/api/resource-types/${typeId}`);

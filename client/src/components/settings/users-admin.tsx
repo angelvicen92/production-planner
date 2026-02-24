@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { RefreshCw, Trash2 } from "lucide-react";
 
 type RoleKey = "admin" | "production" | "aux" | "viewer";
@@ -36,6 +37,7 @@ type RowDraft = {
 export function UsersAdminSettings({ currentUserId }: { currentUserId?: string | null }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [onlyUnlinked, setOnlyUnlinked] = useState(false);
@@ -233,9 +235,13 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
                       <Button
                         size="sm"
                         disabled={!dirty || isSaving}
-                        onClick={() => {
+                        onClick={async () => {
                           if (currentUserId && user.id === currentUserId && draft.roleKey !== "admin") {
-                            const ok = window.confirm("Vas a quitarte rol admin. ¿Confirmas?");
+                            const ok = await confirm({
+                              title: "Quitar rol admin",
+                              description: "Vas a quitarte el rol admin. ¿Confirmas?",
+                              confirmText: "Sí, continuar",
+                            });
                             if (!ok) return;
                           }
                           saveRow.mutate({ userId: user.id, next: draft, current: user });
@@ -250,8 +256,12 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
                       variant="ghost"
                       className="text-destructive"
                       disabled={deleteUser.isPending || user.id === currentUserId}
-                      onClick={() => {
-                        const ok = window.confirm(`¿Eliminar usuario ${user.email || user.id}? Esta acción es irreversible.`);
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Eliminar usuario",
+                          description: `¿Eliminar usuario ${user.email || user.id}? Esta acción es irreversible.`,
+                          confirmText: "Eliminar",
+                        });
                         if (!ok) return;
                         deleteUser.mutate(user);
                       }}
