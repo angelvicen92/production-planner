@@ -16,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 
 type HeuristicSetting = { basicLevel: number; advancedValue: number };
 type OptimizerHeuristics = Record<OptimizerHeuristicKey, HeuristicSetting>;
@@ -30,17 +29,9 @@ type OptimizerSettings = {
   groupBySpaceAndTemplate: boolean;
   mainZonePriorityLevel: number;
   groupingLevel: number;
-  mainZoneOptFinishEarly: boolean;
-  mainZoneOptKeepBusy: boolean;
   contestantCompactLevel: number;
   contestantStayInZoneLevel: number;
-  contestantTotalSpanLevel: number;
-  arrivalTaskTemplateName: string;
-  departureTaskTemplateName: string;
-  arrivalGroupingTarget: number;
-  departureGroupingTarget: number;
-  vanCapacity: number;
-  weightArrivalDepartureGrouping: number;
+  groupingZoneIds: number[];
 };
 
 const heuristicKeys: OptimizerHeuristicKey[] = [
@@ -135,7 +126,7 @@ export function GeneralOptimizerSettings() {
   useEffect(() => {
     if (!data) return;
     const normalizedHeuristics = normalizeHeuristics(data.heuristics);
-    setDraft({ ...data, heuristics: normalizedHeuristics });
+    setDraft({ ...data, heuristics: normalizedHeuristics, groupingZoneIds: data.groupingZoneIds ?? [] });
     setLocalMode(data.optimizationMode);
     setLocalHeuristics(normalizedHeuristics);
     latestOptimizerRef.current = { mode: data.optimizationMode, heuristics: normalizedHeuristics };
@@ -253,15 +244,6 @@ export function GeneralOptimizerSettings() {
     await saveWithHeuristics(nextHeuristics);
   };
 
-  const mainZoneBasic = useMemo(
-    () =>
-      Math.max(
-        localHeuristics?.mainZoneFinishEarly.basicLevel ?? 0,
-        localHeuristics?.mainZoneKeepBusy.basicLevel ?? 0,
-      ),
-    [localHeuristics],
-  );
-
   const groupingBasic = useMemo(
     () =>
       Math.max(
@@ -325,7 +307,7 @@ export function GeneralOptimizerSettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Plató principal (opcional)</Label>
+          <Label>Zona principal (plato)</Label>
           <Select
             value={draft.mainZoneId ? String(draft.mainZoneId) : "none"}
             disabled={isSaving}
@@ -349,87 +331,51 @@ export function GeneralOptimizerSettings() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={draft.mainZoneOptFinishEarly !== false}
-            disabled={isSaving}
-            onCheckedChange={async (v) => {
-              const mainZoneOptFinishEarly = v !== false;
-              const nextDraft = { ...draft, mainZoneOptFinishEarly };
-              await saveSimpleField({ mainZoneOptFinishEarly }, nextDraft);
-            }}
-          />
-          <div className="text-sm">Plató principal: terminar cuanto antes</div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={draft.mainZoneOptKeepBusy !== false}
-            disabled={isSaving}
-            onCheckedChange={async (v) => {
-              const mainZoneOptKeepBusy = v !== false;
-              const nextDraft = { ...draft, mainZoneOptKeepBusy };
-              await saveSimpleField({ mainZoneOptKeepBusy }, nextDraft);
-            }}
-          />
-          <div
-            className="text-sm"
-            title="Modo dirección intenta que el plató principal funcione en bloque continuo; puede retrasar el inicio para evitar huecos."
-          >
-            Plató principal: sin tiempos muertos (modo dirección)
+        <div className="space-y-2">
+          <Label>Zona principal: terminar cuanto antes</Label>
+          <div className="space-y-1">
+            <Slider
+              min={0}
+              max={10}
+              step={1}
+              disabled={isSaving}
+              value={[localMode === "basic" ? mapBasicToAdvanced(localHeuristics.mainZoneFinishEarly.basicLevel) : localHeuristics.mainZoneFinishEarly.advancedValue]}
+              onValueChange={(arr) => {
+                const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                setAdvancedHeuristicLocal({ mainZoneFinishEarly: { advancedValue } });
+              }}
+              onValueCommit={async (arr) => {
+                const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                await commitAdvancedHeuristic({ mainZoneFinishEarly: { advancedValue } });
+              }}
+            />
+            <div className="text-xs">Valor: {localMode === "basic" ? mapBasicToAdvanced(localHeuristics.mainZoneFinishEarly.basicLevel) : localHeuristics.mainZoneFinishEarly.advancedValue}</div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Plató principal: prioridad operativa</Label>
-          {localMode === "basic" ? (
-            <Select
-              value={String(mainZoneBasic)}
+          <Label title="Modo dirección intenta que el plató principal funcione en bloque continuo; puede retrasar el inicio para evitar huecos.">
+            Zona principal: sin tiempos muertos (modo dirección)
+          </Label>
+          <div className="space-y-1">
+            <Slider
+              min={0}
+              max={10}
+              step={1}
               disabled={isSaving}
-              onValueChange={async (v) => {
-                const basicLevel = clampBasicLevel(Number(v));
-                await setBasicHeuristic({
-                  mainZoneFinishEarly: { basicLevel },
-                  mainZoneKeepBusy: { basicLevel },
-                });
+              value={[localMode === "basic" ? mapBasicToAdvanced(localHeuristics.mainZoneKeepBusy.basicLevel) : localHeuristics.mainZoneKeepBusy.advancedValue]}
+              onValueChange={(arr) => {
+                const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                setAdvancedHeuristicLocal({ mainZoneKeepBusy: { advancedValue } });
               }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Apagado</SelectItem>
-                <SelectItem value="1">Suave</SelectItem>
-                <SelectItem value="2">Medio</SelectItem>
-                <SelectItem value="3">Fuerte</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="space-y-1">
-              <Slider
-                min={0}
-                max={10}
-                step={1}
-                disabled={isSaving}
-                value={[localHeuristics.mainZoneFinishEarly.advancedValue]}
-                onValueChange={(arr) => {
-                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
-                  setAdvancedHeuristicLocal({
-                    mainZoneFinishEarly: { advancedValue },
-                    mainZoneKeepBusy: { advancedValue },
-                  });
-                }}
-                onValueCommit={async (arr) => {
-                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
-                  await commitAdvancedHeuristic({
-                    mainZoneFinishEarly: { advancedValue },
-                    mainZoneKeepBusy: { advancedValue },
-                  });
-                }}
-              />
-              <div className="text-xs">Valor: {localHeuristics.mainZoneFinishEarly.advancedValue}</div>
-            </div>
-          )}
+              onValueCommit={async (arr) => {
+                const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
+                await commitAdvancedHeuristic({ mainZoneKeepBusy: { advancedValue } });
+              }}
+            />
+            <div className="text-xs">Valor: {localMode === "basic" ? mapBasicToAdvanced(localHeuristics.mainZoneKeepBusy.basicLevel) : localHeuristics.mainZoneKeepBusy.advancedValue}</div>
+          </div>
           <div className="text-xs text-muted-foreground">En Básico, Fuerte = {strongLabelValue}.</div>
         </div>
 
@@ -483,6 +429,35 @@ export function GeneralOptimizerSettings() {
               <div className="text-xs">Valor: {localHeuristics.groupBySpaceTemplateMatch.advancedValue}</div>
             </div>
           )}
+        </div>
+
+        <div className="space-y-2 rounded-md border p-3">
+          <Label>Aplicar “Agrupar por actividad” en zonas</Label>
+          {Number(localHeuristics.groupBySpaceTemplateMatch.advancedValue) <= 0 ? (
+            <div className="text-xs text-muted-foreground">Sin efecto con 0</div>
+          ) : null}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {zones.map((z: any) => {
+              const zoneId = Number(z.id);
+              const checked = draft.groupingZoneIds.includes(zoneId);
+              return (
+                <label key={zoneId} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={checked}
+                    disabled={isSaving || Number(localHeuristics.groupBySpaceTemplateMatch.advancedValue) <= 0}
+                    onCheckedChange={async (v) => {
+                      const nextZoneIds = v
+                        ? Array.from(new Set([...draft.groupingZoneIds, zoneId]))
+                        : draft.groupingZoneIds.filter((id) => id !== zoneId);
+                      const nextDraft = { ...draft, groupingZoneIds: nextZoneIds };
+                      await saveSimpleField({ groupingZoneIds: nextZoneIds }, nextDraft);
+                    }}
+                  />
+                  <span>{String(z.name ?? `Zona ${zoneId}`)}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -574,61 +549,10 @@ export function GeneralOptimizerSettings() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>Tiempo total concursante en grabación</Label>
-          {localMode === "basic" ? (
-            <Select
-              value={String(localHeuristics.contestantTotalSpan.basicLevel)}
-              disabled={isSaving}
-              onValueChange={async (v) => {
-                const basicLevel = clampBasicLevel(Number(v));
-                await setBasicHeuristic({ contestantTotalSpan: { basicLevel } });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Apagado</SelectItem>
-                <SelectItem value="1">Suave</SelectItem>
-                <SelectItem value="2">Medio</SelectItem>
-                <SelectItem value="3">Fuerte</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="space-y-1">
-              <Slider
-                min={0}
-                max={10}
-                step={1}
-                disabled={isSaving}
-                value={[localHeuristics.contestantTotalSpan.advancedValue]}
-                onValueChange={(arr) => {
-                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
-                  setAdvancedHeuristicLocal({ contestantTotalSpan: { advancedValue } });
-                }}
-                onValueCommit={async (arr) => {
-                  const advancedValue = clampAdvancedValue(arr?.[0] ?? 0);
-                  await commitAdvancedHeuristic({ contestantTotalSpan: { advancedValue } });
-                }}
-              />
-              <div className="text-xs">Valor: {localHeuristics.contestantTotalSpan.advancedValue}</div>
-            </div>
-          )}
-        </div>
 
 
-        <div className="space-y-3 rounded-md border p-3">
-          <div className="text-sm font-medium">Transporte (Llegada/Salida)</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1"><Label>Plantilla Llegada</Label><Input value={draft.arrivalTaskTemplateName ?? ""} disabled={isSaving} onChange={async (e) => { const v=e.target.value; const next={...draft,arrivalTaskTemplateName:v}; setDraft(next); await patchSettings({arrivalTaskTemplateName:v}); }} /></div>
-            <div className="space-y-1"><Label>Plantilla Salida</Label><Input value={draft.departureTaskTemplateName ?? ""} disabled={isSaving} onChange={async (e) => { const v=e.target.value; const next={...draft,departureTaskTemplateName:v}; setDraft(next); await patchSettings({departureTaskTemplateName:v}); }} /></div>
-            <div className="space-y-1"><Label>Objetivo agrupación llegada</Label><Input type="number" value={draft.arrivalGroupingTarget ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,arrivalGroupingTarget:v}; setDraft(next); await patchSettings({arrivalGroupingTarget:v}); }} /></div>
-            <div className="space-y-1"><Label>Objetivo agrupación salida</Label><Input type="number" value={draft.departureGroupingTarget ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,departureGroupingTarget:v}; setDraft(next); await patchSettings({departureGroupingTarget:v}); }} /></div>
-            <div className="space-y-1"><Label>Capacidad furgoneta</Label><Input type="number" value={draft.vanCapacity ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Number(e.target.value)||0); const next={...draft,vanCapacity:v}; setDraft(next); await patchSettings({vanCapacity:v}); }} /></div>
-            <div className="space-y-1"><Label>Peso agrupación (0-10)</Label><Input type="number" value={draft.weightArrivalDepartureGrouping ?? 0} disabled={isSaving} onChange={async (e)=>{ const v=Math.max(0,Math.min(10,Number(e.target.value)||0)); const next={...draft,weightArrivalDepartureGrouping:v}; setDraft(next); await patchSettings({weightArrivalDepartureGrouping:v}); }} /></div>
-          </div>
-        </div>
+
+
       </CardContent>
     </Card>
   );

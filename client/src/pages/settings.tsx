@@ -76,6 +76,7 @@ import { ResourcesList } from "@/components/resources-list";
 import { GeneralProgramSettings } from "@/components/general-program-settings";
 import { GeneralOptimizerSettings } from "@/components/general-optimizer-settings";
 import { ControlRoomSettingsCard } from "@/components/control-room-settings";
+import { TransportSettingsCard } from "@/components/transport-settings-card";
 import { useTranslation } from "react-i18next";
 import { UsersAdminSettings } from "@/components/settings/users-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -148,6 +149,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-4">
+            <TransportSettingsCard />
             <ResourcesList />
           </TabsContent>
           <TabsContent value="staff" className="space-y-4">

@@ -1829,6 +1829,7 @@ function mapDeleteError(err: any, fallback: string) {
         // ✅ compactar concursantes
         contestantCompactLevel: settings.contestantCompactLevel,
         contestantTotalSpanLevel: settings.contestantTotalSpanLevel,
+        groupingZoneIds: settings.groupingZoneIds,
         arrivalTaskTemplateName: settings.arrivalTaskTemplateName,
         departureTaskTemplateName: settings.departureTaskTemplateName,
         arrivalGroupingTarget: settings.arrivalGroupingTarget,
@@ -1902,6 +1903,7 @@ function mapDeleteError(err: any, fallback: string) {
         patch.contestant_compact_level = lvl;
       }
 
+      if (input.groupingZoneIds !== undefined) patch.grouping_zone_ids = Array.from(new Set((input.groupingZoneIds ?? []).map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0)));
       if (input.arrivalTaskTemplateName !== undefined) patch.arrival_task_template_name = String(input.arrivalTaskTemplateName ?? "").trim();
       if (input.departureTaskTemplateName !== undefined) patch.departure_task_template_name = String(input.departureTaskTemplateName ?? "").trim();
       if (input.arrivalGroupingTarget !== undefined) patch.arrival_grouping_target = Math.max(0, Number(input.arrivalGroupingTarget));
