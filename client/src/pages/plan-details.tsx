@@ -1035,24 +1035,141 @@ export default function PlanDetailsPage() {
 
   const DailyTaskEditor = ({ task, variant }: { task: any; variant: "list" | "detail" }) => {
     const locked = task.status === "in_progress" || task.status === "done";
-    const durationValue = task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? "";
+    const initialDraft = {
+      startPlanned: String(task.startPlanned ?? task.start_planned ?? ""),
+      endPlanned: String(task.endPlanned ?? task.end_planned ?? ""),
+      durationOverride: String(task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? ""),
+      comment1Text: String(task.comment1Text ?? task.comment_1 ?? task.comment1_text ?? ""),
+      comment1Color: String(task.comment1Color ?? task.comment_color_1 ?? task.comment1_color ?? ""),
+      comment2Text: String(task.comment2Text ?? task.comment_2 ?? task.comment2_text ?? ""),
+      comment2Color: String(task.comment2Color ?? task.comment_color_2 ?? task.comment2_color ?? ""),
+    };
+    const [draft, setDraft] = useState(initialDraft);
+    const [editingField, setEditingField] = useState<string | null>(null);
+
+    useEffect(() => {
+      if (editingField) return;
+      setDraft(initialDraft);
+    }, [editingField, task.id, task.startPlanned, task.endPlanned, task.durationOverride, task.comment1Text, task.comment1Color, task.comment2Text, task.comment2Color]);
+
+    const saveTaskPatch = async (patch: Record<string, any>, successTitle: string) => {
+      await apiRequest("PATCH", buildUrl(api.dailyTasks.update.path, { id: task.id }), patch);
+      await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+      toast({ title: successTitle });
+    };
+
+    const savePlannedTimeIfChanged = async () => {
+      const start = draft.startPlanned.trim();
+      const end = draft.endPlanned.trim();
+      const prevStart = String(task.startPlanned ?? task.start_planned ?? "").trim();
+      const prevEnd = String(task.endPlanned ?? task.end_planned ?? "").trim();
+      if (start === prevStart && end === prevEnd) return;
+      const startMin = parseHHMMToMinutes(start);
+      const endMin = parseHHMMToMinutes(end);
+      if (startMin === null || endMin === null || endMin <= startMin) {
+        toast({ title: "Horas inválidas", description: "Usa HH:MM y fin > inicio", variant: "destructive" });
+        setDraft((prev) => ({ ...prev, startPlanned: prevStart, endPlanned: prevEnd }));
+        return;
+      }
+      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/planned-time`, { startPlanned: start, endPlanned: end });
+      await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+      toast({ title: "Horario planificado actualizado" });
+    };
+
+    const onFieldBlur = async (field: string, save: () => Promise<void>) => {
+      setEditingField((current) => (current === field ? null : current));
+      await save();
+    };
+
     if (variant === "list") {
       return (
-        <div className="grid grid-cols-6 gap-3 items-center rounded-md border px-2 py-2">
-          <div className="font-medium text-sm">{task.template?.name || `Template #${task.templateId}`}</div>
-          <div className="font-mono text-xs">{task.startPlanned || "—"}</div>
-          <div className="font-mono text-xs">{task.endPlanned || "—"}</div>
+        <div className="grid grid-cols-9 gap-2 items-center rounded-md border px-2 py-2">
+          <div className="font-medium text-sm truncate">{task.template?.name || `Template #${task.templateId}`}</div>
+          <Input
+            type="time"
+            step={60}
+            className="h-8"
+            value={draft.startPlanned}
+            onFocus={() => setEditingField("startPlanned")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, startPlanned: e.target.value }))}
+            onBlur={() => void onFieldBlur("startPlanned", savePlannedTimeIfChanged)}
+            disabled={locked}
+          />
+          <Input
+            type="time"
+            step={60}
+            className="h-8"
+            value={draft.endPlanned}
+            onFocus={() => setEditingField("endPlanned")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, endPlanned: e.target.value }))}
+            onBlur={() => void onFieldBlur("endPlanned", savePlannedTimeIfChanged)}
+            disabled={locked}
+          />
           <div>
             {locked ? <span className="text-xs text-muted-foreground">Locked</span> : (
-              <Input type="number" className="h-8" defaultValue={durationValue} placeholder="min" onBlur={(e) => updateContestantTaskDuration(Number(task.id), e.currentTarget.value)} />
+              <Input
+                type="number"
+                className="h-8"
+                value={draft.durationOverride}
+                placeholder="min"
+                onFocus={() => setEditingField("durationOverride")}
+                onChange={(e) => setDraft((prev) => ({ ...prev, durationOverride: e.target.value }))}
+                onBlur={() => void onFieldBlur("durationOverride", async () => {
+                  await updateContestantTaskDuration(Number(task.id), draft.durationOverride);
+                })}
+              />
             )}
           </div>
+          <Input
+            className="h-8 text-xs"
+            value={draft.comment1Text}
+            placeholder="Comentario 1"
+            onFocus={() => setEditingField("comment1Text")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, comment1Text: e.target.value }))}
+            onBlur={() => void onFieldBlur("comment1Text", async () => {
+              await saveTaskPatch({ comment1Text: draft.comment1Text.trim() || null }, "Comentario 1 actualizado");
+            })}
+            disabled={locked}
+          />
+          <Input
+            className="h-8 text-xs"
+            value={draft.comment1Color}
+            placeholder="#RRGGBB"
+            onFocus={() => setEditingField("comment1Color")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, comment1Color: e.target.value }))}
+            onBlur={() => void onFieldBlur("comment1Color", async () => {
+              await saveTaskPatch({ comment1Color: normalizeHexColor(draft.comment1Color) }, "Color comentario 1 actualizado");
+            })}
+            disabled={locked}
+          />
+          <Input
+            className="h-8 text-xs"
+            value={draft.comment2Text}
+            placeholder="Comentario 2"
+            onFocus={() => setEditingField("comment2Text")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, comment2Text: e.target.value }))}
+            onBlur={() => void onFieldBlur("comment2Text", async () => {
+              await saveTaskPatch({ comment2Text: draft.comment2Text.trim() || null }, "Comentario 2 actualizado");
+            })}
+            disabled={locked}
+          />
+          <Input
+            className="h-8 text-xs"
+            value={draft.comment2Color}
+            placeholder="#RRGGBB"
+            onFocus={() => setEditingField("comment2Color")}
+            onChange={(e) => setDraft((prev) => ({ ...prev, comment2Color: e.target.value }))}
+            onBlur={() => void onFieldBlur("comment2Color", async () => {
+              await saveTaskPatch({ comment2Color: normalizeHexColor(draft.comment2Color) }, "Color comentario 2 actualizado");
+            })}
+            disabled={locked}
+          />
           <div>
             <Select
               value={task.status || "pending"}
               onValueChange={(next) => updateTaskStatus.mutate({ taskId: task.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
             >
-              <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-[120px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">pending</SelectItem>
                 <SelectItem value="in_progress">in_progress</SelectItem>
@@ -1075,16 +1192,28 @@ export default function PlanDetailsPage() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Inicio plan</Label><div className="text-sm">{task.startPlanned || "—"}</div></div>
-          <div><Label>Fin plan</Label><div className="text-sm">{task.endPlanned || "—"}</div></div>
+          <div><Label>Inicio plan</Label><Input type="time" step={60} className="mt-1" value={draft.startPlanned} onFocus={() => setEditingField("detailStart")} onChange={(e) => setDraft((prev) => ({ ...prev, startPlanned: e.target.value }))} onBlur={() => void onFieldBlur("detailStart", savePlannedTimeIfChanged)} disabled={locked} /></div>
+          <div><Label>Fin plan</Label><Input type="time" step={60} className="mt-1" value={draft.endPlanned} onFocus={() => setEditingField("detailEnd")} onChange={(e) => setDraft((prev) => ({ ...prev, endPlanned: e.target.value }))} onBlur={() => void onFieldBlur("detailEnd", savePlannedTimeIfChanged)} disabled={locked} /></div>
           <div><Label>Estado</Label><div className="text-sm">{task.status || "pending"}</div></div>
           <div><Label>Recursos</Label><div className="text-sm">{Array.isArray(task.assignedResources) ? task.assignedResources.length : 0}</div></div>
         </div>
         <div>
           <Label>Duración (min)</Label>
           {locked ? <div className="text-xs text-muted-foreground pt-2">Locked</div> : (
-            <Input type="number" defaultValue={durationValue} className="mt-2" onBlur={(e) => updateContestantTaskDuration(Number(task.id), e.currentTarget.value)} />
+            <Input type="number" value={draft.durationOverride} className="mt-2" onFocus={() => setEditingField("detailDuration")} onChange={(e) => setDraft((prev) => ({ ...prev, durationOverride: e.target.value }))} onBlur={() => void onFieldBlur("detailDuration", async () => updateContestantTaskDuration(Number(task.id), draft.durationOverride))} />
           )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Comentario 1</Label>
+            <Input value={draft.comment1Text} onFocus={() => setEditingField("detailComment1")} onChange={(e) => setDraft((prev) => ({ ...prev, comment1Text: e.target.value }))} onBlur={() => void onFieldBlur("detailComment1", async () => saveTaskPatch({ comment1Text: draft.comment1Text.trim() || null }, "Comentario 1 actualizado"))} disabled={locked} />
+            <Input value={draft.comment1Color} placeholder="#RRGGBB" onFocus={() => setEditingField("detailColor1")} onChange={(e) => setDraft((prev) => ({ ...prev, comment1Color: e.target.value }))} onBlur={() => void onFieldBlur("detailColor1", async () => saveTaskPatch({ comment1Color: normalizeHexColor(draft.comment1Color) }, "Color comentario 1 actualizado"))} disabled={locked} />
+          </div>
+          <div className="space-y-2">
+            <Label>Comentario 2</Label>
+            <Input value={draft.comment2Text} onFocus={() => setEditingField("detailComment2")} onChange={(e) => setDraft((prev) => ({ ...prev, comment2Text: e.target.value }))} onBlur={() => void onFieldBlur("detailComment2", async () => saveTaskPatch({ comment2Text: draft.comment2Text.trim() || null }, "Comentario 2 actualizado"))} disabled={locked} />
+            <Input value={draft.comment2Color} placeholder="#RRGGBB" onFocus={() => setEditingField("detailColor2")} onChange={(e) => setDraft((prev) => ({ ...prev, comment2Color: e.target.value }))} onBlur={() => void onFieldBlur("detailColor2", async () => saveTaskPatch({ comment2Color: normalizeHexColor(draft.comment2Color) }, "Color comentario 2 actualizado"))} disabled={locked} />
+          </div>
         </div>
       </div>
     );
@@ -2374,8 +2503,8 @@ ${reasonMessage}` : message,
 
                     {contestantTasksMode === "list" ? (
                       <div className="rounded-lg border border-border p-3">
-                        <div className="grid grid-cols-6 gap-3 px-2 pb-2 text-muted-foreground text-xs uppercase tracking-wide">
-                          <div>Tarea</div><div>Inicio plan</div><div>Fin plan</div><div>Duración</div><div>Estado</div><div>Acciones</div>
+                        <div className="grid grid-cols-9 gap-2 px-2 pb-2 text-muted-foreground text-[10px] uppercase tracking-wide">
+                          <div>Tarea</div><div>Inicio</div><div>Fin</div><div>Duración</div><div>Comentario 1</div><div>Color C1</div><div>Comentario 2</div><div>Color C2</div><div>Estado/Acciones</div>
                         </div>
                         <div className="space-y-2">
                           {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
@@ -2384,20 +2513,23 @@ ${reasonMessage}` : message,
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
                         {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
                           <button
                             key={t.id}
                             type="button"
-                            className="rounded-xl p-5 shadow-sm border text-left"
-                            style={{ borderColor: t?.template?.uiColor ?? '#e5e7eb', backgroundColor: `${t?.template?.uiColor ?? '#e5e7eb'}15` }}
+                            className="rounded-lg p-2 border border-border border-l-4 text-left hover:bg-muted/30 transition min-h-[76px]"
+                            style={{ borderLeftColor: t?.template?.uiColor ?? '#e5e7eb' }}
                             onClick={() => setContestantDetailTask(t)}
                           >
-                            <div className="font-semibold">{t.template?.name || `Template #${t.templateId}`}</div>
-                            <div className="mt-2 text-sm text-muted-foreground">Inicio: {t.startPlanned || '—'}</div>
-                            <div className="text-sm text-muted-foreground">Fin: {t.endPlanned || '—'}</div>
-                            <div className="text-sm text-muted-foreground">Duración: {t.durationOverride ?? t.template?.defaultDuration ?? '—'} min</div>
-                            <div className="text-sm">Estado: {t.status || 'pending'}</div>
+                            <div className="text-sm font-medium truncate">{t.template?.name || `Template #${t.templateId}`}</div>
+                            <div className="mt-1 text-xs text-muted-foreground truncate">{t.startPlanned || '—'} - {t.endPlanned || '—'} · {t.durationOverride ?? t.template?.defaultDuration ?? '—'} min</div>
+                            <div className="text-xs mt-1">{t.status || 'pending'}</div>
+                            {(t.comment1Text || t.comment2Text) ? (
+                              <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
+                                {[t.comment1Text, t.comment2Text].filter(Boolean).join(' · ')}
+                              </div>
+                            ) : null}
                           </button>
                         ))}
                       </div>
