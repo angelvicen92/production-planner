@@ -86,6 +86,10 @@ export default function SettingsPage() {
   const { role } = useUserRole(true);
   const { user } = useAuth();
   const isAdmin = role === "admin";
+  const resourceTypesWithItemsQ = useQuery({
+    queryKey: ["/api/resource-types-with-items"],
+    queryFn: () => apiRequest("GET", "/api/resource-types-with-items"),
+  });
 
   return (
     <Layout>
@@ -135,11 +139,11 @@ export default function SettingsPage() {
             <ControlRoomSettingsCard />
           </TabsContent>
           <TabsContent value="templates" className="space-y-4">
-            <TaskTemplatesSettings />
+            <TaskTemplatesSettings resourceTypesQ={resourceTypesWithItemsQ} />
           </TabsContent>
 
           <TabsContent value="spaces" className="space-y-4">
-            <ZonesSpacesSettings />
+            <ZonesSpacesSettings resourceTypesQ={resourceTypesWithItemsQ} />
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-4">
@@ -961,7 +965,7 @@ function StaffDefaultsSettings() {
   );
 }
 
-function ZonesSpacesSettings() {
+function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const { t } = useTranslation();
   const {
     data: zones,
@@ -994,11 +998,6 @@ function ZonesSpacesSettings() {
       ? ((zones ?? []) as any[]).find((z) => Number(z?.id) === resourcesZoneId)
           ?.name || `#${resourcesZoneId}`
       : "";
-
-  const resourceTypesQ = useQuery({
-    queryKey: ["/api/resource-types-with-items"],
-    queryFn: () => apiRequest("GET", "/api/resource-types-with-items"),
-  });
 
   const zoneDefaultsQ = useQuery({
     queryKey: resourcesZoneId
@@ -2281,16 +2280,12 @@ function ZonesSpacesSettings() {
   );
 }
 
-function TaskTemplatesSettings() {
+function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const { t } = useTranslation();
   const { data: templates, isLoading } = useTaskTemplates();
   const { data: zones = [] } = useZones();
   const { data: spaces = [] } = useSpaces();
   const { data: itinerantTeams = [] } = useItinerantTeams();
-  const resourceTypesQ = useQuery({
-    queryKey: ["/api/resource-types-with-items"],
-    queryFn: () => apiRequest("GET", "/api/resource-types-with-items"),
-  });
   const createTask = useCreateTaskTemplate();
   const updateTask = useUpdateTaskTemplate();
   const deleteTask = useDeleteTaskTemplate();
@@ -2699,12 +2694,24 @@ function TaskTemplatesSettings() {
     if (Boolean(editData.requiresCoach)) {
       if (editData.coachMode === "specific") {
         const selectedCoachId = Number(editData.coachResourceItemId ?? NaN);
-        if (Number.isFinite(selectedCoachId) && selectedCoachId > 0) {
-          rrByItemRaw[selectedCoachId] = 1;
-        } else if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
-          rrByTypeRaw[vocalCoachTypeId] = 1;
+        const selectedCoachIsValid =
+          Number.isFinite(selectedCoachId) && selectedCoachId > 0 && vocalCoachItemIds.has(selectedCoachId);
+        if (!selectedCoachIsValid) {
+          toast({
+            title: "Selecciona un coach válido",
+            variant: "destructive",
+          });
+          return;
         }
-      } else if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
+        rrByItemRaw[selectedCoachId] = 1;
+      } else {
+        if (!(Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0)) {
+          toast({
+            title: "No existe el tipo de recurso Vocal Coach",
+            variant: "destructive",
+          });
+          return;
+        }
         rrByTypeRaw[vocalCoachTypeId] = 1;
       }
     }
@@ -2743,7 +2750,9 @@ function TaskTemplatesSettings() {
           uiColor: normalizedUiColor,
           uiColorSecondary: normalizedSecondaryColor,
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
-          requiresCoach: Boolean(editData.requiresCoach),
+          requiresCoach:
+            Object.keys(rrByType).some((k) => Number(k) === vocalCoachTypeId && Number((rrByType as any)[k] ?? 0) > 0) ||
+            Object.keys(rrByItem).some((k) => vocalCoachItemIds.has(Number(k)) && Number((rrByItem as any)[k] ?? 0) > 0),
           requiresPresenter: Boolean(editData.requiresPresenter),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
           hasDependency: Boolean(editData.hasDependency),
@@ -3107,6 +3116,12 @@ function TaskTemplatesSettings() {
 
                   <section className="space-y-3">
                     <p className="text-sm font-medium">Recursos</p>
+                    {resourceTypesQ.isLoading ? (
+                      <p className="text-xs text-muted-foreground">Cargando recursos…</p>
+                    ) : null}
+                    {resourceTypesQ.error ? (
+                      <p className="text-xs text-destructive">No se pudieron cargar los recursos.</p>
+                    ) : null}
                     <div className="grid grid-cols-2 md:grid-cols-2 gap-2 text-sm">
                       <div className="space-y-2 rounded-md border p-3">
                         <label className="flex items-center gap-2">
@@ -3179,7 +3194,7 @@ function TaskTemplatesSettings() {
                         )}
                         {!Number.isFinite(vocalCoachTypeId) && (
                           <p className="text-xs text-muted-foreground">
-                            No se encontró el tipo de recurso “Vocal Coach”; se mantiene fallback sin bloquear guardado.
+                            No se encontró el tipo de recurso “Vocal Coach”.
                           </p>
                         )}
                       </div>
