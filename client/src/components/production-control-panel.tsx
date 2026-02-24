@@ -48,6 +48,27 @@ function formatMmSs(totalSec: number): string {
   return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
 }
 
+function normalizeHexColor(input?: string | null): string | null {
+  if (!input || typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const maybeHex = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  const valid = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(maybeHex);
+  if (!valid) return null;
+  return maybeHex.slice(0, 7);
+}
+
+function hexToRgba(hex: string, alpha: number): string | null {
+  const normalized = normalizeHexColor(hex);
+  if (!normalized) return null;
+  const boundedAlpha = Number.isFinite(alpha) ? Math.min(1, Math.max(0, alpha)) : 1;
+  const r = Number.parseInt(normalized.slice(1, 3), 16);
+  const g = Number.parseInt(normalized.slice(3, 5), 16);
+  const b = Number.parseInt(normalized.slice(5, 7), 16);
+  if (![r, g, b].every((value) => Number.isFinite(value))) return null;
+  return `rgba(${r}, ${g}, ${b}, ${boundedAlpha})`;
+}
+
 export function ProductionControlPanel({
   tasks,
   zones,
@@ -156,11 +177,28 @@ export function ProductionControlPanel({
       </div>
 
       <div className={cn("grid grid-cols-1 xl:grid-cols-2 gap-4", directorMode && "xl:grid-cols-1") }>
-        {zoneSummaries.map((zone) => (
-          <Card key={`${zone.group.zoneId ?? "none"}-${zone.group.zoneName}`}>
+        {zoneSummaries.map((zone) => {
+          const zoneColor = normalizeHexColor(zonesById.get(zone.group.zoneId ?? -1)?.uiColor);
+          const zoneBg = zoneColor ? hexToRgba(zoneColor, 0.1) : null;
+          return (
+          <Card
+            key={`${zone.group.zoneId ?? "none"}-${zone.group.zoneName}`}
+            className="relative overflow-hidden"
+            style={{ backgroundColor: zoneBg ?? undefined }}
+          >
+            <div
+              className="absolute left-0 top-0 h-full w-1.5 rounded-l"
+              style={{ backgroundColor: zoneColor ?? undefined }}
+            />
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className={cn(directorMode && "text-2xl")}>{zone.group.zoneName}</CardTitle>
+                <CardTitle className={cn("flex items-center gap-2", directorMode && "text-2xl")}>
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: zoneColor ?? undefined }}
+                  />
+                  {zone.group.zoneName}
+                </CardTitle>
                 <Badge variant={zone.lanes.some((lane) => lane.current) ? "default" : "secondary"}>
                   {zone.lanes.some((lane) => lane.current) ? <Play className="mr-1 h-3 w-3 text-green-200" /> : <Pause className="mr-1 h-3 w-3" />} {zone.lanes.some((lane) => lane.current) ? "Activo" : "Parcial"}
                 </Badge>
@@ -170,6 +208,11 @@ export function ProductionControlPanel({
               {zone.lanes.map(({ laneKey, lane, lastDone, current, next }) => {
                 const currentTpl = templatesById.get(Number(current?.templateId ?? current?.template_id));
                 const currentContestant = contestantsById.get(Number(current?.contestantId ?? current?.contestant_id));
+                const taskColor = normalizeHexColor(currentTpl?.uiColor ?? current?.template?.uiColor);
+                const isRunning = String(current?.status ?? "") === "in_progress";
+                const ring = taskColor ? hexToRgba(taskColor, isRunning ? 0.25 : 0.16) : null;
+                const glow = taskColor ? hexToRgba(taskColor, isRunning ? 0.2 : 0.12) : null;
+                const halo = ring && glow ? `0 0 0 3px ${ring}, 0 8px 24px ${glow}` : undefined;
                 const elapsed = current ? elapsedSeconds(nowTotalSec, current?.startReal ?? current?.start_real, current?.startRealSeconds ?? current?.start_real_seconds) : 0;
                 const lastStart = lastDone?.startReal ?? lastDone?.start_real ?? lastDone?.startPlanned ?? lastDone?.start_planned;
                 const lastEnd = lastDone?.endReal ?? lastDone?.end_real ?? lastDone?.endPlanned ?? lastDone?.end_planned;
@@ -181,9 +224,19 @@ export function ProductionControlPanel({
                       <div className="font-medium truncate">{String(lastDone?.template?.name ?? "—")}</div>
                       <div className="text-xs text-muted-foreground">{lastDone ? `${lastStart ?? "—"}–${lastEnd ?? "—"}` : "—"}</div>
                     </div>
-                    <div className="rounded border bg-muted/20 p-2">
+                    <div
+                      className="rounded border bg-muted/20 p-2"
+                      style={{
+                        borderColor: taskColor ?? undefined,
+                        borderWidth: current ? (isRunning ? 4 : 2) : undefined,
+                        boxShadow: current && taskColor ? halo : undefined,
+                      }}
+                    >
                       <div className="text-xs text-muted-foreground">{lane.name}</div>
-                      <div className="font-semibold truncate">{current ? String(currentTpl?.name ?? current?.template?.name ?? "Tarea") : "Sin tarea en curso"}</div>
+                      <div className="font-semibold truncate flex items-center gap-1.5">
+                        {current && taskColor ? <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: taskColor }} /> : null}
+                        <span>{current ? String(currentTpl?.name ?? current?.template?.name ?? "Tarea") : "Sin tarea en curso"}</span>
+                      </div>
                       {current ? <div className="text-xs">{currentContestant?.name ? `(${currentContestant.name})` : ""}</div> : null}
                       {current ? <div className="text-xs">Inicio real: {String(current?.startReal ?? current?.start_real ?? current?.startPlanned ?? current?.start_planned ?? "—")}</div> : null}
                       {current ? <div className="text-xs font-mono">Timer: {formatMmSs(elapsed)} / {Math.max(0, durationPlannedMin(current, templatesById))}m</div> : null}
@@ -198,7 +251,7 @@ export function ProductionControlPanel({
               })}
             </CardContent>
           </Card>
-        ))}
+        )})}
       </div>
     </div>
   );
