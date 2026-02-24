@@ -413,18 +413,7 @@ function TaskStatusMenuTrigger({
                     setOpen(false);
                   }}
                 >
-                  Cambiar texto
-                </button>
-                <button
-                  type="button"
-                  className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50"
-                  disabled={taskStatusPending}
-                  onClick={() => {
-                    onEditManualBlock?.(task);
-                    setOpen(false);
-                  }}
-                >
-                  Cambiar color
+                  Editar bloqueo…
                 </button>
                 <button
                   type="button"
