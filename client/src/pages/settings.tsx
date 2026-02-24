@@ -2698,7 +2698,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           Number.isFinite(selectedCoachId) && selectedCoachId > 0 && vocalCoachItemIds.has(selectedCoachId);
         if (!selectedCoachIsValid) {
           toast({
-            title: "Selecciona un coach válido",
+            title: "Selecciona un vocal coach válido",
             variant: "destructive",
           });
           return;
@@ -2732,6 +2732,11 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       byType: rrByType,
       byItem: rrByItem,
     };
+    const hasCoachRR =
+      (Number.isFinite(vocalCoachTypeId) && Number((rrByType as any)?.[vocalCoachTypeId] ?? 0) === 1) ||
+      Object.keys(rrByItem).some(
+        (k) => vocalCoachItemIds.has(Number(k)) && Number((rrByItem as any)?.[k] ?? 0) > 0,
+      );
 
     try {
       setIsSavingEdit(true);
@@ -2750,9 +2755,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           uiColor: normalizedUiColor,
           uiColorSecondary: normalizedSecondaryColor,
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
-          requiresCoach:
-            Object.keys(rrByType).some((k) => Number(k) === vocalCoachTypeId && Number((rrByType as any)[k] ?? 0) > 0) ||
-            Object.keys(rrByItem).some((k) => vocalCoachItemIds.has(Number(k)) && Number((rrByItem as any)[k] ?? 0) > 0),
+          requiresCoach: hasCoachRR,
           requiresPresenter: Boolean(editData.requiresPresenter),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
           hasDependency: Boolean(editData.hasDependency),
