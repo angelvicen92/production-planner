@@ -617,59 +617,6 @@ export class SupabaseStorage implements IStorage {
       createdAt: data.created_at ?? null,
     };
 
-    // ✅ Auto-crear tarea de comida según program_settings.meal_task_template_name
-    try {
-      const { data: settings, error: settingsErr } = await supabaseAdmin
-        .from("program_settings")
-        .select("meal_task_template_name")
-        .eq("id", 1)
-        .single();
-
-      if (settingsErr) throw settingsErr;
-
-      const mealTemplateName = String(
-        settings?.meal_task_template_name ?? "Comer",
-      ).trim();
-      if (mealTemplateName.length > 0) {
-        const { data: mealTpl, error: mealTplErr } = await supabaseAdmin
-          .from("task_templates")
-          .select("id, name")
-          .ilike("name", mealTemplateName)
-          .maybeSingle();
-
-        if (mealTplErr) throw mealTplErr;
-
-        if (!mealTpl?.id) {
-          console.warn(
-            `[AUTO CREATE MEAL TASK] No task template found for name="${mealTemplateName}". Skipping.`,
-          );
-        } else {
-          const { data: planRow, error: planErr } = await supabaseAdmin
-            .from("plans")
-            .select("contestant_meal_duration_minutes")
-            .eq("id", planId)
-            .maybeSingle();
-
-          if (planErr) throw planErr;
-
-          const duration =
-            (planRow as any)?.contestant_meal_duration_minutes ?? 75;
-
-          await this.createDailyTask({
-            planId,
-            templateId: mealTpl.id,
-            contestantId: createdContestant.id,
-            durationOverride: duration,
-            camerasOverride: null,
-            status: "pending",
-          } as any);
-        }
-      }
-    } catch (e) {
-      console.error("[AUTO CREATE MEAL TASK] error", e);
-      // No bloqueamos la creación del concursante si falla la tarea
-    }
-
     // ✅ Auto-crear tareas por templates marcadas para creación automática al crear concursante
     try {
       const { data: autoTemplates, error: autoTemplatesErr } = await supabaseAdmin
