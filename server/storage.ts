@@ -1798,12 +1798,44 @@ export class SupabaseStorage implements IStorage {
         ? effectiveSeconds
         : (task.start_real_seconds ?? null);
 
+    const currentPausedTotalSeconds = Number(task.paused_total_seconds ?? 0);
+    const currentPausedAtSeconds = Number.isFinite(Number(task.paused_at_seconds))
+      ? Number(task.paused_at_seconds)
+      : null;
+
+    let nextPausedTotalSeconds = Number.isFinite(currentPausedTotalSeconds)
+      ? Math.max(0, Math.floor(currentPausedTotalSeconds))
+      : 0;
+    let nextPausedAtSeconds = task.paused_at_seconds ?? null;
+    let nextPausedAtHHMM = task.paused_at_hhmm ?? null;
+
+    if (updates?.status === "interrupted") {
+      nextPausedAtSeconds = effectiveSeconds;
+      nextPausedAtHHMM = effectiveTime;
+    }
+
+    if (updates?.status === "in_progress" && String(task.status ?? "") === "interrupted") {
+      if (currentPausedAtSeconds !== null && effectiveSeconds !== null) {
+        const delta = Math.max(0, Math.floor(effectiveSeconds - currentPausedAtSeconds));
+        nextPausedTotalSeconds = Math.max(0, nextPausedTotalSeconds + delta);
+      }
+      nextPausedAtSeconds = null;
+      nextPausedAtHHMM = null;
+    }
+
+    if (["done", "cancelled"].includes(String(updates?.status)) && currentPausedAtSeconds !== null && effectiveSeconds !== null) {
+      const delta = Math.max(0, Math.floor(effectiveSeconds - currentPausedAtSeconds));
+      nextPausedTotalSeconds = Math.max(0, nextPausedTotalSeconds + delta);
+      nextPausedAtSeconds = null;
+      nextPausedAtHHMM = null;
+    }
+
     const nextEndReal =
-      ["done", "interrupted", "cancelled"].includes(String(updates?.status)) && !task.end_real
+      ["done", "cancelled"].includes(String(updates?.status)) && !task.end_real
         ? effectiveTime
         : (task.end_real ?? null);
     const nextEndRealSeconds =
-      ["done", "interrupted", "cancelled"].includes(String(updates?.status)) && !task.end_real
+      ["done", "cancelled"].includes(String(updates?.status)) && !task.end_real
         ? effectiveSeconds
         : (task.end_real_seconds ?? null);
 
@@ -1816,6 +1848,9 @@ export class SupabaseStorage implements IStorage {
         end_real: nextEndReal,
         start_real_seconds: nextStartRealSeconds,
         end_real_seconds: nextEndRealSeconds,
+        paused_total_seconds: nextPausedTotalSeconds,
+        paused_at_seconds: nextPausedAtSeconds,
+        paused_at_hhmm: nextPausedAtHHMM,
       })
       .eq("id", taskId)
       .select()
@@ -1903,6 +1938,9 @@ export class SupabaseStorage implements IStorage {
       end_real: null,
       start_real_seconds: null,
       end_real_seconds: null,
+      paused_total_seconds: 0,
+      paused_at_seconds: null,
+      paused_at_hhmm: null,
     };
 
     const { data: updated, error: updateError } = await supabaseAdmin

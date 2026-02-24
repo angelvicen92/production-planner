@@ -4428,10 +4428,15 @@ function normalizeHexColor(value: unknown): string | null {
     let planningRunId: number | null = null;
     try {
       const input = z
-        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks"]).optional() })
+        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional() })
         .strict()
         .parse(req.body ?? {});
-      const mode = input.mode ?? "full";
+      const modeRaw = input.mode ?? "full";
+      const mode = modeRaw === "generate_planning"
+        ? "full"
+        : modeRaw === "plan_pending"
+          ? "only_unplanned"
+          : modeRaw;
       const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
         .from("daily_tasks")
         .select("id, status, is_manual_block")
@@ -4565,17 +4570,17 @@ function normalizeHexColor(value: unknown): string | null {
       const enrich = await buildReasonEnricher(planId);
 
       const planned = (result as any).plannedTasks || [];
-      if (!result.feasible && planned.length === 0) {
+      if ((result as any).hardFeasible === false) {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
         if (planningRunId) {
           await supabaseAdmin
             .from("planning_runs")
-            .update({ status: "infeasible", updated_at: new Date().toISOString(), message: "INFEASIBLE", last_reasons: reasons, planned_count: 0 })
+            .update({ status: "infeasible", updated_at: new Date().toISOString(), message: "INFEASIBLE_HARD", last_reasons: reasons, planned_count: 0 })
             .eq("id", planningRunId);
         }
 
         return res.status(422).json({
-          message: "INFEASIBLE",
+          message: "INFEASIBLE_HARD",
           reasons,
           runId: planningRunId,
         });
@@ -4631,7 +4636,9 @@ function normalizeHexColor(value: unknown): string | null {
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
       res.json({
         success: true,
-        feasible: !!result.feasible,
+        hardFeasible: true,
+        complete: !!(result as any).complete,
+        feasible: !!(result as any).complete,
         planId,
         tasksUpdated: updated,
         warnings,

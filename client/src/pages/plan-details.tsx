@@ -133,18 +133,47 @@ function ExecutionElapsedTimer({
   status,
   startReal,
   startRealSeconds,
+  pausedTotalSeconds,
+  pausedAtSeconds,
 }: {
   status?: string | null;
   startReal?: string | null;
   startRealSeconds?: number | null;
+  pausedTotalSeconds?: number | null;
+  pausedAtSeconds?: number | null;
 }) {
+  const { effectiveNow } = useProductionClock();
   const elapsed = useElapsedSince(startReal, startRealSeconds);
 
-  if (status !== "in_progress" || !startReal || !elapsed) {
+  const elapsedWithPauses = useMemo(() => {
+    if (!startReal) return null;
+    const [hh, mm] = String(startReal).split(":").map((v) => Number(v));
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+
+    const start = new Date(effectiveNow);
+    const ss = Number.isFinite(Number(startRealSeconds)) ? Math.max(0, Math.min(59, Math.floor(Number(startRealSeconds)))) : 0;
+    start.setHours(hh, mm, ss, 0);
+
+    const nowSeconds = effectiveNow.getHours() * 3600 + effectiveNow.getMinutes() * 60 + effectiveNow.getSeconds();
+    const startSecondsOfDay = hh * 3600 + mm * 60 + ss;
+    const pausedTotal = Number.isFinite(Number(pausedTotalSeconds)) ? Math.max(0, Math.floor(Number(pausedTotalSeconds))) : 0;
+    const pausedAt = Number.isFinite(Number(pausedAtSeconds)) ? Math.max(0, Math.floor(Number(pausedAtSeconds))) : null;
+    const currentPause = status === "interrupted" && pausedAt !== null ? Math.max(0, nowSeconds - pausedAt) : 0;
+
+    const elapsedSeconds = Math.max(0, nowSeconds - startSecondsOfDay - pausedTotal - currentPause);
+    const hours = Math.floor(elapsedSeconds / 3600);
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+    const seconds = elapsedSeconds % 60;
+    return hours > 0
+      ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }, [effectiveNow, pausedAtSeconds, pausedTotalSeconds, startReal, startRealSeconds, status]);
+
+  if (status !== "in_progress" || !startReal || !(elapsedWithPauses ?? elapsed)) {
     return <span className="text-muted-foreground">—</span>;
   }
 
-  return <span className="text-xs font-medium text-emerald-700">Tiempo en marcha: {elapsed}</span>;
+  return <span className="text-xs font-medium text-emerald-700">Tiempo en marcha: {elapsedWithPauses ?? elapsed}</span>;
 }
 
 type ResourceSelectable = {
@@ -1452,7 +1481,7 @@ ${reasonMessage}` : message,
     try {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-      const data: any = await generatePlan.mutateAsync({ id, mode: "full" });
+      const data: any = await generatePlan.mutateAsync({ id, mode: "generate_planning" });
       setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
@@ -1619,7 +1648,7 @@ ${reasonMessage}` : message,
                 setExpectedPlanningRunId(null);
                 void (async () => {
                   try {
-                    await generatePlan.mutateAsync({ id, mode: "only_unplanned" });
+                    await generatePlan.mutateAsync({ id, mode: "plan_pending" });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                   } catch (err: any) {
@@ -3768,14 +3797,14 @@ ${reasonMessage}` : message,
                     }
                     return validation;
                   }}
-                  onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" = "full") => {
+                  onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending" = "generate_planning") => {
                     try {
                       await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
                       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                       setManualDraftBlockIds([]);
                       setManualEditsSnapshot({});
-                      toast({ title: mode === "full" ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
+                      toast({ title: (mode === "full" || mode === "generate_planning") ? "Replanificación lanzada" : "Replanificación parcial lanzada" });
                     } catch (err: any) {
                       if (isAbortLikeError(err)) {
                         toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
@@ -3972,7 +4001,7 @@ ${reasonMessage}` : message,
                                     : "—"}
                               </TableCell>
                               <TableCell className="font-mono text-xs">
-                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} startRealSeconds={t?.startRealSeconds ?? t?.start_real_seconds ?? null} />
+                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} startRealSeconds={t?.startRealSeconds ?? t?.start_real_seconds ?? null} pausedTotalSeconds={t?.pausedTotalSeconds ?? t?.paused_total_seconds ?? 0} pausedAtSeconds={t?.pausedAtSeconds ?? t?.paused_at_seconds ?? null} />
                               </TableCell>
 
                               <TableCell className="font-medium">

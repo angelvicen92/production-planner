@@ -14,6 +14,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
   const unplanned: { taskId: number; reason: { code: string; message: string; taskId?: number; details?: any } }[] = [];
 
+  const hardInfeasible = (hardReasons: any[] = []): EngineOutput => ({
+    feasible: false,
+    complete: false,
+    hardFeasible: false,
+    plannedTasks: [],
+    warnings,
+    unplanned: [],
+    reasons: hardReasons as any,
+  });
+
+
   if (!input?.planId)
     reasons.push({ code: "VALIDATION_ERROR", message: "Falta planId." });
   if (!input?.workDay?.start || !input?.workDay?.end)
@@ -314,7 +325,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   if (missingDeps.length)
-    return { feasible: false, reasons: missingDeps } as any;
+    return hardInfeasible(missingDeps);
 
   // ✅ Topological sort estable por dependsOnTaskId
   const originalOrder = new Map<number, number>();
@@ -375,16 +386,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
   }
 
   if (sortedIds.length !== tasksForSolve.length) {
-    return {
-      feasible: false,
-      reasons: [
-        {
-          code: "DEPENDENCY_CYCLE",
-          message:
-            "Hay un ciclo de dependencias entre tareas (A depende de B y B depende de A, o cadena circular). Rompe el ciclo en Task Templates.",
-        },
-      ],
-    } as any;
+    return hardInfeasible([
+      {
+        code: "DEPENDENCY_CYCLE",
+        message:
+          "Hay un ciclo de dependencias entre tareas (A depende de B y B depende de A, o cadena circular). Rompe el ciclo en Task Templates.",
+      },
+    ]);
   }
 
   const tasksSorted = sortedIds
@@ -455,7 +463,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     });
   }
 
-  if (reasons.length) return { feasible: false, reasons };
+  if (reasons.length) return hardInfeasible(reasons);
 
   // ✅ Disponibilidad por concursante: usar la ventana más restrictiva (plan ∩ concursante)
   const contestantAvailabilityById = ((input as any)
@@ -888,16 +896,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
     // encajar sin solaparse con otro bloque de comida del mismo plató
     start = findEarliestGap(zoneArr, start, duration);
     if (start + duration > mealEnd) {
-      return {
-        feasible: false,
-        reasons: [
-          {
-            code: "MEAL_ZONE_NO_FIT",
-            message: `No cabe la comida del plató (zona ${zid}) dentro de la ventana global de comida (${toHHMM(mealStart)}–${toHHMM(mealEnd)}).`,
-            taskId: Number(task?.id),
-          },
-        ],
-      } as any;
+      return hardInfeasible([
+        {
+          code: "MEAL_ZONE_NO_FIT",
+          message: `No cabe la comida del plató (zona ${zid}) dentro de la ventana global de comida (${toHHMM(mealStart)}–${toHHMM(mealEnd)}).`,
+          taskId: Number(task?.id),
+        },
+      ]);
     }
 
     const finish = start + duration;
@@ -930,7 +935,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const occ = occupiedBySpace.get(spaceId) ?? [];
       start = findEarliestGap(occ, start, duration);
       if (start + duration > winEnd) {
-        return { feasible: false, reasons: [{ code: "SPACE_BREAK_NO_FIT", message: `No cabe parada de comida en espacio ${spaceId}.` }] } as any;
+        return hardInfeasible([{ code: "SPACE_BREAK_NO_FIT", message: `No cabe parada de comida en espacio ${spaceId}.` }]);
       }
       const end = start + duration;
       addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
@@ -944,7 +949,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const occ = occupiedByItinerant.get(teamId) ?? [];
     start = findEarliestGap(occ, start, duration);
     if (start + duration > winEnd) {
-      return { feasible: false, reasons: [{ code: "ITINERANT_BREAK_NO_FIT", message: `No cabe parada de comida en equipo itinerante ${teamId}.` }] } as any;
+      return hardInfeasible([{ code: "ITINERANT_BREAK_NO_FIT", message: `No cabe parada de comida en equipo itinerante ${teamId}.` }]);
     }
     const end = start + duration;
     addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
@@ -2142,10 +2147,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
           .map(({ time }) => toHHMM(time))
       : ((mealSolve as any)?.blockedBuckets ?? []);
 
-    return {
-      feasible: false,
-      reasons: [{
-        code: 'MEAL_CONTESTANT_NO_FIT',
+    return hardInfeasible([{
+      code: 'MEAL_CONTESTANT_NO_FIT',
         message:
           `No se pudo encajar la comida de "${failingMealCandidate?.contestantName ?? 'concursante'}" (${contestantMealDuration} min) dentro de ${toHHMM(mealStart)}–${toHHMM(mealEnd)} respetando máximo simultáneo (${contestantMealMaxSim}). ` +
           `Motivo principal: ${effectiveWindowReason ? 'ventana efectiva insuficiente' : 'ocupación por tareas fijas/bloqueos'}. ` +
@@ -2162,8 +2165,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
           blockedByCapacity,
           blockingIntervals: blockingFixed,
         },
-      }],
-    } as any;
+      }]);
   }
 
   for (const row of mealSolve.assignments) {
@@ -2211,10 +2213,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   const mealCapacityValidation = validateMealSimultaneity();
   if (!mealCapacityValidation.ok) {
-    return {
-      feasible: false,
-      reasons: [{
-        code: 'MEAL_CONTESTANT_NO_FIT',
+    return hardInfeasible([{
+      code: 'MEAL_CONTESTANT_NO_FIT',
         message:
           `Violación interna de simultaneidad en comidas a las ${toHHMM(mealCapacityValidation.bucket)}: ` +
           `${mealCapacityValidation.count} > máximo ${contestantMealMaxSim}.`,
@@ -2224,8 +2224,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
           count: mealCapacityValidation.count,
           maxSimultaneous: contestantMealMaxSim,
         },
-      }],
-    } as any;
+      }]);
   }
 
   const pendingNonMeal = (tasksSorted as any[]).filter((task) => {
@@ -2511,7 +2510,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
         taskId,
         details: { missingDependencyTaskIds: depIds },
       };
-      if (hardLocked) return { feasible: false, reasons: [reason] } as any;
+      if (hardLocked) return hardInfeasible([reason]);
       unplanned.push({ taskId, reason });
       pendingNonMeal.splice(0, 1);
       continue;
@@ -2915,7 +2914,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   });
 
   if (overlaps.length) {
-    return { feasible: false, reasons: overlaps } as any;
+    return hardInfeasible(overlaps);
   }
 
   // ✅ Hard rule: un recurso (plan_resource_item.id) no puede estar en dos tareas a la vez
@@ -3022,14 +3021,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
   });
 
   if (resourceOverlaps.length) {
-    return { feasible: false, reasons: resourceOverlaps } as any;
+    return hardInfeasible(resourceOverlaps);
   }
 
+  const complete = unplanned.length === 0;
   return {
-    feasible: unplanned.length === 0,
+    feasible: complete,
+    complete,
+    hardFeasible: true,
     plannedTasks,
     warnings,
     unplanned,
-    reasons: unplanned.map((x) => x.reason),
+    reasons: complete ? [] : unplanned.map((x) => x.reason),
   } as any;
 }
