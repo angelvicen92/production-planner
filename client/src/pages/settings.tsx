@@ -2452,9 +2452,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         const hasByItem = Object.keys(byItem ?? {}).some((k) => vocalCoachItemIds.has(Number(k)) && Number((byItem as any)?.[k] ?? 0) > 0);
         return Boolean((tpl.requiresCoach ?? tpl.requires_coach ?? false) || hasByType || hasByItem);
       })(),
-      requiresPresenter: Boolean(
-        tpl.requiresPresenter ?? tpl.requires_presenter ?? false,
-      ),
       exclusiveAuxiliar: Boolean(
         tpl.exclusiveAuxiliar ?? tpl.exclusive_auxiliar ?? false,
       ),
@@ -2722,7 +2719,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           uiColorSecondary: normalizedSecondaryColor,
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
           requiresCoach: hasCoachRR,
-          requiresPresenter: Boolean(editData.requiresPresenter),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
           hasDependency: Boolean(editData.hasDependency),
           dependsOnTemplateIds: editData.hasDependency ? normalizedDirectDependencies : [],
@@ -2996,13 +2992,14 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 </div>
               </CardHeader>
               {isEditing && (
-                <CardContent className="space-y-4">
+                <CardContent className="p-4 space-y-3">
                   <section className="space-y-3">
-                    <p className="text-sm font-medium">Básico</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Básico</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="space-y-1">
                         <Label>Duración (min)</Label>
                         <Input
+                          className="h-9"
                           type="number"
                           value={editData?.defaultDuration ?? 30}
                           onChange={(e) =>
@@ -3017,6 +3014,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                       <div className="space-y-1">
                         <Label>Abreviatura</Label>
                         <Input
+                          className="h-9"
                           value={String(editData?.abbrev ?? "")}
                           maxLength={32}
                           onChange={(e) =>
@@ -3026,32 +3024,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                             }))
                           }
                           placeholder="ENTR"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Color comentario 1 (default)</Label>
-                        <Input
-                          value={String(editData?.defaultComment1Color ?? "")}
-                          onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              defaultComment1Color: e.target.value || null,
-                            }))
-                          }
-                          placeholder="#RRGGBB"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Color comentario 2 (default)</Label>
-                        <Input
-                          value={String(editData?.defaultComment2Color ?? "")}
-                          onChange={(e) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              defaultComment2Color: e.target.value || null,
-                            }))
-                          }
-                          placeholder="#RRGGBB"
                         />
                       </div>
                       <div className="space-y-1">
@@ -3066,7 +3038,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                             }))
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9">
                             <SelectValue placeholder="Sin plató" />
                           </SelectTrigger>
                           <SelectContent>
@@ -3090,7 +3062,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                             }))
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9">
                             <SelectValue placeholder="Sin espacio" />
                           </SelectTrigger>
                           <SelectContent>
@@ -3126,14 +3098,14 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   </section>
 
                   <section className="space-y-3">
-                    <p className="text-sm font-medium">Recursos</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Recursos</p>
                     {resourceTypesQ.isLoading ? (
                       <p className="text-xs text-muted-foreground">Cargando recursos…</p>
                     ) : null}
                     {resourceTypesQ.error ? (
                       <p className="text-xs text-destructive">No se pudieron cargar los recursos.</p>
                     ) : null}
-                    <div className="grid grid-cols-2 md:grid-cols-2 gap-2 text-sm">
+                    <div className="rounded-md border p-3"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
                       <div className="space-y-2 rounded-md border p-3">
                         <label className="flex items-center gap-2">
                           <Checkbox
@@ -3209,19 +3181,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           </p>
                         )}
                       </div>
-                      <label className="flex items-center gap-2">
-                        <Checkbox
-                          checked={!!editData?.requiresPresenter}
-                          onCheckedChange={(v) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              requiresPresenter: Boolean(v),
-                            }))
-                          }
-                        />
-                        Presenter
-                      </label>
-                    </div>
+                    </div></div>
                     <div className="space-y-2 text-sm">
                       <label className="flex items-center gap-2">
                         <Checkbox
@@ -3293,7 +3253,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   </section>
 
                   <section className="space-y-3">
-                    <p className="text-sm font-medium">Dependencias</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dependencias</p>
                     <label className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={!!editData?.hasDependency}
@@ -3317,7 +3277,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     )}
 
                     {!!editData?.hasDependency && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="max-h-[220px] overflow-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                         {(templates ?? [])
                           .filter(
                             (x: any) => Number(x?.id) !== Number(editData?.id),
@@ -3406,10 +3366,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   </section>
 
                   <section className="space-y-3">
-                    <p className="text-sm font-medium">Color</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Color</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label>Color de tarea</Label>
+                        <Label>Tarea</Label>
                         <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
                           <Input
                             type="color"
@@ -3422,9 +3382,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 uiColorError: null,
                               }))
                             }
-                            className="h-10 w-16 p-1"
+                            className="h-9 w-14 p-1"
                           />
                           <Input
+                            className="font-mono h-9 max-w-[160px]"
                             value={String(editData?.uiColorInput ?? "")}
                             onChange={(e) =>
                               setEditData((p: any) => {
@@ -3441,7 +3402,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 };
                               })
                             }
-                            placeholder="Sin color · #RRGGBB o rgb(r,g,b)"
+                            placeholder="#RRGGBB"
                           />
                         </div>
                         {editData?.uiColorError && (
@@ -3450,7 +3411,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Color de plató</Label>
+                        <Label>Plató</Label>
                         <div className="grid grid-cols-[auto,1fr] gap-2 items-end">
                           <Input
                             type="color"
@@ -3463,9 +3424,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 uiColorSecondaryError: null,
                               }))
                             }
-                            className="h-10 w-16 p-1"
+                            className="h-9 w-14 p-1"
                           />
                           <Input
+                            className="font-mono h-9 max-w-[160px]"
                             value={String(editData?.uiColorSecondaryInput ?? "")}
                             onChange={(e) =>
                               setEditData((p: any) => {
@@ -3482,7 +3444,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 };
                               })
                             }
-                            placeholder="Sin color · #RRGGBB o rgb(r,g,b)"
+                            placeholder="#RRGGBB"
                           />
                         </div>
                         {editData?.uiColorSecondaryError && (
@@ -3490,6 +3452,37 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                             {editData.uiColorSecondaryError}
                           </p>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Comentario 1</Label>
+                        <Input
+                          className="font-mono h-9 max-w-[160px]"
+                          value={String(editData?.defaultComment1Color ?? "")}
+                          onChange={(e) =>
+                            setEditData((p: any) => ({
+                              ...p,
+                              defaultComment1Color: e.target.value || null,
+                            }))
+                          }
+                          placeholder="#RRGGBB"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Comentario 2</Label>
+                        <Input
+                          className="font-mono h-9 max-w-[160px]"
+                          value={String(editData?.defaultComment2Color ?? "")}
+                          onChange={(e) =>
+                            setEditData((p: any) => ({
+                              ...p,
+                              defaultComment2Color: e.target.value || null,
+                            }))
+                          }
+                          placeholder="#RRGGBB"
+                        />
                       </div>
                     </div>
                   </section>
