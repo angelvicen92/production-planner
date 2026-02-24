@@ -1600,7 +1600,8 @@ ${reasonMessage}` : message,
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-[1500px] space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
@@ -1906,7 +1907,7 @@ ${reasonMessage}` : message,
                 if (!open) setSelectedContestant(null);
               }}
             >
-              <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] overflow-hidden">
+              <DialogContent className="w-[95vw] max-w-[1400px] max-h-[85vh] overflow-hidden p-8">
                 <DialogHeader>
                   <DialogTitle>
                     Ficha: {selectedContestant?.name ?? "Concursante"}
@@ -4712,6 +4713,7 @@ ${reasonMessage}` : message,
           </DialogContent>
         </Dialog>
 
+        </div>
       </div>
     </Layout>
   );

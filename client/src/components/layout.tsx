@@ -269,8 +269,10 @@ export function Layout({ children }: LayoutProps) {
         {shouldOverlayDesktop ? <div className="hidden lg:block fixed inset-0 z-40 bg-background/40" /> : null}
 
         {/* Main Content */}
-        <main className={cn("flex-1 overflow-y-auto bg-background px-4 py-4 md:px-6 md:py-8 transition-[padding] duration-200", desktopMainPaddingClass)}>
-          <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">{children}</div>
+        <main className={cn("flex-1 overflow-y-auto bg-background py-4 md:py-8 transition-[padding] duration-200", desktopMainPaddingClass)}>
+          <div className="mx-auto w-full max-w-[1600px] px-6 md:px-8 xl:px-12">
+            <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">{children}</div>
+          </div>
         </main>
       </div>
     </div>

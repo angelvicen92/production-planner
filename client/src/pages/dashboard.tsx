@@ -384,7 +384,8 @@ export default function DashboardPage() {
   if (plansLoading || plansError) {
     return (
       <Layout>
-        <div className="p-8">
+        <div className="w-full">
+          <div className="mx-auto w-full max-w-[1500px] p-8">
           <QueryState
             isLoading={plansLoading}
             isError={Boolean(plansError)}
@@ -395,6 +396,7 @@ export default function DashboardPage() {
               refetchPlans();
             }}
           />
+          </div>
         </div>
       </Layout>
     );
@@ -402,7 +404,8 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="space-y-4">
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-[1500px] space-y-4">
         <div className="sticky top-0 z-10 rounded-lg border bg-card/95 p-4 backdrop-blur no-print">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="mr-auto text-2xl font-bold">Centro de Control</h1>
@@ -561,6 +564,7 @@ export default function DashboardPage() {
         )}
 
         {isLoading && <QueryState isLoading loadingText="Cargando datos operativos..." />}
+        </div>
       </div>
 
       <Dialog open={!!locationDialogTask} onOpenChange={(open) => !open && setLocationDialogTask(null)}>
