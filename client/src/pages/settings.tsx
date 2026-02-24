@@ -95,7 +95,8 @@ export default function SettingsPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-[1500px] space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
             <SettingsIcon className="h-6 w-6 text-primary" />
@@ -163,6 +164,7 @@ export default function SettingsPage() {
             </TabsContent>
           ) : null}
         </Tabs>
+        </div>
       </div>
     </Layout>
   );
