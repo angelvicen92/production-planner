@@ -1022,63 +1022,177 @@ export default function PlanDetailsPage() {
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
   >([]);
-  const updateContestantTaskDuration = async (taskId: number, rawValue: string) => {
-    const value = rawValue.trim();
-    await apiRequest(
-      "PATCH",
-      buildUrl(api.dailyTasks.update.path, { id: taskId }),
-      { durationMinutes: value === "" ? null : Number(value) },
-    );
-    await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-    toast({ title: "Duración actualizada" });
+
+  type DraftTask = {
+    id: number;
+    startPlanned: string;
+    endPlanned: string;
+    durationOverride: string;
+    comment1Text: string;
+    comment1Color: string;
+    comment2Text: string;
+    comment2Color: string;
+  };
+
+  const [draftById, setDraftById] = useState<Record<number, DraftTask>>({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const contestantTasks = useMemo(
+    () =>
+      (plan?.dailyTasks ?? []).filter(
+        (t: any) => t.contestantId === selectedContestant?.id,
+      ),
+    [plan?.dailyTasks, selectedContestant?.id],
+  );
+
+  const closeContestantPanel = () => {
+    setContestantDetailTask(null);
+    setSelectedContestant(null);
+  };
+
+  const buildTaskDraft = (task: any): DraftTask => ({
+    id: Number(task.id),
+    startPlanned: String(task.startPlanned ?? task.start_planned ?? ""),
+    endPlanned: String(task.endPlanned ?? task.end_planned ?? ""),
+    durationOverride: String(
+      task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? "",
+    ),
+    comment1Text: String(task.comment1Text ?? task.comment_1 ?? task.comment1_text ?? ""),
+    comment1Color: String(task.comment1Color ?? task.comment_color_1 ?? task.comment1_color ?? ""),
+    comment2Text: String(task.comment2Text ?? task.comment_2 ?? task.comment2_text ?? ""),
+    comment2Color: String(task.comment2Color ?? task.comment_color_2 ?? task.comment2_color ?? ""),
+  });
+
+  useEffect(() => {
+    if (!selectedContestant?.id) {
+      setDraftById({});
+      setIsDirty(false);
+      setSaveError(null);
+      return;
+    }
+    if (isDirty) return;
+    const nextDraftById: Record<number, DraftTask> = {};
+    for (const task of contestantTasks) {
+      nextDraftById[Number(task.id)] = buildTaskDraft(task);
+    }
+    setDraftById(nextDraftById);
+    setSaveError(null);
+  }, [contestantTasks, isDirty, selectedContestant?.id]);
+
+  const updateDraftTask = (
+    task: any,
+    updater: (current: DraftTask) => DraftTask,
+  ) => {
+    const taskId = Number(task.id);
+    setDraftById((prev) => {
+      const base = prev[taskId] ?? buildTaskDraft(task);
+      return {
+        ...prev,
+        [taskId]: updater(base),
+      };
+    });
+    setIsDirty(true);
+    setSaveError(null);
+  };
+
+  const handleCancelContestantTasks = () => {
+    const resetDraftById: Record<number, DraftTask> = {};
+    for (const task of contestantTasks) {
+      resetDraftById[Number(task.id)] = buildTaskDraft(task);
+    }
+    setDraftById(resetDraftById);
+    setIsDirty(false);
+    setSaveError(null);
+    closeContestantPanel();
+  };
+
+  const handleSaveContestantTasks = async () => {
+    const changedTasks: Array<{ task: any; draft: DraftTask }> = [];
+    for (const task of contestantTasks) {
+      const taskId = Number(task.id);
+      const draft = draftById[taskId] ?? buildTaskDraft(task);
+      const original = buildTaskDraft(task);
+      if (
+        draft.startPlanned !== original.startPlanned
+        || draft.endPlanned !== original.endPlanned
+        || draft.durationOverride !== original.durationOverride
+        || draft.comment1Text !== original.comment1Text
+        || draft.comment1Color !== original.comment1Color
+        || draft.comment2Text !== original.comment2Text
+        || draft.comment2Color !== original.comment2Color
+      ) {
+        changedTasks.push({ task, draft });
+      }
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+
+      for (const { task, draft } of changedTasks) {
+        const durationValue = draft.durationOverride.trim();
+        if (durationValue !== "") {
+          const parsedDuration = Number(durationValue);
+          if (!Number.isFinite(parsedDuration) || parsedDuration < 1) {
+            throw new Error(`Duración inválida en tarea #${task.id}.`);
+          }
+        }
+        const start = draft.startPlanned.trim();
+        const end = draft.endPlanned.trim();
+        if (start || end) {
+          const startMin = parseHHMMToMinutes(start);
+          const endMin = parseHHMMToMinutes(end);
+          if (startMin === null || endMin === null || endMin <= startMin) {
+            throw new Error(`Horario inválido en tarea #${task.id}. Usa HH:MM y fin > inicio.`);
+          }
+        }
+      }
+
+      await Promise.all(
+        changedTasks.map(({ task, draft }) => apiRequest(
+          "PATCH",
+          buildUrl(api.dailyTasks.update.path, { id: task.id }),
+          {
+            startPlanned: draft.startPlanned.trim() || null,
+            endPlanned: draft.endPlanned.trim() || null,
+            durationMinutes: draft.durationOverride.trim() === "" ? null : Number(draft.durationOverride),
+            comment1Text: draft.comment1Text.trim() || null,
+            comment1Color: normalizeHexColor(draft.comment1Color),
+            comment2Text: draft.comment2Text.trim() || null,
+            comment2Color: normalizeHexColor(draft.comment2Color),
+          },
+        )),
+      );
+
+      await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+      setIsDirty(false);
+      closeContestantPanel();
+      toast({ title: "Cambios guardados" });
+    } catch (err: any) {
+      const message = String(err?.message || "No se pudieron guardar los cambios.");
+      setSaveError(message);
+      toast({ title: "Error al guardar", description: message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const DailyTaskEditor = ({ task, variant }: { task: any; variant: "list" | "detail" }) => {
     const locked = task.status === "in_progress" || task.status === "done";
-    const initialDraft = {
-      startPlanned: String(task.startPlanned ?? task.start_planned ?? ""),
-      endPlanned: String(task.endPlanned ?? task.end_planned ?? ""),
-      durationOverride: String(task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? ""),
-      comment1Text: String(task.comment1Text ?? task.comment_1 ?? task.comment1_text ?? ""),
-      comment1Color: String(task.comment1Color ?? task.comment_color_1 ?? task.comment1_color ?? ""),
-      comment2Text: String(task.comment2Text ?? task.comment_2 ?? task.comment2_text ?? ""),
-      comment2Color: String(task.comment2Color ?? task.comment_color_2 ?? task.comment2_color ?? ""),
-    };
-    const [draft, setDraft] = useState(initialDraft);
-    const [editingField, setEditingField] = useState<string | null>(null);
+    const draft = draftById[Number(task.id)] ?? buildTaskDraft(task);
 
-    useEffect(() => {
-      if (editingField) return;
-      setDraft(initialDraft);
-    }, [editingField, task.id, task.startPlanned, task.endPlanned, task.durationOverride, task.comment1Text, task.comment1Color, task.comment2Text, task.comment2Color]);
-
-    const saveTaskPatch = async (patch: Record<string, any>, successTitle: string) => {
-      await apiRequest("PATCH", buildUrl(api.dailyTasks.update.path, { id: task.id }), patch);
-      await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-      toast({ title: successTitle });
-    };
-
-    const savePlannedTimeIfChanged = async () => {
-      const start = draft.startPlanned.trim();
-      const end = draft.endPlanned.trim();
-      const prevStart = String(task.startPlanned ?? task.start_planned ?? "").trim();
-      const prevEnd = String(task.endPlanned ?? task.end_planned ?? "").trim();
-      if (start === prevStart && end === prevEnd) return;
-      const startMin = parseHHMMToMinutes(start);
-      const endMin = parseHHMMToMinutes(end);
-      if (startMin === null || endMin === null || endMin <= startMin) {
-        toast({ title: "Horas inválidas", description: "Usa HH:MM y fin > inicio", variant: "destructive" });
-        setDraft((prev) => ({ ...prev, startPlanned: prevStart, endPlanned: prevEnd }));
-        return;
-      }
-      await apiRequest("PATCH", `/api/daily-tasks/${task.id}/planned-time`, { startPlanned: start, endPlanned: end });
-      await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-      toast({ title: "Horario planificado actualizado" });
-    };
-
-    const onFieldBlur = async (field: string, save: () => Promise<void>) => {
-      setEditingField((current) => (current === field ? null : current));
-      await save();
+    const handleDurationChange = (value: string) => {
+      updateDraftTask(task, (prev) => {
+        const next: DraftTask = { ...prev, durationOverride: value };
+        const startMin = parseHHMMToMinutes(prev.startPlanned.trim());
+        const duration = Number(value);
+        if (startMin !== null && Number.isFinite(duration) && duration > 0) {
+          next.endPlanned = minutesToHHMM(startMin + Math.round(duration));
+        }
+        return next;
+      });
     };
 
     if (variant === "list") {
@@ -1090,9 +1204,7 @@ export default function PlanDetailsPage() {
             step={60}
             className="h-8"
             value={draft.startPlanned}
-            onFocus={() => setEditingField("startPlanned")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, startPlanned: e.target.value }))}
-            onBlur={() => void onFieldBlur("startPlanned", savePlannedTimeIfChanged)}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, startPlanned: e.target.value }))}
             disabled={locked}
           />
           <Input
@@ -1100,9 +1212,7 @@ export default function PlanDetailsPage() {
             step={60}
             className="h-8"
             value={draft.endPlanned}
-            onFocus={() => setEditingField("endPlanned")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, endPlanned: e.target.value }))}
-            onBlur={() => void onFieldBlur("endPlanned", savePlannedTimeIfChanged)}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, endPlanned: e.target.value }))}
             disabled={locked}
           />
           <div>
@@ -1112,11 +1222,7 @@ export default function PlanDetailsPage() {
                 className="h-8"
                 value={draft.durationOverride}
                 placeholder="min"
-                onFocus={() => setEditingField("durationOverride")}
-                onChange={(e) => setDraft((prev) => ({ ...prev, durationOverride: e.target.value }))}
-                onBlur={() => void onFieldBlur("durationOverride", async () => {
-                  await updateContestantTaskDuration(Number(task.id), draft.durationOverride);
-                })}
+                onChange={(e) => handleDurationChange(e.target.value)}
               />
             )}
           </div>
@@ -1124,44 +1230,28 @@ export default function PlanDetailsPage() {
             className="h-8 text-xs"
             value={draft.comment1Text}
             placeholder="Comentario 1"
-            onFocus={() => setEditingField("comment1Text")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, comment1Text: e.target.value }))}
-            onBlur={() => void onFieldBlur("comment1Text", async () => {
-              await saveTaskPatch({ comment1Text: draft.comment1Text.trim() || null }, "Comentario 1 actualizado");
-            })}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Text: e.target.value }))}
             disabled={locked}
           />
           <Input
             className="h-8 text-xs"
             value={draft.comment1Color}
             placeholder="#RRGGBB"
-            onFocus={() => setEditingField("comment1Color")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, comment1Color: e.target.value }))}
-            onBlur={() => void onFieldBlur("comment1Color", async () => {
-              await saveTaskPatch({ comment1Color: normalizeHexColor(draft.comment1Color) }, "Color comentario 1 actualizado");
-            })}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Color: e.target.value }))}
             disabled={locked}
           />
           <Input
             className="h-8 text-xs"
             value={draft.comment2Text}
             placeholder="Comentario 2"
-            onFocus={() => setEditingField("comment2Text")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, comment2Text: e.target.value }))}
-            onBlur={() => void onFieldBlur("comment2Text", async () => {
-              await saveTaskPatch({ comment2Text: draft.comment2Text.trim() || null }, "Comentario 2 actualizado");
-            })}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Text: e.target.value }))}
             disabled={locked}
           />
           <Input
             className="h-8 text-xs"
             value={draft.comment2Color}
             placeholder="#RRGGBB"
-            onFocus={() => setEditingField("comment2Color")}
-            onChange={(e) => setDraft((prev) => ({ ...prev, comment2Color: e.target.value }))}
-            onBlur={() => void onFieldBlur("comment2Color", async () => {
-              await saveTaskPatch({ comment2Color: normalizeHexColor(draft.comment2Color) }, "Color comentario 2 actualizado");
-            })}
+            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Color: e.target.value }))}
             disabled={locked}
           />
           <div>
@@ -1192,27 +1282,27 @@ export default function PlanDetailsPage() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Inicio plan</Label><Input type="time" step={60} className="mt-1" value={draft.startPlanned} onFocus={() => setEditingField("detailStart")} onChange={(e) => setDraft((prev) => ({ ...prev, startPlanned: e.target.value }))} onBlur={() => void onFieldBlur("detailStart", savePlannedTimeIfChanged)} disabled={locked} /></div>
-          <div><Label>Fin plan</Label><Input type="time" step={60} className="mt-1" value={draft.endPlanned} onFocus={() => setEditingField("detailEnd")} onChange={(e) => setDraft((prev) => ({ ...prev, endPlanned: e.target.value }))} onBlur={() => void onFieldBlur("detailEnd", savePlannedTimeIfChanged)} disabled={locked} /></div>
+          <div><Label>Inicio plan</Label><Input type="time" step={60} className="mt-1" value={draft.startPlanned} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, startPlanned: e.target.value }))} disabled={locked} /></div>
+          <div><Label>Fin plan</Label><Input type="time" step={60} className="mt-1" value={draft.endPlanned} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, endPlanned: e.target.value }))} disabled={locked} /></div>
           <div><Label>Estado</Label><div className="text-sm">{task.status || "pending"}</div></div>
           <div><Label>Recursos</Label><div className="text-sm">{Array.isArray(task.assignedResources) ? task.assignedResources.length : 0}</div></div>
         </div>
         <div>
           <Label>Duración (min)</Label>
           {locked ? <div className="text-xs text-muted-foreground pt-2">Locked</div> : (
-            <Input type="number" value={draft.durationOverride} className="mt-2" onFocus={() => setEditingField("detailDuration")} onChange={(e) => setDraft((prev) => ({ ...prev, durationOverride: e.target.value }))} onBlur={() => void onFieldBlur("detailDuration", async () => updateContestantTaskDuration(Number(task.id), draft.durationOverride))} />
+            <Input type="number" value={draft.durationOverride} className="mt-2" onChange={(e) => handleDurationChange(e.target.value)} />
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label>Comentario 1</Label>
-            <Input value={draft.comment1Text} onFocus={() => setEditingField("detailComment1")} onChange={(e) => setDraft((prev) => ({ ...prev, comment1Text: e.target.value }))} onBlur={() => void onFieldBlur("detailComment1", async () => saveTaskPatch({ comment1Text: draft.comment1Text.trim() || null }, "Comentario 1 actualizado"))} disabled={locked} />
-            <Input value={draft.comment1Color} placeholder="#RRGGBB" onFocus={() => setEditingField("detailColor1")} onChange={(e) => setDraft((prev) => ({ ...prev, comment1Color: e.target.value }))} onBlur={() => void onFieldBlur("detailColor1", async () => saveTaskPatch({ comment1Color: normalizeHexColor(draft.comment1Color) }, "Color comentario 1 actualizado"))} disabled={locked} />
+            <Input value={draft.comment1Text} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Text: e.target.value }))} disabled={locked} />
+            <Input value={draft.comment1Color} placeholder="#RRGGBB" onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Color: e.target.value }))} disabled={locked} />
           </div>
           <div className="space-y-2">
             <Label>Comentario 2</Label>
-            <Input value={draft.comment2Text} onFocus={() => setEditingField("detailComment2")} onChange={(e) => setDraft((prev) => ({ ...prev, comment2Text: e.target.value }))} onBlur={() => void onFieldBlur("detailComment2", async () => saveTaskPatch({ comment2Text: draft.comment2Text.trim() || null }, "Comentario 2 actualizado"))} disabled={locked} />
-            <Input value={draft.comment2Color} placeholder="#RRGGBB" onFocus={() => setEditingField("detailColor2")} onChange={(e) => setDraft((prev) => ({ ...prev, comment2Color: e.target.value }))} onBlur={() => void onFieldBlur("detailColor2", async () => saveTaskPatch({ comment2Color: normalizeHexColor(draft.comment2Color) }, "Color comentario 2 actualizado"))} disabled={locked} />
+            <Input value={draft.comment2Text} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Text: e.target.value }))} disabled={locked} />
+            <Input value={draft.comment2Color} placeholder="#RRGGBB" onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Color: e.target.value }))} disabled={locked} />
           </div>
         </div>
       </div>
@@ -2489,7 +2579,7 @@ ${reasonMessage}` : message,
                       <h3 className="text-sm font-semibold">Daily Tasks asignadas</h3>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-muted-foreground">
-                          {plan.dailyTasks?.filter((t: any) => t.contestantId === selectedContestant?.id).length ?? 0} tareas
+                          {contestantTasks.length} tareas
                         </span>
                         <Button
                           variant="ghost"
@@ -2498,8 +2588,20 @@ ${reasonMessage}` : message,
                         >
                           {contestantTasksMode === "list" ? "Modo tarjetas" : "Modo lista"}
                         </Button>
+                        <Button variant="outline" size="sm" onClick={handleCancelContestantTasks} disabled={isSaving}>
+                          Cancelar
+                        </Button>
+                        <Button size="sm" onClick={() => void handleSaveContestantTasks()} disabled={!isDirty || isSaving}>
+                          {isSaving ? "Guardando..." : "Guardar"}
+                        </Button>
                       </div>
                     </div>
+
+                    {saveError ? (
+                      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+                        {saveError}
+                      </div>
+                    ) : null}
 
                     {contestantTasksMode === "list" ? (
                       <div className="rounded-lg border border-border p-3">
@@ -2507,14 +2609,16 @@ ${reasonMessage}` : message,
                           <div>Tarea</div><div>Inicio</div><div>Fin</div><div>Duración</div><div>Comentario 1</div><div>Color C1</div><div>Comentario 2</div><div>Color C2</div><div>Estado/Acciones</div>
                         </div>
                         <div className="space-y-2">
-                          {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
+                          {contestantTasks.map((t: any) => (
                             <DailyTaskEditor key={t.id} task={t} variant="list" />
                           ))}
                         </div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
-                        {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
+                        {contestantTasks.map((t: any) => {
+                          const draft = draftById[Number(t.id)] ?? buildTaskDraft(t);
+                          return (
                           <button
                             key={t.id}
                             type="button"
@@ -2523,19 +2627,20 @@ ${reasonMessage}` : message,
                             onClick={() => setContestantDetailTask(t)}
                           >
                             <div className="text-sm font-medium truncate">{t.template?.name || `Template #${t.templateId}`}</div>
-                            <div className="mt-1 text-xs text-muted-foreground truncate">{t.startPlanned || '—'} - {t.endPlanned || '—'} · {t.durationOverride ?? t.template?.defaultDuration ?? '—'} min</div>
+                            <div className="mt-1 text-xs text-muted-foreground truncate">{draft.startPlanned || '—'} - {draft.endPlanned || '—'} · {draft.durationOverride || '—'} min</div>
                             <div className="text-xs mt-1">{t.status || 'pending'}</div>
-                            {(t.comment1Text || t.comment2Text) ? (
+                            {(draft.comment1Text || draft.comment2Text) ? (
                               <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
-                                {[t.comment1Text, t.comment2Text].filter(Boolean).join(' · ')}
+                                {[draft.comment1Text, draft.comment2Text].filter(Boolean).join(' · ')}
                               </div>
                             ) : null}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
-                    {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).length === 0 ? (
+                    {contestantTasks.length === 0 ? (
                       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No hay tareas asignadas todavía.</div>
                     ) : null}
 
@@ -2552,7 +2657,7 @@ ${reasonMessage}` : message,
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedContestant(null)}
+                      onClick={handleCancelContestantTasks}
                     >
                       Cerrar
                     </Button>
