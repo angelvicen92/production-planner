@@ -22,6 +22,7 @@ export const plans = pgTable("plans", {
   // ✅ Comida concursantes (por plan)
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
+  spaceMealBreakMinutes: integer("space_meal_break_minutes"),
 
   camerasAvailable: integer("cameras_available").notNull().default(0),
   status: text("status").notNull().default('draft'),
@@ -75,6 +76,10 @@ export const optimizerSettings = pgTable("optimizer_settings", {
   // ✅ escala avanzada (0..10)
   optimizationMode: text("optimization_mode").notNull().default("basic"),
   mainZonePriorityAdvancedValue: integer("main_zone_priority_advanced_value").notNull().default(0),
+  mainZoneFinishEarlyLevel: integer("main_zone_finish_early_level").notNull().default(0),
+  mainZoneFinishEarlyAdvancedValue: integer("main_zone_finish_early_advanced_value").notNull().default(0),
+  mainZoneKeepBusyLevel: integer("main_zone_keep_busy_level").notNull().default(0),
+  mainZoneKeepBusyAdvancedValue: integer("main_zone_keep_busy_advanced_value").notNull().default(0),
   groupingAdvancedValue: integer("grouping_advanced_value").notNull().default(6),
   contestantCompactAdvancedValue: integer("contestant_compact_advanced_value").notNull().default(0),
   contestantStayInZoneAdvancedValue: integer("contestant_stay_in_zone_advanced_value").notNull().default(0),
