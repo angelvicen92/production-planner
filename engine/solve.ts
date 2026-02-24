@@ -2400,6 +2400,15 @@ export function generatePlan(input: EngineInput): EngineOutput {
           planned.endPlanned = toHHMM(placed.end);
           addTaskToOccupancy(task, placed);
           leftCursor = Math.max(leftCursor, placed.end);
+        } else {
+          addTaskToOccupancy(task, {
+            start: toMinutes(planned.startPlanned),
+            end: toMinutes(planned.endPlanned),
+            assigned: Array.isArray(planned?.assignedResources)
+              ? planned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+              : [],
+          });
+          leftCursor = Math.max(leftCursor, toMinutes(planned.endPlanned));
         }
       }
     }
@@ -2423,33 +2432,65 @@ export function generatePlan(input: EngineInput): EngineOutput {
         message: `No se pudo garantizar “sin tiempos muertos” en el plató principal por restricciones: ${Array.from(blockers).join(", ") || "ventanas concursantes/recursos/bloqueos"}.`,
       });
     }
+  };
 
-    if (mainZoneKeepBusyStrength >= 10 && remainingGaps.length > 0) {
-      // start gating simple: no iniciar antes de la primera cadena continua en cada espacio
-      for (const spaceId of targetSpaces) {
-        const entries = (plannedTasks as any[])
-          .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
-          .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
-          .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
-        if (entries.length <= 1) continue;
-        let pivot = 0;
-        for (let i = 1; i < entries.length; i++) {
-          const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
-          const nextStart = toMinutes(entries[i].p.startPlanned);
-          if (nextStart - prevEnd > 1) pivot = i;
-        }
-        if (pivot <= 0) continue;
-        const shiftTo = toMinutes(entries[pivot].p.startPlanned);
-        for (let i = 0; i < pivot; i++) {
-          const t = entries[i].task;
-          if (isImmovableTask(t)) continue;
-          const p = entries[i].p;
-          const dur = toMinutes(p.endPlanned) - toMinutes(p.startPlanned);
-          p.startPlanned = toHHMM(shiftTo);
-          p.endPlanned = toHHMM(shiftTo + dur);
+  const hasOverlapInPlannedTasks = () => {
+    const byContestant = new Map<number, Array<{ start: number; end: number }>>();
+    const byResource = new Map<number, Array<{ start: number; end: number }>>();
+
+    const normalizeAssigned = (raw: any): number[] => {
+      if (!raw) return [];
+      let arr: any[] = [];
+      if (Array.isArray(raw)) arr = raw;
+      else if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) arr = parsed;
+        } catch {
+          arr = [];
         }
       }
+      return Array.from(
+        new Set(
+          arr.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0),
+        ),
+      );
+    };
+
+    for (const p of plannedTasks as any[]) {
+      const task = taskById.get(Number(p.taskId));
+      const start = toMinutes(p.startPlanned);
+      const end = toMinutes(p.endPlanned);
+
+      const contestantId = getContestantId(task);
+      if (contestantId) {
+        const list = byContestant.get(contestantId) ?? [];
+        list.push({ start, end });
+        byContestant.set(contestantId, list);
+      }
+
+      for (const rid of normalizeAssigned(p?.assignedResources ?? null)) {
+        const list = byResource.get(rid) ?? [];
+        list.push({ start, end });
+        byResource.set(rid, list);
+      }
     }
+
+    const hasOverlap = (list: Array<{ start: number; end: number }>) => {
+      list.sort((a, b) => a.start - b.start);
+      for (let i = 1; i < list.length; i++) {
+        if (list[i].start < list[i - 1].end) return true;
+      }
+      return false;
+    };
+
+    for (const list of byContestant.values()) {
+      if (hasOverlap(list)) return true;
+    }
+    for (const list of byResource.values()) {
+      if (hasOverlap(list)) return true;
+    }
+    return false;
   };
 
   while (pendingNonMeal.length) {
@@ -2716,7 +2757,33 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (out?.feasible === false) return out;
   }
 
+  const noIdlePassSnapshot = (plannedTasks as any[]).map((p) => ({
+    taskId: Number(p.taskId),
+    startPlanned: String(p.startPlanned),
+    endPlanned: String(p.endPlanned),
+    assignedResources: Array.isArray(p?.assignedResources) ? [...p.assignedResources] : [],
+    assignedSpace: Number(p?.assignedSpace ?? 0),
+  }));
+
+  rebuildPlannedByTask();
   runMainZoneNoIdlePass();
+  if (hasOverlapInPlannedTasks()) {
+    const snapshotByTask = new Map(noIdlePassSnapshot.map((p) => [Number(p.taskId), p]));
+    for (const planned of plannedTasks as any[]) {
+      const snap = snapshotByTask.get(Number(planned.taskId));
+      if (!snap) continue;
+      planned.startPlanned = snap.startPlanned;
+      planned.endPlanned = snap.endPlanned;
+      planned.assignedResources = [...snap.assignedResources];
+      planned.assignedSpace = snap.assignedSpace;
+    }
+    rebuildPlannedByTask();
+    reasons.push({
+      code: "MAIN_ZONE_NO_IDLE_ROLLED_BACK",
+      message:
+        "Se intentó compactar el plató principal pero generaba solapes; se mantuvo la planificación factible.",
+    });
+  }
 
   // Hard rule: un concursante no puede solaparse
   // (Validamos sobre la planificación resultante, y devolvemos razones operativas)
