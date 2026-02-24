@@ -167,6 +167,10 @@ export interface EngineInput {
   optimizerContestantCompactLevel?: number;
   optimizerContestantStayInZoneLevel?: number;
 
+  // Configuración final por espacio para minimizar cambios de actividad
+  // Key: spaceId -> { level (1..10), minChain (1..50) }
+  minimizeChangesBySpace?: Record<number, { level: number; minChain: number }>;
+
   optimizerWeights?: Partial<Record<
     | "mainZoneFinishEarly"
     | "mainZoneKeepBusy"

@@ -1039,6 +1039,63 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   // “memoria” simple para intentar hacer bloques por espacio+tipo
   const lastTemplateBySpace = new Map<number, number>();
+  const streakBySpace = new Map<number, { templateId: number; streakCount: number }>();
+  const minimizeChangesBySpaceInput =
+    ((input as any)?.minimizeChangesBySpace ?? {}) as Record<
+      number,
+      { level: number; minChain: number }
+    >;
+
+  const getMinimizeConfigForSpace = (spaceId: number | null | undefined) => {
+    if (!spaceId || !Number.isFinite(Number(spaceId))) return null;
+    const raw = minimizeChangesBySpaceInput[Number(spaceId)] ?? null;
+    if (!raw || typeof raw !== "object") return null;
+    const level = Math.max(0, Math.min(10, Math.floor(Number((raw as any).level ?? 0))));
+    const minChain = Math.max(1, Math.min(50, Math.floor(Number((raw as any).minChain ?? 4))));
+    if (level <= 0) return null;
+    return { level, minChain };
+  };
+
+  const scoreMinimizeChangesBonus = (spaceId: number, tplId: number) => {
+    const cfg = getMinimizeConfigForSpace(spaceId);
+    if (!cfg) return 0;
+    const lastTpl = lastTemplateBySpace.get(spaceId) ?? null;
+    const levelFactor = cfg.level / 10;
+    let bonus = 0;
+    const baseMatch = effectiveGroupingMatchWeight > 0 ? effectiveGroupingMatchWeight : 3000;
+    const baseActive = effectiveGroupingActiveSpaceWeight > 0 ? effectiveGroupingActiveSpaceWeight : 240;
+
+    if (lastTpl !== null && lastTpl === tplId) {
+      const currentStreakRaw = streakBySpace.get(spaceId)?.streakCount ?? 1;
+      const currentStreak = Math.max(1, Number(currentStreakRaw));
+      const mult =
+        currentStreak < cfg.minChain
+          ? 1
+          : cfg.minChain / Math.max(currentStreak, cfg.minChain);
+      bonus += baseMatch * levelFactor * mult;
+    }
+
+    if (lastTemplateBySpace.has(spaceId)) {
+      bonus += baseActive * levelFactor;
+    }
+
+    return Math.round(Number.isFinite(bonus) ? bonus : 0);
+  };
+
+  const rememberSpaceTemplate = (spaceId: number | null | undefined, tplId: number | null | undefined) => {
+    if (!spaceId || !tplId) return;
+    const sid = Number(spaceId);
+    const tid = Number(tplId);
+    if (!Number.isFinite(sid) || sid <= 0 || !Number.isFinite(tid) || tid <= 0) return;
+
+    const prev = streakBySpace.get(sid);
+    if (prev && prev.templateId === tid) {
+      streakBySpace.set(sid, { templateId: tid, streakCount: prev.streakCount + 1 });
+    } else {
+      streakBySpace.set(sid, { templateId: tid, streakCount: 1 });
+    }
+    lastTemplateBySpace.set(sid, tid);
+  };
 
   // ✅ memoria para compactar por zona/concursante
 
@@ -1464,8 +1521,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // ✅ memoria para agrupar tareas iguales en el mismo espacio
       const tplId = Number(task?.templateId ?? 0);
-      if (Number.isFinite(tplId) && tplId > 0 && spaceId)
-        lastTemplateBySpace.set(spaceId, tplId);
+      rememberSpaceTemplate(spaceId, tplId);
 
       // ✅ memoria para “sin huecos” por zona
       const zId = getZoneId(task);
@@ -1766,8 +1822,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     plannedEndByTaskId.set(taskId, finish);
 
     const tplId = Number(task?.templateId ?? 0);
-    if (Number.isFinite(tplId) && tplId > 0)
-      lastTemplateBySpace.set(spaceId, tplId);
+    rememberSpaceTemplate(spaceId, tplId);
     lastEndByZone.set(zoneId, finish);
     if (contestantId) {
       lastEndByContestant.set(contestantId, finish);
@@ -2232,6 +2287,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (space && lastTemplateBySpace.has(space)) s += effectiveGroupingActiveSpaceWeight;
       }
 
+      // 4.b) Minimizar cambios por espacio/zona (config local)
+      if (space) {
+        s += scoreMinimizeChangesBonus(space, tpl);
+      }
+
       // 5) Mantener concursante en el mismo plató (heurística blanda)
       if (effectiveContestantStayInZoneWeight > 0) {
         const cId = getContestantId(t);
@@ -2370,6 +2430,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (bSpace && lastTemplateBySpace.has(bSpace))
           sb += effectiveGroupingActiveSpaceWeight;
       }
+
+      // 4.b) Minimizar cambios por espacio/zona (config local)
+      if (aSpace) sa += scoreMinimizeChangesBonus(aSpace, aTpl);
+      if (bSpace) sb += scoreMinimizeChangesBonus(bSpace, bTpl);
 
       // 5) Mantener concursante en el mismo plató (solo bonus, sin penalización)
       if (effectiveContestantStayInZoneWeight > 0) {

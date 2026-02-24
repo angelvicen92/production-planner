@@ -1254,11 +1254,15 @@ function ZonesSpacesSettings() {
   const [editingZoneId, setEditingZoneId] = useState<number | null>(null);
   const [editingZoneName, setEditingZoneName] = useState("");
   const [editingZoneColor, setEditingZoneColor] = useState<string>("");
+  const [editingZoneMinimizeLevel, setEditingZoneMinimizeLevel] = useState<number>(0);
+  const [editingZoneMinChain, setEditingZoneMinChain] = useState<number>(4);
 
   const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
   const [editingSpace, setEditingSpace] = useState<{
     name: string;
     priorityLevel: number;
+    minimizeChangesLevel: number;
+    minimizeChangesMinChain: number;
   } | null>(null);
 
   if (zonesLoading || spacesLoading) {
@@ -1281,7 +1285,11 @@ function ZonesSpacesSettings() {
     );
   }
 
-  const allZones = (zones || []) as any[];
+  const allZones = ((zones || []) as any[]).map((z: any) => ({
+    ...z,
+    minimizeChangesLevel: Number(z?.minimizeChangesLevel ?? z?.minimize_changes_level ?? 0),
+    minimizeChangesMinChain: Number(z?.minimizeChangesMinChain ?? z?.minimize_changes_min_chain ?? 4),
+  }));
   const allSpaces = ((spaces || []) as any[])
     .map((s: any) => {
       const zoneRaw = s.zoneId ?? s.zone_id;
@@ -1303,6 +1311,8 @@ function ZonesSpacesSettings() {
         zoneId,
         parentSpaceId,
         priorityLevel,
+        minimizeChangesLevel: Number(s.minimizeChangesLevel ?? s.minimize_changes_level ?? 0),
+        minimizeChangesMinChain: Number(s.minimizeChangesMinChain ?? s.minimize_changes_min_chain ?? 4),
       };
     })
     // defensivo: si algo viene roto, mejor excluirlo que romper el árbol
@@ -1393,6 +1403,33 @@ function ZonesSpacesSettings() {
                   )
                 }
               />
+              <Input
+                className="w-24"
+                type="number"
+                min={0}
+                max={10}
+                title="Minimiza cambios de actividad en este espacio"
+                value={editingSpace?.minimizeChangesLevel ?? 0}
+                onChange={(e) =>
+                  setEditingSpace((p) =>
+                    p ? { ...p, minimizeChangesLevel: Number(e.target.value) } : p,
+                  )
+                }
+              />
+              <Input
+                className="w-28"
+                type="number"
+                min={1}
+                max={50}
+                title="Mínimo de encadenamientos antes de reducir bonus"
+                disabled={(editingSpace?.minimizeChangesLevel ?? 0) <= 0}
+                value={editingSpace?.minimizeChangesMinChain ?? 4}
+                onChange={(e) =>
+                  setEditingSpace((p) =>
+                    p ? { ...p, minimizeChangesMinChain: Number(e.target.value) } : p,
+                  )
+                }
+              />
               <Button
                 size="sm"
                 onClick={() => {
@@ -1402,6 +1439,8 @@ function ZonesSpacesSettings() {
                     patch: {
                       name: editingSpace.name,
                       priorityLevel: editingSpace.priorityLevel,
+                      minimizeChangesLevel: Math.max(0, Math.min(10, Math.floor(Number(editingSpace.minimizeChangesLevel) || 0))),
+                      minimizeChangesMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingSpace.minimizeChangesMinChain) || 4))),
                     },
                   });
                   setEditingSpaceId(null);
@@ -1427,6 +1466,9 @@ function ZonesSpacesSettings() {
               <div className="w-24 text-sm text-muted-foreground">
                 P{node.priorityLevel ?? 1}
               </div>
+              <div className="w-40 text-xs text-muted-foreground" title="Agrupa tareas iguales consecutivas antes de cambiar">
+                Min cambios: {Number(node.minimizeChangesLevel ?? 0)}/10
+              </div>
               <Button
                 size="sm"
                 variant="outline"
@@ -1435,6 +1477,8 @@ function ZonesSpacesSettings() {
                   setEditingSpace({
                     name: node.name ?? "",
                     priorityLevel: Number(node.priorityLevel ?? 1),
+                    minimizeChangesLevel: Number(node.minimizeChangesLevel ?? 0),
+                    minimizeChangesMinChain: Number(node.minimizeChangesMinChain ?? 4),
                   });
                 }}
               >
@@ -1655,6 +1699,25 @@ function ZonesSpacesSettings() {
                               }
                               className="h-10 w-14 p-1"
                             />
+                            <Input
+                              className="w-24"
+                              type="number"
+                              min={0}
+                              max={10}
+                              title="Agrupa tareas iguales consecutivas antes de cambiar"
+                              value={editingZoneMinimizeLevel}
+                              onChange={(e) => setEditingZoneMinimizeLevel(Number(e.target.value))}
+                            />
+                            <Input
+                              className="w-28"
+                              type="number"
+                              min={1}
+                              max={50}
+                              disabled={editingZoneMinimizeLevel <= 0}
+                              title="Mínimo de encadenamientos"
+                              value={editingZoneMinChain}
+                              onChange={(e) => setEditingZoneMinChain(Number(e.target.value))}
+                            />
 
                             <Button
                               size="sm"
@@ -1664,6 +1727,8 @@ function ZonesSpacesSettings() {
                                   id: z.id,
                                   name: editingZoneName.trim(),
                                   uiColor: editingZoneColor || null,
+                                  minimizeChangesLevel: Math.max(0, Math.min(10, Math.floor(Number(editingZoneMinimizeLevel) || 0))),
+                                  minimizeChangesMinChain: Math.max(1, Math.min(50, Math.floor(Number(editingZoneMinChain) || 4))),
                                 });
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
@@ -1696,6 +1761,8 @@ function ZonesSpacesSettings() {
                                     (z as any).ui_color ??
                                     "",
                                 );
+                                setEditingZoneMinimizeLevel(Number((z as any).minimizeChangesLevel ?? (z as any).minimize_changes_level ?? 0));
+                                setEditingZoneMinChain(Number((z as any).minimizeChangesMinChain ?? (z as any).minimize_changes_min_chain ?? 4));
                               }}
                             >
                               Edit
@@ -2220,6 +2287,10 @@ function TaskTemplatesSettings() {
   const { data: zones = [] } = useZones();
   const { data: spaces = [] } = useSpaces();
   const { data: itinerantTeams = [] } = useItinerantTeams();
+  const resourceTypesQ = useQuery({
+    queryKey: ["/api/resource-types-with-items"],
+    queryFn: () => apiRequest("GET", "/api/resource-types-with-items"),
+  });
   const createTask = useCreateTaskTemplate();
   const updateTask = useUpdateTaskTemplate();
   const deleteTask = useDeleteTaskTemplate();
@@ -2270,6 +2341,27 @@ function TaskTemplatesSettings() {
     if (!Number.isFinite(sid) || sid <= 0) return;
     spaceById.set(sid, s);
   });
+
+  const resourceTypesWithItems = (resourceTypesQ.data as any[]) ?? [];
+  const vocalCoachType =
+    resourceTypesWithItems.find((rt: any) =>
+      String(rt?.code ?? "").trim().toLowerCase() === "vocal_coach",
+    ) ??
+    resourceTypesWithItems.find((rt: any) => {
+      const code = String(rt?.code ?? "").toLowerCase();
+      const name = String(rt?.name ?? "").toLowerCase();
+      return code.includes("coach") || name.includes("coach");
+    }) ??
+    null;
+  const vocalCoachTypeId = Number(vocalCoachType?.id ?? NaN);
+  const vocalCoachItems = Array.isArray(vocalCoachType?.items)
+    ? vocalCoachType.items
+    : [];
+  const vocalCoachItemIds = new Set(
+    vocalCoachItems
+      .map((it: any) => Number(it?.id))
+      .filter((id: number) => Number.isFinite(id) && id > 0),
+  );
 
   const getTemplateDependencyIds = (rawTemplate: any): number[] => {
     const parsed = Array.isArray(rawTemplate?.dependsOnTemplateIds)
@@ -2394,7 +2486,14 @@ function TaskTemplatesSettings() {
       requiresAuxiliar: Boolean(
         tpl.requiresAuxiliar ?? tpl.requires_auxiliar ?? false,
       ),
-      requiresCoach: Boolean(tpl.requiresCoach ?? tpl.requires_coach ?? false),
+      requiresCoach: (() => {
+        const rr = tpl.resourceRequirements ?? tpl.resource_requirements ?? null;
+        const byType = rr && typeof rr === "object" ? (rr.byType ?? rr.by_type ?? {}) : {};
+        const byItem = rr && typeof rr === "object" ? (rr.byItem ?? rr.by_item ?? {}) : {};
+        const hasByType = Number.isFinite(vocalCoachTypeId) && Number(byType?.[vocalCoachTypeId] ?? 0) > 0;
+        const hasByItem = Object.keys(byItem ?? {}).some((k) => vocalCoachItemIds.has(Number(k)) && Number((byItem as any)?.[k] ?? 0) > 0);
+        return Boolean((tpl.requiresCoach ?? tpl.requires_coach ?? false) || hasByType || hasByItem);
+      })(),
       requiresPresenter: Boolean(
         tpl.requiresPresenter ?? tpl.requires_presenter ?? false,
       ),
@@ -2446,6 +2545,24 @@ function TaskTemplatesSettings() {
       rulesJsonData: tpl.rulesJson ?? tpl.rules_json ?? null,
       resourceRequirementsData:
         tpl.resourceRequirements ?? tpl.resource_requirements ?? null,
+      coachMode: (() => {
+        const rr = tpl.resourceRequirements ?? tpl.resource_requirements ?? null;
+        const byType = rr && typeof rr === "object" ? (rr.byType ?? rr.by_type ?? {}) : {};
+        const byItem = rr && typeof rr === "object" ? (rr.byItem ?? rr.by_item ?? {}) : {};
+        if (Object.keys(byItem ?? {}).some((k) => vocalCoachItemIds.has(Number(k)) && Number((byItem as any)?.[k] ?? 0) > 0)) return "specific";
+        if (Number.isFinite(vocalCoachTypeId) && Number(byType?.[vocalCoachTypeId] ?? 0) > 0) return "any";
+        return "any";
+      })(),
+      coachResourceItemId: (() => {
+        const rr = tpl.resourceRequirements ?? tpl.resource_requirements ?? null;
+        const byItem = rr && typeof rr === "object" ? (rr.byItem ?? rr.by_item ?? {}) : {};
+        for (const key of Object.keys(byItem ?? {})) {
+          const id = Number(key);
+          if (vocalCoachItemIds.has(id) && Number((byItem as any)?.[key] ?? 0) > 0) return id;
+        }
+        const first = Number(vocalCoachItems?.[0]?.id ?? NaN);
+        return Number.isFinite(first) && first > 0 ? first : null;
+      })(),
     });
   };
 
@@ -2553,6 +2670,62 @@ function TaskTemplatesSettings() {
       if (!inverseDraft.has(id)) removedInverse.push(id);
     });
 
+    const previousRR =
+      editData.resourceRequirementsData && typeof editData.resourceRequirementsData === "object"
+        ? editData.resourceRequirementsData
+        : {};
+    const rrByTypeRaw =
+      previousRR.byType && typeof previousRR.byType === "object"
+        ? { ...previousRR.byType }
+        : previousRR.by_type && typeof previousRR.by_type === "object"
+          ? { ...previousRR.by_type }
+          : {};
+    const rrByItemRaw =
+      previousRR.byItem && typeof previousRR.byItem === "object"
+        ? { ...previousRR.byItem }
+        : previousRR.by_item && typeof previousRR.by_item === "object"
+          ? { ...previousRR.by_item }
+          : {};
+
+    if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
+      delete (rrByTypeRaw as any)[String(vocalCoachTypeId)];
+      delete (rrByTypeRaw as any)[vocalCoachTypeId as any];
+    }
+    for (const coachItemId of vocalCoachItemIds) {
+      delete (rrByItemRaw as any)[String(coachItemId)];
+      delete (rrByItemRaw as any)[coachItemId as any];
+    }
+
+    if (Boolean(editData.requiresCoach)) {
+      if (editData.coachMode === "specific") {
+        const selectedCoachId = Number(editData.coachResourceItemId ?? NaN);
+        if (Number.isFinite(selectedCoachId) && selectedCoachId > 0) {
+          rrByItemRaw[selectedCoachId] = 1;
+        } else if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
+          rrByTypeRaw[vocalCoachTypeId] = 1;
+        }
+      } else if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
+        rrByTypeRaw[vocalCoachTypeId] = 1;
+      }
+    }
+
+    const rrByType = Object.fromEntries(
+      Object.entries(rrByTypeRaw)
+        .map(([k, v]) => [Number(k), Number(v)])
+        .filter(([k, v]) => Number.isFinite(k) && k > 0 && Number.isFinite(v) && v > 0),
+    );
+    const rrByItem = Object.fromEntries(
+      Object.entries(rrByItemRaw)
+        .map(([k, v]) => [Number(k), Number(v)])
+        .filter(([k, v]) => Number.isFinite(k) && k > 0 && Number.isFinite(v) && v > 0),
+    );
+
+    const nextResourceRequirements = {
+      ...previousRR,
+      byType: rrByType,
+      byItem: rrByItem,
+    };
+
     try {
       setIsSavingEdit(true);
 
@@ -2584,7 +2757,7 @@ function TaskTemplatesSettings() {
             ...previousRules,
             itinerantTeamAllowedIds: normalizedAllowedTeamIds,
           },
-          resourceRequirements: editData.resourceRequirementsData ?? null,
+          resourceRequirements: nextResourceRequirements,
         },
       } as any);
 
@@ -2935,18 +3108,81 @@ function TaskTemplatesSettings() {
                   <section className="space-y-3">
                     <p className="text-sm font-medium">Recursos</p>
                     <div className="grid grid-cols-2 md:grid-cols-2 gap-2 text-sm">
-                      <label className="flex items-center gap-2">
-                        <Checkbox
-                          checked={!!editData?.requiresCoach}
-                          onCheckedChange={(v) =>
-                            setEditData((p: any) => ({
-                              ...p,
-                              requiresCoach: Boolean(v),
-                            }))
-                          }
-                        />
-                        Coach
-                      </label>
+                      <div className="space-y-2 rounded-md border p-3">
+                        <label className="flex items-center gap-2">
+                          <Checkbox
+                            checked={!!editData?.requiresCoach}
+                            onCheckedChange={(v) =>
+                              setEditData((p: any) => ({
+                                ...p,
+                                requiresCoach: Boolean(v),
+                                coachMode: p?.coachMode ?? "any",
+                                coachResourceItemId:
+                                  p?.coachResourceItemId ?? (Number(vocalCoachItems?.[0]?.id ?? NaN) || null),
+                              }))
+                            }
+                          />
+                          Requiere Vocal Coach
+                        </label>
+                        {!!editData?.requiresCoach && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label>Modo</Label>
+                              <Select
+                                value={String(editData?.coachMode ?? "any")}
+                                onValueChange={(v) =>
+                                  setEditData((p: any) => ({
+                                    ...p,
+                                    coachMode: v === "specific" ? "specific" : "any",
+                                  }))
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona modo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="any">Cualquiera</SelectItem>
+                                  <SelectItem value="specific">Específico</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {editData?.coachMode === "specific" && (
+                              <div className="space-y-1">
+                                <Label>Coach</Label>
+                                <Select
+                                  value={String(editData?.coachResourceItemId ?? "none")}
+                                  onValueChange={(v) =>
+                                    setEditData((p: any) => ({
+                                      ...p,
+                                      coachResourceItemId: v === "none" ? null : Number(v),
+                                    }))
+                                  }
+                                  disabled={vocalCoachItems.length === 0}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={vocalCoachItems.length ? "Selecciona coach" : "No hay coaches configurados"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {vocalCoachItems.length === 0 && (
+                                      <SelectItem value="none">Sin coaches</SelectItem>
+                                    )}
+                                    {vocalCoachItems.map((item: any) => (
+                                      <SelectItem key={item.id} value={String(item.id)}>
+                                        {item?.name ?? `Coach #${item?.id ?? "—"}`}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {!Number.isFinite(vocalCoachTypeId) && (
+                          <p className="text-xs text-muted-foreground">
+                            No se encontró el tipo de recurso “Vocal Coach”; se mantiene fallback sin bloquear guardado.
+                          </p>
+                        )}
+                      </div>
                       <label className="flex items-center gap-2">
                         <Checkbox
                           checked={!!editData?.requiresPresenter}

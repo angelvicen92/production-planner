@@ -73,7 +73,7 @@ export interface IStorage {
   // Zones (Platós)
   getZones(): Promise<any[]>;
   createZone(input: { name: string }): Promise<any>;
-  updateZone(id: number, input: { name: string }): Promise<any>;
+  updateZone(id: number, input: { name: string; uiColor?: string | null; minimizeChangesLevel?: number; minimizeChangesMinChain?: number }): Promise<any>;
 
   // Spaces (hierarchy)
   getSpaces(): Promise<any[]>;
@@ -90,6 +90,8 @@ export interface IStorage {
       zoneId?: number;
       priorityLevel?: number;
       parentSpaceId?: number | null;
+      minimizeChangesLevel?: number;
+      minimizeChangesMinChain?: number;
     },
   ): Promise<any>;
 
@@ -1332,14 +1334,33 @@ export class SupabaseStorage implements IStorage {
 
   async updateZone(
     id: number,
-    input: { name: string; uiColor?: string | null },
+    input: {
+      name: string;
+      uiColor?: string | null;
+      minimizeChangesLevel?: number;
+      minimizeChangesMinChain?: number;
+    },
   ) {
+    const clamp = (v: unknown, min: number, max: number, fallback: number) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.max(min, Math.min(max, Math.floor(n)));
+    };
+
+    const upd: any = {
+      name: input.name,
+      ui_color: input.uiColor ?? null,
+    };
+    if (Object.prototype.hasOwnProperty.call(input, "minimizeChangesLevel")) {
+      upd.minimize_changes_level = clamp(input.minimizeChangesLevel, 0, 10, 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "minimizeChangesMinChain")) {
+      upd.minimize_changes_min_chain = clamp(input.minimizeChangesMinChain, 1, 50, 4);
+    }
+
     const { data, error } = await supabaseAdmin
       .from("zones")
-      .update({
-        name: input.name,
-        ui_color: input.uiColor ?? null,
-      })
+      .update(upd)
       .eq("id", id)
       .select()
       .single();
@@ -1362,6 +1383,8 @@ export class SupabaseStorage implements IStorage {
       priorityLevel: s.priority_level,
       parentSpaceId: s.parent_space_id ?? null,
       abbrev: s.abbrev ?? null,
+      minimizeChangesLevel: s.minimize_changes_level ?? 0,
+      minimizeChangesMinChain: s.minimize_changes_min_chain ?? 4,
     }));
   }
 
@@ -1422,6 +1445,8 @@ export class SupabaseStorage implements IStorage {
       priorityLevel: data.priority_level,
       parentSpaceId: data.parent_space_id ?? null,
       abbrev: data.abbrev ?? null,
+      minimizeChangesLevel: data.minimize_changes_level ?? 0,
+      minimizeChangesMinChain: data.minimize_changes_min_chain ?? 4,
     };
   }
 
@@ -1434,6 +1459,19 @@ export class SupabaseStorage implements IStorage {
     if (patch.parentSpaceId === null || typeof patch.parentSpaceId === "number")
       upd.parent_space_id = patch.parentSpaceId;
     if (patch.abbrev === null || typeof patch.abbrev === "string") upd.abbrev = patch.abbrev;
+    const clamp = (v: unknown, min: number, max: number) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      return Math.max(min, Math.min(max, Math.floor(n)));
+    };
+    if (Object.prototype.hasOwnProperty.call(patch, "minimizeChangesLevel")) {
+      const n = clamp(patch.minimizeChangesLevel, 0, 10);
+      if (n !== null) upd.minimize_changes_level = n;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "minimizeChangesMinChain")) {
+      const n = clamp(patch.minimizeChangesMinChain, 1, 50);
+      if (n !== null) upd.minimize_changes_min_chain = n;
+    }
 
     const { data, error } = await supabaseAdmin
       .from("spaces")
@@ -1450,6 +1488,8 @@ export class SupabaseStorage implements IStorage {
       priorityLevel: data.priority_level,
       parentSpaceId: data.parent_space_id ?? null,
       abbrev: data.abbrev ?? null,
+      minimizeChangesLevel: data.minimize_changes_level ?? 0,
+      minimizeChangesMinChain: data.minimize_changes_min_chain ?? 4,
     };
   }
 

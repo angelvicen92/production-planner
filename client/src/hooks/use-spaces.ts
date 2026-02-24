@@ -41,10 +41,18 @@ export function useUpdateZone() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (args: { id: number; name: string; uiColor?: string | null }) =>
+    mutationFn: (args: {
+      id: number;
+      name: string;
+      uiColor?: string | null;
+      minimizeChangesLevel?: number;
+      minimizeChangesMinChain?: number;
+    }) =>
       apiRequest("PATCH", buildUrl(api.zones.update.path, { id: args.id }), {
         name: args.name,
         uiColor: args.uiColor ?? null,
+        minimizeChangesLevel: args.minimizeChangesLevel,
+        minimizeChangesMinChain: args.minimizeChangesMinChain,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [api.zones.list.path] });
