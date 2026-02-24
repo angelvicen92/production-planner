@@ -3419,6 +3419,8 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.contestantId !== undefined) patchDb.contestant_id = input.contestantId;
       if (input.durationOverride !== undefined) patchDb.duration_override = input.durationOverride;
+      if (input.durationMinutes !== undefined) patchDb.duration_override = input.durationMinutes;
+      if (input.duration_minutes !== undefined) patchDb.duration_override = input.duration_minutes;
       if (input.camerasOverride !== undefined) patchDb.cameras_override = input.camerasOverride;
 
       // ✅ ubicación
@@ -3439,17 +3441,7 @@ function mapDeleteError(err: any, fallback: string) {
         return res.status(400).json({ message: "No fields to update" });
       }
 
-      const { data: updated, error: updErr } = await supabaseAdmin
-        .from("daily_tasks")
-        .update(patchDb)
-        .eq("id", taskId)
-        .select("*")
-        .single();
-
-      if (updErr) throw updErr;
-
-
-      if (updErr) throw updErr;
+      const updated = await storage.updateDailyTask(taskId, patchDb);
 
       // 3) Respuesta camelCase mínima (coherente)
       return res.json({

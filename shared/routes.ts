@@ -1501,6 +1501,8 @@ export const api = {
           // ✅ asignación / overrides por instancia (daily_task)
           contestantId: z.number().int().positive().nullable().optional(),
           durationOverride: z.number().int().positive().nullable().optional(),
+          durationMinutes: z.number().int().positive().nullable().optional(),
+          duration_minutes: z.number().int().positive().nullable().optional(),
           camerasOverride: z.number().int().min(0).max(2).nullable().optional(),
 
           zoneId: z.number().int().positive().nullable().optional(),

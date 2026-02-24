@@ -39,6 +39,19 @@ function coerceSecond(value: unknown): number | null {
   return sec;
 }
 
+function addMinutesToHHMM(base: string, durationMinutes: number): { hhmm: string; seconds: number } | null {
+  if (!isValidHHMM(base)) return null;
+  const [h, m] = base.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  const safeMinutes = Math.max(1, Math.floor(Number(durationMinutes)));
+  const total = (h * 60) + m + safeMinutes;
+  const day = 24 * 60;
+  const normalized = ((total % day) + day) % day;
+  const hh = Math.floor(normalized / 60);
+  const mm = normalized % 60;
+  return { hhmm: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`, seconds: 0 };
+}
+
 export interface IStorage {
   // Plans
   getPlans(): Promise<PlanSummary[]>;
@@ -53,6 +66,7 @@ export interface IStorage {
   // Tasks
   getTasksForPlan(planId: number): Promise<DailyTask[]>;
   createDailyTask(task: InsertDailyTask): Promise<DailyTask>;
+  updateDailyTask(taskId: number, patch: Record<string, any>): Promise<any>;
   updateTaskStatus(
     taskId: number,
     updates: {
@@ -1638,6 +1652,38 @@ export class SupabaseStorage implements IStorage {
 
     if (error) throw error;
     return data as DailyTask;
+  }
+
+  async updateDailyTask(taskId: number, patch: Record<string, any>): Promise<any> {
+    const patchDb: Record<string, any> = { ...patch };
+
+    if (Object.prototype.hasOwnProperty.call(patchDb, "duration_override")) {
+      const { data: current, error: currentErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("start_planned")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (currentErr) throw currentErr;
+
+      const startPlanned = String((current as any)?.start_planned ?? "");
+      const durationMinutes = Number(patchDb.duration_override);
+      if (isValidHHMM(startPlanned) && Number.isFinite(durationMinutes) && durationMinutes > 0) {
+        const nextEnd = addMinutesToHHMM(startPlanned, durationMinutes);
+        if (nextEnd) {
+          patchDb.end_planned = nextEnd.hhmm;
+          patchDb.planned_end_seconds = nextEnd.seconds;
+        }
+      }
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("daily_tasks")
+      .update(patchDb)
+      .eq("id", taskId)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   async updatePlannedTimes(

@@ -926,6 +926,8 @@ export default function PlanDetailsPage() {
   const [manualBlockSaving, setManualBlockSaving] = useState(false);
   const [replanPending, setReplanPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
+  const [contestantTasksMode, setContestantTasksMode] = useState<"list" | "cards">("list");
+  const [contestantDetailTask, setContestantDetailTask] = useState<any | null>(null);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
     task: any | null;
@@ -1020,6 +1022,74 @@ export default function PlanDetailsPage() {
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
   >([]);
+  const updateContestantTaskDuration = async (taskId: number, rawValue: string) => {
+    const value = rawValue.trim();
+    await apiRequest(
+      "PATCH",
+      buildUrl(api.dailyTasks.update.path, { id: taskId }),
+      { durationMinutes: value === "" ? null : Number(value) },
+    );
+    await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+    toast({ title: "Duración actualizada" });
+  };
+
+  const DailyTaskEditor = ({ task, variant }: { task: any; variant: "list" | "detail" }) => {
+    const locked = task.status === "in_progress" || task.status === "done";
+    const durationValue = task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? "";
+    if (variant === "list") {
+      return (
+        <div className="grid grid-cols-6 gap-3 items-center rounded-md border px-2 py-2">
+          <div className="font-medium text-sm">{task.template?.name || `Template #${task.templateId}`}</div>
+          <div className="font-mono text-xs">{task.startPlanned || "—"}</div>
+          <div className="font-mono text-xs">{task.endPlanned || "—"}</div>
+          <div>
+            {locked ? <span className="text-xs text-muted-foreground">Locked</span> : (
+              <Input type="number" className="h-8" defaultValue={durationValue} placeholder="min" onBlur={(e) => updateContestantTaskDuration(Number(task.id), e.currentTarget.value)} />
+            )}
+          </div>
+          <div>
+            <Select
+              value={task.status || "pending"}
+              onValueChange={(next) => updateTaskStatus.mutate({ taskId: task.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
+            >
+              <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">pending</SelectItem>
+                <SelectItem value="in_progress">in_progress</SelectItem>
+                <SelectItem value="done">done</SelectItem>
+                <SelectItem value="interrupted">interrupted</SelectItem>
+                <SelectItem value="cancelled">cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={async () => {
+              await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: task.id }));
+              await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+            }} aria-label="Eliminar tarea"><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Inicio plan</Label><div className="text-sm">{task.startPlanned || "—"}</div></div>
+          <div><Label>Fin plan</Label><div className="text-sm">{task.endPlanned || "—"}</div></div>
+          <div><Label>Estado</Label><div className="text-sm">{task.status || "pending"}</div></div>
+          <div><Label>Recursos</Label><div className="text-sm">{Array.isArray(task.assignedResources) ? task.assignedResources.length : 0}</div></div>
+        </div>
+        <div>
+          <Label>Duración (min)</Label>
+          {locked ? <div className="text-xs text-muted-foreground pt-2">Locked</div> : (
+            <Input type="number" defaultValue={durationValue} className="mt-2" onBlur={(e) => updateContestantTaskDuration(Number(task.id), e.currentTarget.value)} />
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const timeLockedTaskIds = useMemo(() => {
     const set = new Set<number>();
     for (const l of ((plan as any)?.locks ?? []) as any[]) {
@@ -2285,429 +2355,68 @@ ${reasonMessage}` : message,
                   </div>
 
                   {/* Tareas del concursante */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">
-                        Daily Tasks asignadas
-                      </h3>
-                      <span className="text-xs text-muted-foreground">
-                        {plan.dailyTasks?.filter(
-                          (t: any) => t.contestantId === selectedContestant?.id,
-                        ).length ?? 0}{" "}
-                        tareas
-                      </span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold">Daily Tasks asignadas</h3>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {plan.dailyTasks?.filter((t: any) => t.contestantId === selectedContestant?.id).length ?? 0} tareas
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setContestantTasksMode((m) => (m === "list" ? "cards" : "list"))}
+                        >
+                          {contestantTasksMode === "list" ? "Modo tarjetas" : "Modo lista"}
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Task</TableHead>
-                            <TableHead className="w-[160px]">Estado</TableHead>
-                            <TableHead className="w-[200px]">Plató</TableHead>
-                            <TableHead className="w-[220px]">Espacio</TableHead>
-                            <TableHead className="w-[120px]">Acción</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(plan.dailyTasks ?? [])
-                            .filter(
-                              (t: any) =>
-                                t.contestantId === selectedContestant?.id,
-                            )
-                            // Daily tasks asignadas
-                            .map((t: any) => (
-                              <TableRow key={t.id} data-ta={t.id} data-task-id={t.id} className={highlightTaskId === Number(t.id) ? "border-red-300 bg-red-50/60" : undefined}>
-                                <TableCell className="font-medium">
-                                  <div className="flex items-center gap-2">
-                                    {highlightTaskId === Number(t.id) ? (
-                                      <AlertCircle className="h-4 w-4 text-red-600" aria-label="Tarea resaltada" />
-                                    ) : null}
-                                    {isMissingSpace(t) && (
-                                      <span
-                                        className="text-destructive"
-                                        title="Requiere configuración: falta espacio"
-                                      >
-                                        ⚠
-                                      </span>
-                                    )}
-                                    <span>
-                                      {t.template?.name ||
-                                        `Template #${t.templateId}`}
-                                    </span>
-                                  </div>
-                                </TableCell>
+                    {contestantTasksMode === "list" ? (
+                      <div className="rounded-lg border border-border p-3">
+                        <div className="grid grid-cols-6 gap-3 px-2 pb-2 text-muted-foreground text-xs uppercase tracking-wide">
+                          <div>Tarea</div><div>Inicio plan</div><div>Fin plan</div><div>Duración</div><div>Estado</div><div>Acciones</div>
+                        </div>
+                        <div className="space-y-2">
+                          {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
+                            <DailyTaskEditor key={t.id} task={t} variant="list" />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).map((t: any) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className="rounded-xl p-5 shadow-sm border text-left"
+                            style={{ borderColor: t?.template?.uiColor ?? '#e5e7eb', backgroundColor: `${t?.template?.uiColor ?? '#e5e7eb'}15` }}
+                            onClick={() => setContestantDetailTask(t)}
+                          >
+                            <div className="font-semibold">{t.template?.name || `Template #${t.templateId}`}</div>
+                            <div className="mt-2 text-sm text-muted-foreground">Inicio: {t.startPlanned || '—'}</div>
+                            <div className="text-sm text-muted-foreground">Fin: {t.endPlanned || '—'}</div>
+                            <div className="text-sm text-muted-foreground">Duración: {t.durationOverride ?? t.template?.defaultDuration ?? '—'} min</div>
+                            <div className="text-sm">Estado: {t.status || 'pending'}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                                <TableCell className="text-xs">
-                                  <Select
-                                    value={t.status || "pending"}
-                                    onValueChange={(next) => {
-                                      updateTaskStatus.mutate({
-                                        taskId: t.id,
-                                        planId: id,
-                                        status: next as any,
-                                        effectiveTimeHHMM: nowTime,
-      effectiveSeconds: nowSeconds,
-                                      });
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-8 w-[150px]">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">pending</SelectItem>
-                                      <SelectItem value="in_progress">in_progress</SelectItem>
-                                      <SelectItem value="done">done</SelectItem>
-                                      <SelectItem value="interrupted">interrupted</SelectItem>
-                                      <SelectItem value="cancelled">cancelled</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
+                    {(plan.dailyTasks ?? []).filter((t: any) => t.contestantId === selectedContestant?.id).length === 0 ? (
+                      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No hay tareas asignadas todavía.</div>
+                    ) : null}
 
-                                {(() => {
-                                  const zoneRaw = t.zoneId ?? t.zone_id ?? null;
-                                  const spaceRaw =
-                                    t.spaceId ?? t.space_id ?? null;
-
-                                  const zoneId =
-                                    zoneRaw === null || zoneRaw === undefined
-                                      ? null
-                                      : Number(zoneRaw);
-                                  const spaceId =
-                                    spaceRaw === null || spaceRaw === undefined
-                                      ? null
-                                      : Number(spaceRaw);
-
-                                  const locationLabel =
-                                    t.locationLabel ?? t.location_label ?? null;
-
-                                  const locked =
-                                    t.status === "in_progress" ||
-                                    t.status === "done";
-
-                                  return (
-                                    <>
-                                      <TableCell>
-                                        {zonesLoading ? (
-                                          <span className="text-xs text-muted-foreground">
-                                            Cargando…
-                                          </span>
-                                        ) : locked ? (
-                                          zoneId ? (
-                                            (zonesById.get(zoneId)?.name ?? "—")
-                                          ) : (
-                                            (locationLabel ?? "—")
-                                          )
-                                        ) : (
-                                          <Select
-                                            value={
-                                              zoneId === null
-                                                ? locationLabel
-                                                  ? "deleted"
-                                                  : "none"
-                                                : String(zoneId)
-                                            }
-                                            onValueChange={async (v) => {
-                                              const nextZoneId =
-                                                v === "none" || v === "deleted"
-                                                  ? null
-                                                  : Number(v);
-
-                                              await apiRequest(
-                                                "PATCH",
-                                                buildUrl(
-                                                  api.dailyTasks.update.path,
-                                                  { id: t.id },
-                                                ),
-                                                {
-                                                  zoneId: nextZoneId,
-                                                  spaceId: null, // al cambiar plató, resetea espacio
-                                                },
-                                              );
-
-                                              queryClient.invalidateQueries({
-                                                queryKey: [
-                                                  buildUrl(api.plans.get.path, {
-                                                    id,
-                                                  }),
-                                                ],
-                                              });
-
-                                              toast({
-                                                title: "Plató actualizado",
-                                              });
-                                            }}
-                                          >
-                                            <SelectTrigger className="h-8">
-                                              <SelectValue placeholder="—" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {locationLabel ? (
-                                                <SelectItem
-                                                  value="deleted"
-                                                  disabled
-                                                >
-                                                  {locationLabel}
-                                                </SelectItem>
-                                              ) : null}
-                                              <SelectItem value="none">
-                                                —
-                                              </SelectItem>
-                                              {(zones as any[]).map(
-                                                (z: any) => (
-                                                  <SelectItem
-                                                    key={z.id}
-                                                    value={String(z.id)}
-                                                  >
-                                                    {z.name}
-                                                  </SelectItem>
-                                                ),
-                                              )}
-                                            </SelectContent>
-                                          </Select>
-                                        )}
-                                      </TableCell>
-
-                                      <TableCell>
-                                        {spacesLoading ? (
-                                          <span className="text-xs text-muted-foreground">
-                                            Cargando…
-                                          </span>
-                                        ) : locked ? (
-                                          spaceId ? (
-                                            ((spaces as any[]).find(
-                                              (s: any) =>
-                                                Number(s.id) === spaceId,
-                                            )?.name ?? "—")
-                                          ) : (
-                                            (locationLabel ?? "—")
-                                          )
-                                        ) : (
-                                          <Select
-                                            value={
-                                              spaceId === null
-                                                ? locationLabel
-                                                  ? "deleted"
-                                                  : "none"
-                                                : String(spaceId)
-                                            }
-                                            onValueChange={async (v) => {
-                                              const nextSpaceId =
-                                                v === "none" || v === "deleted"
-                                                  ? null
-                                                  : Number(v);
-
-                                              await apiRequest(
-                                                "PATCH",
-                                                buildUrl(
-                                                  api.dailyTasks.update.path,
-                                                  { id: t.id },
-                                                ),
-                                                {
-                                                  zoneId,
-                                                  spaceId: nextSpaceId,
-                                                },
-                                              );
-
-                                              queryClient.invalidateQueries({
-                                                queryKey: [
-                                                  buildUrl(api.plans.get.path, {
-                                                    id,
-                                                  }),
-                                                ],
-                                              });
-
-                                              toast({
-                                                title: "Espacio actualizado",
-                                              });
-                                            }}
-                                            disabled={zoneId === null}
-                                          >
-                                            <SelectTrigger className="h-8">
-                                              <SelectValue
-                                                placeholder={
-                                                  zoneId === null
-                                                    ? "Plató primero"
-                                                    : "—"
-                                                }
-                                              />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {locationLabel ? (
-                                                <SelectItem
-                                                  value="deleted"
-                                                  disabled
-                                                >
-                                                  {locationLabel}
-                                                </SelectItem>
-                                              ) : null}
-
-                                              <SelectItem value="none">
-                                                —
-                                              </SelectItem>
-
-                                              {(
-                                                (spacesByZone.get(
-                                                  zoneId ?? -1,
-                                                ) ?? []) as any[]
-                                              ).map((s: any) => {
-                                                const parent =
-                                                  s.parentSpaceId ??
-                                                  s.parent_space_id ??
-                                                  null;
-                                                const label = parent
-                                                  ? `↳ ${s.name}`
-                                                  : s.name;
-                                                return (
-                                                  <SelectItem
-                                                    key={s.id}
-                                                    value={String(s.id)}
-                                                  >
-                                                    {label}
-                                                  </SelectItem>
-                                                );
-                                              })}
-                                            </SelectContent>
-                                          </Select>
-                                        )}
-                                      </TableCell>
-                                    </>
-                                  );
-                                })()}
-
-                              <TableCell>
-                                <Input
-                                  className="h-8"
-                                  defaultValue={t.comment1Text ?? ""}
-                                  placeholder="comment1"
-                                  onBlur={async (e) => {
-                                    await apiRequest(
-                                      "PATCH",
-                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment1Text: e.currentTarget.value || null },
-                                    );
-                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                                  }}
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <ColorSwatchPicker
-                                  value={t.comment1Color ?? ""}
-                                  onChange={async (next) => {
-                                    await apiRequest(
-                                      "PATCH",
-                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment1Color: next || null },
-                                    );
-                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                                  }}
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  className="h-8"
-                                  defaultValue={t.comment2Text ?? ""}
-                                  placeholder="comment2"
-                                  onBlur={async (e) => {
-                                    await apiRequest(
-                                      "PATCH",
-                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment2Text: e.currentTarget.value || null },
-                                    );
-                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                                  }}
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <ColorSwatchPicker
-                                  value={t.comment2Color ?? ""}
-                                  onChange={async (next) => {
-                                    await apiRequest(
-                                      "PATCH",
-                                      buildUrl(api.dailyTasks.update.path, { id: t.id }),
-                                      { comment2Color: next || null },
-                                    );
-                                    queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                                  }}
-                                />
-                              </TableCell>
-
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={async () => {
-                                      if (
-                                        t.status === "in_progress" ||
-                                        t.status === "done"
-                                      ) {
-                                        toast({
-                                          title: "No se puede cambiar",
-                                          description:
-                                            "Tareas in_progress/done son inamovibles.",
-                                          variant: "destructive",
-                                        });
-                                        return;
-                                      }
-
-                                      try {
-                                        await apiRequest(
-                                          "DELETE",
-                                          buildUrl(api.dailyTasks.delete.path, {
-                                            id: t.id,
-                                          }),
-                                        );
-
-                                        queryClient.invalidateQueries({
-                                          queryKey: [
-                                            buildUrl(api.plans.get.path, {
-                                              id,
-                                            }),
-                                          ],
-                                        });
-
-                                        toast({ title: "Tarea eliminada" });
-                                      } catch (e: any) {
-                                        toast({
-                                          title: "Error eliminando",
-                                          description:
-                                            e?.message ||
-                                            e?.response?.message ||
-                                            "Error desconocido",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    aria-label="Eliminar tarea"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-
-                          {(plan.dailyTasks ?? []).filter(
-                            (t: any) =>
-                              t.contestantId === selectedContestant?.id,
-                          ).length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={5}
-                                className="h-20 text-center text-muted-foreground"
-                              >
-                                No hay tareas asignadas todavía.
-                              </TableCell>
-                            </TableRow>
-                          ) : null}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <Dialog open={!!contestantDetailTask} onOpenChange={(open) => { if (!open) setContestantDetailTask(null); }}>
+                      <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>{contestantDetailTask?.template?.name || `Tarea #${contestantDetailTask?.id ?? ''}`}</DialogTitle>
+                          <DialogDescription>Detalle de la tarea del concursante</DialogDescription>
+                        </DialogHeader>
+                        {contestantDetailTask ? <DailyTaskEditor task={contestantDetailTask} variant="detail" /> : null}
+                      </DialogContent>
+                    </Dialog>
                   </div>
-
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
