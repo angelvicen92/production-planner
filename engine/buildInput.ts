@@ -495,11 +495,7 @@ export async function buildEngineInput(
         (optimizer as any)?.heuristics?.arrivalDepartureGrouping,
         (optimizer as any)?.weightArrivalDepartureGrouping,
       ),
-      contestantTotalSpan: resolveWeight(
-        optimizer?.optimizationMode,
-        optimizer?.heuristics?.contestantTotalSpan,
-        optimizer?.contestantTotalSpanLevel,
-      ),
+      contestantTotalSpan: 0,
     },
 
           tasks: [

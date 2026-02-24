@@ -41,7 +41,6 @@ const heuristicKeys: OptimizerHeuristicKey[] = [
   "groupBySpaceTemplateMatch",
   "groupBySpaceActive",
   "contestantStayInZone",
-  "contestantTotalSpan",
 ];
 
 const strongLabelValue = mapBasicToAdvanced(3);

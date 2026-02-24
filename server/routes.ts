@@ -1867,7 +1867,6 @@ function mapDeleteError(err: any, fallback: string) {
       const hzGroupingActive = normalizeHeuristicPatch("groupBySpaceActive");
       const hzCompact = normalizeHeuristicPatch("contestantCompact");
       const hzStayInZone = normalizeHeuristicPatch("contestantStayInZone");
-      const hzTotalSpan = normalizeHeuristicPatch("contestantTotalSpan");
 
       // niveles nuevos
       if (input.mainZonePriorityLevel !== undefined) {
@@ -1887,7 +1886,8 @@ function mapDeleteError(err: any, fallback: string) {
       }
 
       if (input.contestantTotalSpanLevel !== undefined) {
-        patch.contestant_total_span_level = Math.max(0, Math.min(3, Number(input.contestantTotalSpanLevel)));
+        patch.contestant_total_span_level = 0;
+        patch.contestant_total_span_advanced_value = 0;
       }
 
       // ✅ modos del plató principal
@@ -1960,10 +1960,11 @@ function mapDeleteError(err: any, fallback: string) {
       }
 
       if (input.heuristics?.contestantTotalSpan) {
-        patch.contestant_total_span_level = hzTotalSpan.basicLevel;
-        patch.contestant_total_span_advanced_value = hzTotalSpan.advancedValue;
+        patch.contestant_total_span_level = 0;
+        patch.contestant_total_span_advanced_value = 0;
       } else if (input.contestantTotalSpanLevel !== undefined) {
-        patch.contestant_total_span_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.contestantTotalSpanLevel)))] ?? 0;
+        patch.contestant_total_span_level = 0;
+        patch.contestant_total_span_advanced_value = 0;
       }
 
       const { error } = await supabaseAdmin
