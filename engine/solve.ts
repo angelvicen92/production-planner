@@ -105,8 +105,9 @@ export function explainMainZoneGaps(params: {
   getContestantId: (task: any) => number | null;
   getSpaceId: (task: any) => number | null;
   lockedTaskIds: Set<number>;
+  relocationAttemptsByTaskId?: Map<number, { attempted: boolean; succeeded: boolean }>;
 }): MainZoneGapReason[] {
-  const { gaps, plannedTasks, taskById, getContestantId, getSpaceId, lockedTaskIds } = params;
+  const { gaps, plannedTasks, taskById, getContestantId, getSpaceId, lockedTaskIds, relocationAttemptsByTaskId } = params;
   const reasons: MainZoneGapReason[] = [];
   const plannedRows = plannedTasks.map((p) => ({
     p,
@@ -117,10 +118,15 @@ export function explainMainZoneGaps(params: {
 
   const fmtTask = (task: any, taskId: number) => String(task?.templateName ?? task?.manualTitle ?? `Tarea #${taskId}`);
   const getTaskStatus = (task: any) => String(task?.status ?? "pending");
+  const searchGrid = 5;
+  const dayStart = plannedRows.reduce((min, row) => Math.min(min, row.start), Number.POSITIVE_INFINITY);
+  const dayEnd = plannedRows.reduce((max, row) => Math.max(max, row.end), 0);
   const isInProgressOrDone = (task: any) => {
     const status = getTaskStatus(task);
     return status === "in_progress" || status === "done";
   };
+  const isReplannableTask = (task: any, taskId: number) =>
+    !isInProgressOrDone(task) && !lockedTaskIds.has(taskId) && !Boolean(task?.isManualBlock);
 
   const resolveTimeWindowStart = (task: any) => {
     const candidates = [task?.forcedStart, task?.earliestStart, task?.fixedWindowStart];
@@ -138,6 +144,70 @@ export function explainMainZoneGaps(params: {
       if (Number.isFinite(Number(c))) return Number(c);
     }
     return null;
+  };
+
+  const isRelocationFeasible = (blockingRow: (typeof plannedRows)[number], candidateStart: number) => {
+    const blockerTask = blockingRow.task;
+    const duration = blockingRow.end - blockingRow.start;
+    const candidateEnd = candidateStart + duration;
+    const candidateTaskId = Number(blockingRow.p.taskId);
+    const blockerContestantId = getContestantId(blockerTask);
+    const blockerSpaceId = Number(blockingRow.p.assignedSpace ?? getSpaceId(blockerTask) ?? NaN);
+    const blockerResources = Array.isArray(blockingRow.p.assignedResources)
+      ? blockingRow.p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+      : [];
+
+    if (!Number.isFinite(candidateStart) || !Number.isFinite(candidateEnd) || candidateEnd <= candidateStart) return false;
+    if (Number.isFinite(dayStart) && candidateStart < dayStart) return false;
+    if (candidateEnd > dayEnd) return false;
+
+    const depIds = Array.isArray(blockerTask?.dependsOnTaskIds)
+      ? blockerTask.dependsOnTaskIds.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+      : [];
+    const depsEnd = depIds.reduce((mx: number, depId: number) => {
+      const dep = plannedRows.find((row) => Number(row.p.taskId) === depId);
+      return dep ? Math.max(mx, dep.end) : mx;
+    }, Number.NEGATIVE_INFINITY);
+    if (Number.isFinite(depsEnd) && candidateStart < depsEnd) return false;
+
+    const earliestStart = resolveTimeWindowStart(blockerTask);
+    const latestEnd = resolveTimeWindowEnd(blockerTask);
+    if (earliestStart !== null && candidateStart < earliestStart) return false;
+    if (latestEnd !== null && candidateEnd > latestEnd) return false;
+
+    for (const row of plannedRows) {
+      const rowTaskId = Number(row.p.taskId);
+      if (rowTaskId === candidateTaskId) continue;
+      if (!rangesOverlap(candidateStart, candidateEnd, row.start, row.end)) continue;
+
+      if (Number(getContestantId(row.task)) === Number(blockerContestantId)) return false;
+      const rowSpaceId = Number(row.p.assignedSpace ?? getSpaceId(row.task) ?? NaN);
+      if (Number.isFinite(blockerSpaceId) && rowSpaceId === blockerSpaceId) return false;
+      const rowResources = Array.isArray(row.p.assignedResources)
+        ? row.p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+        : [];
+      if (blockerResources.some((rid) => rowResources.includes(rid))) return false;
+    }
+
+    return true;
+  };
+
+  const canRelocateOutsideGap = (blockingRow: (typeof plannedRows)[number], gapStart: number, gapEnd: number) => {
+    const duration = blockingRow.end - blockingRow.start;
+    const searchStart = Math.max(Number.isFinite(dayStart) ? dayStart : 0, blockingRow.start - 120);
+    const searchEnd = Math.min(dayEnd, blockingRow.end + 120);
+
+    for (let candidate = Math.max(blockingRow.start + searchGrid, searchStart); candidate + duration <= searchEnd; candidate += searchGrid) {
+      if (rangesOverlap(candidate, candidate + duration, gapStart, gapEnd)) continue;
+      if (isRelocationFeasible(blockingRow, candidate)) return true;
+    }
+
+    for (let candidate = Math.min(blockingRow.start - searchGrid, searchEnd - duration); candidate >= searchStart; candidate -= searchGrid) {
+      if (rangesOverlap(candidate, candidate + duration, gapStart, gapEnd)) continue;
+      if (isRelocationFeasible(blockingRow, candidate)) return true;
+    }
+
+    return false;
   };
 
   for (const gap of gaps) {
@@ -214,6 +284,12 @@ export function explainMainZoneGaps(params: {
         const blockingTask = blocker.task;
         const locked = lockedTaskIds.has(blockingTaskId);
         const status = String(blockingTask?.status ?? "pending");
+        const replannable = isReplannableTask(blockingTask, blockingTaskId);
+        const relocationAttempt = relocationAttemptsByTaskId?.get(blockingTaskId);
+        const failedRelocation = replannable && (
+          (relocationAttempt?.attempted && !relocationAttempt?.succeeded) ||
+          (!relocationAttempt?.attempted && !canRelocateOutsideGap(blocker, gap.start, gap.end))
+        );
         const contestantName = String(nextTask?.contestantName ?? "").trim() || String(blockingTask?.contestantName ?? "").trim();
         reasons.push({
           type: "CONTESTANT_BUSY",
@@ -223,7 +299,7 @@ export function explainMainZoneGaps(params: {
           blockedMainZoneTaskId: nextTaskId,
           blockedInterval,
           entity: { kind: "contestant", id: Number(contestantId) },
-          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: ${contestantName ? `el concursante ${contestantName}` : "el concursante"} está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.`,
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: ${contestantName ? `el concursante ${contestantName}` : "el concursante"} está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.${failedRelocation ? ' La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación).' : ''}`,
         });
         continue;
       }
@@ -245,15 +321,22 @@ export function explainMainZoneGaps(params: {
         });
         if (blocker) {
           const blockingTaskId = Number(blocker.p.taskId);
+          const blockingTask = blocker.task;
+          const replannable = isReplannableTask(blockingTask, blockingTaskId);
+          const relocationAttempt = relocationAttemptsByTaskId?.get(blockingTaskId);
+          const failedRelocation = replannable && (
+            (relocationAttempt?.attempted && !relocationAttempt?.succeeded) ||
+            (!relocationAttempt?.attempted && !canRelocateOutsideGap(blocker, gap.start, gap.end))
+          );
           reasons.push({
             type: "RESOURCE_BUSY",
             blockingTaskId,
-            blockingTaskLabel: fmtTask(blocker.task, blockingTaskId),
+            blockingTaskLabel: fmtTask(blockingTask, blockingTaskId),
             blockingInterval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end) },
             blockedMainZoneTaskId: nextTaskId,
             blockedInterval,
             entity: { kind: "resource", id: resourceId },
-            humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el recurso ${resourceId} está ocupado por ${fmtTask(blocker.task, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)}).`,
+            humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el recurso ${resourceId} está ocupado por ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)}).${failedRelocation ? ' La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación).' : ''}`,
           });
           break;
         }
@@ -294,7 +377,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     complete: false,
     hardFeasible: false,
     plannedTasks: [],
-    warnings,
+    warnings: [],
     unplanned: [],
     reasons: hardReasons as any,
   });
@@ -2582,6 +2665,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
   };
   rebuildPlannedByTask();
 
+  const globalGapRelocationAttemptsByTaskId = new Map<number, { attempted: boolean; succeeded: boolean }>();
+
   const isImmovableTask = (task: any) => {
     const taskId = Number(task?.id);
     const status = String(task?.status ?? "pending");
@@ -2688,6 +2773,96 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const blockers = new Set<string>();
     let globalAttempts = 0;
+
+    const sortedPlannedRows = () =>
+      (plannedTasks as any[])
+        .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
+        .filter(({ task }) => Boolean(task))
+        .sort(
+          (a, b) =>
+            toMinutes(String(a.p.startPlanned)) - toMinutes(String(b.p.startPlanned)) ||
+            (toMinutes(String(a.p.endPlanned)) - toMinutes(String(b.p.endPlanned))) ||
+            (Number(a.p.taskId) - Number(b.p.taskId)),
+        );
+
+    const findBlockingReasonForGap = (gap: MainZoneGap) =>
+      explainMainZoneGaps({
+        gaps: [gap],
+        plannedTasks: plannedTasks as any,
+        taskById,
+        getContestantId,
+        getSpaceId,
+        lockedTaskIds,
+        relocationAttemptsByTaskId: globalGapRelocationAttemptsByTaskId,
+      })[0] ?? null;
+
+    const tryMoveTaskToCandidate = (row: { p: any; task: any }, candidateStart: number, gapStart: number, gapEnd: number) => {
+      const task = row.task;
+      const planned = row.p;
+      const taskId = Number(task?.id);
+      const oldStart = toMinutes(String(planned.startPlanned));
+      const oldEnd = toMinutes(String(planned.endPlanned));
+      const duration = oldEnd - oldStart;
+      if (duration <= 0) return false;
+      if (rangesOverlap(candidateStart, candidateStart + duration, gapStart, gapEnd)) return false;
+
+      removeTaskFromOccupancy(task, planned);
+      const placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, candidateStart);
+      if (!placed) {
+        addTaskToOccupancy(task, {
+          start: oldStart,
+          end: oldEnd,
+          assigned: Array.isArray(planned?.assignedResources)
+            ? planned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+            : [],
+        });
+        return false;
+      }
+
+      planned.startPlanned = toHHMM(placed.start);
+      planned.endPlanned = toHHMM(placed.end);
+      addTaskToOccupancy(task, placed);
+      return true;
+    };
+
+    const tryRelocateBlockerOutsideGap = (blockerTaskId: number, gapStart: number, gapEnd: number) => {
+      const row = sortedPlannedRows().find((x) => Number(x.p.taskId) === Number(blockerTaskId));
+      if (!row || !row.task) return false;
+      if (isImmovableTask(row.task)) return false;
+
+      const oldStart = toMinutes(String(row.p.startPlanned));
+      const oldEnd = toMinutes(String(row.p.endPlanned));
+      const duration = oldEnd - oldStart;
+      if (duration <= 0) return false;
+
+      const minSearch = Math.max(startDay, oldStart - 120);
+      const maxSearch = Math.min(endDay, oldEnd + 120);
+
+      const rightCandidates: number[] = [];
+      for (let t = snapUp(oldStart + GRID); t + duration <= maxSearch; t += GRID) rightCandidates.push(t);
+
+      const leftCandidates: number[] = [];
+      for (let t = snapUp(oldStart - GRID); t >= minSearch; t -= GRID) leftCandidates.push(t);
+
+      const normalizeCandidates = (arr: number[]) =>
+        Array.from(new Set(arr))
+          .filter((v) => Number.isFinite(v))
+          .sort((a, b) => a - b);
+
+      for (const candidateStart of normalizeCandidates(rightCandidates)) {
+        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        globalAttempts++;
+        if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
+      }
+
+      for (const candidateStart of normalizeCandidates(leftCandidates)) {
+        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        globalAttempts++;
+        if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
+      }
+
+      return false;
+    };
 
     for (const spaceId of targetSpaces) {
       const spaceTasks = (plannedTasks as any[])
@@ -2841,6 +3016,71 @@ export function generatePlan(input: EngineInput): EngineOutput {
             spaceId,
             reason: `no se pudo mover un bloque ${requiredShift} min (grid ${GRID}) sin romper dependencias/ventanas/recursos/ocupación`,
           });
+        }
+      }
+    }
+
+    if (mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD) {
+      let attemptsByGap = new Map<string, number>();
+      let movedAny = true;
+
+      while (movedAny && globalAttempts < DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) {
+        movedAny = false;
+        rebuildPlannedByTask();
+
+        const mainZoneGaps = computeMainZoneGaps({
+          zoneId: optMainZoneId,
+          plannedTasks: plannedTasks as any,
+          taskById,
+          getSpaceId,
+          getZoneId,
+          getZoneIdForSpace,
+        }).sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId);
+
+        if (!mainZoneGaps.length) break;
+
+        for (const gap of mainZoneGaps) {
+          if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+          const gapKey = `${gap.spaceId}:${gap.start}:${gap.end}:${gap.nextTaskId ?? 0}`;
+          const used = attemptsByGap.get(gapKey) ?? 0;
+          if (used >= DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP) continue;
+
+          const nextTaskId = Number(gap.nextTaskId ?? NaN);
+          const nextTask = taskById.get(nextTaskId);
+          const nextPlanned = plannedByTaskId.get(nextTaskId);
+          if (!nextTask || !nextPlanned || isImmovableTask(nextTask)) continue;
+
+          const originalStart = toMinutes(String(nextPlanned.startPlanned));
+          attemptsByGap.set(gapKey, used + 1);
+          globalAttempts++;
+          if (gap.start < originalStart && tryMoveTaskToCandidate({ p: nextPlanned, task: nextTask }, gap.start, Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER)) {
+            movedAny = true;
+            break;
+          }
+
+          const reason = findBlockingReasonForGap(gap);
+          if (!reason?.blockingTaskId) continue;
+          if (reason.type !== "CONTESTANT_BUSY" && reason.type !== "RESOURCE_BUSY") continue;
+
+          const blockerTaskId = Number(reason.blockingTaskId);
+          const blockerTask = taskById.get(blockerTaskId);
+          if (!blockerTask || isImmovableTask(blockerTask)) continue;
+
+          const relocated = tryRelocateBlockerOutsideGap(blockerTaskId, gap.start, gap.end);
+          globalGapRelocationAttemptsByTaskId.set(blockerTaskId, { attempted: true, succeeded: relocated });
+
+          if (!relocated) continue;
+
+          rebuildPlannedByTask();
+          const refreshedNext = plannedByTaskId.get(nextTaskId);
+          if (!refreshedNext) continue;
+          const refreshedTask = taskById.get(nextTaskId);
+          const refreshedStart = toMinutes(String(refreshedNext.startPlanned));
+          globalAttempts++;
+          if (gap.start < refreshedStart && tryMoveTaskToCandidate({ p: refreshedNext, task: refreshedTask }, gap.start, Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER)) {
+            movedAny = true;
+            break;
+          }
         }
       }
     }
@@ -3517,6 +3757,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     getContestantId,
     getSpaceId,
     lockedTaskIds,
+    relocationAttemptsByTaskId: globalGapRelocationAttemptsByTaskId,
   });
 
   if (optMainZoneId && mainZoneGaps.length > 0) {
