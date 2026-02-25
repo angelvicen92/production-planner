@@ -1507,6 +1507,8 @@ export const api = {
 
           zoneId: z.number().int().positive().nullable().optional(),
           spaceId: z.number().int().positive().nullable().optional(),
+          plannedStart: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+          plannedEnd: z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
           comment1Text: z.string().max(500).nullable().optional(),
           comment1Color: z.string().nullable().optional(),
           comment2Text: z.string().max(500).nullable().optional(),
