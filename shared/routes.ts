@@ -335,6 +335,8 @@ export const api = {
           success: z.boolean(),
           planId: z.number(),
           tasksUpdated: z.number(),
+          warnings: z.array(z.any()).optional(),
+          planningStats: z.record(z.any()).optional(),
         }),
         422: errorSchemas.infeasible,
         404: errorSchemas.notFound,

@@ -229,10 +229,31 @@ export interface InfeasibleReason {
   };
 }
 
+export type MainZoneGapReasonType =
+  | "CONTESTANT_BUSY"
+  | "RESOURCE_BUSY"
+  | "LOCKED_TASK"
+  | "IN_PROGRESS_OR_DONE"
+  | "HARD_DEPENDENCY"
+  | "TIME_WINDOW"
+  | "OTHER";
+
+export interface MainZoneGapReason {
+  type: MainZoneGapReasonType;
+  blockingTaskId?: number;
+  blockingTaskLabel?: string;
+  blockingInterval?: { start: string; end: string };
+  blockedMainZoneTaskId?: number;
+  blockedInterval: { start: string; end: string };
+  entity?: { kind: "contestant" | "resource" | "space"; id: number };
+  humanMessage: string;
+}
+
 export interface EngineOutputWarning {
   code: string;
   message: string;
   taskId?: number;
+  details?: any;
 }
 
 export interface EngineOutputUnplanned {
@@ -255,4 +276,10 @@ export interface EngineOutput {
   unplanned?: EngineOutputUnplanned[];
   schedule?: TaskOutput[];
   reasons?: InfeasibleReason[];
+  insights?: Array<{
+    code: string;
+    message: string;
+    details?: any;
+  }>;
 }
+
