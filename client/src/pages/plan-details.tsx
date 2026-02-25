@@ -20,7 +20,6 @@ import {
   GanttChartSquare,
   ChevronDown,
   ChevronUp,
-  Trash2,
   Users,
   Check,
   ChevronsUpDown,
@@ -107,6 +106,10 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ColorSwatchPicker, normalizeHexColor } from "@/components/color-swatch-picker";
+import {
+  ContestantDailyTaskEditor,
+  type DraftTask,
+} from "@/components/contestant-daily-task-editor";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1024,17 +1027,6 @@ export default function PlanDetailsPage() {
     { id: number; name: string }[]
   >([]);
 
-  type DraftTask = {
-    id: number;
-    startPlanned: string;
-    endPlanned: string;
-    durationOverride: string;
-    comment1Text: string;
-    comment1Color: string;
-    comment2Text: string;
-    comment2Color: string;
-  };
-
   const [draftById, setDraftById] = useState<Record<number, DraftTask>>({});
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -1180,136 +1172,6 @@ export default function PlanDetailsPage() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const DailyTaskEditor = ({ task, variant }: { task: any; variant: "list" | "detail" }) => {
-    const locked = task.status === "in_progress" || task.status === "done";
-    const draft = draftById[Number(task.id)] ?? buildTaskDraft(task);
-
-    const handleDurationChange = (value: string) => {
-      updateDraftTask(task, (prev) => {
-        const next: DraftTask = { ...prev, durationOverride: value };
-        const startMin = parseHHMMToMinutes(prev.startPlanned.trim());
-        const duration = Number(value);
-        if (startMin !== null && Number.isFinite(duration) && duration > 0) {
-          next.endPlanned = minutesToHHMM(startMin + Math.round(duration));
-        }
-        return next;
-      });
-    };
-
-    if (variant === "list") {
-      return (
-        <div className="grid grid-cols-9 gap-2 items-center rounded-md border px-2 py-2">
-          <div className="font-medium text-sm truncate">{task.template?.name || `Template #${task.templateId}`}</div>
-          <Input
-            type="time"
-            step={60}
-            className="h-8"
-            value={draft.startPlanned}
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, startPlanned: e.target.value }))}
-            disabled={locked}
-          />
-          <Input
-            type="time"
-            step={60}
-            className="h-8"
-            value={draft.endPlanned}
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, endPlanned: e.target.value }))}
-            disabled={locked}
-          />
-          <div>
-            {locked ? <span className="text-xs text-muted-foreground">Locked</span> : (
-              <Input
-                type="number"
-                className="h-8"
-                value={draft.durationOverride}
-                placeholder="min"
-                onChange={(e) => handleDurationChange(e.target.value)}
-              />
-            )}
-          </div>
-          <Input
-            className="h-8 text-xs"
-            value={draft.comment1Text}
-            placeholder="Comentario 1"
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Text: e.target.value }))}
-            disabled={locked}
-          />
-          <Input
-            className="h-8 text-xs"
-            value={draft.comment1Color}
-            placeholder="#RRGGBB"
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Color: e.target.value }))}
-            disabled={locked}
-          />
-          <Input
-            className="h-8 text-xs"
-            value={draft.comment2Text}
-            placeholder="Comentario 2"
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Text: e.target.value }))}
-            disabled={locked}
-          />
-          <Input
-            className="h-8 text-xs"
-            value={draft.comment2Color}
-            placeholder="#RRGGBB"
-            onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Color: e.target.value }))}
-            disabled={locked}
-          />
-          <div>
-            <Select
-              value={task.status || "pending"}
-              onValueChange={(next) => updateTaskStatus.mutate({ taskId: task.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
-            >
-              <SelectTrigger className="h-8 w-[120px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">pending</SelectItem>
-                <SelectItem value="in_progress">in_progress</SelectItem>
-                <SelectItem value="done">done</SelectItem>
-                <SelectItem value="interrupted">interrupted</SelectItem>
-                <SelectItem value="cancelled">cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={async () => {
-              await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: task.id }));
-              await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
-            }} aria-label="Eliminar tarea"><Trash2 className="h-4 w-4" /></Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>Inicio plan</Label><Input type="time" step={60} className="mt-1" value={draft.startPlanned} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, startPlanned: e.target.value }))} disabled={locked} /></div>
-          <div><Label>Fin plan</Label><Input type="time" step={60} className="mt-1" value={draft.endPlanned} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, endPlanned: e.target.value }))} disabled={locked} /></div>
-          <div><Label>Estado</Label><div className="text-sm">{task.status || "pending"}</div></div>
-          <div><Label>Recursos</Label><div className="text-sm">{Array.isArray(task.assignedResources) ? task.assignedResources.length : 0}</div></div>
-        </div>
-        <div>
-          <Label>Duración (min)</Label>
-          {locked ? <div className="text-xs text-muted-foreground pt-2">Locked</div> : (
-            <Input type="number" value={draft.durationOverride} className="mt-2" onChange={(e) => handleDurationChange(e.target.value)} />
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>Comentario 1</Label>
-            <Input value={draft.comment1Text} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Text: e.target.value }))} disabled={locked} />
-            <Input value={draft.comment1Color} placeholder="#RRGGBB" onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment1Color: e.target.value }))} disabled={locked} />
-          </div>
-          <div className="space-y-2">
-            <Label>Comentario 2</Label>
-            <Input value={draft.comment2Text} onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Text: e.target.value }))} disabled={locked} />
-            <Input value={draft.comment2Color} placeholder="#RRGGBB" onChange={(e) => updateDraftTask(task, (prev) => ({ ...prev, comment2Color: e.target.value }))} disabled={locked} />
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const timeLockedTaskIds = useMemo(() => {
@@ -2618,9 +2480,26 @@ ${reasonMessage}` : message,
                           <div>Tarea</div><div>Inicio</div><div>Fin</div><div>Duración</div><div>Comentario 1</div><div>Color C1</div><div>Comentario 2</div><div>Color C2</div><div>Estado/Acciones</div>
                         </div>
                         <div className="space-y-2">
-                          {contestantTasks.map((t: any) => (
-                            <DailyTaskEditor key={t.id} task={t} variant="list" />
-                          ))}
+                          {contestantTasks.map((t: any) => {
+                            const draft = draftById[Number(t.id)] ?? buildTaskDraft(t);
+                            const locked = t.status === "in_progress" || t.status === "done";
+
+                            return (
+                              <ContestantDailyTaskEditor
+                                key={t.id}
+                                task={t}
+                                variant="list"
+                                draft={draft}
+                                locked={locked}
+                                onChangeDraft={(fn) => updateDraftTask(t, fn)}
+                                onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
+                                onDelete={async () => {
+                                  await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: t.id }));
+                                  await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                                }}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     ) : (
@@ -2659,7 +2538,20 @@ ${reasonMessage}` : message,
                           <DialogTitle>{contestantDetailTask?.template?.name || `Tarea #${contestantDetailTask?.id ?? ''}`}</DialogTitle>
                           <DialogDescription>Detalle de la tarea del concursante</DialogDescription>
                         </DialogHeader>
-                        {contestantDetailTask ? <DailyTaskEditor task={contestantDetailTask} variant="detail" /> : null}
+                        {contestantDetailTask ? (
+                          <ContestantDailyTaskEditor
+                            task={contestantDetailTask}
+                            variant="detail"
+                            draft={draftById[Number(contestantDetailTask.id)] ?? buildTaskDraft(contestantDetailTask)}
+                            locked={contestantDetailTask.status === "in_progress" || contestantDetailTask.status === "done"}
+                            onChangeDraft={(fn) => updateDraftTask(contestantDetailTask, fn)}
+                            onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
+                            onDelete={async () => {
+                              await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: contestantDetailTask.id }));
+                              await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
+                            }}
+                          />
+                        ) : null}
                       </DialogContent>
                     </Dialog>
                   </div>
