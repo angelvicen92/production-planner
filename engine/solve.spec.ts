@@ -146,4 +146,60 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
   assert.deepEqual(run1, run2);
 }
 
+{
+  const input: EngineInput = {
+    planId: 2,
+    workDay: { start: "10:00", end: "13:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 201, planId: 2, templateId: 1, templateName: "Main A", zoneId: 7, spaceId: 71, contestantId: 1, contestantName: "Lucía", status: "pending", durationOverrideMin: 30, priority: 1 },
+      { id: 203, planId: 2, templateId: 2, templateName: "Externa X", zoneId: 5, spaceId: 50, contestantId: 1, contestantName: "Lucía", status: "pending", durationOverrideMin: 30, priority: 20 },
+      { id: 202, planId: 2, templateId: 3, templateName: "Main B", zoneId: 7, spaceId: 71, contestantId: 1, contestantName: "Lucía", status: "pending", durationOverrideMin: 30 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((p) => [Number(p.taskId), p]));
+  assert.equal(byTask.get(202)?.startPlanned, "10:30");
+  assert.equal(byTask.get(203)?.startPlanned, "11:00");
+}
+
+{
+  const taskById = new Map<number, any>([
+    [301, { id: 301, zoneId: 7, spaceId: 71, contestantId: 1, contestantName: "Lucía", templateName: "Main A", status: "pending" }],
+    [302, { id: 302, zoneId: 7, spaceId: 71, contestantId: 1, contestantName: "Lucía", templateName: "Main B", status: "pending" }],
+    [303, { id: 303, zoneId: 5, spaceId: 50, contestantId: 1, contestantName: "Lucía", templateName: "Externa X", status: "pending", earliestStart: "10:30", latestEnd: "11:00" }],
+  ]);
+
+  const reasons = explainMainZoneGaps({
+    gaps: [{ zoneId: 7, spaceId: 71, start: 630, end: 660, durationMin: 30, prevTaskId: 301, nextTaskId: 302 }],
+    plannedTasks: [
+      { taskId: 301, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [] },
+      { taskId: 303, startPlanned: "10:30", endPlanned: "11:00", assignedResources: [] },
+      { taskId: 302, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [] },
+    ],
+    taskById,
+    getContestantId,
+    getSpaceId,
+    lockedTaskIds: new Set(),
+    relocationAttemptsByTaskId: new Map([[303, { attempted: true, succeeded: false }]]),
+  });
+
+  assert.equal(reasons.length, 1);
+  assert.equal(reasons[0].type, "CONTESTANT_BUSY");
+  assert.ok(reasons[0].humanMessage.includes("La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD"));
+}
+
 console.log("solve.spec.ts: ok");
