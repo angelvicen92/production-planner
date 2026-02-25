@@ -2139,6 +2139,7 @@ export class SupabaseStorage implements IStorage {
     return (data || []).map((t: any) => ({
       id: t.id,
       name: t.name,
+      abbrev: t.abbrev ?? null,
 
       defaultDuration: t.default_duration ?? t.defaultDuration ?? null,
       defaultCameras: t.default_cameras ?? t.defaultCameras ?? 0,
