@@ -1,5 +1,37 @@
 import type { EngineInput, EngineOutput } from "./types";
 
+export type MainZoneGapReasonType =
+  | "CONTESTANT_BUSY"
+  | "RESOURCE_BUSY"
+  | "LOCKED_TASK"
+  | "IN_PROGRESS_OR_DONE"
+  | "HARD_DEPENDENCY"
+  | "TIME_WINDOW"
+  | "OTHER";
+
+export type MainZoneGap = {
+  zoneId: number;
+  start: number;
+  end: number;
+  durationMin: number;
+  nextTaskId: number | null;
+};
+
+export type MainZoneGapReason = {
+  type: MainZoneGapReasonType;
+  blockingTaskId?: number;
+  blockingTaskLabel?: string;
+  blockingInterval?: { start: string; end: string };
+  blockedMainZoneTaskId?: number;
+  blockedInterval: { start: string; end: string };
+  entity?: { kind: "contestant" | "resource" | "space"; id: number };
+  humanMessage: string;
+};
+
+const DIRECTOR_MODE_KEEP_BUSY_THRESHOLD = 8;
+const DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP = 50;
+const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
+
 function toMinutes(hhmm: string) {
   const [h, m] = hhmm.split(":").map((x) => parseInt(x, 10));
   return h * 60 + m;
@@ -8,6 +40,127 @@ function toHHMM(mins: number) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) =>
+  aStart < bEnd && bStart < aEnd;
+
+export function computeMainZoneGaps(params: {
+  zoneId: number | null;
+  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string }>;
+  taskById: Map<number, any>;
+  getZoneId: (task: any) => number | null;
+}): MainZoneGap[] {
+  const { zoneId, plannedTasks, taskById, getZoneId } = params;
+  if (!zoneId) return [];
+
+  const zoneIntervals = plannedTasks
+    .map((p) => ({
+      taskId: Number(p.taskId),
+      start: toMinutes(String(p.startPlanned)),
+      end: toMinutes(String(p.endPlanned)),
+      task: taskById.get(Number(p.taskId)),
+    }))
+    .filter((row) => row.task && Number(getZoneId(row.task)) === Number(zoneId))
+    .sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId);
+
+  const gaps: MainZoneGap[] = [];
+  for (let i = 1; i < zoneIntervals.length; i++) {
+    const prev = zoneIntervals[i - 1];
+    const next = zoneIntervals[i];
+    if (next.start <= prev.end) continue;
+    gaps.push({
+      zoneId: Number(zoneId),
+      start: prev.end,
+      end: next.start,
+      durationMin: next.start - prev.end,
+      nextTaskId: next.taskId,
+    });
+  }
+  return gaps;
+}
+
+export function explainMainZoneGaps(params: {
+  gaps: MainZoneGap[];
+  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedResources?: number[] }>;
+  taskById: Map<number, any>;
+  getContestantId: (task: any) => number | null;
+  getZoneId: (task: any) => number | null;
+  lockedTaskIds: Set<number>;
+}): MainZoneGapReason[] {
+  const { gaps, plannedTasks, taskById, getContestantId, getZoneId, lockedTaskIds } = params;
+  const reasons: MainZoneGapReason[] = [];
+  const plannedRows = plannedTasks.map((p) => ({
+    p,
+    task: taskById.get(Number(p.taskId)),
+    start: toMinutes(String(p.startPlanned)),
+    end: toMinutes(String(p.endPlanned)),
+  }));
+
+  const fmtTask = (task: any, taskId: number) => String(task?.templateName ?? task?.manualTitle ?? `Tarea #${taskId}`);
+
+  for (const gap of gaps) {
+    const nextTask = gap.nextTaskId ? taskById.get(Number(gap.nextTaskId)) : null;
+    const nextTaskId = gap.nextTaskId ?? undefined;
+    const blockedInterval = { start: toHHMM(gap.start), end: toHHMM(gap.end) };
+
+    const contestantId = nextTask ? getContestantId(nextTask) : null;
+    if (contestantId) {
+      const blocker = plannedRows.find((row) => {
+        if (!row.task) return false;
+        if (Number(row.p.taskId) === Number(nextTaskId)) return false;
+        return Number(getContestantId(row.task)) === Number(contestantId) && rangesOverlap(gap.start, gap.end, row.start, row.end);
+      });
+      if (blocker) {
+        const blockingTaskId = Number(blocker.p.taskId);
+        const blockingTask = blocker.task;
+        const locked = lockedTaskIds.has(blockingTaskId);
+        const status = String(blockingTask?.status ?? "pending");
+        reasons.push({
+          type: "CONTESTANT_BUSY",
+          blockingTaskId,
+          blockingTaskLabel: fmtTask(blockingTask, blockingTaskId),
+          blockingInterval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end) },
+          blockedMainZoneTaskId: nextTaskId,
+          blockedInterval,
+          entity: { kind: "contestant", id: Number(contestantId) },
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el concursante está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.`,
+        });
+        continue;
+      }
+    }
+
+    if (nextTask) {
+      const depIds = Array.isArray(nextTask?.dependsOnTaskIds)
+        ? nextTask.dependsOnTaskIds.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+        : [];
+      const depBlocker = depIds
+        .map((depId: number) => plannedRows.find((row) => Number(row.p.taskId) === depId))
+        .find((row: any) => row && Number(row.end) > gap.start);
+      if (depBlocker) {
+        const depTaskId = Number(depBlocker.p.taskId);
+        reasons.push({
+          type: "HARD_DEPENDENCY",
+          blockingTaskId: depTaskId,
+          blockingTaskLabel: fmtTask(depBlocker.task, depTaskId),
+          blockingInterval: { start: toHHMM(depBlocker.start), end: toHHMM(depBlocker.end) },
+          blockedMainZoneTaskId: nextTaskId,
+          blockedInterval,
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: la dependencia ${fmtTask(depBlocker.task, depTaskId)} termina a las ${toHHMM(depBlocker.end)}.`,
+        });
+        continue;
+      }
+    }
+
+    reasons.push({
+      type: "OTHER",
+      blockedMainZoneTaskId: nextTaskId,
+      blockedInterval,
+      humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: no se encontró movimiento factible sin violar restricciones HARD.`,
+    });
+  }
+
+  return reasons;
 }
 
 export function generatePlan(input: EngineInput): EngineOutput {
@@ -84,7 +237,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
   };
 
   // ✅ NUEVO: tareas que requieren configuración (no rompen el solve, se excluyen)
-  const warnings: { code: string; message: string; taskId?: number }[] = [];
+  const warnings: { code: string; message: string; taskId?: number; details?: any }[] = [];
   const excludedTaskIds = new Set<number>();
 
   const mealName = String((input as any)?.mealTaskTemplateName ?? "")
@@ -603,12 +756,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return t;
   };
 
-  const rangesOverlap = (
-    aStart: number,
-    aEnd: number,
-    bStart: number,
-    bEnd: number,
-  ) => aStart < bEnd && bStart < aEnd;
 
   const occupiedByContestant = new Map<number, Interval[]>();
   const occupiedBySpace = new Map<number, Interval[]>();
@@ -1090,6 +1237,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
       ),
     ),
   );
+  const directorModeEnabled = Boolean(
+    optMainZoneId &&
+      optMainZoneOptKeepBusy &&
+      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD,
+  );
+
   const effectiveGroupingMatchWeight = Math.round(weightFromInput("groupBySpaceTemplateMatch", groupingMatchWeight / 3_000) * 3_000);
   const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
@@ -2404,7 +2557,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     // NOTE: este pase aplica dos estrategias en zona principal:
     // 1) compactación a la izquierda (no-idle), y
     // 2) start gating con desplazamiento a la derecha de bloques previos a tareas inmovibles.
-    if (!optMainZoneId || !optMainZoneOptKeepBusy || mainZoneKeepBusyStrength < 9) return;
+    if (!directorModeEnabled || !optMainZoneId) return;
 
     rebuildPlannedByTask();
     const targetSpaces = Array.from(spaceZoneById.entries())
@@ -2412,6 +2565,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       .map(([sid]) => Number(sid));
 
     const blockers = new Set<string>();
+    let globalAttempts = 0;
 
     for (const spaceId of targetSpaces) {
       const spaceTasks = (plannedTasks as any[])
@@ -2474,6 +2628,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       if (entries.length <= 1) continue;
 
       for (let i = 1; i < entries.length; i++) {
+        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
         const prev = entries[i - 1];
         const next = entries[i];
 
@@ -2507,7 +2662,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
         if (requiredShift < GRID) continue;
 
         let moved = false;
+        let attemptsForGap = 0;
         for (const row of block) removeTaskFromOccupancy(row.task, row.p);
+        attemptsForGap++;
+        globalAttempts++;
 
         const snapshots = block.map(({ p }) => ({
           p,
@@ -2556,7 +2714,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
           }
         }
 
-        if (!moved) {
+        if (!moved || attemptsForGap > DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP) {
           startGatingWarnings.push({
             spaceId,
             reason: `no se pudo mover un bloque ${requiredShift} min (grid ${GRID}) sin romper dependencias/ventanas/recursos/ocupación`,
@@ -2572,6 +2730,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
         .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
         .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
       for (let i = 1; i < entries.length; i++) {
+        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
         const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
         const nextStart = toMinutes(entries[i].p.startPlanned);
         if (nextStart - prevEnd > 1) remainingGaps.push({ spaceId, start: prevEnd, end: nextStart });
@@ -2704,7 +2863,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       let s = 0;
 
-      // 1) Plató principal: “Terminar cuanto antes”
+      // 1) Director mode: prioridad global de tareas de plató principal
+      if (directorModeEnabled && optMainZoneId && zone === optMainZoneId) {
+        s += 5_000_000;
+      }
+
+      // 1.b) Plató principal: “Terminar cuanto antes”
       if (effectiveFinishEarlyWeight > 0 && optMainZoneId && zone === optMainZoneId) {
         s += effectiveFinishEarlyWeight;
       }
@@ -2772,7 +2936,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     // intentamos rellenarlo con una tarea que ENCAJE exacta en ese hueco.
     // (Solo se aplica a tareas del MISMO espacio dentro del plató principal.)
     if (
-      effectiveKeepBusyWeight > 0 &&
+      directorModeEnabled &&
       optMainZoneId &&
       lastEndByZone.has(optMainZoneId)
     ) {
@@ -2833,7 +2997,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
       let sa = 0;
       let sb = 0;
 
-      // 1) Plató principal: “Terminar cuanto antes” (según nivel)
+      // 1) Director mode: prioridad global de tareas de plató principal
+      if (directorModeEnabled && optMainZoneId) {
+        if (aZone === optMainZoneId) sa += 5_000_000;
+        if (bZone === optMainZoneId) sb += 5_000_000;
+      }
+
+      // 1.b) Plató principal: “Terminar cuanto antes” (según nivel)
       if (effectiveFinishEarlyWeight > 0 && optMainZoneId) {
         if (aZone === optMainZoneId) sa += effectiveFinishEarlyWeight;
         if (bZone === optMainZoneId) sb += effectiveFinishEarlyWeight;
@@ -3210,6 +3380,32 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return hardInfeasible(resourceOverlaps);
   }
 
+  const mainZoneGaps = computeMainZoneGaps({
+    zoneId: optMainZoneId,
+    plannedTasks: plannedTasks as any,
+    taskById,
+    getZoneId,
+  });
+  const mainZoneGapReasons = explainMainZoneGaps({
+    gaps: mainZoneGaps,
+    plannedTasks: plannedTasks as any,
+    taskById,
+    getContestantId,
+    getZoneId,
+    lockedTaskIds,
+  });
+
+  if (directorModeEnabled && mainZoneGaps.length > 0) {
+    warnings.push({
+      code: "MAIN_ZONE_GAPS_REMAIN",
+      message: `No se pudo eliminar ${mainZoneGaps.length} hueco(s) en plató principal.`,
+      details: {
+        gaps: mainZoneGaps.map((g) => ({ start: toHHMM(g.start), end: toHHMM(g.end), durationMin: g.durationMin, nextTaskId: g.nextTaskId })),
+        reasons: mainZoneGapReasons,
+      },
+    });
+  }
+
   const complete = unplanned.length === 0;
   return {
     feasible: complete,
@@ -3219,5 +3415,17 @@ export function generatePlan(input: EngineInput): EngineOutput {
     warnings,
     unplanned,
     reasons: complete ? [] : unplanned.map((x) => x.reason),
+    insights: [
+      {
+        code: "MAIN_ZONE_GAP_STATS",
+        message: "Métricas de continuidad del plató principal",
+        details: {
+          zoneId: optMainZoneId,
+          totalGaps: mainZoneGaps.length,
+          totalGapMinutes: mainZoneGaps.reduce((acc, g) => acc + Number(g.durationMin || 0), 0),
+          gapReasons: mainZoneGapReasons,
+        },
+      },
+    ],
   } as any;
 }

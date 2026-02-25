@@ -3030,6 +3030,8 @@ function mapDeleteError(err: any, fallback: string) {
             p.space_meal_break_minutes ?? p.spaceMealBreakMinutes ?? null,
 
           camerasAvailable: p.cameras_available ?? p.camerasAvailable ?? 0,
+          planningWarnings: Array.isArray(p.planning_warnings ?? p.planningWarnings) ? (p.planning_warnings ?? p.planningWarnings) : [],
+          planningStats: (p.planning_stats ?? p.planningStats ?? {}),
 
           dailyTasks: (full.tasks || []).map((t: any) => ({
             id: t.id,
@@ -4649,6 +4651,17 @@ function normalizeHexColor(value: unknown): string | null {
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+      const insights = Array.isArray((result as any)?.insights) ? (result as any).insights : [];
+      const planningStats = insights.find((x: any) => String(x?.code) === "MAIN_ZONE_GAP_STATS")?.details ?? {};
+
+      await supabaseAdmin
+        .from("plans")
+        .update({
+          planning_warnings: warnings,
+          planning_stats: planningStats,
+        })
+        .eq("id", planId);
+
       res.json({
         success: true,
         hardFeasible: true,
@@ -4657,6 +4670,7 @@ function normalizeHexColor(value: unknown): string | null {
         planId,
         tasksUpdated: updated,
         warnings,
+        planningStats,
         reasons,
         unplanned: (result as any).unplanned ?? [],
         runId: planningRunId,

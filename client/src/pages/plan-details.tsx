@@ -6,6 +6,7 @@ import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanningTimeline } from "@/components/planning-timeline";
 import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
+import { PlanningWarningsPanel } from "@/components/planning-warnings-panel";
 import {
   ArrowLeft,
   Calendar,
@@ -1965,6 +1966,12 @@ ${reasonMessage}` : message,
             </Button>
           </div>
         </div>
+
+        <PlanningWarningsPanel
+          enabled
+          warnings={Array.isArray((plan as any)?.planningWarnings) ? (plan as any).planningWarnings : []}
+          planningStats={(plan as any)?.planningStats ?? {}}
+        />
 
         {/* Metadata Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
