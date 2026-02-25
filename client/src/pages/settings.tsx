@@ -46,7 +46,7 @@ import {
   ChevronsDown,
   ChevronsUp,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api, buildUrl } from "@shared/routes";
@@ -2253,6 +2253,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"alphabetical" | "duration" | "zone">("alphabetical");
   const [formData, setFormData] = useState<any>({
     name: "",
     abbrev: "",
@@ -2791,6 +2792,46 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     deleteTask.mutate(id);
   };
 
+  const sortedTemplates = useMemo(() => {
+    const list = [...(templates ?? [])];
+
+    if (sortBy === "duration") {
+      list.sort((a: any, b: any) => {
+        const aDuration = Number(a?.defaultDuration ?? a?.default_duration ?? Number.POSITIVE_INFINITY);
+        const bDuration = Number(b?.defaultDuration ?? b?.default_duration ?? Number.POSITIVE_INFINITY);
+        const safeA = Number.isFinite(aDuration) ? aDuration : Number.POSITIVE_INFINITY;
+        const safeB = Number.isFinite(bDuration) ? bDuration : Number.POSITIVE_INFINITY;
+        if (safeA !== safeB) return safeA - safeB;
+        return String(a?.name ?? "").localeCompare(String(b?.name ?? ""), "es", { sensitivity: "base" });
+      });
+      return list;
+    }
+
+    if (sortBy === "zone") {
+      list.sort((a: any, b: any) => {
+        const aZoneId = Number(a?.zoneId ?? a?.zone_id ?? NaN);
+        const bZoneId = Number(b?.zoneId ?? b?.zone_id ?? NaN);
+        const aZoneName = Number.isFinite(aZoneId) ? String(zoneById.get(aZoneId)?.name ?? "").trim() : "";
+        const bZoneName = Number.isFinite(bZoneId) ? String(zoneById.get(bZoneId)?.name ?? "").trim() : "";
+        const aHasZone = aZoneName.length > 0;
+        const bHasZone = bZoneName.length > 0;
+
+        if (aHasZone && !bHasZone) return -1;
+        if (!aHasZone && bHasZone) return 1;
+
+        const zoneCmp = aZoneName.localeCompare(bZoneName, "es", { sensitivity: "base" });
+        if (zoneCmp !== 0) return zoneCmp;
+        return String(a?.name ?? "").localeCompare(String(b?.name ?? ""), "es", { sensitivity: "base" });
+      });
+      return list;
+    }
+
+    list.sort((a: any, b: any) =>
+      String(a?.name ?? "").localeCompare(String(b?.name ?? ""), "es", { sensitivity: "base" }),
+    );
+    return list;
+  }, [templates, sortBy, zoneById]);
+
   if (isLoading)
     return (
       <div className="flex h-40 items-center justify-center">
@@ -2870,7 +2911,25 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {(templates ?? []).map((tpl: any) => {
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">Ordenar por:</Label>
+          <Select
+            value={sortBy}
+            onValueChange={(value: "alphabetical" | "duration" | "zone") =>
+              setSortBy(value)
+            }
+          >
+            <SelectTrigger className="h-9 w-[220px]">
+              <SelectValue placeholder="Selecciona orden" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="alphabetical">Alfabético</SelectItem>
+              <SelectItem value="duration">Duración</SelectItem>
+              <SelectItem value="zone">Plató</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {sortedTemplates.map((tpl: any) => {
           const isEditing = editingId === Number(tpl.id) && !!editData;
           const curr = isEditing ? editData : tpl;
           const tplZoneId = Number(curr?.zoneId ?? curr?.zone_id ?? NaN);
