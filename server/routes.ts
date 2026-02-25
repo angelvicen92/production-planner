@@ -3439,6 +3439,16 @@ function mapDeleteError(err: any, fallback: string) {
         if (nextStart && nextEnd && nextEnd <= nextStart) {
           return res.status(400).json({ message: "plannedEnd must be greater than plannedStart" });
         }
+        const isValidHHMM = (value: unknown): value is string =>
+          typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+        const hhmmToSeconds = (value: string): number => {
+          const [hours, minutes] = value.split(":").map(Number);
+          return ((hours * 60) + minutes) * 60;
+        };
+        if (isValidHHMM(nextStart) && isValidHHMM(nextEnd)) {
+          patchDb.planned_start_seconds = hhmmToSeconds(nextStart);
+          patchDb.planned_end_seconds = hhmmToSeconds(nextEnd);
+        }
       }
       if (input.comment1Text !== undefined) patchDb.comment1_text = input.comment1Text;
       if (input.comment1Color !== undefined) patchDb.comment1_color = input.comment1Color;
