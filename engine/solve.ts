@@ -499,6 +499,24 @@ export function generatePlan(input: EngineInput): EngineOutput {
     return templateName === "break";
   };
 
+  const isItinerantWrapTask = (task: any) => {
+    if (!task) return false;
+    const teamId = Number(task?.itinerantTeamId ?? 0);
+    if (!Number.isFinite(teamId) || teamId <= 0) return false;
+    if (Boolean(task?.isManualBlock)) return false;
+    return !isProtectedWrapTask(task);
+  };
+
+  const getWrapExtraMin = (task: any) => {
+    const raw = Number(task?.durationOverrideMin ?? task?.durationMin ?? 0);
+    const base = Number.isFinite(raw) ? raw : 0;
+    const minExtra = Math.max(10, Math.floor(base));
+    const wrapGrid = 5;
+    return Math.max(wrapGrid, Math.ceil(minExtra / wrapGrid) * wrapGrid);
+  };
+
+  const wrapInnerByTaskId = new Map<number, number>();
+
   const canAllowContestantWrapOverlap = (leftTask: any, rightTask: any) => {
     if (!leftTask || !rightTask) return false;
     if (Boolean(leftTask?.isManualBlock) || Boolean(rightTask?.isManualBlock)) return false;
@@ -516,7 +534,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (Number(leftSpaceId) !== Number(rightSpaceId)) return false;
     if (leftItinerantTeamId > 0 && rightItinerantTeamId > 0) return false;
 
-    return leftItinerantTeamId > 0 || rightItinerantTeamId > 0;
+    const leftId = Number(leftTask?.id ?? 0);
+    const rightId = Number(rightTask?.id ?? 0);
+    if (!Number.isFinite(leftId) || !Number.isFinite(rightId) || leftId <= 0 || rightId <= 0) return false;
+
+    if (leftItinerantTeamId > 0) return wrapInnerByTaskId.get(leftId) === rightId;
+    if (rightItinerantTeamId > 0) return wrapInnerByTaskId.get(rightId) === leftId;
+    return false;
   };
 
   // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
@@ -1553,6 +1577,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const contestantId = getContestantId(task);
     const spaceId = getSpaceId(task);
     const zoneId = getZoneId(task);
+    const itinerantTeamId = Number(task?.itinerantTeamId ?? 0);
     const taskItinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     const transportTask = isArrivalTask(task) || isDepartureTask(task);
@@ -2685,12 +2710,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const contestantId = getContestantId(task);
     const spaceId = getSpaceId(task);
     const zoneId = getZoneId(task);
+    const itinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     const pull = (arr: Interval[] | undefined) => (arr ?? []).filter((it) => Number(it.taskId) !== taskId || it.start !== start || it.end !== end);
 
     if (contestantId) occupiedByContestant.set(contestantId, pull(occupiedByContestant.get(contestantId)));
     if (spaceId) occupiedBySpace.set(spaceId, pull(occupiedBySpace.get(spaceId)));
     if (zoneId) occupiedByZoneMeal.set(zoneId, pull(occupiedByZoneMeal.get(zoneId)));
+    if (itinerantTeamId > 0) occupiedByItinerant.set(itinerantTeamId, pull(occupiedByItinerant.get(itinerantTeamId)));
     for (const pid of Array.isArray(planned?.assignedResources) ? planned.assignedResources : []) {
       occupiedByResource.set(Number(pid), pull(occupiedByResource.get(Number(pid))));
     }
@@ -2737,6 +2764,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const contestantId = getContestantId(task);
     const spaceId = getSpaceId(task);
     const zoneId = getZoneId(task);
+    const itinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     if (contestantId) {
       const arr = occupiedByContestant.get(contestantId) ?? [];
@@ -2752,6 +2780,11 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const arr = occupiedByZoneMeal.get(zoneId) ?? [];
       addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
       occupiedByZoneMeal.set(zoneId, arr);
+    }
+    if (itinerantTeamId > 0) {
+      const arr = occupiedByItinerant.get(itinerantTeamId) ?? [];
+      addIntervalSorted(arr, { start: placement.start, end: placement.end, taskId });
+      occupiedByItinerant.set(itinerantTeamId, arr);
     }
     for (const pid of placement.assigned) {
       const arr = occupiedByResource.get(pid) ?? [];
@@ -3484,6 +3517,193 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   rebuildPlannedByTask();
   runMainZoneNoIdlePass();
+
+  const getTaskIntervalMinutes = (task: any) => {
+    if (!task) return null;
+    const taskId = Number(task?.id ?? 0);
+    const planned = plannedByTaskId.get(taskId);
+    const sRaw = planned?.startPlanned ?? task?.startPlanned ?? null;
+    const eRaw = planned?.endPlanned ?? task?.endPlanned ?? null;
+    if (!sRaw || !eRaw) return null;
+    const s = toMinutes(String(sRaw));
+    const e = toMinutes(String(eRaw));
+    if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return null;
+    return { start: s, end: e };
+  };
+
+  const classifyWrapPlacementBlocker = (params: {
+    wrapTask: any;
+    wrapPlanned: any;
+    innerTask: any;
+    desiredStart: number;
+    desiredEnd: number;
+  }) => {
+    const { wrapTask, wrapPlanned, innerTask, desiredStart, desiredEnd } = params;
+    const wrapTaskId = Number(wrapTask?.id ?? 0);
+    const innerTaskId = Number(innerTask?.id ?? 0);
+    const wrapContestantId = getContestantId(wrapTask);
+    const wrapSpaceId = getSpaceId(wrapTask);
+    const wrapTeamId = Number(wrapTask?.itinerantTeamId ?? 0);
+
+    const desiredDuration = desiredEnd - desiredStart;
+    if (desiredStart < startDay || desiredEnd > endDay || desiredDuration <= 0) {
+      return { reason: 'TIME_WINDOW', blockerTaskId: null };
+    }
+
+    const effWin = getContestantEffectiveWindow(wrapContestantId);
+    if (effWin && (desiredStart < effWin.start || desiredEnd > effWin.end)) {
+      return { reason: 'TIME_WINDOW', blockerTaskId: null };
+    }
+
+    const assigned = Array.isArray(wrapPlanned?.assignedResources)
+      ? wrapPlanned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+      : [];
+
+    const overlaps = (arr: Interval[]) => arr.find((it) => {
+      const otherTaskId = Number(it?.taskId ?? NaN);
+      if (!Number.isFinite(otherTaskId) || otherTaskId <= 0) return false;
+      if (otherTaskId === wrapTaskId || otherTaskId === innerTaskId) return false;
+      return rangesOverlap(desiredStart, desiredEnd, it.start, it.end);
+    });
+
+    if (wrapContestantId) {
+      const it = overlaps(occupiedByContestant.get(wrapContestantId) ?? []);
+      if (it) return { reason: 'CONTESTANT_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
+    }
+
+    if (wrapSpaceId) {
+      const it = overlaps(occupiedBySpace.get(wrapSpaceId) ?? []);
+      if (it) return { reason: 'SPACE_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
+    }
+
+    if (wrapTeamId > 0) {
+      const it = overlaps(occupiedByItinerant.get(wrapTeamId) ?? []);
+      if (it) return { reason: 'ITINERANT_TEAM_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
+    }
+
+    for (const pid of assigned) {
+      const it = overlaps(occupiedByResource.get(pid) ?? []);
+      if (it) return { reason: 'RESOURCE_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
+    }
+
+    const wrapZoneId = getZoneId(wrapTask);
+    if (wrapZoneId) {
+      const it = overlaps(occupiedByZoneMeal.get(wrapZoneId) ?? []);
+      if (it) return { reason: 'ZONE_MEAL_BREAK', blockerTaskId: Number(it.taskId ?? 0) };
+    }
+
+    return null;
+  };
+
+  const emittedWrapWarningKeys = new Set<string>();
+
+  const syncItinerantWrapTasks = () => {
+    rebuildPlannedByTask();
+    const wrapTasks = tasksSorted.filter((task: any) => isItinerantWrapTask(task));
+
+    for (const wrapTask of wrapTasks) {
+      const wrapTaskId = Number(wrapTask?.id ?? 0);
+      const wrapPlanned = plannedByTaskId.get(wrapTaskId);
+      if (!wrapPlanned) continue;
+
+      const contestantId = getContestantId(wrapTask);
+      const spaceId = getSpaceId(wrapTask);
+      if (!contestantId || !spaceId) continue;
+
+      const wrapInterval = getTaskIntervalMinutes(wrapTask);
+      if (!wrapInterval) continue;
+
+      const innerCandidates = tasksSorted.filter((task: any) => {
+        if (!task) return false;
+        const taskId = Number(task?.id ?? 0);
+        if (taskId === wrapTaskId) return false;
+        if (Boolean(task?.isManualBlock)) return false;
+        if (isItinerantWrapTask(task)) return false;
+        if (isProtectedWrapTask(task)) return false;
+        if (Number(getContestantId(task) ?? 0) !== Number(contestantId)) return false;
+        if (Number(getSpaceId(task) ?? 0) !== Number(spaceId)) return false;
+        return Boolean(getTaskIntervalMinutes(task));
+      });
+
+      if (!innerCandidates.length) continue;
+
+      const scored = innerCandidates
+        .map((task: any) => {
+          const interval = getTaskIntervalMinutes(task)!;
+          const overlap = rangesOverlap(wrapInterval.start, wrapInterval.end, interval.start, interval.end);
+          const distance = overlap ? 0 : Math.abs(interval.start - wrapInterval.start);
+          return { task, interval, overlap, distance };
+        })
+        .sort((a: any, b: any) => {
+          if (Number(b.overlap) !== Number(a.overlap)) return Number(b.overlap) - Number(a.overlap);
+          if (a.distance !== b.distance) return a.distance - b.distance;
+          return Number(a.task?.id ?? 0) - Number(b.task?.id ?? 0);
+        });
+
+      const selected = scored[0];
+      const innerTask = selected.task;
+      const innerTaskId = Number(innerTask?.id ?? 0);
+      const innerInterval = selected.interval;
+      wrapInnerByTaskId.set(wrapTaskId, innerTaskId);
+
+      const extra = getWrapExtraMin(wrapTask);
+      const pre = Math.floor(extra / 2);
+      const post = extra - pre;
+      const desiredStart = innerInterval.start - pre;
+      const desiredEnd = innerInterval.end + post;
+
+      removeTaskFromOccupancy(wrapTask, wrapPlanned);
+
+      const blocker = classifyWrapPlacementBlocker({
+        wrapTask,
+        wrapPlanned,
+        innerTask,
+        desiredStart,
+        desiredEnd,
+      });
+
+      if (blocker) {
+        addTaskToOccupancy(wrapTask, {
+          start: toMinutes(String(wrapPlanned.startPlanned)),
+          end: toMinutes(String(wrapPlanned.endPlanned)),
+          assigned: Array.isArray(wrapPlanned?.assignedResources) ? wrapPlanned.assignedResources : [],
+        });
+
+        const innerImmovable = isImmovableTask(innerTask);
+        const wrapReason = innerImmovable ? 'LOCKED' : blocker.reason;
+        const warningKey = `${wrapTaskId}:${innerTaskId}:${desiredStart}:${desiredEnd}:${wrapReason}:${Number(blocker.blockerTaskId ?? 0)}`;
+        if (!emittedWrapWarningKeys.has(warningKey)) {
+          emittedWrapWarningKeys.add(warningKey);
+          warnings.push({
+            code: 'ITINERANT_WRAP_NOT_FEASIBLE',
+            taskId: wrapTaskId,
+            message: `No se pudo alinear wrap itinerante ${wrapTaskId} envolviendo tarea ${innerTaskId}.`,
+            details: {
+              wrapTaskId,
+              innerTaskId,
+              desiredStart: toHHMM(desiredStart),
+              desiredEnd: toHHMM(desiredEnd),
+              blockerTaskId: blocker.blockerTaskId ?? null,
+              reason: wrapReason,
+            },
+          });
+        }
+        continue;
+      }
+
+      wrapPlanned.startPlanned = toHHMM(desiredStart);
+      wrapPlanned.endPlanned = toHHMM(desiredEnd);
+      addTaskToOccupancy(wrapTask, {
+        start: desiredStart,
+        end: desiredEnd,
+        assigned: Array.isArray(wrapPlanned?.assignedResources) ? wrapPlanned.assignedResources : [],
+      });
+    }
+
+    rebuildPlannedByTask();
+  };
+
+  syncItinerantWrapTasks();
   if (hasOverlapInPlannedTasks()) {
     const snapshotByTask = new Map(noIdlePassSnapshot.map((p) => [Number(p.taskId), p]));
     for (const planned of plannedTasks as any[]) {
@@ -3501,6 +3721,8 @@ export function generatePlan(input: EngineInput): EngineOutput {
         "Se intentó compactar el plató principal pero generaba solapes; se mantuvo la planificación factible.",
     });
   }
+
+  syncItinerantWrapTasks();
 
   // Hard rule: un concursante no puede solaparse
   // (Validamos sobre la planificación resultante, y devolvemos razones operativas)

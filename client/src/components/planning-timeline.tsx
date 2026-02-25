@@ -611,23 +611,50 @@ function TaskStatusMenuTrigger({
     return mapped;
   }, [dailyTasks]);
 
-  const isWrappedItinerantOverlay = (task: Task, laneTasks: Task[]) => {
-    if (viewMode !== "contestants") return false;
+  const isItinerantWrapTask = (task: Task) => {
     const itinerantTeamId = Number(task?.itinerantTeamId ?? NaN);
     if (!Number.isFinite(itinerantTeamId) || itinerantTeamId <= 0) return false;
-    const spaceId = Number(task?.spaceId ?? NaN);
-    if (!Number.isFinite(spaceId) || spaceId <= 0) return false;
-    const taskStart = timeToMinutes(task.startPlanned ?? "00:00");
-    const taskEnd = timeToMinutes(task.endPlanned ?? "00:00");
-    return laneTasks.some((other) => {
-      if (Number(other.id) === Number(task.id)) return false;
-      if (Number(other?.spaceId ?? NaN) !== spaceId) return false;
-      if (!other.startPlanned || !other.endPlanned) return false;
-      const otherStart = timeToMinutes(other.startPlanned);
-      const otherEnd = timeToMinutes(other.endPlanned);
-      return taskStart < otherEnd && otherStart < taskEnd;
-    });
+    if (task.isManualBlock) return false;
+    const templateName = String(task.template?.name ?? "").trim().toLowerCase();
+    const breakKind = String((task as any)?.breakKind ?? "").trim().toLowerCase();
+    if (breakKind.length > 0) return false;
+    return templateName !== "break";
   };
+
+  const getWrapInnerInLane = (task: Task, laneTasks: Task[]) => {
+    if (!isItinerantWrapTask(task)) return null;
+    const spaceId = Number(task?.spaceId ?? NaN);
+    if (!Number.isFinite(spaceId) || spaceId <= 0) return null;
+    if (!task.startPlanned || !task.endPlanned) return null;
+
+    const wrapStart = timeToMinutes(task.startPlanned);
+    const wrapEnd = timeToMinutes(task.endPlanned);
+    const candidates = laneTasks
+      .filter((other) => {
+        if (Number(other.id) === Number(task.id)) return false;
+        if (!other.startPlanned || !other.endPlanned) return false;
+        if (other.isManualBlock) return false;
+        if (Number(other?.spaceId ?? NaN) !== spaceId) return false;
+        if (Number(other?.itinerantTeamId ?? 0) > 0) return false;
+        return true;
+      })
+      .map((other) => {
+        const start = timeToMinutes(other.startPlanned!);
+        const end = timeToMinutes(other.endPlanned!);
+        const overlap = wrapStart < end && start < wrapEnd;
+        const distance = overlap ? 0 : Math.abs(start - wrapStart);
+        return { other, start, end, overlap, distance };
+      })
+      .sort((a, b) => {
+        if (Number(b.overlap) !== Number(a.overlap)) return Number(b.overlap) - Number(a.overlap);
+        if (a.distance !== b.distance) return a.distance - b.distance;
+        return Number(a.other.id) - Number(b.other.id);
+      });
+
+    return candidates[0] ?? null;
+  };
+
+  const isWrappedItinerantOverlay = (task: Task, laneTasks: Task[]) => Boolean(getWrapInnerInLane(task, laneTasks));
 
   const splitContestantLaneTasksByLayer = (laneTasks: Task[]) => {
     if (viewMode !== "contestants") {
@@ -3143,6 +3170,14 @@ function TaskStatusMenuTrigger({
                       const tStart = effectiveStart;
                       const tEnd = effectiveEnd;
                       const tDur = Math.max(5, tEnd - tStart);
+                      const wrapInner = viewMode === "contestants" ? getWrapInnerInLane(task, lane.tasks) : null;
+                      const wrapExtra = wrapInner ? Math.max(10, tDur - Math.max(5, wrapInner.end - wrapInner.start)) : 0;
+                      const wrapPre = wrapInner ? Math.floor(wrapExtra / 2) : 0;
+                      const wrapPost = wrapInner ? wrapExtra - wrapPre : 0;
+                      const wrapPreLeft = wrapInner ? ((wrapInner.start - wrapPre - startMin) / duration) * 100 : 0;
+                      const wrapPreWidth = wrapInner ? (wrapPre / duration) * 100 : 0;
+                      const wrapPostLeft = wrapInner ? ((wrapInner.end - startMin) / duration) * 100 : 0;
+                      const wrapPostWidth = wrapInner ? (wrapPost / duration) * 100 : 0;
 
                       return (
                         <TaskStatusMenuTrigger key={task.id}
@@ -3228,15 +3263,33 @@ function TaskStatusMenuTrigger({
                               left: `${((tStart - startMin) / duration) * 100}%`,
                               width: `${(tDur / duration) * 100}%`,
 
-                              backgroundColor: taskBaseColor(task),
+                              backgroundColor: wrapInner ? "transparent" : taskBaseColor(task),
                               borderColor:
-                                task.status === "in_progress"
-                                  ? "rgb(34 197 94)"
-                                  : taskBaseColor(task),
+                                wrapInner
+                                  ? "transparent"
+                                  : task.status === "in_progress"
+                                    ? "rgb(34 197 94)"
+                                    : taskBaseColor(task),
                               color: taskTextColor(task),
                               pointerEvents: isBackgroundTask ? "none" : "auto",
                             }}
                           >
+                            {wrapInner ? (
+                              <>
+                                {wrapPre > 0 ? (
+                                  <div
+                                    className={cn("absolute top-0 bottom-0 rounded-sm", isPdf ? "" : "")}
+                                    style={{ left: `${wrapPreLeft}%`, width: `${wrapPreWidth}%`, backgroundColor: taskBaseColor(task) }}
+                                  />
+                                ) : null}
+                                {wrapPost > 0 ? (
+                                  <div
+                                    className={cn("absolute top-0 bottom-0 rounded-sm", isPdf ? "" : "")}
+                                    style={{ left: `${wrapPostLeft}%`, width: `${wrapPostWidth}%`, backgroundColor: taskBaseColor(task) }}
+                                  />
+                                ) : null}
+                              </>
+                            ) : null}
                             <span className={cn("font-bold truncate", isPdf ? "text-[10px]" : "text-xs")}>
                               {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                             </span>
