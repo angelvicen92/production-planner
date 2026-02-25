@@ -11,9 +11,11 @@ export type MainZoneGapReasonType =
 
 export type MainZoneGap = {
   zoneId: number;
+  spaceId: number;
   start: number;
   end: number;
   durationMin: number;
+  prevTaskId: number | null;
   nextTaskId: number | null;
 };
 
@@ -47,48 +49,64 @@ const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: numbe
 
 export function computeMainZoneGaps(params: {
   zoneId: number | null;
-  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string }>;
+  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
   taskById: Map<number, any>;
+  getSpaceId: (task: any) => number | null;
   getZoneId: (task: any) => number | null;
+  getZoneIdForSpace: (spaceId: number | null | undefined) => number | null;
 }): MainZoneGap[] {
-  const { zoneId, plannedTasks, taskById, getZoneId } = params;
+  const { zoneId, plannedTasks, taskById, getSpaceId, getZoneId, getZoneIdForSpace } = params;
   if (!zoneId) return [];
 
-  const zoneIntervals = plannedTasks
-    .map((p) => ({
-      taskId: Number(p.taskId),
+  const intervalsBySpace = new Map<number, Array<{ taskId: number; start: number; end: number }>>();
+  for (const p of plannedTasks) {
+    const taskId = Number(p.taskId);
+    const task = taskById.get(taskId);
+    if (!task) continue;
+    const candidateSpaceId = Number(p?.assignedSpace ?? getSpaceId(task) ?? NaN);
+    if (!Number.isFinite(candidateSpaceId) || candidateSpaceId <= 0) continue;
+    const taskZoneId = Number(getZoneId(task) ?? getZoneIdForSpace(candidateSpaceId) ?? NaN);
+    if (!Number.isFinite(taskZoneId) || taskZoneId !== Number(zoneId)) continue;
+    const list = intervalsBySpace.get(candidateSpaceId) ?? [];
+    list.push({
+      taskId,
       start: toMinutes(String(p.startPlanned)),
       end: toMinutes(String(p.endPlanned)),
-      task: taskById.get(Number(p.taskId)),
-    }))
-    .filter((row) => row.task && Number(getZoneId(row.task)) === Number(zoneId))
-    .sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId);
+    });
+    intervalsBySpace.set(candidateSpaceId, list);
+  }
 
   const gaps: MainZoneGap[] = [];
-  for (let i = 1; i < zoneIntervals.length; i++) {
-    const prev = zoneIntervals[i - 1];
-    const next = zoneIntervals[i];
-    if (next.start <= prev.end) continue;
-    gaps.push({
-      zoneId: Number(zoneId),
-      start: prev.end,
-      end: next.start,
-      durationMin: next.start - prev.end,
-      nextTaskId: next.taskId,
-    });
+  for (const [spaceId, intervals] of intervalsBySpace.entries()) {
+    intervals.sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId);
+    for (let i = 1; i < intervals.length; i++) {
+      const prev = intervals[i - 1];
+      const next = intervals[i];
+      if (next.start <= prev.end) continue;
+      gaps.push({
+        zoneId: Number(zoneId),
+        spaceId,
+        start: prev.end,
+        end: next.start,
+        durationMin: next.start - prev.end,
+        prevTaskId: prev.taskId,
+        nextTaskId: next.taskId,
+      });
+    }
   }
-  return gaps;
+
+  return gaps.sort((a, b) => a.start - b.start || a.end - b.end || a.spaceId - b.spaceId);
 }
 
 export function explainMainZoneGaps(params: {
   gaps: MainZoneGap[];
-  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedResources?: number[] }>;
+  plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedResources?: number[]; assignedSpace?: number | null }>;
   taskById: Map<number, any>;
   getContestantId: (task: any) => number | null;
-  getZoneId: (task: any) => number | null;
+  getSpaceId: (task: any) => number | null;
   lockedTaskIds: Set<number>;
 }): MainZoneGapReason[] {
-  const { gaps, plannedTasks, taskById, getContestantId, getZoneId, lockedTaskIds } = params;
+  const { gaps, plannedTasks, taskById, getContestantId, getSpaceId, lockedTaskIds } = params;
   const reasons: MainZoneGapReason[] = [];
   const plannedRows = plannedTasks.map((p) => ({
     p,
@@ -98,33 +116,65 @@ export function explainMainZoneGaps(params: {
   }));
 
   const fmtTask = (task: any, taskId: number) => String(task?.templateName ?? task?.manualTitle ?? `Tarea #${taskId}`);
+  const getTaskStatus = (task: any) => String(task?.status ?? "pending");
+  const isInProgressOrDone = (task: any) => {
+    const status = getTaskStatus(task);
+    return status === "in_progress" || status === "done";
+  };
+
+  const resolveTimeWindowStart = (task: any) => {
+    const candidates = [task?.forcedStart, task?.earliestStart, task?.fixedWindowStart];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.includes(":")) return toMinutes(c);
+      if (Number.isFinite(Number(c))) return Number(c);
+    }
+    return null;
+  };
+
+  const resolveTimeWindowEnd = (task: any) => {
+    const candidates = [task?.latestEnd, task?.fixedWindowEnd];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.includes(":")) return toMinutes(c);
+      if (Number.isFinite(Number(c))) return Number(c);
+    }
+    return null;
+  };
 
   for (const gap of gaps) {
     const nextTask = gap.nextTaskId ? taskById.get(Number(gap.nextTaskId)) : null;
     const nextTaskId = gap.nextTaskId ?? undefined;
     const blockedInterval = { start: toHHMM(gap.start), end: toHHMM(gap.end) };
+    const nextTaskStatus = getTaskStatus(nextTask);
 
-    const contestantId = nextTask ? getContestantId(nextTask) : null;
-    if (contestantId) {
-      const blocker = plannedRows.find((row) => {
-        if (!row.task) return false;
-        if (Number(row.p.taskId) === Number(nextTaskId)) return false;
-        return Number(getContestantId(row.task)) === Number(contestantId) && rangesOverlap(gap.start, gap.end, row.start, row.end);
+    if (nextTask && isInProgressOrDone(nextTask)) {
+      reasons.push({
+        type: "IN_PROGRESS_OR_DONE",
+        blockedMainZoneTaskId: nextTaskId,
+        blockedInterval,
+        humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: la tarea siguiente está ${nextTaskStatus} y no se puede mover.`,
       });
-      if (blocker) {
-        const blockingTaskId = Number(blocker.p.taskId);
-        const blockingTask = blocker.task;
-        const locked = lockedTaskIds.has(blockingTaskId);
-        const status = String(blockingTask?.status ?? "pending");
+      continue;
+    }
+
+    if (nextTaskId && lockedTaskIds.has(Number(nextTaskId))) {
+      reasons.push({
+        type: "LOCKED_TASK",
+        blockedMainZoneTaskId: nextTaskId,
+        blockedInterval,
+        humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: la tarea siguiente está bloqueada (lock) y no se puede adelantar.`,
+      });
+      continue;
+    }
+
+    if (nextTask) {
+      const earliestStart = resolveTimeWindowStart(nextTask);
+      const latestEnd = resolveTimeWindowEnd(nextTask);
+      if ((earliestStart !== null && earliestStart > gap.start) || (latestEnd !== null && latestEnd <= gap.start)) {
         reasons.push({
-          type: "CONTESTANT_BUSY",
-          blockingTaskId,
-          blockingTaskLabel: fmtTask(blockingTask, blockingTaskId),
-          blockingInterval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end) },
+          type: "TIME_WINDOW",
           blockedMainZoneTaskId: nextTaskId,
           blockedInterval,
-          entity: { kind: "contestant", id: Number(contestantId) },
-          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el concursante está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.`,
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: la tarea siguiente tiene ventana horaria y no puede iniciar antes de ${toHHMM(Math.max(earliestStart ?? gap.end, gap.start))}.`,
         });
         continue;
       }
@@ -150,6 +200,78 @@ export function explainMainZoneGaps(params: {
         });
         continue;
       }
+    }
+
+    const contestantId = nextTask ? getContestantId(nextTask) : null;
+    if (contestantId) {
+      const blocker = plannedRows.find((row) => {
+        if (!row.task) return false;
+        if (Number(row.p.taskId) === Number(nextTaskId)) return false;
+        return Number(getContestantId(row.task)) === Number(contestantId) && rangesOverlap(gap.start, gap.end, row.start, row.end);
+      });
+      if (blocker) {
+        const blockingTaskId = Number(blocker.p.taskId);
+        const blockingTask = blocker.task;
+        const locked = lockedTaskIds.has(blockingTaskId);
+        const status = String(blockingTask?.status ?? "pending");
+        const contestantName = String(nextTask?.contestantName ?? "").trim() || String(blockingTask?.contestantName ?? "").trim();
+        reasons.push({
+          type: "CONTESTANT_BUSY",
+          blockingTaskId,
+          blockingTaskLabel: fmtTask(blockingTask, blockingTaskId),
+          blockingInterval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end) },
+          blockedMainZoneTaskId: nextTaskId,
+          blockedInterval,
+          entity: { kind: "contestant", id: Number(contestantId) },
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: ${contestantName ? `el concursante ${contestantName}` : "el concursante"} está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.`,
+        });
+        continue;
+      }
+    }
+
+    if (nextTaskId) {
+      const nextRow = plannedRows.find((row) => Number(row.p.taskId) === Number(nextTaskId));
+      const assignedResources = Array.isArray(nextRow?.p?.assignedResources)
+        ? nextRow!.p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+        : [];
+      for (const resourceId of assignedResources) {
+        const blocker = plannedRows.find((row) => {
+          if (!row.task) return false;
+          if (Number(row.p.taskId) === Number(nextTaskId)) return false;
+          const rowResources = Array.isArray(row.p.assignedResources)
+            ? row.p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+            : [];
+          return rowResources.includes(resourceId) && rangesOverlap(gap.start, gap.end, row.start, row.end);
+        });
+        if (blocker) {
+          const blockingTaskId = Number(blocker.p.taskId);
+          reasons.push({
+            type: "RESOURCE_BUSY",
+            blockingTaskId,
+            blockingTaskLabel: fmtTask(blocker.task, blockingTaskId),
+            blockingInterval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end) },
+            blockedMainZoneTaskId: nextTaskId,
+            blockedInterval,
+            entity: { kind: "resource", id: resourceId },
+            humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el recurso ${resourceId} está ocupado por ${fmtTask(blocker.task, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)}).`,
+          });
+          break;
+        }
+      }
+      if (reasons.length > 0 && reasons[reasons.length - 1]?.blockedMainZoneTaskId === nextTaskId && reasons[reasons.length - 1]?.type === "RESOURCE_BUSY") {
+        continue;
+      }
+    }
+
+    if (gap.spaceId) {
+      reasons.push({
+        type: "OTHER",
+        blockedMainZoneTaskId: nextTaskId,
+        blockedInterval,
+        entity: { kind: "space", id: Number(gap.spaceId) },
+        humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: no se encontró un movimiento factible en el espacio ${gap.spaceId} sin violar restricciones HARD.`,
+      });
+      continue;
     }
 
     reasons.push({
@@ -3384,26 +3506,46 @@ export function generatePlan(input: EngineInput): EngineOutput {
     zoneId: optMainZoneId,
     plannedTasks: plannedTasks as any,
     taskById,
+    getSpaceId,
     getZoneId,
+    getZoneIdForSpace,
   });
   const mainZoneGapReasons = explainMainZoneGaps({
     gaps: mainZoneGaps,
     plannedTasks: plannedTasks as any,
     taskById,
     getContestantId,
-    getZoneId,
+    getSpaceId,
     lockedTaskIds,
   });
 
-  if (directorModeEnabled && mainZoneGaps.length > 0) {
-    warnings.push({
-      code: "MAIN_ZONE_GAPS_REMAIN",
-      message: `No se pudo eliminar ${mainZoneGaps.length} hueco(s) en plató principal.`,
-      details: {
-        gaps: mainZoneGaps.map((g) => ({ start: toHHMM(g.start), end: toHHMM(g.end), durationMin: g.durationMin, nextTaskId: g.nextTaskId })),
-        reasons: mainZoneGapReasons,
-      },
-    });
+  if (optMainZoneId && mainZoneGaps.length > 0) {
+    const details = {
+      gaps: mainZoneGaps.map((g) => ({
+        zoneId: g.zoneId,
+        spaceId: g.spaceId,
+        start: toHHMM(g.start),
+        end: toHHMM(g.end),
+        durationMin: g.durationMin,
+        prevTaskId: g.prevTaskId,
+        nextTaskId: g.nextTaskId,
+      })),
+      reasons: mainZoneGapReasons,
+    };
+
+    if (mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD) {
+      warnings.push({
+        code: "MAIN_ZONE_GAPS_REMAIN",
+        message: `No se pudo eliminar ${mainZoneGaps.length} hueco(s) en plató principal.`,
+        details,
+      });
+    } else {
+      warnings.push({
+        code: "MAIN_ZONE_GAP_STATS_AVAILABLE",
+        message: `Se detectaron ${mainZoneGaps.length} hueco(s) en plató principal. Revisa métricas para diagnóstico.`,
+        details,
+      });
+    }
   }
 
   const complete = unplanned.length === 0;
@@ -3421,8 +3563,18 @@ export function generatePlan(input: EngineInput): EngineOutput {
         message: "Métricas de continuidad del plató principal",
         details: {
           zoneId: optMainZoneId,
+          spacesConsidered: Array.from(new Set(mainZoneGaps.map((g) => Number(g.spaceId)).filter((n) => Number.isFinite(n) && n > 0))),
           totalGaps: mainZoneGaps.length,
           totalGapMinutes: mainZoneGaps.reduce((acc, g) => acc + Number(g.durationMin || 0), 0),
+          gaps: mainZoneGaps.map((g) => ({
+            zoneId: g.zoneId,
+            spaceId: g.spaceId,
+            start: toHHMM(g.start),
+            end: toHHMM(g.end),
+            durationMin: g.durationMin,
+            prevTaskId: g.prevTaskId,
+            nextTaskId: g.nextTaskId,
+          })),
           gapReasons: mainZoneGapReasons,
         },
       },
