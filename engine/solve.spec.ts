@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { computeMainZoneGaps, explainMainZoneGaps, generatePlan } from "./solve";
 import type { EngineInput } from "./types";
 
+const timeToMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map((v) => Number(v));
+  return h * 60 + m;
+};
+
 const getZoneId = (task: any) => Number(task?.zoneId ?? 0) || null;
 const getSpaceId = (task: any) => Number(task?.spaceId ?? 0) || null;
 const getContestantId = (task: any) => Number(task?.contestantId ?? 0) || null;
@@ -121,7 +126,7 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
 {
   const input: EngineInput = {
     planId: 1,
-    workDay: { start: "10:00", end: "13:00" },
+    workDay: { start: "09:00", end: "13:00" },
     meal: { start: "12:00", end: "12:30" },
     camerasAvailable: 0,
     tasks: [
@@ -200,6 +205,127 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
   assert.equal(reasons.length, 1);
   assert.equal(reasons[0].type, "CONTESTANT_BUSY");
   assert.ok(reasons[0].humanMessage.includes("La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD"));
+}
+
+{
+  const input: EngineInput = {
+    planId: 10,
+    workDay: { start: "09:00", end: "13:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1000, planId: 10, templateId: 99, templateName: "Prereq", zoneId: 7, spaceId: 72, contestantId: 2, status: "pending", durationOverrideMin: 60, priority: 200 },
+      { id: 1001, planId: 10, templateId: 1, templateName: "Inner", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 60, dependsOnTaskIds: [1000], priority: 100 },
+      { id: 1002, planId: 10, templateId: 2, templateName: "Wrap", zoneId: 7, spaceId: 71, contestantId: 1, itinerantTeamId: 9, status: "pending", durationOverrideMin: 30, priority: 10 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((p) => [Number(p.taskId), p]));
+  assert.equal(byTask.get(1001)?.startPlanned, "10:00");
+  assert.equal(byTask.get(1001)?.endPlanned, "11:00");
+  assert.equal(byTask.get(1002)?.startPlanned, "09:45");
+  assert.equal(byTask.get(1002)?.endPlanned, "11:15");
+}
+
+{
+  const input: EngineInput = {
+    planId: 11,
+    workDay: { start: "09:00", end: "13:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1100, planId: 11, templateId: 10, templateName: "Blocker", zoneId: 7, spaceId: 71, contestantId: 1, status: "done", startPlanned: "09:40", endPlanned: "09:50", durationOverrideMin: 10 },
+      { id: 1101, planId: 11, templateId: 1, templateName: "Inner locked", zoneId: 7, spaceId: 71, contestantId: 1, status: "done", startPlanned: "10:00", endPlanned: "11:00", durationOverrideMin: 60 },
+      { id: 1102, planId: 11, templateId: 2, templateName: "Wrap", zoneId: 7, spaceId: 71, contestantId: 1, itinerantTeamId: 9, status: "pending", durationOverrideMin: 30 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlan(input);
+  const warn = run.warnings.find((w) => w.code === "ITINERANT_WRAP_NOT_FEASIBLE" && Number(w.taskId) === 1102);
+  assert.ok(warn);
+  assert.equal(String(warn?.details?.reason), "LOCKED");
+}
+
+{
+  const input: EngineInput = {
+    planId: 12,
+    workDay: { start: "08:00", end: "13:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1199, planId: 12, templateId: 99, templateName: "Prereq", zoneId: 7, spaceId: 72, contestantId: 2, status: "done", startPlanned: "09:00", endPlanned: "10:00", durationOverrideMin: 60 },
+      { id: 1200, planId: 12, templateId: 10, templateName: "Team busy", zoneId: 7, spaceId: 72, contestantId: 2, itinerantTeamId: 9, status: "done", startPlanned: "10:50", endPlanned: "11:30", durationOverrideMin: 40 },
+      { id: 1201, planId: 12, templateId: 1, templateName: "Inner", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 60, dependsOnTaskIds: [1199], priority: 100 },
+      { id: 1202, planId: 12, templateId: 2, templateName: "Wrap", zoneId: 7, spaceId: 71, contestantId: 1, itinerantTeamId: 9, status: "pending", durationOverrideMin: 30, priority: 10 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlan(input);
+  const warn = run.warnings.find((w) => w.code === "ITINERANT_WRAP_NOT_FEASIBLE" && Number(w.taskId) === 1202);
+  assert.ok(warn);
+  assert.equal(String(warn?.details?.reason), "ITINERANT_TEAM_BUSY");
+}
+
+{
+  const input: EngineInput = {
+    planId: 13,
+    workDay: { start: "09:00", end: "13:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1301, planId: 13, templateId: 1, templateName: "Prereq", zoneId: 7, spaceId: 72, contestantId: 2, status: "pending", durationOverrideMin: 60, priority: 200 },
+      { id: 1302, planId: 13, templateId: 2, templateName: "Inner", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 60, dependsOnTaskIds: [1301], priority: 100 },
+      { id: 1303, planId: 13, templateId: 3, templateName: "Wrap", zoneId: 7, spaceId: 71, contestantId: 1, itinerantTeamId: 77, status: "pending", durationOverrideMin: 30, priority: 10 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((p) => [Number(p.taskId), p]));
+  const inner = byTask.get(1302);
+  const wrap = byTask.get(1303);
+  assert.ok(inner && wrap);
+  const innerStart = timeToMinutes(inner!.startPlanned);
+  const innerEnd = timeToMinutes(inner!.endPlanned);
+  const wrapStart = timeToMinutes(wrap!.startPlanned);
+  const wrapEnd = timeToMinutes(wrap!.endPlanned);
+  assert.equal(wrapStart, innerStart - 15);
+  assert.equal(wrapEnd, innerEnd + 15);
 }
 
 console.log("solve.spec.ts: ok");
