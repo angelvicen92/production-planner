@@ -20,6 +20,8 @@ export type DraftTask = {
   comment1Color: string;
   comment2Text: string;
   comment2Color: string;
+  zoneId: number | null;
+  spaceId: number | null;
 };
 
 function parseHHMMToMinutes(value: string): number | null {
@@ -46,6 +48,8 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
   variant: "list" | "detail";
   draft: DraftTask;
   locked: boolean;
+  zones: any;
+  spaces: any;
   onChangeDraft: (updater: (prev: DraftTask) => DraftTask) => void;
   onDelete: () => Promise<void> | void;
   onChangeStatus: (next: string) => void;
@@ -55,10 +59,17 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
     variant,
     draft,
     locked,
+    zones,
+    spaces,
     onChangeDraft,
     onDelete,
     onChangeStatus,
   } = props;
+
+  const safeZones = Array.isArray(zones) ? zones : [];
+  const safeSpaces = Array.isArray(spaces) ? spaces : [];
+  const zoneId = Number.isFinite(Number(draft.zoneId)) ? Number(draft.zoneId) : null;
+  const spacesForZone = safeSpaces.filter((s: any) => Number(s.zoneId ?? s.zone_id) === zoneId);
 
   const handleDurationChange = (value: string) => {
     onChangeDraft((prev) => {
@@ -74,7 +85,7 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
 
   if (variant === "list") {
     return (
-      <div className="grid grid-cols-9 gap-2 items-center rounded-md border px-2 py-2">
+      <div className="grid grid-cols-11 gap-2 items-center rounded-md border px-2 py-2">
         <div className="font-medium text-sm truncate">{task.template?.name || `Template #${task.templateId}`}</div>
         <Input
           type="time"
@@ -103,6 +114,55 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
             />
           )}
         </div>
+        <Select
+          value={draft.zoneId === null ? "none" : String(draft.zoneId)}
+          onValueChange={(value) => {
+            if (value === "none") {
+              onChangeDraft((prev) => ({ ...prev, zoneId: null, spaceId: null }));
+              return;
+            }
+            onChangeDraft((prev) => {
+              const nextZoneId = Number(value);
+              const keepsSpace = Number(prev.spaceId) > 0 && safeSpaces.some((s: any) => Number(s.id) === Number(prev.spaceId) && Number(s.zoneId ?? s.zone_id) === nextZoneId);
+              return { ...prev, zoneId: nextZoneId, spaceId: keepsSpace ? prev.spaceId : null };
+            });
+          }}
+          disabled={locked}
+        >
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder="Plató" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">(sin plató)</SelectItem>
+            {safeZones.map((z: any) => (
+              <SelectItem key={z.id} value={String(z.id)}>{z.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={draft.spaceId === null ? "none" : String(draft.spaceId)}
+          onValueChange={(value) => {
+            if (value === "none") {
+              onChangeDraft((prev) => ({ ...prev, spaceId: null }));
+              return;
+            }
+            const nextSpaceId = Number(value);
+            const selectedSpace = safeSpaces.find((s: any) => Number(s.id) === nextSpaceId);
+            const nextZoneId = selectedSpace ? Number(selectedSpace.zoneId ?? selectedSpace.zone_id) : null;
+            onChangeDraft((prev) => ({ ...prev, spaceId: nextSpaceId, zoneId: Number.isFinite(nextZoneId) ? nextZoneId : prev.zoneId }));
+          }}
+          disabled={locked || zoneId === null}
+        >
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder="Espacio" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">(sin espacio)</SelectItem>
+            {spacesForZone.map((sp: any) => (
+              <SelectItem key={sp.id} value={String(sp.id)}>{sp.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Input
           className="h-8 text-xs"
           value={draft.comment1Text}
@@ -165,6 +225,57 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
       <div className="grid grid-cols-2 gap-3">
         <div><Label>Inicio plan</Label><Input type="time" step={60} className="mt-1" value={draft.startPlanned} onChange={(e) => onChangeDraft((prev) => ({ ...prev, startPlanned: e.target.value }))} disabled={locked} /></div>
         <div><Label>Fin plan</Label><Input type="time" step={60} className="mt-1" value={draft.endPlanned} onChange={(e) => onChangeDraft((prev) => ({ ...prev, endPlanned: e.target.value }))} disabled={locked} /></div>
+        <div>
+          <Label>Plató</Label>
+          <Select
+            value={draft.zoneId === null ? "none" : String(draft.zoneId)}
+            onValueChange={(value) => {
+              if (value === "none") {
+                onChangeDraft((prev) => ({ ...prev, zoneId: null, spaceId: null }));
+                return;
+              }
+              onChangeDraft((prev) => {
+                const nextZoneId = Number(value);
+                const keepsSpace = Number(prev.spaceId) > 0 && safeSpaces.some((s: any) => Number(s.id) === Number(prev.spaceId) && Number(s.zoneId ?? s.zone_id) === nextZoneId);
+                return { ...prev, zoneId: nextZoneId, spaceId: keepsSpace ? prev.spaceId : null };
+              });
+            }}
+            disabled={locked}
+          >
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Plató" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">(sin plató)</SelectItem>
+              {safeZones.map((z: any) => (
+                <SelectItem key={z.id} value={String(z.id)}>{z.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Espacio</Label>
+          <Select
+            value={draft.spaceId === null ? "none" : String(draft.spaceId)}
+            onValueChange={(value) => {
+              if (value === "none") {
+                onChangeDraft((prev) => ({ ...prev, spaceId: null }));
+                return;
+              }
+              const nextSpaceId = Number(value);
+              const selectedSpace = safeSpaces.find((s: any) => Number(s.id) === nextSpaceId);
+              const nextZoneId = selectedSpace ? Number(selectedSpace.zoneId ?? selectedSpace.zone_id) : null;
+              onChangeDraft((prev) => ({ ...prev, spaceId: nextSpaceId, zoneId: Number.isFinite(nextZoneId) ? nextZoneId : prev.zoneId }));
+            }}
+            disabled={locked || zoneId === null}
+          >
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Espacio" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">(sin espacio)</SelectItem>
+              {spacesForZone.map((sp: any) => (
+                <SelectItem key={sp.id} value={String(sp.id)}>{sp.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div><Label>Estado</Label><div className="text-sm">{task.status || "pending"}</div></div>
         <div><Label>Recursos</Label><div className="text-sm">{Array.isArray(task.assignedResources) ? task.assignedResources.length : 0}</div></div>
       </div>

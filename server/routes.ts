@@ -3209,6 +3209,25 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.delete(api.plans.contestants.delete.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      const contestantId = Number(req.params.contestantId);
+
+      if (!Number.isFinite(planId) || !Number.isFinite(contestantId)) {
+        return res.status(400).json({ message: "Invalid id" });
+      }
+
+      await storage.deleteContestantForPlan(planId, contestantId);
+      return res.status(204).end();
+    } catch (err: any) {
+      if (String(err?.message || "").toLowerCase().includes("not found")) {
+        return res.status(404).json({ message: "Not found" });
+      }
+      return res.status(400).json({ message: err?.message || "Cannot delete contestant" });
+    }
+  });
+
   // Task Templates
   app.get(api.taskTemplates.list.path, async (req, res) => {
     const templates = await storage.getTaskTemplates();
@@ -3498,6 +3517,37 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+
+  app.patch(api.dailyTasks.updateLocation.path, async (req, res) => {
+    const taskId = Number(req.params.id);
+
+    try {
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return res.status(400).json({ message: "Invalid task id" });
+      }
+
+      const input = api.dailyTasks.updateLocation.input.parse(req.body ?? {});
+      const updated = await storage.updateDailyTaskLocation(taskId, input);
+
+      return res.json({
+        ...updated,
+        planId: updated.plan_id ?? null,
+        templateId: updated.template_id ?? null,
+        contestantId: updated.contestant_id ?? null,
+        zoneId: updated.zone_id ?? null,
+        spaceId: updated.space_id ?? null,
+      });
+    } catch (err: any) {
+      if (err?.name === "ZodError") {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
+      }
+      const msg = String(err?.message || "");
+      if (msg.toLowerCase().includes("not found")) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      return res.status(400).json({ message: msg || "Cannot update location" });
+    }
+  });
 
 
   app.patch("/api/daily-tasks/:id/planned-time", async (req, res) => {

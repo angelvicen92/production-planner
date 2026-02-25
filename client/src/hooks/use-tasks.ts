@@ -313,6 +313,35 @@ export function useCreateContestant(planId: number) {
   });
 }
 
+
+export function useDeleteContestant(planId: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (contestantId: number) =>
+      apiRequest(
+        "DELETE",
+        buildUrl(api.plans.contestants.delete.path, {
+          id: planId,
+          contestantId,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contestantsQueryKey(planId) });
+      queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
+      toast({ title: "Concursante eliminado" });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "No se pudo eliminar",
+        description: err?.message || "Error desconocido",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useUpdateContestant(planId: number) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
