@@ -62,11 +62,13 @@ export interface IStorage {
   // Contestants
   getContestantsByPlan(planId: number): Promise<any[]>;
   createContestantForPlan(planId: number, contestant: any): Promise<any>;
+  deleteContestantForPlan(planId: number, contestantId: number): Promise<void>;
 
   // Tasks
   getTasksForPlan(planId: number): Promise<DailyTask[]>;
   createDailyTask(task: InsertDailyTask): Promise<DailyTask>;
   updateDailyTask(taskId: number, patch: Record<string, any>): Promise<any>;
+  updateDailyTaskLocation(taskId: number, input: { zoneId: number | null; spaceId: number | null }): Promise<any>;
   updateTaskStatus(
     taskId: number,
     updates: {
@@ -889,6 +891,46 @@ export class SupabaseStorage implements IStorage {
     };
   }
 
+
+  async deleteContestantForPlan(planId: number, contestantId: number): Promise<void> {
+    const { data: contestant, error: contestantErr } = await supabaseAdmin
+      .from("contestants")
+      .select("id")
+      .eq("id", contestantId)
+      .eq("plan_id", planId)
+      .maybeSingle();
+
+    if (contestantErr) throw contestantErr;
+    if (!contestant) throw new Error("Contestant not found");
+
+    const { data: blockingTasks, error: tasksErr } = await supabaseAdmin
+      .from("daily_tasks")
+      .select("id")
+      .eq("plan_id", planId)
+      .eq("contestant_id", contestantId)
+      .in("status", ["in_progress", "done"])
+      .limit(1);
+
+    if (tasksErr) throw tasksErr;
+    if ((blockingTasks ?? []).length > 0) {
+      throw new Error("No se puede borrar el concursante: tiene tareas in_progress o done.");
+    }
+
+    const { error: deleteTasksErr } = await supabaseAdmin
+      .from("daily_tasks")
+      .delete()
+      .eq("plan_id", planId)
+      .eq("contestant_id", contestantId);
+    if (deleteTasksErr) throw deleteTasksErr;
+
+    const { error: deleteContestantErr } = await supabaseAdmin
+      .from("contestants")
+      .delete()
+      .eq("id", contestantId)
+      .eq("plan_id", planId);
+    if (deleteContestantErr) throw deleteContestantErr;
+  }
+
   async getPlan(id: number): Promise<Plan | undefined> {
     const { data, error } = await supabaseAdmin
       .from("plans")
@@ -1686,6 +1728,59 @@ export class SupabaseStorage implements IStorage {
       .single();
     if (error) throw error;
     return data;
+  }
+
+
+  async updateDailyTaskLocation(taskId: number, input: { zoneId: number | null; spaceId: number | null }): Promise<any> {
+    const { zoneId, spaceId } = input;
+
+    let finalZoneId: number | null = zoneId ?? null;
+    const finalSpaceId: number | null = spaceId ?? null;
+
+    if (finalSpaceId !== null) {
+      const { data: space, error: spaceErr } = await supabaseAdmin
+        .from("spaces")
+        .select("id, zone_id")
+        .eq("id", finalSpaceId)
+        .maybeSingle();
+      if (spaceErr) throw spaceErr;
+      if (!space) throw new Error("Invalid spaceId");
+
+      const spaceZoneId = Number((space as any).zone_id);
+      if (!Number.isFinite(spaceZoneId) || spaceZoneId <= 0) {
+        throw new Error("Invalid space zone");
+      }
+
+      if (finalZoneId !== null && finalZoneId !== spaceZoneId) {
+        throw new Error("spaceId does not belong to zoneId");
+      }
+      finalZoneId = spaceZoneId;
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from("daily_tasks")
+      .update({
+        zone_id: finalZoneId,
+        space_id: finalSpaceId,
+      })
+      .eq("id", taskId)
+      .not("status", "in", "(in_progress,done)")
+      .select("*")
+      .maybeSingle();
+
+    if (updateErr) throw updateErr;
+    if (!updated) {
+      const { data: exists, error: existsErr } = await supabaseAdmin
+        .from("daily_tasks")
+        .select("id")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (existsErr) throw existsErr;
+      if (!exists) throw new Error("Task not found");
+      throw new Error("Cannot edit a task that is in progress or done");
+    }
+
+    return updated;
   }
 
   async updatePlannedTimes(

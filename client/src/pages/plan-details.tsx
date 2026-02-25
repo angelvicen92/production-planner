@@ -26,6 +26,7 @@ import {
   Lock,
   Pause,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +64,7 @@ import {
   useCreateContestant,
   useCreateDailyTask,
   useUpdateContestant,
+  useDeleteContestant,
   useUpdateTaskStatus,
   useResetTask,
   useTaskTemplates,
@@ -836,6 +838,7 @@ export default function PlanDetailsPage() {
   const createContestant = useCreateContestant(id);
   const createDailyTask = useCreateDailyTask();
   const updateContestant = useUpdateContestant(id);
+  const deleteContestant = useDeleteContestant(id);
   const updateTaskStatus = useUpdateTaskStatus();
   const resetTask = useResetTask();
 
@@ -1056,6 +1059,8 @@ export default function PlanDetailsPage() {
     comment1Color: String(task.comment1Color ?? task.comment_color_1 ?? task.comment1_color ?? ""),
     comment2Text: String(task.comment2Text ?? task.comment_2 ?? task.comment2_text ?? ""),
     comment2Color: String(task.comment2Color ?? task.comment_color_2 ?? task.comment2_color ?? ""),
+    zoneId: Number.isFinite(Number(task.zoneId ?? task.zone_id)) ? Number(task.zoneId ?? task.zone_id) : null,
+    spaceId: Number.isFinite(Number(task.spaceId ?? task.space_id)) ? Number(task.spaceId ?? task.space_id) : null,
   });
 
   useEffect(() => {
@@ -1117,6 +1122,8 @@ export default function PlanDetailsPage() {
         || draft.comment1Color !== original.comment1Color
         || draft.comment2Text !== original.comment2Text
         || draft.comment2Color !== original.comment2Color
+        || draft.zoneId !== original.zoneId
+        || draft.spaceId !== original.spaceId
       ) {
         changedTasks.push({ task, draft });
       }
@@ -1146,19 +1153,30 @@ export default function PlanDetailsPage() {
       }
 
       await Promise.all(
-        changedTasks.map(({ task, draft }) => apiRequest(
-          "PATCH",
-          buildUrl(api.dailyTasks.update.path, { id: task.id }),
-          {
-            plannedStart: draft.startPlanned.trim() || null,
-            plannedEnd: draft.endPlanned.trim() || null,
-            durationMinutes: draft.durationOverride.trim() === "" ? null : Number(draft.durationOverride),
-            comment1Text: draft.comment1Text.trim() || null,
-            comment1Color: normalizeHexColor(draft.comment1Color),
-            comment2Text: draft.comment2Text.trim() || null,
-            comment2Color: normalizeHexColor(draft.comment2Color),
-          },
-        )),
+        changedTasks.map(async ({ task, draft }) => {
+          await apiRequest(
+            "PATCH",
+            buildUrl(api.dailyTasks.update.path, { id: task.id }),
+            {
+              plannedStart: draft.startPlanned.trim() || null,
+              plannedEnd: draft.endPlanned.trim() || null,
+              durationMinutes: draft.durationOverride.trim() === "" ? null : Number(draft.durationOverride),
+              comment1Text: draft.comment1Text.trim() || null,
+              comment1Color: normalizeHexColor(draft.comment1Color),
+              comment2Text: draft.comment2Text.trim() || null,
+              comment2Color: normalizeHexColor(draft.comment2Color),
+            },
+          );
+
+          await apiRequest(
+            "PATCH",
+            buildUrl(api.dailyTasks.updateLocation.path, { id: task.id }),
+            {
+              zoneId: draft.zoneId,
+              spaceId: draft.spaceId,
+            },
+          );
+        }),
       );
 
       await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
@@ -1833,6 +1851,8 @@ ${reasonMessage}` : message,
           enabled
           warnings={Array.isArray((plan as any)?.planningWarnings) ? (plan as any).planningWarnings : []}
           planningStats={(plan as any)?.planningStats ?? {}}
+          arrivalName={(plan as any)?.arrivalTaskTemplateName ?? null}
+          departureName={(plan as any)?.departureTaskTemplateName ?? null}
         />
 
         {/* Metadata Cards */}
@@ -1965,13 +1985,53 @@ ${reasonMessage}` : message,
 
                     const badgeText = badgeParts.join(" · ");
 
+                    const canDeleteContestant = inProgressCount === 0 && doneCount === 0;
+
                     return (
-                      <button
+                      <div
                         key={c.id}
-                        type="button"
-                        className="w-full text-left bg-card rounded-lg border border-border p-3 hover:bg-muted/40 transition h-full min-h-[96px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => setSelectedContestant(c)}
+                        className="w-full text-left bg-card rounded-lg border border-border p-3 hover:bg-muted/40 transition h-full min-h-[96px]"
                       >
+                        <div className="flex items-center justify-end mb-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            disabled={!canDeleteContestant || deleteContestant.isPending}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const ok = await confirmDialog({
+                                title: "Eliminar concursante",
+                                description: `¿Seguro que quieres eliminar a ${c.name}? Se borrarán también sus daily tasks no iniciadas/finalizadas.`,
+                                confirmText: "Eliminar",
+                              });
+                              if (!ok) return;
+                              try {
+                                await deleteContestant.mutateAsync(Number(c.id));
+                                if (selectedContestant?.id === c.id) {
+                                  setSelectedContestant(null);
+                                }
+                              } catch (err: any) {
+                                if (Number((err as any)?.status) === 400) {
+                                  toast({
+                                    title: "No se puede eliminar",
+                                    description: err?.message || "El concursante tiene tareas in_progress o done.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }
+                            }}
+                            title={canDeleteContestant ? "Eliminar concursante" : "Solo se puede borrar si no tiene tareas in_progress/done"}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <button
+                          type="button"
+                          className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                          onClick={() => setSelectedContestant(c)}
+                        >
                         {/* Fila 1: instrumento + nombre (misma línea) + globo nº tareas */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex items-center gap-2">
@@ -2004,6 +2064,7 @@ ${reasonMessage}` : message,
                           {coachLabel}
                         </div>
                       </button>
+                    </div>
                     );
                   })}
                 </div>
@@ -2476,8 +2537,8 @@ ${reasonMessage}` : message,
 
                     {contestantTasksMode === "list" ? (
                       <div className="rounded-lg border border-border p-3">
-                        <div className="grid grid-cols-9 gap-2 px-2 pb-2 text-muted-foreground text-[10px] uppercase tracking-wide">
-                          <div>Tarea</div><div>Inicio</div><div>Fin</div><div>Duración</div><div>Comentario 1</div><div>Color C1</div><div>Comentario 2</div><div>Color C2</div><div>Estado/Acciones</div>
+                        <div className="grid grid-cols-11 gap-2 px-2 pb-2 text-muted-foreground text-[10px] uppercase tracking-wide">
+                          <div>Tarea</div><div>Inicio</div><div>Fin</div><div>Duración</div><div>Plató</div><div>Espacio</div><div>Comentario 1</div><div>Color C1</div><div>Comentario 2</div><div>Color C2</div><div>Estado/Acciones</div>
                         </div>
                         <div className="space-y-2">
                           {contestantTasks.map((t: any) => {
@@ -2491,6 +2552,8 @@ ${reasonMessage}` : message,
                                 variant="list"
                                 draft={draft}
                                 locked={locked}
+                                zones={zones}
+                                spaces={spaces}
                                 onChangeDraft={(fn) => updateDraftTask(t, fn)}
                                 onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
                                 onDelete={async () => {
@@ -2544,6 +2607,8 @@ ${reasonMessage}` : message,
                             variant="detail"
                             draft={draftById[Number(contestantDetailTask.id)] ?? buildTaskDraft(contestantDetailTask)}
                             locked={contestantDetailTask.status === "in_progress" || contestantDetailTask.status === "done"}
+                            zones={zones}
+                            spaces={spaces}
                             onChangeDraft={(fn) => updateDraftTask(contestantDetailTask, fn)}
                             onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
                             onDelete={async () => {

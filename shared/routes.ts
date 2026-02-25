@@ -424,6 +424,15 @@ export const api = {
           404: errorSchemas.notFound,
         },
       },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/plans/:id/contestants/:contestantId",
+        responses: {
+          204: z.undefined(),
+          400: errorSchemas.validation,
+          404: errorSchemas.notFound,
+        },
+      },
     },
 
     // ✅ Staff roles (Producción / Redacción) asignados al plan y por scope (plato/espacio/reality)
@@ -1515,6 +1524,23 @@ export const api = {
           comment1Color: z.string().nullable().optional(),
           comment2Text: z.string().max(500).nullable().optional(),
           comment2Color: z.string().nullable().optional(),
+        })
+        .strict(),
+      responses: {
+        200: z.custom<typeof dailyTasks.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+
+
+    updateLocation: {
+      method: "PATCH" as const,
+      path: "/api/daily-tasks/:id/location",
+      input: z
+        .object({
+          zoneId: z.number().int().positive().nullable(),
+          spaceId: z.number().int().positive().nullable(),
         })
         .strict(),
       responses: {
