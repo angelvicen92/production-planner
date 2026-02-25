@@ -1072,13 +1072,15 @@ export default function PlanDetailsPage() {
       setSaveError(null);
       return;
     }
-    if (isDirty) return;
-    const nextDraftById: Record<number, DraftTask> = {};
-    for (const task of contestantTasks) {
-      nextDraftById[Number(task.id)] = buildTaskDraft(task);
+
+    if (!isDirty) {
+      const nextDraftById: Record<number, DraftTask> = {};
+      for (const task of contestantTasks) {
+        nextDraftById[Number(task.id)] = buildTaskDraft(task);
+      }
+      setDraftById(nextDraftById);
+      setSaveError(null);
     }
-    setDraftById(nextDraftById);
-    setSaveError(null);
   }, [contestantTasks, isDirty, selectedContestant?.id]);
 
   const updateDraftTask = (
@@ -1155,8 +1157,8 @@ export default function PlanDetailsPage() {
           "PATCH",
           buildUrl(api.dailyTasks.update.path, { id: task.id }),
           {
-            startPlanned: draft.startPlanned.trim() || null,
-            endPlanned: draft.endPlanned.trim() || null,
+            plannedStart: draft.startPlanned.trim() || null,
+            plannedEnd: draft.endPlanned.trim() || null,
             durationMinutes: draft.durationOverride.trim() === "" ? null : Number(draft.durationOverride),
             comment1Text: draft.comment1Text.trim() || null,
             comment1Color: normalizeHexColor(draft.comment1Color),

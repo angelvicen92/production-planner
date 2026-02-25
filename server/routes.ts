@@ -3401,7 +3401,7 @@ function mapDeleteError(err: any, fallback: string) {
       // 1) Leer para validar estado
       const { data: task, error: readErr } = await supabaseAdmin
         .from("daily_tasks")
-        .select("id,status,plan_id")
+        .select("id,status,plan_id,start_planned,end_planned")
         .eq("id", taskId)
         .maybeSingle();
 
@@ -3426,6 +3426,18 @@ function mapDeleteError(err: any, fallback: string) {
       // ✅ ubicación
       if (input.zoneId !== undefined) patchDb.zone_id = input.zoneId;
       if (input.spaceId !== undefined) patchDb.space_id = input.spaceId;
+      if (input.plannedStart !== undefined) patchDb.start_planned = input.plannedStart;
+      if (input.plannedEnd !== undefined) patchDb.end_planned = input.plannedEnd;
+      if (input.plannedStart !== undefined || input.plannedEnd !== undefined) {
+        const nextStart = input.plannedStart ?? task.start_planned ?? null;
+        const nextEnd = input.plannedEnd ?? task.end_planned ?? null;
+        if ((nextStart && !nextEnd) || (!nextStart && nextEnd)) {
+          return res.status(400).json({ message: "plannedStart and plannedEnd must both be provided or both be null" });
+        }
+        if (nextStart && nextEnd && nextEnd <= nextStart) {
+          return res.status(400).json({ message: "plannedEnd must be greater than plannedStart" });
+        }
+      }
       if (input.comment1Text !== undefined) patchDb.comment1_text = input.comment1Text;
       if (input.comment1Color !== undefined) patchDb.comment1_color = input.comment1Color;
       if (input.comment2Text !== undefined) patchDb.comment2_text = input.comment2Text;
