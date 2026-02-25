@@ -59,6 +59,7 @@ interface Task {
   lockedStart?: string | null;
   lockedEnd?: string | null;
   dependsOnTaskIds?: number[] | null;
+  durationOverrideMin?: number | null;
 }
 
 interface Contestant {
@@ -3171,13 +3172,21 @@ function TaskStatusMenuTrigger({
                       const tEnd = effectiveEnd;
                       const tDur = Math.max(5, tEnd - tStart);
                       const wrapInner = viewMode === "contestants" ? getWrapInnerInLane(task, lane.tasks) : null;
-                      const wrapExtra = wrapInner ? Math.max(10, tDur - Math.max(5, wrapInner.end - wrapInner.start)) : 0;
-                      const wrapPre = wrapInner ? Math.floor(wrapExtra / 2) : 0;
-                      const wrapPost = wrapInner ? wrapExtra - wrapPre : 0;
-                      const wrapPreLeft = wrapInner ? ((wrapInner.start - wrapPre - startMin) / duration) * 100 : 0;
-                      const wrapPreWidth = wrapInner ? (wrapPre / duration) * 100 : 0;
-                      const wrapPostLeft = wrapInner ? ((wrapInner.end - startMin) / duration) * 100 : 0;
-                      const wrapPostWidth = wrapInner ? (wrapPost / duration) * 100 : 0;
+                      const innerDur = wrapInner ? Math.max(5, wrapInner.end - wrapInner.start) : 0;
+                      const overrideExtraRaw = Number(task.durationOverrideMin ?? 0) || 0;
+                      const wrapExtraFromOverride = Math.round(Math.max(10, overrideExtraRaw) / 5) * 5;
+                      const wrapExtraFallback = Math.max(10, tDur - innerDur);
+                      const wrapExtra = wrapInner
+                        ? (Number.isFinite(wrapExtraFromOverride) && wrapExtraFromOverride > 0 ? wrapExtraFromOverride : wrapExtraFallback)
+                        : 0;
+                      const wrapPreUnclamped = wrapInner ? Math.floor(wrapExtra / 2) : 0;
+                      const wrapPre = wrapInner ? Math.max(0, Math.min(wrapPreUnclamped, tDur)) : 0;
+                      const wrapPostUnclamped = wrapInner ? wrapExtra - wrapPreUnclamped : 0;
+                      const wrapPost = wrapInner ? Math.max(0, Math.min(wrapPostUnclamped, tDur - wrapPre)) : 0;
+                      const wrapPreLeft = 0;
+                      const wrapPreWidth = wrapInner && tDur > 0 ? (wrapPre / tDur) * 100 : 0;
+                      const wrapPostLeft = wrapInner && tDur > 0 ? ((tDur - wrapPost) / tDur) * 100 : 0;
+                      const wrapPostWidth = wrapInner && tDur > 0 ? (wrapPost / tDur) * 100 : 0;
 
                       return (
                         <TaskStatusMenuTrigger key={task.id}
