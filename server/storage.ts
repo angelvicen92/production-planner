@@ -1665,10 +1665,12 @@ export class SupabaseStorage implements IStorage {
         .maybeSingle();
       if (currentErr) throw currentErr;
 
-      const startPlanned = String((current as any)?.start_planned ?? "");
+      const startPlannedCandidate = isValidHHMM(patchDb.start_planned)
+        ? patchDb.start_planned
+        : String((current as any)?.start_planned ?? "");
       const durationMinutes = Number(patchDb.duration_override);
-      if (isValidHHMM(startPlanned) && Number.isFinite(durationMinutes) && durationMinutes > 0) {
-        const nextEnd = addMinutesToHHMM(startPlanned, durationMinutes);
+      if (isValidHHMM(startPlannedCandidate) && Number.isFinite(durationMinutes) && durationMinutes > 0) {
+        const nextEnd = addMinutesToHHMM(startPlannedCandidate, durationMinutes);
         if (nextEnd) {
           patchDb.end_planned = nextEnd.hhmm;
           patchDb.planned_end_seconds = nextEnd.seconds;

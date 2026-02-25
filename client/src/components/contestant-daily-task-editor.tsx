@@ -131,7 +131,7 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
           onChange={(e) => onChangeDraft((prev) => ({ ...prev, comment2Color: e.target.value }))}
           disabled={locked}
         />
-        <div>
+        <div className="flex items-center gap-2 justify-between">
           <Select value={task.status || "pending"} onValueChange={onChangeStatus}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -142,8 +142,6 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
               <SelectItem value="cancelled">cancelled</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div>
           <Button
             variant="ghost"
             size="icon"
