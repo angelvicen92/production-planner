@@ -109,24 +109,26 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.ok(switches <= 4);
 }
 
-
+// Lookahead depth=2: feeder A desbloquea 2 ensayos del template objetivo; feeder B desbloquea 1.
 {
   const tasks = [
-    { id: 1, planId: 3, templateId: 100, templateName: "Ensayo JM 1", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [10] },
-    { id: 3, planId: 3, templateId: 101, templateName: "Ensayo Lucía", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    { id: 1, planId: 3, templateId: 100, templateName: "Ensayo JM 1", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [10, 12] },
+    { id: 2, planId: 3, templateId: 100, templateName: "Ensayo JM 2", zoneId: 7, spaceId: 71, contestantId: 4, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [10] },
     { id: 4, planId: 3, templateId: 100, templateName: "Ensayo JM ready", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30 },
-    { id: 10, planId: 3, templateId: 200, templateName: "PV JM 1", zoneId: 5, spaceId: 51, contestantId: 3, status: "pending", durationOverrideMin: 15 },
+    { id: 10, planId: 3, templateId: 200, templateName: "PV JM A", zoneId: 5, spaceId: 51, contestantId: 3, status: "pending", durationOverrideMin: 15 },
+    { id: 11, planId: 3, templateId: 201, templateName: "PV JM B", zoneId: 5, spaceId: 51, contestantId: 4, status: "pending", durationOverrideMin: 15 },
+    { id: 12, planId: 3, templateId: 202, templateName: "Previo", zoneId: 6, spaceId: 61, contestantId: 3, status: "pending", durationOverrideMin: 15 },
+    { id: 5, planId: 3, templateId: 100, templateName: "Ensayo JM 3", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [11] },
   ];
 
   const input: EngineInput = {
     planId: 3,
     workDay: { start: "09:00", end: "12:00" },
-    meal: { start: "12:00", end: "12:30" },
+    meal: { start: "11:30", end: "12:00" },
     camerasAvailable: 0,
     tasks: tasks as any,
     locks: [],
     groupingZoneIds: [7],
-    maxTemplateChangesByZoneId: { 7: 4 },
     zoneResourceAssignments: {},
     spaceResourceAssignments: {},
     zoneResourceTypeRequirements: {},
@@ -137,24 +139,93 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
     optimizerMainZoneOptKeepBusy: true,
     optimizerMainZonePriorityLevel: 3,
     optimizerGroupingLevel: 3,
-    optimizerWeights: {
-      mainZoneKeepBusy: 10,
-      groupBySpaceTemplateMatch: 10,
-      groupBySpaceActive: 10,
-    },
+    optimizerWeights: { mainZoneKeepBusy: 10, groupBySpaceTemplateMatch: 10, groupBySpaceActive: 10 },
   };
 
   const run = generatePlanV2(input);
-  const seq = (run.plannedTasks ?? [])
-    .slice()
+  const seq = (run.plannedTasks ?? []).slice().sort((a, b) => toMin(String(a.startPlanned)) - toMin(String(b.startPlanned))).map((p) => Number(p.taskId));
+  assert.ok(seq.indexOf(10) >= 0 && seq.indexOf(11) >= 0 && seq.indexOf(10) < seq.indexOf(11));
+
+  const lookaheadInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_LOOKAHEAD");
+  assert.ok(lookaheadInsight);
+}
+
+// Reset por comida: cambiar template justo tras comida no debe disparar penalización de switch.
+{
+  const tasks = [
+    { id: 21, planId: 4, templateId: 100, templateName: "Main A", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 22, planId: 4, templateId: 101, templateName: "Main B", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    { id: 23, planId: 4, templateId: 999, templateName: "Comida plató", zoneId: 7, spaceId: 71, isMeal: true, status: "pending", durationOverrideMin: 15 },
+    { id: 24, planId: 4, templateId: 200, templateName: "Feeder", zoneId: 5, spaceId: 51, contestantId: 3, status: "pending", durationOverrideMin: 15 },
+  ];
+
+  const input: EngineInput = {
+    planId: 4,
+    workDay: { start: "09:00", end: "11:00" },
+    meal: { start: "09:30", end: "10:00" },
+    camerasAvailable: 0,
+    tasks: tasks as any,
+    locks: [],
+    groupingZoneIds: [7],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerMainZonePriorityLevel: 3,
+    optimizerGroupingLevel: 3,
+    optimizerWeights: { mainZoneKeepBusy: 10, groupBySpaceTemplateMatch: 10, groupBySpaceActive: 10 },
+  };
+
+  const run = generatePlanV2(input);
+  const byId = new Map(tasks.map((t: any) => [Number(t.id), t]));
+  const mainSeq = (run.plannedTasks ?? [])
+    .filter((p) => Number(byId.get(Number(p.taskId))?.zoneId) === 7)
     .sort((a, b) => toMin(String(a.startPlanned)) - toMin(String(b.startPlanned)))
     .map((p) => Number(p.taskId));
+  assert.ok(mainSeq.includes(23));
 
-  const pvIndex = seq.indexOf(10);
-  const luciaIndex = seq.indexOf(3);
-  assert.ok(pvIndex >= 0 && luciaIndex >= 0 && pvIndex < luciaIndex);
+  const switchInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_MAIN_TEMPLATE_SWITCH");
+  assert.ok(!switchInsight);
+}
 
+// Comida flexible: el solver evita colocar comida al inicio si produce más switches.
+{
+  const tasks = [
+    { id: 31, planId: 5, templateId: 100, templateName: "Main A1", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 32, planId: 5, templateId: 101, templateName: "Main B", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    { id: 33, planId: 5, templateId: 100, templateName: "Main A2", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30 },
+    { id: 34, planId: 5, templateId: 999, templateName: "Comida plató", zoneId: 7, spaceId: 71, isMeal: true, status: "pending", durationOverrideMin: 30 },
+  ];
 
-  const feedInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_FEED_MAIN_ACTIVE");
-  assert.ok(feedInsight);
+  const input: EngineInput = {
+    planId: 5,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "09:00", end: "10:00" },
+    camerasAvailable: 0,
+    tasks: tasks as any,
+    locks: [],
+    groupingZoneIds: [7],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerMainZonePriorityLevel: 3,
+    optimizerGroupingLevel: 3,
+    optimizerWeights: { mainZoneKeepBusy: 10, groupBySpaceTemplateMatch: 10, groupBySpaceActive: 10 },
+  };
+
+  const run = generatePlanV2(input);
+  assert.equal(mainGapCount(run, tasks as any, 7), 0);
+
+  const mealInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_MEAL_CHOICE");
+  assert.ok(mealInsight);
+  assert.ok(Number(mealInsight?.details?.attemptsMeal ?? 0) > 1);
 }
