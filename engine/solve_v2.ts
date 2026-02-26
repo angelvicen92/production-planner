@@ -370,7 +370,7 @@ export function explainMainZoneGaps(params: {
   return reasons;
 }
 
-function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number }): EngineOutput {
+function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number; mealStartMin?: number }): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
   const unplanned: { taskId: number; reason: { code: string; message: string; taskId?: number; details?: any } }[] = [];
 
@@ -615,6 +615,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       dependentsByTaskId.set(Number(depId), list);
     }
   }
+  const getDependents = (taskId: number) => dependentsByTaskId.get(Number(taskId)) ?? [];
 
   const templatesByContestant = new Map<number, Set<number>>();
   for (const t of tasks as any[]) {
@@ -840,8 +841,16 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const startDay = toMinutes(input.workDay.start);
   const endDay = toMinutes(input.workDay.end);
   const mainStartGateMin = Number.isFinite(Number(options?.mainStartGateMin)) ? Number(options?.mainStartGateMin) : startDay;
-  const mealStart = toMinutes(input.meal.start);
+  const mealStartDefault = toMinutes(input.meal.start);
   const mealEnd = toMinutes(input.meal.end);
+  const mealStart = Number.isFinite(Number(options?.mealStartMin))
+    ? Math.max(mealStartDefault, Math.min(mealEnd, Math.ceil(Number(options?.mealStartMin) / 5) * 5))
+    : mealStartDefault;
+  const mainZoneIdForMealResetRaw = (input as any)?.optimizerMainZoneId ?? null;
+  const mainZoneIdForMealReset = Number.isFinite(Number(mainZoneIdForMealResetRaw)) && Number(mainZoneIdForMealResetRaw) > 0
+    ? Number(mainZoneIdForMealResetRaw)
+    : null;
+  let mainTemplateResetRequested = false;
   const availabilityByContestant = ((input as any)?.contestantAvailabilityById ?? {}) as Record<number, { start: string; end: string }>;
 
   const toAvailStart = (contestantId: number | null) => {
@@ -1352,6 +1361,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       assignedResources: [],
     });
     plannedEndByTaskId.set(Number(task.id), finish);
+    if (mainZoneIdForMealReset && Number(zid) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
   }
 
   for (const task of tasksSorted as any[]) {
@@ -1373,6 +1383,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
       occupiedBySpace.set(spaceId, occ);
       plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: spaceId ?? null, assignedResources: [] });
+      if (mainZoneIdForMealReset && Number(getZoneIdForSpace(spaceId)) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
       continue;
     }
 
@@ -1387,6 +1398,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     addIntervalSorted(occ, { start, end, taskId: Number(task.id) });
     occupiedByItinerant.set(teamId, occ);
     plannedTasks.push({ taskId: Number(task.id), startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedSpace: null, assignedResources: [] });
+    if (mainZoneIdForMealReset && Number(task?.zoneId ?? NaN) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
   }
 
   // 2) Tareas NO comida (paralelas), respetando: deps + concursante + espacio + recursos + bloqueos de comida de plató
@@ -1397,6 +1409,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     Number.isFinite(Number(optMainZoneIdRaw)) && Number(optMainZoneIdRaw) > 0
       ? Number(optMainZoneIdRaw)
       : null;
+
 
   // ✅ niveles (0..3). Si no llegan, hacemos fallback a legacy booleans.
   const optMainZoneLevelRaw = (input as any)?.optimizerMainZonePriorityLevel;
@@ -1514,6 +1527,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const streakByKey = new Map<string, { templateId: number; streakCount: number }>();
   const activeTemplateByZoneId = new Map<number, number>();
   const templateSwitchesByZoneId = new Map<number, number>();
+  let mainTemplateResetArmed = Boolean(mainTemplateResetRequested);
   const maxTemplateChangesByZoneId = (((input as any)?.maxTemplateChangesByZoneId ?? {}) as Record<number, number>);
   const groupingBySpaceIdInput =
     (((input as any)?.groupingBySpaceId ?? (input as any)?.minimizeChangesBySpace ?? {}) as Record<
@@ -2053,6 +2067,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       // ✅ memoria para “sin huecos” por zona
       const zId = getZoneId(task);
       if (zId) lastEndByZone.set(zId, finish);
+      if (optMainZoneId && Number(zId) === Number(optMainZoneId)) {
+        mainTemplateResetArmed = false;
+      }
 
       // ✅ memoria para compactar concursantes
       const cId = getContestantId(task);
@@ -2674,6 +2691,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       assignedResources: [],
     });
     plannedEndByTaskId.set(row.cand.taskId, row.end);
+    const mealTask = taskById.get(Number(row.cand.taskId));
+    if (mainZoneIdForMealReset && Number(getZoneId(mealTask)) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
 
     const cOcc = occupiedByContestant.get(row.cand.contestantId) ?? [];
     addIntervalSorted(cOcc, { start: row.start, end: row.end, taskId: row.cand.taskId });
@@ -3348,7 +3367,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     return false;
   };
 
-  let feedMainInsightDetails: { mainActiveTpl: number; topFeeders: Array<{ taskId: number; name: string; unlockCount: number }> } | null = null;
+  let feedMainInsightDetails: { mainTargetTpl: number; topFeedersReady: Array<{ taskId: number; name: string; unlockScore: number; depth1: number; depth2: number }> } | null = null;
   let mainTemplateSwitchInsight:
     | { fromTpl: number; toTpl: number; hadFeedersReady: boolean; feedersReadyCount: number }
     | null = null;
@@ -3430,48 +3449,80 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     }
     const hasNonMainReady = ready.some((t) => Number(getZoneId(t)) !== Number(optMainZoneId));
     const pendingTaskIds = new Set<number>(pendingNonMeal.map((t) => Number(t?.id)).filter((id) => Number.isFinite(id) && id > 0));
-    const mainActiveTpl = optMainZoneId ? activeTemplateByZoneId.get(Number(optMainZoneId)) : null;
-    const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainActiveTpl)) && Number(mainActiveTpl) > 0);
-    const unlockCountForTask = (candidate: any) => {
-      if (!canFeedMainActive || !optMainZoneId) return 0;
-      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return 0;
-      const dependents = dependentsByTaskId.get(Number(candidate?.id)) ?? [];
-      let unlockCount = 0;
-      for (const depTaskId of dependents) {
+    const pendingMainTasks = (pendingNonMeal as any[]).filter((task) => Number(getZoneId(task)) === Number(optMainZoneId));
+    const pendingMainByTpl = new Map<number, number>();
+    for (const task of pendingMainTasks) {
+      const taskId = Number(task?.id ?? 0);
+      if (!Number.isFinite(taskId) || taskId <= 0) continue;
+      const status = String(task?.status ?? "pending");
+      if (status === "in_progress" || status === "done") continue;
+      const tpl = Number(task?.templateId ?? NaN);
+      if (!Number.isFinite(tpl) || tpl <= 0) continue;
+      pendingMainByTpl.set(tpl, (pendingMainByTpl.get(tpl) ?? 0) + 1);
+    }
+    const activeMainTpl = optMainZoneId ? activeTemplateByZoneId.get(Number(optMainZoneId)) : null;
+    const mainTargetTpl = Number.isFinite(Number(activeMainTpl)) && Number(activeMainTpl) > 0
+      ? Number(activeMainTpl)
+      : Array.from(pendingMainByTpl.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+    const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainTargetTpl)) && Number(mainTargetTpl) > 0);
+    const canApplyLookahead2 = Boolean(canFeedMainActive && mainZoneKeepBusyStrength >= 9 && globalGroupingStrength10 >= 9);
+
+    const unlockStatsForTask = (candidate: any) => {
+      if (!canApplyLookahead2 || !optMainZoneId) return { depth1: 0, depth2: 0, unlockScore: 0 };
+      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return { depth1: 0, depth2: 0, unlockScore: 0 };
+      const candidateId = Number(candidate?.id ?? 0);
+      if (!Number.isFinite(candidateId) || candidateId <= 0) return { depth1: 0, depth2: 0, unlockScore: 0 };
+
+      let depth1 = 0;
+      let depth2 = 0;
+      for (const depTaskId of getDependents(candidateId)) {
         if (!pendingTaskIds.has(Number(depTaskId))) continue;
         const depTask = taskById.get(Number(depTaskId));
         if (!depTask) continue;
-        if (Number(depTask?.zoneId ?? getZoneId(depTask) ?? 0) !== Number(optMainZoneId)) continue;
-        if (Number(depTask?.templateId ?? 0) !== Number(mainActiveTpl)) continue;
+        if (Number(getZoneId(depTask) ?? depTask?.zoneId ?? 0) !== Number(optMainZoneId)) continue;
+        if (Number(depTask?.templateId ?? 0) !== Number(mainTargetTpl)) continue;
         if (String(depTask?.status ?? "pending") !== "pending") continue;
-        unlockCount += 1;
+        depth1 += 1;
+
+        for (const prereqId of getDepTaskIds(depTask)) {
+          const pId = Number(prereqId);
+          if (!Number.isFinite(pId) || pId <= 0 || pId === candidateId) continue;
+          if (!pendingTaskIds.has(pId)) continue;
+          const prereqTask = taskById.get(pId);
+          if (!prereqTask) continue;
+          if (Number(getZoneId(prereqTask) ?? prereqTask?.zoneId ?? 0) === Number(optMainZoneId)) continue;
+          const status = String(prereqTask?.status ?? "pending");
+          if (status === "in_progress" || status === "done") continue;
+          depth2 += 1;
+        }
       }
-      return unlockCount;
+
+      const unlockScore = depth1 * 1.0 + depth2 * 0.5;
+      return { depth1, depth2, unlockScore };
     };
+
+    const feederStatsByTaskId = new Map<number, { depth1: number; depth2: number; unlockScore: number }>();
     const feedersReady = ready
       .filter((t) => Number(getZoneId(t)) !== Number(optMainZoneId))
-      .map((t) => ({
-        taskId: Number(t?.id),
-        name: String(t?.templateName ?? t?.manualTitle ?? `Tarea #${Number(t?.id ?? 0)}`),
-        unlockCount: unlockCountForTask(t),
-      }))
-      .filter((x) => x.unlockCount > 0)
-      .sort((a, b) => b.unlockCount - a.unlockCount || a.taskId - b.taskId);
+      .map((t) => {
+        const stats = unlockStatsForTask(t);
+        const taskId = Number(t?.id ?? 0);
+        feederStatsByTaskId.set(taskId, stats);
+        return {
+          taskId,
+          name: String(t?.templateName ?? t?.manualTitle ?? `Tarea #${Number(t?.id ?? 0)}`),
+          ...stats,
+        };
+      })
+      .filter((x) => x.unlockScore > 0)
+      .sort((a, b) => b.unlockScore - a.unlockScore || b.depth1 - a.depth1 || b.depth2 - a.depth2 || a.taskId - b.taskId);
 
-    if (canFeedMainActive && feedersReady.length > 0) {
+    if (canApplyLookahead2 && mainTargetTpl && feedersReady.length > 0) {
       feedMainInsightDetails = {
-        mainActiveTpl: Number(mainActiveTpl),
-        topFeeders: feedersReady.slice(0, 5),
+        mainTargetTpl: Number(mainTargetTpl),
+        topFeedersReady: feedersReady.slice(0, 5),
       };
     }
-    const pendingMainActiveBlockedCount = canFeedMainActive
-      ? (pendingNonMeal as any[]).reduce((acc, task) => {
-        if (Number(getZoneId(task)) !== Number(optMainZoneId)) return acc;
-        if (Number(task?.templateId ?? 0) !== Number(mainActiveTpl)) return acc;
-        if (depsSatisfied(task)) return acc;
-        return acc + 1;
-      }, 0)
-      : 0;
     const shouldGateMainStart = Boolean(
       optMainZoneId &&
       !lastEndByZone.has(optMainZoneId) &&
@@ -3612,19 +3663,20 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         }
       }
 
-      if (canFeedMainActive && Number(zone) !== Number(optMainZoneId)) {
-        const unlockCount = unlockCountForTask(t);
-        if (unlockCount > 0) {
-          s += unlockCount * FEED_MAIN_UNLOCK_BONUS;
-          if (pendingMainActiveBlockedCount > 0) s += FEED_MAIN_SWITCH_PENALTY;
+      if (canApplyLookahead2 && Number(zone) !== Number(optMainZoneId)) {
+        const feederStats = feederStatsByTaskId.get(Number(t?.id ?? 0));
+        const unlockScore = Number(feederStats?.unlockScore ?? 0);
+        if (unlockScore > 0) {
+          s += unlockScore * FEED_MAIN_UNLOCK_BONUS;
         }
       }
 
       if (
-        canFeedMainActive &&
+        canApplyLookahead2 &&
         Number(zone) === Number(optMainZoneId) &&
-        Number(tpl) !== Number(mainActiveTpl) &&
-        feedersReady.length > 0
+        Number(tpl) !== Number(mainTargetTpl) &&
+        feedersReady.length > 0 &&
+        !mainTemplateResetArmed
       ) {
         s -= FEED_MAIN_SWITCH_PENALTY;
       }
@@ -3697,14 +3749,15 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     const task = ready[0];
     if (
-      canFeedMainActive &&
+      canApplyLookahead2 &&
       optMainZoneId &&
       Number(getZoneId(task)) === Number(optMainZoneId) &&
-      Number(task?.templateId ?? 0) !== Number(mainActiveTpl) &&
-      feedersReady.length > 0
+      Number(task?.templateId ?? 0) !== Number(mainTargetTpl) &&
+      feedersReady.length > 0 &&
+      !mainTemplateResetArmed
     ) {
       mainTemplateSwitchInsight = {
-        fromTpl: Number(mainActiveTpl),
+        fromTpl: Number(mainTargetTpl),
         toTpl: Number(task?.templateId ?? 0),
         hadFeedersReady: feedersReady.length > 0,
         feedersReadyCount: feedersReady.length,
@@ -4255,8 +4308,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   if (feedMainInsightDetails) {
     insights.push({
-      code: "V2_FEED_MAIN_ACTIVE",
-      message: "Heurístico FEED THE MAIN ZONE activo",
+      code: "V2_LOOKAHEAD",
+      message: "Lookahead depth=2 para alimentar continuidad del plató principal",
       details: feedMainInsightDetails,
     });
   }
@@ -4326,36 +4379,138 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   const hardNoGaps = Boolean((input as any)?.optimizerMainZoneOptKeepBusy === true && keepBusyStrength === 10);
   const startDay = toMinutes(input.workDay.start);
   const endDay = toMinutes(input.workDay.end);
+  const mealWindowStart = toMinutes(input.meal.start);
+  const mealWindowEnd = toMinutes(input.meal.end);
 
   if (!hardNoGaps) {
-    return generatePlanV2Single(input, { mainStartGateMin: startDay });
-  }
-
-  let bestPlan: EngineOutput | null = null;
-  let bestGapMinutes = Number.POSITIVE_INFINITY;
-  const maxAttempts = 60;
-  let attempts = 0;
-
-  for (let gate = startDay; gate <= endDay && attempts < maxAttempts; gate += GRID_V2, attempts += 1) {
-    const plan = generatePlanV2Single(input, { mainStartGateMin: gate });
-    const stats = computeMainZoneGapStats({
-      plannedTasks: (plan as any)?.plannedTasks ?? [],
+    const baseline = generatePlanV2Single(input, { mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+    const baseStats = computeMainZoneGapStats({
+      plannedTasks: (baseline as any)?.plannedTasks ?? [],
       tasks: input.tasks ?? [],
       mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
     });
-    if (stats.gapCount === 0) return plan;
-    if (stats.gapMinutes < bestGapMinutes) {
-      bestGapMinutes = stats.gapMinutes;
-      bestPlan = plan;
+    const baseInsights = Array.isArray((baseline as any)?.insights) ? [...((baseline as any).insights)] : [];
+    baseInsights.push({
+      code: "V2_MEAL_CHOICE",
+      message: "Selección de comida en ventana (modo básico)",
+      details: { chosenMealStart: toHHMM(mealWindowStart), attemptsMeal: 1 },
+    });
+    baseInsights.push({
+      code: "V2_GATE_CHOICE",
+      message: "Selección de gate principal (modo básico)",
+      details: { chosenGateStart: toHHMM(startDay), gapCount: baseStats.gapCount, gapTotal: baseStats.gapMinutes, mainSwitches: null },
+    });
+    return { ...baseline, insights: baseInsights } as EngineOutput;
+  }
+
+  const gateMaxAttempts = 60;
+  const mealMaxAttempts = 10;
+  const mealStep = Math.max(GRID_V2, Math.floor(Math.max(0, mealWindowEnd - mealWindowStart) / Math.max(1, mealMaxAttempts - 1) / GRID_V2) * GRID_V2 || GRID_V2);
+  const mealCandidates: number[] = [];
+  for (let meal = mealWindowStart; meal <= mealWindowEnd && mealCandidates.length < mealMaxAttempts; meal += mealStep) {
+    mealCandidates.push(Math.ceil(meal / GRID_V2) * GRID_V2);
+  }
+  if (!mealCandidates.includes(mealWindowEnd)) mealCandidates.push(Math.ceil(mealWindowEnd / GRID_V2) * GRID_V2);
+
+  let bestPlan: EngineOutput | null = null;
+  let bestMeta: { gate: number; meal: number; gapCount: number; gapTotal: number; mainSwitches: number } | null = null;
+  const countMainSwitches = (plan: EngineOutput) => {
+    const mainZoneId = Number((input as any)?.optimizerMainZoneId ?? NaN);
+    if (!Number.isFinite(mainZoneId) || mainZoneId <= 0) return 0;
+    const taskById = new Map<number, any>();
+    for (const t of input.tasks ?? []) taskById.set(Number((t as any)?.id), t);
+    const rows = ((plan as any)?.plannedTasks ?? [])
+      .map((p: any) => {
+        const task = taskById.get(Number(p?.taskId));
+        const zoneId = Number(task?.zoneId ?? NaN);
+        if (zoneId !== mainZoneId) return null;
+        return {
+          start: toMinutes(String(p?.startPlanned ?? "")),
+          task,
+        };
+      })
+      .filter((x: any) => Boolean(x))
+      .sort((a: any, b: any) => a.start - b.start);
+
+    let switches = 0;
+    let activeTpl: number | null = null;
+    for (const row of rows) {
+      const isMeal = Boolean((row.task as any)?.isMeal || (row.task as any)?.breakKind);
+      if (isMeal) {
+        activeTpl = null;
+        continue;
+      }
+      const tpl = Number((row.task as any)?.templateId ?? NaN);
+      if (!Number.isFinite(tpl) || tpl <= 0) continue;
+      if (activeTpl === null) {
+        activeTpl = tpl;
+        continue;
+      }
+      if (activeTpl !== tpl) {
+        switches += 1;
+        activeTpl = tpl;
+      }
+    }
+    return switches;
+  };
+
+  for (let gate = startDay; gate <= endDay && ((gate - startDay) / GRID_V2) < gateMaxAttempts; gate += GRID_V2) {
+    for (const meal of mealCandidates) {
+      const plan = generatePlanV2Single(input, { mainStartGateMin: gate, mealStartMin: meal });
+      const stats = computeMainZoneGapStats({
+        plannedTasks: (plan as any)?.plannedTasks ?? [],
+        tasks: input.tasks ?? [],
+        mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
+      });
+      const mainSwitches = countMainSwitches(plan);
+      const candidate = { gate, meal, gapCount: stats.gapCount, gapTotal: stats.gapMinutes, mainSwitches };
+      if (!bestMeta) {
+        bestMeta = candidate;
+        bestPlan = plan;
+      } else {
+        const better =
+          (candidate.gapCount === 0 && bestMeta.gapCount !== 0) ||
+          (candidate.gapCount === bestMeta.gapCount && candidate.gapTotal < bestMeta.gapTotal) ||
+          (candidate.gapCount === bestMeta.gapCount && candidate.gapTotal === bestMeta.gapTotal && candidate.mainSwitches < bestMeta.mainSwitches) ||
+          (candidate.gapCount === bestMeta.gapCount && candidate.gapTotal === bestMeta.gapTotal && candidate.mainSwitches === bestMeta.mainSwitches && gate < bestMeta.gate);
+        if (better) {
+          bestMeta = candidate;
+          bestPlan = plan;
+        }
+      }
+      if (bestMeta && bestMeta.gapCount === 0 && bestMeta.mainSwitches === 0) break;
     }
   }
 
-  const fallback = bestPlan ?? generatePlanV2Single(input, { mainStartGateMin: startDay });
+  const fallback = bestPlan ?? generatePlanV2Single(input, { mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+  const selected = bestMeta ?? { gate: startDay, meal: mealWindowStart, gapCount: 0, gapTotal: 0, mainSwitches: 0 };
+
   const warnings = Array.isArray((fallback as any)?.warnings) ? [...((fallback as any).warnings)] : [];
-  warnings.push({
-    code: 'MAIN_ZONE_NO_GAPS_NOT_FULLY_ACHIEVED',
-    message: 'No fue posible eliminar todos los huecos del plató principal con keepBusy=10; se devolvió el mejor resultado encontrado.',
-    details: { totalGapMinutes: Number.isFinite(bestGapMinutes) ? bestGapMinutes : null },
+  if (selected.gapCount > 0) {
+    warnings.push({
+      code: 'MAIN_ZONE_NO_GAPS_NOT_FULLY_ACHIEVED',
+      message: 'No fue posible eliminar todos los huecos del plató principal con keepBusy=10; se devolvió el mejor resultado encontrado.',
+      details: { totalGapMinutes: selected.gapTotal },
+    });
+  }
+
+  const insights = Array.isArray((fallback as any)?.insights) ? [...((fallback as any).insights)] : [];
+  insights.push({
+    code: "V2_MEAL_CHOICE",
+    message: "Selección de slot de comida dentro de ventana",
+    details: { chosenMealStart: toHHMM(selected.meal), attemptsMeal: mealCandidates.length },
   });
-  return { ...fallback, warnings } as EngineOutput;
+  insights.push({
+    code: "V2_GATE_CHOICE",
+    message: "Selección de gate y continuidad del plató principal",
+    details: {
+      chosenGateStart: toHHMM(selected.gate),
+      gapCount: selected.gapCount,
+      gapTotal: selected.gapTotal,
+      mainSwitches: selected.mainSwitches,
+    },
+  });
+
+  return { ...fallback, warnings, insights } as EngineOutput;
 }
+
