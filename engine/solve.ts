@@ -1474,6 +1474,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   const effectiveGroupingMatchWeight = Math.round(weightFromInput("groupBySpaceTemplateMatch", groupingMatchWeight / 3_000) * 3_000);
   const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
+  const globalGroupingStrength10 = Math.max(
+    weightFromInput("groupBySpaceTemplateMatch", 0),
+    weightFromInput("groupBySpaceActive", 0),
+  );
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
   const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
   const effectiveContestantTotalSpanWeight = contestantTotalSpanWeights[Math.round(weightFromInput("contestantTotalSpan", 0))] ?? 0;
@@ -1490,13 +1494,23 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const getGroupingConfigForSpace = (spaceId: number | null | undefined) => {
     if (!spaceId || !Number.isFinite(Number(spaceId))) return null;
     const raw = groupingBySpaceIdInput[Number(spaceId)] ?? null;
-    if (!raw || typeof raw !== "object") return null;
-    const level = Math.max(0, Math.min(10, Math.floor(Number((raw as any).level ?? 0))));
-    const minChain = Math.max(1, Math.min(50, Math.floor(Number((raw as any).minChain ?? 4))));
-    if (level <= 0) return null;
-    const keyRaw = String((raw as any).key ?? `S:${Number(spaceId)}`).trim();
-    const key = keyRaw || `S:${Number(spaceId)}`;
-    return { key, level, minChain };
+    if (raw && typeof raw === "object") {
+      const level = Math.max(0, Math.min(10, Math.floor(Number((raw as any).level ?? 0))));
+      const minChain = Math.max(1, Math.min(50, Math.floor(Number((raw as any).minChain ?? 4))));
+      if (level <= 0) return null;
+      const keyRaw = String((raw as any).key ?? `S:${Number(spaceId)}`).trim();
+      const key = keyRaw || `S:${Number(spaceId)}`;
+      return { key, level, minChain };
+    }
+
+    const zoneId = getZoneIdForSpace(Number(spaceId));
+    if (!isGroupingEnabledForZone(zoneId)) return null;
+    if (globalGroupingStrength10 <= 0) return null;
+    return {
+      key: `S:${Number(spaceId)}`,
+      level: Math.max(0, Math.min(10, Math.floor(globalGroupingStrength10))),
+      minChain: 4,
+    };
   };
 
   const scoreMinimizeChangesBonus = (spaceId: number, tplId: number, options?: { pendingByTemplate?: Map<number, number> | null }) => {
@@ -2897,6 +2911,63 @@ export function generatePlan(input: EngineInput): EngineOutput {
       return false;
     };
 
+    const tryMoveSequentialBlock = (block: Array<{ p: any; task: any }>, targetFirstStart: number) => {
+      if (!block.length) return false;
+      if (!Number.isFinite(targetFirstStart)) return false;
+
+      const snappedTargetStart = snapUp(targetFirstStart);
+      const firstCurrentStart = toMinutes(String(block[0].p.startPlanned));
+      if (snappedTargetStart <= firstCurrentStart) return false;
+      if (snappedTargetStart < startDay || snappedTargetStart >= endDay) return false;
+
+      const snapshots = block.map(({ p, task }) => ({
+        p,
+        task,
+        oldStart: String(p.startPlanned),
+        oldEnd: String(p.endPlanned),
+        assigned: Array.isArray(p?.assignedResources)
+          ? p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+          : [],
+      }));
+
+      for (const { task, p } of block) removeTaskFromOccupancy(task, p);
+
+      let ok = true;
+      const placements: Array<{ row: { p: any; task: any }; start: number; end: number; assigned: number[] }> = [];
+      let cursorStart = snappedTargetStart;
+
+      for (const row of block) {
+        const placed = canPlaceTaskAtWithCurrentOccupancy(row.task, row.p, cursorStart);
+        if (!placed || placed.start < startDay || placed.end > endDay) {
+          ok = false;
+          break;
+        }
+        placements.push({ row, ...placed });
+        addTaskToOccupancy(row.task, placed);
+        cursorStart = placed.end;
+      }
+
+      if (ok) {
+        for (const placement of placements) {
+          placement.row.p.startPlanned = toHHMM(placement.start);
+          placement.row.p.endPlanned = toHHMM(placement.end);
+        }
+        return true;
+      }
+
+      for (const placement of placements) removeTaskFromOccupancy(placement.row.task, placement.row.p);
+      for (const snap of snapshots) {
+        snap.p.startPlanned = snap.oldStart;
+        snap.p.endPlanned = snap.oldEnd;
+        addTaskToOccupancy(snap.task, {
+          start: toMinutes(snap.oldStart),
+          end: toMinutes(snap.oldEnd),
+          assigned: snap.assigned,
+        });
+      }
+      return false;
+    };
+
     for (const spaceId of targetSpaces) {
       const spaceTasks = (plannedTasks as any[])
         .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
@@ -2949,6 +3020,60 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     const startGatingWarnings: Array<{ spaceId: number; reason: string }> = [];
 
+    if (
+      directorModeEnabled &&
+      optMainZoneId &&
+      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD &&
+      effectiveFinishEarlyWeight === 0
+    ) {
+      for (const spaceId of targetSpaces) {
+        const entries = (plannedTasks as any[])
+          .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
+          .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
+          .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
+
+        if (entries.length <= 1) continue;
+
+        let moved = false;
+        for (let i = 0; i < entries.length - 1; i++) {
+          const currentEnd = toMinutes(String(entries[i].p.endPlanned));
+          const nextStart = toMinutes(String(entries[i + 1].p.startPlanned));
+          if (nextStart - currentEnd < GRID) continue;
+
+          const block: Array<{ p: any; task: any }> = [];
+          for (let cursor = 0; cursor <= i; cursor++) {
+            const candidate = entries[cursor];
+            if (isImmovableTask(candidate.task)) {
+              block.length = 0;
+              break;
+            }
+            block.push(candidate);
+          }
+          if (!block.length) continue;
+
+          const totalDuration = block.reduce((acc, row) => {
+            const start = toMinutes(String(row.p.startPlanned));
+            const end = toMinutes(String(row.p.endPlanned));
+            return acc + Math.max(GRID, end - start);
+          }, 0);
+
+          const currentFirstStart = toMinutes(String(block[0].p.startPlanned));
+          const targetFirstStart = snapUp(nextStart - totalDuration);
+          if (targetFirstStart <= currentFirstStart) continue;
+
+          globalAttempts++;
+          if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+
+          if (tryMoveSequentialBlock(block, targetFirstStart)) {
+            moved = true;
+            break;
+          }
+        }
+
+        if (moved) rebuildPlannedByTask();
+      }
+    }
+
     for (const spaceId of targetSpaces) {
       const entries = (plannedTasks as any[])
         .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
@@ -2991,58 +3116,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
         if (requiredShift < GRID) continue;
 
-        let moved = false;
         let attemptsForGap = 0;
-        for (const row of block) removeTaskFromOccupancy(row.task, row.p);
         attemptsForGap++;
         globalAttempts++;
-
-        const snapshots = block.map(({ p }) => ({
-          p,
-          oldStart: String(p.startPlanned),
-          oldEnd: String(p.endPlanned),
-          assigned: Array.isArray(p?.assignedResources)
-            ? p.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
-            : [],
-        }));
-
-        const placements: Array<{ row: { p: any; task: any }; start: number; end: number; assigned: number[] }> = [];
-        let ok = true;
-        let cursorStart = targetFirstStart;
-
-        for (const row of block) {
-          const placed = canPlaceTaskAtWithCurrentOccupancy(row.task, row.p, cursorStart);
-          if (!placed) {
-            ok = false;
-            break;
-          }
-          placements.push({ row, ...placed });
-          addTaskToOccupancy(row.task, placed);
-          cursorStart = placed.end;
-        }
-
-        if (ok) {
-          for (const placement of placements) {
-            placement.row.p.startPlanned = toHHMM(placement.start);
-            placement.row.p.endPlanned = toHHMM(placement.end);
-          }
-          moved = true;
-        }
-
-        if (!ok) {
-          for (const placement of placements) {
-            removeTaskFromOccupancy(placement.row.task, placement.row.p);
-          }
-          for (const snap of snapshots) {
-            snap.p.startPlanned = snap.oldStart;
-            snap.p.endPlanned = snap.oldEnd;
-            addTaskToOccupancy(taskById.get(Number(snap.p.taskId)), {
-              start: toMinutes(snap.oldStart),
-              end: toMinutes(snap.oldEnd),
-              assigned: snap.assigned,
-            });
-          }
-        }
+        const moved = tryMoveSequentialBlock(block, targetFirstStart);
 
         if (!moved || attemptsForGap > DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP) {
           startGatingWarnings.push({

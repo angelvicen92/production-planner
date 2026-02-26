@@ -328,4 +328,70 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
   assert.equal(wrapEnd, innerEnd + 15);
 }
 
+
+{
+  const input: EngineInput = {
+    planId: 14,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1401, planId: 14, templateId: 101, templateName: "Main early", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 100 },
+      { id: 1402, planId: 14, templateId: 102, templateName: "Main gated", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [1403], priority: 90 },
+      { id: 1403, planId: 14, templateId: 201, templateName: "Prereq other zone", zoneId: 5, spaceId: 50, contestantId: 9, status: "pending", durationOverrideMin: 60, priority: 500 },
+    ],
+    locks: [],
+    groupingZoneIds: [7],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZonePriorityLevel: 3,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerMainZoneOptFinishEarly: true,
+    optimizerWeights: { mainZoneKeepBusy: 10, mainZoneFinishEarly: 0 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((row) => [Number(row.taskId), row]));
+  assert.equal(byTask.get(1401)?.startPlanned, "09:30");
+  assert.equal(byTask.get(1402)?.startPlanned, "10:00");
+}
+
+{
+  const input: EngineInput = {
+    planId: 15,
+    workDay: { start: "09:00", end: "13:00" },
+    meal: { start: "13:30", end: "14:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1501, planId: 15, templateId: 700, templateName: "A1", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 100 },
+      { id: 1502, planId: 15, templateId: 700, templateName: "A2", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30, priority: 95 },
+      { id: 1503, planId: 15, templateId: 701, templateName: "B", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30, priority: 90 },
+      { id: 1504, planId: 15, templateId: 800, templateName: "Off-zone", zoneId: 5, spaceId: 50, contestantId: 4, status: "pending", durationOverrideMin: 30, priority: 85 },
+    ],
+    locks: [],
+    groupingZoneIds: [7],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerWeights: { groupBySpaceTemplateMatch: 10, groupBySpaceActive: 10 },
+  };
+
+  const run = generatePlan(input);
+  const ordered = run.plannedTasks
+    .filter((row) => Number(row.assignedSpace) === 71)
+    .sort((a, b) => timeToMinutes(a.startPlanned) - timeToMinutes(b.startPlanned))
+    .map((row) => Number(input.tasks.find((t) => Number(t.id) === Number(row.taskId))?.templateId ?? -1));
+
+  assert.deepEqual(ordered.slice(0, 2), [700, 700]);
+}
+
+
 console.log("solve.spec.ts: ok");
