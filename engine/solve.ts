@@ -1475,8 +1475,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
   const effectiveGroupingMatchWeight = Math.round(weightFromInput("groupBySpaceTemplateMatch", groupingMatchWeight / 3_000) * 3_000);
   const effectiveGroupingActiveSpaceWeight = Math.round(weightFromInput("groupBySpaceActive", groupingActiveSpaceWeight / 60) * 60);
   const globalGroupingStrength10 = Math.max(
-    weightFromInput("groupBySpaceTemplateMatch", 0),
-    weightFromInput("groupBySpaceActive", 0),
+    0,
+    Math.min(
+      10,
+      Math.round(
+        Math.max(
+          weightFromInput("groupBySpaceTemplateMatch", 0),
+          weightFromInput("groupBySpaceActive", 0),
+        ),
+      ),
+    ),
   );
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
   const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
@@ -2955,7 +2963,18 @@ export function generatePlan(input: EngineInput): EngineOutput {
         return true;
       }
 
-      for (const placement of placements) removeTaskFromOccupancy(placement.row.task, placement.row.p);
+      for (const placement of placements) {
+        const prevStart = String(placement.row.p.startPlanned);
+        const prevEnd = String(placement.row.p.endPlanned);
+
+        placement.row.p.startPlanned = toHHMM(placement.start);
+        placement.row.p.endPlanned = toHHMM(placement.end);
+
+        removeTaskFromOccupancy(placement.row.task, placement.row.p);
+
+        placement.row.p.startPlanned = prevStart;
+        placement.row.p.endPlanned = prevEnd;
+      }
       for (const snap of snapshots) {
         snap.p.startPlanned = snap.oldStart;
         snap.p.endPlanned = snap.oldEnd;

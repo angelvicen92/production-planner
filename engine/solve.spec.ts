@@ -394,4 +394,41 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
 }
 
 
+{
+  const input: EngineInput = {
+    planId: 16,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1601, planId: 16, templateId: 1, templateName: "Block A", zoneId: 7, spaceId: 71, contestantId: 11, status: "pending", durationOverrideMin: 30, priority: 120 },
+      { id: 1602, planId: 16, templateId: 2, templateName: "Block B", zoneId: 7, spaceId: 71, contestantId: 22, status: "pending", durationOverrideMin: 30, priority: 110 },
+      { id: 1603, planId: 16, templateId: 3, templateName: "Gated lock", zoneId: 7, spaceId: 71, contestantId: 33, status: "done", startPlanned: "10:30", endPlanned: "11:00", durationOverrideMin: 30, priority: 100 },
+      { id: 1604, planId: 16, templateId: 4, templateName: "Contestant B busy", zoneId: 5, spaceId: 50, contestantId: 22, status: "done", startPlanned: "10:00", endPlanned: "10:30", durationOverrideMin: 30, priority: 90 },
+      { id: 1605, planId: 16, templateId: 5, templateName: "Follower", zoneId: 7, spaceId: 71, contestantId: 44, status: "pending", durationOverrideMin: 30, priority: 80 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((row) => [Number(row.taskId), row]));
+
+  assert.equal(byTask.get(1601)?.startPlanned, "09:00");
+  assert.equal(byTask.get(1601)?.endPlanned, "09:30");
+  assert.equal(byTask.get(1602)?.startPlanned, "09:30");
+  assert.equal(byTask.get(1602)?.endPlanned, "10:00");
+  assert.equal(byTask.get(1605)?.startPlanned, "10:00");
+  assert.equal(byTask.get(1605)?.endPlanned, "10:30");
+}
+
 console.log("solve.spec.ts: ok");
