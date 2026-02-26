@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout";
 import { QueryGuard } from "@/components/QueryGuard";
-import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
+import { useGeneratePlan, useGeneratePlanV2, usePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -697,6 +697,7 @@ export default function PlanDetailsPage() {
   const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
 
   const generatePlan = useGeneratePlan();
+  const generatePlanV2 = useGeneratePlanV2();
   const planningRunQ = usePlanningRun(id);
 
   const updatePlan = useUpdatePlan();
@@ -1811,7 +1812,7 @@ ${reasonMessage}` : message,
               size="lg"
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
               onClick={() => { void handleGenerate(); }}
-              disabled={generatePlan.isPending}
+              disabled={generatePlan.isPending || generatePlanV2.isPending}
             >
               {generatePlan.isPending ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -1821,6 +1822,31 @@ ${reasonMessage}` : message,
               {generatePlan.isPending
                 ? "Planificando..."
                 : "Generar/Recalcular"}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setPlanningInProgress(true);
+                setExpectedPlanningRunId(null);
+                void (async () => {
+                  try {
+                    await generatePlanV2.mutateAsync({ id, mode: "generate_planning" });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                  } catch (err: any) {
+                    if (isAbortLikeError(err)) {
+                      toast({ title: "La optimización v2 tardó más de lo esperado, comprobando estado..." });
+                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    }
+                  } finally {
+                    setPlanningInProgress(false);
+                  }
+                })();
+              }}
+              disabled={generatePlan.isPending || generatePlanV2.isPending}
+            >
+              PLANIFICADOR v2
             </Button>
             <Button
               size="lg"
@@ -1843,7 +1869,7 @@ ${reasonMessage}` : message,
                   }
                 })();
               }}
-              disabled={generatePlan.isPending}
+              disabled={generatePlan.isPending || generatePlanV2.isPending}
             >
               Planificar pendientes
             </Button>
@@ -3600,7 +3626,7 @@ ${reasonMessage}` : message,
                 supportsZoom
               >
                 <div className="relative">
-                {(planningInProgress || generatePlan.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
+                {(planningInProgress || generatePlan.isPending || generatePlanV2.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
                 <PlanningTimeline
                   plan={plan as any}
                   contestants={contestants as any}

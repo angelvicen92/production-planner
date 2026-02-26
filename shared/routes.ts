@@ -342,6 +342,27 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    generateV2: {
+      method: "POST" as const,
+      path: "/api/plans/:id/generate-v2",
+      input: z
+        .object({
+          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
+        })
+        .strict()
+        .optional(),
+      responses: {
+        200: z.object({
+          success: z.boolean(),
+          planId: z.number(),
+          tasksUpdated: z.number(),
+          warnings: z.array(z.any()).optional(),
+          planningStats: z.record(z.any()).optional(),
+        }),
+        422: errorSchemas.infeasible,
+        404: errorSchemas.notFound,
+      },
+    },
     clearTimeLocks: {
       method: "DELETE" as const,
       path: "/api/plans/:id/time-locks",
@@ -1069,6 +1090,7 @@ export const api = {
           groupingLevel: z.union([z.number(), z.string()]).optional(),
           groupingMinChain: z.union([z.number(), z.string()]).optional(),
           uiOrderIndex: z.number().int().nullable().optional(),
+          maxTemplateChanges: z.number().int().min(0).max(50).optional(),
         })
         .strict(),
       responses: {

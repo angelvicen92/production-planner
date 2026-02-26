@@ -115,6 +115,7 @@ export const zones = pgTable("zones", {
   minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
   groupingLevel: integer("grouping_level").notNull().default(0),
   groupingMinChain: integer("grouping_min_chain").notNull().default(4),
+  maxTemplateChanges: integer("max_template_changes").notNull().default(4),
   uiOrderIndex: integer("ui_order_index"),
 });
 

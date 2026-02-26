@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlan } from "../engine/solve";
+import { generatePlanV2 } from "../engine/solve_v2";
 import { getUserRole, withPermissionDenied } from "./authz";
 
 export async function registerRoutes(
@@ -4763,6 +4764,115 @@ function normalizeHexColor(value: unknown): string | null {
       return res.status(500).json({ message: "ENGINE_ERROR", detail: msg, runId: planningRunId });
     }
 
+  });
+
+
+
+  app.post(api.plans.generateV2.path, async (req, res) => {
+    const planId = Number(req.params.id);
+    try {
+      const input = z
+        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional() })
+        .strict()
+        .parse(req.body ?? {});
+      const modeRaw = input.mode ?? "full";
+      const mode = modeRaw === "generate_planning"
+        ? "full"
+        : modeRaw === "plan_pending"
+          ? "only_unplanned"
+          : modeRaw;
+
+      const engineInput = await buildEngineInput(planId, storage);
+      if (mode === "only_unplanned") {
+        const { data: taskRows, error: taskErr } = await supabaseAdmin
+          .from("daily_tasks")
+          .select("id, status, is_manual_block, start_planned, end_planned")
+          .eq("plan_id", planId);
+        if (taskErr) throw taskErr;
+
+        const virtualLocks = (taskRows ?? [])
+          .filter((task: any) => {
+            const status = String(task?.status ?? "pending");
+            if (status === "done" || status === "in_progress" || status === "cancelled") return false;
+            if (task?.is_manual_block === true) return false;
+            return Boolean(task?.start_planned) && Boolean(task?.end_planned);
+          })
+          .map((task: any) => ({
+            id: -Number(task.id),
+            planId,
+            taskId: Number(task.id),
+            lockType: "time" as const,
+            lockedStart: String(task.start_planned),
+            lockedEnd: String(task.end_planned),
+            lockedResourceId: null,
+            source: "planned_time_virtual",
+          }));
+
+        const lockByTaskId = new Map<number, any>();
+        for (const lock of (engineInput.locks ?? []) as any[]) {
+          const taskId = Number(lock?.taskId);
+          if (!Number.isFinite(taskId) || taskId <= 0) continue;
+          lockByTaskId.set(taskId, lock);
+        }
+        for (const lock of virtualLocks) {
+          if (!lockByTaskId.has(lock.taskId)) lockByTaskId.set(lock.taskId, lock);
+        }
+        engineInput.locks = Array.from(lockByTaskId.values());
+      }
+
+      const result = generatePlanV2(engineInput);
+      const enrich = await buildReasonEnricher(planId);
+
+      if ((result as any).hardFeasible === false) {
+        const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+        return res.status(422).json({ message: "INFEASIBLE_HARD", reasons });
+      }
+
+      let updated = 0;
+      for (const p of ((result as any).plannedTasks || [])) {
+        if (Number((p as any).taskId) < 0) {
+          const breakId = Math.abs(Number((p as any).taskId));
+          await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
+          updated++;
+        } else {
+          const persisted = await storage.updatePlannedTimes(
+            p.taskId,
+            p.startPlanned,
+            p.endPlanned,
+            Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
+          );
+          if (!persisted.updated) continue;
+          updated++;
+        }
+      }
+
+      const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
+      const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+      const insights = Array.isArray((result as any)?.insights) ? (result as any).insights : [];
+      const planningStats = insights.find((x: any) => String(x?.code) === "MAIN_ZONE_GAP_STATS")?.details ?? {};
+
+      await supabaseAdmin
+        .from("plans")
+        .update({ planning_warnings: warnings, planning_stats: planningStats })
+        .eq("id", planId);
+
+      return res.json({
+        success: true,
+        hardFeasible: true,
+        complete: !!(result as any).complete,
+        feasible: !!(result as any).complete,
+        planId,
+        tasksUpdated: updated,
+        warnings,
+        planningStats,
+        reasons,
+        unplanned: (result as any).unplanned ?? [],
+      });
+    } catch (e: any) {
+      const msg = typeof e?.message === "string" ? e.message : "Unknown error";
+      if (msg.toLowerCase().includes("not found")) return res.status(404).json({ message: msg });
+      return res.status(500).json({ message: "ENGINE_ERROR", detail: msg });
+    }
   });
 
   return httpServer;

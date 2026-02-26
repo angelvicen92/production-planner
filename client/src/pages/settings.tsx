@@ -1287,6 +1287,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const [editingZoneId, setEditingZoneId] = useState<number | null>(null);
   const [editingZoneName, setEditingZoneName] = useState("");
   const [editingZoneColor, setEditingZoneColor] = useState<string>("");
+  const [editingZoneMaxTemplateChanges, setEditingZoneMaxTemplateChanges] = useState<number>(4);
 
   const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
   const [editingSpace, setEditingSpace] = useState<{
@@ -1778,6 +1779,17 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                               }
                               className="h-10 w-14 p-1"
                             />
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Máximo cambios de tarea (agrupación)</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={50}
+                                className="w-24"
+                                value={editingZoneMaxTemplateChanges}
+                                onChange={(e) => setEditingZoneMaxTemplateChanges(Math.max(0, Math.min(50, Number(e.target.value) || 0)))}
+                              />
+                            </div>
 
                             <Button
                               size="sm"
@@ -1787,9 +1799,11 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                   id: z.id,
                                   name: editingZoneName.trim(),
                                   uiColor: editingZoneColor || null,
+                                  maxTemplateChanges: editingZoneMaxTemplateChanges,
                                 });
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
+                                setEditingZoneMaxTemplateChanges(4);
                               }}
                             >
                               Save
@@ -1800,6 +1814,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                               onClick={() => {
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
+                                setEditingZoneMaxTemplateChanges(4);
                               }}
                             >
                               Cancel
@@ -1819,6 +1834,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                     (z as any).ui_color ??
                                     "",
                                 );
+                                setEditingZoneMaxTemplateChanges(Number((z as any).maxTemplateChanges ?? (z as any).max_template_changes ?? 4));
                               }}
                             >
                               Edit

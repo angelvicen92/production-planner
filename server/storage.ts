@@ -111,6 +111,7 @@ export interface IStorage {
       groupingLevel?: unknown;
       groupingMinChain?: unknown;
       uiOrderIndex?: number | null;
+      maxTemplateChanges?: number;
     },
   ): Promise<any>;
 
@@ -1373,6 +1374,7 @@ export class SupabaseStorage implements IStorage {
       groupingLevel?: unknown;
       groupingMinChain?: unknown;
       uiOrderIndex?: number | null;
+      maxTemplateChanges?: number;
     },
   ) {
     const clamp = (v: unknown, min: number, max: number, fallback: number) => {
@@ -1399,6 +1401,9 @@ export class SupabaseStorage implements IStorage {
     }
     if (Object.prototype.hasOwnProperty.call(input, "uiOrderIndex")) {
       upd.ui_order_index = input.uiOrderIndex === null ? null : clamp(input.uiOrderIndex, -2147483648, 2147483647, 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "maxTemplateChanges")) {
+      upd.max_template_changes = clamp(input.maxTemplateChanges, 0, 50, 4);
     }
 
     const { data, error } = await supabaseAdmin
@@ -1430,6 +1435,7 @@ export class SupabaseStorage implements IStorage {
       minimizeChangesMinChain: s.minimize_changes_min_chain ?? 4,
       groupingLevel: s.grouping_level ?? 0,
       groupingMinChain: s.grouping_min_chain ?? 4,
+      maxTemplateChanges: s.max_template_changes ?? 4,
       groupingApplyToDescendants: Boolean(s.grouping_apply_to_descendants ?? false),
     }));
   }
