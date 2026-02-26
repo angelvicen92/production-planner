@@ -89,7 +89,7 @@ export interface IStorage {
   // Zones (Platós)
   getZones(): Promise<any[]>;
   createZone(input: { name: string }): Promise<any>;
-  updateZone(id: number, input: { name: string; uiColor?: string | null; minimizeChangesLevel?: number; minimizeChangesMinChain?: number; groupingLevel?: unknown; groupingMinChain?: unknown }): Promise<any>;
+  updateZone(id: number, input: { name: string; uiColor?: string | null; minimizeChangesLevel?: number; minimizeChangesMinChain?: number; groupingLevel?: unknown; groupingMinChain?: unknown; uiOrderIndex?: number | null }): Promise<any>;
 
   // Spaces (hierarchy)
   getSpaces(): Promise<any[]>;
@@ -110,6 +110,7 @@ export interface IStorage {
       minimizeChangesMinChain?: number;
       groupingLevel?: unknown;
       groupingMinChain?: unknown;
+      uiOrderIndex?: number | null;
     },
   ): Promise<any>;
 
@@ -1371,6 +1372,7 @@ export class SupabaseStorage implements IStorage {
       minimizeChangesMinChain?: number;
       groupingLevel?: unknown;
       groupingMinChain?: unknown;
+      uiOrderIndex?: number | null;
     },
   ) {
     const clamp = (v: unknown, min: number, max: number, fallback: number) => {
@@ -1394,6 +1396,9 @@ export class SupabaseStorage implements IStorage {
     }
     if (Object.prototype.hasOwnProperty.call(input, "groupingMinChain")) {
       upd.grouping_min_chain = clamp(input.groupingMinChain, 1, 50, 4);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "uiOrderIndex")) {
+      upd.ui_order_index = input.uiOrderIndex === null ? null : clamp(input.uiOrderIndex, -2147483648, 2147483647, 0);
     }
 
     const { data, error } = await supabaseAdmin

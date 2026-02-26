@@ -47,12 +47,14 @@ export function useUpdateZone() {
       uiColor?: string | null;
       minimizeChangesLevel?: number;
       minimizeChangesMinChain?: number;
+      uiOrderIndex?: number | null;
     }) =>
       apiRequest("PATCH", buildUrl(api.zones.update.path, { id: args.id }), {
         name: args.name,
         uiColor: args.uiColor ?? null,
         minimizeChangesLevel: args.minimizeChangesLevel,
         minimizeChangesMinChain: args.minimizeChangesMinChain,
+        uiOrderIndex: args.uiOrderIndex,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [api.zones.list.path] });

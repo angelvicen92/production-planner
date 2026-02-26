@@ -1003,6 +1003,22 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const { toast } = useToast();
   const confirmDialog = useConfirm();
 
+  const programSettingsQ = useQuery({
+    queryKey: [api.programSettings.get.path],
+    queryFn: () => apiRequest("GET", api.programSettings.get.path),
+  });
+
+  const saveProgramUiOrder = useMutation({
+    mutationFn: (patch: {
+      uiItinerantGroupOrderIndex?: number | null;
+      uiUnlocatedGroupOrderIndex?: number | null;
+    }) => apiRequest("PATCH", api.programSettings.update.path, patch),
+  });
+
+  const [zoneOrderDraft, setZoneOrderDraft] = useState<Record<number, string>>({});
+  const [itinerantGroupOrderDraft, setItinerantGroupOrderDraft] = useState<string>("");
+  const [unlocatedGroupOrderDraft, setUnlocatedGroupOrderDraft] = useState<string>("");
+
   // === Recursos por ZONA/PLATÓ (defaults globales) ===
   const [resourcesZoneId, setResourcesZoneId] = useState<number | null>(null);
   const [resourcesDraftIds, setResourcesDraftIds] = useState<number[]>([]);
@@ -1367,6 +1383,91 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     const next: Record<number, boolean> = {};
     for (const z of allZones) next[Number(z.id)] = false;
     setExpandedZoneIds(next);
+  };
+
+  useEffect(() => {
+    const next: Record<number, string> = {};
+    for (const z of allZones) {
+      const zid = Number(z?.id);
+      if (!Number.isFinite(zid)) continue;
+      const raw = z?.uiOrderIndex ?? z?.ui_order_index;
+      next[zid] = raw === null || raw === undefined ? "" : String(Number(raw));
+    }
+    setZoneOrderDraft(next);
+
+    const ps = (programSettingsQ.data ?? {}) as any;
+    const it = ps.uiItinerantGroupOrderIndex ?? ps.ui_itinerant_group_order_index;
+    const un = ps.uiUnlocatedGroupOrderIndex ?? ps.ui_unlocated_group_order_index;
+    setItinerantGroupOrderDraft(it === null || it === undefined ? "" : String(Number(it)));
+    setUnlocatedGroupOrderDraft(un === null || un === undefined ? "" : String(Number(un)));
+  }, [allZones, programSettingsQ.data]);
+
+  const toNullableOrderIndex = (value: string): number | null => {
+    const trimmed = String(value ?? "").trim();
+    if (!trimmed) return null;
+    const n = Number(trimmed);
+    if (!Number.isInteger(n)) return null;
+    return n;
+  };
+
+  const saveUiOrderIndexes = async () => {
+    const entries: Array<{ label: string; value: number }> = [];
+
+    for (const z of allZones) {
+      const zid = Number(z?.id);
+      if (!Number.isFinite(zid)) continue;
+      const parsed = toNullableOrderIndex(zoneOrderDraft[zid] ?? "");
+      if (parsed !== null) entries.push({ label: `Plató ${String(z?.name ?? `#${zid}`)}`, value: parsed });
+    }
+
+    const itinerantParsed = toNullableOrderIndex(itinerantGroupOrderDraft);
+    if (itinerantParsed !== null) entries.push({ label: "Equipos itinerantes", value: itinerantParsed });
+
+    const unlocatedParsed = toNullableOrderIndex(unlocatedGroupOrderDraft);
+    if (unlocatedParsed !== null) entries.push({ label: "Sin ubicación", value: unlocatedParsed });
+
+    const seen = new Set<number>();
+    for (const e of entries) {
+      if (seen.has(e.value)) {
+        toast({
+          title: `Hay índices repetidos (valor ${e.value}). Deben ser únicos.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      seen.add(e.value);
+    }
+
+    await Promise.all(
+      allZones.map(async (z) => {
+        const zid = Number(z?.id);
+        if (!Number.isFinite(zid)) return;
+        const parsed = toNullableOrderIndex(zoneOrderDraft[zid] ?? "");
+        const currentRaw = z?.uiOrderIndex ?? z?.ui_order_index;
+        const current = currentRaw === null || currentRaw === undefined ? null : Number(currentRaw);
+        if (current === parsed) return;
+        await updateZone.mutateAsync({
+          id: zid,
+          name: String(z?.name ?? "").trim(),
+          uiColor: (z as any).uiColor ?? (z as any).ui_color ?? null,
+          uiOrderIndex: parsed,
+        });
+      }),
+    );
+
+    const ps = (programSettingsQ.data ?? {}) as any;
+    const currentIt = ps.uiItinerantGroupOrderIndex ?? ps.ui_itinerant_group_order_index ?? null;
+    const currentUn = ps.uiUnlocatedGroupOrderIndex ?? ps.ui_unlocated_group_order_index ?? null;
+    if (currentIt !== itinerantParsed || currentUn !== unlocatedParsed) {
+      await saveProgramUiOrder.mutateAsync({
+        uiItinerantGroupOrderIndex: itinerantParsed,
+        uiUnlocatedGroupOrderIndex: unlocatedParsed,
+      });
+    }
+
+    await qc.invalidateQueries({ queryKey: [api.zones.list.path] });
+    await qc.invalidateQueries({ queryKey: [api.programSettings.get.path] });
+    toast({ title: "Orden de columnas guardado" });
   };
 
   const renderSpaceNode = (
@@ -1801,6 +1902,77 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Orden columnas planning (vista por espacios)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead className="w-44">Índice</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allZones.map((z) => {
+                const zid = Number(z?.id);
+                return (
+                  <TableRow key={`zone-order-${zid}`}>
+                    <TableCell>{String(z?.name ?? `#${zid}`)}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={zoneOrderDraft[zid] ?? ""}
+                        onChange={(e) => setZoneOrderDraft((prev) => ({ ...prev, [zid]: e.target.value }))}
+                        placeholder="—"
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow>
+                <TableCell>EQUIPOS ITINERANTES</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={itinerantGroupOrderDraft}
+                    onChange={(e) => setItinerantGroupOrderDraft(e.target.value)}
+                    placeholder="—"
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>SIN UBICACIÓN</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={unlocatedGroupOrderDraft}
+                    onChange={(e) => setUnlocatedGroupOrderDraft(e.target.value)}
+                    placeholder="—"
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={() => saveUiOrderIndexes().catch((err: any) => {
+                toast({
+                  title: err?.message || "No se pudo guardar el orden de columnas",
+                  variant: "destructive",
+                });
+              })}
+              disabled={updateZone.isPending || saveProgramUiOrder.isPending}
+            >
+              Guardar orden
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
 
       {/* Dialog Recursos del espacio (pegar aquí el bloque entero) */}
       <Dialog

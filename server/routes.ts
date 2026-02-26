@@ -1702,6 +1702,14 @@ function mapDeleteError(err: any, fallback: string) {
             ? data.simulated_time
             : null,
         simulatedSetAt: data.simulated_set_at ? new Date(data.simulated_set_at).toISOString() : null,
+        uiItinerantGroupOrderIndex:
+          data.ui_itinerant_group_order_index === null || data.ui_itinerant_group_order_index === undefined
+            ? null
+            : Number(data.ui_itinerant_group_order_index),
+        uiUnlocatedGroupOrderIndex:
+          data.ui_unlocated_group_order_index === null || data.ui_unlocated_group_order_index === undefined
+            ? null
+            : Number(data.ui_unlocated_group_order_index),
       });
 
     } catch (err: any) {
@@ -1730,6 +1738,10 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (input.clockMode !== undefined) patch.clock_mode = input.clockMode;
       if (input.simulatedTime !== undefined) patch.simulated_time = input.simulatedTime;
+      if (input.uiItinerantGroupOrderIndex !== undefined)
+        patch.ui_itinerant_group_order_index = input.uiItinerantGroupOrderIndex;
+      if (input.uiUnlocatedGroupOrderIndex !== undefined)
+        patch.ui_unlocated_group_order_index = input.uiUnlocatedGroupOrderIndex;
 
       if (input.clockMode === "manual" && input.simulatedTime) {
         patch.simulated_set_at = new Date().toISOString();
