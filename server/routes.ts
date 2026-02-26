@@ -1880,6 +1880,8 @@ function mapDeleteError(err: any, fallback: string) {
       const hzGroupingActive = normalizeHeuristicPatch("groupBySpaceActive");
       const hzCompact = normalizeHeuristicPatch("contestantCompact");
       const hzStayInZone = normalizeHeuristicPatch("contestantStayInZone");
+      const effectiveOptimizationMode =
+        input.optimizationMode !== undefined ? input.optimizationMode : current.optimizationMode;
 
       // niveles nuevos
       if (input.mainZonePriorityLevel !== undefined) {
@@ -1946,6 +1948,11 @@ function mapDeleteError(err: any, fallback: string) {
         patch.main_zone_keep_busy_level = hzMainKeepBusy.basicLevel;
         patch.main_zone_keep_busy_advanced_value = hzMainKeepBusy.advancedValue;
 
+        if (effectiveOptimizationMode === "advanced") {
+          patch.main_zone_opt_finish_early = hzMainFinishEarly.advancedValue > 0;
+          patch.main_zone_opt_keep_busy = hzMainKeepBusy.advancedValue > 0;
+        }
+
         const legacyLevel = Math.max(hzMainFinishEarly.basicLevel, hzMainKeepBusy.basicLevel);
         const legacyAdvanced = Math.max(hzMainFinishEarly.advancedValue, hzMainKeepBusy.advancedValue);
         patch.main_zone_priority_level = legacyLevel;
@@ -1959,7 +1966,10 @@ function mapDeleteError(err: any, fallback: string) {
         const best = hzGroupingMatch.basicLevel >= hzGroupingActive.basicLevel ? hzGroupingMatch : hzGroupingActive;
         patch.grouping_level = best.basicLevel;
         patch.grouping_advanced_value = Math.max(hzGroupingMatch.advancedValue, hzGroupingActive.advancedValue);
-        patch.group_by_space_and_template = best.basicLevel > 0;
+        patch.group_by_space_and_template =
+          effectiveOptimizationMode === "advanced"
+            ? patch.grouping_advanced_value > 0
+            : best.basicLevel > 0;
       } else if (input.groupingLevel !== undefined) {
         patch.grouping_advanced_value = [0, 3, 6, 9][Math.max(0, Math.min(3, Number(input.groupingLevel)))] ?? 0;
       }
@@ -4818,6 +4828,17 @@ function normalizeHexColor(value: unknown): string | null {
           if (!lockByTaskId.has(lock.taskId)) lockByTaskId.set(lock.taskId, lock);
         }
         engineInput.locks = Array.from(lockByTaskId.values());
+      }
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[planner-v2] engineInput optimizer snapshot", {
+          optimizerMainZoneOptKeepBusy: (engineInput as any)?.optimizerMainZoneOptKeepBusy,
+          optimizerMainZoneOptFinishEarly: (engineInput as any)?.optimizerMainZoneOptFinishEarly,
+          optimizerGroupBySpaceAndTemplate: (engineInput as any)?.optimizerGroupBySpaceAndTemplate,
+          optimizerWeights: (engineInput as any)?.optimizerWeights,
+          groupingZoneIds: (engineInput as any)?.groupingZoneIds,
+          optimizerMainZoneId: (engineInput as any)?.optimizerMainZoneId,
+        });
       }
 
       const result = generatePlanV2(engineInput);

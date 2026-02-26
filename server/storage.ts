@@ -426,8 +426,42 @@ export class SupabaseStorage implements IStorage {
 
     if (error) throw error;
 
+    const parseGroupingZoneIds = (raw: unknown): number[] => {
+      let source: unknown[] = [];
+
+      if (Array.isArray(raw)) {
+        source = raw;
+      } else if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) source = parsed;
+        } catch {
+          source = [];
+        }
+      }
+
+      return Array.from(
+        new Set(
+          source
+            .map((v: unknown) => Number(v))
+            .filter((v: number) => Number.isInteger(v) && v > 0),
+        ),
+      );
+    };
+
+    const optimizationMode = coerceOptimizationMode((data as any)?.optimization_mode);
+
+    const keepBusyAdvancedValue = clampAdvancedValue((data as any)?.main_zone_keep_busy_advanced_value);
+    const finishEarlyAdvancedValue = clampAdvancedValue((data as any)?.main_zone_finish_early_advanced_value);
+    const groupingAdvancedValue = clampAdvancedValue((data as any)?.grouping_advanced_value);
+
     const prioritizeMainZone = data?.prioritize_main_zone === true;
-    const groupBySpaceAndTemplate = data?.group_by_space_and_template !== false;
+    const groupBySpaceAndTemplateRaw = data?.group_by_space_and_template !== false;
+
+    const groupBySpaceAndTemplate =
+      optimizationMode === "advanced"
+        ? groupingAdvancedValue > 0
+        : groupBySpaceAndTemplateRaw;
 
     const mainZonePriorityLevel = clampBasicLevel(
       (data as any)?.main_zone_priority_level ?? (prioritizeMainZone ? 2 : 0),
@@ -495,13 +529,13 @@ export class SupabaseStorage implements IStorage {
       }, 0),
     } as const;
 
-    return {
+    const settings = {
       mainZoneId:
         data?.main_zone_id === null || data?.main_zone_id === undefined
           ? null
           : Number(data.main_zone_id),
 
-      optimizationMode: coerceOptimizationMode((data as any)?.optimization_mode),
+      optimizationMode,
       heuristics: heuristics as any,
 
       // legacy
@@ -515,13 +549,18 @@ export class SupabaseStorage implements IStorage {
 
       // ✅ modos del plató principal
       mainZoneOptFinishEarly:
-        (data as any)?.main_zone_opt_finish_early !== false,
-      mainZoneOptKeepBusy: (data as any)?.main_zone_opt_keep_busy !== false,
+        optimizationMode === "advanced"
+          ? finishEarlyAdvancedValue > 0
+          : (data as any)?.main_zone_opt_finish_early !== false,
+      mainZoneOptKeepBusy:
+        optimizationMode === "advanced"
+          ? keepBusyAdvancedValue > 0
+          : (data as any)?.main_zone_opt_keep_busy !== false,
 
       // ✅ compactar concursantes
       contestantCompactLevel,
       contestantTotalSpanLevel,
-      groupingZoneIds: Array.isArray((data as any)?.grouping_zone_ids) ? (data as any).grouping_zone_ids.map((v: any) => Number(v)).filter((v: number) => Number.isInteger(v) && v > 0) : [],
+      groupingZoneIds: parseGroupingZoneIds((data as any)?.grouping_zone_ids),
       arrivalTaskTemplateName: String((data as any)?.arrival_task_template_name ?? ""),
       departureTaskTemplateName: String((data as any)?.departure_task_template_name ?? ""),
       arrivalGroupingTarget: Math.max(0, Number((data as any)?.arrival_grouping_target ?? 0) || 0),
@@ -529,6 +568,27 @@ export class SupabaseStorage implements IStorage {
       vanCapacity: Math.max(0, Number((data as any)?.van_capacity ?? 0) || 0),
       weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number((data as any)?.weight_arrival_departure_grouping ?? 0) || 0)),
     };
+
+    if (
+      optimizationMode === "advanced" &&
+      (((data as any)?.main_zone_opt_keep_busy === false && keepBusyAdvancedValue > 0) ||
+        ((data as any)?.main_zone_opt_finish_early === false && finishEarlyAdvancedValue > 0) ||
+        ((data as any)?.group_by_space_and_template === false && groupingAdvancedValue > 0))
+    ) {
+      console.warn(
+        "[optimizer_settings] Inconsistent advanced flags detected; auto-correcting in-memory booleans from advanced values.",
+        {
+          main_zone_opt_keep_busy: (data as any)?.main_zone_opt_keep_busy,
+          main_zone_keep_busy_advanced_value: keepBusyAdvancedValue,
+          main_zone_opt_finish_early: (data as any)?.main_zone_opt_finish_early,
+          main_zone_finish_early_advanced_value: finishEarlyAdvancedValue,
+          group_by_space_and_template: (data as any)?.group_by_space_and_template,
+          grouping_advanced_value: groupingAdvancedValue,
+        },
+      );
+    }
+
+    return settings;
   }
 
   async getContestantsByPlan(planId: number) {

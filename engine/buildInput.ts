@@ -54,6 +54,36 @@ export async function buildEngineInput(
 
   // ✅ Optimización global (Settings)
   const optimizer = await storage.getOptimizerSettings();
+  const optimizationMode = optimizer?.optimizationMode === "advanced" ? "advanced" : "basic";
+  const clampWeight = (value: unknown) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(10, Math.round(n)));
+  };
+
+  const mainZoneKeepBusyWeight = clampWeight(optimizer?.heuristics?.mainZoneKeepBusy?.advancedValue);
+  const mainZoneFinishEarlyWeight = clampWeight(optimizer?.heuristics?.mainZoneFinishEarly?.advancedValue);
+  const groupingWeight = clampWeight(
+    Math.max(
+      Number(optimizer?.heuristics?.groupBySpaceTemplateMatch?.advancedValue ?? 0),
+      Number(optimizer?.heuristics?.groupBySpaceActive?.advancedValue ?? 0),
+    ),
+  );
+
+  const optimizerMainZoneOptKeepBusy =
+    optimizationMode === "advanced"
+      ? mainZoneKeepBusyWeight > 0
+      : optimizer?.mainZoneOptKeepBusy !== false;
+
+  const optimizerMainZoneOptFinishEarly =
+    optimizationMode === "advanced"
+      ? mainZoneFinishEarlyWeight > 0
+      : optimizer?.mainZoneOptFinishEarly !== false;
+
+  const optimizerGroupBySpaceAndTemplate =
+    optimizationMode === "advanced"
+      ? groupingWeight > 0
+      : optimizer?.groupBySpaceAndTemplate !== false;
 
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
@@ -445,15 +475,15 @@ export async function buildEngineInput(
 
     optimizerMainZoneId: optimizer?.mainZoneId ?? null,
     optimizerPrioritizeMainZone: optimizer?.prioritizeMainZone === true,
-    optimizerGroupBySpaceAndTemplate: optimizer?.groupBySpaceAndTemplate !== false,
+    optimizerGroupBySpaceAndTemplate,
 
     groupingZoneIds,
     maxTemplateChangesByZoneId,
 
     optimizerMainZonePriorityLevel: optimizer?.mainZonePriorityLevel ?? (optimizer?.prioritizeMainZone ? 2 : 0),
-    optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizer?.groupBySpaceAndTemplate !== false ? 2 : 0),
-    optimizerMainZoneOptFinishEarly: optimizer?.mainZoneOptFinishEarly !== false,
-    optimizerMainZoneOptKeepBusy: optimizer?.mainZoneOptKeepBusy !== false,
+    optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizerGroupBySpaceAndTemplate ? 2 : 0),
+    optimizerMainZoneOptFinishEarly,
+    optimizerMainZoneOptKeepBusy,
     optimizerContestantCompactLevel: optimizer?.contestantCompactLevel ?? 0,
     optimizerContestantStayInZoneLevel: optimizer?.contestantStayInZoneLevel ?? 0,
     arrivalTaskTemplateName: String((optimizer as any)?.arrivalTaskTemplateName ?? ""),
@@ -464,37 +494,37 @@ export async function buildEngineInput(
 
     optimizerWeights: {
       mainZoneFinishEarly: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.mainZoneFinishEarly,
         optimizer?.mainZonePriorityLevel,
       ),
       mainZoneKeepBusy: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.mainZoneKeepBusy,
         optimizer?.mainZonePriorityLevel,
       ),
       contestantCompact: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.contestantCompact,
         optimizer?.contestantCompactLevel,
       ),
       groupBySpaceTemplateMatch: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.groupBySpaceTemplateMatch,
         optimizer?.groupingLevel,
       ),
       groupBySpaceActive: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.groupBySpaceActive,
         optimizer?.groupingLevel,
       ),
       contestantStayInZone: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         optimizer?.heuristics?.contestantStayInZone,
         optimizer?.contestantStayInZoneLevel,
       ),
       arrivalDepartureGrouping: resolveWeight(
-        optimizer?.optimizationMode,
+        optimizationMode,
         (optimizer as any)?.heuristics?.arrivalDepartureGrouping,
         (optimizer as any)?.weightArrivalDepartureGrouping,
       ),
