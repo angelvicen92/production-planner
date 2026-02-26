@@ -3318,12 +3318,21 @@ export function generatePlan(input: EngineInput): EngineOutput {
       );
       const taskId = Number(t?.id);
       const hardLocked = lockedTaskIds.has(taskId) || Number.isFinite(forcedStartByTaskId.get(taskId)) || Number.isFinite(forcedEndByTaskId.get(taskId));
+      const missingDependencies = depIds.map((depId) => {
+        const depTask = taskById.get(Number(depId));
+        const depContestantId = Number(depTask?.contestantId ?? 0);
+        return {
+          taskId: Number(depId),
+          name: String(depTask?.templateName ?? `tarea ${depId}`),
+          contestantId: Number.isFinite(depContestantId) && depContestantId > 0 ? depContestantId : undefined,
+        };
+      });
       const reason = {
         code: "DEPENDENCY_NOT_SCHEDULED",
         message:
           `No se puede planificar "${String(t?.templateName ?? `tarea ${t?.id}`)}" porque faltan tareas previas requeridas.`,
         taskId,
-        details: { missingDependencyTaskIds: depIds },
+        details: { missingDependencyTaskIds: depIds, missingDependencies },
       };
       if (hardLocked) return hardInfeasible([reason]);
       unplanned.push({ taskId, reason });
@@ -3346,18 +3355,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
       pendingTemplateCountsByGroupingKey.set(pendingCfg.key, byTpl);
     }
 
-    const readyMainBySpace = new Map<number, { count: number; minutes: number }>();
+    const readyMainBySpaceByTpl = new Map<number, Map<number, { count: number; minutes: number }>>();
     for (const readyTask of ready) {
       if (!optMainZoneId) continue;
       if (Number(getZoneId(readyTask)) !== Number(optMainZoneId)) continue;
       if (isMealTask(readyTask)) continue;
       const readySpaceId = Number(getSpaceId(readyTask) ?? NaN);
       if (!Number.isFinite(readySpaceId) || readySpaceId <= 0) continue;
+      const readyTemplateId = Number(readyTask?.templateId ?? NaN);
+      if (!Number.isFinite(readyTemplateId) || readyTemplateId <= 0) continue;
       const readyDuration = Math.max(5, Math.floor(Number(readyTask?.durationOverrideMin ?? 30)));
-      const current = readyMainBySpace.get(readySpaceId) ?? { count: 0, minutes: 0 };
+      const byTemplate = readyMainBySpaceByTpl.get(readySpaceId) ?? new Map<number, { count: number; minutes: number }>();
+      const current = byTemplate.get(readyTemplateId) ?? { count: 0, minutes: 0 };
       current.count += 1;
       current.minutes += readyDuration;
-      readyMainBySpace.set(readySpaceId, current);
+      byTemplate.set(readyTemplateId, current);
+      readyMainBySpaceByTpl.set(readySpaceId, byTemplate);
     }
     const hasNonMainReady = ready.some((t) => Number(getZoneId(t)) !== Number(optMainZoneId));
     const shouldGateMainStart = Boolean(
@@ -3379,14 +3392,45 @@ export function generatePlan(input: EngineInput): EngineOutput {
       if (directorModeEnabled && optMainZoneId && zone === optMainZoneId) {
         let canForceMainStart = true;
         if (shouldGateMainStart) {
-          const readyMainStats = readyMainBySpace.get(Number(space ?? NaN));
+          const readyMainByTpl = readyMainBySpaceByTpl.get(Number(space ?? NaN));
+          const readyMainStats = Array.from(readyMainByTpl?.values() ?? []).reduce<{ count: number; minutes: number } | null>(
+            (best, tplStats) => {
+              if (!best) return tplStats;
+              if (tplStats.minutes > best.minutes) return tplStats;
+              if (tplStats.minutes === best.minutes && tplStats.count > best.count) return tplStats;
+              return best;
+            },
+            null,
+          );
           const hasReadyBlock = Boolean(
             readyMainStats && (readyMainStats.minutes >= 60 || readyMainStats.count >= 2),
           );
           canForceMainStart = !hasNonMainReady || hasReadyBlock;
+          const candidateTplStats = readyMainByTpl?.get(tpl);
+          const candidateTemplateHasBlock = Boolean(
+            candidateTplStats && (candidateTplStats.minutes >= 60 || candidateTplStats.count >= 2),
+          );
+          if (!candidateTemplateHasBlock) canForceMainStart = false;
           if (!canForceMainStart) s -= 10_000_000;
         }
         if (canForceMainStart) s += 5_000_000;
+      }
+
+      if (optMainZoneId && zone === optMainZoneId) {
+        const gcfg = space ? getGroupingConfigForSpace(space) : null;
+        if (gcfg && isGroupingEnabledForZone(zone)) {
+          const streak = streakByKey.get(gcfg.key);
+          if (
+            streak &&
+            streak.templateId !== tpl &&
+            streak.streakCount < gcfg.minChain
+          ) {
+            const lastTplReadyStats = readyMainBySpaceByTpl.get(space)?.get(streak.templateId);
+            if ((lastTplReadyStats?.count ?? 0) > 0) {
+              s -= 8_000_000;
+            }
+          }
+        }
       }
 
       // 1.b) Plató principal: “Terminar cuanto antes”

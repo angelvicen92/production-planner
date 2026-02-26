@@ -1431,12 +1431,15 @@ ${reasonMessage}` : message,
   }, [plan?.dailyTasks]);
 
   const reasonsByTaskId = useMemo(() => {
-    const map = new Map<number, string>();
+    const map = new Map<number, any>();
     const reasons = Array.isArray(planningRunQ.data?.lastReasons) ? planningRunQ.data?.lastReasons : [];
     for (const reason of reasons) {
       const taskId = Number(reason?.taskId ?? reason?.task_id);
       if (!Number.isFinite(taskId) || map.has(taskId)) continue;
-      map.set(taskId, formatInfeasibleReason(reason));
+      map.set(taskId, {
+        message: formatInfeasibleReason(reason),
+        details: reason?.details,
+      });
     }
     return map;
   }, [planningRunQ.data?.lastReasons, formatInfeasibleReason]);
@@ -4013,7 +4016,11 @@ ${reasonMessage}` : message,
                   const contestantId = Number(task?.contestantId ?? task?.contestant_id);
                   const contestant = (contestants ?? []).find((c: any) => Number(c?.id) === contestantId);
                   const taskId = Number(task?.id);
-                  const reason = reasonsByTaskId.get(taskId) || "Sin detalle (replanifica para ver motivos).";
+                  const reason = reasonsByTaskId.get(taskId) ?? null;
+                  const reasonMessage = reason?.message || "Sin detalle (replanifica para ver motivos).";
+                  const missingDependencies = Array.isArray(reason?.details?.missingDependencies)
+                    ? reason.details.missingDependencies
+                    : [];
                   const tags: string[] = [];
                   if (task?.isManualBlock || task?.is_manual_block) tags.push("manual_block");
                   if (task?.lockType === "time" || task?.lock_type === "time") tags.push("time_lock");
@@ -4025,7 +4032,27 @@ ${reasonMessage}` : message,
                         <div className="space-y-1">
                           <div className="font-medium">{task?.template?.name || `Template #${task?.templateId}`}</div>
                           <div className="text-sm text-muted-foreground">{contestant?.name || (Number.isFinite(contestantId) ? `Concursante #${contestantId}` : "(sin concursante)")}</div>
-                          <div className="text-xs text-muted-foreground">Motivo: {reason}</div>
+                          <div className="text-xs text-muted-foreground">Motivo: {reasonMessage}</div>
+                          {missingDependencies.length > 0 && (
+                            <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-1">
+                              {missingDependencies.map((dep: any, index: number) => {
+                                const depTaskId = Number(dep?.taskId);
+                                const depName = String(dep?.name ?? `Tarea ${depTaskId}`);
+                                const depContestantId = Number(dep?.contestantId);
+                                const depContestantName = Number.isFinite(depContestantId)
+                                  ? contestantNameById.get(depContestantId)
+                                  : null;
+                                const contestantLabel = Number.isFinite(depContestantId)
+                                  ? ` · concursante ${depContestantName ?? depContestantId}`
+                                  : "";
+                                return (
+                                  <li key={`${taskId}-missing-${depTaskId}-${index}`}>
+                                    {`${depName} (ID ${depTaskId})${contestantLabel}`}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
                           <div className="flex flex-wrap gap-1 pt-1">
                             {tags.map((tag) => (
                               <Badge key={`${taskId}-${tag}`} variant="outline" className="text-[10px]">{tag}</Badge>
