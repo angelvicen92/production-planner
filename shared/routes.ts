@@ -831,6 +831,8 @@ export const api = {
             .string()
             .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
             .nullable(),
+          uiItinerantGroupOrderIndex: z.number().int().nullable().optional(),
+          uiUnlocatedGroupOrderIndex: z.number().int().nullable().optional(),
           simulatedSetAt: z.string().nullable().optional(),
         }),
       },
@@ -869,6 +871,8 @@ export const api = {
             .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
             .nullable()
             .optional(),
+          uiItinerantGroupOrderIndex: z.number().int().nullable().optional(),
+          uiUnlocatedGroupOrderIndex: z.number().int().nullable().optional(),
         })
         .strict(),
       responses: {
@@ -1064,6 +1068,7 @@ export const api = {
           minimizeChangesMinChain: z.number().int().min(1).max(50).optional(),
           groupingLevel: z.union([z.number(), z.string()]).optional(),
           groupingMinChain: z.union([z.number(), z.string()]).optional(),
+          uiOrderIndex: z.number().int().nullable().optional(),
         })
         .strict(),
       responses: {

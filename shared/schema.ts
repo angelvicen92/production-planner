@@ -42,6 +42,8 @@ export const programSettings = pgTable("program_settings", {
   clockMode: text("clock_mode").notNull().default("auto"),
   simulatedTime: text("simulated_time"),
   simulatedSetAt: timestamp("simulated_set_at", { withTimezone: true }),
+  uiItinerantGroupOrderIndex: integer("ui_itinerant_group_order_index"),
+  uiUnlocatedGroupOrderIndex: integer("ui_unlocated_group_order_index"),
 });
 
 export const planBreaks = pgTable("plan_breaks", {
@@ -113,6 +115,7 @@ export const zones = pgTable("zones", {
   minimizeChangesMinChain: integer("minimize_changes_min_chain").notNull().default(4),
   groupingLevel: integer("grouping_level").notNull().default(0),
   groupingMinChain: integer("grouping_min_chain").notNull().default(4),
+  uiOrderIndex: integer("ui_order_index"),
 });
 
 // 3. spaces
@@ -343,6 +346,7 @@ export type ResourcePool = typeof resourcePools.$inferSelect;
 export type PlanResourcePool = typeof planResourcePools.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
 export type Zone = typeof zones.$inferSelect;
+export type ProgramSettings = typeof programSettings.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
 export const insertContestantSchema = createInsertSchema(contestants).omit({ id: true });
 

@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
@@ -714,6 +714,10 @@ export default function PlanDetailsPage() {
   const { data: itinerantTeams = [] } = useItinerantTeams();
   const { data: spaces = [], isLoading: spacesLoading } = useSpaces();
   const { data: taskTemplates = [] } = useTaskTemplates();
+  const { data: programSettings } = useQuery({
+    queryKey: [api.programSettings.get.path],
+    queryFn: () => apiRequest("GET", api.programSettings.get.path),
+  });
 
   const parseHHMMToMinutes = (v: string) => {
     const s = String(v ?? "").trim();
@@ -3605,6 +3609,8 @@ ${reasonMessage}` : message,
                   zoneStaffModes={planZoneStaffModes as any}
                   itinerantTeams={itinerantTeams as any}
                   staffAssignments={planStaffAssignments as any}
+                  uiItinerantGroupOrderIndex={(programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null}
+                  uiUnlocatedGroupOrderIndex={(programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null}
                   onTaskStatusChange={handlePlanningTaskStatusChange}
                   taskStatusPending={updateTaskStatus.isPending}
                   timeLockedTaskIds={Array.from(timeLockedTaskIds)}

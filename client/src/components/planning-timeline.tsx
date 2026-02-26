@@ -102,7 +102,7 @@ interface PlanningTimelineProps {
   stageFilterIds?: number[];
   resourceFilterIds?: string[];
   resourceSelectables?: ResourceSelectable[];
-  zones?: { id: number; name: string; uiColor?: string | null }[];
+  zones?: { id: number; name: string; uiColor?: string | null; uiOrderIndex?: number | null }[];
   spaces?: {
     id: number;
     name: string;
@@ -160,6 +160,8 @@ interface PlanningTimelineProps {
   onDeleteManualBlock?: (task: Task) => Promise<void> | void;
   onPatchManualBlock?: (taskId: number, patch: { title?: string | null; color?: string | null }) => Promise<void> | void;
   onSetManualBlockDuration?: (task: Task, durationMinutes: number) => Promise<void> | void;
+  uiItinerantGroupOrderIndex?: number | null;
+  uiUnlocatedGroupOrderIndex?: number | null;
 }
 
 function taskActionsForStatus(status: string) {
@@ -546,6 +548,8 @@ function TaskStatusMenuTrigger({
     onDeleteManualBlock,
     onPatchManualBlock,
     onSetManualBlockDuration,
+    uiItinerantGroupOrderIndex = null,
+    uiUnlocatedGroupOrderIndex = null,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
   const { nowTime } = useProductionClock();
@@ -1588,26 +1592,34 @@ function TaskStatusMenuTrigger({
                   );
 
                   // Construir platós desde `zones` (no desde spacesByZone), para que NO desaparezcan platós
-                  const zoneCols: ZoneCol[] = (filteredZones as any[]).map((z: any) => {
-                    const zid = Number(z.id);
-                    const zoneName = String(
-                      z.name ?? zonesById2.get(zid) ?? `Zona #${zid}`,
-                    );
-                    const spList = (spacesByZone.get(zid) ?? []) as any[];
-                    const zoneColor =
-                      (z as any).uiColor ?? (z as any).ui_color ?? null;
+                  const zoneCols: ZoneCol[] = (filteredZones as any[])
+                    .filter((z: any) => {
+                      const idx = (z as any).uiOrderIndex ?? (z as any).ui_order_index;
+                      return idx !== null && idx !== undefined && Number.isInteger(Number(idx));
+                    })
+                    .map((z: any) => {
+                      const zid = Number(z.id);
+                      const zoneName = String(
+                        z.name ?? zonesById2.get(zid) ?? `Zona #${zid}`,
+                      );
+                      const spList = (spacesByZone.get(zid) ?? []) as any[];
+                      const zoneColor =
+                        (z as any).uiColor ?? (z as any).ui_color ?? null;
 
-                    return {
-                      zoneId: zid,
-                      zoneName,
-                      zoneColor,
-                      spaces: spList.map((sp: any) => ({
-                        id: Number(sp.id),
-                        name: String(sp.name),
-                        tasks: [],
-                      })),
-                    };
-                  });
+                      return {
+                        zoneId: zid,
+                        zoneName,
+                        zoneColor,
+                        orderIndex: Number((z as any).uiOrderIndex ?? (z as any).ui_order_index),
+                        spaces: spList.map((sp: any) => ({
+                          id: Number(sp.id),
+                          name: String(sp.name),
+                          tasks: [],
+                        })),
+                      };
+                    })
+                    .sort((a: any, b: any) => (a.orderIndex - b.orderIndex) || a.zoneName.localeCompare(b.zoneName))
+                    .map(({ orderIndex: _orderIndex, ...zone }) => zone as ZoneCol);
 
                   // Índice rápido: spaceId -> { zoneId, colIndex }
                   const spaceIndex = new Map<
@@ -1721,7 +1733,9 @@ function TaskStatusMenuTrigger({
                   itinerantCols.forEach((team) => sortTasks(team.tasks));
                   sortTasks(unlocatedCol.tasks);
 
-                  const itinerantColsToShow = itinerantCols.filter((team) => team.tasks.some(isRealTask));
+                  const itinerantColsToShow = uiItinerantGroupOrderIndex === null || uiItinerantGroupOrderIndex === undefined
+                    ? []
+                    : itinerantCols.filter((team) => team.tasks.some(isRealTask));
 
                   // Filtrar platós vacíos (no mostrar bloques sin tareas)
                   const zoneColsToShow = zoneCols
@@ -1731,7 +1745,17 @@ function TaskStatusMenuTrigger({
                     }))
                     .filter((zc) => zc.spaces.length > 0);
 
-                  const showUnlocated = unlocatedCol.tasks.some(isRealTask);
+                  const showUnlocated =
+                    uiUnlocatedGroupOrderIndex !== null &&
+                    uiUnlocatedGroupOrderIndex !== undefined &&
+                    unlocatedCol.tasks.some(isRealTask);
+
+                  const zoneUiOrderById = new Map<number, number>();
+                  (filteredZones as any[]).forEach((z: any) => {
+                    const zid = Number(z?.id);
+                    const idx = Number((z as any)?.uiOrderIndex ?? (z as any)?.ui_order_index);
+                    if (Number.isFinite(zid) && Number.isFinite(idx)) zoneUiOrderById.set(zid, idx);
+                  });
 
                   // Render
                   return (
@@ -1764,7 +1788,7 @@ function TaskStatusMenuTrigger({
                           <div className="flex-1 overflow-x-auto">
                             <div className="flex gap-2 min-w-max pr-4">
                               {zoneColsToShow.map((zc) => (
-                                <div key={zc.zoneId} className="shrink-0 w-max">
+                                <div key={zc.zoneId} className="shrink-0 w-max" style={{ order: zoneUiOrderById.get(Number(zc.zoneId)) ?? 0 }}>
                                   <div
                                     className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}
                             style={{
@@ -2014,7 +2038,7 @@ function TaskStatusMenuTrigger({
                               ))}
 
                               {itinerantColsToShow.length > 0 ? (
-                                <div className="shrink-0 w-max">
+                                <div className="shrink-0 w-max" style={{ order: Number(uiItinerantGroupOrderIndex ?? 0) }}>
                                   <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
                                     <div className="leading-5">Itinerantes</div>
                                   </div>
@@ -2078,7 +2102,7 @@ function TaskStatusMenuTrigger({
                               ) : null}
 
                               {showUnlocated ? (
-                                <div className="min-w-[260px] shrink-0">
+                                <div className="min-w-[260px] shrink-0" style={{ order: Number(uiUnlocatedGroupOrderIndex ?? 0) }}>
                                   <div className="font-semibold mb-2">
                                     Sin ubicación
                                   </div>
@@ -2196,7 +2220,7 @@ function TaskStatusMenuTrigger({
                         <div className="overflow-x-auto">
                           <div className="flex gap-2 min-w-max pr-4">
                             {zoneColsToShow.map((zc) => (
-                              <div key={zc.zoneId} className="shrink-0 w-max">
+                              <div key={zc.zoneId} className="shrink-0 w-max" style={{ order: zoneUiOrderById.get(Number(zc.zoneId)) ?? 0 }}>
                                 <div
                                   className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}
                                   style={{
@@ -2388,7 +2412,7 @@ function TaskStatusMenuTrigger({
                             ))}
 
                             {itinerantColsToShow.length > 0 ? (
-                              <div className="shrink-0 w-max">
+                              <div className="shrink-0 w-max" style={{ order: Number(uiItinerantGroupOrderIndex ?? 0) }}>
                                 <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
                                   <div className="leading-5">Itinerantes</div>
                                 </div>
@@ -2440,7 +2464,7 @@ function TaskStatusMenuTrigger({
                             ) : null}
 
                             {showUnlocated ? (
-                              <div className="min-w-[260px]">
+                              <div className="min-w-[260px]" style={{ order: Number(uiUnlocatedGroupOrderIndex ?? 0) }}>
                                 <div className="font-semibold mb-2">
                                   Sin ubicación
                                 </div>
