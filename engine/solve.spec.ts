@@ -336,9 +336,10 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
     meal: { start: "12:30", end: "13:00" },
     camerasAvailable: 0,
     tasks: [
-      { id: 1401, planId: 14, templateId: 101, templateName: "Main early", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 100 },
-      { id: 1402, planId: 14, templateId: 102, templateName: "Main gated", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [1403], priority: 90 },
-      { id: 1403, planId: 14, templateId: 201, templateName: "Prereq other zone", zoneId: 5, spaceId: 50, contestantId: 9, status: "pending", durationOverrideMin: 60, priority: 500 },
+      { id: 1401, planId: 14, templateId: 101, templateName: "Main early", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 500 },
+      { id: 1402, planId: 14, templateId: 102, templateName: "Main gated", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [1404], priority: 450 },
+      { id: 1403, planId: 14, templateId: 201, templateName: "Other zone ready 1", zoneId: 5, spaceId: 50, contestantId: 9, status: "pending", durationOverrideMin: 30, priority: 400 },
+      { id: 1404, planId: 14, templateId: 202, templateName: "Other zone ready 2", zoneId: 5, spaceId: 50, contestantId: 10, status: "pending", durationOverrideMin: 30, priority: 350 },
     ],
     locks: [],
     groupingZoneIds: [7],
@@ -357,6 +358,8 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
 
   const run = generatePlan(input);
   const byTask = new Map(run.plannedTasks.map((row) => [Number(row.taskId), row]));
+  assert.equal(byTask.get(1403)?.startPlanned, "09:00");
+  assert.equal(byTask.get(1404)?.startPlanned, "09:30");
   assert.equal(byTask.get(1401)?.startPlanned, "09:30");
   assert.equal(byTask.get(1402)?.startPlanned, "10:00");
 }
@@ -393,6 +396,41 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
   assert.deepEqual(ordered.slice(0, 2), [700, 700]);
 }
 
+
+
+{
+  const input: EngineInput = {
+    planId: 17,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1701, planId: 17, templateId: 1, templateName: "Main block A", zoneId: 7, spaceId: 71, contestantId: 11, status: "pending", durationOverrideMin: 30, priority: 300 },
+      { id: 1702, planId: 17, templateId: 2, templateName: "Main block B", zoneId: 7, spaceId: 71, contestantId: 22, status: "pending", durationOverrideMin: 30, priority: 290 },
+      { id: 1703, planId: 17, templateId: 3, templateName: "Main locked next", zoneId: 7, spaceId: 71, contestantId: 33, status: "done", startPlanned: "10:30", endPlanned: "11:00", durationOverrideMin: 30, priority: 280 },
+      { id: 1704, planId: 17, templateId: 4, templateName: "Contestant B busy", zoneId: 5, spaceId: 50, contestantId: 22, status: "done", startPlanned: "10:00", endPlanned: "10:30", durationOverrideMin: 30, priority: 270 },
+      { id: 1705, planId: 17, templateId: 5, templateName: "Main follower", zoneId: 7, spaceId: 71, contestantId: 44, status: "pending", durationOverrideMin: 30, priority: 260 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10, mainZoneFinishEarly: 0 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((row) => [Number(row.taskId), row]));
+
+  assert.equal(byTask.get(1701)?.startPlanned, "09:00");
+  assert.equal(byTask.get(1702)?.startPlanned, "09:30");
+  assert.equal(byTask.get(1705)?.startPlanned, "10:00");
+}
 
 {
   const input: EngineInput = {
