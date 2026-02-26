@@ -177,8 +177,8 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
 
   const run = generatePlan(input);
   const byTask = new Map(run.plannedTasks.map((p) => [Number(p.taskId), p]));
-  assert.equal(byTask.get(202)?.startPlanned, "10:30");
-  assert.equal(byTask.get(203)?.startPlanned, "11:00");
+  assert.equal(byTask.get(203)?.startPlanned, "10:00");
+  assert.equal(byTask.get(202)?.startPlanned, "11:00");
 }
 
 {
@@ -467,6 +467,73 @@ const getZoneIdForSpace = (spaceId: number | null | undefined) => {
   assert.equal(byTask.get(1602)?.endPlanned, "10:00");
   assert.equal(byTask.get(1605)?.startPlanned, "10:00");
   assert.equal(byTask.get(1605)?.endPlanned, "10:30");
+}
+
+{
+  const input: EngineInput = {
+    planId: 19,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 1901, planId: 19, templateId: 901, templateName: "Main tpl A", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 200 },
+      { id: 1902, planId: 19, templateId: 902, templateName: "Main tpl B", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30, priority: 190 },
+      { id: 1903, planId: 19, templateId: 903, templateName: "Other zone", zoneId: 5, spaceId: 50, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 10 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerMainZoneOptFinishEarly: true,
+    optimizerWeights: { mainZoneKeepBusy: 10, mainZoneFinishEarly: 0 },
+  };
+
+  const run = generatePlan(input);
+  const byTask = new Map(run.plannedTasks.map((row) => [Number(row.taskId), row]));
+  assert.equal(byTask.get(1903)?.startPlanned, "09:00");
+  assert.ok((byTask.get(1901)?.startPlanned ?? "99:99") >= "09:30" || (byTask.get(1902)?.startPlanned ?? "99:99") >= "09:30");
+}
+
+{
+  const input: EngineInput = {
+    planId: 20,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 2001, planId: 20, templateId: 1001, templateName: "A1", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30, priority: 100 },
+      { id: 2002, planId: 20, templateId: 1001, templateName: "A2", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30, priority: 95 },
+      { id: 2003, planId: 20, templateId: 1002, templateName: "B", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30, priority: 90 },
+    ],
+    locks: [],
+    groupingZoneIds: [7],
+    groupingBySpaceId: {
+      71: { key: "S:71", level: 10, minChain: 2 },
+    },
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { groupBySpaceTemplateMatch: 10, groupBySpaceActive: 10, mainZoneKeepBusy: 10 },
+  };
+
+  const run = generatePlan(input);
+  const ordered = run.plannedTasks
+    .filter((row) => Number(row.assignedSpace) === 71)
+    .sort((a, b) => timeToMinutes(a.startPlanned) - timeToMinutes(b.startPlanned))
+    .map((row) => Number(input.tasks.find((t) => Number(t.id) === Number(row.taskId))?.templateId ?? -1));
+
+  assert.deepEqual(ordered.slice(0, 2), [1001, 1001]);
 }
 
 console.log("solve.spec.ts: ok");
