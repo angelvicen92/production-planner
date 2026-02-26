@@ -155,6 +155,7 @@ export interface EngineInput {
   optimizerPrioritizeMainZone?: boolean;
   optimizerGroupBySpaceAndTemplate?: boolean;
   groupingZoneIds: number[];
+  maxTemplateChangesByZoneId?: Record<number, number>;
 
   // ✅ niveles amigables (0=Off, 1=Suave, 2=Medio, 3=Fuerte)
   optimizerMainZonePriorityLevel?: number;
@@ -282,4 +283,3 @@ export interface EngineOutput {
     details?: any;
   }>;
 }
-

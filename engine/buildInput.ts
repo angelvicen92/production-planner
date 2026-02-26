@@ -90,6 +90,7 @@ export async function buildEngineInput(
     return Math.max(min, Math.min(max, Math.floor(n)));
   };
   const zoneGroupingMap = new Map<number, { level: number; minChain: number }>();
+  const maxTemplateChangesByZoneId: Record<number, number> = {};
   const groupingZoneIds: number[] = Array.from(
     new Set<number>(
       (Array.isArray((optimizer as any)?.groupingZoneIds)
@@ -116,6 +117,7 @@ export async function buildEngineInput(
     const zoneLevel = clamp((z as any)?.grouping_level ?? (z as any)?.groupingLevel ?? (z as any)?.minimize_changes_level ?? (z as any)?.minimizeChangesLevel, 0, 10, 0);
     const zoneMinChain = clamp((z as any)?.grouping_min_chain ?? (z as any)?.groupingMinChain ?? (z as any)?.minimize_changes_min_chain ?? (z as any)?.minimizeChangesMinChain, 1, 50, 4);
     zoneGroupingMap.set(zid, { level: zoneLevel, minChain: zoneMinChain });
+    maxTemplateChangesByZoneId[zid] = clamp((z as any)?.max_template_changes ?? (z as any)?.maxTemplateChanges, 0, 50, 4);
   }
 
   for (const s of (allSpaces as any[]) ?? []) {
@@ -446,6 +448,7 @@ export async function buildEngineInput(
     optimizerGroupBySpaceAndTemplate: optimizer?.groupBySpaceAndTemplate !== false,
 
     groupingZoneIds,
+    maxTemplateChangesByZoneId,
 
     optimizerMainZonePriorityLevel: optimizer?.mainZonePriorityLevel ?? (optimizer?.prioritizeMainZone ? 2 : 0),
     optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizer?.groupBySpaceAndTemplate !== false ? 2 : 0),
