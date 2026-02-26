@@ -33,6 +33,8 @@ export type MainZoneGapReason = {
 const DIRECTOR_MODE_KEEP_BUSY_THRESHOLD = 8;
 const DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP = 50;
 const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
+const FEED_MAIN_UNLOCK_BONUS = 2_000_000;
+const FEED_MAIN_SWITCH_PENALTY = 5_000_000;
 
 function toMinutes(hhmm: string) {
   const [h, m] = hhmm.split(":").map((x) => parseInt(x, 10));
@@ -602,6 +604,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const taskById = new Map<number, any>();
   for (const t of tasks as any[]) taskById.set(Number(t?.id), t);
+
+  const dependentsByTaskId = new Map<number, number[]>();
+  for (const t of tasks as any[]) {
+    const tId = Number(t?.id ?? NaN);
+    if (!Number.isFinite(tId) || tId <= 0) continue;
+    for (const depId of getDepTaskIds(t)) {
+      const list = dependentsByTaskId.get(Number(depId)) ?? [];
+      list.push(tId);
+      dependentsByTaskId.set(Number(depId), list);
+    }
+  }
 
   const templatesByContestant = new Map<number, Set<number>>();
   for (const t of tasks as any[]) {
@@ -1490,6 +1503,11 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const effectiveContestantCompactWeight = Math.round(weightFromInput("contestantCompact", contestantCompactWeight / 900) * 900);
   const effectiveContestantStayInZoneWeight = contestantStayInZoneWeights[Math.round(weightFromInput("contestantStayInZone", 0))] ?? 0;
   const effectiveContestantTotalSpanWeight = contestantTotalSpanWeights[Math.round(weightFromInput("contestantTotalSpan", 0))] ?? 0;
+  const feedMainActiveEnabled = Boolean(
+    optMainZoneId &&
+    mainZoneKeepBusyStrength >= 9 &&
+    globalGroupingStrength10 >= 9,
+  );
 
   // “memoria” por clave de contenedor de agrupación (espacio hoja, ancestro o zona)
   const lastTemplateByKey = new Map<string, number>();
@@ -3330,6 +3348,11 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     return false;
   };
 
+  let feedMainInsightDetails: { mainActiveTpl: number; topFeeders: Array<{ taskId: number; name: string; unlockCount: number }> } | null = null;
+  let mainTemplateSwitchInsight:
+    | { fromTpl: number; toTpl: number; hadFeedersReady: boolean; feedersReadyCount: number }
+    | null = null;
+
   while (pendingNonMeal.length) {
     const ready = pendingNonMeal.filter((t) => depsSatisfied(t));
     if (!ready.length) {
@@ -3406,6 +3429,49 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       readyMainBySpaceByTpl.set(readySpaceId, byTemplate);
     }
     const hasNonMainReady = ready.some((t) => Number(getZoneId(t)) !== Number(optMainZoneId));
+    const pendingTaskIds = new Set<number>(pendingNonMeal.map((t) => Number(t?.id)).filter((id) => Number.isFinite(id) && id > 0));
+    const mainActiveTpl = optMainZoneId ? activeTemplateByZoneId.get(Number(optMainZoneId)) : null;
+    const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainActiveTpl)) && Number(mainActiveTpl) > 0);
+    const unlockCountForTask = (candidate: any) => {
+      if (!canFeedMainActive || !optMainZoneId) return 0;
+      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return 0;
+      const dependents = dependentsByTaskId.get(Number(candidate?.id)) ?? [];
+      let unlockCount = 0;
+      for (const depTaskId of dependents) {
+        if (!pendingTaskIds.has(Number(depTaskId))) continue;
+        const depTask = taskById.get(Number(depTaskId));
+        if (!depTask) continue;
+        if (Number(depTask?.zoneId ?? getZoneId(depTask) ?? 0) !== Number(optMainZoneId)) continue;
+        if (Number(depTask?.templateId ?? 0) !== Number(mainActiveTpl)) continue;
+        if (String(depTask?.status ?? "pending") !== "pending") continue;
+        unlockCount += 1;
+      }
+      return unlockCount;
+    };
+    const feedersReady = ready
+      .filter((t) => Number(getZoneId(t)) !== Number(optMainZoneId))
+      .map((t) => ({
+        taskId: Number(t?.id),
+        name: String(t?.templateName ?? t?.manualTitle ?? `Tarea #${Number(t?.id ?? 0)}`),
+        unlockCount: unlockCountForTask(t),
+      }))
+      .filter((x) => x.unlockCount > 0)
+      .sort((a, b) => b.unlockCount - a.unlockCount || a.taskId - b.taskId);
+
+    if (canFeedMainActive && feedersReady.length > 0) {
+      feedMainInsightDetails = {
+        mainActiveTpl: Number(mainActiveTpl),
+        topFeeders: feedersReady.slice(0, 5),
+      };
+    }
+    const pendingMainActiveBlockedCount = canFeedMainActive
+      ? (pendingNonMeal as any[]).reduce((acc, task) => {
+        if (Number(getZoneId(task)) !== Number(optMainZoneId)) return acc;
+        if (Number(task?.templateId ?? 0) !== Number(mainActiveTpl)) return acc;
+        if (depsSatisfied(task)) return acc;
+        return acc + 1;
+      }, 0)
+      : 0;
     const shouldGateMainStart = Boolean(
       optMainZoneId &&
       !lastEndByZone.has(optMainZoneId) &&
@@ -3546,6 +3612,23 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         }
       }
 
+      if (canFeedMainActive && Number(zone) !== Number(optMainZoneId)) {
+        const unlockCount = unlockCountForTask(t);
+        if (unlockCount > 0) {
+          s += unlockCount * FEED_MAIN_UNLOCK_BONUS;
+          if (pendingMainActiveBlockedCount > 0) s += FEED_MAIN_SWITCH_PENALTY;
+        }
+      }
+
+      if (
+        canFeedMainActive &&
+        Number(zone) === Number(optMainZoneId) &&
+        Number(tpl) !== Number(mainActiveTpl) &&
+        feedersReady.length > 0
+      ) {
+        s -= FEED_MAIN_SWITCH_PENALTY;
+      }
+
       return s;
     };
 
@@ -3613,6 +3696,20 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     });
 
     const task = ready[0];
+    if (
+      canFeedMainActive &&
+      optMainZoneId &&
+      Number(getZoneId(task)) === Number(optMainZoneId) &&
+      Number(task?.templateId ?? 0) !== Number(mainActiveTpl) &&
+      feedersReady.length > 0
+    ) {
+      mainTemplateSwitchInsight = {
+        fromTpl: Number(mainActiveTpl),
+        toTpl: Number(task?.templateId ?? 0),
+        hadFeedersReady: feedersReady.length > 0,
+        feedersReadyCount: feedersReady.length,
+      };
+    }
 
     // removemos el elegido de pending
     const idx = pendingNonMeal.findIndex(
@@ -4133,6 +4230,45 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   }
 
   const complete = unplanned.length === 0;
+  const insights: any[] = [
+    {
+      code: "MAIN_ZONE_GAP_STATS",
+      message: "Métricas de continuidad del plató principal",
+      details: {
+        zoneId: optMainZoneId,
+        spacesConsidered: Array.from(new Set(mainZoneGaps.map((g) => Number(g.spaceId)).filter((n) => Number.isFinite(n) && n > 0))),
+        totalGaps: mainZoneGaps.length,
+        totalGapMinutes: mainZoneGaps.reduce((acc, g) => acc + Number(g.durationMin || 0), 0),
+        gaps: mainZoneGaps.map((g) => ({
+          zoneId: g.zoneId,
+          spaceId: g.spaceId,
+          start: toHHMM(g.start),
+          end: toHHMM(g.end),
+          durationMin: g.durationMin,
+          prevTaskId: g.prevTaskId,
+          nextTaskId: g.nextTaskId,
+        })),
+        gapReasons: mainZoneGapReasons,
+      },
+    },
+  ];
+
+  if (feedMainInsightDetails) {
+    insights.push({
+      code: "V2_FEED_MAIN_ACTIVE",
+      message: "Heurístico FEED THE MAIN ZONE activo",
+      details: feedMainInsightDetails,
+    });
+  }
+
+  if (mainTemplateSwitchInsight) {
+    insights.push({
+      code: "V2_MAIN_TEMPLATE_SWITCH",
+      message: "Cambio de template detectado en el plató principal",
+      details: mainTemplateSwitchInsight,
+    });
+  }
+
   return {
     feasible: complete,
     complete,
@@ -4141,28 +4277,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     warnings,
     unplanned,
     reasons: complete ? [] : unplanned.map((x) => x.reason),
-    insights: [
-      {
-        code: "MAIN_ZONE_GAP_STATS",
-        message: "Métricas de continuidad del plató principal",
-        details: {
-          zoneId: optMainZoneId,
-          spacesConsidered: Array.from(new Set(mainZoneGaps.map((g) => Number(g.spaceId)).filter((n) => Number.isFinite(n) && n > 0))),
-          totalGaps: mainZoneGaps.length,
-          totalGapMinutes: mainZoneGaps.reduce((acc, g) => acc + Number(g.durationMin || 0), 0),
-          gaps: mainZoneGaps.map((g) => ({
-            zoneId: g.zoneId,
-            spaceId: g.spaceId,
-            start: toHHMM(g.start),
-            end: toHHMM(g.end),
-            durationMin: g.durationMin,
-            prevTaskId: g.prevTaskId,
-            nextTaskId: g.nextTaskId,
-          })),
-          gapReasons: mainZoneGapReasons,
-        },
-      },
-    ],
+    insights,
   } as any;
 }
 

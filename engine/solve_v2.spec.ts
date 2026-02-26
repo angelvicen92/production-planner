@@ -108,3 +108,53 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.ok(longestBlock >= 3);
   assert.ok(switches <= 4);
 }
+
+
+{
+  const tasks = [
+    { id: 1, planId: 3, templateId: 100, templateName: "Ensayo JM 1", zoneId: 7, spaceId: 71, contestantId: 3, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [10] },
+    { id: 3, planId: 3, templateId: 101, templateName: "Ensayo Lucía", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    { id: 4, planId: 3, templateId: 100, templateName: "Ensayo JM ready", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 10, planId: 3, templateId: 200, templateName: "PV JM 1", zoneId: 5, spaceId: 51, contestantId: 3, status: "pending", durationOverrideMin: 15 },
+  ];
+
+  const input: EngineInput = {
+    planId: 3,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:00", end: "12:30" },
+    camerasAvailable: 0,
+    tasks: tasks as any,
+    locks: [],
+    groupingZoneIds: [7],
+    maxTemplateChangesByZoneId: { 7: 4 },
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerMainZonePriorityLevel: 3,
+    optimizerGroupingLevel: 3,
+    optimizerWeights: {
+      mainZoneKeepBusy: 10,
+      groupBySpaceTemplateMatch: 10,
+      groupBySpaceActive: 10,
+    },
+  };
+
+  const run = generatePlanV2(input);
+  const seq = (run.plannedTasks ?? [])
+    .slice()
+    .sort((a, b) => toMin(String(a.startPlanned)) - toMin(String(b.startPlanned)))
+    .map((p) => Number(p.taskId));
+
+  const pvIndex = seq.indexOf(10);
+  const luciaIndex = seq.indexOf(3);
+  assert.ok(pvIndex >= 0 && luciaIndex >= 0 && pvIndex < luciaIndex);
+
+
+  const feedInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_FEED_MAIN_ACTIVE");
+  assert.ok(feedInsight);
+}
