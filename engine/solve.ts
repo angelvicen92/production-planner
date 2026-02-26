@@ -3346,6 +3346,27 @@ export function generatePlan(input: EngineInput): EngineOutput {
       pendingTemplateCountsByGroupingKey.set(pendingCfg.key, byTpl);
     }
 
+    const readyMainBySpace = new Map<number, { count: number; minutes: number }>();
+    for (const readyTask of ready) {
+      if (!optMainZoneId) continue;
+      if (Number(getZoneId(readyTask)) !== Number(optMainZoneId)) continue;
+      if (isMealTask(readyTask)) continue;
+      const readySpaceId = Number(getSpaceId(readyTask) ?? NaN);
+      if (!Number.isFinite(readySpaceId) || readySpaceId <= 0) continue;
+      const readyDuration = Math.max(5, Math.floor(Number(readyTask?.durationOverrideMin ?? 30)));
+      const current = readyMainBySpace.get(readySpaceId) ?? { count: 0, minutes: 0 };
+      current.count += 1;
+      current.minutes += readyDuration;
+      readyMainBySpace.set(readySpaceId, current);
+    }
+    const hasNonMainReady = ready.some((t) => Number(getZoneId(t)) !== Number(optMainZoneId));
+    const shouldGateMainStart = Boolean(
+      optMainZoneId &&
+      !lastEndByZone.has(optMainZoneId) &&
+      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD &&
+      effectiveFinishEarlyWeight === 0,
+    );
+
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
     const scoreTaskForSelection = (t: any) => {
       const space = getSpaceId(t) ?? 0;
@@ -3356,7 +3377,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // 1) Director mode: prioridad global de tareas de plató principal
       if (directorModeEnabled && optMainZoneId && zone === optMainZoneId) {
-        s += 5_000_000;
+        let canForceMainStart = true;
+        if (shouldGateMainStart) {
+          const readyMainStats = readyMainBySpace.get(Number(space ?? NaN));
+          const hasReadyBlock = Boolean(
+            readyMainStats && (readyMainStats.minutes >= 60 || readyMainStats.count >= 2),
+          );
+          canForceMainStart = !hasNonMainReady || hasReadyBlock;
+          if (!canForceMainStart) s -= 10_000_000;
+        }
+        if (canForceMainStart) s += 5_000_000;
       }
 
       // 1.b) Plató principal: “Terminar cuanto antes”
@@ -3476,110 +3506,9 @@ export function generatePlan(input: EngineInput): EngineOutput {
     }
 
     ready.sort((a, b) => {
-      const aSpace = getSpaceId(a) ?? 0;
-      const bSpace = getSpaceId(b) ?? 0;
+      const sa = scoreTaskForSelection(a);
+      const sb = scoreTaskForSelection(b);
 
-      const aTpl = Number(a?.templateId ?? 0);
-      const bTpl = Number(b?.templateId ?? 0);
-
-      const aZone = getZoneId(a);
-      const bZone = getZoneId(b);
-
-      let sa = 0;
-      let sb = 0;
-
-      // 1) Director mode: prioridad global de tareas de plató principal
-      if (directorModeEnabled && optMainZoneId) {
-        if (aZone === optMainZoneId) sa += 5_000_000;
-        if (bZone === optMainZoneId) sb += 5_000_000;
-      }
-
-      // 1.b) Plató principal: “Terminar cuanto antes” (según nivel)
-      if (effectiveFinishEarlyWeight > 0 && optMainZoneId) {
-        if (aZone === optMainZoneId) sa += effectiveFinishEarlyWeight;
-        if (bZone === optMainZoneId) sb += effectiveFinishEarlyWeight;
-      }
-
-      // 2) Plató principal: “Sin huecos” (si ya hemos empezado a planificar en ese plató)
-      if (
-        effectiveKeepBusyWeight > 0 &&
-        optMainZoneId &&
-        lastEndByZone.has(optMainZoneId)
-      ) {
-        if (aZone === optMainZoneId) sa += effectiveKeepBusyWeight;
-        if (bZone === optMainZoneId) sb += effectiveKeepBusyWeight;
-      }
-
-      // 3) Compactar concursantes: si un concursante ya tiene tareas, intenta agruparlas
-      if (effectiveContestantCompactWeight > 0) {
-        const aC = getContestantId(a);
-        const bC = getContestantId(b);
-
-        if (aC && lastEndByContestant.has(aC)) sa += effectiveContestantCompactWeight;
-        if (bC && lastEndByContestant.has(bC)) sb += effectiveContestantCompactWeight;
-      }
-
-      // 4) Agrupar tareas iguales dentro del mismo contenedor de agrupación (según nivel)
-      if (optGroupingLevel > 0) {
-        const gA = aSpace ? getGroupingConfigForSpace(aSpace) : null;
-        const gB = bSpace ? getGroupingConfigForSpace(bSpace) : null;
-        const lastA = gA ? (lastTemplateByKey.get(gA.key) ?? null) : null;
-        const lastB = gB ? (lastTemplateByKey.get(gB.key) ?? null) : null;
-        const zoneA = aZone ?? getZoneIdForSpace(aSpace);
-        const zoneB = bZone ?? getZoneIdForSpace(bSpace);
-
-        if (gA && isGroupingEnabledForZone(zoneA) && lastA !== null && lastA === aTpl)
-          sa += effectiveGroupingMatchWeight;
-        if (gB && isGroupingEnabledForZone(zoneB) && lastB !== null && lastB === bTpl)
-          sb += effectiveGroupingMatchWeight;
-
-        // pequeño premio por seguir trabajando en un contenedor “ya activo”
-        if (gA && isGroupingEnabledForZone(zoneA) && lastTemplateByKey.has(gA.key))
-          sa += effectiveGroupingActiveSpaceWeight;
-        if (gB && isGroupingEnabledForZone(zoneB) && lastTemplateByKey.has(gB.key))
-          sb += effectiveGroupingActiveSpaceWeight;
-      }
-
-      // 4.b) Minimizar cambios por espacio/zona (config local)
-      if (aSpace) {
-        const gA = getGroupingConfigForSpace(aSpace);
-        const pendingA = gA ? pendingTemplateCountsByGroupingKey.get(gA.key) ?? null : null;
-        sa += scoreMinimizeChangesBonus(aSpace, aTpl, { pendingByTemplate: pendingA });
-      }
-      if (bSpace) {
-        const gB = getGroupingConfigForSpace(bSpace);
-        const pendingB = gB ? pendingTemplateCountsByGroupingKey.get(gB.key) ?? null : null;
-        sb += scoreMinimizeChangesBonus(bSpace, bTpl, { pendingByTemplate: pendingB });
-      }
-
-      // 5) Mantener concursante en el mismo plató (solo bonus, sin penalización)
-      if (effectiveContestantStayInZoneWeight > 0) {
-        const aC = getContestantId(a);
-        const bC = getContestantId(b);
-        if (aC && aZone && lastZoneByContestant.get(aC) === aZone)
-          sa += effectiveContestantStayInZoneWeight;
-        if (bC && bZone && lastZoneByContestant.get(bC) === bZone)
-          sb += effectiveContestantStayInZoneWeight;
-      }
-
-      if (effectiveContestantTotalSpanWeight > 0) {
-        const scoreTotalSpan = (task: any) => {
-          const cId = getContestantId(task);
-          if (!cId) return 0;
-          const firstStart = firstStartByContestant.get(cId);
-          const lastEnd = lastEndByContestant.get(cId);
-          if (Number.isFinite(firstStart) && Number.isFinite(lastEnd) && Number(lastEnd) >= Number(firstStart)) {
-            const openSpan = Math.min(240, Math.max(0, Number(lastEnd) - Number(firstStart)));
-            return openSpan * effectiveContestantTotalSpanWeight;
-          }
-          if (firstStartByContestant.size > 0) return -Math.round(effectiveContestantTotalSpanWeight * 8);
-          return 0;
-        };
-        sa += scoreTotalSpan(a);
-        sb += scoreTotalSpan(b);
-      }
-
-      // desempate estable: respeta orden original de topo-sort
       const oa = originalOrder.get(Number(a?.id)) ?? 0;
       const ob = originalOrder.get(Number(b?.id)) ?? 0;
 
