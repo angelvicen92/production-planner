@@ -26,7 +26,6 @@ import {
   Lock,
   Pause,
   RotateCcw,
-  Trash2,
 } from "lucide-react";
 import { Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -1994,55 +1993,70 @@ ${reasonMessage}` : message,
                     return (
                       <div
                         key={c.id}
-                        className="w-full text-left bg-card rounded-lg border border-border p-3 hover:bg-muted/40 transition h-full min-h-[96px]"
+                        className="relative w-full text-left bg-card rounded-lg border border-border px-4 py-2 hover:bg-muted/40 transition h-full min-h-[88px]"
                       >
-                        <div className="flex items-center justify-end mb-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            disabled={!canDeleteContestant || deleteContestant.isPending}
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const ok = await confirmDialog({
-                                title: "Eliminar concursante",
-                                description: `¿Seguro que quieres eliminar a ${c.name}? Se borrarán también sus daily tasks no iniciadas/finalizadas.`,
-                                confirmText: "Eliminar",
-                              });
-                              if (!ok) return;
-                              try {
-                                await deleteContestant.mutateAsync(Number(c.id));
-                                if (selectedContestant?.id === c.id) {
-                                  setSelectedContestant(null);
-                                }
-                              } catch (err: any) {
-                                if (Number((err as any)?.status) === 400) {
-                                  toast({
-                                    title: "No se puede eliminar",
-                                    description: err?.message || "El concursante tiene tareas in_progress o done.",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }
-                            }}
-                            title={canDeleteContestant ? "Eliminar concursante" : "Solo se puede borrar si no tiene tareas in_progress/done"}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                         <button
                           type="button"
-                          className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                          aria-label="Eliminar concursante"
+                          className="absolute top-2 right-2 text-red-600 font-bold text-lg leading-none hover:scale-110 transition-transform"
+                          disabled={!canDeleteContestant || deleteContestant.isPending}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const ok = await confirmDialog({
+                              title: "Eliminar concursante",
+                              description: `¿Seguro que quieres eliminar a ${c.name}? Se borrarán también sus daily tasks no iniciadas/finalizadas.`,
+                              confirmText: "Eliminar",
+                            });
+                            if (!ok) return;
+                            try {
+                              await deleteContestant.mutateAsync(Number(c.id));
+                              if (selectedContestant?.id === c.id) {
+                                setSelectedContestant(null);
+                              }
+                            } catch (err: any) {
+                              if (Number((err as any)?.status) === 400) {
+                                toast({
+                                  title: "No se puede eliminar",
+                                  description: err?.message || "El concursante tiene tareas in_progress o done.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }
+                          }}
+                          title={canDeleteContestant ? "Eliminar concursante" : "Solo se puede borrar si no tiene tareas in_progress/done"}
+                        >
+                          ×
+                        </button>
+                        <button
+                          type="button"
+                          className="w-full pr-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                           onClick={() => setSelectedContestant(c)}
                         >
-                        {/* Fila 1: instrumento + nombre (misma línea) + globo nº tareas */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0 flex items-center gap-2">
-                            <span className="text-base leading-none">
-                              {c.instrument ? "🎸" : "🎤"}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex flex-col space-y-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-lg font-bold leading-tight truncate">
+                                {c.name}
+                              </span>
+                              <span className="text-base leading-none shrink-0">
+                                {c.instrument ? "🎸" : "🎤"}
+                              </span>
+                            </div>
+
+                            {c.instrument && c.instrumentName ? (
+                              <span className="text-xs text-[#ff0000] truncate">
+                                {c.instrumentName}
+                              </span>
+                            ) : null}
+
+                            <span className="text-sm text-[#5781c1] truncate">
+                              {c.song || "(sin canción)"}
                             </span>
-                            <div className="font-medium truncate">{c.name}</div>
+
+                            <span className="text-sm text-gray-600 truncate">
+                              {coachLabel}
+                            </span>
                           </div>
 
                           <span
@@ -2056,16 +2070,6 @@ ${reasonMessage}` : message,
                           >
                             {badgeText}
                           </span>
-                        </div>
-
-                        {/* Fila 2: canción */}
-                        <div className="mt-2 text-xs text-muted-foreground truncate">
-                          {c.song ? `🎵 ${c.song}` : "🎵 (sin canción)"}
-                        </div>
-
-                        {/* Fila 3: coach */}
-                        <div className="mt-1 text-xs text-muted-foreground truncate">
-                          {coachLabel}
                         </div>
                       </button>
                     </div>
