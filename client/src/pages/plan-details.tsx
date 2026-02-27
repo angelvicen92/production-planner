@@ -1336,9 +1336,16 @@ ${reasonMessage}` : message,
   const [errorDialog, setErrorDialog] = useState<{
     open: boolean;
     reasons: any[];
+    diagnostic: {
+      code: string | null;
+      warnings: any[];
+      insights: any[];
+      unplanned: any[];
+    } | null;
   }>({
     open: false,
     reasons: [],
+    diagnostic: null,
   });
 
   useEffect(() => {
@@ -1420,7 +1427,7 @@ ${reasonMessage}` : message,
       });
 
       if (run.status === "infeasible") {
-        setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [] });
+        setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [], diagnostic: null });
       }
     }
   }, [planningRunQ.data, expectedPlanningRunId, toast]);
@@ -1648,6 +1655,26 @@ ${reasonMessage}` : message,
 
   const isAbortLikeError = (err: any) => err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("aborted");
 
+  const openV2DiagnosticDialog = (source: any) => {
+    const payload = source?.payload ?? source ?? {};
+    const warnings = Array.isArray(source?.warnings) ? source.warnings : (Array.isArray(payload?.warnings) ? payload.warnings : []);
+    const insights = Array.isArray(source?.insights) ? source.insights : (Array.isArray(payload?.insights) ? payload.insights : []);
+    const unplanned = Array.isArray(source?.unplanned) ? source.unplanned : (Array.isArray(payload?.unplanned) ? payload.unplanned : []);
+    const reasons = Array.isArray(source?.reasons) ? source.reasons : (Array.isArray(payload?.reasons) ? payload.reasons : []);
+    const codeRaw = source?.code ?? payload?.code ?? payload?.message ?? source?.message ?? null;
+    const code = codeRaw == null ? null : String(codeRaw);
+
+    const hasDiagnostics = warnings.length > 0 || insights.length > 0 || unplanned.length > 0;
+    if (!hasDiagnostics && reasons.length === 0) return false;
+
+    setErrorDialog({
+      open: true,
+      reasons,
+      diagnostic: { code, warnings, insights, unplanned },
+    });
+    return true;
+  };
+
   const handleGenerate = async () => {
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
@@ -1686,7 +1713,7 @@ ${reasonMessage}` : message,
           toast({ title: "Planificación completada", description: "Se recuperó el estado tras refrescar." });
         }
       } else if (err?.reasons) {
-        setErrorDialog({ open: true, reasons: err.reasons });
+        setErrorDialog({ open: true, reasons: err.reasons, diagnostic: null });
       }
     } finally {
       setPlanningInProgress(false);
@@ -1842,9 +1869,10 @@ ${reasonMessage}` : message,
                       if (import.meta.env.DEV) {
                         console.error(err);
                       }
+                      openV2DiagnosticDialog(err);
                       toast({
                         title: "Error en planificador v2",
-                        description: err?.detail ?? err?.message ?? "Error desconocido",
+                        description: err?.code ?? err?.detail ?? err?.message ?? "Error desconocido",
                         variant: "destructive",
                       });
                     }
@@ -4350,6 +4378,68 @@ ${reasonMessage}` : message,
                 );
               })}
             </div>
+
+            {(errorDialog.diagnostic?.warnings.length || errorDialog.diagnostic?.insights.length || errorDialog.diagnostic?.unplanned.length) ? (
+              <div className="mt-4 rounded-lg border p-3 space-y-4">
+                <div className="text-sm font-semibold">Diagnóstico motor v2</div>
+
+                {errorDialog.diagnostic?.code === "V2_EMPTY_RESULT" && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>El motor v2 no pudo planificar ninguna tarea. Ver diagnóstico abajo.</AlertTitle>
+                  </Alert>
+                )}
+
+                {errorDialog.diagnostic?.warnings.length ? (
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium uppercase text-muted-foreground">Warnings</div>
+                    <ul className="list-disc pl-4 text-sm space-y-1">
+                      {errorDialog.diagnostic.warnings.map((warning: any, idx: number) => (
+                        <li key={`warning-${idx}`}>{String(warning?.message ?? warning?.code ?? warning)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {errorDialog.diagnostic?.insights.length ? (
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium uppercase text-muted-foreground">Insights</div>
+                    <ul className="space-y-2 text-sm">
+                      {errorDialog.diagnostic.insights.map((insight: any, idx: number) => (
+                        <li key={`insight-${idx}`} className="rounded border p-2">
+                          <div className="font-medium">{String(insight?.code ?? insight?.title ?? `Insight ${idx + 1}`)}</div>
+                          {insight?.message ? <div className="text-xs text-muted-foreground mt-0.5">{String(insight.message)}</div> : null}
+                          {insight?.details ? (
+                            <pre className="mt-2 text-xs whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{JSON.stringify(insight.details, null, 2)}</pre>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {errorDialog.diagnostic?.unplanned.length ? (
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium uppercase text-muted-foreground">Top 20 unplanned</div>
+                    <ul className="list-disc pl-4 text-sm space-y-1">
+                      {errorDialog.diagnostic.unplanned.slice(0, 20).map((item: any, idx: number) => {
+                        const taskId = Number(item?.taskId ?? item?.task_id);
+                        const taskLabel = Number.isFinite(taskId) && taskNameById.get(taskId)
+                          ? taskNameById.get(taskId)
+                          : (Number.isFinite(taskId) ? `Tarea #${taskId}` : `Tarea ${idx + 1}`);
+                        const reason = item?.reason ?? item?.message ?? item?.code ?? "Sin motivo informado";
+                        return (
+                          <li key={`unplanned-${idx}`}>
+                            <span className="font-medium">{taskLabel}</span>: {String(reason)}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="flex justify-end gap-2 pt-4">
               {errorDialog.reasons.some(
                 (r: any) => r?.code === "DEPENDENCY_MISSING",
@@ -4424,7 +4514,7 @@ ${reasonMessage}` : message,
                       });
 
                       // 5) Cerrar popup (opcional) para que el usuario regenere
-                      setErrorDialog({ open: false, reasons: [] });
+                      setErrorDialog({ open: false, reasons: [], diagnostic: null });
                     } catch (err: any) {
                       toast({
                         title: "No se pudieron crear prerequisitos",
@@ -4442,7 +4532,7 @@ ${reasonMessage}` : message,
               )}
 
               <Button
-                onClick={() => setErrorDialog({ open: false, reasons: [] })}
+                onClick={() => setErrorDialog({ open: false, reasons: [], diagnostic: null })}
               >
                 Close
               </Button>
