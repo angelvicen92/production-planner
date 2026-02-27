@@ -97,6 +97,12 @@ export async function apiRequest<T>(
     const error = new Error(payload?.message || res.statusText);
     (error as any).status = res.status;
     (error as any).reasons = payload?.reasons;
+    (error as any).payload = payload;
+    (error as any).code = payload?.code ?? payload?.message;
+    (error as any).warnings = payload?.warnings;
+    (error as any).insights = payload?.insights;
+    (error as any).unplanned = payload?.unplanned;
+    (error as any).hardFeasible = payload?.hardFeasible;
     (error as any).contentType = contentType;
     console.warn(warnPrefix, {
       url: path,
