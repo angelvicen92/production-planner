@@ -4489,10 +4489,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const dedupedWarnings = dedupeWarnings(warnings);
 
+  const hardFeasible = complete && plannedTasks.length > 0;
+
   return {
     feasible: complete,
     complete,
-    hardFeasible: true,
+    hardFeasible,
     plannedTasks,
     warnings: dedupedWarnings,
     unplanned,
@@ -4691,14 +4693,15 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
       throw err;
     }
   }
+  const selected = bestMeta ?? { gate: startDay, meal: mealWindowStart, gapCount: 0, gapTotal: 0, mainSwitches: 0 };
   const tasksPendingCount = ((input as any)?.tasks ?? []).filter((task: any) => {
     const status = String(task?.status ?? "pending");
     return status !== "in_progress" && status !== "done";
   }).length;
-  if (((fallback as any)?.plannedTasks ?? []).length === 0 && tasksPendingCount > 0) {
-    throw new Error("V2_NO_SELECTION_POSSIBLE");
-  }
-  const selected = bestMeta ?? { gate: startDay, meal: mealWindowStart, gapCount: 0, gapTotal: 0, mainSwitches: 0 };
+  const plannedCount = ((fallback as any)?.plannedTasks ?? []).length;
+  const pendingEligible = ((input as any)?.tasks ?? [])
+    .filter((task: any) => String(task?.status ?? "pending") !== "in_progress" && String(task?.status ?? "pending") !== "done")
+    .length;
 
   const warnings = Array.isArray((fallback as any)?.warnings) ? [...((fallback as any).warnings)] : [];
   if (selected.gapCount > 0) {
@@ -4725,6 +4728,38 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
       mainSwitches: selected.mainSwitches,
     },
   });
+
+  if (plannedCount === 0 && pendingEligible > 0) {
+    warnings.push({
+      code: "V2_EMPTY_RESULT",
+      message: "El planificador v2 no pudo planificar ninguna tarea. Se devuelve diagnóstico en warnings/unplanned.",
+      details: { pendingEligible, plannedCount, tasksPendingCount },
+    });
+
+    insights.push({
+      code: "V2_EMPTY_RESULT_DIAGNOSTIC",
+      message: "Diagnóstico de resultado vacío en v2",
+      details: {
+        chosenGateStart: toHHMM(selected.gate),
+        chosenMealStart: toHHMM(selected.meal),
+        gapCount: selected.gapCount,
+        gapTotal: selected.gapTotal,
+        mainSwitches: selected.mainSwitches,
+        pendingEligible,
+        plannedCount,
+        topUnplannedReasons: (Array.isArray((fallback as any)?.unplanned) ? (fallback as any).unplanned.slice(0, 10) : []),
+      },
+    });
+
+    return {
+      ...(fallback as any),
+      hardFeasible: false,
+      feasible: false,
+      complete: false,
+      warnings,
+      insights,
+    } as EngineOutput;
+  }
 
   return { ...fallback, warnings, insights } as EngineOutput;
 }
