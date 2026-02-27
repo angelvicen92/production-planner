@@ -4830,19 +4830,43 @@ function normalizeHexColor(value: unknown): string | null {
         engineInput.locks = Array.from(lockByTaskId.values());
       }
 
+      const optimizerSnapshot = {
+        optimizerMainZoneOptKeepBusy: (engineInput as any)?.optimizerMainZoneOptKeepBusy,
+        optimizerMainZoneOptFinishEarly: (engineInput as any)?.optimizerMainZoneOptFinishEarly,
+        optimizerGroupBySpaceAndTemplate: (engineInput as any)?.optimizerGroupBySpaceAndTemplate,
+        optimizerWeights: (engineInput as any)?.optimizerWeights,
+        groupingZoneIds: (engineInput as any)?.groupingZoneIds,
+        optimizerMainZoneId: (engineInput as any)?.optimizerMainZoneId,
+      };
+
       if (process.env.NODE_ENV !== "production") {
-        console.log("[planner-v2] engineInput optimizer snapshot", {
-          optimizerMainZoneOptKeepBusy: (engineInput as any)?.optimizerMainZoneOptKeepBusy,
-          optimizerMainZoneOptFinishEarly: (engineInput as any)?.optimizerMainZoneOptFinishEarly,
-          optimizerGroupBySpaceAndTemplate: (engineInput as any)?.optimizerGroupBySpaceAndTemplate,
-          optimizerWeights: (engineInput as any)?.optimizerWeights,
-          groupingZoneIds: (engineInput as any)?.groupingZoneIds,
-          optimizerMainZoneId: (engineInput as any)?.optimizerMainZoneId,
-        });
+        console.log("[planner-v2] engineInput optimizer snapshot", optimizerSnapshot);
       }
 
       const result = generatePlanV2(engineInput);
       const enrich = await buildReasonEnricher(planId);
+
+      const plannedTasks = Array.isArray((result as any)?.plannedTasks)
+        ? ((result as any).plannedTasks as any[])
+        : null;
+      const unplanned = Array.isArray((result as any)?.unplanned)
+        ? ((result as any).unplanned as any[])
+        : [];
+
+      if (!plannedTasks || plannedTasks.length === 0) {
+        const warningsRaw = Array.isArray((result as any)?.warnings) ? (result as any).warnings : [];
+        const excludedCount = warningsRaw.filter((w: any) => String(w?.code) === "REQUIRES_CONFIGURATION").length;
+        return res.status(500).json({
+          message: "ENGINE_EMPTY_RESULT",
+          detail: "El motor v2 devolvió 0 tareas planificadas.",
+          debug: {
+            optimizer: optimizerSnapshot,
+            tasksCount: engineInput.tasks?.length ?? 0,
+            excludedCount,
+            unplannedCount: unplanned.length,
+          },
+        });
+      }
 
       if ((result as any).hardFeasible === false) {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
@@ -4850,7 +4874,7 @@ function normalizeHexColor(value: unknown): string | null {
       }
 
       let updated = 0;
-      for (const p of ((result as any).plannedTasks || [])) {
+      for (const p of plannedTasks) {
         if (Number((p as any).taskId) < 0) {
           const breakId = Math.abs(Number((p as any).taskId));
           await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
@@ -4869,6 +4893,16 @@ function normalizeHexColor(value: unknown): string | null {
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+
+      if (updated === 0 && unplanned.length > 0) {
+        return res.status(422).json({
+          message: "INFEASIBLE_OR_EMPTY",
+          reasons,
+          warnings,
+          unplanned,
+        });
+      }
+
       const insights = Array.isArray((result as any)?.insights) ? (result as any).insights : [];
       const planningStats = insights.find((x: any) => String(x?.code) === "MAIN_ZONE_GAP_STATS")?.details ?? {};
 
@@ -4891,6 +4925,7 @@ function normalizeHexColor(value: unknown): string | null {
       });
     } catch (e: any) {
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
+      console.error("[planner-v2] ENGINE_ERROR", { planId, msg, stack: e?.stack });
       if (msg.toLowerCase().includes("not found")) return res.status(404).json({ message: msg });
       return res.status(500).json({ message: "ENGINE_ERROR", detail: msg });
     }

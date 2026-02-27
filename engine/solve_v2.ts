@@ -37,7 +37,18 @@ const FEED_MAIN_UNLOCK_BONUS = 2_000_000;
 const FEED_MAIN_SWITCH_PENALTY = 5_000_000;
 
 function toMinutes(hhmm: string) {
-  const [h, m] = hhmm.split(":").map((x) => parseInt(x, 10));
+  const value = String(hhmm ?? "").trim();
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) {
+    throw new Error(`Invalid time format for workDay/meal: ${value || "<empty>"}`);
+  }
+
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+    throw new Error(`Invalid time format for workDay/meal: ${value}`);
+  }
+
   return h * 60 + m;
 }
 function toHHMM(mins: number) {
@@ -656,6 +667,15 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         });
       }
     }
+  }
+
+  const nonMealTasksCount = (tasks as any[]).filter((t) => !isMealTask(t)).length;
+  if (nonMealTasksCount > 0 && excludedTaskIds.size >= nonMealTasksCount) {
+    warnings.push({
+      code: "ALL_TASKS_EXCLUDED",
+      message: "Todas las tareas quedaron excluidas (probablemente falta zona/espacio en tareas o espacios).",
+      details: { excluded: excludedTaskIds.size, total: tasks.length },
+    });
   }
 
   // Lista de tareas que sí entran al solve
@@ -4319,6 +4339,29 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       code: "V2_MAIN_TEMPLATE_SWITCH",
       message: "Cambio de template detectado en el plató principal",
       details: mainTemplateSwitchInsight,
+    });
+  }
+
+  if (plannedTasks.length === 0 && unplanned.length > 0) {
+    const counts = new Map<string, { count: number; label: string }>();
+    for (const item of unplanned) {
+      const reason = item?.reason ?? {};
+      const code = String(reason?.code ?? "UNSPECIFIED").trim() || "UNSPECIFIED";
+      const message = String((reason as any)?.humanMessage ?? reason?.message ?? code).trim() || code;
+      const current = counts.get(code) ?? { count: 0, label: message };
+      current.count += 1;
+      counts.set(code, current);
+    }
+
+    const topReasons = Array.from(counts.entries())
+      .map(([code, info]) => ({ code, count: info.count, message: info.label }))
+      .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code))
+      .slice(0, 10);
+
+    warnings.push({
+      code: "NO_TASKS_PLANNED_SUMMARY",
+      message: "No se planificó ninguna tarea. Revisa los motivos principales en unplanned.",
+      details: { topReasons, totalUnplanned: unplanned.length },
     });
   }
 
