@@ -557,10 +557,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     return false;
   };
 
-  // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
+  // 1) Falta zoneId efectivo (zona directa o derivada desde espacio)
   for (const task of tasks as any[]) {
     const id = Number(task?.id);
-    const zid = getZoneId(task) ?? getZoneIdForSpace(getSpaceId(task));
+    const spaceId = getSpaceId(task);
+    let zid = getZoneId(task);
+    if (!zid && spaceId) zid = getZoneIdForSpace(spaceId);
 
     if (!Number.isFinite(id)) continue;
 
@@ -4402,6 +4404,24 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     },
   });
 
+  const pendingTaskCount = (tasks as any[]).filter((task) => {
+    const id = Number(task?.id);
+    if (!Number.isFinite(id) || excludedTaskIds.has(id)) return false;
+    const status = String(task?.status ?? "pending").trim().toLowerCase();
+    return status === "pending";
+  }).length;
+
+  if (plannedTasks.length === 0 && pendingTaskCount > 0) {
+    const error: any = new Error("V2_EMPTY_AFTER_EXCLUSIONS");
+    error.details = {
+      totalTasks: tasks.length,
+      excludedTasks: excludedTaskIds.size,
+      pendingTasksAfterExclusions: pendingTaskCount,
+      unplannedTasks: unplanned.length,
+    };
+    throw error;
+  }
+
   if (plannedTasks.length === 0 && unplanned.length > 0) {
     const counts = new Map<string, { count: number; label: string }>();
     for (const item of unplanned) {
@@ -4439,8 +4459,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       const templateName = String(task?.templateName ?? "").trim().toLowerCase() || "-";
       const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
       const contestantKey = Number.isFinite(contestantId) && contestantId > 0 ? String(contestantId) : "-";
-      const messageKey = String(warning?.message ?? "").trim();
-      const key = `${code}:${templateName}:${contestantKey}:${messageKey}`;
+      const taskId = Number(warning?.taskId ?? NaN);
+      const key = Number.isFinite(taskId) && taskId > 0
+        ? `${code}:${taskId}`
+        : `${code}:${templateName}:${contestantKey}`;
 
       const current = grouped.get(key);
       if (!current) {
@@ -4527,8 +4549,38 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   const mealWindowStart = toMinutes(input.meal.start);
   const mealWindowEnd = toMinutes(input.meal.end);
 
+  const runSingle = (opts: { mainStartGateMin?: number; mealStartMin?: number }) => {
+    try {
+      return generatePlanV2Single(input, opts) as any;
+    } catch (error: any) {
+      if (String(error?.message ?? "") !== "V2_EMPTY_AFTER_EXCLUSIONS") throw error;
+      return {
+        feasible: false,
+        complete: false,
+        hardFeasible: false,
+        plannedTasks: [],
+        warnings: [
+          {
+            code: "V2_EMPTY_AFTER_EXCLUSIONS",
+            message: "V2 devolvió plan vacío tras exclusiones; revisar configuración y restricciones.",
+            details: error?.details ?? null,
+          },
+        ],
+        unplanned: [],
+        reasons: [
+          {
+            code: "V2_EMPTY_AFTER_EXCLUSIONS",
+            message: "V2 devolvió plan vacío tras exclusiones.",
+            details: error?.details ?? null,
+          },
+        ],
+        insights: [],
+      } as EngineOutput;
+    }
+  };
+
   if (!hardNoGaps) {
-    const baseline = generatePlanV2Single(input, { mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+    const baseline = runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart });
     const baseStats = computeMainZoneGapStats({
       plannedTasks: (baseline as any)?.plannedTasks ?? [],
       tasks: input.tasks ?? [],
@@ -4601,7 +4653,7 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
 
   for (let gate = startDay; gate <= endDay && ((gate - startDay) / GRID_V2) < gateMaxAttempts; gate += GRID_V2) {
     for (const meal of mealCandidates) {
-      const plan = generatePlanV2Single(input, { mainStartGateMin: gate, mealStartMin: meal });
+      const plan = runSingle({ mainStartGateMin: gate, mealStartMin: meal });
       const stats = computeMainZoneGapStats({
         plannedTasks: (plan as any)?.plannedTasks ?? [],
         tasks: input.tasks ?? [],
@@ -4627,7 +4679,18 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
     }
   }
 
-  const fallback = bestPlan ?? generatePlanV2Single(input, { mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+  const fallback = bestPlan ?? runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+
+  if (((fallback as any)?.plannedTasks ?? []).length === 0) {
+    const maybeReason = Array.isArray((fallback as any)?.reasons)
+      ? (fallback as any).reasons.find((r: any) => String(r?.code ?? "") === "V2_EMPTY_AFTER_EXCLUSIONS")
+      : null;
+    if (maybeReason) {
+      const err: any = new Error("V2_EMPTY_AFTER_EXCLUSIONS");
+      err.details = maybeReason?.details ?? null;
+      throw err;
+    }
+  }
   const tasksPendingCount = ((input as any)?.tasks ?? []).filter((task: any) => {
     const status = String(task?.status ?? "pending");
     return status !== "in_progress" && status !== "done";

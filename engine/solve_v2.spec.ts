@@ -54,7 +54,7 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
     optimizerWeights: { mainZoneKeepBusy: 10 },
   };
 
-  assert.throws(() => generatePlanV2(input), /V2_NO_SELECTION_POSSIBLE/);
+  assert.throws(() => generatePlanV2(input), /V2_EMPTY_AFTER_EXCLUSIONS|V2_NO_SELECTION_POSSIBLE/);
 }
 
 {
@@ -227,4 +227,121 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   const mealInsight = (run.insights ?? []).find((i: any) => i?.code === "V2_MEAL_CHOICE");
   assert.ok(mealInsight);
   assert.ok(Number(mealInsight?.details?.attemptsMeal ?? 0) > 1);
+}
+
+// No debe excluir tareas sin zoneId directo cuando la zona se puede derivar del espacio.
+{
+  const tasks: any[] = [
+    {
+      id: 401,
+      planId: 40,
+      templateId: 501,
+      templateName: "Referencia espacio Transporte",
+      zone_id: 9,
+      space_id: 900,
+      contestant_id: 41,
+      status: "done",
+      startPlanned: "08:00",
+      endPlanned: "08:10",
+      durationOverrideMin: 10,
+    },
+    {
+      id: 402,
+      planId: 40,
+      templateId: 502,
+      templateName: "IN Transporte",
+      zoneId: null,
+      spaceId: 900,
+      contestantId: 42,
+      status: "pending",
+      durationOverrideMin: 20,
+    },
+  ];
+
+  const input: EngineInput = {
+    planId: 40,
+    workDay: { start: "09:00", end: "11:00" },
+    meal: { start: "10:00", end: "10:30" },
+    camerasAvailable: 0,
+    tasks,
+    locks: [],
+    groupingZoneIds: [9],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  assert.ok((run.plannedTasks ?? []).length > 0);
+  assert.ok((run.plannedTasks ?? []).some((p) => Number(p.taskId) === 402));
+  const missingZoneWarning = (run.warnings ?? []).find(
+    (w: any) => w?.code === "REQUIRES_CONFIGURATION" && String(w?.message ?? "").includes("no tiene plató/zona"),
+  );
+  assert.ok(!missingZoneWarning);
+}
+
+// IN/OUT en espacio Transporte: no debe generar falso warning de zona faltante si la zona viene del espacio.
+{
+  const tasks: any[] = [
+    {
+      id: 501,
+      planId: 50,
+      templateId: 601,
+      templateName: "Semilla Transporte",
+      zone: { id: 11 },
+      space: { id: 1100 },
+      contestantId: 77,
+      status: "done",
+      startPlanned: "08:00",
+      endPlanned: "08:10",
+      durationOverrideMin: 10,
+    },
+    {
+      id: 502,
+      planId: 50,
+      templateId: 602,
+      templateName: "IN",
+      zoneId: null,
+      spaceId: 1100,
+      contestantId: 78,
+      status: "pending",
+      durationOverrideMin: 15,
+    },
+    {
+      id: 503,
+      planId: 50,
+      templateId: 603,
+      templateName: "OUT",
+      zone_id: null,
+      space_id: 1100,
+      contestant_id: 79,
+      status: "pending",
+      durationOverrideMin: 15,
+    },
+  ];
+
+  const input: EngineInput = {
+    planId: 50,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "10:30", end: "11:00" },
+    camerasAvailable: 0,
+    tasks,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const falseWarning = (run.warnings ?? []).find(
+    (w: any) => w?.code === "REQUIRES_CONFIGURATION" && String(w?.message ?? "").includes("no tiene plató/zona"),
+  );
+  assert.ok(!falseWarning);
 }
