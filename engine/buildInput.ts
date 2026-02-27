@@ -170,6 +170,34 @@ export async function buildEngineInput(
     });
   }
 
+  const zonesByName = new Map<string, number>();
+  for (const z of (zones as any[]) ?? []) {
+    const zid = Number((z as any)?.id);
+    if (!Number.isFinite(zid) || zid <= 0) continue;
+    const name = String((z as any)?.name ?? "").trim().toLowerCase();
+    if (!name || zonesByName.has(name)) continue;
+    zonesByName.set(name, zid);
+  }
+
+  const spacesByName = new Map<string, number>();
+  for (const s of (allSpaces as any[]) ?? []) {
+    const sid = Number((s as any)?.id);
+    if (!Number.isFinite(sid) || sid <= 0) continue;
+    const name = String((s as any)?.name ?? "").trim().toLowerCase();
+    if (!name || spacesByName.has(name)) continue;
+    spacesByName.set(name, sid);
+  }
+
+  const fallbackTransportSpaceId = spacesByName.get("transporte") ?? null;
+  const firstAvailableZoneId = (() => {
+    for (const z of (zones as any[]) ?? []) {
+      const zid = Number((z as any)?.id);
+      if (Number.isFinite(zid) && zid > 0) return zid;
+    }
+    return null;
+  })();
+  const fallbackOthersZoneId = zonesByName.get("otros") ?? firstAvailableZoneId;
+
   const resolveGroupingForSpace = (spaceId: number): { key: string; level: number; minChain: number } | null => {
     const self = spaceMeta.get(spaceId);
     if (!self) return null;
@@ -640,8 +668,68 @@ export async function buildEngineInput(
                   null,
               ),
 
-          zoneId: (t.zone_id ?? t.zoneId ?? null) as number | null,
-          spaceId: hasInvalidSpace ? null : rawSpaceId,
+          zoneId: (() => {
+            const rawZoneId = t.zone_id ?? t.zoneId ?? null;
+            const normalizedZoneId = Number(rawZoneId);
+            const explicitZoneId =
+              Number.isFinite(normalizedZoneId) && normalizedZoneId > 0
+                ? normalizedZoneId
+                : null;
+
+            const resolvedSpaceId = hasInvalidSpace ? null : normalizedSpaceId;
+            const zoneFromSpace =
+              resolvedSpaceId !== null
+                ? zoneIdBySpaceId[resolvedSpaceId] ?? null
+                : null;
+
+            const templateName = String(
+              (isManualBlock
+                ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "")
+                : (tpl?.name ?? t.template?.name ?? "")) ?? "",
+            )
+              .trim()
+              .toLowerCase();
+
+            const arrivalTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "")
+              .trim()
+              .toLowerCase();
+            const departureTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "")
+              .trim()
+              .toLowerCase();
+
+            const isArrivalOrDeparture = Boolean(
+              templateName && (templateName === arrivalTemplateName || templateName === departureTemplateName),
+            );
+
+            if (explicitZoneId) return explicitZoneId;
+            if (zoneFromSpace) return zoneFromSpace;
+            if (isArrivalOrDeparture) return fallbackOthersZoneId;
+            return null;
+          })(),
+          spaceId: (() => {
+            const resolvedSpaceId = hasInvalidSpace ? null : normalizedSpaceId;
+            if (resolvedSpaceId !== null) return resolvedSpaceId;
+
+            const templateName = String(
+              (isManualBlock
+                ? (t.manual_title ?? t.manualTitle ?? tpl?.name ?? t.template?.name ?? "")
+                : (tpl?.name ?? t.template?.name ?? "")) ?? "",
+            )
+              .trim()
+              .toLowerCase();
+            const arrivalTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "")
+              .trim()
+              .toLowerCase();
+            const departureTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "")
+              .trim()
+              .toLowerCase();
+            const isArrivalOrDeparture = Boolean(
+              templateName && (templateName === arrivalTemplateName || templateName === departureTemplateName),
+            );
+
+            if (isArrivalOrDeparture && fallbackTransportSpaceId) return fallbackTransportSpaceId;
+            return null;
+          })(),
           _invalidSpaceId: hasInvalidSpace ? normalizedSpaceId : null,
           _unplannedHint: hasInvalidSpace
             ? {

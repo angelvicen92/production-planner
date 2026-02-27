@@ -449,6 +449,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const getZoneIdForSpace = (spaceId: number | null | undefined) => {
     const sid = Number(spaceId);
+    if (spaceId === null || spaceId === undefined) return null;
     if (!Number.isFinite(sid) || sid <= 0) return null;
     const zid = spaceZoneById.get(sid);
     return Number.isFinite(Number(zid)) && Number(zid) > 0 ? Number(zid) : null;
@@ -559,7 +560,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   // 1) Falta zoneId (no puede heredar recursos por plató ni ubicarse correctamente)
   for (const task of tasks as any[]) {
     const id = Number(task?.id);
-    const zid = task?.zoneId;
+    const zid = getZoneId(task) ?? getZoneIdForSpace(getSpaceId(task));
 
     if (!Number.isFinite(id)) continue;
 
@@ -4424,12 +4425,54 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     });
   }
 
+  const dedupeWarnings = (
+    warningList: { code: string; message: string; taskId?: number; details?: any }[],
+  ) => {
+    const grouped = new Map<
+      string,
+      { code: string; message: string; taskId?: number; details?: any; count: number }
+    >();
+
+    for (const warning of warningList) {
+      const code = String(warning?.code ?? "UNKNOWN").trim() || "UNKNOWN";
+      const task = warning?.taskId != null ? taskById.get(Number(warning.taskId)) : null;
+      const templateName = String(task?.templateName ?? "").trim().toLowerCase() || "-";
+      const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
+      const contestantKey = Number.isFinite(contestantId) && contestantId > 0 ? String(contestantId) : "-";
+      const messageKey = String(warning?.message ?? "").trim();
+      const key = `${code}:${templateName}:${contestantKey}:${messageKey}`;
+
+      const current = grouped.get(key);
+      if (!current) {
+        grouped.set(key, { ...warning, count: 1 });
+      } else {
+        current.count += 1;
+        if (current.taskId == null && warning.taskId != null) {
+          current.taskId = warning.taskId;
+        }
+      }
+    }
+
+    return Array.from(grouped.values()).map((warning) => {
+      if (warning.count <= 1) return warning;
+      return {
+        ...warning,
+        details: {
+          ...(warning.details && typeof warning.details === "object" ? warning.details : {}),
+          dedupeCount: warning.count,
+        },
+      };
+    });
+  };
+
+  const dedupedWarnings = dedupeWarnings(warnings);
+
   return {
     feasible: complete,
     complete,
     hardFeasible: true,
     plannedTasks,
-    warnings,
+    warnings: dedupedWarnings,
     unplanned,
     reasons: complete ? [] : unplanned.map((x) => x.reason),
     insights,
