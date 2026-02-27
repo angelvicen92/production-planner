@@ -712,12 +712,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       return taskA - taskB;
     });
 
-  // Validación de dependencias:
-  // - Si la tarea pertenece a un concursante: solo exigimos orden para las plantillas
-  //   que realmente existen en ese concursante (dependencias "soft").
-  // - Si la tarea NO pertenece a un concursante: mantenemos validación estricta
-  //   (todas las dependencias deben resolverse).
-  const missingDeps: any[] = [];
+  // Normalización de dependencias antes de validar/ordenar:
+  // - dependsOnTaskIds solo conserva IDs de tareas existentes.
+  // - En tareas de concursante, solo deps del mismo concursante.
+  // - dependsOnTemplateIds en concursante son soft (si no existe, se ignora).
   const pickPrimaryTaskId = (taskIds: number[]) => {
     if (!Array.isArray(taskIds) || !taskIds.length) return null;
     return taskIds
@@ -725,6 +723,49 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       .map((id) => Number(id))
       .sort((a, b) => a - b)[0] ?? null;
   };
+
+  for (const task of tasks as any[]) {
+    const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
+    const existingDepTaskIds = getDepTaskIds(task);
+    const normalizedDepTaskIds = new Set<number>();
+
+    for (const depId of existingDepTaskIds) {
+      const depTask = taskById.get(Number(depId));
+      if (!depTask) continue;
+
+      if (contestantId > 0) {
+        const depContestantId = Number(depTask?.contestantId ?? depTask?.contestant_id ?? 0);
+        if (!Number.isFinite(depContestantId) || depContestantId <= 0 || depContestantId !== contestantId) {
+          continue;
+        }
+      }
+
+      normalizedDepTaskIds.add(Number(depId));
+    }
+
+    if (contestantId > 0) {
+      const depTplIds = getDepTemplateIds(task);
+      const perContestant = taskIdsByContestantAndTemplate.get(contestantId) ?? new Map<number, number[]>();
+
+      for (const depTplId of depTplIds) {
+        const depTplNum = Number(depTplId);
+        if (!Number.isFinite(depTplNum) || depTplNum <= 0) continue;
+
+        const candidateTaskIds = perContestant.get(depTplNum) ?? [];
+        if (!candidateTaskIds.length) continue; // soft: si no existe prereq, no bloquea
+
+        const primaryDepTaskId = pickPrimaryTaskId(candidateTaskIds);
+        if (primaryDepTaskId) normalizedDepTaskIds.add(primaryDepTaskId);
+      }
+    }
+
+    task.dependsOnTaskIds = Array.from(normalizedDepTaskIds).sort((a, b) => a - b);
+  }
+
+  // Validación de dependencias:
+  // - Si la tarea pertenece a un concursante: dependencias por template son soft.
+  // - Si la tarea NO pertenece a un concursante: mantenemos validación estricta.
+  const missingDeps: any[] = [];
 
   const tplNameById = ((input as any)?.taskTemplateNameById ?? {}) as Record<
     number,
@@ -752,23 +793,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
     if (contestantId > 0) {
-      const perContestant = taskIdsByContestantAndTemplate.get(contestantId) ?? new Map<number, number[]>();
-      for (const depTplId of depTplIds) {
-        const depTplNum = Number(depTplId);
-        if (!Number.isFinite(depTplNum) || depTplNum <= 0) continue;
-
-        const candidateTaskIds = perContestant.get(depTplNum) ?? [];
-        if (!candidateTaskIds.length) continue; // dependencia soft: no existe, no bloquea
-
-        const isAlreadyLinked = candidateTaskIds.some((depTaskId) => runtimeDepTaskIds.has(Number(depTaskId)));
-        if (isAlreadyLinked) continue;
-
-        const primaryDepTaskId = pickPrimaryTaskId(candidateTaskIds);
-        if (primaryDepTaskId) runtimeDepTaskIds.add(primaryDepTaskId);
-      }
-
-      const nextDepTaskIds = Array.from(runtimeDepTaskIds).sort((a, b) => a - b);
-      task.dependsOnTaskIds = nextDepTaskIds;
+      task.dependsOnTaskIds = Array.from(runtimeDepTaskIds).sort((a, b) => a - b);
       continue;
     }
 
@@ -808,21 +833,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     const mainTaskName = taskLabel(task);
 
-    // ✅ Un mensaje por prerequisito faltante (mucho más claro y accionable)
     for (const missingTplId of missingTplIds) {
       const missingTemplateId = Number(missingTplId);
       missingDeps.push({
         code: "DEPENDENCY_MISSING",
         taskId: Number(task?.id),
-
-        // ✅ datos para que la UI pueda “autofijarlo”
         contestantId: contestantId || null,
         contestantName: contestantName || null,
         missingTemplateId,
         missingTemplateName: tplLabel(missingTemplateId),
         mainTemplateId: Number(task?.templateId ?? 0) || null,
         mainTaskName,
-
         message:
           `Para ${who} falta por declarar "${tplLabel(missingTemplateId)}" ` +
           `(prerrequisito de "${mainTaskName}").`,
@@ -3470,6 +3491,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       const t = pendingNonMeal[0];
       const depIds = getDepTaskIds(t).filter(
         (x) =>
+          taskById.has(Number(x)) &&
           !plannedEndByTaskId.has(Number(x)) &&
           !fixedEndByTaskId.has(Number(x)),
       );
