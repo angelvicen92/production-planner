@@ -631,17 +631,28 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   }
   const getDependents = (taskId: number) => dependentsByTaskId.get(Number(taskId)) ?? [];
 
-  const templatesByContestant = new Map<number, Set<number>>();
+  const taskIdsByContestantAndTemplate = new Map<number, Map<number, number[]>>();
+  const globalTaskIdsByTemplate = new Map<number, number[]>();
   for (const t of tasks as any[]) {
     const cid = Number(t?.contestantId ?? t?.contestant_id ?? 0);
     const tplId = Number(t?.templateId ?? t?.template_id ?? 0);
-    if (!Number.isFinite(cid) || cid <= 0) continue;
-    if (!Number.isFinite(tplId) || tplId <= 0) continue;
-
-    if (!templatesByContestant.has(cid)) {
-      templatesByContestant.set(cid, new Set<number>());
+    const taskId = Number(t?.id ?? 0);
+    if (Number.isFinite(taskId) && taskId > 0 && Number.isFinite(tplId) && tplId > 0) {
+      if (cid > 0) {
+        if (!taskIdsByContestantAndTemplate.has(cid)) {
+          taskIdsByContestantAndTemplate.set(cid, new Map<number, number[]>());
+        }
+        const perContestant = taskIdsByContestantAndTemplate.get(cid)!;
+        const ids = perContestant.get(tplId) ?? [];
+        ids.push(taskId);
+        perContestant.set(tplId, ids);
+      } else {
+        const ids = globalTaskIdsByTemplate.get(tplId) ?? [];
+        ids.push(taskId);
+        globalTaskIdsByTemplate.set(tplId, ids);
+      }
     }
-    templatesByContestant.get(cid)?.add(tplId);
+
   }
 
   // 2) Si una tarea depende de otra excluida, también se excluye (en cascada)
@@ -707,6 +718,13 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   // - Si la tarea NO pertenece a un concursante: mantenemos validación estricta
   //   (todas las dependencias deben resolverse).
   const missingDeps: any[] = [];
+  const pickPrimaryTaskId = (taskIds: number[]) => {
+    if (!Array.isArray(taskIds) || !taskIds.length) return null;
+    return taskIds
+      .filter((id) => Number.isFinite(Number(id)) && Number(id) > 0)
+      .map((id) => Number(id))
+      .sort((a, b) => a - b)[0] ?? null;
+  };
 
   const tplNameById = ((input as any)?.taskTemplateNameById ?? {}) as Record<
     number,
@@ -728,30 +746,57 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   for (const task of tasks as any[]) {
     const depTplIds = getDepTemplateIds(task);
     const depTaskIds = getDepTaskIds(task);
+    const runtimeDepTaskIds = new Set<number>(depTaskIds);
 
     if (!depTplIds.length) continue;
 
     const contestantId = Number(task?.contestantId ?? task?.contestant_id ?? 0);
-    const existingTplIds = contestantId > 0
-      ? (templatesByContestant.get(contestantId) ?? new Set<number>())
-      : new Set<number>();
+    if (contestantId > 0) {
+      const perContestant = taskIdsByContestantAndTemplate.get(contestantId) ?? new Map<number, number[]>();
+      for (const depTplId of depTplIds) {
+        const depTplNum = Number(depTplId);
+        if (!Number.isFinite(depTplNum) || depTplNum <= 0) continue;
 
-    // templates ya resueltos por tasks reales existentes
-    const resolvedTplIds = new Set<number>();
-    for (const depTaskId of depTaskIds) {
-      const depTask = taskById.get(Number(depTaskId));
-      const depTplId = Number(depTask?.templateId);
-      if (Number.isFinite(depTplId)) resolvedTplIds.add(depTplId);
+        const candidateTaskIds = perContestant.get(depTplNum) ?? [];
+        if (!candidateTaskIds.length) continue; // dependencia soft: no existe, no bloquea
+
+        const isAlreadyLinked = candidateTaskIds.some((depTaskId) => runtimeDepTaskIds.has(Number(depTaskId)));
+        if (isAlreadyLinked) continue;
+
+        const primaryDepTaskId = pickPrimaryTaskId(candidateTaskIds);
+        if (primaryDepTaskId) runtimeDepTaskIds.add(primaryDepTaskId);
+      }
+
+      const nextDepTaskIds = Array.from(runtimeDepTaskIds).sort((a, b) => a - b);
+      task.dependsOnTaskIds = nextDepTaskIds;
+      continue;
     }
 
-    const missingTplIds =
-      contestantId > 0
-        ? depTplIds.filter(
-            (tplId) =>
-              existingTplIds.has(Number(tplId)) &&
-              !resolvedTplIds.has(Number(tplId)),
-          )
-        : depTplIds.filter((tplId) => !resolvedTplIds.has(Number(tplId)));
+    const resolvedTplIds = new Set<number>();
+    for (const depTaskId of runtimeDepTaskIds) {
+      const depTask = taskById.get(Number(depTaskId));
+      const depTplId = Number(depTask?.templateId ?? depTask?.template_id);
+      if (Number.isFinite(depTplId) && depTplId > 0) resolvedTplIds.add(depTplId);
+    }
+
+    const missingTplIds = depTplIds.filter((tplId) => {
+      const depTplNum = Number(tplId);
+      if (!Number.isFinite(depTplNum) || depTplNum <= 0) return false;
+      const existingTaskIds = globalTaskIdsByTemplate.get(depTplNum) ?? [];
+      if (!existingTaskIds.length) return true;
+
+      const isAlreadyLinked = existingTaskIds.some((depTaskId) => runtimeDepTaskIds.has(Number(depTaskId)));
+      if (isAlreadyLinked || resolvedTplIds.has(depTplNum)) return false;
+
+      const primaryDepTaskId = pickPrimaryTaskId(existingTaskIds);
+      if (primaryDepTaskId) {
+        runtimeDepTaskIds.add(primaryDepTaskId);
+        return false;
+      }
+
+      return true;
+    });
+    task.dependsOnTaskIds = Array.from(runtimeDepTaskIds).sort((a, b) => a - b);
     if (!missingTplIds.length) continue;
 
     const contestantName = String(task?.contestantName ?? "").trim();
