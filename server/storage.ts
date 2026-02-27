@@ -1786,7 +1786,6 @@ export class SupabaseStorage implements IStorage {
         const nextEnd = addMinutesToHHMM(startPlannedCandidate, durationMinutes);
         if (nextEnd) {
           patchDb.end_planned = nextEnd.hhmm;
-          patchDb.planned_end_seconds = nextEnd.seconds;
         }
       }
     }
