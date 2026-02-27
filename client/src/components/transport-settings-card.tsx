@@ -14,6 +14,8 @@ type TransportSettings = {
   departureTaskTemplateName: string;
   arrivalGroupingTarget: number;
   departureGroupingTarget: number;
+  arrivalMinGapMinutes: number;
+  departureMinGapMinutes: number;
   vanCapacity: number;
   weightArrivalDepartureGrouping: number;
 };
@@ -46,6 +48,8 @@ export function TransportSettingsCard() {
       departureTaskTemplateName: String(settingsQ.data.departureTaskTemplateName ?? ""),
       arrivalGroupingTarget: Math.max(0, Number(settingsQ.data.arrivalGroupingTarget ?? 0) || 0),
       departureGroupingTarget: Math.max(0, Number(settingsQ.data.departureGroupingTarget ?? 0) || 0),
+      arrivalMinGapMinutes: Math.max(0, Number(settingsQ.data.arrivalMinGapMinutes ?? 0) || 0),
+      departureMinGapMinutes: Math.max(0, Number(settingsQ.data.departureMinGapMinutes ?? 0) || 0),
       vanCapacity: Math.max(0, Number(settingsQ.data.vanCapacity ?? 0) || 0),
       weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number(settingsQ.data.weightArrivalDepartureGrouping ?? 0) || 0)),
     });
@@ -189,6 +193,38 @@ export function TransportSettingsCard() {
             onBlur={() => {
               flushDebouncedSave();
               void patchNow({ departureGroupingTarget: draft.departureGroupingTarget });
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Tiempo mínimo entre llegadas (min)</Label>
+          <Input
+            type="number"
+            value={draft.arrivalMinGapMinutes}
+            disabled={isSaving}
+            onChange={(e) => {
+              const arrivalMinGapMinutes = Math.max(0, Number(e.target.value) || 0);
+              setDraft((prev) => (prev ? { ...prev, arrivalMinGapMinutes } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ arrivalMinGapMinutes: draft.arrivalMinGapMinutes });
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Tiempo mínimo entre salidas (min)</Label>
+          <Input
+            type="number"
+            value={draft.departureMinGapMinutes}
+            disabled={isSaving}
+            onChange={(e) => {
+              const departureMinGapMinutes = Math.max(0, Number(e.target.value) || 0);
+              setDraft((prev) => (prev ? { ...prev, departureMinGapMinutes } : prev));
+            }}
+            onBlur={() => {
+              flushDebouncedSave();
+              void patchNow({ departureMinGapMinutes: draft.departureMinGapMinutes });
             }}
           />
         </div>

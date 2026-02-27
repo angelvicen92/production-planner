@@ -192,6 +192,8 @@ export interface EngineInput {
   departureTaskTemplateName?: string;
   arrivalGroupingTarget?: number;
   departureGroupingTarget?: number;
+  arrivalMinGapMinutes?: number;
+  departureMinGapMinutes?: number;
   vanCapacity?: number;
 
   // v-next: resources, spaces, zones, availability

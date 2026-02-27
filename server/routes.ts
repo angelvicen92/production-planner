@@ -1847,6 +1847,8 @@ function mapDeleteError(err: any, fallback: string) {
         departureTaskTemplateName: settings.departureTaskTemplateName,
         arrivalGroupingTarget: settings.arrivalGroupingTarget,
         departureGroupingTarget: settings.departureGroupingTarget,
+        arrivalMinGapMinutes: settings.arrivalMinGapMinutes,
+        departureMinGapMinutes: settings.departureMinGapMinutes,
         vanCapacity: settings.vanCapacity,
         weightArrivalDepartureGrouping: settings.weightArrivalDepartureGrouping,
       });
@@ -1923,6 +1925,8 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.departureTaskTemplateName !== undefined) patch.departure_task_template_name = String(input.departureTaskTemplateName ?? "").trim();
       if (input.arrivalGroupingTarget !== undefined) patch.arrival_grouping_target = Math.max(0, Number(input.arrivalGroupingTarget));
       if (input.departureGroupingTarget !== undefined) patch.departure_grouping_target = Math.max(0, Number(input.departureGroupingTarget));
+      if (input.arrivalMinGapMinutes !== undefined) patch.arrival_min_gap_minutes = Math.max(0, Number(input.arrivalMinGapMinutes));
+      if (input.departureMinGapMinutes !== undefined) patch.departure_min_gap_minutes = Math.max(0, Number(input.departureMinGapMinutes));
       if (input.vanCapacity !== undefined) patch.van_capacity = Math.max(0, Number(input.vanCapacity));
       if (input.weightArrivalDepartureGrouping !== undefined) patch.weight_arrival_departure_grouping = Math.max(0, Math.min(10, Number(input.weightArrivalDepartureGrouping)));
 
