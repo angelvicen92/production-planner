@@ -4084,7 +4084,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const teamId = Number(task?.itinerantTeamId ?? 0);
         if (teamId > 0) {
           const teamOcc = occupiedByItinerant.get(teamId) ?? [];
-          if (findEarliestGap(teamOcc, tripStart, duration) !== tripStart) {
+          const nextTeamStart = findEarliestGap(teamOcc, tripStart, duration);
+          if (nextTeamStart !== tripStart) {
+            row.earliest = snapUp(Math.max(row.earliest, nextTeamStart));
             tripDeferred.push(row);
             continue;
           }
@@ -4113,8 +4115,11 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
 
       for (const row of tripDeferred) {
-        const minTripStart = previousTripStart !== null ? previousTripStart + minGap : row.earliest;
-        row.earliest = snapUp(Math.max(row.earliest + GRID_V2, minTripStart));
+        const prev = Number(row.earliest);
+        const minTripStart = previousTripStart !== null ? previousTripStart + minGap : prev;
+        let next = snapUp(Math.max(prev, minTripStart));
+        if (next <= prev) next = snapUp(prev + GRID_V2);
+        row.earliest = next;
       }
 
       const rest = pendingDepartures.slice(chunkEnd);

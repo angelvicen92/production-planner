@@ -4592,16 +4592,30 @@ ${reasonMessage}` : message,
                 {errorDialog.diagnostic?.unplanned.length ? (
                   <div className="space-y-1">
                     <div className="text-xs font-medium uppercase text-muted-foreground">Top 20 unplanned</div>
-                    <ul className="list-disc pl-4 text-sm space-y-1">
+                    <ul className="list-disc pl-4 text-sm space-y-2">
                       {errorDialog.diagnostic.unplanned.slice(0, 20).map((item: any, idx: number) => {
                         const taskId = Number(item?.taskId ?? item?.task_id);
                         const taskLabel = Number.isFinite(taskId) && taskNameById.get(taskId)
                           ? taskNameById.get(taskId)
                           : (Number.isFinite(taskId) ? `Tarea #${taskId}` : `Tarea ${idx + 1}`);
-                        const reason = item?.reason ?? item?.message ?? item?.code ?? "Sin motivo informado";
+                        const reasonObj = item?.reason;
+                        const reasonMessage = typeof reasonObj === "object" && reasonObj !== null
+                          ? (reasonObj?.message ?? item?.message ?? item?.code ?? "Sin motivo informado")
+                          : (reasonObj ?? item?.message ?? item?.code ?? "Sin motivo informado");
+                        const reasonDiagnostic = typeof reasonObj === "object" && reasonObj !== null
+                          ? reasonObj?.diagnostic
+                          : null;
                         return (
-                          <li key={`unplanned-${idx}`}>
-                            <span className="font-medium">{taskLabel}</span>: {String(reason)}
+                          <li key={`unplanned-${idx}`} className="space-y-1">
+                            <div>
+                              <span className="font-medium">{taskLabel}</span>: {String(reasonMessage)}
+                            </div>
+                            {reasonDiagnostic ? (
+                              <pre className="text-xs whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{JSON.stringify(reasonDiagnostic, null, 2)}</pre>
+                            ) : null}
+                            {typeof item === "object" && item !== null ? (
+                              <pre className="text-xs whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{JSON.stringify(item, null, 2)}</pre>
+                            ) : null}
                           </li>
                         );
                       })}
