@@ -518,6 +518,8 @@ export async function buildEngineInput(
     departureTaskTemplateName: String((optimizer as any)?.departureTaskTemplateName ?? ""),
     arrivalGroupingTarget: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),
     departureGroupingTarget: Number((optimizer as any)?.departureGroupingTarget ?? 0),
+    arrivalMinGapMinutes: Number((optimizer as any)?.arrivalMinGapMinutes ?? 0),
+    departureMinGapMinutes: Number((optimizer as any)?.departureMinGapMinutes ?? 0),
     vanCapacity: Number((optimizer as any)?.vanCapacity ?? 0),
 
     optimizerWeights: {

@@ -954,21 +954,28 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   if (arrivalBatchingEnabled) {
     const target = Math.min(vanCapacity, arrivalGroupingTarget);
+    const minGap = Math.max(GRID_V2, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
     const arrivals = tasksSorted
       .filter((t) => isArrivalTask(t) && String(t?.status ?? "pending") === "pending")
       .sort((a, b) => toAvailStart(getContestantId(a)) - toAvailStart(getContestantId(b)));
+    let previousBatchStart: number | null = null;
     for (let i = 0; i < arrivals.length; i += target) {
       const batch = arrivals.slice(i, i + target);
       if (!batch.length) continue;
-      let commonStart = Math.ceil(Math.max(...batch.map((t) => toAvailStart(getContestantId(t)))) / 5) * 5;
+      const batchMinStart = Math.max(...batch.map((t) => toAvailStart(getContestantId(t))));
+      let commonStart = Math.ceil(batchMinStart / GRID_V2) * GRID_V2;
+      if (previousBatchStart !== null) {
+        commonStart = Math.ceil(Math.max(commonStart, previousBatchStart + minGap) / GRID_V2) * GRID_V2;
+      }
       for (let step = 0; step < 48; step++) {
         const fits = batch.every((t) => {
           const dur = Math.max(5, Math.floor(Number(t.durationOverrideMin ?? 30)));
           return commonStart + dur <= toAvailEnd(getContestantId(t));
         });
         if (fits) break;
-        commonStart += 5;
+        commonStart = Math.ceil((commonStart + GRID_V2) / GRID_V2) * GRID_V2;
       }
+      previousBatchStart = commonStart;
       for (const t of batch) {
         forcedStartByTaskId.set(Number(t.id), commonStart);
       }
@@ -977,16 +984,21 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   if (departureBatchingEnabled) {
     const target = Math.min(vanCapacity, departureGroupingTarget);
+    const minGapDeparture = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
     const departures = tasksSorted
       .filter((t) => isDepartureTask(t) && String(t?.status ?? "pending") === "pending")
       .sort((a, b) => toAvailEnd(getContestantId(b)) - toAvailEnd(getContestantId(a)));
+    let nextLatestEnd = endDay;
     for (let i = 0; i < departures.length; i += target) {
       const batch = departures.slice(i, i + target);
       if (!batch.length) continue;
-      const commonEnd = Math.floor(Math.min(...batch.map((t) => toAvailEnd(getContestantId(t)))) / 5) * 5;
+      const minAvailEndBatch = Math.min(...batch.map((t) => toAvailEnd(getContestantId(t))));
+      const commonEndCandidate = Math.min(minAvailEndBatch, nextLatestEnd);
+      const commonEnd = Math.floor(commonEndCandidate / GRID_V2) * GRID_V2;
       for (const t of batch) {
         forcedEndByTaskId.set(Number(t.id), commonEnd);
       }
+      nextLatestEnd = commonEnd - minGapDeparture;
     }
   }
   if (!Array.isArray(tasksForSolve) || tasksForSolve.length === 0) {
@@ -1806,6 +1818,38 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     if (effWin) start = snapUp(Math.max(start, effWin.start));
     if (optMainZoneId && Number(zoneId) === Number(optMainZoneId)) start = snapUp(Math.max(start, mainStartGateMin));
 
+    const isForcedDepartureTask = isDepartureTask(task) && Number.isFinite(forcedEnd);
+    const forcedDepartureEnd = isForcedDepartureTask ? Number(forcedEnd) : NaN;
+    const forceDepartureExactStart = forcedDepartureEnd - duration;
+    const baseSearchStart = start;
+    let forceDepartureExact = false;
+    let forcedDepartureFallbackWarned = false;
+
+    if (isForcedDepartureTask) {
+      const exactStartIsOnGrid = forceDepartureExactStart % GRID === 0;
+      const exactFitsWindow = forceDepartureExactStart >= startDay
+        && forceDepartureExactStart >= baseSearchStart
+        && forcedDepartureEnd <= endDay
+        && (!effWin || (forceDepartureExactStart >= effWin.start && forcedDepartureEnd <= effWin.end));
+      if (exactStartIsOnGrid && exactFitsWindow) {
+        forceDepartureExact = true;
+        start = forceDepartureExactStart;
+      } else {
+        warnings.push({
+          code: "OUT_FORCED_END_EXACT_FALLBACK",
+          taskId,
+          message: `No se pudo fijar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} para "${String(task?.templateName ?? `tarea ${taskId}`)}"; se usa fallback end <= forcedEnd.`,
+          details: {
+            forcedEnd: toHHMM(forcedDepartureEnd),
+            forceDepartureExactStart,
+            baseSearchStart,
+            exactStartIsOnGrid,
+            exactFitsWindow,
+          },
+        });
+      }
+    }
+
     if (canUseItinerantWrapOverlap && contestantId && spaceId) {
       const cOcc = occupiedByContestant.get(contestantId) ?? [];
       let bestWrapInterval: Interval | null = null;
@@ -1876,6 +1920,20 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
       // 2.4) Si movimos candidate, re-chequeamos (porque al mover por concursante podemos caer en espacio ocupado, etc.)
       if (candidate !== start) {
+        if (forceDepartureExact) {
+          forceDepartureExact = false;
+          if (!forcedDepartureFallbackWarned) {
+            warnings.push({
+              code: "OUT_FORCED_END_EXACT_FALLBACK",
+              taskId,
+              message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por conflictos de agenda; se usa fallback end <= forcedEnd.`,
+              details: { forcedEnd: toHHMM(forcedDepartureEnd), candidate, attemptedStart: start },
+            });
+            forcedDepartureFallbackWarned = true;
+          }
+          start = baseSearchStart;
+          continue;
+        }
         start = snapUp(candidate);
         continue;
       }
@@ -1919,6 +1977,20 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
 
       const finish = start + duration;
+      if (forceDepartureExact && finish !== forcedDepartureEnd) {
+        forceDepartureExact = false;
+        if (!forcedDepartureFallbackWarned) {
+          warnings.push({
+            code: "OUT_FORCED_END_EXACT_FALLBACK",
+            taskId,
+            message: `No se pudo fijar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)}; se usa fallback end <= forcedEnd.`,
+            details: { forcedEnd: toHHMM(forcedDepartureEnd), computedFinish: toHHMM(finish) },
+          });
+          forcedDepartureFallbackWarned = true;
+        }
+        start = baseSearchStart;
+        continue;
+      }
       if (finish <= start) {
         start = snapUp(start + GRID);
         continue;
@@ -1938,6 +2010,20 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         const teamStart = findEarliestGap(teamOcc, start, duration);
         if (teamStart !== start) {
+          if (forceDepartureExact) {
+            forceDepartureExact = false;
+            if (!forcedDepartureFallbackWarned) {
+              warnings.push({
+                code: "OUT_FORCED_END_EXACT_FALLBACK",
+                taskId,
+                message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por solape de equipo itinerante; se usa fallback end <= forcedEnd.`,
+                details: { forcedEnd: toHHMM(forcedDepartureEnd), teamStart },
+              });
+              forcedDepartureFallbackWarned = true;
+            }
+            start = baseSearchStart;
+            continue;
+          }
           start = snapUp(teamStart);
           continue;
         }
@@ -1951,7 +2037,21 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       // hay que volver al inicio del while para recalcular huecos (contestante/espacio/zona).
       let retry = false;
       const bumpStartAndRetry = () => {
-        start = snapUp(start + GRID);
+        if (forceDepartureExact) {
+          forceDepartureExact = false;
+          if (!forcedDepartureFallbackWarned) {
+            warnings.push({
+              code: "OUT_FORCED_END_EXACT_FALLBACK",
+              taskId,
+              message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por recursos no disponibles; se usa fallback end <= forcedEnd.`,
+              details: { forcedEnd: toHHMM(forcedDepartureEnd), start, duration },
+            });
+            forcedDepartureFallbackWarned = true;
+          }
+          start = baseSearchStart;
+        } else {
+          start = snapUp(start + GRID);
+        }
         retry = true;
       };
 

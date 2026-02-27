@@ -100,6 +100,8 @@ export const optimizerSettings = pgTable("optimizer_settings", {
   departureTaskTemplateName: text("departure_task_template_name"),
   arrivalGroupingTarget: integer("arrival_grouping_target").notNull().default(0),
   departureGroupingTarget: integer("departure_grouping_target").notNull().default(0),
+  arrivalMinGapMinutes: integer("arrival_min_gap_minutes").notNull().default(0),
+  departureMinGapMinutes: integer("departure_min_gap_minutes").notNull().default(0),
   vanCapacity: integer("van_capacity").notNull().default(0),
   weightArrivalDepartureGrouping: integer("weight_arrival_departure_grouping").notNull().default(0),
 });

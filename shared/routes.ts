@@ -970,6 +970,8 @@ export const api = {
           departureTaskTemplateName: z.string(),
           arrivalGroupingTarget: z.number().int().min(0).max(100),
           departureGroupingTarget: z.number().int().min(0).max(100),
+          arrivalMinGapMinutes: z.number().int().min(0).max(600),
+          departureMinGapMinutes: z.number().int().min(0).max(600),
           vanCapacity: z.number().int().min(0).max(100),
           weightArrivalDepartureGrouping: z.number().int().min(0).max(10),
         }),
@@ -1023,6 +1025,8 @@ export const api = {
           departureTaskTemplateName: z.string().max(120).optional(),
           arrivalGroupingTarget: z.number().int().min(0).max(100).optional(),
           departureGroupingTarget: z.number().int().min(0).max(100).optional(),
+          arrivalMinGapMinutes: z.number().int().min(0).max(600).optional(),
+          departureMinGapMinutes: z.number().int().min(0).max(600).optional(),
           vanCapacity: z.number().int().min(0).max(100).optional(),
           weightArrivalDepartureGrouping: z.number().int().min(0).max(10).optional(),
         })
