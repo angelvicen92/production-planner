@@ -345,3 +345,59 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   );
   assert.ok(!falseWarning);
 }
+
+// Ventana de comida amplia + alta capacidad: no debe vaciar resultado ni reducir ventana a un único slot.
+{
+  const tasks: any[] = [];
+  let id = 700;
+  for (let i = 0; i < 9; i++) {
+    const contestantId = 800 + i;
+    tasks.push({
+      id: id++,
+      planId: 60,
+      templateId: 1000,
+      templateName: `Ensayo ${i + 1}`,
+      zoneId: 21,
+      spaceId: 2101,
+      contestantId,
+      status: "pending",
+      durationOverrideMin: 30,
+    });
+    tasks.push({
+      id: id++,
+      planId: 60,
+      templateId: 1999,
+      templateName: "Comida",
+      contestantId,
+      status: "pending",
+      durationOverrideMin: 40,
+    });
+  }
+
+  const input: EngineInput = {
+    planId: 60,
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+    mealTaskTemplateName: "Comida",
+    contestantMealDurationMinutes: 40,
+    contestantMealMaxSimultaneous: 10,
+    camerasAvailable: 0,
+    tasks,
+    locks: [],
+    groupingZoneIds: [21],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 21,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10 },
+  };
+
+  const run = generatePlanV2(input);
+  assert.equal(run.hardFeasible, true);
+  assert.ok((run.plannedTasks ?? []).length > 0);
+  assert.ok(!(run.warnings ?? []).some((w: any) => w?.code === "V2_EMPTY_RESULT"));
+}
