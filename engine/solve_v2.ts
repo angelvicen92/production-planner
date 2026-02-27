@@ -60,6 +60,35 @@ function toHHMM(mins: number) {
 const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) =>
   aStart < bEnd && bStart < aEnd;
 
+const splitGapOutsideMealWindow = (
+  gapStart: number,
+  gapEnd: number,
+  mealWindowStartMin?: number,
+  mealWindowEndMin?: number,
+) => {
+  if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd) || gapEnd <= gapStart) return [] as Array<{ start: number; end: number }>;
+  const hasMealWindow =
+    Number.isFinite(Number(mealWindowStartMin)) &&
+    Number.isFinite(Number(mealWindowEndMin)) &&
+    Number(mealWindowEndMin) > Number(mealWindowStartMin);
+  if (!hasMealWindow) return [{ start: gapStart, end: gapEnd }];
+
+  const mealStart = Number(mealWindowStartMin);
+  const mealEnd = Number(mealWindowEndMin);
+
+  if (gapEnd <= mealStart || gapStart >= mealEnd) return [{ start: gapStart, end: gapEnd }];
+  if (gapStart >= mealStart && gapEnd <= mealEnd) return [];
+  if (gapStart < mealStart && gapEnd <= mealEnd) return [{ start: gapStart, end: mealStart }];
+  if (gapStart >= mealStart && gapStart < mealEnd && gapEnd > mealEnd) return [{ start: mealEnd, end: gapEnd }];
+  if (gapStart < mealStart && gapEnd > mealEnd) {
+    return [
+      { start: gapStart, end: mealStart },
+      { start: mealEnd, end: gapEnd },
+    ];
+  }
+  return [];
+};
+
 export function computeMainZoneGaps(params: {
   zoneId: number | null;
   plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
@@ -67,8 +96,10 @@ export function computeMainZoneGaps(params: {
   getSpaceId: (task: any) => number | null;
   getZoneId: (task: any) => number | null;
   getZoneIdForSpace: (spaceId: number | null | undefined) => number | null;
+  mealWindowStartMin?: number;
+  mealWindowEndMin?: number;
 }): MainZoneGap[] {
-  const { zoneId, plannedTasks, taskById, getSpaceId, getZoneId, getZoneIdForSpace } = params;
+  const { zoneId, plannedTasks, taskById, getSpaceId, getZoneId, getZoneIdForSpace, mealWindowStartMin, mealWindowEndMin } = params;
   if (!zoneId) return [];
 
   const intervalsBySpace = new Map<number, Array<{ taskId: number; start: number; end: number }>>();
@@ -76,6 +107,7 @@ export function computeMainZoneGaps(params: {
     const taskId = Number(p.taskId);
     const task = taskById.get(taskId);
     if (!task) continue;
+    if (Boolean(task?.isMeal || task?.breakKind)) continue;
     const candidateSpaceId = Number(p?.assignedSpace ?? getSpaceId(task) ?? NaN);
     if (!Number.isFinite(candidateSpaceId) || candidateSpaceId <= 0) continue;
     const taskZoneId = Number(getZoneId(task) ?? getZoneIdForSpace(candidateSpaceId) ?? NaN);
@@ -96,15 +128,19 @@ export function computeMainZoneGaps(params: {
       const prev = intervals[i - 1];
       const next = intervals[i];
       if (next.start <= prev.end) continue;
-      gaps.push({
-        zoneId: Number(zoneId),
-        spaceId,
-        start: prev.end,
-        end: next.start,
-        durationMin: next.start - prev.end,
-        prevTaskId: prev.taskId,
-        nextTaskId: next.taskId,
-      });
+      const segments = splitGapOutsideMealWindow(prev.end, next.start, mealWindowStartMin, mealWindowEndMin);
+      for (const segment of segments) {
+        if (segment.end - segment.start < GRID_V2) continue;
+        gaps.push({
+          zoneId: Number(zoneId),
+          spaceId,
+          start: segment.start,
+          end: segment.end,
+          durationMin: segment.end - segment.start,
+          prevTaskId: prev.taskId,
+          nextTaskId: next.taskId,
+        });
+      }
     }
   }
 
@@ -926,7 +962,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     .map((id) => (tasksForSolve as any[]).find((t) => Number(t.id) === id))
     .filter(Boolean) as any[];
   const forcedStartByTaskId = new Map<number, number>();
-  const forcedEndByTaskId = new Map<number, number>();
+  const deferredDepartureTaskIds = new Set<number>();
   const startDay = toMinutes(input.workDay.start);
   const endDay = toMinutes(input.workDay.end);
   const mainStartGateMin = Number.isFinite(Number(options?.mainStartGateMin)) ? Number(options?.mainStartGateMin) : startDay;
@@ -953,52 +989,41 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   };
 
   if (arrivalBatchingEnabled) {
-    const target = Math.min(vanCapacity, arrivalGroupingTarget);
+    const snapGrid = (value: number) => Math.ceil(value / GRID_V2) * GRID_V2;
+    const minGroup = Math.max(1, arrivalGroupingTarget);
+    const cap = Math.max(1, vanCapacity);
     const minGap = Math.max(GRID_V2, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
     const arrivals = tasksSorted
       .filter((t) => isArrivalTask(t) && String(t?.status ?? "pending") === "pending")
       .sort((a, b) => toAvailStart(getContestantId(a)) - toAvailStart(getContestantId(b)));
-    let previousBatchStart: number | null = null;
-    for (let i = 0; i < arrivals.length; i += target) {
-      const batch = arrivals.slice(i, i + target);
-      if (!batch.length) continue;
-      const batchMinStart = Math.max(...batch.map((t) => toAvailStart(getContestantId(t))));
-      let commonStart = Math.ceil(batchMinStart / GRID_V2) * GRID_V2;
-      if (previousBatchStart !== null) {
-        commonStart = Math.ceil(Math.max(commonStart, previousBatchStart + minGap) / GRID_V2) * GRID_V2;
+
+    let cursor = 0;
+    let previousTripStart: number | null = null;
+    while (cursor < arrivals.length) {
+      const remaining = arrivals.length - cursor;
+      let tripStart = snapGrid(toAvailStart(getContestantId(arrivals[cursor])));
+      if (previousTripStart !== null) tripStart = snapGrid(Math.max(tripStart, previousTripStart + minGap));
+
+      while (cursor < arrivals.length) {
+        const availableCount = arrivals.slice(cursor).filter((t) => toAvailStart(getContestantId(t)) <= tripStart).length;
+        if (availableCount >= minGroup || remaining < minGroup) break;
+        tripStart = snapGrid(Math.max(tripStart, toAvailStart(getContestantId(arrivals[cursor + availableCount]))));
       }
-      for (let step = 0; step < 48; step++) {
-        const fits = batch.every((t) => {
-          const dur = Math.max(5, Math.floor(Number(t.durationOverrideMin ?? 30)));
-          return commonStart + dur <= toAvailEnd(getContestantId(t));
-        });
-        if (fits) break;
-        commonStart = Math.ceil((commonStart + GRID_V2) / GRID_V2) * GRID_V2;
-      }
-      previousBatchStart = commonStart;
-      for (const t of batch) {
-        forcedStartByTaskId.set(Number(t.id), commonStart);
-      }
+
+      const available = arrivals.slice(cursor).filter((t) => toAvailStart(getContestantId(t)) <= tripStart);
+      const tripSize = Math.min(cap, Math.max(1, available.length));
+      const tripTasks = arrivals.slice(cursor, cursor + tripSize);
+      for (const t of tripTasks) forcedStartByTaskId.set(Number(t.id), tripStart);
+      previousTripStart = tripStart;
+      cursor += tripTasks.length;
     }
   }
 
   if (departureBatchingEnabled) {
-    const target = Math.min(vanCapacity, departureGroupingTarget);
-    const minGapDeparture = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
-    const departures = tasksSorted
-      .filter((t) => isDepartureTask(t) && String(t?.status ?? "pending") === "pending")
-      .sort((a, b) => toAvailEnd(getContestantId(b)) - toAvailEnd(getContestantId(a)));
-    let nextLatestEnd = endDay;
-    for (let i = 0; i < departures.length; i += target) {
-      const batch = departures.slice(i, i + target);
-      if (!batch.length) continue;
-      const minAvailEndBatch = Math.min(...batch.map((t) => toAvailEnd(getContestantId(t))));
-      const commonEndCandidate = Math.min(minAvailEndBatch, nextLatestEnd);
-      const commonEnd = Math.floor(commonEndCandidate / GRID_V2) * GRID_V2;
-      for (const t of batch) {
-        forcedEndByTaskId.set(Number(t.id), commonEnd);
-      }
-      nextLatestEnd = commonEnd - minGapDeparture;
+    for (const task of tasksSorted) {
+      if (!isDepartureTask(task)) continue;
+      if (String(task?.status ?? "pending") !== "pending") continue;
+      deferredDepartureTaskIds.add(Number(task.id));
     }
   }
   if (!Array.isArray(tasksForSolve) || tasksForSolve.length === 0) {
@@ -1791,7 +1816,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     // earliest por horario + deps
     let start = snapUp(Math.max(startDay, depsEnd(task)));
     const forcedStart = forcedStartByTaskId.get(taskId);
-    const forcedEnd = forcedEndByTaskId.get(taskId);
     if (Number.isFinite(forcedStart)) start = snapUp(Math.max(start, Number(forcedStart)));
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
@@ -1817,38 +1841,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     if (effWin) start = snapUp(Math.max(start, effWin.start));
     if (optMainZoneId && Number(zoneId) === Number(optMainZoneId)) start = snapUp(Math.max(start, mainStartGateMin));
-
-    const isForcedDepartureTask = isDepartureTask(task) && Number.isFinite(forcedEnd);
-    const forcedDepartureEnd = isForcedDepartureTask ? Number(forcedEnd) : NaN;
-    const forceDepartureExactStart = forcedDepartureEnd - duration;
-    const baseSearchStart = start;
-    let forceDepartureExact = false;
-    let forcedDepartureFallbackWarned = false;
-
-    if (isForcedDepartureTask) {
-      const exactStartIsOnGrid = forceDepartureExactStart % GRID === 0;
-      const exactFitsWindow = forceDepartureExactStart >= startDay
-        && forceDepartureExactStart >= baseSearchStart
-        && forcedDepartureEnd <= endDay
-        && (!effWin || (forceDepartureExactStart >= effWin.start && forcedDepartureEnd <= effWin.end));
-      if (exactStartIsOnGrid && exactFitsWindow) {
-        forceDepartureExact = true;
-        start = forceDepartureExactStart;
-      } else {
-        warnings.push({
-          code: "OUT_FORCED_END_EXACT_FALLBACK",
-          taskId,
-          message: `No se pudo fijar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} para "${String(task?.templateName ?? `tarea ${taskId}`)}"; se usa fallback end <= forcedEnd.`,
-          details: {
-            forcedEnd: toHHMM(forcedDepartureEnd),
-            forceDepartureExactStart,
-            baseSearchStart,
-            exactStartIsOnGrid,
-            exactFitsWindow,
-          },
-        });
-      }
-    }
 
     if (canUseItinerantWrapOverlap && contestantId && spaceId) {
       const cOcc = occupiedByContestant.get(contestantId) ?? [];
@@ -1920,20 +1912,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
       // 2.4) Si movimos candidate, re-chequeamos (porque al mover por concursante podemos caer en espacio ocupado, etc.)
       if (candidate !== start) {
-        if (forceDepartureExact) {
-          forceDepartureExact = false;
-          if (!forcedDepartureFallbackWarned) {
-            warnings.push({
-              code: "OUT_FORCED_END_EXACT_FALLBACK",
-              taskId,
-              message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por conflictos de agenda; se usa fallback end <= forcedEnd.`,
-              details: { forcedEnd: toHHMM(forcedDepartureEnd), candidate, attemptedStart: start },
-            });
-            forcedDepartureFallbackWarned = true;
-          }
-          start = baseSearchStart;
-          continue;
-        }
         start = snapUp(candidate);
         continue;
       }
@@ -1945,17 +1923,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
       const maxEndAllowed = Math.min(
         endDay,
-        Number.isFinite(forcedEnd) ? Number(forcedEnd) : endDay,
         effWin ? effWin.end : endDay,
       );
       if (start + duration > maxEndAllowed) {
-        const hasForcedEnd = Number.isFinite(forcedEnd);
-        const forcedEndText = hasForcedEnd ? toHHMM(Number(forcedEnd)) : null;
         const startsBeforeAvailability = Boolean(effWin) && startDay < Number(effWin?.start);
         const code = effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME";
-        const message = hasForcedEnd
-          ? `No hay hueco para ${isDepartureTask(task) ? "OUT" : `\"${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}\"`} antes de ${forcedEndText} (forcedEnd).`
-          : `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
+        const message = `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
         return {
           scheduled: false,
           reason: {
@@ -1969,7 +1942,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
               workDayEnd: toHHMM(endDay),
               duration,
               startsBeforeAvailability,
-              forcedEnd: hasForcedEnd ? forcedEndText : undefined,
               maxEndAllowed: toHHMM(maxEndAllowed),
             },
           },
@@ -1977,20 +1949,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
 
       const finish = start + duration;
-      if (forceDepartureExact && finish !== forcedDepartureEnd) {
-        forceDepartureExact = false;
-        if (!forcedDepartureFallbackWarned) {
-          warnings.push({
-            code: "OUT_FORCED_END_EXACT_FALLBACK",
-            taskId,
-            message: `No se pudo fijar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)}; se usa fallback end <= forcedEnd.`,
-            details: { forcedEnd: toHHMM(forcedDepartureEnd), computedFinish: toHHMM(finish) },
-          });
-          forcedDepartureFallbackWarned = true;
-        }
-        start = baseSearchStart;
-        continue;
-      }
       if (finish <= start) {
         start = snapUp(start + GRID);
         continue;
@@ -2010,20 +1968,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         const teamStart = findEarliestGap(teamOcc, start, duration);
         if (teamStart !== start) {
-          if (forceDepartureExact) {
-            forceDepartureExact = false;
-            if (!forcedDepartureFallbackWarned) {
-              warnings.push({
-                code: "OUT_FORCED_END_EXACT_FALLBACK",
-                taskId,
-                message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por solape de equipo itinerante; se usa fallback end <= forcedEnd.`,
-                details: { forcedEnd: toHHMM(forcedDepartureEnd), teamStart },
-              });
-              forcedDepartureFallbackWarned = true;
-            }
-            start = baseSearchStart;
-            continue;
-          }
           start = snapUp(teamStart);
           continue;
         }
@@ -2037,21 +1981,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       // hay que volver al inicio del while para recalcular huecos (contestante/espacio/zona).
       let retry = false;
       const bumpStartAndRetry = () => {
-        if (forceDepartureExact) {
-          forceDepartureExact = false;
-          if (!forcedDepartureFallbackWarned) {
-            warnings.push({
-              code: "OUT_FORCED_END_EXACT_FALLBACK",
-              taskId,
-              message: `No se pudo respetar fin exacto de OUT en ${toHHMM(forcedDepartureEnd)} por recursos no disponibles; se usa fallback end <= forcedEnd.`,
-              details: { forcedEnd: toHHMM(forcedDepartureEnd), start, duration },
-            });
-            forcedDepartureFallbackWarned = true;
-          }
-          start = baseSearchStart;
-        } else {
-          start = snapUp(start + GRID);
-        }
+        start = snapUp(start + GRID);
         retry = true;
       };
 
@@ -2970,6 +2900,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const pendingNonMeal = (tasksSorted as any[]).filter((task) => {
     if (isMealTask(task) || isResourceBreakTask(task)) return false;
+    if (deferredDepartureTaskIds.has(Number(task?.id))) return false;
 
     const taskId = Number(task?.id);
     if (!Number.isFinite(taskId)) return false;
@@ -3449,6 +3380,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           getSpaceId,
           getZoneId,
           getZoneIdForSpace,
+          mealWindowStartMin: mealStart,
+          mealWindowEndMin: mealEnd,
         }).sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId);
 
         if (!mainZoneGaps.length) break;
@@ -3503,13 +3436,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     for (const spaceId of targetSpaces) {
       const entries = (plannedTasks as any[])
         .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
-        .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task))
+        .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task) && !Boolean(task?.breakKind))
         .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
       for (let i = 1; i < entries.length; i++) {
         if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
         const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
         const nextStart = toMinutes(entries[i].p.startPlanned);
-        if (nextStart - prevEnd > 1) remainingGaps.push({ spaceId, start: prevEnd, end: nextStart });
+        const segments = splitGapOutsideMealWindow(prevEnd, nextStart, mealStart, mealEnd);
+        for (const segment of segments) {
+          if (segment.end - segment.start < GRID_V2) continue;
+          remainingGaps.push({ spaceId, start: segment.start, end: segment.end });
+        }
       }
     }
 
@@ -3609,7 +3546,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           !fixedEndByTaskId.has(Number(x)),
       );
       const taskId = Number(t?.id);
-      const hardLocked = lockedTaskIds.has(taskId) || Number.isFinite(forcedStartByTaskId.get(taskId)) || Number.isFinite(forcedEndByTaskId.get(taskId));
+      const hardLocked = lockedTaskIds.has(taskId) || Number.isFinite(forcedStartByTaskId.get(taskId));
       const missingDependencies = depIds.map((depId) => {
         const depTask = taskById.get(Number(depId));
         const depContestantId = Number(depTask?.contestantId ?? 0);
@@ -4062,6 +3999,140 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   rebuildPlannedByTask();
   runMainZoneNoIdlePass();
+  rebuildPlannedByTask();
+
+  const scheduleDepartureTrips = () => {
+    if (!departureBatchingEnabled || deferredDepartureTaskIds.size === 0) return;
+
+    const minGroup = Math.max(1, departureGroupingTarget);
+    const cap = Math.max(1, vanCapacity);
+    const minGap = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
+
+    const pendingDepartures = tasksSorted
+      .filter((task) => deferredDepartureTaskIds.has(Number(task?.id)))
+      .filter((task) => !plannedEndByTaskId.has(Number(task?.id)) && !fixedEndByTaskId.has(Number(task?.id)))
+      .map((task) => {
+        const taskId = Number(task?.id);
+        const contestantId = getContestantId(task);
+        const effWin = getContestantEffectiveWindow(contestantId);
+        const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+        const earliest = snapUp(Math.max(startDay, depsEnd(task), effWin ? effWin.start : startDay));
+        return { task, taskId, contestantId, effWin, duration, earliest };
+      })
+      .sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
+
+    let cursor = 0;
+    let previousTripStart: number | null = null;
+    let safetyIterations = 0;
+
+    while (cursor < pendingDepartures.length) {
+      if (safetyIterations++ > 5000) break;
+      let lowerBound = pendingDepartures[cursor].earliest;
+      if (previousTripStart !== null) lowerBound = Math.max(lowerBound, previousTripStart + minGap);
+      lowerBound = snapUp(lowerBound);
+      if (lowerBound >= endDay) break;
+
+      const remaining = pendingDepartures.length - cursor;
+      let probe = cursor;
+      while (probe < pendingDepartures.length && pendingDepartures[probe].earliest <= lowerBound) probe++;
+      const availableCount = probe - cursor;
+      if (availableCount < minGroup && remaining >= minGroup && probe < pendingDepartures.length) {
+        lowerBound = snapUp(Math.max(lowerBound, pendingDepartures[probe].earliest));
+        while (probe < pendingDepartures.length && pendingDepartures[probe].earliest <= lowerBound) probe++;
+      }
+
+      const chunkEnd = Math.min(pendingDepartures.length, Math.max(cursor + 1, cursor + Math.min(cap, Math.max(1, probe - cursor))));
+      const candidates = pendingDepartures.slice(cursor, chunkEnd);
+      const tripStart = snapUp(Math.max(lowerBound, ...candidates.map((row) => row.earliest)));
+
+      const tripAssigned: typeof candidates = [];
+      const tripDeferred: typeof candidates = [];
+      for (const row of candidates) {
+        const { task, taskId, contestantId, effWin, duration } = row;
+        const finish = tripStart + duration;
+        if (effWin && (tripStart < effWin.start || finish > effWin.end)) {
+          tripDeferred.push(row);
+          continue;
+        }
+        if (finish > endDay) {
+          tripDeferred.push(row);
+          continue;
+        }
+
+        if (contestantId) {
+          const cOcc = occupiedByContestant.get(contestantId) ?? [];
+          if (findEarliestGap(cOcc, tripStart, duration) !== tripStart) {
+            tripDeferred.push(row);
+            continue;
+          }
+        }
+
+        const teamId = Number(task?.itinerantTeamId ?? 0);
+        if (teamId > 0) {
+          const teamOcc = occupiedByItinerant.get(teamId) ?? [];
+          if (findEarliestGap(teamOcc, tripStart, duration) !== tripStart) {
+            tripDeferred.push(row);
+            continue;
+          }
+        }
+
+        plannedTasks.push({
+          taskId,
+          startPlanned: toHHMM(tripStart),
+          endPlanned: toHHMM(finish),
+          assignedSpace: null,
+          assignedResources: [],
+        });
+        plannedEndByTaskId.set(taskId, finish);
+        tripAssigned.push(row);
+
+        if (contestantId) {
+          const arr = occupiedByContestant.get(contestantId) ?? [];
+          addIntervalSorted(arr, { start: tripStart, end: finish, taskId });
+          occupiedByContestant.set(contestantId, arr);
+        }
+        if (teamId > 0) {
+          const arr = occupiedByItinerant.get(teamId) ?? [];
+          addIntervalSorted(arr, { start: tripStart, end: finish, taskId });
+          occupiedByItinerant.set(teamId, arr);
+        }
+      }
+
+      for (const row of tripDeferred) {
+        const nextEarliest = snapUp(Math.max(tripStart + minGap, row.earliest + GRID_V2));
+        row.earliest = nextEarliest;
+      }
+
+      const rest = pendingDepartures.slice(chunkEnd);
+      pendingDepartures.splice(cursor, pendingDepartures.length - cursor, ...tripDeferred, ...rest);
+      pendingDepartures.sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
+
+      previousTripStart = tripAssigned.length > 0 ? tripStart : previousTripStart;
+      if (tripAssigned.length === 0 && tripDeferred.length > 0 && cursor === 0 && previousTripStart === null) {
+        cursor = 0;
+      } else {
+        cursor += tripAssigned.length;
+      }
+
+      if (tripAssigned.length === 0 && tripDeferred.length === 0) break;
+    }
+
+    for (const row of pendingDepartures) {
+      const taskId = Number(row.taskId);
+      if (plannedEndByTaskId.has(taskId) || fixedEndByTaskId.has(taskId)) continue;
+      unplanned.push({
+        taskId,
+        reason: {
+          code: "NO_TIME",
+          taskId,
+          message: `No se pudo ubicar OUT para "${String(row.task?.templateName ?? `tarea ${taskId}`)}" dentro de su ventana disponible.`,
+        },
+      });
+    }
+    rebuildPlannedByTask();
+  };
+
+  scheduleDepartureTrips();
 
   const getTaskIntervalMinutes = (task: any) => {
     if (!task) return null;
@@ -4547,6 +4618,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     getSpaceId,
     getZoneId,
     getZoneIdForSpace,
+    mealWindowStartMin: mealStart,
+    mealWindowEndMin: mealEnd,
   });
   const mainZoneGapReasons = explainMainZoneGaps({
     gaps: mainZoneGaps,
@@ -4744,6 +4817,8 @@ function computeMainZoneGapStats(params: {
   plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
   tasks: any[];
   mainZoneId: number | null | undefined;
+  mealWindowStartMin?: number;
+  mealWindowEndMin?: number;
 }) {
   const mainZoneId = Number(params.mainZoneId ?? NaN);
   if (!Number.isFinite(mainZoneId) || mainZoneId <= 0) return { gapCount: 0, gapMinutes: 0 };
@@ -4756,6 +4831,7 @@ function computeMainZoneGapStats(params: {
       const task = taskById.get(Number((p as any)?.taskId));
       const zoneId = Number((task as any)?.zoneId ?? NaN);
       if (zoneId !== mainZoneId) return null;
+      if (Boolean((task as any)?.isMeal || (task as any)?.breakKind)) return null;
       const start = toMinutes(String((p as any)?.startPlanned ?? ''));
       const end = toMinutes(String((p as any)?.endPlanned ?? ''));
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
@@ -4768,8 +4844,15 @@ function computeMainZoneGapStats(params: {
   let gapCount = 0;
   let gapMinutes = 0;
   for (let i = 1; i < intervals.length; i++) {
-    const gap = intervals[i].start - intervals[i - 1].end;
-    if (gap >= GRID_V2) {
+    const segments = splitGapOutsideMealWindow(
+      intervals[i - 1].end,
+      intervals[i].start,
+      params.mealWindowStartMin,
+      params.mealWindowEndMin,
+    );
+    for (const segment of segments) {
+      const gap = segment.end - segment.start;
+      if (gap < GRID_V2) continue;
       gapCount += 1;
       gapMinutes += gap;
     }
@@ -4825,6 +4908,8 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
       plannedTasks: (baseline as any)?.plannedTasks ?? [],
       tasks: input.tasks ?? [],
       mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
+      mealWindowStartMin: mealWindowStart,
+      mealWindowEndMin: mealWindowEnd,
     });
     const baseInsights = Array.isArray((baseline as any)?.insights) ? [...((baseline as any).insights)] : [];
     baseInsights.push({
@@ -4901,6 +4986,8 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
         plannedTasks: (plan as any)?.plannedTasks ?? [],
         tasks: input.tasks ?? [],
         mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
+        mealWindowStartMin: mealWindowStart,
+        mealWindowEndMin: mealWindowEnd,
       });
       const mainSwitches = countMainSwitches(plan);
       const candidate = { gate, meal, gapCount: stats.gapCount, gapTotal: stats.gapMinutes, mainSwitches };
