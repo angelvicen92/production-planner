@@ -1103,6 +1103,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const GRID = 5;
   const snapUp = (m: number) => Math.ceil(m / GRID) * GRID;
+  const snapDown = (m: number) => Math.floor(m / GRID) * GRID;
 
   const zoneResourceAssignments = (input as any)?.zoneResourceAssignments ?? {};
   const spaceResourceAssignments =
@@ -4018,7 +4019,41 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       lastEndByContestantId.set(cid, maxEnd);
     }
 
-    const pendingDepartures = tasksSorted
+    const noTimeMarkedTaskIds = new Set<number>();
+    const markDepartureNoTime = (row: {
+      task: any;
+      taskId: number;
+      contestantId: number | null;
+      effWin: { start: number; end: number } | null;
+      duration: number;
+      earliest: number;
+      latestStart: number;
+      lastLowerBound?: number | null;
+    }) => {
+      if (noTimeMarkedTaskIds.has(Number(row.taskId))) return;
+      noTimeMarkedTaskIds.add(Number(row.taskId));
+      const taskId = Number(row.taskId);
+      unplanned.push({
+        taskId,
+        reason: {
+          code: "NO_TIME",
+          taskId,
+          message: `No se pudo ubicar OUT para "${String(row.task?.templateName ?? `tarea ${taskId}`)}" dentro de su ventana disponible.`,
+          diagnostic: {
+            contestantId: row.contestantId,
+            effWin: row.effWin,
+            earliest: toHHMM(row.earliest),
+            latestStart: toHHMM(row.latestStart),
+            tripLowerBound: Number.isFinite(Number(row.lastLowerBound)) ? toHHMM(Number(row.lastLowerBound)) : null,
+            duration: row.duration,
+            depsEnd: toHHMM(depsEnd(row.task)),
+            lastEnd: row.contestantId ? toHHMM(lastEndByContestantId.get(row.contestantId) ?? startDay) : null,
+          },
+        },
+      });
+    };
+
+    let pendingDepartures = tasksSorted
       .filter((task) => deferredDepartureTaskIds.has(Number(task?.id)))
       .filter((task) => !plannedEndByTaskId.has(Number(task?.id)) && !fixedEndByTaskId.has(Number(task?.id)))
       .map((task) => {
@@ -4029,37 +4064,77 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const duration = Math.max(5, Math.floor(Number.isFinite(rawDur) ? rawDur : 30));
         const lastEnd = contestantId ? (lastEndByContestantId.get(contestantId) ?? startDay) : startDay;
         const earliest = snapUp(Math.max(startDay, depsEnd(task), lastEnd, effWin ? effWin.start : startDay));
-        return { task, taskId, contestantId, effWin, duration, earliest };
+        const latestEnd = effWin ? effWin.end : endDay;
+        const latestStart = snapDown(Math.min(endDay, latestEnd) - duration);
+        return { task, taskId, contestantId, effWin, duration, earliest, latestStart, lastLowerBound: null as number | null };
       })
       .sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
 
-    let cursor = 0;
     let previousTripStart: number | null = null;
     let safetyIterations = 0;
 
-    while (cursor < pendingDepartures.length) {
+    while (pendingDepartures.length > 0) {
       if (safetyIterations++ > 5000) break;
-      let lowerBound = pendingDepartures[cursor].earliest;
+      let lowerBound = pendingDepartures[0].earliest;
       if (previousTripStart !== null) lowerBound = Math.max(lowerBound, previousTripStart + minGap);
       lowerBound = snapUp(lowerBound);
       if (lowerBound >= endDay) break;
 
-      const remaining = pendingDepartures.length - cursor;
-      let probe = cursor;
-      while (probe < pendingDepartures.length && pendingDepartures[probe].earliest <= lowerBound) probe++;
-      const availableCount = probe - cursor;
-      if (availableCount < minGroup && remaining >= minGroup && probe < pendingDepartures.length) {
-        lowerBound = snapUp(Math.max(lowerBound, pendingDepartures[probe].earliest));
-        while (probe < pendingDepartures.length && pendingDepartures[probe].earliest <= lowerBound) probe++;
+      const overdueRows = pendingDepartures.filter((row) => row.earliest > row.latestStart || (row.earliest <= lowerBound && lowerBound > row.latestStart));
+      if (overdueRows.length > 0) {
+        for (const row of overdueRows) {
+          row.lastLowerBound = lowerBound;
+          markDepartureNoTime(row);
+        }
+        const overdueIds = new Set(overdueRows.map((row) => row.taskId));
+        pendingDepartures = pendingDepartures.filter((row) => !overdueIds.has(row.taskId));
+        continue;
       }
 
-      const chunkEnd = Math.min(pendingDepartures.length, Math.max(cursor + 1, cursor + Math.min(cap, Math.max(1, probe - cursor))));
-      const candidates = pendingDepartures.slice(cursor, chunkEnd);
-      const tripStart = snapUp(Math.max(lowerBound, ...candidates.map((row) => row.earliest)));
+      const eligibles = pendingDepartures.filter((row) => row.earliest <= lowerBound && lowerBound <= row.latestStart);
 
-      const tripAssigned: typeof candidates = [];
-      const tripDeferred: typeof candidates = [];
-      for (const row of candidates) {
+      if (eligibles.length === 0) {
+        const nextEarliest = pendingDepartures
+          .map((row) => row.earliest)
+          .filter((earliest) => earliest > lowerBound)
+          .sort((a, b) => a - b)[0];
+        if (!Number.isFinite(nextEarliest)) break;
+        pendingDepartures[0].earliest = snapUp(Math.max(pendingDepartures[0].earliest, Number(nextEarliest)));
+        pendingDepartures.sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
+        continue;
+      }
+
+      let shouldWarnSoftMin = false;
+      if (eligibles.length < minGroup) {
+        const nextReady = pendingDepartures
+          .filter((row) => row.earliest > lowerBound)
+          .map((row) => row.earliest)
+          .sort((a, b) => a - b)[0];
+        if (Number.isFinite(nextReady)) {
+          const minLatestStartAmongEligibles = eligibles.reduce((mn, row) => Math.min(mn, row.latestStart), Number.POSITIVE_INFINITY);
+          if (Number(nextReady) <= minLatestStartAmongEligibles) {
+            const waitedLowerBound = snapUp(Math.max(lowerBound, Number(nextReady)));
+            if (waitedLowerBound > lowerBound) {
+              pendingDepartures[0].earliest = waitedLowerBound;
+              pendingDepartures.sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
+              continue;
+            }
+          } else {
+            shouldWarnSoftMin = true;
+          }
+        }
+      }
+
+      const orderedEligibles = [...eligibles].sort(
+        (a, b) => a.latestStart - b.latestStart || a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0),
+      );
+      const passengers = orderedEligibles.slice(0, cap);
+      const tripStart = lowerBound;
+
+      const tripAssigned: typeof passengers = [];
+      const tripDeferred: typeof passengers = [];
+      for (const row of passengers) {
+        row.lastLowerBound = tripStart;
         const { task, taskId, contestantId, effWin, duration } = row;
         const finish = tripStart + duration;
         if (effWin && (tripStart < effWin.start || finish > effWin.end)) {
@@ -4114,47 +4189,31 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         }
       }
 
-      for (const row of tripDeferred) {
-        const prev = Number(row.earliest);
-        const minTripStart = previousTripStart !== null ? previousTripStart + minGap : prev;
-        let next = snapUp(Math.max(prev, minTripStart));
-        if (next <= prev) next = snapUp(prev + GRID_V2);
-        row.earliest = next;
+      if (shouldWarnSoftMin && tripAssigned.length > 0 && tripAssigned.length < minGroup) {
+        warnings.push({
+          code: "DEPARTURE_BELOW_MIN_GROUP",
+          message: `Salida ejecutada con ${tripAssigned.length} (<${minGroup}) para no perder ventana de ${eligibles.length} concursantes.`,
+          details: {
+            minGroup,
+            scheduledCount: tripAssigned.length,
+            eligibleCount: eligibles.length,
+            tripStart: toHHMM(tripStart),
+          },
+        });
       }
 
-      const rest = pendingDepartures.slice(chunkEnd);
-      pendingDepartures.splice(cursor, pendingDepartures.length - cursor, ...tripDeferred, ...rest);
-      pendingDepartures.sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
+      const passengerIds = new Set(passengers.map((row) => row.taskId));
+      const untouched = pendingDepartures.filter((row) => !passengerIds.has(row.taskId));
+      pendingDepartures = [...tripDeferred, ...untouched]
+        .sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
 
       previousTripStart = tripAssigned.length > 0 ? tripStart : previousTripStart;
-      if (tripAssigned.length === 0 && tripDeferred.length > 0 && cursor === 0 && previousTripStart === null) {
-        cursor = 0;
-      } else {
-        cursor += tripAssigned.length;
-      }
-
       if (tripAssigned.length === 0 && tripDeferred.length === 0) break;
     }
 
     for (const row of pendingDepartures) {
-      const taskId = Number(row.taskId);
-      if (plannedEndByTaskId.has(taskId) || fixedEndByTaskId.has(taskId)) continue;
-      unplanned.push({
-        taskId,
-        reason: {
-          code: "NO_TIME",
-          taskId,
-          message: `No se pudo ubicar OUT para "${String(row.task?.templateName ?? `tarea ${taskId}`)}" dentro de su ventana disponible.`,
-          diagnostic: {
-            contestantId: row.contestantId,
-            effWin: row.effWin,
-            earliest: toHHMM(row.earliest),
-            duration: row.duration,
-            depsEnd: toHHMM(depsEnd(row.task)),
-            lastEnd: row.contestantId ? toHHMM(lastEndByContestantId.get(row.contestantId) ?? startDay) : null,
-          },
-        },
-      });
+      if (plannedEndByTaskId.has(Number(row.taskId)) || fixedEndByTaskId.has(Number(row.taskId))) continue;
+      markDepartureNoTime(row);
     }
     rebuildPlannedByTask();
   };
