@@ -1747,6 +1747,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const taskItinerantTeamId = Number(task?.itinerantTeamId ?? 0);
 
     const transportTask = isArrivalTask(task) || isDepartureTask(task);
+    const effectiveSpaceId = transportTask ? null : spaceId;
+    const effectiveZoneId = transportTask ? null : zoneId;
     const canUseItinerantWrapOverlap = Boolean(
       Number(task?.itinerantTeamId ?? 0) > 0 && contestantId && spaceId,
     );
@@ -1779,9 +1781,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const forcedStart = forcedStartByTaskId.get(taskId);
     const forcedEnd = forcedEndByTaskId.get(taskId);
     if (Number.isFinite(forcedStart)) start = snapUp(Math.max(start, Number(forcedStart)));
-    if (Number.isFinite(forcedEnd)) {
-      start = snapUp(Math.max(start, Number(forcedEnd) - duration));
-    }
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
     const effWin = getContestantEffectiveWindow(contestantId);
@@ -1844,8 +1843,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     while (iter++ < maxIter) {
       // 2.1) Espacio: hueco libre en space
-      const spaceOcc = spaceId ? (occupiedBySpace.get(spaceId) ?? []) : [];
-      let candidate = spaceId
+      const spaceOcc = effectiveSpaceId ? (occupiedBySpace.get(effectiveSpaceId) ?? []) : [];
+      let candidate = effectiveSpaceId
         ? (canUseItinerantWrapOverlap
           ? findEarliestGapAllowingOverlap(
             spaceOcc,
@@ -1857,8 +1856,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         : start;
 
       // 2.2) Bloqueo por comida de plató (zona): NO se puede solapar
-      if (zoneId) {
-        const zOcc = occupiedByZoneMeal.get(zoneId) ?? [];
+      if (effectiveZoneId) {
+        const zOcc = occupiedByZoneMeal.get(effectiveZoneId) ?? [];
         candidate = findEarliestGap(zOcc, candidate, duration);
       }
 
@@ -1956,12 +1955,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         retry = true;
       };
 
-      const rr = (task as any)?.resourceRequirements ?? null;
+      const rr = transportTask ? null : ((task as any)?.resourceRequirements ?? null);
 
       const ignoreSpacePool = shouldIgnoreSpacePool(task);
-      const spacePool = ignoreSpacePool || !spaceId ? [] : getSpacePool(spaceId);
-      const zonePool = Number.isFinite(Number(zoneId))
-        ? (zoneResourceAssignments[Number(zoneId)] ?? [])
+      const spacePool = ignoreSpacePool || !effectiveSpaceId ? [] : getSpacePool(effectiveSpaceId);
+      const zonePool = Number.isFinite(Number(effectiveZoneId))
+        ? (zoneResourceAssignments[Number(effectiveZoneId)] ?? [])
         : [];
 
       const isResourceFree = (pid: number) => {
@@ -2140,9 +2139,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       assigned.push(...extraComponentsToAdd);
 
       // ✅ reservar intervalos
-      if (spaceId) {
+      if (effectiveSpaceId) {
         addIntervalSorted(spaceOcc, { start, end: finish, taskId });
-        occupiedBySpace.set(spaceId, spaceOcc);
+        occupiedBySpace.set(effectiveSpaceId, spaceOcc);
       }
       if (taskItinerantTeamId) {
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
