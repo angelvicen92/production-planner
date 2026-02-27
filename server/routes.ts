@@ -4853,24 +4853,28 @@ function normalizeHexColor(value: unknown): string | null {
         ? ((result as any).unplanned as any[])
         : [];
 
-      if (!plannedTasks || plannedTasks.length === 0) {
-        const warningsRaw = Array.isArray((result as any)?.warnings) ? (result as any).warnings : [];
-        const excludedCount = warningsRaw.filter((w: any) => String(w?.code) === "REQUIRES_CONFIGURATION").length;
-        return res.status(500).json({
-          message: "ENGINE_EMPTY_RESULT",
-          detail: "El motor v2 devolvió 0 tareas planificadas.",
+      const warningsRaw = Array.isArray((result as any)?.warnings) ? (result as any).warnings : [];
+      const hasEmptyResultWarning = warningsRaw.some((w: any) => String(w?.code ?? "") === "V2_EMPTY_RESULT");
+      if (!plannedTasks || plannedTasks.length === 0 || (result as any).hardFeasible === false || hasEmptyResultWarning) {
+        const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+        const warnings = warningsRaw.map((w: any) => enrich(w));
+        const statusCode = hasEmptyResultWarning || (result as any).hardFeasible === false ? 422 : 422;
+        return res.status(statusCode).json({
+          message: hasEmptyResultWarning ? "V2_EMPTY_RESULT" : "INFEASIBLE_HARD",
+          hardFeasible: false,
+          complete: !!(result as any).complete,
+          feasible: !!(result as any).feasible,
+          warnings,
+          reasons,
+          unplanned,
+          insights: Array.isArray((result as any)?.insights) ? (result as any).insights : [],
           debug: {
             optimizer: optimizerSnapshot,
             tasksCount: engineInput.tasks?.length ?? 0,
-            excludedCount,
+            excludedCount: warningsRaw.filter((w: any) => String(w?.code) === "REQUIRES_CONFIGURATION").length,
             unplannedCount: unplanned.length,
           },
         });
-      }
-
-      if ((result as any).hardFeasible === false) {
-        const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
-        return res.status(422).json({ message: "INFEASIBLE_HARD", reasons });
       }
 
       let updated = 0;
