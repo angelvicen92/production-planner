@@ -3181,6 +3181,135 @@ function mapDeleteError(err: any, fallback: string) {
     res.json(locks);
   });
 
+  app.post(api.plans.tasks.refreshFromTemplates.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const plan = await storage.getPlan(planId);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+
+      const dailyTasks = await storage.getTasksForPlan(planId);
+
+      const { data: manualTemplate, error: manualTplErr } = await supabaseAdmin
+        .from("task_templates")
+        .select("id")
+        .ilike("name", "manual_block")
+        .limit(1)
+        .maybeSingle();
+      if (manualTplErr) throw manualTplErr;
+
+      const manualTemplateId = Number((manualTemplate as any)?.id ?? NaN);
+
+      const templateIds = Array.from(
+        new Set(
+          (dailyTasks as any[])
+            .map((t: any) => Number(t.template_id ?? t.templateId ?? NaN))
+            .filter((v) => Number.isFinite(v) && v > 0),
+        ),
+      );
+
+      const templateById = new Map<number, any>();
+      if (templateIds.length > 0) {
+        const { data: templates, error: templatesErr } = await supabaseAdmin
+          .from("task_templates")
+          .select("id, default_duration, default_cameras, space_id, zone_id, default_comment1_color, default_comment2_color")
+          .in("id", templateIds);
+        if (templatesErr) throw templatesErr;
+        for (const tpl of templates ?? []) {
+          templateById.set(Number((tpl as any).id), tpl);
+        }
+      }
+
+      const spaceIdsForInference = Array.from(
+        new Set(
+          Array.from(templateById.values())
+            .map((tpl: any) => Number(tpl?.space_id ?? NaN))
+            .filter((v) => Number.isFinite(v) && v > 0),
+        ),
+      );
+
+      const zoneBySpaceId = new Map<number, number | null>();
+      if (spaceIdsForInference.length > 0) {
+        const { data: spacesData, error: spacesErr } = await supabaseAdmin
+          .from("spaces")
+          .select("id, zone_id")
+          .in("id", spaceIdsForInference);
+        if (spacesErr) throw spacesErr;
+        for (const sp of spacesData ?? []) {
+          zoneBySpaceId.set(Number((sp as any).id), (sp as any).zone_id == null ? null : Number((sp as any).zone_id));
+        }
+      }
+
+      let updatedCount = 0;
+      let skippedExecutedCount = 0;
+      let skippedManualCount = 0;
+      let skippedNoTemplateCount = 0;
+
+      for (const task of dailyTasks as any[]) {
+        const status = String(task?.status ?? "");
+        if (status === "in_progress" || status === "done") {
+          skippedExecutedCount += 1;
+          continue;
+        }
+
+        const taskTemplateId = Number(task?.template_id ?? task?.templateId ?? NaN);
+        const isManualByFlag = Boolean(task?.is_manual_block);
+        const isManualByTemplate = Number.isFinite(manualTemplateId) && manualTemplateId > 0 && taskTemplateId === manualTemplateId;
+        if (isManualByFlag || isManualByTemplate) {
+          skippedManualCount += 1;
+          continue;
+        }
+
+        if (!Number.isFinite(taskTemplateId) || taskTemplateId <= 0) {
+          skippedNoTemplateCount += 1;
+          continue;
+        }
+
+        const template = templateById.get(taskTemplateId);
+        if (!template) {
+          skippedNoTemplateCount += 1;
+          continue;
+        }
+
+        const templateSpaceIdRaw = template?.space_id;
+        const templateSpaceId = templateSpaceIdRaw == null ? null : Number(templateSpaceIdRaw);
+        const templateZoneIdRaw = template?.zone_id;
+        let nextZoneId = templateZoneIdRaw == null ? null : Number(templateZoneIdRaw);
+
+        if (templateSpaceId != null && nextZoneId == null) {
+          nextZoneId = zoneBySpaceId.get(templateSpaceId) ?? null;
+        }
+
+        const patchDb: Record<string, any> = {
+          duration_override: template?.default_duration ?? null,
+          cameras_override: template?.default_cameras ?? null,
+          space_id: templateSpaceId,
+          zone_id: nextZoneId,
+          comment1_color: template?.default_comment1_color ?? null,
+          comment2_color: template?.default_comment2_color ?? null,
+          location_label: null,
+        };
+
+        await storage.updateDailyTask(Number(task.id), patchDb);
+        updatedCount += 1;
+      }
+
+      return res.json({
+        updatedCount,
+        skippedExecutedCount,
+        skippedManualCount,
+        skippedNoTemplateCount,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Internal Server Error" });
+    }
+  });
+
   // Contestants (per plan)
   app.get(api.plans.contestants.list.path, async (req, res) => {
     try {

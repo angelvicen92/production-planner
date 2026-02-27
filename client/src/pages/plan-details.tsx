@@ -848,6 +848,11 @@ export default function PlanDetailsPage() {
 
   const [newName, setNewName] = useState("");
   const [newInstrument, setNewInstrument] = useState(false);
+  const [newInstrumentName, setNewInstrumentName] = useState("");
+  const [newAvailabilityEnabled, setNewAvailabilityEnabled] = useState(false);
+  const [newAvailabilityStart, setNewAvailabilityStart] = useState("");
+  const [newAvailabilityEnd, setNewAvailabilityEnd] = useState("");
+  const [refreshingTasksFromTemplates, setRefreshingTasksFromTemplates] = useState(false);
   const [selectedContestant, setSelectedContestant] = useState<any | null>(
     null,
   );
@@ -1269,8 +1274,82 @@ ${reasonMessage}` : message,
     }
   };
 
+  async function handleRefreshTasksFromTemplates() {
+    try {
+      setRefreshingTasksFromTemplates(true);
+      const result = await apiRequest<{
+        updatedCount: number;
+        skippedExecutedCount: number;
+        skippedManualCount: number;
+        skippedNoTemplateCount: number;
+      }>("POST", buildUrl(api.plans.tasks.refreshFromTemplates.path, { id }));
+
+      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+
+      toast({
+        title: `Actualizadas ${result.updatedCount} tareas.`,
+        description:
+          result.skippedManualCount > 0 || result.skippedNoTemplateCount > 0
+            ? [
+                result.skippedManualCount > 0
+                  ? `${result.skippedManualCount} manuales no actualizadas.`
+                  : null,
+                result.skippedNoTemplateCount > 0
+                  ? `${result.skippedNoTemplateCount} sin plantilla no actualizadas.`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" ")
+            : undefined,
+      });
+
+      if (result.skippedExecutedCount > 0) {
+        toast({
+          title: `No se actualizaron ${result.skippedExecutedCount} tareas en ejecución/finalizadas.`,
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "No se pudieron actualizar las tareas",
+        description: err?.message || "Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshingTasksFromTemplates(false);
+    }
+  }
+
   function handleCreateContestant() {
     if (!newName.trim()) return;
+
+    if (newInstrument && !newInstrumentName.trim()) {
+      toast({
+        title: "Falta instrumento",
+        description: "Debes indicar el instrumento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newAvailabilityEnabled) {
+      if (!newAvailabilityStart || !newAvailabilityEnd) {
+        toast({
+          title: "Falta disponibilidad",
+          description: "Debes indicar hora inicio y hora fin.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (newAvailabilityStart >= newAvailabilityEnd) {
+        toast({
+          title: "Rango de disponibilidad inválido",
+          description: "La hora inicio debe ser menor que la hora fin.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     const vocalCoachPlanResourceItemId =
       newCoachPriId !== "none" ? Number(newCoachPriId) : null;
@@ -1279,15 +1358,22 @@ ${reasonMessage}` : message,
       {
         name: newName,
         instrument: newInstrument,
+        instrumentName: newInstrument ? newInstrumentName.trim() : null,
         song: newSong.trim() || null,
         vocalCoachPlanResourceItemId,
+        availabilityStart: newAvailabilityEnabled ? newAvailabilityStart : null,
+        availabilityEnd: newAvailabilityEnabled ? newAvailabilityEnd : null,
       },
       {
         onSuccess: () => {
           setNewName("");
           setNewInstrument(false);
+          setNewInstrumentName("");
           setNewSong("");
           setNewCoachPriId("none");
+          setNewAvailabilityEnabled(false);
+          setNewAvailabilityStart("");
+          setNewAvailabilityEnd("");
         },
       },
     );
@@ -1990,8 +2076,21 @@ ${reasonMessage}` : message,
 
           <TabsContent value="tasks" className="space-y-6 mt-0">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Concursantes</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Actualizar tareas con datos por defecto"
+                  onClick={handleRefreshTasksFromTemplates}
+                  disabled={refreshingTasksFromTemplates}
+                >
+                  {refreshingTasksFromTemplates ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 {contestants.length === 0 && (
@@ -2184,6 +2283,21 @@ ${reasonMessage}` : message,
                       <span className="text-sm">Instrumento</span>
                     </div>
 
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={newAvailabilityEnabled}
+                        onCheckedChange={(v) => {
+                          const enabled = !!v;
+                          setNewAvailabilityEnabled(enabled);
+                          if (enabled && !newAvailabilityStart && !newAvailabilityEnd) {
+                            setNewAvailabilityStart(String(plan?.workStart ?? ""));
+                            setNewAvailabilityEnd(String(plan?.workEnd ?? ""));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">Disponibilidad</span>
+                    </div>
+
                     <Button
                       className="ml-auto"
                       onClick={handleCreateContestant}
@@ -2192,6 +2306,34 @@ ${reasonMessage}` : message,
                       Añadir
                     </Button>
                   </div>
+
+                  {newInstrument && (
+                    <Input
+                      className="md:col-span-1"
+                      placeholder="Instrumento"
+                      value={newInstrumentName}
+                      onChange={(e) => setNewInstrumentName(e.target.value)}
+                    />
+                  )}
+
+                  {newAvailabilityEnabled && (
+                    <>
+                      <Input
+                        className="md:col-span-1"
+                        type="time"
+                        value={newAvailabilityStart}
+                        onChange={(e) => setNewAvailabilityStart(e.target.value)}
+                        title="Hora inicio"
+                      />
+                      <Input
+                        className="md:col-span-1"
+                        type="time"
+                        value={newAvailabilityEnd}
+                        onChange={(e) => setNewAvailabilityEnd(e.target.value)}
+                        title="Hora fin"
+                      />
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
