@@ -419,7 +419,10 @@ export function explainMainZoneGaps(params: {
 
 function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number; mealStartMin?: number; chosenMealStartMin?: number }): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
-  const unplanned: { taskId: number; reason: { code: string; message: string; taskId?: number; details?: any } }[] = [];
+  const unplanned: {
+    taskId: number;
+    reason: { code: string; message: string; taskId?: number; details?: any; diagnostic?: any };
+  }[] = [];
 
   const hardInfeasible = (hardReasons: any[] = []): EngineOutput => ({
     feasible: false,
@@ -4007,6 +4010,13 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const minGroup = Math.max(1, departureGroupingTarget);
     const cap = Math.max(1, vanCapacity);
     const minGap = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
+    const lastEndByContestantId = new Map<number, number>();
+    for (const [contestantId, intervals] of occupiedByContestant.entries()) {
+      const cid = Number(contestantId);
+      if (!Number.isFinite(cid) || cid <= 0) continue;
+      const maxEnd = intervals.reduce((mx, interval) => Math.max(mx, Number(interval?.end ?? startDay)), startDay);
+      lastEndByContestantId.set(cid, maxEnd);
+    }
 
     const pendingDepartures = tasksSorted
       .filter((task) => deferredDepartureTaskIds.has(Number(task?.id)))
@@ -4015,8 +4025,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const taskId = Number(task?.id);
         const contestantId = getContestantId(task);
         const effWin = getContestantEffectiveWindow(contestantId);
-        const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
-        const earliest = snapUp(Math.max(startDay, depsEnd(task), effWin ? effWin.start : startDay));
+        const rawDur = Number(task?.durationOverrideMin ?? task?.durationMin ?? 30);
+        const duration = Math.max(5, Math.floor(Number.isFinite(rawDur) ? rawDur : 30));
+        const lastEnd = contestantId ? (lastEndByContestantId.get(contestantId) ?? startDay) : startDay;
+        const earliest = snapUp(Math.max(startDay, depsEnd(task), lastEnd, effWin ? effWin.start : startDay));
         return { task, taskId, contestantId, effWin, duration, earliest };
       })
       .sort((a, b) => a.earliest - b.earliest || (originalOrder.get(a.taskId) ?? 0) - (originalOrder.get(b.taskId) ?? 0));
@@ -4061,7 +4073,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
         if (contestantId) {
           const cOcc = occupiedByContestant.get(contestantId) ?? [];
-          if (findEarliestGap(cOcc, tripStart, duration) !== tripStart) {
+          const nextStart = findEarliestGap(cOcc, tripStart, duration);
+          if (nextStart !== tripStart) {
+            row.earliest = snapUp(Math.max(row.earliest, nextStart));
             tripDeferred.push(row);
             continue;
           }
@@ -4099,8 +4113,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
 
       for (const row of tripDeferred) {
-        const nextEarliest = snapUp(Math.max(tripStart + minGap, row.earliest + GRID_V2));
-        row.earliest = nextEarliest;
+        const minTripStart = previousTripStart !== null ? previousTripStart + minGap : row.earliest;
+        row.earliest = snapUp(Math.max(row.earliest + GRID_V2, minTripStart));
       }
 
       const rest = pendingDepartures.slice(chunkEnd);
@@ -4126,6 +4140,14 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           code: "NO_TIME",
           taskId,
           message: `No se pudo ubicar OUT para "${String(row.task?.templateName ?? `tarea ${taskId}`)}" dentro de su ventana disponible.`,
+          diagnostic: {
+            contestantId: row.contestantId,
+            effWin: row.effWin,
+            earliest: toHHMM(row.earliest),
+            duration: row.duration,
+            depsEnd: toHHMM(depsEnd(row.task)),
+            lastEnd: row.contestantId ? toHHMM(lastEndByContestantId.get(row.contestantId) ?? startDay) : null,
+          },
         },
       });
     }

@@ -213,6 +213,7 @@ export interface InfeasibleReason {
   taskId?: number;
   blockingLockIds?: number[];
   diagnostic?: {
+    [key: string]: any;
     windowStart: string;
     windowEnd: string;
     windowMinutes: number;
