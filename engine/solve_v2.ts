@@ -381,7 +381,7 @@ export function explainMainZoneGaps(params: {
   return reasons;
 }
 
-function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number; mealStartMin?: number }): EngineOutput {
+function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number; mealStartMin?: number; chosenMealStartMin?: number }): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
   const unplanned: { taskId: number; reason: { code: string; message: string; taskId?: number; details?: any } }[] = [];
 
@@ -864,11 +864,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const startDay = toMinutes(input.workDay.start);
   const endDay = toMinutes(input.workDay.end);
   const mainStartGateMin = Number.isFinite(Number(options?.mainStartGateMin)) ? Number(options?.mainStartGateMin) : startDay;
-  const mealStartDefault = toMinutes(input.meal.start);
-  const mealEnd = toMinutes(input.meal.end);
-  const mealStart = Number.isFinite(Number(options?.mealStartMin))
-    ? Math.max(mealStartDefault, Math.min(mealEnd, Math.ceil(Number(options?.mealStartMin) / 5) * 5))
-    : mealStartDefault;
+  const mealWindowStartOriginal = toMinutes(input.meal.start);
+  const mealWindowEndOriginal = toMinutes(input.meal.end);
+  const mealStart = mealWindowStartOriginal;
+  const mealEnd = mealWindowEndOriginal;
   const mainZoneIdForMealResetRaw = (input as any)?.optimizerMainZoneId ?? null;
   const mainZoneIdForMealReset = Number.isFinite(Number(mainZoneIdForMealResetRaw)) && Number(mainZoneIdForMealResetRaw) > 0
     ? Number(mainZoneIdForMealResetRaw)
@@ -967,14 +966,34 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       )
     : 75;
 
-  const contestantMealMaxSim = Number.isFinite(
-    Number((input as any)?.contestantMealMaxSimultaneous),
-  )
-    ? Math.max(
-        1,
-        Math.floor(Number((input as any)?.contestantMealMaxSimultaneous)),
-      )
-    : 10;
+  const rawMaxSimultaneousEating = Number(
+    (input as any)?.maxSimultaneousEating ??
+    (input as any)?.contestantMealMaxSimultaneous,
+  );
+  const maxSimultaneousParsed = Math.max(
+    0,
+    Number.isFinite(rawMaxSimultaneousEating)
+      ? rawMaxSimultaneousEating
+      : 0,
+  );
+  const contestantMealMaxSim = Math.floor(maxSimultaneousParsed);
+  if (contestantMealMaxSim <= 0) {
+    warnings.push({
+      code: "INVALID_MEAL_CAPACITY",
+      message: "Máx. concursantes comiendo inválido.",
+      details: {
+        provided: (input as any)?.maxSimultaneousEating ?? (input as any)?.contestantMealMaxSimultaneous ?? null,
+        effectiveMaxSimultaneous: contestantMealMaxSim,
+      },
+    });
+  }
+
+  const chosenMealStart = Number.isFinite(Number(options?.chosenMealStartMin))
+    ? Math.max(mealWindowStartOriginal, Math.min(mealWindowEndOriginal, Math.ceil(Number(options?.chosenMealStartMin) / 5) * 5))
+    : Number.isFinite(Number(options?.mealStartMin))
+      ? Math.max(mealWindowStartOriginal, Math.min(mealWindowEndOriginal, Math.ceil(Number(options?.mealStartMin) / 5) * 5))
+      : mealWindowStartOriginal;
+  const chosenMealEnd = chosenMealStart + contestantMealDuration;
 
   const GRID = 5;
   const snapUp = (m: number) => Math.ceil(m / GRID) * GRID;
@@ -1356,7 +1375,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const duration = contestantMealDuration;
     const zoneArr = occupiedByZoneMeal.get(zid) ?? [];
 
-    let start = snapUp(mealStart);
+    let start = snapUp(chosenMealStart);
     // encajar sin solaparse con otro bloque de comida del mismo plató
     start = findEarliestGap(zoneArr, start, duration);
     if (start + duration > mealEnd) {
@@ -2687,7 +2706,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     return hardInfeasible([{
       code: 'MEAL_CONTESTANT_NO_FIT',
         message:
-          `No se pudo encajar la comida de "${failingMealCandidate?.contestantName ?? 'concursante'}" (${contestantMealDuration} min) dentro de ${toHHMM(mealStart)}–${toHHMM(mealEnd)} respetando máximo simultáneo (${contestantMealMaxSim}). ` +
+          `No se pudo encajar la comida de "${failingMealCandidate?.contestantName ?? 'concursante'}" (${contestantMealDuration} min) dentro de la ventana ${toHHMM(mealWindowStartOriginal)}–${toHHMM(mealWindowEndOriginal)} (slot evaluado: ${toHHMM(chosenMealStart)}–${toHHMM(chosenMealEnd)}) respetando máximo simultáneo (${contestantMealMaxSim}). ` +
           `Motivo principal: ${effectiveWindowReason ? 'ventana efectiva insuficiente' : 'ocupación por tareas fijas/bloqueos'}. ` +
           (blockedByCapacity.length ? `Capacidad al límite en: ${blockedByCapacity.join(', ')}. ` : '') +
           (blockingFixed.length ? `Bloqueos: ${blockingFixed.join(', ')}. ` : '') +
@@ -2701,6 +2720,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           failReason: effectiveWindowReason ? 'effective_window_insufficient' : 'fixed_occupation_or_blocks',
           blockedByCapacity,
           blockingIntervals: blockingFixed,
+          windowStartOriginal: toHHMM(mealWindowStartOriginal),
+          windowEndOriginal: toHHMM(mealWindowEndOriginal),
+          evaluatedMealSlotStart: toHHMM(chosenMealStart),
+          evaluatedMealSlotEnd: toHHMM(chosenMealEnd),
         },
       }]);
   }
@@ -4550,8 +4573,12 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   const endDay = toMinutes(input.workDay.end);
   const mealWindowStart = toMinutes(input.meal.start);
   const mealWindowEnd = toMinutes(input.meal.end);
+  const mealDuration = Math.max(
+    5,
+    Math.floor(Number((input as any)?.contestantMealDurationMinutes ?? 75)),
+  );
 
-  const runSingle = (opts: { mainStartGateMin?: number; mealStartMin?: number }) => {
+  const runSingle = (opts: { mainStartGateMin?: number; mealStartMin?: number; chosenMealStartMin?: number }) => {
     try {
       return generatePlanV2Single(input, opts) as any;
     } catch (error: any) {
@@ -4577,12 +4604,12 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
           },
         ],
         insights: [],
-      } as EngineOutput;
+      } as any;
     }
   };
 
   if (!hardNoGaps) {
-    const baseline = runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+    const baseline = runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart, chosenMealStartMin: mealWindowStart });
     const baseStats = computeMainZoneGapStats({
       plannedTasks: (baseline as any)?.plannedTasks ?? [],
       tasks: input.tasks ?? [],
@@ -4592,7 +4619,7 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
     baseInsights.push({
       code: "V2_MEAL_CHOICE",
       message: "Selección de comida en ventana (modo básico)",
-      details: { chosenMealStart: toHHMM(mealWindowStart), attemptsMeal: 1 },
+      details: { chosenMealStart: toHHMM(mealWindowStart), chosenMealEnd: toHHMM(mealWindowStart + mealDuration), windowStart: toHHMM(mealWindowStart), windowEnd: toHHMM(mealWindowEnd), attemptsMeal: 1 },
     });
     baseInsights.push({
       code: "V2_GATE_CHOICE",
@@ -4655,7 +4682,10 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
 
   for (let gate = startDay; gate <= endDay && ((gate - startDay) / GRID_V2) < gateMaxAttempts; gate += GRID_V2) {
     for (const meal of mealCandidates) {
-      const plan = runSingle({ mainStartGateMin: gate, mealStartMin: meal });
+      const testMealStart = meal;
+      const testMealEnd = testMealStart + mealDuration;
+      void testMealEnd;
+      const plan = runSingle({ mainStartGateMin: gate, mealStartMin: mealWindowStart, chosenMealStartMin: testMealStart });
       const stats = computeMainZoneGapStats({
         plannedTasks: (plan as any)?.plannedTasks ?? [],
         tasks: input.tasks ?? [],
@@ -4681,7 +4711,7 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
     }
   }
 
-  const fallback = bestPlan ?? runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+  const fallback = bestPlan ?? runSingle({ mainStartGateMin: startDay, mealStartMin: mealWindowStart, chosenMealStartMin: mealWindowStart });
 
   if (((fallback as any)?.plannedTasks ?? []).length === 0) {
     const maybeReason = Array.isArray((fallback as any)?.reasons)
@@ -4716,7 +4746,7 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   insights.push({
     code: "V2_MEAL_CHOICE",
     message: "Selección de slot de comida dentro de ventana",
-    details: { chosenMealStart: toHHMM(selected.meal), attemptsMeal: mealCandidates.length },
+    details: { chosenMealStart: toHHMM(selected.meal), chosenMealEnd: toHHMM(selected.meal + mealDuration), windowStart: toHHMM(mealWindowStart), windowEnd: toHHMM(mealWindowEnd), attemptsMeal: mealCandidates.length },
   });
   insights.push({
     code: "V2_GATE_CHOICE",
@@ -4742,6 +4772,9 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
       details: {
         chosenGateStart: toHHMM(selected.gate),
         chosenMealStart: toHHMM(selected.meal),
+        chosenMealEnd: toHHMM(selected.meal + mealDuration),
+        mealWindowStart: toHHMM(mealWindowStart),
+        mealWindowEnd: toHHMM(mealWindowEnd),
         gapCount: selected.gapCount,
         gapTotal: selected.gapTotal,
         mainSwitches: selected.mainSwitches,
