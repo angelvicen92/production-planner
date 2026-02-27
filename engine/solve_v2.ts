@@ -1779,6 +1779,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const forcedStart = forcedStartByTaskId.get(taskId);
     const forcedEnd = forcedEndByTaskId.get(taskId);
     if (Number.isFinite(forcedStart)) start = snapUp(Math.max(start, Number(forcedStart)));
+    if (Number.isFinite(forcedEnd)) {
+      start = snapUp(Math.max(start, Number(forcedEnd) - duration));
+    }
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
     const effWin = getContestantEffectiveWindow(contestantId);
@@ -1883,34 +1886,45 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         continue;
       }
 
-      // ✅ No permitir que la tarea se salga de la ventana efectiva del concursante
-      if (effWin && start + duration > effWin.end) {
-        const startsBeforeAvailability = startDay < effWin.start;
+      const maxEndAllowed = Math.min(
+        endDay,
+        Number.isFinite(forcedEnd) ? Number(forcedEnd) : endDay,
+        effWin ? effWin.end : endDay,
+      );
+      if (start + duration > maxEndAllowed) {
+        const hasForcedEnd = Number.isFinite(forcedEnd);
+        const forcedEndText = hasForcedEnd ? toHHMM(Number(forcedEnd)) : null;
+        const startsBeforeAvailability = Boolean(effWin) && startDay < Number(effWin?.start);
+        const code = effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME";
+        const message = hasForcedEnd
+          ? `No hay hueco para ${isDepartureTask(task) ? "OUT" : `\"${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}\"`} antes de ${forcedEndText} (forcedEnd).`
+          : `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
         return {
           scheduled: false,
           reason: {
-            code: "CONTESTANT_NOT_AVAILABLE",
-            message:
-              `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`,
+            code,
+            message,
             taskId,
             details: {
-              availabilityStart: toHHMM(effWin.start),
-              availabilityEnd: toHHMM(effWin.end),
+              availabilityStart: effWin ? toHHMM(effWin.start) : undefined,
+              availabilityEnd: effWin ? toHHMM(effWin.end) : undefined,
               workDayStart: toHHMM(startDay),
               workDayEnd: toHHMM(endDay),
               duration,
               startsBeforeAvailability,
+              forcedEnd: hasForcedEnd ? forcedEndText : undefined,
+              maxEndAllowed: toHHMM(maxEndAllowed),
             },
           },
         } as any;
       }
 
-      const finish = Number.isFinite(forcedEnd) ? Number(forcedEnd) : start + duration;
+      const finish = start + duration;
       if (finish <= start) {
         start = snapUp(start + GRID);
         continue;
       }
-      if (finish > endDay) {
+      if (finish > maxEndAllowed) {
         return {
           scheduled: false,
           reason: {
@@ -4180,7 +4194,14 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     });
   }
 
-  const overlaps: { code: string; message: string }[] = [];
+  const overlaps: { code: string; message: string; details?: any }[] = [];
+  const resolveForcedEndLabel = (task: any): string | null => {
+    const raw = task?.latestEnd ?? task?.fixedWindowEnd ?? task?.forcedEnd ?? task?.forced_end ?? null;
+    if (typeof raw === "string" && raw.includes(":")) return raw;
+    const n = Number(raw);
+    if (Number.isFinite(n)) return toHHMM(n);
+    return null;
+  };
   const byContestant = new Map<
     number,
     Array<{ taskId: number; start: number; end: number; fixed?: boolean }>
@@ -4248,6 +4269,14 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           message:
             `Solape múltiple de concursante${name ? ` (${name})` : ` (ID ${contestantId})`}: ` +
             `hay 3 o más tareas coincidiendo alrededor de ${toHHMM(curr.start)}.`,
+          details: {
+            taskId: Number(curr.taskId),
+            templateName: String((currTask as any)?.templateName ?? "").trim() || undefined,
+            start: toHHMM(curr.start),
+            end: toHHMM(curr.end),
+            durationMin: Math.max(0, curr.end - curr.start),
+            forcedEnd: resolveForcedEndLabel(currTask) ?? undefined,
+          },
         });
         continue;
       }
@@ -4267,6 +4296,11 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
         const prevTag = prev.fixed ? "fija" : "planificada";
         const currTag = curr.fixed ? "fija" : "planificada";
+        const currDuration = Math.max(0, curr.end - curr.start);
+        const currForcedEnd = resolveForcedEndLabel(currTask);
+        const currHint = currForcedEnd
+          ? ` (duración ${currDuration}m, forcedEnd=${currForcedEnd})`
+          : "";
 
         const taskLabel = (id: number) => {
           const t = tasks.find((x) => Number(x.id) === Number(id));
@@ -4279,7 +4313,18 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           message:
             `Solape de concursante${name ? ` (${name})` : ` (ID ${contestantId})`}: ` +
             `tarea "${taskLabel(prev.taskId)}" (${prevTag}) (${toHHMM(prev.start)}–${toHHMM(prev.end)}) ` +
-            `se solapa con tarea "${taskLabel(curr.taskId)}" (${currTag}) (${toHHMM(curr.start)}–${toHHMM(curr.end)}).`,
+            `se solapa con tarea "${taskLabel(curr.taskId)}" (${currTag}) (${toHHMM(curr.start)}–${toHHMM(curr.end)})${currHint}.`,
+          details: {
+            taskId: Number(curr.taskId),
+            templateName: taskLabel(curr.taskId),
+            start: toHHMM(curr.start),
+            end: toHHMM(curr.end),
+            durationMin: currDuration,
+            forcedEnd: currForcedEnd ?? undefined,
+            overlapsWithTaskId: Number(prev.taskId),
+            overlapsWithStart: toHHMM(prev.start),
+            overlapsWithEnd: toHHMM(prev.end),
+          },
         });
       }
     }
