@@ -853,6 +853,7 @@ export default function PlanDetailsPage() {
   const [newAvailabilityStart, setNewAvailabilityStart] = useState("");
   const [newAvailabilityEnd, setNewAvailabilityEnd] = useState("");
   const [refreshingTasksFromTemplates, setRefreshingTasksFromTemplates] = useState(false);
+  const [showInfeasibleDetails, setShowInfeasibleDetails] = useState(false);
   const [selectedContestant, setSelectedContestant] = useState<any | null>(
     null,
   );
@@ -1275,6 +1276,11 @@ ${reasonMessage}` : message,
   };
 
   async function handleRefreshTasksFromTemplates() {
+    const loadingToast = toast({
+      title: "Actualizando tareas desde templates...",
+      description: "Esto puede tardar hasta 2 minutos.",
+    });
+
     try {
       setRefreshingTasksFromTemplates(true);
       const result = await apiRequest<{
@@ -1286,21 +1292,20 @@ ${reasonMessage}` : message,
 
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
 
+      loadingToast.dismiss();
+
+      const successMessages = [
+        result.skippedManualCount > 0
+          ? `${result.skippedManualCount} manuales no actualizadas.`
+          : null,
+        result.skippedNoTemplateCount > 0
+          ? `${result.skippedNoTemplateCount} sin plantilla no actualizadas.`
+          : null,
+      ].filter(Boolean);
+
       toast({
         title: `Actualizadas ${result.updatedCount} tareas.`,
-        description:
-          result.skippedManualCount > 0 || result.skippedNoTemplateCount > 0
-            ? [
-                result.skippedManualCount > 0
-                  ? `${result.skippedManualCount} manuales no actualizadas.`
-                  : null,
-                result.skippedNoTemplateCount > 0
-                  ? `${result.skippedNoTemplateCount} sin plantilla no actualizadas.`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" ")
-            : undefined,
+        description: successMessages.length > 0 ? successMessages.join(" ") : undefined,
       });
 
       if (result.skippedExecutedCount > 0) {
@@ -1309,6 +1314,7 @@ ${reasonMessage}` : message,
         });
       }
     } catch (err: any) {
+      loadingToast.dismiss();
       toast({
         title: "No se pudieron actualizar las tareas",
         description: err?.message || "Inténtalo de nuevo.",
@@ -2080,15 +2086,22 @@ ${reasonMessage}` : message,
                 <CardTitle>Concursantes</CardTitle>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   title="Actualizar tareas con datos por defecto"
                   onClick={handleRefreshTasksFromTemplates}
                   disabled={refreshingTasksFromTemplates}
+                  className="gap-2"
                 >
                   {refreshingTasksFromTemplates ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Actualizando...
+                    </>
                   ) : (
-                    <RotateCcw className="h-4 w-4" />
+                    <>
+                      <RotateCcw className="h-4 w-4" />
+                      Actualizar tareas desde templates
+                    </>
                   )}
                 </Button>
               </CardHeader>
@@ -4453,7 +4466,10 @@ ${reasonMessage}` : message,
         {/* Infeasible Error Dialog */}
         <Dialog
           open={errorDialog.open}
-          onOpenChange={(open) => setErrorDialog((prev) => ({ ...prev, open }))}
+          onOpenChange={(open) => {
+            setErrorDialog((prev) => ({ ...prev, open }));
+            if (!open) setShowInfeasibleDetails(false);
+          }}
         >
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -4544,19 +4560,32 @@ ${reasonMessage}` : message,
                 ) : null}
 
                 {errorDialog.diagnostic?.insights.length ? (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium uppercase text-muted-foreground">Insights</div>
-                    <ul className="space-y-2 text-sm">
-                      {errorDialog.diagnostic.insights.map((insight: any, idx: number) => (
-                        <li key={`insight-${idx}`} className="rounded border p-2">
-                          <div className="font-medium">{String(insight?.code ?? insight?.title ?? `Insight ${idx + 1}`)}</div>
-                          {insight?.message ? <div className="text-xs text-muted-foreground mt-0.5">{String(insight.message)}</div> : null}
-                          {insight?.details ? (
-                            <pre className="mt-2 text-xs whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{JSON.stringify(insight.details, null, 2)}</pre>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setShowInfeasibleDetails((prev) => !prev)}
+                    >
+                      {showInfeasibleDetails ? "Ocultar detalle" : "Detalle"}
+                    </Button>
+
+                    {showInfeasibleDetails ? (
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium uppercase text-muted-foreground">Insights</div>
+                        <ul className="space-y-2 text-sm">
+                          {errorDialog.diagnostic.insights.map((insight: any, idx: number) => (
+                            <li key={`insight-${idx}`} className="rounded border p-2">
+                              <div className="font-medium">{String(insight?.code ?? insight?.title ?? `Insight ${idx + 1}`)}</div>
+                              {insight?.message ? <div className="text-xs text-muted-foreground mt-0.5">{String(insight.message)}</div> : null}
+                              {insight?.details ? (
+                                <pre className="mt-2 text-xs whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{JSON.stringify(insight.details, null, 2)}</pre>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -4657,6 +4686,7 @@ ${reasonMessage}` : message,
 
                       // 5) Cerrar popup (opcional) para que el usuario regenere
                       setErrorDialog({ open: false, reasons: [], diagnostic: null });
+                      setShowInfeasibleDetails(false);
                     } catch (err: any) {
                       toast({
                         title: "No se pudieron crear prerequisitos",
@@ -4674,7 +4704,10 @@ ${reasonMessage}` : message,
               )}
 
               <Button
-                onClick={() => setErrorDialog({ open: false, reasons: [], diagnostic: null })}
+                onClick={() => {
+                  setErrorDialog({ open: false, reasons: [], diagnostic: null });
+                  setShowInfeasibleDetails(false);
+                }}
               >
                 Close
               </Button>

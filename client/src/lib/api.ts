@@ -15,8 +15,13 @@ export async function apiRequest<T>(
   const startedAt = performance.now();
   const requestId = ++requestCounter;
   const controller = new AbortController();
-  const heavyEndpoint = path.includes("/generate") || path.includes("/reset") || path.includes("/replan");
-  const timeoutMs = heavyEndpoint ? 60_000 : 20_000;
+  const heavyEndpoint =
+    path.includes("/generate") ||
+    path.includes("/reset") ||
+    path.includes("/replan") ||
+    path.includes("/refresh-from-templates") ||
+    path.includes("/tasks/refresh");
+  const timeoutMs = heavyEndpoint ? 120_000 : 20_000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   const externalSignal = options?.signal;
