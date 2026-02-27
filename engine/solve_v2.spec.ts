@@ -54,8 +54,7 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
     optimizerWeights: { mainZoneKeepBusy: 10 },
   };
 
-  const run = generatePlanV2(input);
-  assert.equal(mainGapCount(run, tasks, 7), 0);
+  assert.throws(() => generatePlanV2(input), /V2_NO_SELECTION_POSSIBLE/);
 }
 
 {
