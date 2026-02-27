@@ -33,8 +33,8 @@ export type MainZoneGapReason = {
 const DIRECTOR_MODE_KEEP_BUSY_THRESHOLD = 8;
 const DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP = 50;
 const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
-const FEED_MAIN_UNLOCK_BONUS = 2_000_000;
-const FEED_MAIN_SWITCH_PENALTY = 5_000_000;
+const FEED_MAIN_UNLOCK_BONUS = 300_000;
+const FEED_MAIN_SWITCH_PENALTY = 500_000;
 
 function toMinutes(hhmm: string) {
   const value = String(hhmm ?? "").trim();
@@ -3391,6 +3391,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   let mainTemplateSwitchInsight:
     | { fromTpl: number; toTpl: number; hadFeedersReady: boolean; feedersReadyCount: number }
     | null = null;
+  let scoringDiagnosticDetails: { readyCount: number; mainTargetTpl: number | null; feedersReadyCount: number; usedFallback: boolean } | null = null;
 
   while (pendingNonMeal.length) {
     const ready = pendingNonMeal.filter((t) => depsSatisfied(t));
@@ -3470,20 +3471,32 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const hasNonMainReady = ready.some((t) => Number(getZoneId(t)) !== Number(optMainZoneId));
     const pendingTaskIds = new Set<number>(pendingNonMeal.map((t) => Number(t?.id)).filter((id) => Number.isFinite(id) && id > 0));
     const pendingMainTasks = (pendingNonMeal as any[]).filter((task) => Number(getZoneId(task)) === Number(optMainZoneId));
-    const pendingMainByTpl = new Map<number, number>();
-    for (const task of pendingMainTasks) {
-      const taskId = Number(task?.id ?? 0);
-      if (!Number.isFinite(taskId) || taskId <= 0) continue;
-      const status = String(task?.status ?? "pending");
-      if (status === "in_progress" || status === "done") continue;
-      const tpl = Number(task?.templateId ?? NaN);
-      if (!Number.isFinite(tpl) || tpl <= 0) continue;
-      pendingMainByTpl.set(tpl, (pendingMainByTpl.get(tpl) ?? 0) + 1);
-    }
-    const activeMainTpl = optMainZoneId ? activeTemplateByZoneId.get(Number(optMainZoneId)) : null;
-    const mainTargetTpl = Number.isFinite(Number(activeMainTpl)) && Number(activeMainTpl) > 0
-      ? Number(activeMainTpl)
-      : Array.from(pendingMainByTpl.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+    const getMainTargetTemplateId = () => {
+      if (!optMainZoneId || pendingMainTasks.length === 0) return null;
+
+      const pendingMainByTpl = new Map<number, number>();
+      for (const task of pendingMainTasks) {
+        const taskId = Number(task?.id ?? 0);
+        if (!Number.isFinite(taskId) || taskId <= 0) continue;
+        const status = String(task?.status ?? "pending");
+        if (status === "in_progress" || status === "done") continue;
+        const tpl = Number(task?.templateId ?? NaN);
+        if (!Number.isFinite(tpl) || tpl <= 0) continue;
+        pendingMainByTpl.set(tpl, (pendingMainByTpl.get(tpl) ?? 0) + 1);
+      }
+
+      if (pendingMainByTpl.size === 0) return null;
+
+      const activeMainTpl = activeTemplateByZoneId.get(Number(optMainZoneId));
+      if (Number.isFinite(Number(activeMainTpl)) && Number(activeMainTpl) > 0) {
+        return Number(activeMainTpl);
+      }
+
+      const inferredMainTpl = Array.from(pendingMainByTpl.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+      if (!Number.isFinite(Number(inferredMainTpl)) || Number(inferredMainTpl) <= 0) return null;
+      return Number(inferredMainTpl);
+    };
+    const mainTargetTpl = getMainTargetTemplateId();
     const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainTargetTpl)) && Number(mainTargetTpl) > 0);
     const canApplyLookahead2 = Boolean(canFeedMainActive && mainZoneKeepBusyStrength >= 9 && globalGroupingStrength10 >= 9);
 
@@ -3550,8 +3563,11 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       effectiveFinishEarlyWeight === 0,
     );
 
+    const readyFeedersCount = feedersReady.length;
+    const unlockScoreTotal = feedersReady.reduce((acc, feeder) => acc + Number(feeder.unlockScore ?? 0), 0);
+
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
-    const scoreTaskForSelection = (t: any) => {
+    const scoreTaskForSelection = (t: any, useHeuristics = true) => {
       const space = getSpaceId(t) ?? 0;
       const tpl = Number(t?.templateId ?? 0);
       const zone = getZoneId(t);
@@ -3683,7 +3699,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         }
       }
 
-      if (canApplyLookahead2 && Number(zone) !== Number(optMainZoneId)) {
+      if (useHeuristics && canApplyLookahead2 && mainTargetTpl && Number(zone) !== Number(optMainZoneId)) {
         const feederStats = feederStatsByTaskId.get(Number(t?.id ?? 0));
         const unlockScore = Number(feederStats?.unlockScore ?? 0);
         if (unlockScore > 0) {
@@ -3692,10 +3708,13 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
 
       if (
+        useHeuristics &&
         canApplyLookahead2 &&
+        mainTargetTpl &&
         Number(zone) === Number(optMainZoneId) &&
         Number(tpl) !== Number(mainTargetTpl) &&
-        feedersReady.length > 0 &&
+        readyFeedersCount > 0 &&
+        unlockScoreTotal > 0 &&
         !mainTemplateResetArmed
       ) {
         s -= FEED_MAIN_SWITCH_PENALTY;
@@ -3756,24 +3775,53 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       }
     }
 
-    ready.sort((a, b) => {
-      const sa = scoreTaskForSelection(a);
-      const sb = scoreTaskForSelection(b);
+    const computeBestTask = (useHeuristics: boolean, allowAnyScore = false) => {
+      const scored = ready
+        .map((candidate) => {
+          const rawScore = scoreTaskForSelection(candidate, useHeuristics);
+          const safeScore = Number.isFinite(rawScore) ? rawScore : -1e15;
+          return {
+            candidate,
+            score: safeScore,
+            order: originalOrder.get(Number(candidate?.id)) ?? 0,
+          };
+        })
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.order - b.order;
+        });
 
-      const oa = originalOrder.get(Number(a?.id)) ?? 0;
-      const ob = originalOrder.get(Number(b?.id)) ?? 0;
+      const top = scored[0];
+      if (!top) return null;
+      if (!allowAnyScore && top.score <= -1e12) return null;
+      return top.candidate;
+    };
 
-      if (sb !== sa) return sb - sa;
-      return oa - ob;
-    });
+    let usedScoringFallback = false;
+    let task = computeBestTask(true, false);
+    if (!task) {
+      task = computeBestTask(false, true);
+      usedScoringFallback = Boolean(task);
+    }
 
-    const task = ready[0];
+    scoringDiagnosticDetails = {
+      readyCount: ready.length,
+      mainTargetTpl: mainTargetTpl ?? null,
+      feedersReadyCount: readyFeedersCount,
+      usedFallback: usedScoringFallback,
+    };
+
+    if (!task) {
+      break;
+    }
     if (
       canApplyLookahead2 &&
       optMainZoneId &&
       Number(getZoneId(task)) === Number(optMainZoneId) &&
+      mainTargetTpl &&
       Number(task?.templateId ?? 0) !== Number(mainTargetTpl) &&
-      feedersReady.length > 0 &&
+      readyFeedersCount > 0 &&
+      unlockScoreTotal > 0 &&
       !mainTemplateResetArmed
     ) {
       mainTemplateSwitchInsight = {
@@ -4342,6 +4390,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     });
   }
 
+  insights.push({
+    code: "V2_SCORING_DIAGNOSTIC",
+    message: "Diagnóstico del scoring de selección en v2",
+    details: scoringDiagnosticDetails ?? {
+      readyCount: 0,
+      mainTargetTpl: null,
+      feedersReadyCount: 0,
+      usedFallback: false,
+    },
+  });
+
   if (plannedTasks.length === 0 && unplanned.length > 0) {
     const counts = new Map<string, { count: number; label: string }>();
     for (const item of unplanned) {
@@ -4526,6 +4585,13 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   }
 
   const fallback = bestPlan ?? generatePlanV2Single(input, { mainStartGateMin: startDay, mealStartMin: mealWindowStart });
+  const tasksPendingCount = ((input as any)?.tasks ?? []).filter((task: any) => {
+    const status = String(task?.status ?? "pending");
+    return status !== "in_progress" && status !== "done";
+  }).length;
+  if (((fallback as any)?.plannedTasks ?? []).length === 0 && tasksPendingCount > 0) {
+    throw new Error("V2_NO_SELECTION_POSSIBLE");
+  }
   const selected = bestMeta ?? { gate: startDay, meal: mealWindowStart, gapCount: 0, gapTotal: 0, mainSwitches: 0 };
 
   const warnings = Array.isArray((fallback as any)?.warnings) ? [...((fallback as any).warnings)] : [];
@@ -4556,4 +4622,3 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
 
   return { ...fallback, warnings, insights } as EngineOutput;
 }
-
