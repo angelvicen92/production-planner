@@ -1838,6 +1838,15 @@ ${reasonMessage}` : message,
                     if (isAbortLikeError(err)) {
                       toast({ title: "La optimización v2 tardó más de lo esperado, comprobando estado..." });
                       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    } else {
+                      if (import.meta.env.DEV) {
+                        console.error(err);
+                      }
+                      toast({
+                        title: "Error en planificador v2",
+                        description: err?.detail ?? err?.message ?? "Error desconocido",
+                        variant: "destructive",
+                      });
                     }
                   } finally {
                     setPlanningInProgress(false);
