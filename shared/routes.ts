@@ -375,6 +375,23 @@ export const api = {
       },
     },
 
+    tasks: {
+      refreshFromTemplates: {
+        method: "POST" as const,
+        path: "/api/plans/:id/tasks/refresh-from-templates",
+        responses: {
+          200: z.object({
+            updatedCount: z.number(),
+            skippedExecutedCount: z.number(),
+            skippedManualCount: z.number(),
+            skippedNoTemplateCount: z.number(),
+          }),
+          400: errorSchemas.validation,
+          404: errorSchemas.notFound,
+        },
+      },
+    },
+
     vocalCoachRules: {
       list: {
         method: "GET" as const,
