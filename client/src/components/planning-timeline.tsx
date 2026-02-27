@@ -1557,7 +1557,7 @@ function TaskStatusMenuTrigger({
     return (
               <TooltipProvider>
                 <div className="border rounded-xl bg-card shadow-sm">
-                      <div className="h-[650px] w-full overflow-auto">
+                      <div className="w-full min-h-0 overflow-auto" style={{ height: "var(--planning-scroll-height)" }}>
                         <div className="p-4 space-y-6" data-planning-zoom-target>
               {lanesToShow.length === 0 ? (
                 <Card className="p-8 text-center bg-muted/50">
@@ -2606,7 +2606,7 @@ function TaskStatusMenuTrigger({
     return (
       <TooltipProvider>
         <div className="border rounded-xl bg-card shadow-sm">
-          <ScrollArea className="h-[600px] w-full">
+          <ScrollArea className="w-full" style={{ height: "var(--planning-scroll-height)" }}>
             <div className="p-4" data-planning-zoom-target>
               <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedResourceKeys.length)}, minmax(280px, 1fr))` }}>
               {selectedResourceKeys.map((resourceKey) => {
@@ -2703,7 +2703,7 @@ function TaskStatusMenuTrigger({
   return (
     <TooltipProvider>
       <div className="border rounded-xl bg-card shadow-sm">
-        <ScrollArea className="h-[600px] w-full">
+        <ScrollArea className="w-full" style={{ height: "var(--planning-scroll-height)" }}>
           <div className="overflow-x-auto">
             <div className="min-w-[800px] relative pb-4" data-planning-zoom-target>
               {/* Timeline Header */}

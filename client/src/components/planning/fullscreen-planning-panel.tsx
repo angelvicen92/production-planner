@@ -110,7 +110,12 @@ export function FullscreenPlanningPanel({
       )}
       data-density={density}
       data-planning-zoom-enabled={supportsZoom ? "true" : "false"}
-      style={{ ["--planning-zoom" as string]: zoomFactor } as CSSProperties}
+      style={{
+        ["--planning-zoom" as string]: zoomFactor,
+        ["--planning-scroll-height" as string]: isFullscreen
+          ? "calc(100vh - 110px)"
+          : "600px",
+      } as CSSProperties}
     >
       <div className="sticky top-0 z-20 mb-3 flex items-center justify-between gap-3 rounded-lg border bg-card/95 px-3 py-2 backdrop-blur">
         <div className="min-w-0">

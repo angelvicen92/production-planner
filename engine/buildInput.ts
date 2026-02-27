@@ -589,7 +589,22 @@ export async function buildEngineInput(
         const manualScopeId = manualScopeIdRaw == null ? null : Number(manualScopeIdRaw);
         const startPlanned = (t.start_planned ?? t.startPlanned ?? null) as string | null;
         const endPlanned = (t.end_planned ?? t.endPlanned ?? null) as string | null;
-        const explicitDuration = t.duration_override ?? t.durationOverride ?? null;
+        const explicitDurationRaw = t.duration_override ?? t.durationOverride ?? null;
+        const templateDurationRaw =
+          (tpl as any)?.default_duration ??
+          (tpl as any)?.defaultDuration ??
+          (tpl as any)?.default_duration_min ??
+          (tpl as any)?.defaultDurationMin ??
+          null;
+        const toNormalizedDuration = (value: unknown): number | null => {
+          const parsed = Number(value);
+          if (!Number.isFinite(parsed) || parsed <= 0) return null;
+          return Math.max(1, Math.floor(parsed));
+        };
+        const effectiveDurationMin =
+          toNormalizedDuration(explicitDurationRaw) ??
+          toNormalizedDuration(templateDurationRaw) ??
+          30;
         const lockForTask = lockByTaskId.get(Number(t.id));
         const manualDuration = (() => {
           const startMin = minutesFromHHMM(startPlanned);
@@ -654,7 +669,7 @@ export async function buildEngineInput(
           dependsOnTemplateId: isManualBlock ? null : dependsOnTemplateId,
           dependsOnTaskId: isManualBlock ? null : dependsOnTaskId,
 
-        durationOverrideMin: isManualBlock ? manualDuration : explicitDuration,
+        durationOverrideMin: isManualBlock ? manualDuration : effectiveDurationMin,
         camerasOverride: (t.cameras_override ?? t.camerasOverride ?? null) as
           | 0
           | 1
