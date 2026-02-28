@@ -417,7 +417,23 @@ export function explainMainZoneGaps(params: {
   return reasons;
 }
 
-function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?: number; mealStartMin?: number; chosenMealStartMin?: number }): EngineOutput {
+type SolveV2AttemptPenaltyWindow = {
+  spaceId: number;
+  from: number;
+  to: number;
+  penalty: number;
+};
+
+type SolveV2AttemptOptions = {
+  mainStartGateMin?: number;
+  mealStartMin?: number;
+  chosenMealStartMin?: number;
+  optimizerWeightsOverride?: Record<string, number>;
+  maxIterations?: number;
+  penalizeSchedulingInSpaceWindow?: SolveV2AttemptPenaltyWindow[];
+};
+
+function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOptions): EngineOutput {
   const reasons: { code: string; message: string }[] = [];
   const unplanned: {
     taskId: number;
@@ -1741,6 +1757,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const contestantTotalSpanWeights = [0, 200, 400, 650, 900, 1_200, 1_600, 2_000, 2_400, 2_900, 3_500];
 
   const weightFromInput = (key: keyof NonNullable<(typeof input)["optimizerWeights"]>, fallback: number) => {
+    const overrideRaw = (options as any)?.optimizerWeightsOverride?.[String(key)];
+    if (Number.isFinite(Number(overrideRaw))) {
+      return Math.max(0, Math.min(10, Number(overrideRaw)));
+    }
     const raw = (input as any)?.optimizerWeights?.[key];
     if (!Number.isFinite(Number(raw))) return fallback;
     return Math.max(0, Math.min(10, Number(raw)));
@@ -1806,6 +1826,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     mainZoneKeepBusyStrength >= 9 &&
     globalGroupingStrength10 >= 9,
   );
+
+  const selectionSpacePenalties = (Array.isArray(options?.penalizeSchedulingInSpaceWindow)
+    ? options?.penalizeSchedulingInSpaceWindow
+    : [])
+    .map((w) => ({
+      spaceId: Number((w as any)?.spaceId ?? NaN),
+      from: Number((w as any)?.from ?? NaN),
+      to: Number((w as any)?.to ?? NaN),
+      penalty: Math.max(0, Number((w as any)?.penalty ?? 0)),
+    }))
+    .filter((w) => Number.isFinite(w.spaceId) && w.spaceId > 0 && Number.isFinite(w.from) && Number.isFinite(w.to) && w.to > w.from && w.penalty > 0);
 
   // “memoria” por clave de contenedor de agrupación (espacio hoja, ancestro o zona)
   const lastTemplateByKey = new Map<string, number>();
@@ -1976,7 +2007,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     if (optMainZoneId && Number(zoneId) === Number(optMainZoneId)) start = snapUp(Math.max(start, mainStartGateMin));
 
     // bucle de búsqueda (avanzando GRID) hasta encajar con todas las restricciones
-    const maxIter = 20000; // defensivo
+    const maxIter = Math.max(500, Number.isFinite(Number(options?.maxIterations)) ? Number(options?.maxIterations) : 20000); // defensivo
     let iter = 0;
     let lastBump: null | { code: string; message: string; details?: any } = null;
 
@@ -2079,6 +2110,21 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
               startsBeforeAvailability,
               maxEndAllowed: toHHMM(maxEndAllowed),
               ...(lastBump?.details ?? {}),
+              blockingTasks:
+                (lastBump?.code === "SPACE_BUSY" && Number.isFinite(Number((lastBump as any)?.details?.spaceId)))
+                  ? (occupiedBySpace.get(Number((lastBump as any)?.details?.spaceId)) ?? [])
+                      .filter((it) => rangesOverlap(it.start, it.end, effWin ? effWin.start : startDay, maxEndAllowed))
+                      .slice(0, 8)
+                      .map((it) => {
+                        const bt = taskById.get(Number(it.taskId));
+                        return {
+                          taskId: Number(it.taskId),
+                          label: String(bt?.templateName ?? bt?.manualTitle ?? `Tarea #${Number(it.taskId)}`),
+                          start: toHHMM(Number(it.start)),
+                          end: toHHMM(Number(it.end)),
+                        };
+                      })
+                  : undefined,
             },
           },
         } as any;
@@ -4465,6 +4511,19 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         s -= FEED_MAIN_SWITCH_PENALTY;
       }
 
+      if (selectionSpacePenalties.length > 0) {
+        const spaceId = Number(getSpaceId(t) ?? NaN);
+        const contestantId = getContestantId(t);
+        const contestantAvailability = contestantId ? contestantAvailabilityById[Number(contestantId)] ?? null : null;
+        const criticalWindowStart = contestantAvailability ? (parseHHMMSafe(contestantAvailability.start) ?? startDay) : startDay;
+        const criticalWindowEnd = contestantAvailability ? (parseHHMMSafe(contestantAvailability.end) ?? endDay) : endDay;
+        for (const penaltyWindow of selectionSpacePenalties) {
+          if (spaceId !== penaltyWindow.spaceId) continue;
+          if (!rangesOverlap(criticalWindowStart, criticalWindowEnd, penaltyWindow.from, penaltyWindow.to)) continue;
+          s -= penaltyWindow.penalty;
+        }
+      }
+
       return s;
     };
 
@@ -5404,7 +5463,7 @@ function computeMainZoneGapStats(params: {
   return { gapCount, gapMinutes };
 }
 
-export function generatePlanV2(input: EngineInput): EngineOutput {
+export function solve_v2_attempt(input: EngineInput, attemptOptions?: SolveV2AttemptOptions): EngineOutput {
   const keepBusyStrength = Number((input as any)?.optimizerWeights?.mainZoneKeepBusy ?? 0);
   const hardNoGaps = Boolean((input as any)?.optimizerMainZoneOptKeepBusy === true && keepBusyStrength === 10);
   const startDay = toMinutes(input.workDay.start);
@@ -5418,7 +5477,7 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
 
   const runSingle = (opts: { mainStartGateMin?: number; mealStartMin?: number; chosenMealStartMin?: number }) => {
     try {
-      return generatePlanV2Single(input, opts) as any;
+      return generatePlanV2Single(input, { ...(attemptOptions ?? {}), ...(opts ?? {}) }) as any;
     } catch (error: any) {
       if (String(error?.message ?? "") !== "V2_EMPTY_AFTER_EXCLUSIONS") throw error;
       return {
@@ -5637,4 +5696,144 @@ export function generatePlanV2(input: EngineInput): EngineOutput {
   }
 
   return { ...fallback, warnings, insights } as EngineOutput;
+}
+
+
+type SolveAttemptSummary = { level: number; ok: boolean; topReasons: string[]; reason?: string };
+
+type RepairConfig = {
+  level: number;
+  reason: string;
+  degradations: string[];
+  options: SolveV2AttemptOptions;
+};
+
+function summarizeTopReasons(output: EngineOutput): string[] {
+  const unplanned = Array.isArray((output as any)?.unplanned) ? (output as any).unplanned : [];
+  const reasons = new Map<string, number>();
+  for (const item of unplanned) {
+    const code = String(item?.reason?.code ?? item?.reason ?? 'UNSPECIFIED');
+    reasons.set(code, (reasons.get(code) ?? 0) + 1);
+  }
+  return Array.from(reasons.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code]) => code);
+}
+
+function parseHHMMSafe(value: any): number | null {
+  if (typeof value !== "string" || !value.includes(":")) return null;
+  try {
+    return toMinutes(value);
+  } catch {
+    return null;
+  }
+}
+
+function deriveRepairPlanFromDiagnostics(_input: EngineInput, diagnostics: EngineOutput): RepairConfig[] {
+  const unplanned = Array.isArray((diagnostics as any)?.unplanned) ? (diagnostics as any).unplanned : [];
+  const hasShortAvailability = unplanned.some((item: any) => parseHHMMSafe(item?.reason?.details?.availabilityEnd) !== null);
+  const spaceBusyCritical = unplanned.filter((item: any) => String(item?.reason?.code ?? '') === 'SPACE_BUSY' && Number.isFinite(Number(item?.reason?.details?.spaceId)));
+  const penalties: SolveV2AttemptPenaltyWindow[] = [];
+  for (const item of spaceBusyCritical.slice(0, 5)) {
+    const d = item?.reason?.details ?? {};
+    const from = parseHHMMSafe(d?.availabilityStart);
+    const to = parseHHMMSafe(d?.maxEndAllowed);
+    const spaceId = Number(d?.spaceId ?? NaN);
+    if (!Number.isFinite(spaceId) || from === null || to === null || to <= from) continue;
+    penalties.push({ spaceId, from: Number(from), to: Number(to), penalty: 1_000_000 });
+  }
+
+  const repairs: RepairConfig[] = [];
+  if (hasShortAvailability) {
+    repairs.push({
+      level: 1,
+      reason: 'boosted slack priority',
+      degradations: ['boost_least_slack'],
+      options: { optimizerWeightsOverride: { contestantCompact: 0, contestantTotalSpan: 0, mainZoneKeepBusy: 10 } },
+    });
+  }
+
+  if (penalties.length > 0) {
+    repairs.push({
+      level: 2,
+      reason: 'applied space-window penalties for blockers',
+      degradations: ['penalize_space_window_blockers'],
+      options: { penalizeSchedulingInSpaceWindow: penalties },
+    });
+  }
+
+  repairs.push({
+    level: 3,
+    reason: 'relaxed soft grouping and stage-change minimization',
+    degradations: ['relax_minimize_stage_changes', 'relax_grouping_preferences'],
+    options: {
+      optimizerWeightsOverride: {
+        groupBySpaceTemplateMatch: 0,
+        groupBySpaceActive: 0,
+        contestantStayInZone: 0,
+      },
+    },
+  });
+
+  repairs.push({
+    level: 4,
+    reason: 'small repair search (beam/lns-like) with broader iterations',
+    degradations: ['lns_move_blockers'],
+    options: { maxIterations: 40000 },
+  });
+
+  return repairs;
+}
+
+export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
+  const attemptsSummary: SolveAttemptSummary[] = [];
+  const attempt0 = solve_v2_attempt(input, {});
+  const attempt0ok = Boolean((attempt0 as any)?.complete);
+  attemptsSummary.push({ level: 0, ok: attempt0ok, topReasons: summarizeTopReasons(attempt0), reason: 'base_options' });
+  if (attempt0ok) {
+    return { ...attempt0, report: { repairsTried: 0, degradations: [], attemptsSummary } } as EngineOutput;
+  }
+
+  const repairs = deriveRepairPlanFromDiagnostics(input, attempt0);
+  let latest = attempt0;
+  const appliedDegradations: string[] = [];
+  let accumulatedOptions: SolveV2AttemptOptions = {};
+  for (const repair of repairs) {
+    accumulatedOptions = {
+      ...accumulatedOptions,
+      ...repair.options,
+      optimizerWeightsOverride: {
+        ...(accumulatedOptions.optimizerWeightsOverride ?? {}),
+        ...(repair.options.optimizerWeightsOverride ?? {}),
+      },
+      penalizeSchedulingInSpaceWindow: repair.options.penalizeSchedulingInSpaceWindow ?? accumulatedOptions.penalizeSchedulingInSpaceWindow,
+      maxIterations: repair.options.maxIterations ?? accumulatedOptions.maxIterations,
+    };
+    const out = solve_v2_attempt(input, accumulatedOptions);
+    const ok = Boolean((out as any)?.complete);
+    attemptsSummary.push({ level: repair.level, ok, topReasons: summarizeTopReasons(out), reason: repair.reason });
+    latest = out;
+    appliedDegradations.push(...repair.degradations);
+    if (ok) {
+      return {
+        ...out,
+        report: {
+          repairsTried: repair.level,
+          degradations: Array.from(new Set(appliedDegradations)),
+          attemptsSummary,
+        },
+      } as EngineOutput;
+    }
+  }
+
+  return {
+    ...latest,
+    report: {
+      repairsTried: attemptsSummary.length - 1,
+      degradations: Array.from(new Set(appliedDegradations)),
+      attemptsSummary,
+    },
+  } as EngineOutput;
+}
+
+export function generatePlanV2(input: EngineInput): EngineOutput {
+  return solve_v2_with_repairs(input);
 }
