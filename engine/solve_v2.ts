@@ -555,9 +555,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const isItinerantTask = (task: any) => {
     if (!task) return false;
     const teamId = Number(task?.itinerantTeamId ?? 0);
+    const requirement = String(task?.itinerantTeamRequirement ?? "")
+      .trim()
+      .toLowerCase();
+    const hasItinerantRequirement = requirement === "any" || requirement === "specific";
     return Boolean(
-      Number.isFinite(teamId) &&
-      teamId > 0 &&
+      ((Number.isFinite(teamId) && teamId > 0) || hasItinerantRequirement) &&
       !task?.isMeal &&
       !task?.isArrival &&
       !task?.isDeparture &&
@@ -579,6 +582,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
   const wrapInnerByTaskId = new Map<number, number>();
   const wrapConfigByInnerTaskId = new Map<number, { wrapTaskId: number; pre: number; post: number }>();
+  const taskIndexById = new Map<number, number>();
 
   const isWrapTask = (task: any) => {
     if (!isItinerantTask(task)) return false;
@@ -630,6 +634,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       const wrapSpaceId = Number(getSpaceId(wrapTask) ?? 0);
       if (!Number.isFinite(wrapSpaceId) || wrapSpaceId <= 0) continue;
       const wrapInterval = resolveTaskInterval(wrapTask);
+      const wrapDepends = new Set<number>(getDepTaskIds(wrapTask));
+      const wrapIndex = taskIndexById.get(wrapTaskId) ?? Number.POSITIVE_INFINITY;
 
       const candidates = tasksSorted.filter((task: any) => {
         if (!isCandidateInnerForWrap(task)) return false;
@@ -648,14 +654,22 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           const overlap = wrapInterval && innerInterval
             ? rangesOverlap(wrapInterval.start, wrapInterval.end, innerInterval.start, innerInterval.end)
             : false;
-          const distance = wrapInterval && innerInterval
+          const intervalDistance = wrapInterval && innerInterval
             ? (overlap ? 0 : Math.abs(innerInterval.start - wrapInterval.start))
             : Number.POSITIVE_INFINITY;
-          return { innerTaskId, overlap, distance };
+          const innerDepends = new Set<number>(getDepTaskIds(innerTask));
+          const hasDependencyLink = wrapDepends.has(innerTaskId) || innerDepends.has(wrapTaskId);
+          const innerIndex = taskIndexById.get(innerTaskId) ?? Number.POSITIVE_INFINITY;
+          const indexDistance = Number.isFinite(wrapIndex) && Number.isFinite(innerIndex)
+            ? Math.abs(innerIndex - wrapIndex)
+            : Number.POSITIVE_INFINITY;
+          return { innerTaskId, overlap, intervalDistance, hasDependencyLink, indexDistance };
         })
         .sort((a, b) => {
           if (Number(b.overlap) !== Number(a.overlap)) return Number(b.overlap) - Number(a.overlap);
-          if (a.distance !== b.distance) return a.distance - b.distance;
+          if (a.intervalDistance !== b.intervalDistance) return a.intervalDistance - b.intervalDistance;
+          if (Number(b.hasDependencyLink) !== Number(a.hasDependencyLink)) return Number(b.hasDependencyLink) - Number(a.hasDependencyLink);
+          if (a.indexDistance !== b.indexDistance) return a.indexDistance - b.indexDistance;
           return a.innerTaskId - b.innerTaskId;
         });
 
@@ -682,20 +696,18 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const rightContestantId = getContestantId(rightTask);
     const leftSpaceId = getSpaceId(leftTask);
     const rightSpaceId = getSpaceId(rightTask);
-    const leftItinerantTeamId = Number(leftTask?.itinerantTeamId ?? 0);
-    const rightItinerantTeamId = Number(rightTask?.itinerantTeamId ?? 0);
 
     if (!leftContestantId || !rightContestantId || !leftSpaceId || !rightSpaceId) return false;
     if (Number(leftContestantId) !== Number(rightContestantId)) return false;
     if (Number(leftSpaceId) !== Number(rightSpaceId)) return false;
-    if (leftItinerantTeamId > 0 && rightItinerantTeamId > 0) return false;
 
     const leftId = Number(leftTask?.id ?? 0);
     const rightId = Number(rightTask?.id ?? 0);
     if (!Number.isFinite(leftId) || !Number.isFinite(rightId) || leftId <= 0 || rightId <= 0) return false;
 
-    if (leftItinerantTeamId > 0) return wrapInnerByTaskId.get(leftId) === rightId;
-    if (rightItinerantTeamId > 0) return wrapInnerByTaskId.get(rightId) === leftId;
+    if (isItinerantTask(leftTask) && isItinerantTask(rightTask)) return false;
+    if (isItinerantTask(leftTask)) return wrapInnerByTaskId.get(leftId) === rightId;
+    if (isItinerantTask(rightTask)) return wrapInnerByTaskId.get(rightId) === leftId;
     return false;
   };
 
@@ -1080,6 +1092,12 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const tasksSorted = sortedIds
     .map((id) => (tasksForSolve as any[]).find((t) => Number(t.id) === id))
     .filter(Boolean) as any[];
+
+  taskIndexById.clear();
+  for (let idx = 0; idx < tasksSorted.length; idx += 1) {
+    const taskId = Number(tasksSorted[idx]?.id ?? 0);
+    if (Number.isFinite(taskId) && taskId > 0) taskIndexById.set(taskId, idx);
+  }
 
   buildWrapInnerMapping();
   const forcedStartByTaskId = new Map<number, number>();

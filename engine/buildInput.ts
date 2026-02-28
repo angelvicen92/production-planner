@@ -750,6 +750,10 @@ export async function buildEngineInput(
             Number.isFinite(Number((tpl as any)?.itinerantTeamId))
               ? Number((tpl as any).itinerantTeamId)
               : null,
+          itinerantTeamRequirement:
+            (tpl as any)?.itinerantTeamRequirement ??
+            (tpl as any)?.itinerant_team_requirement ??
+            "none",
 
           // ✅ Dependencias (ya resueltas a taskIds)
           hasDependency: isManualBlock ? false : hasDependency,
@@ -801,6 +805,7 @@ export async function buildEngineInput(
               breakKind: String(b.kind),
               itinerantTeamId:
                 b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
+              itinerantTeamRequirement: "none",
               fixedWindowStart: (() => {
                 const spaceId = b.space_id == null ? null : Number(b.space_id);
                 const zid = spaceId == null ? null : (zoneIdBySpaceId[spaceId] ?? null);

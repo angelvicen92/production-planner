@@ -401,3 +401,63 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.ok((run.plannedTasks ?? []).length > 0);
   assert.ok(!(run.warnings ?? []).some((w: any) => w?.code === "V2_EMPTY_RESULT"));
 }
+
+// Wrap itinerante con requirement=any (teamId null) debe envolver inner y no bloquear espacio a otro concursante.
+{
+  const input: EngineInput = {
+    planId: 61,
+    workDay: { start: "11:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      { id: 6103, planId: 61, templateId: 50, templateName: "Prereq A", zoneId: 7, spaceId: 80, contestantId: 1, status: "done", startPlanned: "11:00", endPlanned: "11:15", durationOverrideMin: 15 },
+      { id: 6101, planId: 61, templateId: 51, templateName: "Inner", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 15, dependsOnTaskIds: [6103] },
+      {
+        id: 6102,
+        planId: 61,
+        templateId: 52,
+        templateName: "Wrap itinerante any",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 1,
+        status: "pending",
+        durationOverrideMin: 30,
+        itinerantTeamId: null,
+        itinerantTeamRequirement: "any",
+        dependsOnTaskIds: [6101],
+      },
+      { id: 6104, planId: 61, templateId: 53, templateName: "Otro concursante mismo espacio", zoneId: 7, spaceId: 71, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    ],
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const byTask = new Map((run.plannedTasks ?? []).map((p: any) => [Number(p.taskId), p]));
+
+  const inner = byTask.get(6101);
+  const wrap = byTask.get(6102);
+  const other = byTask.get(6104);
+
+  assert.ok(inner);
+  assert.ok(wrap);
+  assert.ok(other);
+
+  const innerStart = toMin(String(inner.startPlanned));
+  const innerEnd = toMin(String(inner.endPlanned));
+  const wrapStart = toMin(String(wrap.startPlanned));
+  const wrapEnd = toMin(String(wrap.endPlanned));
+
+  assert.equal(wrapStart, innerStart - 15);
+  assert.equal(wrapEnd, innerEnd + 15);
+
+  const otherStart = toMin(String(other.startPlanned));
+  const otherEnd = toMin(String(other.endPlanned));
+  assert.ok(otherStart < wrapEnd && otherEnd > wrapStart);
+}
