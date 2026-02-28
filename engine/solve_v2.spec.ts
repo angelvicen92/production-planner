@@ -461,3 +461,116 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   const otherEnd = toMin(String(other.endPlanned));
   assert.ok(otherStart < wrapEnd && otherEnd > wrapStart);
 }
+
+// Si no existen candidatos en pools (espacio/zona/global) para byItem, debe fallar inmediato con RESOURCE_POOL_EMPTY.
+{
+  const input: EngineInput = {
+    planId: 62,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      {
+        id: 6201,
+        planId: 62,
+        templateId: 700,
+        templateName: "Reality",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 1,
+        status: "pending",
+        durationOverrideMin: 30,
+        resourceRequirements: { byItem: { 9999: 1 } },
+      },
+      {
+        id: 6202,
+        planId: 62,
+        templateId: 701,
+        templateName: "Tarea base",
+        zoneId: 7,
+        spaceId: 72,
+        contestantId: 2,
+        status: "pending",
+        durationOverrideMin: 30,
+      },
+    ] as any,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const reason = (run.unplannedTasks ?? [])[0]?.reason;
+  assert.equal(reason?.code, "RESOURCE_POOL_EMPTY");
+  assert.equal(reason?.details?.requirementKind, "byItem");
+}
+
+// Si el start se desplaza por espacio y al final supera maxEndAllowed, debe devolver SPACE_BUSY (no CONTESTANT_NOT_AVAILABLE).
+{
+  const input: EngineInput = {
+    planId: 63,
+    workDay: { start: "09:00", end: "11:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    contestantAvailabilityById: {
+      10: { start: "09:00", end: "10:00" },
+    } as any,
+    tasks: [
+      {
+        id: 6300,
+        planId: 63,
+        templateId: 800,
+        templateName: "Bloqueo espacio",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 99,
+        status: "done",
+        startPlanned: "09:00",
+        endPlanned: "10:00",
+        durationOverrideMin: 60,
+      },
+      {
+        id: 6301,
+        planId: 63,
+        templateId: 801,
+        templateName: "Reality",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 10,
+        contestantName: "Ana",
+        status: "pending",
+        durationOverrideMin: 30,
+      },
+      {
+        id: 6302,
+        planId: 63,
+        templateId: 802,
+        templateName: "Tarea base",
+        zoneId: 7,
+        spaceId: 72,
+        contestantId: 11,
+        status: "pending",
+        durationOverrideMin: 30,
+      },
+    ] as any,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const reason = (run.unplannedTasks ?? []).find((t: any) => Number(t?.taskId) === 6301)?.reason;
+  assert.equal(reason?.code, "SPACE_BUSY");
+  assert.ok(String(reason?.message ?? "").includes("Espacio ocupado"));
+  assert.equal(reason?.details?.lastBumpDetails?.spaceId, 71);
+}

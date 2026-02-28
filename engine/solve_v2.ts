@@ -1978,6 +1978,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     // bucle de búsqueda (avanzando GRID) hasta encajar con todas las restricciones
     const maxIter = 20000; // defensivo
     let iter = 0;
+    let lastBump: null | { code: string; message: string; details?: any } = null;
 
     while (iter++ < maxIter) {
       // 2.1) Espacio: hueco libre en space
@@ -1985,16 +1986,39 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       let candidate = effectiveSpaceId && !isMatchedWrapTask
         ? findEarliestGap(spaceOcc, start, duration)
         : start;
+      if (candidate !== start) {
+        lastBump = {
+          code: "SPACE_BUSY",
+          message: `Espacio ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
+          details: {
+            spaceId: effectiveSpaceId,
+            from: toHHMM(start),
+            suggested: toHHMM(candidate),
+          },
+        };
+      }
 
       // 2.2) Bloqueo por comida de plató (zona): NO se puede solapar
       if (effectiveZoneId) {
+        const prevCandidate = candidate;
         const zOcc = occupiedByZoneMeal.get(effectiveZoneId) ?? [];
         candidate = findEarliestGap(zOcc, candidate, duration);
+        if (candidate !== prevCandidate) {
+          lastBump = {
+            code: "ZONE_MEAL_BLOCK",
+            message: `Bloque comida zona impide "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
+            details: {
+              zoneId: effectiveZoneId,
+              suggested: toHHMM(candidate),
+            },
+          };
+        }
       }
 
       // 2.3) Concursante: hueco libre (inner con wrap usa intervalo extendido)
       if (contestantId) {
         const cOcc = occupiedByContestant.get(contestantId) ?? [];
+        const prevCandidate = candidate;
         if (wrapCfg) {
           const extendedStart = candidate - wrapCfg.pre;
           const extendedDuration = duration + wrapCfg.pre + wrapCfg.post;
@@ -2006,6 +2030,16 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           ) + wrapCfg.pre;
         } else {
           candidate = findEarliestGap(cOcc, candidate, duration);
+        }
+        if (candidate !== prevCandidate) {
+          lastBump = {
+            code: "CONTESTANT_BUSY",
+            message: `Concursante ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
+            details: {
+              contestantId,
+              suggested: toHHMM(candidate),
+            },
+          };
         }
       }
 
@@ -2028,8 +2062,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       const wrapExtendedEnd = wrapCfg ? (start + duration + wrapCfg.post) : (start + duration);
       if (wrapExtendedStart < startDay || wrapExtendedEnd > maxEndAllowed) {
         const startsBeforeAvailability = Boolean(effWin) && startDay < Number(effWin?.start);
-        const code = effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME";
-        const message = `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
+        const code = lastBump?.code ?? (effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME");
+        const message = lastBump?.message ?? `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
         return {
           scheduled: false,
           reason: {
@@ -2044,6 +2078,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
               duration,
               startsBeforeAvailability,
               maxEndAllowed: toHHMM(maxEndAllowed),
+              ...(lastBump?.details ?? {}),
+              ...(lastBump?.details ? { lastBumpDetails: lastBump.details } : {}),
             },
           },
         } as any;
@@ -2089,6 +2125,14 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
             (intervalTaskId) => intervalTaskId === wrapTaskId,
           ) + wrapCfg.pre;
           if (teamStart !== start) {
+            lastBump = {
+              code: "ITINERANT_TEAM_BUSY",
+              message: `Equipo itinerante ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
+              details: {
+                itinerantTeamId: wrapTeamId,
+                suggested: toHHMM(teamStart),
+              },
+            };
             start = snapUp(teamStart);
             continue;
           }
@@ -2120,6 +2164,14 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         const teamStart = findEarliestGap(teamOcc, start, duration);
         if (teamStart !== start) {
+          lastBump = {
+            code: "ITINERANT_TEAM_BUSY",
+            message: `Equipo itinerante ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
+            details: {
+              itinerantTeamId: taskItinerantTeamId,
+              suggested: toHHMM(teamStart),
+            },
+          };
           start = snapUp(teamStart);
           continue;
         }
@@ -2133,6 +2185,13 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       // hay que volver al inicio del while para recalcular huecos (contestante/espacio/zona).
       let retry = false;
       const bumpStartAndRetry = () => {
+        lastBump = {
+          code: "RESOURCE_NOT_AVAILABLE",
+          message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+          details: {
+            from: toHHMM(start),
+          },
+        };
         start = snapUp(start + GRID);
         retry = true;
       };
@@ -2202,6 +2261,22 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           );
 
           const need = Math.max(0, Math.floor(qty));
+          if (need > 0 && candidates.length === 0) {
+            return {
+              scheduled: false,
+              reason: {
+                code: "RESOURCE_POOL_EMPTY",
+                message: `La tarea "${String(task?.templateName ?? `tarea ${taskId}`)}" requiere recursos que no tienen candidatos configurados (zona/espacio/global).`,
+                taskId,
+                details: {
+                  requirementKind: "byItem",
+                  resourceItemId,
+                  zoneId: effectiveZoneId,
+                  spaceId: effectiveSpaceId,
+                },
+              },
+            } as any;
+          }
           const got = tryPick(candidates, need);
 
           if (got.length < need) {
@@ -2239,6 +2314,22 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           );
 
           const need = Math.max(0, Math.floor(qty));
+          if (need > 0 && candidates.length === 0) {
+            return {
+              scheduled: false,
+              reason: {
+                code: "RESOURCE_POOL_EMPTY",
+                message: `La tarea "${String(task?.templateName ?? `tarea ${taskId}`)}" requiere recursos que no tienen candidatos configurados (zona/espacio/global).`,
+                taskId,
+                details: {
+                  requirementKind: "byType",
+                  typeId,
+                  zoneId: effectiveZoneId,
+                  spaceId: effectiveSpaceId,
+                },
+              },
+            } as any;
+          }
           const got = tryPick(candidates, need);
 
           if (got.length < need) {
