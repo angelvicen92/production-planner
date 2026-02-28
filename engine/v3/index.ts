@@ -205,34 +205,35 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       if (timeLimitSeconds > 0) {
         options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
         const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
-        if (optimized?.output) {
-          const candidateErrors = validateOptimizedCandidate(input, output, optimized.output);
-          const accepted = candidateErrors.length === 0;
-          const chosenOutput = accepted ? optimized.output : output;
-          const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
-          const qualityInsight = {
-            code: "V3_PHASE_B_QUALITY",
-            message: accepted
+        const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
+        const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+        const chosenOutput = accepted ? optimized.output : output;
+        const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
+        const qualityInsight = {
+          code: "V3_PHASE_B_QUALITY",
+          message: optimized.noOptimized
+            ? optimized.message
+            : accepted
               ? optimized.message
               : "CP-SAT produjo candidato con potenciales hard rotas; se conserva Fase A.",
-            details: {
-              ...optimized.quality,
-              accepted,
-              candidateErrors,
-              degradations: optimized.degradations,
-              technical: optimized.technicalDetails,
-            },
-          };
-          output = {
-            ...chosenOutput,
-            insights: [...insights, qualityInsight],
-            report: {
-              repairsTried: output.report?.repairsTried ?? 0,
-              degradations: [...(output.report?.degradations ?? []), ...optimized.degradations.map((d: any) => `near_hard:${d.rule}:${d.taskId}`)],
-              attemptsSummary: output.report?.attemptsSummary ?? [],
-            },
-          };
-        }
+          details: {
+            ...optimized.quality,
+            accepted,
+            noOptimized: Boolean(optimized.noOptimized),
+            candidateErrors,
+            degradations: optimized.degradations,
+            technical: optimized.technicalDetails,
+          },
+        };
+        output = {
+          ...chosenOutput,
+          insights: [...insights, qualityInsight],
+          report: {
+            repairsTried: output.report?.repairsTried ?? 0,
+            degradations: [...(output.report?.degradations ?? []), ...optimized.degradations.map((d: any) => `near_hard:${d.rule}:${d.taskId}`)],
+            attemptsSummary: output.report?.attemptsSummary ?? [],
+          },
+        };
       }
 
       options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3: plan completo encontrado (Fase A/B)" });

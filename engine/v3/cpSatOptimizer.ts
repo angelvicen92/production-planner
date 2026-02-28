@@ -6,6 +6,7 @@ import type { EngineV3Input } from "./types";
 
 export type CpSatOptimizationResult = {
   output: EngineOutput;
+  noOptimized?: boolean;
   quality: {
     improved: boolean;
     baselineScore: number;
@@ -25,8 +26,26 @@ export function optimizeWithCpSat(
   input: EngineV3Input,
   warmStart: EngineOutput,
   timeLimitSeconds: number,
-): CpSatOptimizationResult | null {
-  if (!existsSync(SCRIPT_PATH)) return null;
+): CpSatOptimizationResult {
+  const baselineResult = (message: string, technicalDetails: string[]): CpSatOptimizationResult => ({
+    output: warmStart,
+    noOptimized: true,
+    quality: {
+      improved: false,
+      baselineScore: 0,
+      optimizedScore: 0,
+      objectiveDelta: 0,
+      mainZoneGapMinutesDelta: 0,
+      spaceSwitchesDelta: 0,
+    },
+    degradations: [],
+    message,
+    technicalDetails,
+  });
+
+  if (!existsSync(SCRIPT_PATH)) {
+    return baselineResult("CP-SAT script no encontrado; se conserva Fase A.", ["cp_sat_script_missing"]);
+  }
 
   const payload = JSON.stringify({
     engineInput: input,
@@ -41,18 +60,23 @@ export function optimizeWithCpSat(
   });
 
   if (py.error) {
-    return null;
+    return baselineResult("Error invocando CP-SAT; se conserva Fase A.", [String(py.error?.message || py.error)]);
   }
 
   if (py.status !== 0) {
-    return null;
+    const stderr = String(py.stderr || "").trim();
+    const detail = stderr || `python_exit_status=${py.status}`;
+    return baselineResult("CP-SAT devolvió error de ejecución; se conserva Fase A.", [detail]);
   }
 
   try {
     const parsed = JSON.parse(py.stdout || "{}");
-    if (!parsed || !parsed.output) return null;
+    if (!parsed || !parsed.output) {
+      return baselineResult("Respuesta CP-SAT inválida; se conserva Fase A.", ["missing_output_in_cp_sat_response"]);
+    }
     return parsed as CpSatOptimizationResult;
-  } catch {
-    return null;
+  } catch (error) {
+    const stderr = String(py.stderr || "").trim();
+    return baselineResult("No se pudo parsear salida CP-SAT; se conserva Fase A.", [String((error as Error)?.message || error), stderr].filter(Boolean));
   }
 }
