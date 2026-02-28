@@ -170,6 +170,7 @@ export interface EngineInput {
   // ✅ compactar concursantes (0=Off..3=Fuerte)
   optimizerContestantCompactLevel?: number;
   optimizerContestantStayInZoneLevel?: number;
+  optimizerNearHardBreaksMax?: number;
 
   // Configuración final por espacio hoja para agrupación (resuelta por contenedor)
   // Key: leaf spaceId -> { key: S:<id>|Z:<id>, level (1..10), minChain (1..50) }

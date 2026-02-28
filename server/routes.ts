@@ -1852,6 +1852,7 @@ function mapDeleteError(err: any, fallback: string) {
         departureMinGapMinutes: settings.departureMinGapMinutes,
         vanCapacity: settings.vanCapacity,
         weightArrivalDepartureGrouping: settings.weightArrivalDepartureGrouping,
+        nearHardBreaksMax: settings.nearHardBreaksMax,
       });
 
     } catch (err: any) {
@@ -1930,6 +1931,7 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.departureMinGapMinutes !== undefined) patch.departure_min_gap_minutes = Math.max(0, Number(input.departureMinGapMinutes));
       if (input.vanCapacity !== undefined) patch.van_capacity = Math.max(0, Number(input.vanCapacity));
       if (input.weightArrivalDepartureGrouping !== undefined) patch.weight_arrival_departure_grouping = Math.max(0, Math.min(10, Number(input.weightArrivalDepartureGrouping)));
+      if (input.nearHardBreaksMax !== undefined) patch.near_hard_breaks_max = Math.max(0, Math.min(10, Number(input.nearHardBreaksMax)));
 
       // legacy booleans (si llegan, también actualizan niveles por defecto)
       if (input.prioritizeMainZone !== undefined) {

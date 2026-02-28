@@ -514,6 +514,7 @@ export async function buildEngineInput(
     optimizerMainZoneOptKeepBusy,
     optimizerContestantCompactLevel: optimizer?.contestantCompactLevel ?? 0,
     optimizerContestantStayInZoneLevel: optimizer?.contestantStayInZoneLevel ?? 0,
+    optimizerNearHardBreaksMax: Math.max(0, Math.min(10, Number((optimizer as any)?.nearHardBreaksMax ?? 0) || 0)),
     arrivalTaskTemplateName: String((optimizer as any)?.arrivalTaskTemplateName ?? ""),
     departureTaskTemplateName: String((optimizer as any)?.departureTaskTemplateName ?? ""),
     arrivalGroupingTarget: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),

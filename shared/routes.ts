@@ -976,6 +976,7 @@ export const api = {
           departureMinGapMinutes: z.number().int().min(0).max(600),
           vanCapacity: z.number().int().min(0).max(100),
           weightArrivalDepartureGrouping: z.number().int().min(0).max(10),
+          nearHardBreaksMax: z.number().int().min(0).max(10),
         }),
       },
     },
@@ -1031,6 +1032,7 @@ export const api = {
           departureMinGapMinutes: z.number().int().min(0).max(600).optional(),
           vanCapacity: z.number().int().min(0).max(100).optional(),
           weightArrivalDepartureGrouping: z.number().int().min(0).max(10).optional(),
+          nearHardBreaksMax: z.number().int().min(0).max(10).optional(),
         })
         .strict(),
       responses: {
