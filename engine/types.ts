@@ -39,6 +39,7 @@ export interface TaskInput {
     contestantId?: number | null;
     contestantName?: string | null;
     itinerantTeamId?: number | null;
+    allowedItinerantTeamIds?: number[];
     itinerantTeamRequirement?: 'none' | 'any' | 'specific' | string | null;
     status: TaskStatus;
     breakId?: number;

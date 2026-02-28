@@ -750,6 +750,43 @@ export async function buildEngineInput(
             Number.isFinite(Number((tpl as any)?.itinerantTeamId))
               ? Number((tpl as any).itinerantTeamId)
               : null,
+          allowedItinerantTeamIds: (() => {
+            const rulesJson =
+              (tpl as any)?.rulesJson ??
+              (tpl as any)?.rules_json ??
+              null;
+            const fromRules: unknown[] = Array.isArray((rulesJson as any)?.itinerantTeamAllowedIds)
+              ? (rulesJson as any).itinerantTeamAllowedIds
+              : Array.isArray((rulesJson as any)?.itinerant_team_allowed_ids)
+                ? (rulesJson as any).itinerant_team_allowed_ids
+                : [];
+
+            const normalized: number[] = Array.from(
+              new Set(
+                fromRules
+                  .map((id: any) => Number(id))
+                  .filter((id: number) => Number.isFinite(id) && id > 0),
+              ),
+            );
+
+            if (normalized.length > 0) return normalized;
+
+            const requirement = String(
+              (tpl as any)?.itinerantTeamRequirement ??
+                (tpl as any)?.itinerant_team_requirement ??
+                "none",
+            )
+              .trim()
+              .toLowerCase();
+            const specificId = Number(
+              (tpl as any)?.itinerantTeamId ?? (tpl as any)?.itinerant_team_id ?? NaN,
+            );
+            if (requirement === "specific" && Number.isFinite(specificId) && specificId > 0) {
+              return [specificId];
+            }
+
+            return [];
+          })(),
           itinerantTeamRequirement:
             (tpl as any)?.itinerantTeamRequirement ??
             (tpl as any)?.itinerant_team_requirement ??
