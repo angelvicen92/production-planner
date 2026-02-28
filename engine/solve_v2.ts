@@ -2079,7 +2079,6 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
               startsBeforeAvailability,
               maxEndAllowed: toHHMM(maxEndAllowed),
               ...(lastBump?.details ?? {}),
-              ...(lastBump?.details ? { lastBumpDetails: lastBump.details } : {}),
             },
           },
         } as any;
@@ -2184,14 +2183,19 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       // ✅ Si durante la selección de recursos cambiamos `start`,
       // hay que volver al inicio del while para recalcular huecos (contestante/espacio/zona).
       let retry = false;
-      const bumpStartAndRetry = () => {
-        lastBump = {
-          code: "RESOURCE_NOT_AVAILABLE",
-          message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
-          details: {
-            from: toHHMM(start),
-          },
-        };
+      const bumpStartAndRetry = (bump?: {
+        code: string;
+        message: string;
+        details?: Record<string, any>;
+      }) => {
+        lastBump =
+          bump ?? {
+            code: "RESOURCE_NOT_AVAILABLE",
+            message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+            details: {
+              from: toHHMM(start),
+            },
+          };
         start = snapUp(start + GRID);
         retry = true;
       };
@@ -2216,6 +2220,52 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           ) === start - wrapCfg.pre;
         }
         return findEarliestGap(occ, start, duration) === start;
+      };
+
+      const explainFirstResourceConflict = (
+        pid: number,
+        intervalStart: number,
+        intervalEnd: number,
+      ): null | { taskId: number; taskName: string; start: string; end: string } => {
+        const occ = occupiedByResource.get(pid) ?? [];
+        for (const row of occ) {
+          if (!rangesOverlap(intervalStart, intervalEnd, Number(row?.start), Number(row?.end))) continue;
+          const conflictTaskId = Number(row?.taskId);
+          const conflictTask = taskById.get(conflictTaskId);
+          const taskName = String(
+            conflictTask?.templateName ?? conflictTask?.manualTitle ?? `Tarea #${conflictTaskId}`,
+          );
+          return {
+            taskId: conflictTaskId,
+            taskName,
+            start: toHHMM(Number(row.start)),
+            end: toHHMM(Number(row.end)),
+          };
+        }
+        return null;
+      };
+
+      const buildCandidatesDebug = (candidates: number[]) => {
+        const resourceIntervalStart = wrapCfg ? start - wrapCfg.pre : start;
+        const resourceIntervalEnd = wrapCfg ? finish + wrapCfg.post : finish;
+        return candidates.map((pidAny) => {
+          const pid = Number(pidAny);
+          const row = priById.get(pid);
+          const isAvailable = row?.isAvailable !== false;
+          const firstConflict = explainFirstResourceConflict(
+            pid,
+            resourceIntervalStart,
+            resourceIntervalEnd,
+          );
+          return {
+            pid,
+            name: String(row?.name ?? ""),
+            resourceItemId: Number(row?.resourceItemId ?? 0),
+            typeId: Number(row?.typeId ?? 0),
+            isAvailable,
+            firstConflict,
+          };
+        });
       };
 
       const tryPick = (candidates: number[], need: number) => {
@@ -2280,8 +2330,30 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           const got = tryPick(candidates, need);
 
           if (got.length < need) {
-            // no hay recursos libres en ESTE start -> reintentar desde el while
-            bumpStartAndRetry();
+            const candidatesDebug = buildCandidatesDebug(candidates);
+            const allDisabled =
+              candidates.length > 0 &&
+              candidatesDebug.every((c) => c.isAvailable === false);
+            bumpStartAndRetry(
+              allDisabled
+                ? {
+                    code: "RESOURCE_DISABLED",
+                    message: `Recursos para "${String(task?.templateName ?? `tarea ${taskId}`)}" existen pero están deshabilitados (is_available=false)`,
+                    details: {
+                      requirementKind: "byItem",
+                      candidates: candidatesDebug,
+                    },
+                  }
+                : {
+                    code: "RESOURCE_NOT_AVAILABLE",
+                    message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+                    details: {
+                      requirementKind: "byItem",
+                      candidates: candidatesDebug,
+                      from: toHHMM(start),
+                    },
+                  },
+            );
             break;
           }
 
@@ -2333,7 +2405,30 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           const got = tryPick(candidates, need);
 
           if (got.length < need) {
-            bumpStartAndRetry();
+            const candidatesDebug = buildCandidatesDebug(candidates);
+            const allDisabled =
+              candidates.length > 0 &&
+              candidatesDebug.every((c) => c.isAvailable === false);
+            bumpStartAndRetry(
+              allDisabled
+                ? {
+                    code: "RESOURCE_DISABLED",
+                    message: `Recursos para "${String(task?.templateName ?? `tarea ${taskId}`)}" existen pero están deshabilitados (is_available=false)`,
+                    details: {
+                      requirementKind: "byType",
+                      candidates: candidatesDebug,
+                    },
+                  }
+                : {
+                    code: "RESOURCE_NOT_AVAILABLE",
+                    message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+                    details: {
+                      requirementKind: "byType",
+                      candidates: candidatesDebug,
+                      from: toHHMM(start),
+                    },
+                  },
+            );
             break;
           }
           assigned.push(...got);
@@ -2380,7 +2475,30 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
         const got = tryPick(candidates, need);
         if (got.length < need) {
-          bumpStartAndRetry();
+          const candidatesDebug = buildCandidatesDebug(candidates);
+          const allDisabled =
+            candidates.length > 0 &&
+            candidatesDebug.every((c) => c.isAvailable === false);
+          bumpStartAndRetry(
+            allDisabled
+              ? {
+                  code: "RESOURCE_DISABLED",
+                  message: `Recursos para "${String(task?.templateName ?? `tarea ${taskId}`)}" existen pero están deshabilitados (is_available=false)`,
+                  details: {
+                    requirementKind: "anyOf",
+                    candidates: candidatesDebug,
+                  },
+                }
+              : {
+                  code: "RESOURCE_NOT_AVAILABLE",
+                  message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+                  details: {
+                    requirementKind: "anyOf",
+                    candidates: candidatesDebug,
+                    from: toHHMM(start),
+                  },
+                },
+          );
           break;
         }
 
@@ -2407,7 +2525,30 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
           for (let k = 0; k < qty; k++) {
             const got = tryPick(candidates, 1);
             if (got.length < 1) {
-              bumpStartAndRetry();
+              const candidatesDebug = buildCandidatesDebug(candidates);
+              const allDisabled =
+                candidates.length > 0 &&
+                candidatesDebug.every((c) => c.isAvailable === false);
+              bumpStartAndRetry(
+                allDisabled
+                  ? {
+                      code: "RESOURCE_DISABLED",
+                      message: `Recursos para "${String(task?.templateName ?? `tarea ${taskId}`)}" existen pero están deshabilitados (is_available=false)`,
+                      details: {
+                        requirementKind: "components",
+                        candidates: candidatesDebug,
+                      },
+                    }
+                  : {
+                      code: "RESOURCE_NOT_AVAILABLE",
+                      message: `No hay recursos libres para "${String(task?.templateName ?? `tarea ${taskId}`)}" en ese tramo`,
+                      details: {
+                        requirementKind: "components",
+                        candidates: candidatesDebug,
+                        from: toHHMM(start),
+                      },
+                    },
+              );
               break;
             }
             extraComponentsToAdd.push(...got);
