@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def parse_hhmm(v: str) -> int:
@@ -109,6 +109,55 @@ def main() -> int:
 
     tasks_by_id = {int(t.get("id")): t for t in engine_input.get("tasks", [])}
     warm_by_id = {int(p.get("taskId")): p for p in warm_planned}
+    locks_by_task: Dict[int, Dict[str, Any]] = {}
+    for lock in engine_input.get("locks", []):
+        task_id = int(lock.get("taskId") or -1)
+        lock_type = str(lock.get("lockType") or "")
+        if task_id <= 0 or lock_type not in ["time", "full"]:
+            continue
+        if task_id not in locks_by_task:
+            locks_by_task[task_id] = lock
+
+    def warm_with_message(message: str, technical: List[str]) -> int:
+        baseline_score, baseline_gap, baseline_switches = score_plan(engine_input, warm_planned)
+        out = {
+            "output": warm,
+            "quality": {
+                "improved": False,
+                "baselineScore": baseline_score,
+                "optimizedScore": baseline_score,
+                "objectiveDelta": 0,
+                "mainZoneGapMinutesDelta": 0,
+                "spaceSwitchesDelta": 0,
+            },
+            "degradations": [],
+            "message": message,
+            "technicalDetails": technical,
+        }
+        sys.stdout.write(json.dumps(out))
+        return 0
+
+    def lock_start_slot(lock: Dict[str, Any], tid: int, dur_slots: int) -> Tuple[Optional[int], Optional[List[str]]]:
+        start_raw = lock.get("lockedStart")
+        if not start_raw:
+            return None, [f"lock_missing_lockedStart_task={tid}"]
+        start_min = parse_hhmm(str(start_raw))
+        if start_min < work_start or start_min > work_end:
+            return None, [f"lock_outside_workday_task={tid}"]
+        delta = start_min - work_start
+        if delta % grid != 0:
+            return None, [f"lock_unaligned_grid_task={tid}"]
+        start_slot = delta // grid
+        if start_slot < 0 or start_slot + dur_slots > horizon:
+            return None, [f"lock_outside_horizon_task={tid}"]
+
+        locked_end = lock.get("lockedEnd")
+        if locked_end:
+            end_min = parse_hhmm(str(locked_end))
+            expected_end = start_min + dur_slots * grid
+            if end_min != expected_end:
+                return None, [f"lock_duration_mismatch_task={tid}"]
+        return int(start_slot), None
 
     model = cp_model.CpModel()
     start_vars: Dict[int, Any] = {}
@@ -129,8 +178,22 @@ def main() -> int:
         ws = int((parse_hhmm(p.get("startPlanned")) - work_start) // grid)
         we = int((parse_hhmm(p.get("endPlanned")) - work_start) // grid)
 
-        fixed = str(t.get("status") or "pending") in ["in_progress", "done", "cancelled"]
-        lb, ub = (ws, ws) if fixed else (0, max(0, horizon - dur_slots))
+        fixed_by_status = str(t.get("status") or "pending") in ["in_progress", "done", "cancelled"]
+        lock = locks_by_task.get(tid)
+        fixed_by_lock = lock is not None
+        fixed = fixed_by_status or fixed_by_lock
+
+        lock_slot = None
+        if fixed_by_lock and lock is not None:
+            lock_slot, lock_error = lock_start_slot(lock, tid, dur_slots)
+            if lock_error:
+                return warm_with_message(
+                    "Lock incompatible con workday/grid; se devuelve Fase A.",
+                    lock_error,
+                )
+
+        fixed_ws = lock_slot if lock_slot is not None else ws
+        lb, ub = (fixed_ws, fixed_ws) if fixed else (0, max(0, horizon - dur_slots))
 
         s = model.NewIntVar(lb, ub, f"s_{tid}")
         e = model.NewIntVar(max(0, lb + dur_slots), min(horizon, ub + dur_slots), f"e_{tid}")
@@ -138,6 +201,10 @@ def main() -> int:
         start_vars[tid] = s
         end_vars[tid] = e
         intervals[tid] = iv
+        if fixed_by_lock:
+            model.Add(s == fixed_ws)
+            model.Add(e == fixed_ws + dur_slots)
+
         if not fixed:
             movable_task_ids.append(tid)
 
@@ -147,19 +214,28 @@ def main() -> int:
     # No overlap by space and contestant
     by_space: Dict[int, List[Any]] = {}
     by_contestant: Dict[int, List[Any]] = {}
+    by_resource: Dict[int, List[Any]] = {}
     for tid, iv in intervals.items():
         t = tasks_by_id.get(tid, {})
         sid = int(t.get("spaceId") or 0)
         cid = int(t.get("contestantId") or 0)
+        assigned_resources = warm_by_id.get(tid, {}).get("assignedResources") or []
         if sid > 0:
             by_space.setdefault(sid, []).append(iv)
         if cid > 0:
             by_contestant.setdefault(cid, []).append(iv)
+        for rid_raw in assigned_resources:
+            rid = int(rid_raw or 0)
+            if rid > 0:
+                by_resource.setdefault(rid, []).append(iv)
 
     for items in by_space.values():
         if len(items) > 1:
             model.AddNoOverlap(items)
     for items in by_contestant.values():
+        if len(items) > 1:
+            model.AddNoOverlap(items)
+    for items in by_resource.values():
         if len(items) > 1:
             model.AddNoOverlap(items)
 
