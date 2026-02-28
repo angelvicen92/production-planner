@@ -4539,7 +4539,7 @@ ${reasonMessage}` : message,
               })}
             </div>
 
-            {(errorDialog.diagnostic?.warnings.length || errorDialog.diagnostic?.insights.length || errorDialog.diagnostic?.unplanned.length) ? (
+            {(errorDialog.diagnostic?.report || errorDialog.diagnostic?.warnings.length || errorDialog.diagnostic?.insights.length || errorDialog.diagnostic?.unplanned.length) ? (
               <div className="mt-4 rounded-lg border p-3 space-y-4">
                 <div className="text-sm font-semibold">Diagnóstico motor v2</div>
 
@@ -4551,14 +4551,39 @@ ${reasonMessage}` : message,
                 )}
 
                 {errorDialog.diagnostic?.report ? (
-                  <div className="space-y-1 rounded-md border border-border bg-background/70 p-3 text-xs">
+                  <div className="space-y-2 rounded-md border border-border bg-background/70 p-3 text-xs">
                     <div className="font-semibold">Repair loop v2</div>
-                    <div>Se ha encontrado solución tras {Number(errorDialog.diagnostic.report?.repairsTried ?? 0)} reintentos.</div>
+                    <div>Intentos: {Array.isArray(errorDialog.diagnostic.report?.attemptsSummary) ? errorDialog.diagnostic.report.attemptsSummary.length : 0}</div>
+                    <div>Abortado por presupuesto: {errorDialog.diagnostic.report?.abortedByBudget ? "Sí" : "No"}</div>
                     {Array.isArray(errorDialog.diagnostic.report?.degradations) && errorDialog.diagnostic.report.degradations.length > 0 ? (
-                      <div>Se han relajado normas blandas: {errorDialog.diagnostic.report.degradations.join(", ")}.</div>
+                      <div>Degradaciones aplicadas: {errorDialog.diagnostic.report.degradations.join(", ")}.</div>
                     ) : (
-                      <div>No se han relajado normas blandas.</div>
+                      <div>Degradaciones aplicadas: ninguna.</div>
                     )}
+                    {Array.isArray(errorDialog.diagnostic.report?.attemptsSummary) && errorDialog.diagnostic.report.attemptsSummary.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-left text-[11px]">
+                          <thead>
+                            <tr className="border-b border-border/80">
+                              <th className="py-1 pr-2 font-medium">level</th>
+                              <th className="py-1 pr-2 font-medium">ok</th>
+                              <th className="py-1 pr-2 font-medium">ms</th>
+                              <th className="py-1 pr-2 font-medium">topReasons</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {errorDialog.diagnostic.report.attemptsSummary.map((attempt: any, idx: number) => (
+                              <tr key={`attempt-summary-${idx}`} className="border-b border-border/40 align-top">
+                                <td className="py-1 pr-2">{Number(attempt?.level ?? idx)}</td>
+                                <td className="py-1 pr-2">{attempt?.ok ? "true" : "false"}</td>
+                                <td className="py-1 pr-2">{Number.isFinite(Number(attempt?.ms)) ? `${Number(attempt.ms)}ms` : "-"}</td>
+                                <td className="py-1 pr-2">{Array.isArray(attempt?.topReasons) && attempt.topReasons.length > 0 ? attempt.topReasons.join(", ") : "-"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
