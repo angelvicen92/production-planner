@@ -12,6 +12,10 @@ export type PlanningRun = {
   plannedCount: number;
   message: string | null;
   phase: string | null;
+  progressPct: number;
+  engine: "v2" | "v3";
+  requestedTimeLimitMs: number | null;
+  finishedAt: string | null;
   lastTaskId: number | null;
   lastTaskName: string | null;
   lastReasons: any[] | null;

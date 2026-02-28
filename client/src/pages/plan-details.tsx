@@ -4307,14 +4307,16 @@ ${reasonMessage}` : message,
             <div className="space-y-3">
               <Progress value={planningProgress.percentage} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                {planningRunQ.data?.phase === "clearing_pending"
-                  ? "Limpiando pendientes"
-                  : planningRunQ.data?.phase === "building_input"
+                {planningRunQ.data?.phase === "prevalidation" || planningRunQ.data?.phase === "clearing_pending"
+                  ? "Prevalidando"
+                  : planningRunQ.data?.phase === "build_input" || planningRunQ.data?.phase === "building_input"
                     ? "Construyendo entrada"
-                    : planningRunQ.data?.phase === "solving"
-                      ? "Resolviendo"
-                      : planningRunQ.data?.phase === "persisting"
-                        ? "Persistiendo..."
+                    : planningRunQ.data?.phase === "solving_feasible" || planningRunQ.data?.phase === "solving"
+                      ? "Validando factibilidad"
+                      : planningRunQ.data?.phase === "optimizing"
+                        ? "Optimizando"
+                        : planningRunQ.data?.phase === "persisting"
+                          ? "Persistiendo..."
                         : planningRunQ.data && planningProgress.plannedCount > planningProgress.totalCount
                           ? "Persistiendo..."
                           : "Procesando"}

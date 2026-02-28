@@ -29,6 +29,7 @@ export const plans = pgTable("plans", {
   isFavorite: boolean("is_favorite").notNull().default(false),
   planningWarnings: jsonb("planning_warnings").$type<any[]>().notNull().default([]),
   planningStats: jsonb("planning_stats").$type<Record<string, any>>().notNull().default({}),
+  optimizerEngine: text("optimizer_engine").notNull().default("v2"),
 });
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {
