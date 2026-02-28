@@ -424,6 +424,14 @@ type SolveV2AttemptPenaltyWindow = {
   penalty: number;
 };
 
+type SolveV2AttemptProtectedSpaceWindow = {
+  spaceId: number;
+  from: number;
+  to: number;
+  ownerTaskId: number;
+  ownerContestantId?: number;
+};
+
 type SolveV2AttemptOptions = {
   mainStartGateMin?: number;
   mealStartMin?: number;
@@ -434,6 +442,8 @@ type SolveV2AttemptOptions = {
   maxMoves?: number;
   maxSteps?: number;
   penalizeSchedulingInSpaceWindow?: SolveV2AttemptPenaltyWindow[];
+  protectedSpaceWindows?: SolveV2AttemptProtectedSpaceWindow[];
+  slackPriorityBoost?: number;
 };
 
 function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOptions): EngineOutput {
@@ -1297,6 +1307,30 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     return t;
   };
 
+  const findEarliestGapAvoidingWindows = (
+    arr: Interval[],
+    earliest: number,
+    duration: number,
+    windows: Array<{ from: number; to: number }>,
+  ) => {
+    if (!Array.isArray(windows) || windows.length === 0) return findEarliestGap(arr, earliest, duration);
+    const sortedWindows = windows
+      .map((w) => ({ from: Number((w as any)?.from ?? NaN), to: Number((w as any)?.to ?? NaN) }))
+      .filter((w) => Number.isFinite(w.from) && Number.isFinite(w.to) && w.to > w.from)
+      .sort((a, b) => a.from - b.from || a.to - b.to);
+    if (sortedWindows.length === 0) return findEarliestGap(arr, earliest, duration);
+
+    let guard = 0;
+    let t = earliest;
+    while (guard++ < 2000) {
+      const candidate = findEarliestGap(arr, t, duration);
+      const overlap = sortedWindows.find((w) => rangesOverlap(candidate, candidate + duration, w.from, w.to));
+      if (!overlap) return candidate;
+      t = snapUp(Math.max(candidate + GRID, overlap.to));
+    }
+    return findEarliestGap(arr, t, duration);
+  };
+
   const findEarliestGapAllowingOverlap = (
     arr: Interval[],
     earliest: number,
@@ -1857,6 +1891,22 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     }))
     .filter((w) => Number.isFinite(w.spaceId) && w.spaceId > 0 && Number.isFinite(w.from) && Number.isFinite(w.to) && w.to > w.from && w.penalty > 0);
 
+  const slackPriorityBoostRaw = Number((options as any)?.slackPriorityBoost ?? 0);
+  const slackPriorityBoost = Number.isFinite(slackPriorityBoostRaw) ? Math.max(0, slackPriorityBoostRaw) : 0;
+
+  const protectedSpaceWindows = (Array.isArray(options?.protectedSpaceWindows)
+    ? options?.protectedSpaceWindows
+    : [])
+    .map((w) => ({
+      spaceId: Number((w as any)?.spaceId ?? NaN),
+      from: Number((w as any)?.from ?? NaN),
+      to: Number((w as any)?.to ?? NaN),
+      ownerTaskId: Number((w as any)?.ownerTaskId ?? NaN),
+      ownerContestantId: Number((w as any)?.ownerContestantId ?? NaN),
+    }))
+    .filter((w) => Number.isFinite(w.spaceId) && w.spaceId > 0 && Number.isFinite(w.from) && Number.isFinite(w.to) && w.to > w.from && Number.isFinite(w.ownerTaskId) && w.ownerTaskId > 0)
+    .map((w) => ({ ...w, ownerContestantId: Number.isFinite(w.ownerContestantId) && w.ownerContestantId > 0 ? w.ownerContestantId : undefined }));
+
   // “memoria” por clave de contenedor de agrupación (espacio hoja, ancestro o zona)
   const lastTemplateByKey = new Map<string, number>();
   const streakByKey = new Map<string, { templateId: number; streakCount: number }>();
@@ -2033,10 +2083,20 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     while (iter++ < maxIter) {
       // 2.1) Espacio: hueco libre en space
       const spaceOcc = effectiveSpaceId ? (occupiedBySpace.get(effectiveSpaceId) ?? []) : [];
+      const spaceWindowsForTask = effectiveSpaceId
+        ? protectedSpaceWindows.filter((w) => (
+          Number(w.spaceId) === Number(effectiveSpaceId) &&
+          Number(w.ownerTaskId) !== Number(taskId) &&
+          (!Number(w.ownerContestantId) || Number(w.ownerContestantId) !== Number(contestantId ?? NaN))
+        ))
+        : [];
       let candidate = effectiveSpaceId && !isMatchedWrapTask
-        ? findEarliestGap(spaceOcc, start, duration)
+        ? (spaceWindowsForTask.length > 0
+            ? findEarliestGapAvoidingWindows(spaceOcc, start, duration, spaceWindowsForTask)
+            : findEarliestGap(spaceOcc, start, duration))
         : start;
       if (candidate !== start) {
+        const overlappedProtectedWindow = spaceWindowsForTask.find((w) => rangesOverlap(start, start + duration, w.from, w.to));
         lastBump = {
           code: "SPACE_BUSY",
           message: `Espacio ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
@@ -2044,6 +2104,15 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
             spaceId: effectiveSpaceId,
             from: toHHMM(start),
             suggested: toHHMM(candidate),
+            ...(overlappedProtectedWindow
+              ? {
+                  protectedWindow: {
+                    from: toHHMM(overlappedProtectedWindow.from),
+                    to: toHHMM(overlappedProtectedWindow.to),
+                    ownerTaskId: overlappedProtectedWindow.ownerTaskId,
+                  },
+                }
+              : {}),
           },
         };
       }
@@ -4541,6 +4610,20 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         }
       }
 
+      if (slackPriorityBoost > 0) {
+        const cId = getContestantId(t);
+        const effWin = getContestantEffectiveWindow(cId);
+        if (effWin && effWin.end > effWin.start) {
+          const duration = Math.max(5, Math.floor(Number(t?.durationOverrideMin ?? 30)));
+          const earliest = snapUp(Math.max(startDay, depsEnd(t), effWin.start));
+          const latestStart = snapUp(effWin.end - duration);
+          const slack = latestStart - earliest;
+          const clampedSlack = Math.max(0, Math.min(240, slack));
+          const slackScore = Math.max(0, Math.min(600, 240 - clampedSlack));
+          s += slackScore * slackPriorityBoost;
+        }
+      }
+
       if (useHeuristics && canApplyLookahead2 && mainTargetTpl && Number(zone) !== Number(optMainZoneId)) {
         const feederStats = feederStatsByTaskId.get(Number(t?.id ?? 0));
         const unlockScore = Number(feederStats?.unlockScore ?? 0);
@@ -5778,18 +5861,38 @@ function parseHHMMSafe(value: any): number | null {
   }
 }
 
-function deriveRepairPlanFromDiagnostics(_input: EngineInput, diagnostics: EngineOutput): RepairConfig[] {
+function deriveRepairPlanFromDiagnostics(input: EngineInput, diagnostics: EngineOutput): RepairConfig[] {
   const unplanned = Array.isArray((diagnostics as any)?.unplanned) ? (diagnostics as any).unplanned : [];
+  const taskById = new Map<number, any>();
+  for (const task of input?.tasks ?? []) {
+    const taskId = Number((task as any)?.id ?? NaN);
+    if (Number.isFinite(taskId) && taskId > 0) taskById.set(taskId, task);
+  }
+
   const hasShortAvailability = unplanned.some((item: any) => parseHHMMSafe(item?.reason?.details?.availabilityEnd) !== null);
   const spaceBusyCritical = unplanned.filter((item: any) => String(item?.reason?.code ?? '') === 'SPACE_BUSY' && Number.isFinite(Number(item?.reason?.details?.spaceId)));
   const penalties: SolveV2AttemptPenaltyWindow[] = [];
+  const protectedWindows: SolveV2AttemptProtectedSpaceWindow[] = [];
   for (const item of spaceBusyCritical.slice(0, 5)) {
     const d = item?.reason?.details ?? {};
     const from = parseHHMMSafe(d?.availabilityStart);
     const to = parseHHMMSafe(d?.maxEndAllowed);
     const spaceId = Number(d?.spaceId ?? NaN);
+    const ownerTaskId = Number(item?.taskId ?? d?.taskId ?? NaN);
+    const ownerTask = taskById.get(ownerTaskId);
+    const ownerContestantIdRaw = Number(ownerTask?.contestantId ?? ownerTask?.contestant_id ?? ownerTask?.contestant?.id ?? NaN);
+    const ownerContestantId = Number.isFinite(ownerContestantIdRaw) && ownerContestantIdRaw > 0 ? ownerContestantIdRaw : undefined;
     if (!Number.isFinite(spaceId) || from === null || to === null || to <= from) continue;
     penalties.push({ spaceId, from: Number(from), to: Number(to), penalty: 1_000_000 });
+    if (Number.isFinite(ownerTaskId) && ownerTaskId > 0 && protectedWindows.length < 3) {
+      protectedWindows.push({
+        spaceId,
+        from: Number(from),
+        to: Number(to),
+        ownerTaskId,
+        ownerContestantId,
+      });
+    }
   }
 
   const repairs: RepairConfig[] = [];
@@ -5798,16 +5901,19 @@ function deriveRepairPlanFromDiagnostics(_input: EngineInput, diagnostics: Engin
       level: 1,
       reason: 'boosted slack priority',
       degradations: ['boost_least_slack'],
-      options: { optimizerWeightsOverride: { contestantCompact: 0, contestantTotalSpan: 0, mainZoneKeepBusy: 10 } },
+      options: { slackPriorityBoost: 20_000, optimizerWeightsOverride: { mainZoneKeepBusy: 10 } },
     });
   }
 
-  if (penalties.length > 0) {
+  if (penalties.length > 0 || protectedWindows.length > 0) {
     repairs.push({
       level: 2,
-      reason: 'applied space-window penalties for blockers',
-      degradations: ['penalize_space_window_blockers'],
-      options: { penalizeSchedulingInSpaceWindow: penalties },
+      reason: 'protected critical space windows for blocked tasks',
+      degradations: ['penalize_space_window_blockers', 'protect_critical_space_windows'],
+      options: {
+        penalizeSchedulingInSpaceWindow: penalties,
+        protectedSpaceWindows: protectedWindows,
+      },
     });
   }
 
@@ -5838,8 +5944,8 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
   const startedAtMs = Date.now();
   const timeBudgetMsRaw = Number((input as any)?.timeBudgetMs ?? (input as any)?.repairTimeBudgetMs ?? 2000);
   const maxAttemptsRaw = Number((input as any)?.maxAttempts ?? (input as any)?.repairMaxAttempts ?? 4);
-  const timeBudgetMs = Math.max(200, Number.isFinite(timeBudgetMsRaw) ? Math.floor(timeBudgetMsRaw) : 2000);
-  const maxAttempts = Math.max(1, Number.isFinite(maxAttemptsRaw) ? Math.floor(maxAttemptsRaw) : 4);
+  const timeBudgetMs = Math.max(500, Math.min(2500, Number.isFinite(timeBudgetMsRaw) ? Math.floor(timeBudgetMsRaw) : 2000));
+  const maxAttempts = Math.max(1, Math.min(4, Number.isFinite(maxAttemptsRaw) ? Math.floor(maxAttemptsRaw) : 4));
 
   const attemptsSummary: SolveAttemptSummary[] = [];
   const runAttempt = (level: number, reason: string, options: SolveV2AttemptOptions) => {
@@ -5895,6 +6001,8 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
         ...(repair.options.optimizerWeightsOverride ?? {}),
       },
       penalizeSchedulingInSpaceWindow: repair.options.penalizeSchedulingInSpaceWindow ?? accumulatedOptions.penalizeSchedulingInSpaceWindow,
+      protectedSpaceWindows: repair.options.protectedSpaceWindows ?? accumulatedOptions.protectedSpaceWindows,
+      slackPriorityBoost: Number(repair.options.slackPriorityBoost ?? accumulatedOptions.slackPriorityBoost ?? 0),
       maxIterations: repair.options.maxIterations ?? accumulatedOptions.maxIterations,
       beamWidth: Math.min(5, Math.max(1, Number(repair.options.beamWidth ?? accumulatedOptions.beamWidth ?? 5))),
       maxMoves: Math.min(8, Math.max(1, Number(repair.options.maxMoves ?? accumulatedOptions.maxMoves ?? 8))),
@@ -5908,7 +6016,7 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
       return {
         ...attempted.out,
         report: {
-          repairsTried: repair.level,
+          repairsTried: attemptsSummary.length - 1,
           degradations: Array.from(new Set(appliedDegradations)),
           attemptsSummary,
           abortedByBudget: false,
