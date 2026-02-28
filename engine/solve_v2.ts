@@ -430,6 +430,9 @@ type SolveV2AttemptOptions = {
   chosenMealStartMin?: number;
   optimizerWeightsOverride?: Record<string, number>;
   maxIterations?: number;
+  beamWidth?: number;
+  maxMoves?: number;
+  maxSteps?: number;
   penalizeSchedulingInSpaceWindow?: SolveV2AttemptPenaltyWindow[];
 };
 
@@ -1199,20 +1202,33 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     { start: string; end: string }
   >;
 
+  const effectiveWindowByContestantId = new Map<number, { start: number; end: number } | null>();
   const getContestantEffectiveWindow = (contestantId: number | null) => {
     if (!contestantId) return null;
-    const raw = contestantAvailabilityById[Number(contestantId)] ?? null;
-    if (!raw?.start || !raw?.end) return null;
+    const cid = Number(contestantId);
+    if (effectiveWindowByContestantId.has(cid)) {
+      return effectiveWindowByContestantId.get(cid) ?? null;
+    }
+
+    const raw = contestantAvailabilityById[cid] ?? null;
+    if (!raw?.start || !raw?.end) {
+      effectiveWindowByContestantId.set(cid, null);
+      return null;
+    }
 
     const cs = toMinutes(String(raw.start));
     const ce = toMinutes(String(raw.end));
 
-    if (!Number.isFinite(cs) || !Number.isFinite(ce)) return null;
+    if (!Number.isFinite(cs) || !Number.isFinite(ce)) {
+      effectiveWindowByContestantId.set(cid, null);
+      return null;
+    }
 
     const start = Math.max(startDay, cs);
     const end = Math.min(endDay, ce);
-
-    return { start, end };
+    const out = { start, end };
+    effectiveWindowByContestantId.set(cid, out);
+    return out;
   };
 
   const contestantMealDuration = Number.isFinite(
@@ -1586,6 +1602,9 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
   }> = [];
 
   const plannedEndByTaskId = new Map<number, number>();
+  const setPlannedEndByTaskId = (taskId: number, endMin: number) => {
+    plannedEndByTaskId.set(taskId, endMin);
+  };
 
   const isResourceBreakTask = (task: any) =>
     task?.breakKind === "space_meal" || task?.breakKind === "itinerant_meal";
@@ -1661,7 +1680,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         : null,
       assignedResources: [],
     });
-    plannedEndByTaskId.set(Number(task.id), finish);
+    setPlannedEndByTaskId(Number(task.id), finish);
     if (mainZoneIdForMealReset && Number(zid) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
   }
 
@@ -2744,7 +2763,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         assignedSpace: spaceId ?? null,
         assignedResources: assigned,
       });
-      plannedEndByTaskId.set(taskId, finish);
+      setPlannedEndByTaskId(taskId, finish);
 
       if (wrapCfg && wrapTask && wrapPlannedEnd > wrapPlannedStart) {
         const wrapPlanned = plannedByTaskId.get(wrapTaskId);
@@ -2761,7 +2780,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
             assignedResources: [...wrapAssignedResources],
           });
         }
-        plannedEndByTaskId.set(wrapTaskId, wrapPlannedEnd);
+        setPlannedEndByTaskId(wrapTaskId, wrapPlannedEnd);
         rebuildPlannedByTask();
       }
 
@@ -3123,7 +3142,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       assignedSpace: spaceId ?? null,
       assignedResources: assigned,
     });
-    plannedEndByTaskId.set(taskId, finish);
+    setPlannedEndByTaskId(taskId, finish);
 
     const tplId = Number(task?.templateId ?? 0);
     rememberSpaceTemplate(spaceId, tplId);
@@ -3456,7 +3475,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       assignedSpace: null,
       assignedResources: [],
     });
-    plannedEndByTaskId.set(row.cand.taskId, row.end);
+    setPlannedEndByTaskId(row.cand.taskId, row.end);
     const mealTask = taskById.get(Number(row.cand.taskId));
     if (mainZoneIdForMealReset && Number(getZoneId(mealTask)) === Number(mainZoneIdForMealReset)) mainTemplateResetRequested = true;
 
@@ -3530,10 +3549,23 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
   
 
   const plannedByTaskId = new Map<number, any>();
+  const plannedRowsBySpaceId = new Map<number, Array<{ p: any; task: any }>>();
   const rebuildPlannedByTask = () => {
     plannedByTaskId.clear();
+    plannedRowsBySpaceId.clear();
     for (const p of plannedTasks as any[]) {
-      plannedByTaskId.set(Number(p.taskId), p);
+      const taskId = Number(p.taskId);
+      plannedByTaskId.set(taskId, p);
+      const task = taskById.get(taskId);
+      if (!task) continue;
+      const sid = Number(getSpaceId(task) ?? NaN);
+      if (!Number.isFinite(sid) || sid <= 0) continue;
+      const rows = plannedRowsBySpaceId.get(sid) ?? [];
+      rows.push({ p, task });
+      plannedRowsBySpaceId.set(sid, rows);
+    }
+    for (const rows of plannedRowsBySpaceId.values()) {
+      rows.sort((a, b) => toMinutes(String(a.p.startPlanned)) - toMinutes(String(b.p.startPlanned)));
     }
   };
   rebuildPlannedByTask();
@@ -3657,6 +3689,18 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       .map(([sid]) => Number(sid));
 
     const blockers = new Set<string>();
+    const rawBeamWidth = Number(options?.beamWidth ?? NaN);
+    const rawMaxMoves = Number(options?.maxMoves ?? NaN);
+    const rawMaxSteps = Number(options?.maxSteps ?? NaN);
+    const configuredBeamWidth = Number.isFinite(rawBeamWidth)
+      ? Math.min(5, Math.max(1, Math.floor(rawBeamWidth)))
+      : Number.MAX_SAFE_INTEGER;
+    const configuredMaxMovesPerGap = Number.isFinite(rawMaxMoves)
+      ? Math.min(8, Math.max(1, Math.floor(rawMaxMoves)))
+      : DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP;
+    const configuredMaxSteps = Number.isFinite(rawMaxSteps)
+      ? Math.min(800, Math.max(50, Math.floor(rawMaxSteps)))
+      : DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS;
     let globalAttempts = 0;
 
     const sortedPlannedRows = () =>
@@ -3735,13 +3779,13 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
           .sort((a, b) => a - b);
 
       for (const candidateStart of normalizeCandidates(rightCandidates)) {
-        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        if (globalAttempts >= configuredMaxSteps) break;
         globalAttempts++;
         if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
       }
 
       for (const candidateStart of normalizeCandidates(leftCandidates)) {
-        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        if (globalAttempts >= configuredMaxSteps) break;
         globalAttempts++;
         if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
       }
@@ -3911,7 +3955,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
           if (targetFirstStart <= currentFirstStart) continue;
 
           globalAttempts++;
-          if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+          if (globalAttempts >= configuredMaxSteps) break;
 
           if (tryMoveSequentialBlock(block, targetFirstStart)) {
             moved = true;
@@ -3932,7 +3976,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       if (entries.length <= 1) continue;
 
       for (let i = 1; i < entries.length; i++) {
-        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        if (globalAttempts >= configuredMaxSteps) break;
         const prev = entries[i - 1];
         const next = entries[i];
 
@@ -3970,7 +4014,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         globalAttempts++;
         const moved = tryMoveSequentialBlock(block, targetFirstStart);
 
-        if (!moved || attemptsForGap > DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP) {
+        if (!moved || attemptsForGap > configuredMaxMovesPerGap) {
           startGatingWarnings.push({
             spaceId,
             reason: `no se pudo mover un bloque ${requiredShift} min (grid ${GRID}) sin romper dependencias/ventanas/recursos/ocupación`,
@@ -3983,7 +4027,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       let attemptsByGap = new Map<string, number>();
       let movedAny = true;
 
-      while (movedAny && globalAttempts < DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) {
+      while (movedAny && globalAttempts < configuredMaxSteps) {
         movedAny = false;
         rebuildPlannedByTask();
 
@@ -3996,15 +4040,17 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
           getZoneIdForSpace,
           mealWindowStartMin: mealStart,
           mealWindowEndMin: mealEnd,
-        }).sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId);
+        })
+          .sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId)
+          .slice(0, configuredBeamWidth);
 
         if (!mainZoneGaps.length) break;
 
         for (const gap of mainZoneGaps) {
-          if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+          if (globalAttempts >= configuredMaxSteps) break;
           const gapKey = `${gap.spaceId}:${gap.start}:${gap.end}:${gap.nextTaskId ?? 0}`;
           const used = attemptsByGap.get(gapKey) ?? 0;
-          if (used >= DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP) continue;
+          if (used >= configuredMaxMovesPerGap) continue;
 
           const nextTaskId = Number(gap.nextTaskId ?? NaN);
           const nextTask = taskById.get(nextTaskId);
@@ -4048,12 +4094,10 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
 
     const remainingGaps: Array<{ spaceId: number; start: number; end: number }> = [];
     for (const spaceId of targetSpaces) {
-      const entries = (plannedTasks as any[])
-        .map((p) => ({ p, task: taskById.get(Number(p.taskId)) }))
-        .filter(({ task }) => task && Number(getSpaceId(task)) === Number(spaceId) && !isMealTask(task) && !Boolean(task?.breakKind))
-        .sort((a, b) => toMinutes(a.p.startPlanned) - toMinutes(b.p.startPlanned));
+      const entries = (plannedRowsBySpaceId.get(Number(spaceId)) ?? [])
+        .filter(({ task }) => task && !isMealTask(task) && !Boolean(task?.breakKind));
       for (let i = 1; i < entries.length; i++) {
-        if (globalAttempts >= DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS) break;
+        if (globalAttempts >= configuredMaxSteps) break;
         const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
         const nextStart = toMinutes(entries[i].p.startPlanned);
         const segments = splitGapOutsideMealWindow(prevEnd, nextStart, mealStart, mealEnd);
@@ -4184,7 +4228,14 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
   let scoringDiagnosticDetails: { readyCount: number; mainTargetTpl: number | null; feedersReadyCount: number; usedFallback: boolean } | null = null;
 
   while (pendingNonMeal.length) {
-    const ready = pendingNonMeal.filter((t) => depsSatisfied(t));
+    const depsReadyCache = new Map<number, boolean>();
+    const ready = pendingNonMeal.filter((t) => {
+      const taskId = Number(t?.id ?? NaN);
+      if (depsReadyCache.has(taskId)) return Boolean(depsReadyCache.get(taskId));
+      const isReady = depsSatisfied(t);
+      depsReadyCache.set(taskId, isReady);
+      return isReady;
+    });
     if (!ready.length) {
       const t = pendingNonMeal[0];
       const depIds = getDepTaskIds(t).filter(
@@ -4831,7 +4882,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
           assignedSpace: null,
           assignedResources: [],
         });
-        plannedEndByTaskId.set(taskId, finish);
+        setPlannedEndByTaskId(taskId, finish);
         tripAssigned.push(row);
 
         if (contestantId) {
@@ -5699,7 +5750,7 @@ export function solve_v2_attempt(input: EngineInput, attemptOptions?: SolveV2Att
 }
 
 
-type SolveAttemptSummary = { level: number; ok: boolean; topReasons: string[]; reason?: string };
+type SolveAttemptSummary = { level: number; ok: boolean; ms: number; topReasons: string[]; reason?: string };
 
 type RepairConfig = {
   level: number;
@@ -5777,26 +5828,65 @@ function deriveRepairPlanFromDiagnostics(_input: EngineInput, diagnostics: Engin
     level: 4,
     reason: 'small repair search (beam/lns-like) with broader iterations',
     degradations: ['lns_move_blockers'],
-    options: { maxIterations: 40000 },
+    options: { maxIterations: 40000, beamWidth: 5, maxMoves: 8, maxSteps: 800 },
   });
 
   return repairs;
 }
 
 export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
+  const startedAtMs = Date.now();
+  const timeBudgetMsRaw = Number((input as any)?.timeBudgetMs ?? (input as any)?.repairTimeBudgetMs ?? 2000);
+  const maxAttemptsRaw = Number((input as any)?.maxAttempts ?? (input as any)?.repairMaxAttempts ?? 4);
+  const timeBudgetMs = Math.max(200, Number.isFinite(timeBudgetMsRaw) ? Math.floor(timeBudgetMsRaw) : 2000);
+  const maxAttempts = Math.max(1, Number.isFinite(maxAttemptsRaw) ? Math.floor(maxAttemptsRaw) : 4);
+
   const attemptsSummary: SolveAttemptSummary[] = [];
-  const attempt0 = solve_v2_attempt(input, {});
-  const attempt0ok = Boolean((attempt0 as any)?.complete);
-  attemptsSummary.push({ level: 0, ok: attempt0ok, topReasons: summarizeTopReasons(attempt0), reason: 'base_options' });
-  if (attempt0ok) {
-    return { ...attempt0, report: { repairsTried: 0, degradations: [], attemptsSummary } } as EngineOutput;
+  const runAttempt = (level: number, reason: string, options: SolveV2AttemptOptions) => {
+    const t0 = Date.now();
+    const out = solve_v2_attempt(input, options);
+    const ms = Math.max(0, Date.now() - t0);
+    const ok = Boolean((out as any)?.complete);
+    attemptsSummary.push({ level, ok, ms, topReasons: summarizeTopReasons(out), reason });
+    return { out, ok };
+  };
+
+  const attempt0 = runAttempt(0, 'base_options', {});
+  if (attempt0.ok) {
+    return {
+      ...attempt0.out,
+      report: { repairsTried: 0, degradations: [], attemptsSummary, abortedByBudget: false, totalMs: Math.max(0, Date.now() - startedAtMs) },
+    } as EngineOutput;
   }
 
-  const repairs = deriveRepairPlanFromDiagnostics(input, attempt0);
-  let latest = attempt0;
+  let latest = attempt0.out;
+  if (attemptsSummary.length >= maxAttempts || (Date.now() - startedAtMs) >= timeBudgetMs) {
+    return {
+      ...latest,
+      report: {
+        repairsTried: attemptsSummary.length - 1,
+        degradations: [],
+        attemptsSummary,
+        abortedByBudget: true,
+        totalMs: Math.max(0, Date.now() - startedAtMs),
+      },
+    } as EngineOutput;
+  }
+
+  const repairs = deriveRepairPlanFromDiagnostics(input, attempt0.out);
   const appliedDegradations: string[] = [];
   let accumulatedOptions: SolveV2AttemptOptions = {};
   for (const repair of repairs) {
+    const elapsed = Date.now() - startedAtMs;
+    const remaining = timeBudgetMs - elapsed;
+    if (attemptsSummary.length >= maxAttempts || remaining <= 0) {
+      break;
+    }
+
+    if ((repair.degradations ?? []).includes('lns_move_blockers') && remaining <= 700) {
+      continue;
+    }
+
     accumulatedOptions = {
       ...accumulatedOptions,
       ...repair.options,
@@ -5806,30 +5896,37 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
       },
       penalizeSchedulingInSpaceWindow: repair.options.penalizeSchedulingInSpaceWindow ?? accumulatedOptions.penalizeSchedulingInSpaceWindow,
       maxIterations: repair.options.maxIterations ?? accumulatedOptions.maxIterations,
+      beamWidth: Math.min(5, Math.max(1, Number(repair.options.beamWidth ?? accumulatedOptions.beamWidth ?? 5))),
+      maxMoves: Math.min(8, Math.max(1, Number(repair.options.maxMoves ?? accumulatedOptions.maxMoves ?? 8))),
+      maxSteps: Math.min(800, Math.max(50, Number(repair.options.maxSteps ?? accumulatedOptions.maxSteps ?? 800))),
     };
-    const out = solve_v2_attempt(input, accumulatedOptions);
-    const ok = Boolean((out as any)?.complete);
-    attemptsSummary.push({ level: repair.level, ok, topReasons: summarizeTopReasons(out), reason: repair.reason });
-    latest = out;
+
+    const attempted = runAttempt(repair.level, repair.reason, accumulatedOptions);
+    latest = attempted.out;
     appliedDegradations.push(...repair.degradations);
-    if (ok) {
+    if (attempted.ok) {
       return {
-        ...out,
+        ...attempted.out,
         report: {
           repairsTried: repair.level,
           degradations: Array.from(new Set(appliedDegradations)),
           attemptsSummary,
+          abortedByBudget: false,
+          totalMs: Math.max(0, Date.now() - startedAtMs),
         },
       } as EngineOutput;
     }
   }
 
+  const exhausted = (Date.now() - startedAtMs) >= timeBudgetMs || attemptsSummary.length >= maxAttempts;
   return {
     ...latest,
     report: {
       repairsTried: attemptsSummary.length - 1,
       degradations: Array.from(new Set(appliedDegradations)),
       attemptsSummary,
+      abortedByBudget: exhausted,
+      totalMs: Math.max(0, Date.now() - startedAtMs),
     },
   } as EngineOutput;
 }
