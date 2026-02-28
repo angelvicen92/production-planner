@@ -1792,8 +1792,12 @@ ${reasonMessage}` : message,
       await refetchPlan();
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+      const reasons = Array.isArray(data?.reasons) ? data.reasons : [];
+      if (reasons.length > 0) {
+        openV2DiagnosticDialog(data);
+      }
       const warnings = data?.warnings ?? [];
-      if (Array.isArray(warnings) && warnings.length > 0) {
+      if (reasons.length === 0 && Array.isArray(warnings) && warnings.length > 0) {
         setConfigDialog({ open: true, reasons: warnings });
       }
     } catch (err: any) {
