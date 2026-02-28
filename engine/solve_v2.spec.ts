@@ -510,6 +510,85 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.equal(reason?.details?.requirementKind, "byItem");
 }
 
+// Si tarea itinerante any/specific no tiene allowedItinerantTeamIds, debe fallar con RESOURCE_POOL_EMPTY (config).
+{
+  const input: EngineInput = {
+    planId: 64,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      {
+        id: 6401,
+        planId: 64,
+        templateId: 800,
+        templateName: "Reality",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 1,
+        status: "pending",
+        durationOverrideMin: 30,
+        itinerantTeamRequirement: "any",
+        allowedItinerantTeamIds: [],
+      },
+    ] as any,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const reason = (run.unplannedTasks ?? [])[0]?.reason;
+  assert.equal(reason?.code, "RESOURCE_POOL_EMPTY");
+  assert.equal(reason?.details?.requirementKind, "anyOf");
+  assert.deepEqual(reason?.details?.allowedItinerantTeamIds, []);
+}
+
+// Si allowedItinerantTeamIds existe pero el plan no tiene items para ellos, debe fallar con RESOURCE_POOL_EMPTY específico.
+{
+  const input: EngineInput = {
+    planId: 65,
+    workDay: { start: "09:00", end: "12:00" },
+    meal: { start: "12:30", end: "13:00" },
+    camerasAvailable: 0,
+    tasks: [
+      {
+        id: 6501,
+        planId: 65,
+        templateId: 801,
+        templateName: "Reality",
+        zoneId: 7,
+        spaceId: 71,
+        contestantId: 1,
+        status: "pending",
+        durationOverrideMin: 30,
+        itinerantTeamRequirement: "specific",
+        allowedItinerantTeamIds: [9001, 9002],
+      },
+    ] as any,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [
+      { id: 1, resourceItemId: 9100, typeId: 77, name: "Otro recurso", isAvailable: true },
+    ],
+    resourceItemComponents: {},
+  };
+
+  const run = generatePlanV2(input);
+  const reason = (run.unplannedTasks ?? [])[0]?.reason;
+  assert.equal(reason?.code, "RESOURCE_POOL_EMPTY");
+  assert.equal(reason?.details?.reason, "NO_PLAN_RESOURCE_ITEMS_MATCH");
+}
+
 // Si el start se desplaza por espacio y al final supera maxEndAllowed, debe devolver SPACE_BUSY (no CONTESTANT_NOT_AVAILABLE).
 {
   const input: EngineInput = {

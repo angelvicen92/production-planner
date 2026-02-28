@@ -2173,6 +2173,16 @@ export class SupabaseStorage implements IStorage {
   }
 
   async updatePlan(planId: number, patch: any) {
+    const { data: beforePlan, error: beforePlanError } = await supabaseAdmin
+      .from("plans")
+      .select("work_start, work_end")
+      .eq("id", planId)
+      .single();
+    if (beforePlanError) throw beforePlanError;
+
+    const oldWorkStart = String((beforePlan as any)?.work_start ?? "").trim() || null;
+    const oldWorkEnd = String((beforePlan as any)?.work_end ?? "").trim() || null;
+
     // aceptamos solo campos que sabemos (evita basura)
     const safe: any = {};
     if (patch.workStart) safe.work_start = patch.workStart;
@@ -2199,6 +2209,31 @@ export class SupabaseStorage implements IStorage {
       .single();
 
     if (error) throw error;
+
+    if (patch.workStart && oldWorkStart) {
+      const newWorkStart = String(patch.workStart).trim();
+      if (newWorkStart && newWorkStart !== oldWorkStart) {
+        const { error: contestantsStartError } = await supabaseAdmin
+          .from("contestants")
+          .update({ availability_start: newWorkStart })
+          .eq("plan_id", planId)
+          .eq("availability_start", oldWorkStart);
+        if (contestantsStartError) throw contestantsStartError;
+      }
+    }
+
+    if (patch.workEnd && oldWorkEnd) {
+      const newWorkEnd = String(patch.workEnd).trim();
+      if (newWorkEnd && newWorkEnd !== oldWorkEnd) {
+        const { error: contestantsEndError } = await supabaseAdmin
+          .from("contestants")
+          .update({ availability_end: newWorkEnd })
+          .eq("plan_id", planId)
+          .eq("availability_end", oldWorkEnd);
+        if (contestantsEndError) throw contestantsEndError;
+      }
+    }
+
     await this.syncPlanMealBreaks(planId);
     return data as any;
   }

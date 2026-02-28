@@ -2438,7 +2438,45 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
       // anyOf
       const anyOf = Array.isArray(rr?.anyOf) ? rr.anyOf : [];
-      for (const g of anyOf) {
+      const itinerantRequirement = String(task?.itinerantTeamRequirement ?? "none")
+        .trim()
+        .toLowerCase();
+      const allowedItinerantTeamIds = Array.from(
+        new Set(
+          (Array.isArray(task?.allowedItinerantTeamIds)
+            ? task.allowedItinerantTeamIds
+            : []
+          )
+            .map((v: any) => Number(v))
+            .filter((v: number) => Number.isFinite(v) && v > 0),
+        ),
+      );
+
+      const hasItinerantAnyOfRequirement =
+        itinerantRequirement === "any" || itinerantRequirement === "specific";
+
+      if (hasItinerantAnyOfRequirement && allowedItinerantTeamIds.length === 0) {
+        return {
+          scheduled: false,
+          reason: {
+            code: "RESOURCE_POOL_EMPTY",
+            message: `La tarea "${String(task?.templateName ?? `tarea ${taskId}`)}" requiere equipo itinerante pero no tiene equipos permitidos configurados en su plantilla.`,
+            taskId,
+            details: {
+              requirementKind: "anyOf",
+              allowedItinerantTeamIds: [],
+              planId: Number((input as any)?.planId ?? 0),
+              taskId,
+            },
+          },
+        } as any;
+      }
+
+      const effectiveAnyOfGroups = hasItinerantAnyOfRequirement
+        ? [{ quantity: 1, resourceItemIds: allowedItinerantTeamIds }]
+        : anyOf;
+
+      for (const g of effectiveAnyOfGroups) {
         const quantity = Number(g?.quantity ?? 1);
         const resourceItemIds = Array.isArray(g?.resourceItemIds)
           ? g.resourceItemIds
@@ -2446,32 +2484,69 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         const need =
           Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 1;
 
-        const globalCandidatePlanIds = resourceItemIds
-          .map((rid: any) => planIdsByResourceItemId.get(Number(rid)) ?? [])
+        const normalizedResourceItemIds: number[] = Array.from(
+          new Set(
+            resourceItemIds
+              .map((rid: any) => Number(rid))
+              .filter((rid: number) => Number.isFinite(rid) && rid > 0),
+          ),
+        );
+
+        const globalCandidatePlanIds = normalizedResourceItemIds
+          .map((rid: number) => planIdsByResourceItemId.get(rid) ?? [])
           .flat();
 
         const zoneCandidatePlanIds = Array.isArray(zonePool)
           ? zonePool.filter((pid) => {
               const row = priById.get(pid);
               if (!row) return false;
-              return resourceItemIds.some(
-                (rid: any) => Number(rid) === Number(row.resourceItemId),
-              );
+              return normalizedResourceItemIds.includes(Number(row.resourceItemId));
             })
           : [];
 
         const spaceCandidatePlanIds = spacePool.filter((pid) => {
           const row = priById.get(pid);
           if (!row) return false;
-          return resourceItemIds.some(
-            (rid: any) => Number(rid) === Number(row.resourceItemId),
-          );
+          return normalizedResourceItemIds.includes(Number(row.resourceItemId));
         });
 
         const candidates = concatPreferSpace(
           spaceCandidatePlanIds,
           concatPreferSpace(zoneCandidatePlanIds, globalCandidatePlanIds),
         );
+
+        if (need > 0 && candidates.length === 0) {
+          if (hasItinerantAnyOfRequirement) {
+            return {
+              scheduled: false,
+              reason: {
+                code: "RESOURCE_POOL_EMPTY",
+                message: `No hay recursos de equipo itinerante dados de alta en el plan para los equipos permitidos en "${String(task?.templateName ?? `tarea ${taskId}`)}".`,
+                taskId,
+                details: {
+                  requirementKind: "anyOf",
+                  allowedItinerantTeamIds,
+                  reason: "NO_PLAN_RESOURCE_ITEMS_MATCH",
+                },
+              },
+            } as any;
+          }
+
+          return {
+            scheduled: false,
+            reason: {
+              code: "RESOURCE_POOL_EMPTY",
+              message: `La tarea "${String(task?.templateName ?? `tarea ${taskId}`)}" requiere recursos que no tienen candidatos configurados (zona/espacio/global).`,
+              taskId,
+              details: {
+                requirementKind: "anyOf",
+                resourceItemIds: normalizedResourceItemIds,
+                zoneId: effectiveZoneId,
+                spaceId: effectiveSpaceId,
+              },
+            },
+          } as any;
+        }
 
         const got = tryPick(candidates, need);
         if (got.length < need) {
@@ -2921,19 +2996,45 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
     // anyOf
     const anyOf = Array.isArray(rr?.anyOf) ? rr.anyOf : null;
-    if (anyOf) {
-      for (const group of anyOf) {
+    const itinerantRequirement = String(task?.itinerantTeamRequirement ?? "none")
+      .trim()
+      .toLowerCase();
+    const allowedItinerantTeamIds = Array.from(
+      new Set(
+        (Array.isArray(task?.allowedItinerantTeamIds) ? task.allowedItinerantTeamIds : [])
+          .map((v: any) => Number(v))
+          .filter((v: number) => Number.isFinite(v) && v > 0),
+      ),
+    );
+    const hasItinerantAnyOfRequirement =
+      itinerantRequirement === "any" || itinerantRequirement === "specific";
+
+    if (hasItinerantAnyOfRequirement && allowedItinerantTeamIds.length === 0) {
+      return false;
+    }
+
+    const effectiveAnyOfGroups = hasItinerantAnyOfRequirement
+      ? [{ quantity: 1, resourceItemIds: allowedItinerantTeamIds }]
+      : anyOf;
+
+    if (effectiveAnyOfGroups) {
+      for (const group of effectiveAnyOfGroups) {
         const qty = Number(group?.quantity ?? 0);
         const ids = Array.isArray(group?.resourceItemIds)
           ? group.resourceItemIds
           : [];
         if (!Number.isFinite(qty) || qty <= 0) continue;
 
-        const candidates: number[] = [];
-        for (const ridAny of ids) {
-          const rid = Number(ridAny);
-          if (!Number.isFinite(rid) || rid <= 0) continue;
+        const normalizedIds: number[] = Array.from(
+          new Set(
+            ids
+              .map((ridAny: any) => Number(ridAny))
+              .filter((rid: number) => Number.isFinite(rid) && rid > 0),
+          ),
+        );
 
+        const candidates: number[] = [];
+        for (const rid of normalizedIds) {
           const global = planIdsByResourceItemId.get(rid) ?? [];
           const zoneCandidates = Array.isArray(zonePool)
             ? zonePool.filter((pid) => priById.get(pid)?.resourceItemId === rid)
@@ -2944,6 +3045,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
           candidates.push(...spaceCandidates, ...zoneCandidates, ...global);
         }
+
+        if (qty > 0 && candidates.length === 0) return false;
 
         const pickedIds = tryPick(candidates, qty);
         if (pickedIds.length < qty) return false;
