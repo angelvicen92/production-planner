@@ -4700,7 +4700,10 @@ function normalizeHexColor(value: unknown): string | null {
     let planningRunId: number | null = null;
     try {
       const input = z
-        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional() })
+        .object({
+          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
+          timeLimitMs: z.number().int().positive().max(300000).optional(),
+        })
         .strict()
         .parse(req.body ?? {});
       const modeRaw = input.mode ?? "full";
@@ -5013,7 +5016,10 @@ function normalizeHexColor(value: unknown): string | null {
     const planId = Number(req.params.id);
     try {
       const input = z
-        .object({ mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional() })
+        .object({
+          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
+          timeLimitMs: z.number().int().positive().max(300000).optional(),
+        })
         .strict()
         .parse(req.body ?? {});
       const modeRaw = input.mode ?? "full";
