@@ -90,4 +90,16 @@ const baseInput = (tasks: any[]): EngineV3Input => ({
   assert.ok(Number(approval?.details?.overtime_min_required ?? 0) > 0);
 }
 
+
+// Imposible incluso con overtime máximo: devuelve INCOMPLETE_PLAN.
+{
+  const tasks = [
+    { id: 41, planId: 1, templateId: 501, templateName: "TooLong", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 500 },
+  ];
+  const out = generatePlanV3(baseInput(tasks));
+  assert.equal(out.complete, false);
+  const incomplete = (out.reasons ?? []).find((r: any) => String(r?.code) === "INCOMPLETE_PLAN") as any;
+  assert.ok(incomplete);
+}
+
 console.log("engine/v3/phaseA.spec.ts: OK");

@@ -162,6 +162,20 @@ const suggestManualBlockMoves = (input: EngineV3Input, unplanned: EngineOutputUn
     }));
 };
 
+const buildRescueProposal = (base: EngineOutput, input: EngineV3Input) => {
+  const overtimeMinRequired = estimateOvertimeMinRequired(cloneWithSoftLevel(input, 0));
+  const unplanned = Array.isArray(base.unplanned) ? base.unplanned : [];
+  const suggestedMoves = suggestManualBlockMoves(input, unplanned);
+  const canOvertime = overtimeMinRequired !== null;
+
+  return {
+    needs_user_approval: canOvertime || suggestedMoves.length > 0,
+    canOvertime,
+    overtime_min_required: overtimeMinRequired,
+    suggested_moves: suggestedMoves,
+  };
+};
+
 export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
   options?.onProgress?.({ phase: "prevalidation", progressPct: 5, message: "V3 Fase A: prevalidación de hard constraints" });
 
@@ -251,22 +265,18 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     reasons: [{ code: "NO_PLAN", message: "No se obtuvo ningún intento válido en V3 Fase A." }],
   };
 
-  const overtimeMin = estimateOvertimeMinRequired(cloneWithSoftLevel(input, 0));
-  const unplanned = Array.isArray(fallback.unplanned) ? fallback.unplanned : [];
-  const suggestedMoves = suggestManualBlockMoves(input, unplanned);
-
-  const needsApproval = overtimeMin !== null || suggestedMoves.length > 0;
-  const approvalReason = needsApproval
+  const rescue = buildRescueProposal(fallback, input);
+  const fallbackReasons: any[] = rescue.canOvertime
     ? [{
         code: "NEEDS_USER_APPROVAL",
-        message: "Se requiere aprobación del usuario para aplicar overtime y/o mover manual blocks.",
-        details: {
-          needs_user_approval: true,
-          overtime_min_required: overtimeMin,
-          suggested_moves: suggestedMoves,
-        },
+        message: "Se requiere ampliar jornada",
+        details: rescue,
       }]
-    : [];
+    : [{
+        code: "INCOMPLETE_PLAN",
+        message: "No se ha podido planificar todas las tareas con las restricciones actuales",
+        details: fallback.unplanned,
+      }];
 
   options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3 Fase A: sin plan completo, devolviendo diagnóstico" });
 
@@ -275,7 +285,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     feasible: false,
     complete: false,
     hardFeasible: false,
-    reasons: [...(fallback.reasons ?? []), ...approvalReason],
+    reasons: fallbackReasons,
     report: {
       repairsTried: attemptsSummary.length,
       degradations: attemptsSummary.map((a) => `soft_${a.level}`),
