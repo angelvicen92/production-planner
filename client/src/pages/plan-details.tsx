@@ -1433,6 +1433,7 @@ ${reasonMessage}` : message,
       warnings: any[];
       insights: any[];
       unplanned: any[];
+      report?: any;
     } | null;
   }>({
     open: false,
@@ -1753,16 +1754,17 @@ ${reasonMessage}` : message,
     const insights = Array.isArray(source?.insights) ? source.insights : (Array.isArray(payload?.insights) ? payload.insights : []);
     const unplanned = Array.isArray(source?.unplanned) ? source.unplanned : (Array.isArray(payload?.unplanned) ? payload.unplanned : []);
     const reasons = Array.isArray(source?.reasons) ? source.reasons : (Array.isArray(payload?.reasons) ? payload.reasons : []);
+    const report = source?.report ?? payload?.report ?? null;
     const codeRaw = source?.code ?? payload?.code ?? payload?.message ?? source?.message ?? null;
     const code = codeRaw == null ? null : String(codeRaw);
 
-    const hasDiagnostics = warnings.length > 0 || insights.length > 0 || unplanned.length > 0;
+    const hasDiagnostics = warnings.length > 0 || insights.length > 0 || unplanned.length > 0 || Boolean(report);
     if (!hasDiagnostics && reasons.length === 0) return false;
 
     setErrorDialog({
       open: true,
       reasons,
-      diagnostic: { code, warnings, insights, unplanned },
+      diagnostic: { code, warnings, insights, unplanned, report },
     });
     return true;
   };
@@ -4547,6 +4549,18 @@ ${reasonMessage}` : message,
                     <AlertTitle>El motor v2 no pudo planificar ninguna tarea. Ver diagnóstico abajo.</AlertTitle>
                   </Alert>
                 )}
+
+                {errorDialog.diagnostic?.report ? (
+                  <div className="space-y-1 rounded-md border border-border bg-background/70 p-3 text-xs">
+                    <div className="font-semibold">Repair loop v2</div>
+                    <div>Se ha encontrado solución tras {Number(errorDialog.diagnostic.report?.repairsTried ?? 0)} reintentos.</div>
+                    {Array.isArray(errorDialog.diagnostic.report?.degradations) && errorDialog.diagnostic.report.degradations.length > 0 ? (
+                      <div>Se han relajado normas blandas: {errorDialog.diagnostic.report.degradations.join(", ")}.</div>
+                    ) : (
+                      <div>No se han relajado normas blandas.</div>
+                    )}
+                  </div>
+                ) : null}
 
                 {errorDialog.diagnostic?.warnings.length ? (
                   <div className="space-y-1">

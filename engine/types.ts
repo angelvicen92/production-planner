@@ -287,4 +287,14 @@ export interface EngineOutput {
     message: string;
     details?: any;
   }>;
+  report?: {
+    repairsTried: number;
+    degradations: string[];
+    attemptsSummary: Array<{
+      level: number;
+      ok: boolean;
+      topReasons: string[];
+      reason?: string;
+    }>;
+  };
 }
