@@ -22,18 +22,75 @@ export type CpSatOptimizationResult = {
 
 const SCRIPT_PATH = path.resolve(process.cwd(), "engine/v3/python/cp_sat_service.py");
 
+const toMinutes = (hhmm: string): number | null => {
+  const [h, m] = String(hhmm ?? "").split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+};
+
+const scoreWarmStart = (input: EngineV3Input, warmStart: EngineOutput) => {
+  const mainZoneId = Number((input as any)?.optimizerMainZoneId ?? NaN);
+  const hasMainZone = Number.isFinite(mainZoneId) && mainZoneId > 0;
+  const tasksById = new Map<number, any>((input.tasks ?? []).map((t: any) => [Number(t.id), t]));
+
+  const bySpace = new Map<number, Array<{ start: number; templateId: number }>>();
+  const mainIntervals: Array<{ start: number; end: number }> = [];
+
+  for (const p of warmStart.plannedTasks ?? []) {
+    const tid = Number((p as any)?.taskId ?? NaN);
+    if (!Number.isFinite(tid) || tid <= 0) continue;
+    const task = tasksById.get(tid);
+    if (!task) continue;
+    const start = toMinutes(String((p as any).startPlanned));
+    const end = toMinutes(String((p as any).endPlanned));
+    if (start == null || end == null || end <= start) continue;
+
+    const spaceId = Number(task.spaceId ?? 0);
+    const templateId = Number(task.templateId ?? 0);
+    if (spaceId > 0) {
+      const list = bySpace.get(spaceId) ?? [];
+      list.push({ start, templateId });
+      bySpace.set(spaceId, list);
+    }
+
+    if (hasMainZone && Number(task.zoneId ?? 0) === mainZoneId) {
+      mainIntervals.push({ start, end });
+    }
+  }
+
+  let switches = 0;
+  for (const list of bySpace.values()) {
+    list.sort((a, b) => a.start - b.start);
+    for (let i = 1; i < list.length; i++) {
+      if (list[i].templateId !== list[i - 1].templateId) switches += 1;
+    }
+  }
+
+  let gap = 0;
+  mainIntervals.sort((a, b) => a.start - b.start);
+  for (let i = 1; i < mainIntervals.length; i++) {
+    const g = mainIntervals[i].start - mainIntervals[i - 1].end;
+    if (g > 0) gap += g;
+  }
+
+  const score = gap * 10 + switches * 5;
+  return { score, gap, switches };
+};
+
 export function optimizeWithCpSat(
   input: EngineV3Input,
   warmStart: EngineOutput,
   timeLimitSeconds: number,
 ): CpSatOptimizationResult {
+  const warmScore = scoreWarmStart(input, warmStart);
+
   const baselineResult = (message: string, technicalDetails: string[]): CpSatOptimizationResult => ({
     output: warmStart,
     noOptimized: true,
     quality: {
       improved: false,
-      baselineScore: 0,
-      optimizedScore: 0,
+      baselineScore: warmScore.score,
+      optimizedScore: warmScore.score,
       objectiveDelta: 0,
       mainZoneGapMinutesDelta: 0,
       spaceSwitchesDelta: 0,

@@ -54,6 +54,39 @@ def score_plan(engine_input: Dict[str, Any], planned: List[Dict[str, Any]]) -> T
     return score, gap, switches
 
 
+def compute_main_zone_occupied_slots(
+    engine_input: Dict[str, Any],
+    planned: List[Dict[str, Any]],
+    work_start: int,
+    work_end: int,
+    grid: int,
+) -> int:
+    horizon = max(1, (work_end - work_start) // grid)
+    tasks_by_id = {int(t.get("id")): t for t in engine_input.get("tasks", [])}
+    main_zone_raw = engine_input.get("optimizerMainZoneId")
+    try:
+        main_zone = int(main_zone_raw)
+    except Exception:
+        return 0
+    if main_zone <= 0:
+        return 0
+
+    occupied = [0] * horizon
+    for p in planned:
+        tid = int(p.get("taskId") or -1)
+        task = tasks_by_id.get(tid) or {}
+        if int(task.get("zoneId") or 0) != main_zone:
+            continue
+        s = parse_hhmm(p.get("startPlanned"))
+        e = parse_hhmm(p.get("endPlanned"))
+        s_slot = max(0, (s - work_start) // grid)
+        e_slot = min(horizon, (e - work_start + (grid - 1)) // grid)
+        for slot in range(s_slot, e_slot):
+            if 0 <= slot < horizon:
+                occupied[slot] = 1
+    return sum(occupied)
+
+
 def main() -> int:
     raw = sys.stdin.read()
     payload = json.loads(raw or "{}")
@@ -163,6 +196,7 @@ def main() -> int:
     start_vars: Dict[int, Any] = {}
     end_vars: Dict[int, Any] = {}
     intervals: Dict[int, Any] = {}
+    duration_slots_by_tid: Dict[int, int] = {}
 
     movable_task_ids: List[int] = []
 
@@ -201,6 +235,7 @@ def main() -> int:
         start_vars[tid] = s
         end_vars[tid] = e
         intervals[tid] = iv
+        duration_slots_by_tid[tid] = dur_slots
         if fixed_by_lock:
             model.Add(s == fixed_ws)
             model.Add(e == fixed_ws + dur_slots)
@@ -272,7 +307,7 @@ def main() -> int:
     if degrade_bools:
         model.Add(sum(b for _, b in degrade_bools) <= near_hard_breaks_max)
 
-    # Objective: minimize weighted distance to warm start and compact main zone
+    # Objective components
     abs_diffs = []
     for tid in movable_task_ids:
         ws = int((parse_hhmm(warm_by_id[tid].get("startPlanned")) - work_start) // grid)
@@ -280,10 +315,77 @@ def main() -> int:
         model.AddAbsEquality(d, start_vars[tid] - ws)
         abs_diffs.append(d)
 
-    objective_terms = list(abs_diffs)
+    main_zone_id_raw = engine_input.get("optimizerMainZoneId")
+    try:
+        main_zone_id = int(main_zone_id_raw)
+    except Exception:
+        main_zone_id = 0
+    main_zone_task_ids = [
+        tid for tid in start_vars.keys()
+        if int((tasks_by_id.get(tid) or {}).get("zoneId") or 0) == main_zone_id and main_zone_id > 0
+    ]
+
+    delta_slots = 12
+    occ_slots_set = set()
+    for tid in main_zone_task_ids:
+        wp = warm_by_id.get(tid) or {}
+        ws = int((parse_hhmm(wp.get("startPlanned")) - work_start) // grid)
+        dur_slots = duration_slots_by_tid.get(tid, 1)
+        we = ws + dur_slots
+        lo = max(0, ws - delta_slots)
+        hi = min(horizon - 1, we + delta_slots)
+        for s in range(lo, hi + 1):
+            occ_slots_set.add(s)
+    occ_slots = sorted(list(occ_slots_set))
+    occ_vars: Dict[int, Any] = {}
+    occ_cover_vars: List[Any] = []
+    for s in occ_slots:
+        cover_bools = []
+        for tid in main_zone_task_ids:
+            dur_slots = duration_slots_by_tid.get(tid, 1)
+            min_start = max(0, s - dur_slots + 1)
+            max_start = min(horizon - dur_slots, s)
+            if min_start > max_start:
+                continue
+            b = model.NewBoolVar(f"cover_{tid}_{s}")
+            model.Add(start_vars[tid] <= s).OnlyEnforceIf(b)
+            model.Add(start_vars[tid] >= s - dur_slots + 1).OnlyEnforceIf(b)
+            cover_bools.append(b)
+            occ_cover_vars.append(b)
+        if not cover_bools:
+            continue
+        occ = model.NewBoolVar(f"occ_{s}")
+        model.AddBoolOr(cover_bools).OnlyEnforceIf(occ)
+        model.AddBoolAnd([b.Not() for b in cover_bools]).OnlyEnforceIf(occ.Not())
+        model.AddBoolOr([occ.Not(), *cover_bools])
+        for b in cover_bools:
+            model.AddImplication(b, occ)
+        occ_vars[s] = occ
+
+    makespan = model.NewIntVar(0, horizon, "makespan")
+    if end_vars:
+        model.AddMaxEquality(makespan, list(end_vars.values()))
+    else:
+        model.Add(makespan == 0)
+
+    total_slots_main = len(occ_vars)
+    main_zone_empty_slots = model.NewIntVar(0, total_slots_main, "main_zone_empty_slots")
+    if total_slots_main > 0:
+        model.Add(main_zone_empty_slots == total_slots_main - sum(occ_vars.values()))
+    else:
+        model.Add(main_zone_empty_slots == 0)
+
+    # Weighted objective: main-zone occupancy >> finish early >> warm-start distance >> near-hard breaks.
+    W1 = 10000
+    W2 = 100
+    W3 = 1
+    W4 = 5000
+    objective_terms = [main_zone_empty_slots * W1, makespan * W2]
+    if abs_diffs:
+        objective_terms.append(sum(abs_diffs) * W3)
     if degrade_bools:
         for _, b in degrade_bools:
-            objective_terms.append(b * 50)
+            objective_terms.append(b * W4)
 
     model.Minimize(sum(objective_terms))
 
@@ -330,6 +432,10 @@ def main() -> int:
 
     baseline_score, baseline_gap, baseline_switches = score_plan(engine_input, warm_planned)
     optimized_score, optimized_gap, optimized_switches = score_plan(engine_input, optimized_planned)
+    baseline_main_zone_occupied = compute_main_zone_occupied_slots(engine_input, warm_planned, work_start, work_end, grid)
+    optimized_main_zone_occupied = compute_main_zone_occupied_slots(engine_input, optimized_planned, work_start, work_end, grid)
+    baseline_makespan = max([parse_hhmm(p.get("endPlanned")) for p in warm_planned], default=work_start) - work_start
+    optimized_makespan = max([parse_hhmm(p.get("endPlanned")) for p in optimized_planned], default=work_start) - work_start
     improved = optimized_score <= baseline_score
 
     broken = []
@@ -367,6 +473,12 @@ def main() -> int:
             f"wall_time_s={solver.WallTime():.3f}",
             f"branches={solver.NumBranches()}",
             f"conflicts={solver.NumConflicts()}",
+            f"mainZoneOccupiedSlotsBaseline={baseline_main_zone_occupied}",
+            f"mainZoneOccupiedSlotsOptimized={optimized_main_zone_occupied}",
+            f"makespanBaselineMinutes={baseline_makespan}",
+            f"makespanOptimizedMinutes={optimized_makespan}",
+            f"mainZoneSlotVars={total_slots_main}",
+            f"mainZoneCoverVars={len(occ_cover_vars)}",
         ],
     }
     sys.stdout.write(json.dumps(out))

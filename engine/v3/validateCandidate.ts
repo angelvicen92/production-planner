@@ -21,6 +21,15 @@ export function validateOptimizedCandidate(input: EngineV3Input, warm: EngineOut
   const warmById = new Map<number, any>();
   for (const p of warm.plannedTasks ?? []) warmById.set(Number((p as any).taskId), p as any);
 
+  const lockByTaskId = new Map<number, any>();
+  for (const lock of input.locks ?? []) {
+    const taskId = Number((lock as any)?.taskId ?? NaN);
+    const lockType = String((lock as any)?.lockType ?? "");
+    if (!Number.isFinite(taskId) || taskId <= 0) continue;
+    if (lockType !== "time" && lockType !== "full") continue;
+    lockByTaskId.set(taskId, lock);
+  }
+
   const planned = (candidate.plannedTasks ?? []).filter((p: any) => Number((p as any).taskId) > 0);
   const intervals: Array<{ taskId: number; start: number; end: number; contestantId: number; spaceId: number; resources: number[] }> = [];
 
@@ -54,6 +63,18 @@ export function validateOptimizedCandidate(input: EngineV3Input, warm: EngineOut
     if (status === "done" || status === "in_progress" || status === "cancelled") {
       if (warmP && (warmP.startPlanned !== p.startPlanned || warmP.endPlanned !== p.endPlanned)) {
         errors.push(`MOVED_FIXED_STATUS_${taskId}`);
+      }
+    }
+
+    const lock = lockByTaskId.get(taskId);
+    if (lock) {
+      const lockStart = String((lock as any)?.lockedStart ?? "");
+      const lockEnd = String((lock as any)?.lockedEnd ?? "");
+      if (lockStart && String(p.startPlanned) !== lockStart) {
+        errors.push(`MOVED_LOCKED_TIME_${taskId}`);
+      }
+      if (lockEnd && String(p.endPlanned) !== lockEnd) {
+        errors.push(`MOVED_LOCKED_TIME_${taskId}`);
       }
     }
 
