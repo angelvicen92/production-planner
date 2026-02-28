@@ -3688,6 +3688,15 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const hasOverlapInPlannedTasks = () => {
     const byContestant = new Map<number, Array<{ start: number; end: number; taskId: number; task: any }>>();
     const byResource = new Map<number, Array<{ start: number; end: number }>>();
+    const safeToMinutes = (v: any): number | null => {
+      const s = String(v ?? "").trim();
+      if (!/^\d{1,2}:\d{2}$/.test(s)) return null;
+      try {
+        return toMinutes(s);
+      } catch {
+        return null;
+      }
+    };
 
     const normalizeAssigned = (raw: any): number[] => {
       if (!raw) return [];
@@ -3711,14 +3720,17 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     for (const p of plannedTasks as any[]) {
       const taskId = Number(p.taskId);
       const task = taskById.get(taskId);
-      const start = toMinutes(p.startPlanned);
-      const end = toMinutes(p.endPlanned);
+      const start = safeToMinutes(p.startPlanned);
+      const end = safeToMinutes(p.endPlanned);
+      if (start === null || end === null || end <= start) continue;
 
-      const contestantId = getContestantId(task);
-      if (contestantId) {
-        const list = byContestant.get(contestantId) ?? [];
-        list.push({ start, end, taskId, task });
-        byContestant.set(contestantId, list);
+      if (task) {
+        const contestantId = getContestantId(task);
+        if (contestantId) {
+          const list = byContestant.get(contestantId) ?? [];
+          list.push({ start, end, taskId, task });
+          byContestant.set(contestantId, list);
+        }
       }
 
       for (const rid of normalizeAssigned(p?.assignedResources ?? null)) {
