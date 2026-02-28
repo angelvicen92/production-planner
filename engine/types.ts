@@ -290,9 +290,12 @@ export interface EngineOutput {
   report?: {
     repairsTried: number;
     degradations: string[];
+    abortedByBudget?: boolean;
+    totalMs?: number;
     attemptsSummary: Array<{
       level: number;
       ok: boolean;
+      ms?: number;
       topReasons: string[];
       reason?: string;
     }>;

@@ -653,3 +653,37 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.ok(String(reason?.message ?? "").includes("Espacio ocupado"));
   assert.equal(reason?.details?.lastBumpDetails?.spaceId, 71);
 }
+
+{
+  const tasks = [
+    { id: 9001, planId: 99, templateId: 11, templateName: "Bloque A", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 120 },
+    { id: 9002, planId: 99, templateId: 12, templateName: "Bloque B", zoneId: 7, spaceId: 71, contestantId: 1, status: "pending", durationOverrideMin: 120 },
+  ];
+
+  const input: EngineInput = {
+    planId: 99,
+    workDay: { start: "09:00", end: "10:00" },
+    meal: { start: "10:00", end: "10:30" },
+    camerasAvailable: 0,
+    tasks: tasks as any,
+    locks: [],
+    groupingZoneIds: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+    resourceItemComponents: {},
+    optimizerMainZoneId: 7,
+    optimizerMainZoneOptKeepBusy: true,
+    optimizerWeights: { mainZoneKeepBusy: 10 },
+    timeBudgetMs: 1,
+    maxAttempts: 4,
+  } as any;
+
+  const run = generatePlanV2(input);
+  assert.equal(Boolean(run?.report?.abortedByBudget), true);
+  assert.ok(Number(run?.report?.totalMs ?? 0) >= 0);
+  assert.ok(Array.isArray(run?.report?.attemptsSummary));
+  assert.ok(Number(run?.report?.attemptsSummary?.[0]?.ms ?? -1) >= 0);
+}
