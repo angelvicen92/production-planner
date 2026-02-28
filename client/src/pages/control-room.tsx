@@ -103,16 +103,22 @@ export default function ControlRoomPage() {
   const isFavoritePlan = Boolean(effectivePlanId && favoriteValid && effectivePlanId === favoritePlanId);
   const run = planningRunQ.data;
   const showPlanning = run?.status === "running";
-  const planningProgress = run && run.totalPending > 0 ? Math.min(100, (run.plannedCount / run.totalPending) * 100) : 0;
-  const phaseLabel = run?.phase === "clearing_pending"
-    ? "Limpiando pendientes"
-    : run?.phase === "building_input"
+  const planningProgress = run ? Math.min(100, Math.max(0, Number(run.progressPct ?? (run.totalPending > 0 ? (run.plannedCount / run.totalPending) * 100 : 0)))) : 0;
+  const phaseLabel = run?.phase === "prevalidation" || run?.phase === "clearing_pending"
+    ? "Prevalidando"
+    : run?.phase === "build_input" || run?.phase === "building_input"
       ? "Construyendo entrada"
-      : run?.phase === "solving"
-        ? "Resolviendo"
-        : run?.phase === "persisting"
-          ? "Persistiendo"
-          : "Procesando";
+      : run?.phase === "solving_feasible" || run?.phase === "solving"
+        ? "Validando factibilidad"
+        : run?.phase === "optimizing"
+          ? "Optimizando"
+          : run?.phase === "persisting"
+            ? "Persistiendo"
+            : run?.phase === "done"
+              ? "Completado"
+              : run?.phase === "error"
+                ? "Error"
+                : "Procesando";
 
   return (
     <Layout>

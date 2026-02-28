@@ -8,6 +8,7 @@ import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlan } from "../engine/solve";
 import { generatePlanV2 } from "../engine/solve_v2";
+import { generatePlanV3 } from "../engine/v3";
 import { getUserRole, withPermissionDenied } from "./authz";
 
 export async function registerRoutes(
@@ -4375,6 +4376,10 @@ function normalizeHexColor(value: unknown): string | null {
         plannedCount: Number(data.planned_count ?? 0),
         message: data.message ? String(data.message) : null,
         phase: data.phase ? String(data.phase) : null,
+        progressPct: Number(data.phase_progress_pct ?? 0),
+        engine: data.engine ? String(data.engine) : "v2",
+        requestedTimeLimitMs: data.requested_time_limit_ms == null ? null : Number(data.requested_time_limit_ms),
+        finishedAt: data.finished_at ? String(data.finished_at) : null,
         lastTaskId: data.last_task_id == null ? null : Number(data.last_task_id),
         lastTaskName: data.last_task_name ? String(data.last_task_name) : null,
         lastReasons: Array.isArray(data.last_reasons) ? data.last_reasons : null,
@@ -4646,6 +4651,50 @@ function normalizeHexColor(value: unknown): string | null {
     }
   });
 
+  const normalizeOptimizerEngine = (raw: any): "v2" | "v3" => {
+    const value = String(raw ?? "v2").toLowerCase();
+    return value === "v3" ? "v3" : "v2";
+  };
+
+  const estimateProgressPct = (phase: string | null | undefined, plannedCount: number, totalPending: number): number => {
+    const safePlanned = Number.isFinite(plannedCount) ? Math.max(0, plannedCount) : 0;
+    const safeTotal = Number.isFinite(totalPending) ? Math.max(0, totalPending) : 0;
+    if (phase === "done") return 100;
+    if (phase === "error") return Math.min(100, Math.max(0, safeTotal > 0 ? Math.round((safePlanned / safeTotal) * 100) : 0));
+    if (phase === "persisting") {
+      const persistBase = 80;
+      const persistSpan = 19;
+      const persistProgress = safeTotal > 0 ? Math.round((Math.min(safePlanned, safeTotal) / safeTotal) * persistSpan) : 0;
+      return Math.min(99, Math.max(persistBase, persistBase + persistProgress));
+    }
+    if (phase === "optimizing") return 70;
+    if (phase === "solving_feasible") return 45;
+    if (phase === "build_input") return 20;
+    if (phase === "prevalidation") return 5;
+    return 0;
+  };
+
+  const updatePlanningRunProgress = async (
+    planningRunId: number | null,
+    patch: Record<string, any>,
+    progressCtx?: { phase?: string | null; plannedCount?: number; totalPending?: number },
+  ) => {
+    if (!planningRunId) return;
+    const phase = progressCtx?.phase ?? (typeof patch.phase === "string" ? patch.phase : null);
+    const plannedCount = Number(progressCtx?.plannedCount ?? patch.planned_count ?? 0);
+    const totalPending = Number(progressCtx?.totalPending ?? patch.total_pending ?? 0);
+    const phaseProgressPct = estimateProgressPct(phase, plannedCount, totalPending);
+
+    await supabaseAdmin
+      .from("planning_runs")
+      .update({
+        ...patch,
+        phase_progress_pct: phaseProgressPct,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", planningRunId);
+  };
+
   app.post(api.plans.generate.path, async (req, res) => {
     const planId = Number(req.params.id);
     let planningRunId: number | null = null;
@@ -4660,6 +4709,21 @@ function normalizeHexColor(value: unknown): string | null {
         : modeRaw === "plan_pending"
           ? "only_unplanned"
           : modeRaw;
+      const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null;
+      const requestedTimeLimitMsRaw = Number((req.body as any)?.timeLimitMs ?? (req.query as any)?.timeLimitMs ?? NaN);
+      const requestedTimeLimitMs = Number.isFinite(requestedTimeLimitMsRaw) && requestedTimeLimitMsRaw > 0
+        ? Math.round(requestedTimeLimitMsRaw)
+        : null;
+
+      const { data: planRow, error: planErr } = await supabaseAdmin
+        .from("plans")
+        .select("id, optimizer_engine")
+        .eq("id", planId)
+        .maybeSingle();
+      if (planErr) throw planErr;
+      if (!planRow?.id) return res.status(404).json({ message: "Plan not found" });
+      const selectedEngine = normalizeOptimizerEngine((planRow as any)?.optimizer_engine);
+
       const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
         .from("daily_tasks")
         .select("id, status, is_manual_block")
@@ -4718,7 +4782,11 @@ function normalizeHexColor(value: unknown): string | null {
           status: "running",
           total_pending: totalPending,
           planned_count: 0,
-          phase: "clearing_pending",
+          phase: "prevalidation",
+          phase_progress_pct: estimateProgressPct("prevalidation", 0, totalPending),
+          engine: selectedEngine,
+          requested_time_limit_ms: requestedTimeLimitMs,
+          request_id: requestId,
           started_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -4737,12 +4805,11 @@ function normalizeHexColor(value: unknown): string | null {
         if (clearPendingErr) throw clearPendingErr;
       }
 
-      if (planningRunId) {
-        await supabaseAdmin
-          .from("planning_runs")
-          .update({ phase: "building_input", updated_at: new Date().toISOString() })
-          .eq("id", planningRunId);
-      }
+      await updatePlanningRunProgress(
+        planningRunId,
+        { phase: "build_input" },
+        { phase: "build_input", plannedCount: 0, totalPending },
+      );
 
       const engineInput = await buildEngineInput(planId, storage);
       if (mode === "only_unplanned") {
@@ -4783,33 +4850,70 @@ function normalizeHexColor(value: unknown): string | null {
         }
         engineInput.locks = Array.from(lockByTaskId.values());
       }
-      if (planningRunId) {
-        await supabaseAdmin
-          .from("planning_runs")
-          .update({ phase: "solving", updated_at: new Date().toISOString() })
-          .eq("id", planningRunId);
+      await updatePlanningRunProgress(
+        planningRunId,
+        { phase: "solving_feasible" },
+        { phase: "solving_feasible", plannedCount: 0, totalPending },
+      );
+
+      let result: any;
+      if (selectedEngine === "v3") {
+        result = generatePlanV3(engineInput, {
+          fallbackToV2: false,
+          requestId: requestId ?? undefined,
+          timeLimitMs: requestedTimeLimitMs,
+          onProgress: (progress) => {
+            void updatePlanningRunProgress(
+              planningRunId,
+              { phase: progress.phase },
+              { phase: progress.phase, plannedCount: 0, totalPending },
+            );
+          },
+        });
+      } else {
+        await updatePlanningRunProgress(
+          planningRunId,
+          { phase: "optimizing" },
+          { phase: "optimizing", plannedCount: 0, totalPending },
+        );
+        result = generatePlanV2(engineInput);
       }
-      const result = generatePlan(engineInput);
       const enrich = await buildReasonEnricher(planId);
 
-      const planned = (result as any).plannedTasks || [];
+      const planned = Array.isArray((result as any)?.plannedTasks) ? (result as any).plannedTasks : [];
       if ((result as any).hardFeasible === false) {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
+        const isV3StubError = selectedEngine === "v3" && reasons.some((r: any) => String(r?.code ?? "") === "ENGINE_V3_NOT_ENABLED");
         if (planningRunId) {
-          await supabaseAdmin
-            .from("planning_runs")
-            .update({ status: "infeasible", updated_at: new Date().toISOString(), message: "INFEASIBLE_HARD", last_reasons: reasons, planned_count: 0 })
-            .eq("id", planningRunId);
+          await updatePlanningRunProgress(
+            planningRunId,
+            {
+              status: isV3StubError ? "error" : "infeasible",
+              message: isV3StubError ? "ENGINE_V3_NOT_ENABLED" : "INFEASIBLE_HARD",
+              last_reasons: reasons,
+              planned_count: 0,
+              phase: isV3StubError ? "error" : "done",
+              finished_at: new Date().toISOString(),
+            },
+            { phase: isV3StubError ? "error" : "done", plannedCount: 0, totalPending },
+          );
         }
 
-        return res.status(422).json({
-          message: "INFEASIBLE_HARD",
+        return res.status(isV3StubError ? 400 : 422).json({
+          message: isV3StubError ? "ENGINE_V3_NOT_ENABLED" : "INFEASIBLE_HARD",
+          detail: isV3StubError ? "Motor V3 aún está en modo stub y no genera planificación." : undefined,
           reasons,
           runId: planningRunId,
         });
       }
 
       let updated = 0;
+
+      await updatePlanningRunProgress(
+        planningRunId,
+        { phase: "persisting", planned_count: 0 },
+        { phase: "persisting", plannedCount: 0, totalPending },
+      );
 
       for (const p of planned) {
         if (Number((p as any).taskId) < 0) {
@@ -4835,25 +4939,30 @@ function normalizeHexColor(value: unknown): string | null {
           const taskName = Number.isFinite(currentTaskId)
             ? enrich({ taskId: currentTaskId }).taskName ?? null
             : null;
-          await supabaseAdmin
-            .from("planning_runs")
-            .update({
+          await updatePlanningRunProgress(
+            planningRunId,
+            {
               planned_count: updated,
               phase: "persisting",
               last_task_id: Number.isFinite(currentTaskId) ? currentTaskId : null,
               last_task_name: taskName,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", planningRunId);
+            },
+            { phase: "persisting", plannedCount: updated, totalPending },
+          );
         }
       }
 
-      if (planningRunId) {
-        await supabaseAdmin
-          .from("planning_runs")
-          .update({ status: "success", planned_count: updated, phase: null, updated_at: new Date().toISOString(), message: null })
-          .eq("id", planningRunId);
-      }
+      await updatePlanningRunProgress(
+        planningRunId,
+        {
+          status: "success",
+          planned_count: updated,
+          phase: "done",
+          finished_at: new Date().toISOString(),
+          message: null,
+        },
+        { phase: "done", plannedCount: updated, totalPending },
+      );
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
@@ -4884,12 +4993,11 @@ function normalizeHexColor(value: unknown): string | null {
 
     } catch (e: any) {
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
-      if (planningRunId) {
-        await supabaseAdmin
-          .from("planning_runs")
-          .update({ status: "error", message: msg, updated_at: new Date().toISOString() })
-          .eq("id", planningRunId);
-      }
+      await updatePlanningRunProgress(
+        planningRunId,
+        { status: "error", message: msg, phase: "error", finished_at: new Date().toISOString() },
+        { phase: "error", plannedCount: 0, totalPending: 0 },
+      );
 
       if (msg.toLowerCase().includes("not found")) {
         return res.status(404).json({ message: msg });
