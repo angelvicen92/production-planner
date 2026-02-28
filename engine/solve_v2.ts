@@ -578,6 +578,88 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   };
 
   const wrapInnerByTaskId = new Map<number, number>();
+  const wrapConfigByInnerTaskId = new Map<number, { wrapTaskId: number; pre: number; post: number }>();
+
+  const resolveTaskInterval = (task: any) => {
+    if (!task) return null;
+    const sRaw = task?.startPlanned ?? null;
+    const eRaw = task?.endPlanned ?? null;
+    if (!sRaw || !eRaw) return null;
+    const s = toMinutes(String(sRaw));
+    const e = toMinutes(String(eRaw));
+    if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return null;
+    return { start: s, end: e };
+  };
+
+  const isCandidateInnerForWrap = (task: any) => {
+    if (!task) return false;
+    if (isItinerantWrapTask(task)) return false;
+    if (isProtectedWrapTask(task)) return false;
+    if (Boolean(task?.isManualBlock)) return false;
+    return true;
+  };
+
+  const buildWrapInnerMapping = () => {
+    wrapInnerByTaskId.clear();
+    wrapConfigByInnerTaskId.clear();
+
+    const wraps = tasksSorted.filter((task: any) => isItinerantWrapTask(task));
+    for (const wrapTask of wraps) {
+      const wrapTaskId = Number(wrapTask?.id ?? 0);
+      const contestantId = Number(getContestantId(wrapTask) ?? 0);
+      if (!wrapTaskId || !contestantId) continue;
+
+      const wrapSpaceId = Number(getSpaceId(wrapTask) ?? 0);
+      const wrapZoneId = Number(getZoneId(wrapTask) ?? getZoneIdForSpace(wrapSpaceId) ?? 0);
+      const wrapInterval = resolveTaskInterval(wrapTask);
+
+      const candidates = tasksSorted.filter((task: any) => {
+        if (!isCandidateInnerForWrap(task)) return false;
+        if (Number(task?.id ?? 0) === wrapTaskId) return false;
+        if (Number(getContestantId(task) ?? 0) !== contestantId) return false;
+        if (wrapSpaceId > 0 && Number(getSpaceId(task) ?? 0) !== wrapSpaceId) return false;
+        return true;
+      });
+
+      if (!candidates.length) continue;
+
+      const scored = candidates
+        .map((innerTask: any) => {
+          const innerTaskId = Number(innerTask?.id ?? 0);
+          const innerSpaceId = Number(getSpaceId(innerTask) ?? 0);
+          const innerZoneId = Number(getZoneId(innerTask) ?? getZoneIdForSpace(innerSpaceId) ?? 0);
+          const sameSpace = wrapSpaceId > 0 && innerSpaceId > 0 && wrapSpaceId === innerSpaceId;
+          const sameZone = wrapZoneId > 0 && innerZoneId > 0 && wrapZoneId === innerZoneId;
+          const innerInterval = resolveTaskInterval(innerTask);
+          const overlap = wrapInterval && innerInterval
+            ? rangesOverlap(wrapInterval.start, wrapInterval.end, innerInterval.start, innerInterval.end)
+            : false;
+          const distance = wrapInterval && innerInterval
+            ? (overlap ? 0 : Math.abs(innerInterval.start - wrapInterval.start))
+            : Number.POSITIVE_INFINITY;
+          return { innerTaskId, sameSpace, sameZone, overlap, distance };
+        })
+        .sort((a, b) => {
+          if (Number(b.sameSpace) !== Number(a.sameSpace)) return Number(b.sameSpace) - Number(a.sameSpace);
+          if (Number(b.sameZone) !== Number(a.sameZone)) return Number(b.sameZone) - Number(a.sameZone);
+          if (Number(b.overlap) !== Number(a.overlap)) return Number(b.overlap) - Number(a.overlap);
+          if (a.distance !== b.distance) return a.distance - b.distance;
+          return a.innerTaskId - b.innerTaskId;
+        });
+
+      const selected = scored[0];
+      if (!selected) continue;
+      const innerTaskId = Number(selected.innerTaskId);
+      if (!Number.isFinite(innerTaskId) || innerTaskId <= 0) continue;
+
+      const extra = getWrapExtraMin(wrapTask);
+      const pre = Math.floor(extra / 2);
+      const post = extra - pre;
+
+      wrapInnerByTaskId.set(wrapTaskId, innerTaskId);
+      wrapConfigByInnerTaskId.set(innerTaskId, { wrapTaskId, pre, post });
+    }
+  };
 
   const canAllowContestantWrapOverlap = (leftTask: any, rightTask: any) => {
     if (!leftTask || !rightTask) return false;
@@ -973,6 +1055,8 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   const tasksSorted = sortedIds
     .map((id) => (tasksForSolve as any[]).find((t) => Number(t.id) === id))
     .filter(Boolean) as any[];
+
+  buildWrapInnerMapping();
   const forcedStartByTaskId = new Map<number, number>();
   const deferredDepartureTaskIds = new Set<number>();
   const startDay = toMinutes(input.workDay.start);
@@ -1800,6 +1884,10 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     const effectiveSpaceId = transportTask ? null : spaceId;
     const effectiveZoneId = transportTask ? null : zoneId;
     const isWrapTask = isItinerantWrapTask(task);
+    const wrapCfg = wrapConfigByInnerTaskId.get(taskId) ?? null;
+    const wrapTask = wrapCfg ? taskById.get(Number(wrapCfg.wrapTaskId)) : null;
+    const wrapTaskId = Number(wrapCfg?.wrapTaskId ?? 0);
+
 
     if (!spaceId && !transportTask) {
       const invalidSpaceId = Number(task?._invalidSpaceId ?? NaN);
@@ -1861,10 +1949,21 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         candidate = findEarliestGap(zOcc, candidate, duration);
       }
 
-      // 2.3) Concursante: hueco libre
+      // 2.3) Concursante: hueco libre (inner con wrap usa intervalo extendido)
       if (contestantId) {
         const cOcc = occupiedByContestant.get(contestantId) ?? [];
-        candidate = findEarliestGap(cOcc, candidate, duration);
+        if (wrapCfg) {
+          const extendedStart = candidate - wrapCfg.pre;
+          const extendedDuration = duration + wrapCfg.pre + wrapCfg.post;
+          candidate = findEarliestGapAllowingOverlap(
+            cOcc,
+            extendedStart,
+            extendedDuration,
+            (intervalTaskId) => intervalTaskId === wrapTaskId,
+          ) + wrapCfg.pre;
+        } else {
+          candidate = findEarliestGap(cOcc, candidate, duration);
+        }
       }
 
       // 2.4) Si movimos candidate, re-chequeamos (porque al mover por concursante podemos caer en espacio ocupado, etc.)
@@ -1882,7 +1981,9 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         endDay,
         effWin ? effWin.end : endDay,
       );
-      if (start + duration > maxEndAllowed) {
+      const wrapExtendedStart = wrapCfg ? start - wrapCfg.pre : start;
+      const wrapExtendedEnd = wrapCfg ? (start + duration + wrapCfg.post) : (start + duration);
+      if (wrapExtendedStart < startDay || wrapExtendedEnd > maxEndAllowed) {
         const startsBeforeAvailability = Boolean(effWin) && startDay < Number(effWin?.start);
         const code = effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME";
         const message = `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
@@ -1921,6 +2022,57 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         } as any;
       }
 
+      if (wrapCfg && wrapTask && contestantId) {
+        const cOcc = occupiedByContestant.get(contestantId) ?? [];
+        const extDur = duration + wrapCfg.pre + wrapCfg.post;
+        const cStart = findEarliestGapAllowingOverlap(
+          cOcc,
+          start - wrapCfg.pre,
+          extDur,
+          (intervalTaskId) => intervalTaskId === wrapTaskId,
+        ) + wrapCfg.pre;
+        if (cStart !== start) {
+          start = snapUp(cStart);
+          continue;
+        }
+
+        const wrapTeamId = Number(wrapTask?.itinerantTeamId ?? 0);
+        if (wrapTeamId > 0) {
+          const teamOcc = occupiedByItinerant.get(wrapTeamId) ?? [];
+          const teamStart = findEarliestGapAllowingOverlap(
+            teamOcc,
+            start - wrapCfg.pre,
+            extDur,
+            (intervalTaskId) => intervalTaskId === wrapTaskId,
+          ) + wrapCfg.pre;
+          if (teamStart !== start) {
+            start = snapUp(teamStart);
+            continue;
+          }
+        }
+
+        const wrapPlanned = plannedByTaskId.get(wrapTaskId);
+        const wrapResourceIds = Array.isArray(wrapPlanned?.assignedResources)
+          ? wrapPlanned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+          : [];
+        let wrapResourcesBusy = false;
+        for (const wrapPid of wrapResourceIds) {
+          const rOcc = occupiedByResource.get(wrapPid) ?? [];
+          const rStart = findEarliestGapAllowingOverlap(
+            rOcc,
+            start - wrapCfg.pre,
+            extDur,
+            (intervalTaskId) => intervalTaskId === wrapTaskId,
+          ) + wrapCfg.pre;
+          if (rStart !== start) {
+            start = snapUp(rStart);
+            wrapResourcesBusy = true;
+            break;
+          }
+        }
+        if (wrapResourcesBusy) continue;
+      }
+
       if (taskItinerantTeamId) {
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         const teamStart = findEarliestGap(teamOcc, start, duration);
@@ -1952,6 +2104,15 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
 
       const isResourceFree = (pid: number) => {
         const occ = occupiedByResource.get(pid) ?? [];
+        if (wrapCfg) {
+          const extDur = duration + wrapCfg.pre + wrapCfg.post;
+          return findEarliestGapAllowingOverlap(
+            occ,
+            start - wrapCfg.pre,
+            extDur,
+            (intervalTaskId) => intervalTaskId === wrapTaskId,
+          ) === start - wrapCfg.pre;
+        }
         return findEarliestGap(occ, start, duration) === start;
       };
 
@@ -2148,6 +2309,38 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         occupiedByResource.set(pid, rOcc);
       }
 
+      let wrapPlannedStart = 0;
+      let wrapPlannedEnd = 0;
+      let wrapAssignedResources: number[] = [];
+      if (wrapCfg && wrapTask) {
+        wrapPlannedStart = start - wrapCfg.pre;
+        wrapPlannedEnd = finish + wrapCfg.post;
+        const wrapPlanned = plannedByTaskId.get(wrapTaskId);
+        wrapAssignedResources = Array.isArray(wrapPlanned?.assignedResources)
+          ? wrapPlanned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+          : [];
+
+        const wrapContestantId = getContestantId(wrapTask);
+        if (wrapContestantId) {
+          const cOcc = occupiedByContestant.get(wrapContestantId) ?? [];
+          addIntervalSorted(cOcc, { start: wrapPlannedStart, end: wrapPlannedEnd, taskId: wrapTaskId });
+          occupiedByContestant.set(wrapContestantId, cOcc);
+        }
+
+        const wrapTeamId = Number(wrapTask?.itinerantTeamId ?? 0);
+        if (wrapTeamId > 0) {
+          const teamOcc = occupiedByItinerant.get(wrapTeamId) ?? [];
+          addIntervalSorted(teamOcc, { start: wrapPlannedStart, end: wrapPlannedEnd, taskId: wrapTaskId });
+          occupiedByItinerant.set(wrapTeamId, teamOcc);
+        }
+
+        for (const pid of wrapAssignedResources) {
+          const rOcc = occupiedByResource.get(pid) ?? [];
+          addIntervalSorted(rOcc, { start: wrapPlannedStart, end: wrapPlannedEnd, taskId: wrapTaskId });
+          occupiedByResource.set(pid, rOcc);
+        }
+      }
+
       plannedTasks.push({
         taskId,
         startPlanned: toHHMM(start),
@@ -2156,6 +2349,25 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
         assignedResources: assigned,
       });
       plannedEndByTaskId.set(taskId, finish);
+
+      if (wrapCfg && wrapTask && wrapPlannedEnd > wrapPlannedStart) {
+        const wrapPlanned = plannedByTaskId.get(wrapTaskId);
+        if (wrapPlanned) {
+          wrapPlanned.startPlanned = toHHMM(wrapPlannedStart);
+          wrapPlanned.endPlanned = toHHMM(wrapPlannedEnd);
+          wrapPlanned.assignedResources = [...wrapAssignedResources];
+        } else {
+          plannedTasks.push({
+            taskId: wrapTaskId,
+            startPlanned: toHHMM(wrapPlannedStart),
+            endPlanned: toHHMM(wrapPlannedEnd),
+            assignedSpace: getSpaceId(wrapTask) ?? null,
+            assignedResources: [...wrapAssignedResources],
+          });
+        }
+        plannedEndByTaskId.set(wrapTaskId, wrapPlannedEnd);
+        rebuildPlannedByTask();
+      }
 
       // ✅ memoria para agrupar tareas iguales en el mismo espacio
       const tplId = Number(task?.templateId ?? 0);
@@ -4188,224 +4400,38 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     return { start: s, end: e };
   };
 
-  const classifyWrapPlacementBlocker = (params: {
-    wrapTask: any;
-    wrapPlanned: any;
-    innerTask: any;
-    desiredStart: number;
-    desiredEnd: number;
-  }) => {
-    const { wrapTask, wrapPlanned, innerTask, desiredStart, desiredEnd } = params;
-    const wrapTaskId = Number(wrapTask?.id ?? 0);
-    const innerTaskId = Number(innerTask?.id ?? 0);
-    const wrapContestantId = getContestantId(wrapTask);
-    const wrapTeamId = Number(wrapTask?.itinerantTeamId ?? 0);
-
-    const desiredDuration = desiredEnd - desiredStart;
-    if (desiredStart < startDay || desiredEnd > endDay || desiredDuration <= 0) {
-      return { reason: 'TIME_WINDOW', blockerTaskId: null };
-    }
-
-    const effWin = getContestantEffectiveWindow(wrapContestantId);
-    if (effWin && (desiredStart < effWin.start || desiredEnd > effWin.end)) {
-      return { reason: 'TIME_WINDOW', blockerTaskId: null };
-    }
-
-    const assigned = Array.isArray(wrapPlanned?.assignedResources)
-      ? wrapPlanned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
-      : [];
-
-    const overlaps = (arr: Interval[]) => arr.find((it) => {
-      const otherTaskId = Number(it?.taskId ?? NaN);
-      if (!Number.isFinite(otherTaskId) || otherTaskId <= 0) return false;
-      if (otherTaskId === wrapTaskId || otherTaskId === innerTaskId) return false;
-      return rangesOverlap(desiredStart, desiredEnd, it.start, it.end);
-    });
-
-    if (wrapContestantId) {
-      const it = overlaps(occupiedByContestant.get(wrapContestantId) ?? []);
-      if (it) return { reason: 'CONTESTANT_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
-    }
-
-
-    if (wrapTeamId > 0) {
-      const it = overlaps(occupiedByItinerant.get(wrapTeamId) ?? []);
-      if (it) return { reason: 'ITINERANT_TEAM_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
-    }
-
-    for (const pid of assigned) {
-      const it = overlaps(occupiedByResource.get(pid) ?? []);
-      if (it) return { reason: 'RESOURCE_BUSY', blockerTaskId: Number(it.taskId ?? 0) };
-    }
-
-    const wrapZoneId = getZoneId(wrapTask);
-    if (wrapZoneId) {
-      const it = overlaps(occupiedByZoneMeal.get(wrapZoneId) ?? []);
-      if (it) return { reason: 'ZONE_MEAL_BREAK', blockerTaskId: Number(it.taskId ?? 0) };
-    }
-
-    return null;
-  };
-
-  const emittedWrapWarningKeys = new Set<string>();
-
-
-  const formatTaskHuman = (task: any, fallbackId?: number) => {
-    const label = String(task?.templateName ?? task?.manualTitle ?? "").trim();
-    if (label) return label;
-    const id = Number(task?.id ?? fallbackId ?? 0);
-    return Number.isFinite(id) && id > 0 ? `Tarea #${id}` : "Tarea";
-  };
-
-  const getWrapBlockHumanMessage = (reason: string, params: { wrapTask: any; innerTask: any; blockerTask: any | null }) => {
-    const wrapName = formatTaskHuman(params.wrapTask);
-    const innerName = formatTaskHuman(params.innerTask);
-    const blockerName = params.blockerTask ? formatTaskHuman(params.blockerTask) : null;
-    if (reason === 'ITINERANT_TEAM_BUSY') return blockerName
-      ? `No se pudo envolver "${innerName}" con "${wrapName}" porque el equipo itinerante está ocupado por "${blockerName}".`
-      : `No se pudo envolver "${innerName}" con "${wrapName}" porque el equipo itinerante está ocupado.`;
-    if (reason === 'RESOURCE_BUSY') return blockerName
-      ? `No se pudo envolver "${innerName}" con "${wrapName}" por conflicto de recurso con "${blockerName}".`
-      : `No se pudo envolver "${innerName}" con "${wrapName}" por conflicto de recurso.`;
-    if (reason === 'CONTESTANT_BUSY') return blockerName
-      ? `No se pudo envolver "${innerName}" con "${wrapName}" porque el concursante está ocupado por "${blockerName}".`
-      : `No se pudo envolver "${innerName}" con "${wrapName}" porque el concursante está ocupado.`;
-    if (reason === 'TIME_WINDOW') return `No se pudo envolver "${innerName}" con "${wrapName}" por ventana horaria del concursante.`;
-    if (reason === 'ZONE_MEAL_BREAK') return blockerName
-      ? `No se pudo envolver "${innerName}" con "${wrapName}" por meal break de zona (bloqueo: "${blockerName}").`
-      : `No se pudo envolver "${innerName}" con "${wrapName}" por meal break de zona.`;
-    return `No se pudo envolver "${innerName}" con "${wrapName}".`;
-  };
-
-  const syncItinerantWrapTasks = () => {
-    rebuildPlannedByTask();
+  const verifyItinerantWrapTasks = () => {
     const wrapTasks = tasksSorted.filter((task: any) => isItinerantWrapTask(task));
-    let hardFailure: any = null;
-
     for (const wrapTask of wrapTasks) {
       const wrapTaskId = Number(wrapTask?.id ?? 0);
+      const innerTaskId = Number(wrapInnerByTaskId.get(wrapTaskId) ?? 0);
+      if (!innerTaskId) continue;
       const wrapPlanned = plannedByTaskId.get(wrapTaskId);
-      if (!wrapPlanned) continue;
-
-      const contestantId = getContestantId(wrapTask);
-      const spaceId = getSpaceId(wrapTask);
-      if (!contestantId || !spaceId) continue;
-
+      const innerPlanned = plannedByTaskId.get(innerTaskId);
+      if (!wrapPlanned || !innerPlanned) continue;
       const wrapInterval = getTaskIntervalMinutes(wrapTask);
-      if (!wrapInterval) continue;
-
-      const innerCandidates = tasksSorted.filter((task: any) => {
-        if (!task) return false;
-        const taskId = Number(task?.id ?? 0);
-        if (taskId === wrapTaskId) return false;
-        if (Boolean(task?.isManualBlock)) return false;
-        if (isItinerantWrapTask(task)) return false;
-        if (isProtectedWrapTask(task)) return false;
-        if (Number(getContestantId(task) ?? 0) !== Number(contestantId)) return false;
-        if (Number(getSpaceId(task) ?? 0) !== Number(spaceId)) return false;
-        return Boolean(getTaskIntervalMinutes(task));
-      });
-
-      if (!innerCandidates.length) continue;
-
-      const scored = innerCandidates
-        .map((task: any) => {
-          const interval = getTaskIntervalMinutes(task)!;
-          const overlap = rangesOverlap(wrapInterval.start, wrapInterval.end, interval.start, interval.end);
-          const distance = overlap ? 0 : Math.abs(interval.start - wrapInterval.start);
-          return { task, interval, overlap, distance };
-        })
-        .sort((a: any, b: any) => {
-          if (Number(b.overlap) !== Number(a.overlap)) return Number(b.overlap) - Number(a.overlap);
-          if (a.distance !== b.distance) return a.distance - b.distance;
-          return Number(a.task?.id ?? 0) - Number(b.task?.id ?? 0);
-        });
-
-      const selected = scored[0];
-      const innerTask = selected.task;
-      const innerTaskId = Number(innerTask?.id ?? 0);
-      const innerInterval = selected.interval;
-      wrapInnerByTaskId.set(wrapTaskId, innerTaskId);
-
-      const extra = getWrapExtraMin(wrapTask);
-      const pre = Math.floor(extra / 2);
-      const post = extra - pre;
-      const desiredStart = innerInterval.start - pre;
-      const desiredEnd = innerInterval.end + post;
-
-      removeTaskFromOccupancy(wrapTask, wrapPlanned);
-
-      const blocker = classifyWrapPlacementBlocker({
-        wrapTask,
-        wrapPlanned,
-        innerTask,
-        desiredStart,
-        desiredEnd,
-      });
-
-      if (blocker) {
-        addTaskToOccupancy(wrapTask, {
-          start: toMinutes(String(wrapPlanned.startPlanned)),
-          end: toMinutes(String(wrapPlanned.endPlanned)),
-          assigned: Array.isArray(wrapPlanned?.assignedResources) ? wrapPlanned.assignedResources : [],
-        });
-
-        const blockerTask = Number(blocker.blockerTaskId ?? 0) > 0 ? taskById.get(Number(blocker.blockerTaskId)) : null;
-        const reasonCode = String(blocker.reason);
-        const warningKey = `${wrapTaskId}:${innerTaskId}:${desiredStart}:${desiredEnd}:${reasonCode}:${Number(blocker.blockerTaskId ?? 0)}`;
-        if (!emittedWrapWarningKeys.has(warningKey)) {
-          emittedWrapWarningKeys.add(warningKey);
-          warnings.push({
-            code: 'ITINERANT_WRAP_NOT_FEASIBLE',
-            taskId: wrapTaskId,
-            message: getWrapBlockHumanMessage(reasonCode, { wrapTask, innerTask, blockerTask }),
-            details: {
-              wrapTaskId,
-              innerTaskId,
-              wrapTaskName: formatTaskHuman(wrapTask, wrapTaskId),
-              innerTaskName: formatTaskHuman(innerTask, innerTaskId),
-              desiredStart: toHHMM(desiredStart),
-              desiredEnd: toHHMM(desiredEnd),
-              blockerTaskId: blocker.blockerTaskId ?? null,
-              blockerTaskName: blockerTask ? formatTaskHuman(blockerTask, Number(blocker.blockerTaskId)) : null,
-              reason: reasonCode,
-            },
-          });
-        }
-
-        hardFailure = {
+      const innerInterval = getTaskIntervalMinutes(taskById.get(innerTaskId));
+      if (!wrapInterval || !innerInterval) continue;
+      if (!(wrapInterval.start <= innerInterval.start && wrapInterval.end >= innerInterval.end)) {
+        return {
           code: 'ITINERANT_WRAP_NOT_FEASIBLE',
           taskId: wrapTaskId,
-          message: getWrapBlockHumanMessage(reasonCode, { wrapTask, innerTask, blockerTask }),
+          message: `No se pudo verificar envoltura de tarea itinerante #${wrapTaskId} sobre inner #${innerTaskId}.`,
           details: {
             wrapTaskId,
             innerTaskId,
-            wrapTaskName: formatTaskHuman(wrapTask, wrapTaskId),
-            innerTaskName: formatTaskHuman(innerTask, innerTaskId),
-            desiredStart: toHHMM(desiredStart),
-            desiredEnd: toHHMM(desiredEnd),
-            blockerTaskId: blocker.blockerTaskId ?? null,
-            blockerTaskName: blockerTask ? formatTaskHuman(blockerTask, Number(blocker.blockerTaskId)) : null,
-            reason: reasonCode,
+            wrapStart: toHHMM(wrapInterval.start),
+            wrapEnd: toHHMM(wrapInterval.end),
+            innerStart: toHHMM(innerInterval.start),
+            innerEnd: toHHMM(innerInterval.end),
           },
         };
-        break;
       }
-
-      wrapPlanned.startPlanned = toHHMM(desiredStart);
-      wrapPlanned.endPlanned = toHHMM(desiredEnd);
-      addTaskToOccupancy(wrapTask, {
-        start: desiredStart,
-        end: desiredEnd,
-        assigned: Array.isArray(wrapPlanned?.assignedResources) ? wrapPlanned.assignedResources : [],
-      });
     }
-
-    rebuildPlannedByTask();
-    return hardFailure;
+    return null;
   };
 
-  const wrapSyncFailure = syncItinerantWrapTasks();
+  const wrapSyncFailure = verifyItinerantWrapTasks();
   if (wrapSyncFailure) return hardInfeasible([wrapSyncFailure]);
   if (hasOverlapInPlannedTasks()) {
     const snapshotByTask = new Map(noIdlePassSnapshot.map((p) => [Number(p.taskId), p]));
