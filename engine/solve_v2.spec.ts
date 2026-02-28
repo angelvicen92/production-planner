@@ -652,6 +652,10 @@ const mainGapCount = (run: any, tasks: any[], mainZoneId: number) => {
   assert.equal(reason?.code, "SPACE_BUSY");
   assert.ok(String(reason?.message ?? "").includes("Espacio ocupado"));
   assert.equal(reason?.details?.lastBumpDetails?.spaceId, 71);
+  assert.ok(Array.isArray(run?.report?.attemptsSummary));
+  assert.ok((run?.report?.attemptsSummary?.length ?? 0) > 1);
+  assert.ok(run?.report?.attemptsSummary?.some((attempt: any) => Number(attempt?.level) === 1));
+  assert.ok(run?.report?.attemptsSummary?.some((attempt: any) => Number(attempt?.level) === 2));
 }
 
 {

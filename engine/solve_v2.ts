@@ -5942,9 +5942,10 @@ function deriveRepairPlanFromDiagnostics(input: EngineInput, diagnostics: Engine
 
 export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
   const startedAtMs = Date.now();
-  const timeBudgetMsRaw = Number((input as any)?.timeBudgetMs ?? (input as any)?.repairTimeBudgetMs ?? 2000);
+  const defaultBudgetMs = 2500;
+  const timeBudgetMsRaw = Number((input as any)?.timeBudgetMs ?? (input as any)?.repairTimeBudgetMs ?? defaultBudgetMs);
   const maxAttemptsRaw = Number((input as any)?.maxAttempts ?? (input as any)?.repairMaxAttempts ?? 4);
-  const timeBudgetMs = Math.max(500, Math.min(2500, Number.isFinite(timeBudgetMsRaw) ? Math.floor(timeBudgetMsRaw) : 2000));
+  const timeBudgetMs = Math.max(500, Math.min(15000, Number.isFinite(timeBudgetMsRaw) ? Math.floor(timeBudgetMsRaw) : defaultBudgetMs));
   const maxAttempts = Math.max(1, Math.min(4, Number.isFinite(maxAttemptsRaw) ? Math.floor(maxAttemptsRaw) : 4));
 
   const attemptsSummary: SolveAttemptSummary[] = [];
@@ -5957,7 +5958,7 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
     return { out, ok };
   };
 
-  const attempt0 = runAttempt(0, 'base_options', {});
+  const attempt0 = runAttempt(0, 'base_options', { maxIterations: 8000 });
   if (attempt0.ok) {
     return {
       ...attempt0.out,
@@ -5982,10 +5983,20 @@ export function solve_v2_with_repairs(input: EngineInput): EngineOutput {
   const repairs = deriveRepairPlanFromDiagnostics(input, attempt0.out);
   const appliedDegradations: string[] = [];
   let accumulatedOptions: SolveV2AttemptOptions = {};
+  const hasShortSpaceBusyWindow = (Array.isArray((attempt0.out as any)?.unplanned) ? (attempt0.out as any).unplanned : []).some((item: any) => {
+    if (String(item?.reason?.code ?? '') !== 'SPACE_BUSY') return false;
+    const details = item?.reason?.details ?? {};
+    return parseHHMMSafe(details?.availabilityEnd) !== null && parseHHMMSafe(details?.maxEndAllowed) !== null;
+  });
+  const forceRetryLevels = hasShortSpaceBusyWindow && (timeBudgetMs - (Date.now() - startedAtMs)) >= 300
+    ? new Set<number>([1, 2])
+    : new Set<number>();
+
   for (const repair of repairs) {
     const elapsed = Date.now() - startedAtMs;
     const remaining = timeBudgetMs - elapsed;
-    if (attemptsSummary.length >= maxAttempts || remaining <= 0) {
+    const forceThisLevel = forceRetryLevels.has(repair.level);
+    if (attemptsSummary.length >= maxAttempts || (!forceThisLevel && remaining <= 0)) {
       break;
     }
 
