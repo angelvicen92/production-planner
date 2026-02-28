@@ -3686,7 +3686,7 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
   };
 
   const hasOverlapInPlannedTasks = () => {
-    const byContestant = new Map<number, Array<{ start: number; end: number }>>();
+    const byContestant = new Map<number, Array<{ start: number; end: number; taskId: number; task: any }>>();
     const byResource = new Map<number, Array<{ start: number; end: number }>>();
 
     const normalizeAssigned = (raw: any): number[] => {
@@ -3709,14 +3709,15 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
     };
 
     for (const p of plannedTasks as any[]) {
-      const task = taskById.get(Number(p.taskId));
+      const taskId = Number(p.taskId);
+      const task = taskById.get(taskId);
       const start = toMinutes(p.startPlanned);
       const end = toMinutes(p.endPlanned);
 
       const contestantId = getContestantId(task);
       if (contestantId) {
         const list = byContestant.get(contestantId) ?? [];
-        list.push({ start, end });
+        list.push({ start, end, taskId, task });
         byContestant.set(contestantId, list);
       }
 
@@ -3735,8 +3736,29 @@ function generatePlanV2Single(input: EngineInput, options?: { mainStartGateMin?:
       return false;
     };
 
+    const hasInvalidContestantOverlap = (list: Array<{ start: number; end: number; taskId: number; task: any }>) => {
+      if (list.length <= 1) return false;
+
+      list.sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId);
+      let prev = { ...list[0] };
+
+      for (let i = 1; i < list.length; i++) {
+        const curr = list[i];
+        if (curr.start < prev.end) {
+          if (canAllowContestantWrapOverlap(prev.task, curr.task)) {
+            prev.end = Math.max(prev.end, curr.end);
+            continue;
+          }
+          return true;
+        }
+        prev = { ...curr };
+      }
+
+      return false;
+    };
+
     for (const list of byContestant.values()) {
-      if (hasOverlap(list)) return true;
+      if (hasInvalidContestantOverlap(list)) return true;
     }
     for (const list of byResource.values()) {
       if (hasOverlap(list)) return true;
