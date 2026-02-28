@@ -936,6 +936,7 @@ export default function PlanDetailsPage() {
   const [planningInProgress, setPlanningInProgress] = useState(false);
   const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(null);
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0 });
+  const [planningTimeLimitSec, setPlanningTimeLimitSec] = useState<number>(30);
   const [showLockedOnly, setShowLockedOnly] = useState(false);
   const [clearTimeLocksDialogOpen, setClearTimeLocksDialogOpen] = useState(false);
   const [locksDialogOpen, setLocksDialogOpen] = useState(false);
@@ -1784,7 +1785,7 @@ ${reasonMessage}` : message,
     try {
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-      const data: any = await generatePlan.mutateAsync({ id, mode: "generate_planning" });
+      const data: any = await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000 });
       setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
@@ -1944,6 +1945,21 @@ ${reasonMessage}` : message,
                 ? "Planificando..."
                 : "Generar/Recalcular"}
             </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Límite</span>
+              <Select value={String(planningTimeLimitSec)} onValueChange={(v) => setPlanningTimeLimitSec(Number(v))}>
+                <SelectTrigger className="w-[110px] h-10">
+                  <SelectValue placeholder="Tiempo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10s</SelectItem>
+                  <SelectItem value="30">30s</SelectItem>
+                  <SelectItem value="60">60s</SelectItem>
+                  <SelectItem value="180">180s</SelectItem>
+                  <SelectItem value="300">300s</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               size="lg"
               variant="outline"
@@ -1952,7 +1968,7 @@ ${reasonMessage}` : message,
                 setExpectedPlanningRunId(null);
                 void (async () => {
                   try {
-                    await generatePlanV2.mutateAsync({ id, mode: "generate_planning" });
+                    await generatePlanV2.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000 });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                   } catch (err: any) {
@@ -1987,7 +2003,7 @@ ${reasonMessage}` : message,
                 setExpectedPlanningRunId(null);
                 void (async () => {
                   try {
-                    await generatePlan.mutateAsync({ id, mode: "plan_pending" });
+                    await generatePlan.mutateAsync({ id, mode: "plan_pending", timeLimitMs: planningTimeLimitSec * 1000 });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                     await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                   } catch (err: any) {
@@ -3948,7 +3964,7 @@ ${reasonMessage}` : message,
                   }}
                   onGeneratePlan={async (mode: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending" = "generate_planning") => {
                     try {
-                      await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode });
+                      await apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { mode, timeLimitMs: planningTimeLimitSec * 1000 });
                       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
                       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
                       setManualDraftBlockIds([]);
