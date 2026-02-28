@@ -32,6 +32,7 @@ type OptimizerSettings = {
   contestantCompactLevel: number;
   contestantStayInZoneLevel: number;
   groupingZoneIds: number[];
+  nearHardBreaksMax: number;
 };
 
 const heuristicKeys: OptimizerHeuristicKey[] = [
@@ -548,9 +549,31 @@ export function GeneralOptimizerSettings() {
           </div>
         </div>
 
-
-
-
+        <div className="space-y-2">
+          <Label>Roturas permitidas de reglas nivel 10</Label>
+          <div className="space-y-1">
+            <Slider
+              min={0}
+              max={10}
+              step={1}
+              disabled={isSaving}
+              value={[Math.max(0, Math.min(10, Number(draft.nearHardBreaksMax ?? 0) || 0))]}
+              onValueChange={(arr) => {
+                const nearHardBreaksMax = Math.max(0, Math.min(10, Number(arr?.[0] ?? 0) || 0));
+                setDraft((prev) => (prev ? { ...prev, nearHardBreaksMax } : prev));
+              }}
+              onValueCommit={async (arr) => {
+                const nearHardBreaksMax = Math.max(0, Math.min(10, Number(arr?.[0] ?? 0) || 0));
+                const nextDraft = { ...draft, nearHardBreaksMax };
+                await saveSimpleField({ nearHardBreaksMax }, nextDraft);
+              }}
+            />
+            <div className="text-xs">Valor: {Math.max(0, Math.min(10, Number(draft.nearHardBreaksMax ?? 0) || 0))}</div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Límite global de tareas nivel 10 que pueden romper warm-start en CP-SAT.
+          </div>
+        </div>
 
       </CardContent>
     </Card>

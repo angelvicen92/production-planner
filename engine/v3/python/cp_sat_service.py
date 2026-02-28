@@ -249,9 +249,14 @@ def main() -> int:
             if did in end_vars:
                 model.Add(start_vars[tid] >= end_vars[did] + dur_prev)
 
-    # near-hard level 10: keep level10-space tasks at warm start; allow breaking only one
+    # near-hard level 10: keep level10-space tasks at warm start; allow configurable breaks
     degrade_bools: List[Tuple[int, Any]] = []
     grouping = engine_input.get("groupingBySpaceId") or {}
+    try:
+        near_hard_breaks_max = int(float(engine_input.get("optimizerNearHardBreaksMax") or 0))
+    except Exception:
+        near_hard_breaks_max = 0
+    near_hard_breaks_max = max(0, min(10, near_hard_breaks_max))
     for tid in movable_task_ids:
         t = tasks_by_id.get(tid, {})
         sid = int(t.get("spaceId") or 0)
@@ -265,7 +270,7 @@ def main() -> int:
         degrade_bools.append((tid, keep.Not()))
 
     if degrade_bools:
-        model.Add(sum(b for _, b in degrade_bools) <= 1)
+        model.Add(sum(b for _, b in degrade_bools) <= near_hard_breaks_max)
 
     # Objective: minimize weighted distance to warm start and compact main zone
     abs_diffs = []
@@ -343,7 +348,7 @@ def main() -> int:
 
     message = "CP-SAT completado; se mantiene best-so-far."
     if broken:
-        message += " Se aplicó una única ruptura de regla casi dura nivel 10."
+        message += f" Se aplicaron {len(broken)} ruptura(s) de regla casi dura nivel 10 (máximo {near_hard_breaks_max})."
 
     out = {
         "output": output,

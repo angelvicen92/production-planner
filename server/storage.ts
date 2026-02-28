@@ -170,6 +170,7 @@ export interface IStorage {
     departureMinGapMinutes: number;
     vanCapacity: number;
     weightArrivalDepartureGrouping: number;
+    nearHardBreaksMax: number;
   }>;
 
   // Resources (per plan, 1 a 1)
@@ -421,7 +422,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, main_zone_finish_early_level, main_zone_finish_early_advanced_value, main_zone_keep_busy_level, main_zone_keep_busy_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, arrival_min_gap_minutes, departure_min_gap_minutes, van_capacity, weight_arrival_departure_grouping",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, main_zone_finish_early_level, main_zone_finish_early_advanced_value, main_zone_keep_busy_level, main_zone_keep_busy_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, arrival_min_gap_minutes, departure_min_gap_minutes, van_capacity, weight_arrival_departure_grouping, near_hard_breaks_max",
       )
       .eq("id", 1)
       .single();
@@ -571,6 +572,7 @@ export class SupabaseStorage implements IStorage {
       departureMinGapMinutes: Math.max(0, Number((data as any)?.departure_min_gap_minutes ?? 0) || 0),
       vanCapacity: Math.max(0, Number((data as any)?.van_capacity ?? 0) || 0),
       weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number((data as any)?.weight_arrival_departure_grouping ?? 0) || 0)),
+      nearHardBreaksMax: Math.max(0, Math.min(10, Number((data as any)?.near_hard_breaks_max ?? 0) || 0)),
     };
 
     if (

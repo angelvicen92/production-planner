@@ -105,6 +105,7 @@ export const optimizerSettings = pgTable("optimizer_settings", {
   departureMinGapMinutes: integer("departure_min_gap_minutes").notNull().default(0),
   vanCapacity: integer("van_capacity").notNull().default(0),
   weightArrivalDepartureGrouping: integer("weight_arrival_departure_grouping").notNull().default(0),
+  nearHardBreaksMax: integer("near_hard_breaks_max").notNull().default(0),
 });
 
 // 2. zones
