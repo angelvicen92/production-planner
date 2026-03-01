@@ -2203,6 +2203,9 @@ export class SupabaseStorage implements IStorage {
     if (Object.prototype.hasOwnProperty.call(patch, "spaceMealBreakMinutes"))
       safe.space_meal_break_minutes = patch.spaceMealBreakMinutes == null ? null : Number(patch.spaceMealBreakMinutes);
 
+    // ✅ motor elegido para /generate
+    if (patch.optimizerEngine) safe.optimizer_engine = patch.optimizerEngine;
+
     const { data, error } = await supabaseAdmin
       .from("plans")
       .update(safe)

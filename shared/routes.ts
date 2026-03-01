@@ -15,31 +15,34 @@ import {
 } from "./schema";
 
 export const updatePlanSchema = z
-  .object({
-    workStart: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/)
-      .optional(),
-    workEnd: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/)
-      .optional(),
-    mealStart: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/)
-      .optional(),
-    mealEnd: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/)
-      .optional(),
+.object({
+  workStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  workEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  mealStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  mealEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
 
-    contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
-    contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
-    spaceMealBreakMinutes: z.number().int().min(1).max(240).nullable().optional(),
+  contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
+  contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
+  spaceMealBreakMinutes: z.number().int().min(1).max(240).nullable().optional(),
 
-    camerasAvailable: z.number().int().min(0).max(20).optional(),
-  })
-  .strict();
+  camerasAvailable: z.number().int().min(0).max(20).optional(),
+
+  // ✅ Permite elegir motor por plan
+  optimizerEngine: z.enum(["v2", "v3"]).optional(),
+})
+.strict();
 
 export const errorSchemas = {
   validation: z.object({

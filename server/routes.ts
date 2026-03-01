@@ -4982,6 +4982,21 @@ function normalizeHexColor(value: unknown): string | null {
         })
         .eq("id", planId);
 
+      if (planningRunId) {
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({
+            status: "success",
+            planned_count: updated,
+            phase: "done",
+            phase_progress_pct: 100,
+            finished_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            message: null,
+          })
+          .eq("id", planningRunId);
+      }
+      
       res.json({
         success: true,
         hardFeasible: true,
@@ -5019,16 +5034,51 @@ function normalizeHexColor(value: unknown): string | null {
 
 
 
-  app.post(api.plans.generateV2.path, async (req, res) => {
-    const planId = Number(req.params.id);
-    try {
-      const input = z
-        .object({
-          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
-          timeLimitMs: z.number().int().positive().max(300000).optional(),
-        })
-        .strict()
-        .parse(req.body ?? {});
+      app.post(api.plans.generateV2.path, async (req, res) => {
+        const planId = Number(req.params.id);
+        let planningRunId: number | null = null;
+
+        try {
+          const input = z
+            .object({
+              mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
+              timeLimitMs: z.number().int().positive().max(300000).optional(),
+            })
+            .strict()
+            .parse(req.body ?? {});
+
+          const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null;
+
+          // total_pending "rápido": conteo de pending no-manual-block (suficiente para log)
+          const { data: pendingTasks, error: pendingTasksErr } = await supabaseAdmin
+            .from("daily_tasks")
+            .select("id")
+            .eq("plan_id", planId)
+            .eq("status", "pending")
+            .neq("is_manual_block", true);
+          if (pendingTasksErr) throw pendingTasksErr;
+
+          const totalPending = Array.isArray(pendingTasks) ? pendingTasks.length : 0;
+
+          const { data: runRow, error: runErr } = await supabaseAdmin
+            .from("planning_runs")
+            .insert({
+              plan_id: planId,
+              status: "running",
+              total_pending: totalPending,
+              planned_count: 0,
+              phase: "solving_feasible",
+              phase_progress_pct: 0,
+              engine: "v2",
+              requested_time_limit_ms: null,
+              request_id: requestId,
+              started_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+          if (runErr) throw runErr;
+          planningRunId = Number(runRow?.id);
       const modeRaw = input.mode ?? "full";
       const mode = modeRaw === "generate_planning"
         ? "full"
@@ -5103,6 +5153,21 @@ function normalizeHexColor(value: unknown): string | null {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
         const warnings = warningsRaw.map((w: any) => enrich(w));
         const statusCode = hasEmptyResultWarning || (result as any).hardFeasible === false ? 422 : 422;
+        if (planningRunId) {
+          await supabaseAdmin
+            .from("planning_runs")
+            .update({
+              status: "infeasible",
+              phase: "done",
+              phase_progress_pct: 100,
+              finished_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              message: hasEmptyResultWarning ? "V2_EMPTY_RESULT" : "INFEASIBLE_HARD",
+              last_reasons: reasons,
+              planned_count: 0,
+            })
+            .eq("id", planningRunId);
+        }
         return res.status(statusCode).json({
           message: hasEmptyResultWarning ? "V2_EMPTY_RESULT" : "INFEASIBLE_HARD",
           hardFeasible: false,
@@ -5143,6 +5208,21 @@ function normalizeHexColor(value: unknown): string | null {
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
 
       if (updated === 0 && unplanned.length > 0) {
+        if (planningRunId) {
+          await supabaseAdmin
+            .from("planning_runs")
+            .update({
+              status: "infeasible",
+              phase: "done",
+              phase_progress_pct: 100,
+              finished_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              message: "INFEASIBLE_OR_EMPTY",
+              last_reasons: reasons,
+              planned_count: 0,
+            })
+            .eq("id", planningRunId);
+        }
         return res.status(422).json({
           message: "INFEASIBLE_OR_EMPTY",
           reasons,
@@ -5159,6 +5239,22 @@ function normalizeHexColor(value: unknown): string | null {
         .update({ planning_warnings: warnings, planning_stats: planningStats })
         .eq("id", planId);
 
+          // ✅ Cierra el run en "success"
+          if (planningRunId) {
+            await supabaseAdmin
+              .from("planning_runs")
+              .update({
+                status: "success",
+                planned_count: updated,
+                phase: "done",
+                phase_progress_pct: 100,
+                finished_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                message: null,
+              })
+              .eq("id", planningRunId);
+          }
+          
       return res.json({
         success: true,
         hardFeasible: true,
@@ -5171,12 +5267,28 @@ function normalizeHexColor(value: unknown): string | null {
         reasons,
         unplanned: (result as any).unplanned ?? [],
       });
-    } catch (e: any) {
-      const msg = typeof e?.message === "string" ? e.message : "Unknown error";
-      console.error("[planner-v2] ENGINE_ERROR", { planId, msg, stack: e?.stack });
-      if (msg.toLowerCase().includes("not found")) return res.status(404).json({ message: msg });
-      return res.status(500).json({ message: "ENGINE_ERROR", detail: msg });
-    }
+        } catch (e: any) {
+          const msg = typeof e?.message === "string" ? e.message : "Unknown error";
+          console.error("[planner-v2] ENGINE_ERROR", { planId, msg, stack: e?.stack });
+
+          // ✅ Cierra el run en "error" (si ya se creó)
+          if (planningRunId) {
+            await supabaseAdmin
+              .from("planning_runs")
+              .update({
+                status: "error",
+                phase: "error",
+                phase_progress_pct: 100,
+                finished_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                message: msg,
+              })
+              .eq("id", planningRunId);
+          }
+
+          if (msg.toLowerCase().includes("not found")) return res.status(404).json({ message: msg });
+          return res.status(500).json({ message: "ENGINE_ERROR", detail: msg });
+        }
   });
 
   return httpServer;

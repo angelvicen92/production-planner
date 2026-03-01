@@ -1782,10 +1782,20 @@ ${reasonMessage}` : message,
     }).length;
     setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 0 });
 
-    try {
-      await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
-      await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
-      const data: any = await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000 });
+      try {
+        // ✅ El botón verde siempre fuerza motor v3 para este plan
+        if (String((plan as any)?.optimizerEngine ?? "") !== "v3") {
+          await updatePlan.mutateAsync({ id, patch: { optimizerEngine: "v3" } });
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
+        await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+
+        const data: any = await generatePlan.mutateAsync({
+          id,
+          mode: "generate_planning",
+          timeLimitMs: planningTimeLimitSec * 1000,
+        });
       setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
@@ -1982,11 +1992,21 @@ ${reasonMessage}` : message,
                 setPlanningInProgress(true);
                 setExpectedPlanningRunId(null);
                 void (async () => {
-                  try {
-                    await generatePlanV2.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000 });
-                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                  } catch (err: any) {
+                    try {
+                      // ✅ Este botón siempre fija motor v2 para el plan
+                      if (String((plan as any)?.optimizerEngine ?? "") !== "v2") {
+                        await updatePlan.mutateAsync({ id, patch: { optimizerEngine: "v2" } });
+                      }
+
+                      await generatePlanV2.mutateAsync({
+                        id,
+                        mode: "generate_planning",
+                        timeLimitMs: planningTimeLimitSec * 1000,
+                      });
+
+                      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    } catch (err: any) {
                     if (isAbortLikeError(err)) {
                       toast({ title: "La optimización v2 tardó más de lo esperado, comprobando estado..." });
                       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
