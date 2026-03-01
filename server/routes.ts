@@ -5007,7 +5007,12 @@ function normalizeHexColor(value: unknown): string | null {
       if (msg.toLowerCase().includes("not found")) {
         return res.status(404).json({ message: msg });
       }
-      return res.status(500).json({ message: "ENGINE_ERROR", detail: msg, runId: planningRunId });
+      return res.status(500).json({
+        message: "ENGINE_ERROR",
+        detail: msg,
+        runId: planningRunId,
+        reasons: [{ code: "ENGINE_ERROR", message: "Fallo interno del motor", details: msg }],
+      });
     }
 
   });

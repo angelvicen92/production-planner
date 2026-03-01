@@ -16,6 +16,14 @@ export async function buildEngineInput(
 
   const p: any = details.plan;
 
+  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await fn();
+    } catch (_e) {
+      return fallback;
+    }
+  };
+
   const contestants = await storage.getContestantsByPlan(planId);
   const contestantNameById = new Map<number, string>();
   const contestantAvailabilityById: Record<number, { start: string; end: string }> = {};
@@ -39,7 +47,7 @@ export async function buildEngineInput(
 
   // Cameras now come from per-plan resource items (type code "cameras")
   // Fallback to legacy plan.camerasAvailable if the plan has no snapshot.
-  const camerasFromResources = await storage.getCamerasAvailableForPlan(planId);
+  const camerasFromResources = await safe(() => storage.getCamerasAvailableForPlan(planId), null);
   const camerasAvailable =
     camerasFromResources !== null
       ? camerasFromResources
@@ -47,10 +55,10 @@ export async function buildEngineInput(
 
   // Recursos anclados a ZONAS (snapshot/override por plan)
   const zoneResourceAssignments =
-    (await storage.getZoneResourceAssignmentsForPlan(planId)) ?? {};
+    (await safe(() => storage.getZoneResourceAssignmentsForPlan(planId), {})) ?? {};
 
   const spaceResourceAssignments =
-    (await storage.getSpaceResourceAssignmentsForPlan(planId)) ?? {};
+    (await safe(() => storage.getSpaceResourceAssignmentsForPlan(planId), {})) ?? {};
 
   // ✅ Optimización global (Settings)
   const optimizer = await storage.getOptimizerSettings();
@@ -235,12 +243,12 @@ export async function buildEngineInput(
 
 
   const zoneResourceTypeRequirements =
-    (await storage.getZoneResourceTypeRequirementsForPlan(planId)) ?? {};
+    (await safe(() => storage.getZoneResourceTypeRequirementsForPlan(planId), {})) ?? {};
 
   const spaceResourceTypeRequirements =
-    (await storage.getSpaceResourceTypeRequirementsForPlan(planId)) ?? {};
+    (await safe(() => storage.getSpaceResourceTypeRequirementsForPlan(planId), {})) ?? {};
 
-  const planResourceItems = (await storage.getPlanResourceItemsForPlan(planId)) ?? [];
+  const planResourceItems = (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) ?? [];
 
   const resourceItemIds = Array.from(
     new Set(
@@ -251,7 +259,7 @@ export async function buildEngineInput(
   );
 
   const resourceItemComponents =
-    (await storage.getResourceItemComponentsMap(resourceItemIds)) ?? {};
+    (await safe(() => storage.getResourceItemComponentsMap(resourceItemIds), {})) ?? {};
 
   // ✅ Dependencias: leemos task_templates y resolvemos por concursante
   const templates = await storage.getTaskTemplates();
