@@ -1813,6 +1813,17 @@ ${reasonMessage}` : message,
         }
       } else if (err?.reasons) {
         setErrorDialog({ open: true, reasons: err.reasons, diagnostic: null });
+      } else {
+        const detail = err?.payload?.detail ?? err?.detail ?? err?.message ?? "Error desconocido";
+        toast({
+          title: "Error al planificar",
+          description: detail,
+          variant: "destructive",
+        });
+
+        if (import.meta.env.DEV) {
+          console.error("[plan-details] generate failed", err);
+        }
       }
     } finally {
       setPlanningInProgress(false);
