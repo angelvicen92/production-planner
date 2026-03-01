@@ -95,7 +95,7 @@ def main() -> int:
     time_limit_seconds = float(payload.get("timeLimitSeconds") or 0)
 
     warm_planned = list(warm.get("plannedTasks") or [])
-    if time_limit_seconds <= 0 or not warm_planned:
+    if time_limit_seconds <= 0:
         baseline_score, baseline_gap, baseline_switches = score_plan(engine_input, warm_planned)
         out = {
             "output": warm,
@@ -108,8 +108,8 @@ def main() -> int:
                 "spaceSwitchesDelta": 0,
             },
             "degradations": [],
-            "message": "Optimización CP-SAT omitida por presupuesto 0 o sin warm start.",
-            "technicalDetails": ["time_limit_seconds<=0 OR warm_start_empty"],
+            "message": "Optimización CP-SAT omitida por presupuesto 0.",
+            "technicalDetails": ["time_limit_seconds<=0"],
         }
         sys.stdout.write(json.dumps(out))
         return 0
@@ -142,6 +142,19 @@ def main() -> int:
 
     tasks_by_id = {int(t.get("id")): t for t in engine_input.get("tasks", [])}
     warm_by_id = {int(p.get("taskId")): p for p in warm_planned}
+    contestant_availability = engine_input.get("contestantAvailabilityById") or {}
+    planning_rows_by_tid: Dict[int, Dict[str, Any]] = {}
+    for tid, task in tasks_by_id.items():
+        wp = warm_by_id.get(tid) or {}
+        assigned_resources = wp.get("assignedResources")
+        if assigned_resources is None:
+            assigned_resources = task.get("assignedResources") or task.get("resourceIds") or []
+        planning_rows_by_tid[tid] = {
+            **wp,
+            "taskId": tid,
+            "assignedResources": assigned_resources if isinstance(assigned_resources, list) else [],
+            "assignedSpace": wp.get("assignedSpace") if "assignedSpace" in wp else task.get("spaceId"),
+        }
     locks_by_task: Dict[int, Dict[str, Any]] = {}
     for lock in engine_input.get("locks", []):
         task_id = int(lock.get("taskId") or -1)
@@ -200,17 +213,43 @@ def main() -> int:
 
     movable_task_ids: List[int] = []
 
-    for tid, p in warm_by_id.items():
+    for tid, t in tasks_by_id.items():
+        p = planning_rows_by_tid.get(tid) or {}
         if tid < 0:
             continue
-        t = tasks_by_id.get(tid)
-        if not t:
-            continue
-        dur_min = int(t.get("durationOverrideMin") or t.get("durationMin") or max(5, parse_hhmm(p.get("endPlanned")) - parse_hhmm(p.get("startPlanned"))))
+        warm_start = p.get("startPlanned")
+        warm_end = p.get("endPlanned")
+        warm_duration = None
+        if warm_start and warm_end:
+            warm_duration = parse_hhmm(warm_end) - parse_hhmm(warm_start)
+        dur_min = int(t.get("durationOverrideMin") or t.get("durationMin") or max(5, warm_duration or 5))
         dur_slots = max(1, dur_min // grid)
 
-        ws = int((parse_hhmm(p.get("startPlanned")) - work_start) // grid)
-        we = int((parse_hhmm(p.get("endPlanned")) - work_start) // grid)
+        if warm_start:
+            ws = int((parse_hhmm(warm_start) - work_start) // grid)
+        else:
+            ws = 0
+
+        contestant_id = int(t.get("contestantId") or 0)
+        availability = contestant_availability.get(str(contestant_id)) or contestant_availability.get(contestant_id) or {}
+        raw_win_start = availability.get("start") if isinstance(availability, dict) else None
+        raw_win_end = availability.get("end") if isinstance(availability, dict) else None
+        win_start_min = parse_hhmm(raw_win_start) if raw_win_start else work_start
+        win_end_min = parse_hhmm(raw_win_end) if raw_win_end else work_end
+
+        if win_end_min <= win_start_min:
+            return warm_with_message(
+                "Ventana de concursante inválida; se devuelve Fase A.",
+                [f"contestant_availability_invalid_window_contestant={contestant_id}"],
+            )
+        if win_start_min < work_start or win_end_min > work_end:
+            return warm_with_message(
+                "Ventana de concursante fuera de jornada; se devuelve Fase A.",
+                [f"contestant_availability_outside_workday_contestant={contestant_id}"],
+            )
+
+        start_slot_min = max(0, (win_start_min - work_start) // grid)
+        end_slot_max = min(horizon, (win_end_min - work_start) // grid)
 
         fixed_by_status = str(t.get("status") or "pending") in ["in_progress", "done", "cancelled"]
         lock = locks_by_task.get(tid)
@@ -227,7 +266,21 @@ def main() -> int:
                 )
 
         fixed_ws = lock_slot if lock_slot is not None else ws
-        lb, ub = (fixed_ws, fixed_ws) if fixed else (0, max(0, horizon - dur_slots))
+        default_lb, default_ub = 0, max(0, horizon - dur_slots)
+        avail_lb = start_slot_min
+        avail_ub = end_slot_max - dur_slots
+        if avail_ub < avail_lb:
+            return warm_with_message(
+                "Ventana de concursante incompatible con duración; se devuelve Fase A.",
+                [f"contestant_availability_no_room_task={tid}", f"contestant={contestant_id}"]
+            )
+
+        lb, ub = (fixed_ws, fixed_ws) if fixed else (max(default_lb, avail_lb), min(default_ub, avail_ub))
+        if ub < lb:
+            return warm_with_message(
+                "Dominio CP-SAT vacío por ventana de concursante; se devuelve Fase A.",
+                [f"contestant_availability_empty_domain_task={tid}", f"contestant={contestant_id}"]
+            )
 
         s = model.NewIntVar(lb, ub, f"s_{tid}")
         e = model.NewIntVar(max(0, lb + dur_slots), min(horizon, ub + dur_slots), f"e_{tid}")
@@ -240,11 +293,15 @@ def main() -> int:
             model.Add(s == fixed_ws)
             model.Add(e == fixed_ws + dur_slots)
 
+        model.Add(s >= start_slot_min)
+        model.Add(s <= end_slot_max - dur_slots)
+
         if not fixed:
             movable_task_ids.append(tid)
 
-        # warm start hint
-        model.AddHint(s, ws)
+        # warm start hint (si existe y cae dentro del dominio)
+        if lb <= ws <= ub:
+            model.AddHint(s, ws)
 
     # No overlap by space and contestant
     by_space: Dict[int, List[Any]] = {}
@@ -254,7 +311,7 @@ def main() -> int:
         t = tasks_by_id.get(tid, {})
         sid = int(t.get("spaceId") or 0)
         cid = int(t.get("contestantId") or 0)
-        assigned_resources = warm_by_id.get(tid, {}).get("assignedResources") or []
+        assigned_resources = planning_rows_by_tid.get(tid, {}).get("assignedResources") or []
         if sid > 0:
             by_space.setdefault(sid, []).append(iv)
         if cid > 0:
@@ -298,7 +355,11 @@ def main() -> int:
         level = int((grouping.get(str(sid)) or grouping.get(sid) or {}).get("level") or 0)
         if level < 10:
             continue
-        ws = int((parse_hhmm(warm_by_id[tid].get("startPlanned")) - work_start) // grid)
+        wp = planning_rows_by_tid.get(tid) or {}
+        ws_raw = wp.get("startPlanned")
+        if not ws_raw:
+            continue
+        ws = int((parse_hhmm(ws_raw) - work_start) // grid)
         keep = model.NewBoolVar(f"keep_{tid}")
         model.Add(start_vars[tid] == ws).OnlyEnforceIf(keep)
         model.Add(start_vars[tid] != ws).OnlyEnforceIf(keep.Not())
@@ -310,7 +371,11 @@ def main() -> int:
     # Objective components
     abs_diffs = []
     for tid in movable_task_ids:
-        ws = int((parse_hhmm(warm_by_id[tid].get("startPlanned")) - work_start) // grid)
+        wp = warm_by_id.get(tid) or {}
+        ws_raw = wp.get("startPlanned")
+        if not ws_raw:
+            continue
+        ws = int((parse_hhmm(ws_raw) - work_start) // grid)
         d = model.NewIntVar(0, horizon, f"d_{tid}")
         model.AddAbsEquality(d, start_vars[tid] - ws)
         abs_diffs.append(d)
@@ -375,17 +440,40 @@ def main() -> int:
     else:
         model.Add(main_zone_empty_slots == 0)
 
-    # Weighted objective: main-zone occupancy >> finish early >> warm-start distance >> near-hard breaks.
+    # Compactación suave por concursante: minimizar span_c = last_c - first_c
+    contestant_task_ids: Dict[int, List[int]] = {}
+    for tid in start_vars.keys():
+        task = tasks_by_id.get(tid) or {}
+        cid = int(task.get("contestantId") or 0)
+        if cid > 0:
+            contestant_task_ids.setdefault(cid, []).append(tid)
+
+    span_vars: List[Any] = []
+    for cid, tids in contestant_task_ids.items():
+        if not tids:
+            continue
+        first_c = model.NewIntVar(0, horizon, f"first_{cid}")
+        last_c = model.NewIntVar(0, horizon, f"last_{cid}")
+        span_c = model.NewIntVar(0, horizon, f"span_{cid}")
+        model.AddMinEquality(first_c, [start_vars[tid] for tid in tids])
+        model.AddMaxEquality(last_c, [end_vars[tid] for tid in tids])
+        model.Add(span_c == last_c - first_c)
+        span_vars.append(span_c)
+
+    # Weighted objective: main-zone occupancy >> finish early >> warm-start distance >> near-hard breaks >> contestant span.
     W1 = 10000
     W2 = 100
     W3 = 1
     W4 = 5000
+    W5 = 1
     objective_terms = [main_zone_empty_slots * W1, makespan * W2]
     if abs_diffs:
         objective_terms.append(sum(abs_diffs) * W3)
     if degrade_bools:
         for _, b in degrade_bools:
             objective_terms.append(b * W4)
+    if span_vars:
+        objective_terms.append(sum(span_vars) * W5)
 
     model.Minimize(sum(objective_terms))
 
@@ -415,19 +503,20 @@ def main() -> int:
         return 0
 
     optimized_planned: List[Dict[str, Any]] = []
-    for p in warm_planned:
-        tid = int(p.get("taskId"))
-        if tid < 0 or tid not in start_vars:
-            optimized_planned.append(p)
-            continue
+    for tid in sorted(start_vars.keys()):
+        warm_task = planning_rows_by_tid.get(tid) or {}
+        t = tasks_by_id.get(tid) or {}
         s = int(solver.Value(start_vars[tid]))
-        duration = parse_hhmm(p.get("endPlanned")) - parse_hhmm(p.get("startPlanned"))
+        dur_slots = duration_slots_by_tid.get(tid, 1)
         start_m = work_start + s * grid
-        end_m = start_m + duration
+        end_m = start_m + dur_slots * grid
         optimized_planned.append({
-            **p,
+            **warm_task,
+            "taskId": tid,
             "startPlanned": to_hhmm(start_m),
             "endPlanned": to_hhmm(end_m),
+            "assignedResources": warm_task.get("assignedResources") or [],
+            "assignedSpace": warm_task.get("assignedSpace") if "assignedSpace" in warm_task else t.get("spaceId"),
         })
 
     baseline_score, baseline_gap, baseline_switches = score_plan(engine_input, warm_planned)

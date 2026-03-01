@@ -1047,8 +1047,16 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     }
   }
 
-  if (missingDeps.length)
-    return hardInfeasible(missingDeps);
+  if (missingDeps.length) {
+    for (const dep of missingDeps) {
+      warnings.push({
+        code: String(dep?.code ?? "DEPENDENCY_MISSING"),
+        taskId: Number(dep?.taskId ?? NaN),
+        message: String(dep?.message ?? "Dependencia faltante ignorada de forma no bloqueante."),
+        details: dep,
+      });
+    }
+  }
 
   // ✅ Topological sort estable por dependsOnTaskId
   const originalOrder = new Map<number, number>();

@@ -265,6 +265,47 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     reasons: [{ code: "NO_PLAN", message: "No se obtuvo ningún intento válido en V3 Fase A." }],
   };
 
+  const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
+  if (timeLimitSeconds > 0) {
+    options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
+    const optimized = optimizeWithCpSat(input, fallback, timeLimitSeconds);
+    const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, fallback, optimized.output);
+    const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+    const optimizedOutput = accepted ? optimized.output : fallback;
+    const insights = Array.isArray((optimizedOutput as any).insights) ? (optimizedOutput as any).insights : [];
+    const qualityInsight = {
+      code: "V3_PHASE_B_QUALITY",
+      message: optimized.noOptimized
+        ? optimized.message
+        : accepted
+          ? optimized.message
+          : "CP-SAT produjo candidato inválido para plan parcial; se conserva Fase A.",
+      details: {
+        ...optimized.quality,
+        accepted,
+        noOptimized: Boolean(optimized.noOptimized),
+        candidateErrors,
+        degradations: optimized.degradations,
+        technical: optimized.technicalDetails,
+      },
+    };
+
+    if (accepted && optimized.output.complete) {
+      return {
+        ...optimized.output,
+        insights: [...insights, qualityInsight],
+        report: {
+          repairsTried: attemptsSummary.length,
+          degradations: [
+            ...attemptsSummary.map((a) => `soft_${a.level}`),
+            ...optimized.degradations.map((d: any) => `near_hard:${d.rule}:${d.taskId}`),
+          ],
+          attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
+        },
+      };
+    }
+  }
+
   const rescue = buildRescueProposal(fallback, input);
   const fallbackReasons: any[] = rescue.canOvertime
     ? [{
