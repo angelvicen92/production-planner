@@ -932,6 +932,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
   const GRID = 5;
   const snapUp = (m: number) => Math.ceil(m / GRID) * GRID;
+  const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
   const zoneResourceAssignments = (input as any)?.zoneResourceAssignments ?? {};
   const spaceResourceAssignments =
@@ -1630,10 +1631,14 @@ export function generatePlan(input: EngineInput): EngineOutput {
       } as any;
     }
 
+    const depsEndAt = depsEnd(task);
+    const taskLabel = String(task?.templateName ?? `tarea ${taskId}`);
+
     // earliest por horario + deps
-    let start = snapUp(Math.max(startDay, depsEnd(task)));
+    let start = snapUp(Math.max(startDay, depsEndAt));
     const forcedStart = forcedStartByTaskId.get(taskId);
     const forcedEnd = forcedEndByTaskId.get(taskId);
+    const hasFixedEnd = Number.isFinite(forcedEnd);
     if (Number.isFinite(forcedStart)) start = snapUp(Math.max(start, Number(forcedStart)));
 
     // ✅ Restricción por disponibilidad del concursante (si existe)
@@ -1658,6 +1663,59 @@ export function generatePlan(input: EngineInput): EngineOutput {
       }
 
     if (effWin) start = snapUp(Math.max(start, effWin.start));
+
+    if (hasFixedEnd) {
+      const fixedEnd = Number(forcedEnd);
+      const startCandidateBase = fixedEnd - duration;
+      const forcedStartMin = Number.isFinite(forcedStart)
+        ? Number(forcedStart)
+        : Number.NEGATIVE_INFINITY;
+      const minStart = Math.max(
+        startCandidateBase,
+        depsEndAt,
+        startDay,
+        effWin?.start ?? Number.NEGATIVE_INFINITY,
+        forcedStartMin,
+      );
+      start = snapUp(minStart);
+
+      if (fixedEnd - start < duration) {
+        return {
+          scheduled: false,
+          reason: {
+            code: "FIXED_END_CONFLICT",
+            taskId,
+            message:
+              `No se puede planificar "${taskLabel}" porque su fin está fijado a ${toHHMM(fixedEnd)} y no hay duración suficiente tras aplicar dependencias/ventana del concursante.`,
+            details: {
+              forcedEnd: toHHMM(fixedEnd),
+              computedStart: toHHMM(start),
+              depsEnd: Number.isFinite(depsEndAt) ? toHHMM(depsEndAt) : null,
+              availabilityStart: effWin ? toHHMM(effWin.start) : null,
+              availabilityEnd: effWin ? toHHMM(effWin.end) : null,
+              duration,
+            },
+          },
+        } as any;
+      }
+    }
+
+    const buildFixedEndBlockedReason = (
+      fixedStart: number,
+      fixedFinish: number,
+      details: Record<string, any>,
+      messageSuffix: string,
+    ) => ({
+      code: "FIXED_END_BLOCKED",
+      taskId,
+      message: `No se puede planificar "${taskLabel}" con fin fijo a las ${toHHMM(fixedFinish)} porque ${messageSuffix}.`,
+      details: {
+        forcedEnd: toHHMM(fixedFinish),
+        start: toHHMM(fixedStart),
+        finish: toHHMM(fixedFinish),
+        ...details,
+      },
+    });
 
     if (canUseItinerantWrapOverlap && contestantId && spaceId) {
       const cOcc = occupiedByContestant.get(contestantId) ?? [];
@@ -1729,6 +1787,44 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // 2.4) Si movimos candidate, re-chequeamos (porque al mover por concursante podemos caer en espacio ocupado, etc.)
       if (candidate !== start) {
+        if (hasFixedEnd) {
+          const fixedFinish = Number(forcedEnd);
+          const blockingSpaceInterval = spaceId
+            ? (occupiedBySpace.get(spaceId) ?? []).find((it) => {
+              if (!rangesOverlap(start, fixedFinish, it.start, it.end)) return false;
+              if (canUseItinerantWrapOverlap && canWrapOverlapWithTaskId(Number(it.taskId ?? NaN))) return false;
+              return true;
+            })
+            : null;
+          const blockingZoneMealInterval = zoneId
+            ? (occupiedByZoneMeal.get(zoneId) ?? []).find((it) => rangesOverlap(start, fixedFinish, it.start, it.end))
+            : null;
+          const blockingContestantInterval = contestantId
+            ? (occupiedByContestant.get(contestantId) ?? []).find((it) => {
+              if (!rangesOverlap(start, fixedFinish, it.start, it.end)) return false;
+              if (canUseItinerantWrapOverlap && canWrapOverlapWithTaskId(Number(it.taskId ?? NaN))) return false;
+              return true;
+            })
+            : null;
+
+          const blocker = blockingSpaceInterval
+            ? { kind: "space", id: Number(spaceId), interval: { start: toHHMM(blockingSpaceInterval.start), end: toHHMM(blockingSpaceInterval.end), taskId: Number(blockingSpaceInterval.taskId ?? 0) } }
+            : blockingZoneMealInterval
+              ? { kind: "zone_meal", id: Number(zoneId), interval: { start: toHHMM(blockingZoneMealInterval.start), end: toHHMM(blockingZoneMealInterval.end), taskId: Number(blockingZoneMealInterval.taskId ?? 0) } }
+              : blockingContestantInterval
+                ? { kind: "contestant", id: Number(contestantId), interval: { start: toHHMM(blockingContestantInterval.start), end: toHHMM(blockingContestantInterval.end), taskId: Number(blockingContestantInterval.taskId ?? 0) } }
+                : null;
+
+          return {
+            scheduled: false,
+            reason: buildFixedEndBlockedReason(
+              start,
+              fixedFinish,
+              { blocker },
+              "su intervalo está bloqueado por otra ocupación",
+            ),
+          } as any;
+        }
         start = snapUp(candidate);
         continue;
       }
@@ -1736,6 +1832,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
       // ✅ No permitir que la tarea se salga de la ventana efectiva del concursante
       if (effWin && start + duration > effWin.end) {
         const startsBeforeAvailability = startDay < effWin.start;
+        const startCandidate = hasFixedEnd ? Number(forcedEnd) - duration : start;
+        const minStartBound = Math.max(
+          startDay,
+          depsEndAt,
+          effWin.start,
+          Number.isFinite(forcedStart) ? Number(forcedStart) : Number.NEGATIVE_INFINITY,
+        );
         return {
           scheduled: false,
           reason: {
@@ -1750,13 +1853,40 @@ export function generatePlan(input: EngineInput): EngineOutput {
               workDayEnd: toHHMM(endDay),
               duration,
               startsBeforeAvailability,
+              ...(hasFixedEnd
+                ? {
+                  forcedEnd: toHHMM(Number(forcedEnd)),
+                  startCandidate: toHHMM(startCandidate),
+                  depsEnd: Number.isFinite(depsEndAt) ? toHHMM(depsEndAt) : null,
+                  lastFeasibleStart: toHHMM(snapUp(minStartBound)),
+                }
+                : {}),
             },
           },
         } as any;
       }
 
-      const finish = Number.isFinite(forcedEnd) ? Number(forcedEnd) : start + duration;
+      const finish = hasFixedEnd ? Number(forcedEnd) : start + duration;
       if (finish <= start) {
+        if (hasFixedEnd) {
+          return {
+            scheduled: false,
+            reason: {
+              code: "FIXED_END_CONFLICT",
+              taskId,
+              message:
+                `No se puede planificar "${taskLabel}" porque su fin está fijado a ${toHHMM(finish)} y no hay duración suficiente tras aplicar dependencias/ventana del concursante.`,
+              details: {
+                forcedEnd: toHHMM(finish),
+                computedStart: toHHMM(start),
+                depsEnd: Number.isFinite(depsEndAt) ? toHHMM(depsEndAt) : null,
+                availabilityStart: effWin ? toHHMM(effWin.start) : null,
+                availabilityEnd: effWin ? toHHMM(effWin.end) : null,
+                duration,
+              },
+            },
+          } as any;
+        }
         start = snapUp(start + GRID);
         continue;
       }
@@ -1775,6 +1905,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
         const teamOcc = occupiedByItinerant.get(taskItinerantTeamId) ?? [];
         const teamStart = findEarliestGap(teamOcc, start, duration);
         if (teamStart !== start) {
+          if (hasFixedEnd) {
+            const blocker = teamOcc.find((it) => rangesOverlap(start, finish, it.start, it.end));
+            return {
+              scheduled: false,
+              reason: buildFixedEndBlockedReason(
+                start,
+                finish,
+                {
+                  blocker: blocker
+                    ? { kind: "itinerant_team", id: taskItinerantTeamId, interval: { start: toHHMM(blocker.start), end: toHHMM(blocker.end), taskId: Number(blocker.taskId ?? 0) } }
+                    : { kind: "itinerant_team", id: taskItinerantTeamId },
+                },
+                "el equipo itinerante está ocupado",
+              ),
+            } as any;
+          }
           start = snapUp(teamStart);
           continue;
         }
@@ -1788,9 +1934,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
       // hay que volver al inicio del while para recalcular huecos (contestante/espacio/zona).
       let retry = false;
       const bumpStartAndRetry = () => {
+        if (hasFixedEnd) {
+          retry = true;
+          return;
+        }
         start = snapUp(start + GRID);
         retry = true;
       };
+      const failFixedEndResourceBlock = () => ({
+        scheduled: false,
+        reason: buildFixedEndBlockedReason(
+          start,
+          finish,
+          {},
+          "no hay recursos libres en ese intervalo",
+        ),
+      }) as any;
 
       const rr = (task as any)?.resourceRequirements ?? null;
 
@@ -1802,6 +1961,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       const isResourceFree = (pid: number) => {
         const occ = occupiedByResource.get(pid) ?? [];
+        if (hasFixedEnd) return !occ.some((it) => rangesOverlap(start, finish, it.start, it.end));
         return findEarliestGap(occ, start, duration) === start;
       };
 
@@ -1858,7 +2018,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
           assigned.push(...got);
         }
-        if (retry) continue;
+        if (retry) {
+          if (hasFixedEnd) return failFixedEndResourceBlock();
+          continue;
+        }
       }
 
       // byType
@@ -1893,7 +2056,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
           }
           assigned.push(...got);
         }
-        if (retry) continue;
+        if (retry) {
+          if (hasFixedEnd) return failFixedEndResourceBlock();
+          continue;
+        }
       }
 
       // anyOf
@@ -1941,7 +2107,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
         assigned.push(...got);
       }
-      if (retry) continue;
+      if (retry) {
+        if (hasFixedEnd) return failFixedEndResourceBlock();
+        continue;
+      }
 
       // ✅ Expandir compuestos (como ya hacías), pero respetando solape también
       const extraComponentsToAdd: number[] = [];
@@ -1971,7 +2140,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
         }
         if (retry) break;
       }
-      if (retry) continue;
+      if (retry) {
+        if (hasFixedEnd) return failFixedEndResourceBlock();
+        continue;
+      }
 
       assigned.push(...extraComponentsToAdd);
 
@@ -2701,6 +2873,38 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
     return true;
   });
+
+  const contestantWindowById = new Map<number, { start: number; end: number; span: number }>();
+  for (const task of pendingNonMeal as any[]) {
+    const cId = getContestantId(task);
+    if (!cId || contestantWindowById.has(cId)) continue;
+    const effWin = getContestantEffectiveWindow(cId);
+    if (!effWin) continue;
+    contestantWindowById.set(cId, {
+      start: effWin.start,
+      end: effWin.end,
+      span: Math.max(0, effWin.end - effWin.start),
+    });
+  }
+
+  const remainingMinutesByContestant = new Map<number, number>();
+  for (const task of pendingNonMeal as any[]) {
+    const cId = getContestantId(task);
+    if (!cId) continue;
+    const taskId = Number(task?.id);
+    if (!Number.isFinite(taskId)) continue;
+    if (plannedEndByTaskId.has(taskId) || fixedEndByTaskId.has(taskId)) continue;
+    const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+    remainingMinutesByContestant.set(cId, (remainingMinutesByContestant.get(cId) ?? 0) + duration);
+  }
+
+  const consumeContestantRemainingMinutes = (task: any) => {
+    const cId = getContestantId(task);
+    if (!cId) return;
+    const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+    const prev = Math.max(0, remainingMinutesByContestant.get(cId) ?? 0);
+    remainingMinutesByContestant.set(cId, Math.max(0, prev - duration));
+  };
   
 
   const plannedByTaskId = new Map<number, any>();
@@ -3385,6 +3589,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       const space = getSpaceId(t) ?? 0;
       const tpl = Number(t?.templateId ?? 0);
       const zone = getZoneId(t);
+      const cId = getContestantId(t);
 
       let s = 0;
 
@@ -3450,7 +3655,6 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // 3) Compactar concursantes
       if (effectiveContestantCompactWeight > 0) {
-        const cId = getContestantId(t);
         if (cId && lastEndByContestant.has(cId)) s += effectiveContestantCompactWeight;
       }
 
@@ -3474,14 +3678,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // 5) Mantener concursante en el mismo plató (heurística blanda)
       if (effectiveContestantStayInZoneWeight > 0) {
-        const cId = getContestantId(t);
         if (cId && zone && lastZoneByContestant.get(cId) === zone) {
           s += effectiveContestantStayInZoneWeight;
         }
       }
 
       if (effectiveContestantTotalSpanWeight > 0) {
-        const cId = getContestantId(t);
         if (cId) {
           const firstStart = firstStartByContestant.get(cId);
           const lastEnd = lastEndByContestant.get(cId);
@@ -3491,6 +3693,22 @@ export function generatePlan(input: EngineInput): EngineOutput {
           } else if (firstStartByContestant.size > 0) {
             s -= Math.round(effectiveContestantTotalSpanWeight * 8);
           }
+        }
+      }
+
+      if (cId) {
+        const win = contestantWindowById.get(cId);
+        if (win) {
+          const remainingMinutes = Math.max(0, remainingMinutesByContestant.get(cId) ?? 0);
+          const slack = win.span - remainingMinutes;
+          const urgencyTargetSlack = 90;
+          const urgencyWeight = 200_000;
+          const urgency = clamp01((urgencyTargetSlack - slack) / urgencyTargetSlack);
+          s += Math.round(urgency * urgencyWeight);
+
+          const shortWindowWeight = 12_000;
+          const shortWindowRatio = clamp01((240 - win.span) / 240);
+          s += Math.round(shortWindowRatio * shortWindowWeight);
         }
       }
 
@@ -3540,6 +3758,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
             (x) => Number(x?.id) === Number(cand?.id),
           );
           if (idx >= 0) pendingNonMeal.splice(idx, 1);
+          consumeContestantRemainingMinutes(cand);
 
           placedInGap = true;
           break;
@@ -3569,11 +3788,12 @@ export function generatePlan(input: EngineInput): EngineOutput {
     if (idx >= 0) pendingNonMeal.splice(idx, 1);
 
     const out = scheduleNonMealTask(task) as any;
+    if (out?.feasible === false) return out;
     if (out?.scheduled === false && out?.reason) {
       unplanned.push({ taskId: Number(task?.id), reason: out.reason });
       continue;
     }
-    if (out?.feasible === false) return out;
+    if (out?.scheduled !== false) consumeContestantRemainingMinutes(task);
   }
 
   const noIdlePassSnapshot = (plannedTasks as any[]).map((p) => ({
