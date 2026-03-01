@@ -89,6 +89,34 @@ const prevalidateHard = (input: EngineV3Input): EngineOutput | null => {
       });
     }
 
+    const breakKind = String((task as any)?.breakKind ?? "");
+    const itinerantTeamId = Number((task as any)?.itinerantTeamId ?? NaN);
+
+    // ✅ Los breaks no deben bloquear la planificación por falta de espacio/zona
+    if (breakKind === "itinerant_meal" && Number.isFinite(itinerantTeamId) && itinerantTeamId > 0) {
+      continue;
+    }
+    if (breakKind === "space_meal") {
+      continue;
+    }
+
+    // ✅ Excepción: comida del concursante (template configurado en el plan)
+    // (En EngineInput viene como mealTaskTemplateId/mealTaskTemplateName)
+    const tplId = Number((task as any)?.templateId ?? NaN);
+    const tplName = String((task as any)?.templateName ?? "");
+
+    // mealTaskTemplateId puede ser null si no está resuelto
+    const mealTplId = Number((input as any)?.mealTaskTemplateId ?? NaN);
+    const mealTplName = String((input as any)?.mealTaskTemplateName ?? "").trim().toLowerCase();
+
+    const isContestantMeal =
+      (Number.isFinite(mealTplId) && mealTplId > 0 && Number.isFinite(tplId) && tplId === mealTplId) ||
+      (mealTplName && tplName.trim().toLowerCase() === mealTplName);
+
+    if (isContestantMeal) {
+      continue; // no exigir space/zone para comida del concursante
+    }
+    
     const spaceId = Number((task as any)?.spaceId ?? NaN);
     const zoneId = Number((task as any)?.zoneId ?? NaN);
     if (!Number.isFinite(spaceId) || spaceId <= 0 || !Number.isFinite(zoneId) || zoneId <= 0) {
