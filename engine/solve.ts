@@ -1,5 +1,14 @@
 import type { EngineInput, EngineOutput } from "./types";
 
+/**
+ * ⚠️ IMPORTANTE:
+ * V3 usa `solve_v2_attempt` (archivo `engine/solve_v2.ts`) como motor real de Fase A.
+ * Cualquier heurística nueva o ajuste de comportamiento operativo debe implementarse primero en `solve_v2.ts`
+ * para evitar divergencias funcionales entre motores.
+ *
+ * Este archivo (`solve.ts`) se mantiene por compatibilidad histórica. Mantener parity explícita o deprecarlo.
+ */
+
 export type MainZoneGapReasonType =
   | "CONTESTANT_BUSY"
   | "RESOURCE_BUSY"

@@ -244,6 +244,20 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       };
 
       const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
+      if (timeLimitSeconds <= 0) {
+        const insights = Array.isArray((output as any).insights) ? (output as any).insights : [];
+        output = {
+          ...output,
+          insights: [
+            ...insights,
+            {
+              code: "V3_PHASE_B_QUALITY",
+              message: "CP-SAT omitido por presupuesto 0",
+              details: { executed: false, accepted: false, budgetSeconds: 0 },
+            },
+          ],
+        };
+      }
       if (timeLimitSeconds > 0) {
         options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
         const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
@@ -294,6 +308,17 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
   };
 
   const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
+  if (timeLimitSeconds <= 0) {
+    const insights = Array.isArray((fallback as any).insights) ? (fallback as any).insights : [];
+    (fallback as any).insights = [
+      ...insights,
+      {
+        code: "V3_PHASE_B_QUALITY",
+        message: "CP-SAT omitido por presupuesto 0",
+        details: { executed: false, accepted: false, budgetSeconds: 0 },
+      },
+    ];
+  }
   if (timeLimitSeconds > 0) {
     options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
     const optimized = optimizeWithCpSat(input, fallback, timeLimitSeconds);

@@ -2876,6 +2876,13 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         }
       }
 
+      if (mainSpaceId && Number(spaceId) === Number(mainSpaceId) && Number.isFinite(tplId) && tplId > 0) {
+        if (Number.isFinite(Number(lastTemplateInMainSpace)) && Number(lastTemplateInMainSpace) > 0 && Number(lastTemplateInMainSpace) !== tplId) {
+          switchesUsedMainSpace += 1;
+        }
+        lastTemplateInMainSpace = tplId;
+      }
+
       // ✅ memoria para “sin huecos” por zona
       const zId = getZoneId(task);
       if (zId) lastEndByZone.set(zId, finish);
@@ -3623,6 +3630,55 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
 
     return true;
   });
+
+  const nearHardMainSpaceSwitchesBudgetRaw = Number((input as any)?.nearHardBudgets?.mainSpaceSwitchesMax ?? 0);
+  const maxSwitchesMainSpace = Number.isFinite(nearHardMainSpaceSwitchesBudgetRaw)
+    ? Math.max(0, Math.floor(nearHardMainSpaceSwitchesBudgetRaw))
+    : 0;
+  const mainZoneSpaceUsage = new Map<number, number>();
+  if (optMainZoneId) {
+    for (const task of tasksSorted as any[]) {
+      if (Number(getZoneId(task)) !== Number(optMainZoneId)) continue;
+      const sid = Number(getSpaceId(task) ?? NaN);
+      if (!Number.isFinite(sid) || sid <= 0) continue;
+      mainZoneSpaceUsage.set(sid, (mainZoneSpaceUsage.get(sid) ?? 0) + 1);
+    }
+  }
+  const mainSpaceId = Array.from(mainZoneSpaceUsage.entries())
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+  const countMainSpaceSwitches = (plannedRows: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>) => {
+    if (!mainSpaceId) return { switches: 0, lastTemplateId: null as number | null };
+    const rows = plannedRows
+      .map((p) => {
+        const task = taskById.get(Number(p?.taskId));
+        if (!task || isMealTask(task)) return null;
+        const sid = Number(p?.assignedSpace ?? getSpaceId(task) ?? NaN);
+        if (sid !== Number(mainSpaceId)) return null;
+        return {
+          start: toMinutes(String(p?.startPlanned ?? "")),
+          templateId: Number(task?.templateId ?? NaN),
+        };
+      })
+      .filter((x): x is { start: number; templateId: number } => Boolean(x) && Number.isFinite(Number((x as any).templateId)) && Number((x as any).templateId) > 0)
+      .sort((a, b) => a.start - b.start);
+
+    let switches = 0;
+    let activeTemplate: number | null = null;
+    for (const row of rows) {
+      if (activeTemplate === null) {
+        activeTemplate = row.templateId;
+        continue;
+      }
+      if (activeTemplate !== row.templateId) {
+        switches += 1;
+        activeTemplate = row.templateId;
+      }
+    }
+    return { switches, lastTemplateId: activeTemplate };
+  };
+  let switchesUsedMainSpace = countMainSpaceSwitches(plannedTasks as any[]).switches;
+  let lastTemplateInMainSpace = countMainSpaceSwitches(plannedTasks as any[]).lastTemplateId;
+  let blockedByMainSpaceSwitchBudget = 0;
   
 
   const plannedByTaskId = new Map<number, any>();
@@ -3779,6 +3835,13 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       ? Math.min(800, Math.max(50, Math.floor(rawMaxSteps)))
       : DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS;
     let globalAttempts = 0;
+    const canAcceptMainSpaceSwitches = (beforeRows: any[], afterRows: any[]) => {
+      if (!mainSpaceId) return true;
+      const before = countMainSpaceSwitches(beforeRows);
+      const after = countMainSpaceSwitches(afterRows);
+      if (maxSwitchesMainSpace <= 0) return after.switches <= before.switches;
+      return after.switches <= maxSwitchesMainSpace;
+    };
 
     const sortedPlannedRows = () =>
       (plannedTasks as any[])
@@ -3828,6 +3891,19 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       planned.startPlanned = toHHMM(placed.start);
       planned.endPlanned = toHHMM(placed.end);
       addTaskToOccupancy(task, placed);
+      if (!canAcceptMainSpaceSwitches(noIdlePassSnapshot as any[], plannedTasks as any[])) {
+        removeTaskFromOccupancy(task, planned);
+        planned.startPlanned = toHHMM(oldStart);
+        planned.endPlanned = toHHMM(oldEnd);
+        addTaskToOccupancy(task, {
+          start: oldStart,
+          end: oldEnd,
+          assigned: Array.isArray(planned?.assignedResources)
+            ? planned.assignedResources.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0)
+            : [],
+        });
+        return false;
+      }
       return true;
     };
 
@@ -4486,7 +4562,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     const unlockScoreTotal = feedersReady.reduce((acc, feeder) => acc + Number(feeder.unlockScore ?? 0), 0);
 
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
-    const scoreTaskForSelection = (t: any, useHeuristics = true) => {
+  const scoreTaskForSelection = (t: any, useHeuristics = true) => {
       const space = getSpaceId(t) ?? 0;
       const tpl = Number(t?.templateId ?? 0);
       const zone = getZoneId(t);
@@ -4666,8 +4742,63 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         }
       }
 
+      const candidateSpaceId = Number(getSpaceId(t) ?? NaN);
+      const candidateTemplateId = Number(t?.templateId ?? NaN);
+      if (
+        mainSpaceId &&
+        Number.isFinite(candidateSpaceId) &&
+        candidateSpaceId === Number(mainSpaceId) &&
+        Number.isFinite(candidateTemplateId) &&
+        candidateTemplateId > 0 &&
+        Number.isFinite(Number(lastTemplateInMainSpace)) &&
+        Number(lastTemplateInMainSpace) > 0 &&
+        Number(lastTemplateInMainSpace) !== candidateTemplateId
+      ) {
+        if (switchesUsedMainSpace >= maxSwitchesMainSpace) {
+          return -1e15;
+        }
+        s -= 50_000_000;
+      }
+
       return s;
     };
+
+    const contestantUrgency = new Map<number, { windowEnd: number; remainingMinutes: number; slack: number }>();
+    for (const pendingTask of pendingNonMeal as any[]) {
+      const contestantId = getContestantId(pendingTask);
+      if (!contestantId) continue;
+      const effWin = getContestantEffectiveWindow(contestantId);
+      if (!effWin || effWin.end <= effWin.start) continue;
+      const taskDuration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
+      const prev = contestantUrgency.get(contestantId) ?? { windowEnd: effWin.end, remainingMinutes: 0, slack: Number.POSITIVE_INFINITY };
+      prev.windowEnd = Math.min(prev.windowEnd, effWin.end);
+      prev.remainingMinutes += taskDuration;
+      contestantUrgency.set(contestantId, prev);
+    }
+    for (const [contestantId, metrics] of contestantUrgency.entries()) {
+      const effWin = getContestantEffectiveWindow(contestantId);
+      if (!effWin || effWin.end <= effWin.start) continue;
+      const slack = (effWin.end - Math.max(startDay, effWin.start)) - metrics.remainingMinutes;
+      contestantUrgency.set(contestantId, { ...metrics, slack });
+    }
+    const criticalContestantEntry = Array.from(contestantUrgency.entries())
+      .sort((a, b) => {
+        if (a[1].windowEnd !== b[1].windowEnd) return a[1].windowEnd - b[1].windowEnd;
+        if (a[1].slack !== b[1].slack) return a[1].slack - b[1].slack;
+        return a[0] - b[0];
+      })[0] ?? null;
+    const criticalContestantId = criticalContestantEntry?.[0] ?? null;
+    const criticalContestantScheduled = criticalContestantId
+      ? plannedTasks.some((p: any) => {
+          const task = taskById.get(Number(p?.taskId));
+          return Number(getContestantId(task)) === Number(criticalContestantId);
+        })
+      : true;
+    const earlyMainStage = !optMainZoneId || !lastEndByZone.has(optMainZoneId);
+    const gatingActive = Boolean(criticalContestantId && earlyMainStage && !criticalContestantScheduled);
+    const gatedReady = gatingActive
+      ? ready.filter((candidate) => Number(getContestantId(candidate)) === Number(criticalContestantId))
+      : ready;
 
     // ✅ LOTE 6 (PRO): si el plató principal ya “ha empezado” y hay un hueco real,
     // intentamos rellenarlo con una tarea que ENCAJE exacta en ese hueco.
@@ -4722,14 +4853,28 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     }
 
     const computeBestTask = (useHeuristics: boolean, allowAnyScore = false) => {
-      const scored = ready
+      const scored = gatedReady
         .map((candidate) => {
           const rawScore = scoreTaskForSelection(candidate, useHeuristics);
           const safeScore = Number.isFinite(rawScore) ? rawScore : -1e15;
+          const candidateSpaceId = Number(getSpaceId(candidate) ?? NaN);
+          const candidateTemplateId = Number(candidate?.templateId ?? NaN);
+          const blockedByMainSwitchBudget = Boolean(
+            mainSpaceId &&
+            Number.isFinite(candidateSpaceId) &&
+            candidateSpaceId === Number(mainSpaceId) &&
+            Number.isFinite(candidateTemplateId) &&
+            candidateTemplateId > 0 &&
+            Number.isFinite(Number(lastTemplateInMainSpace)) &&
+            Number(lastTemplateInMainSpace) > 0 &&
+            Number(lastTemplateInMainSpace) !== candidateTemplateId &&
+            switchesUsedMainSpace >= maxSwitchesMainSpace,
+          );
           return {
             candidate,
             score: safeScore,
             order: originalOrder.get(Number(candidate?.id)) ?? 0,
+            blockedByMainSwitchBudget,
           };
         })
         .sort((a, b) => {
@@ -4739,6 +4884,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
 
       const top = scored[0];
       if (!top) return null;
+      blockedByMainSpaceSwitchBudget += scored.filter((x) => x.blockedByMainSwitchBudget).length;
       if (!allowAnyScore && top.score <= -1e12) return null;
       return top.candidate;
     };
@@ -4751,7 +4897,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     }
 
     scoringDiagnosticDetails = {
-      readyCount: ready.length,
+      readyCount: gatedReady.length,
       mainTargetTpl: mainTargetTpl ?? null,
       feedersReadyCount: readyFeedersCount,
       usedFallback: usedScoringFallback,
@@ -5442,6 +5588,30 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       code: "V2_MAIN_TEMPLATE_SWITCH",
       message: "Cambio de template detectado en el plató principal",
       details: mainTemplateSwitchInsight,
+    });
+  }
+
+  insights.push({
+    code: "V2_MAIN_SPACE_SWITCH_BUDGET",
+    message: "Control near-hard de cambios de actividad en el plató principal",
+    details: {
+      mainSpaceId,
+      switchesUsed: switchesUsedMainSpace,
+      maxSwitches: maxSwitchesMainSpace,
+      blockedCandidates: blockedByMainSpaceSwitchBudget,
+    },
+  });
+
+  if (blockedByMainSpaceSwitchBudget > 0 && unplanned.length > 0) {
+    warnings.push({
+      code: "MAIN_SPACE_SWITCH_BUDGET_EXHAUSTED",
+      message: "El presupuesto de cambios en el plató principal impidió alternancias adicionales; revisar presupuesto near-hard o aprobar ajustes.",
+      details: {
+        mainSpaceId,
+        switchesUsed: switchesUsedMainSpace,
+        maxSwitches: maxSwitchesMainSpace,
+        blockedCandidates: blockedByMainSpaceSwitchBudget,
+      },
     });
   }
 
