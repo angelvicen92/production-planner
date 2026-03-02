@@ -1384,6 +1384,10 @@ export function generatePlan(input: EngineInput): EngineOutput {
     Number.isFinite(Number(optMainZoneIdRaw)) && Number(optMainZoneIdRaw) > 0
       ? Number(optMainZoneIdRaw)
       : null;
+  const mainZoneSwitchesMax = Math.max(
+    0,
+    Math.floor(Number((input as any)?.nearHardBudgets?.mainZoneSwitchesMax ?? 0)),
+  );
 
   // ✅ niveles (0..3). Si no llegan, hacemos fallback a legacy booleans.
   const optMainZoneLevelRaw = (input as any)?.optimizerMainZonePriorityLevel;
@@ -2181,6 +2185,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
 
       // ✅ memoria para agrupar tareas iguales en el mismo espacio
       const tplId = Number(task?.templateId ?? 0);
+      consumeMainZoneSwitchIfNeeded(task, spaceId, tplId);
       rememberSpaceTemplate(spaceId, tplId);
 
       // ✅ memoria para “sin huecos” por zona
@@ -2480,6 +2485,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
     plannedEndByTaskId.set(taskId, finish);
 
     const tplId = Number(task?.templateId ?? 0);
+    consumeMainZoneSwitchIfNeeded(task, spaceId, tplId);
     rememberSpaceTemplate(spaceId, tplId);
     lastEndByZone.set(zoneId, finish);
     if (contestantId) {
@@ -2904,6 +2910,102 @@ export function generatePlan(input: EngineInput): EngineOutput {
     const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
     const prev = Math.max(0, remainingMinutesByContestant.get(cId) ?? 0);
     remainingMinutesByContestant.set(cId, Math.max(0, prev - duration));
+  };
+
+  const hasLockedMainZoneTask = Boolean(
+    optMainZoneId &&
+      (tasks as any[]).some((task) => {
+        const taskId = Number(task?.id ?? 0);
+        if (!Number.isFinite(taskId) || taskId <= 0) return false;
+        const zoneId = Number(getZoneId(task) ?? getZoneIdForSpace(getSpaceId(task)) ?? 0);
+        if (!Number.isFinite(zoneId) || zoneId !== Number(optMainZoneId)) return false;
+        const status = String(task?.status ?? "pending");
+        return (
+          lockedTaskIds.has(taskId) ||
+          status === "in_progress" ||
+          status === "done" ||
+          Boolean(task?.isManualBlock)
+        );
+      }),
+  );
+
+  const contestantNameById = new Map<number, string>();
+  for (const task of tasks as any[]) {
+    const contestantId = Number(getContestantId(task) ?? 0);
+    if (!Number.isFinite(contestantId) || contestantId <= 0 || contestantNameById.has(contestantId)) continue;
+    const rawName = String(task?.contestantName ?? "").trim();
+    if (rawName) contestantNameById.set(contestantId, rawName);
+  }
+
+  const criticalContestantByRank = () => {
+    const rows: Array<{ contestantId: number; end: number; span: number; slack: number }> = [];
+    for (const [contestantId, win] of contestantWindowById.entries()) {
+      const remainingMinutes = Math.max(0, remainingMinutesByContestant.get(contestantId) ?? 0);
+      if (remainingMinutes <= 0) continue;
+      rows.push({
+        contestantId,
+        end: win.end,
+        span: win.span,
+        slack: win.span - remainingMinutes,
+      });
+    }
+    rows.sort((a, b) => a.end - b.end || a.slack - b.slack || a.span - b.span || a.contestantId - b.contestantId);
+    return rows;
+  };
+
+  const CRITICAL_PHASE_END_BUFFER_MIN = 60;
+  const CRITICAL_PHASE_SLACK_THRESHOLD_MIN = 75;
+  const CRITICAL_START_BONUS_PRIMARY = 20_000_000;
+  const CRITICAL_START_BONUS_SECONDARY = 8_000_000;
+  const CRITICAL_START_BONUS_TERTIARY = 3_000_000;
+
+  let criticalStartPhaseContestantId: number | null = null;
+  let criticalStartPhaseAnnounced = false;
+  const criticalStartDiagnostics: string[] = [];
+
+  // Motor v3: estabilidad operativa + near-hard budget (plato principal)
+  let mainZoneSwitchesUsed = 0;
+  let lastMainSpaceId: number | null = null;
+
+  const consumeMainZoneSwitchIfNeeded = (task: any, spaceId: number | null | undefined, tplId: number | null | undefined) => {
+    if (!optMainZoneId) return;
+    const zoneId = Number(getZoneId(task) ?? getZoneIdForSpace(spaceId) ?? 0);
+    if (!Number.isFinite(zoneId) || zoneId !== Number(optMainZoneId)) return;
+
+    const sid = Number(spaceId ?? 0);
+    const tid = Number(tplId ?? 0);
+    if (!Number.isFinite(sid) || sid <= 0 || !Number.isFinite(tid) || tid <= 0) return;
+
+    const mainSpace = Number.isFinite(Number(lastMainSpaceId)) && Number(lastMainSpaceId) > 0 ? Number(lastMainSpaceId) : sid;
+    const mainCfg = getGroupingConfigForSpace(mainSpace);
+    const mainKey = mainCfg?.key ?? `S:${mainSpace}`;
+    const lastTpl = lastTemplateByKey.get(mainKey) ?? null;
+    if (lastTpl !== null && lastTpl !== tid) {
+      mainZoneSwitchesUsed += 1;
+    }
+    lastMainSpaceId = sid;
+  };
+
+  const getMainZoneSwitchPenalty = (task: any) => {
+    if (!optMainZoneId) return { causesSwitch: false, penalty: 0 };
+    const zoneId = Number(getZoneId(task) ?? getZoneIdForSpace(getSpaceId(task)) ?? 0);
+    if (!Number.isFinite(zoneId) || zoneId !== Number(optMainZoneId)) return { causesSwitch: false, penalty: 0 };
+
+    const spaceId = Number(getSpaceId(task) ?? 0);
+    if (!Number.isFinite(spaceId) || spaceId <= 0) return { causesSwitch: false, penalty: 0 };
+
+    const currentTpl = Number(task?.templateId ?? 0);
+    if (!Number.isFinite(currentTpl) || currentTpl <= 0) return { causesSwitch: false, penalty: 0 };
+
+    const mainSpace = Number.isFinite(Number(lastMainSpaceId)) && Number(lastMainSpaceId) > 0 ? Number(lastMainSpaceId) : spaceId;
+    const mainCfg = getGroupingConfigForSpace(mainSpace);
+    const mainKey = mainCfg?.key ?? `S:${mainSpace}`;
+    const lastTpl = lastTemplateByKey.get(mainKey) ?? null;
+    const causesSwitch = lastTpl !== null && lastTpl !== currentTpl;
+    if (!causesSwitch) return { causesSwitch: false, penalty: 0 };
+
+    if (mainZoneSwitchesUsed >= mainZoneSwitchesMax) return { causesSwitch: true, penalty: 50_000_000 };
+    return { causesSwitch: true, penalty: 5_000_000 };
   };
   
 
@@ -3584,6 +3686,46 @@ export function generatePlan(input: EngineInput): EngineOutput {
       effectiveFinishEarlyWeight === 0,
     );
 
+    const criticalRanking = criticalContestantByRank();
+    const criticalTopContestants = criticalRanking.slice(0, 3).map((row) => row.contestantId);
+    const topCritical = criticalRanking[0] ?? null;
+    const isCriticalStartPhase = Boolean(
+      optMainZoneId &&
+        !hasLockedMainZoneTask &&
+        !lastEndByZone.has(optMainZoneId) &&
+        topCritical &&
+        (
+          topCritical.end <= endDay - CRITICAL_PHASE_END_BUFFER_MIN ||
+          topCritical.slack <= CRITICAL_PHASE_SLACK_THRESHOLD_MIN
+        ) &&
+        (
+          criticalStartPhaseContestantId === null ||
+          criticalStartPhaseContestantId === topCritical.contestantId
+        ) &&
+        !firstStartByContestant.has(topCritical.contestantId) &&
+        ready.some((t) => Number(getContestantId(t)) === topCritical.contestantId),
+    );
+
+    if (isCriticalStartPhase && topCritical) {
+      criticalStartPhaseContestantId = topCritical.contestantId;
+      if (!criticalStartPhaseAnnounced) {
+        const contestantName = String(contestantNameById.get(topCritical.contestantId) ?? `Concursante ${topCritical.contestantId}`);
+        criticalStartDiagnostics.push(
+          `Critical start contestant selected: ${contestantName} end=${toHHMM(topCritical.end)} slack=${Math.round(topCritical.slack)}min`,
+        );
+        criticalStartPhaseAnnounced = true;
+      }
+    } else if (
+      criticalStartPhaseContestantId &&
+      (
+        firstStartByContestant.has(criticalStartPhaseContestantId) ||
+        !ready.some((t) => Number(getContestantId(t)) === criticalStartPhaseContestantId) ||
+        Boolean(optMainZoneId && lastEndByZone.has(optMainZoneId))
+      )
+    ) {
+      criticalStartPhaseContestantId = null;
+    }
+
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
     const scoreTaskForSelection = (t: any) => {
       const space = getSpaceId(t) ?? 0;
@@ -3712,6 +3854,16 @@ export function generatePlan(input: EngineInput): EngineOutput {
         }
       }
 
+      if (isCriticalStartPhase && cId) {
+        const rank = criticalTopContestants.indexOf(cId);
+        if (rank === 0) s += CRITICAL_START_BONUS_PRIMARY;
+        else if (rank === 1) s += CRITICAL_START_BONUS_SECONDARY;
+        else if (rank === 2) s += CRITICAL_START_BONUS_TERTIARY;
+      }
+
+      const switchPenalty = getMainZoneSwitchPenalty(t);
+      if (switchPenalty.penalty > 0) s -= switchPenalty.penalty;
+
       return s;
     };
 
@@ -3768,7 +3920,13 @@ export function generatePlan(input: EngineInput): EngineOutput {
       }
     }
 
-    ready.sort((a, b) => {
+    const narrowedReady =
+      isCriticalStartPhase && criticalStartPhaseContestantId
+        ? ready.filter((t) => Number(getContestantId(t)) === criticalStartPhaseContestantId)
+        : ready;
+    const readyForSelection = narrowedReady.length > 0 ? narrowedReady : ready;
+
+    readyForSelection.sort((a, b) => {
       const sa = scoreTaskForSelection(a);
       const sb = scoreTaskForSelection(b);
 
@@ -3779,7 +3937,7 @@ export function generatePlan(input: EngineInput): EngineOutput {
       return oa - ob;
     });
 
-    const task = ready[0];
+    const task = readyForSelection[0];
 
     // removemos el elegido de pending
     const idx = pendingNonMeal.findIndex(
@@ -4310,6 +4468,15 @@ export function generatePlan(input: EngineInput): EngineOutput {
     unplanned,
     reasons: complete ? [] : unplanned.map((x) => x.reason),
     insights: [
+      ...(criticalStartDiagnostics.length > 0
+        ? [{
+            code: "CRITICAL_START_CONTESTANT",
+            message: criticalStartDiagnostics[0],
+            details: {
+              diagnostics: criticalStartDiagnostics,
+            },
+          }]
+        : []),
       {
         code: "MAIN_ZONE_GAP_STATS",
         message: "Métricas de continuidad del plató principal",
