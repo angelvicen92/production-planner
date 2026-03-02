@@ -30,6 +30,12 @@ export type MainZoneGapReason = {
   humanMessage: string;
 };
 
+type GapRelocationAttempt = {
+  attempted: boolean;
+  succeeded: boolean;
+  failReasonsTop?: string[];
+};
+
 const DIRECTOR_MODE_KEEP_BUSY_THRESHOLD = 8;
 const DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP = 50;
 const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
@@ -154,7 +160,7 @@ export function explainMainZoneGaps(params: {
   getContestantId: (task: any) => number | null;
   getSpaceId: (task: any) => number | null;
   lockedTaskIds: Set<number>;
-  relocationAttemptsByTaskId?: Map<number, { attempted: boolean; succeeded: boolean }>;
+  relocationAttemptsByTaskId?: Map<number, GapRelocationAttempt>;
 }): MainZoneGapReason[] {
   const { gaps, plannedTasks, taskById, getContestantId, getSpaceId, lockedTaskIds, relocationAttemptsByTaskId } = params;
   const reasons: MainZoneGapReason[] = [];
@@ -348,7 +354,7 @@ export function explainMainZoneGaps(params: {
           blockedMainZoneTaskId: nextTaskId,
           blockedInterval,
           entity: { kind: "contestant", id: Number(contestantId) },
-          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: ${contestantName ? `el concursante ${contestantName}` : "el concursante"} está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.${failedRelocation ? ' La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación).' : ''}`,
+          humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: ${contestantName ? `el concursante ${contestantName}` : "el concursante"} está ocupado en ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)})${locked ? ' [locked]' : ''}${status === 'in_progress' || status === 'done' ? ` [${status}]` : ''}.${failedRelocation ? ` La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación)${relocationAttempt?.failReasonsTop?.length ? ` [motivos: ${relocationAttempt.failReasonsTop.join('; ')}]` : ''}.` : ''}`,
         });
         continue;
       }
@@ -385,7 +391,7 @@ export function explainMainZoneGaps(params: {
             blockedMainZoneTaskId: nextTaskId,
             blockedInterval,
             entity: { kind: "resource", id: resourceId },
-            humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el recurso ${resourceId} está ocupado por ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)}).${failedRelocation ? ' La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación).' : ''}`,
+            humanMessage: `Hueco ${blockedInterval.start}-${blockedInterval.end}: el recurso ${resourceId} está ocupado por ${fmtTask(blockingTask, blockingTaskId)} (${toHHMM(blocker.start)}-${toHHMM(blocker.end)}).${failedRelocation ? ` La tarea bloqueadora era replanificable, pero no se encontró recolocación sin romper HARD (dep/ventana/recursos/ocupación)${relocationAttempt?.failReasonsTop?.length ? ` [motivos: ${relocationAttempt.failReasonsTop.join('; ')}]` : ''}.` : ''}`,
           });
           break;
         }
@@ -1896,8 +1902,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   const effectiveContestantTotalSpanWeight = contestantTotalSpanWeights[Math.round(weightFromInput("contestantTotalSpan", 0))] ?? 0;
   const feedMainActiveEnabled = Boolean(
     optMainZoneId &&
-    mainZoneKeepBusyStrength >= 9 &&
-    globalGroupingStrength10 >= 9,
+    directorModeEnabled &&
+    mainZoneKeepBusyStrength >= 8,
   );
 
   const selectionSpacePenalties = (Array.isArray(options?.penalizeSchedulingInSpaceWindow)
@@ -3720,7 +3726,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   };
   rebuildPlannedByTask();
 
-  const globalGapRelocationAttemptsByTaskId = new Map<number, { attempted: boolean; succeeded: boolean }>();
+  const globalGapRelocationAttemptsByTaskId = new Map<number, GapRelocationAttempt>();
 
   const isImmovableTask = (task: any) => {
     const taskId = Number(task?.id);
@@ -3924,15 +3930,22 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       return true;
     };
 
-    const tryRelocateBlockerOutsideGap = (blockerTaskId: number, gapStart: number, gapEnd: number) => {
+    const tryRelocateBlockerOutsideGap = (
+      blockerTaskId: number,
+      gapStart: number,
+      gapEnd: number,
+      options?: {
+        targetEndBefore?: number;
+      },
+    ): GapRelocationAttempt => {
       const row = sortedPlannedRows().find((x) => Number(x.p.taskId) === Number(blockerTaskId));
-      if (!row || !row.task) return false;
-      if (isImmovableTask(row.task)) return false;
+      if (!row || !row.task) return { attempted: false, succeeded: false, failReasonsTop: ["BLOCKER_NOT_FOUND"] };
+      if (isImmovableTask(row.task)) return { attempted: false, succeeded: false, failReasonsTop: ["LOCKED"] };
 
       const oldStart = toMinutes(String(row.p.startPlanned));
       const oldEnd = toMinutes(String(row.p.endPlanned));
       const duration = oldEnd - oldStart;
-      if (duration <= 0) return false;
+      if (duration <= 0) return { attempted: false, succeeded: false, failReasonsTop: ["INVALID_DURATION"] };
 
       const minSearch = Math.max(startDay, oldStart - 120);
       const maxSearch = Math.min(endDay, oldEnd + 120);
@@ -3943,24 +3956,78 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const leftCandidates: number[] = [];
       for (let t = snapUp(oldStart - GRID); t >= minSearch; t -= GRID) leftCandidates.push(t);
 
+      const targetEndBefore = Number(options?.targetEndBefore ?? NaN);
+
       const normalizeCandidates = (arr: number[]) =>
         Array.from(new Set(arr))
           .filter((v) => Number.isFinite(v))
           .sort((a, b) => a - b);
 
-      for (const candidateStart of normalizeCandidates(rightCandidates)) {
-        if (globalAttempts >= configuredMaxSteps) break;
+      const failReasons: string[] = [];
+      const seenFailReasons = new Set<string>();
+      const registerFailReason = (reason: string) => {
+        if (!seenFailReasons.has(reason)) {
+          seenFailReasons.add(reason);
+          failReasons.push(reason);
+        }
+      };
+
+      const prioritizedLeftCandidates = normalizeCandidates(leftCandidates).sort((a, b) => {
+        const endA = a + duration;
+        const endB = b + duration;
+        const aBefore = Number.isFinite(targetEndBefore) && endA <= Number(targetEndBefore);
+        const bBefore = Number.isFinite(targetEndBefore) && endB <= Number(targetEndBefore);
+        if (aBefore !== bBefore) return aBefore ? -1 : 1;
+        const aSlack = Number.isFinite(targetEndBefore) ? Math.abs(Number(targetEndBefore) - endA) : 0;
+        const bSlack = Number.isFinite(targetEndBefore) ? Math.abs(Number(targetEndBefore) - endB) : 0;
+        return aSlack - bSlack || a - b;
+      });
+
+      const tries: Array<{ start: number; source: "left" | "right" }> = [
+        ...prioritizedLeftCandidates.map((start) => ({ start, source: "left" as const })),
+        ...normalizeCandidates(rightCandidates).map((start) => ({ start, source: "right" as const })),
+      ];
+
+      for (const candidate of tries) {
+        const candidateStart = candidate.start;
+        const candidateEnd = candidateStart + duration;
+        if (globalAttempts >= configuredMaxSteps) {
+          registerFailReason("GLOBAL_MAX_ATTEMPTS_REACHED");
+          break;
+        }
         globalAttempts++;
-        if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
+        const moved = tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd);
+        if (moved) return { attempted: true, succeeded: true };
+
+        if (rangesOverlap(candidateStart, candidateEnd, gapStart, gapEnd)) {
+          registerFailReason("OVERLAPS_GAP");
+          continue;
+        }
+        const depsGate = snapUp(Math.max(startDay, depsEnd(row.task)));
+        if (candidateStart < depsGate) {
+          registerFailReason(`HARD_DEPENDENCY until ${toHHMM(depsGate)}`);
+          continue;
+        }
+
+        const effWin = getContestantEffectiveWindow(getContestantId(row.task));
+        if (effWin && (candidateStart < effWin.start || candidateEnd > effWin.end)) {
+          registerFailReason(`CONTESTANT_WINDOW ${toHHMM(effWin.start)}-${toHHMM(effWin.end)}`);
+          continue;
+        }
+
+        if (candidateEnd > endDay) {
+          registerFailReason("WINDOW_OVERFLOW");
+          continue;
+        }
+
+        registerFailReason(candidate.source === "left" ? "LEFT_MOVE_BLOCKED" : "RIGHT_MOVE_BLOCKED");
       }
 
-      for (const candidateStart of normalizeCandidates(leftCandidates)) {
-        if (globalAttempts >= configuredMaxSteps) break;
-        globalAttempts++;
-        if (tryMoveTaskToCandidate(row, candidateStart, gapStart, gapEnd)) return true;
-      }
-
-      return false;
+      return {
+        attempted: tries.length > 0,
+        succeeded: false,
+        failReasonsTop: failReasons.slice(0, 5),
+      };
     };
 
     const tryMoveSequentialBlock = (block: Array<{ p: any; task: any }>, targetFirstStart: number) => {
@@ -4237,16 +4304,26 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
           const reason = findBlockingReasonForGap(gap);
           if (!reason?.blockingTaskId) continue;
-          if (reason.type !== "CONTESTANT_BUSY" && reason.type !== "RESOURCE_BUSY") continue;
+          const canRelocateReason =
+            reason.type === "CONTESTANT_BUSY" ||
+            reason.type === "RESOURCE_BUSY" ||
+            reason.type === "HARD_DEPENDENCY" ||
+            (reason.type === "TIME_WINDOW" && Number.isFinite(Number(reason.blockingTaskId)));
+          if (!canRelocateReason) continue;
 
           const blockerTaskId = Number(reason.blockingTaskId);
           const blockerTask = taskById.get(blockerTaskId);
-          if (!blockerTask || isImmovableTask(blockerTask)) continue;
+          if (!blockerTask || isImmovableTask(blockerTask)) {
+            globalGapRelocationAttemptsByTaskId.set(blockerTaskId, { attempted: false, succeeded: false, failReasonsTop: ["LOCKED"] });
+            continue;
+          }
 
-          const relocated = tryRelocateBlockerOutsideGap(blockerTaskId, gap.start, gap.end);
-          globalGapRelocationAttemptsByTaskId.set(blockerTaskId, { attempted: true, succeeded: relocated });
+          const relocation = tryRelocateBlockerOutsideGap(blockerTaskId, gap.start, gap.end, {
+            targetEndBefore: reason.type === "HARD_DEPENDENCY" ? gap.start : undefined,
+          });
+          globalGapRelocationAttemptsByTaskId.set(blockerTaskId, relocation);
 
-          if (!relocated) continue;
+          if (!relocation.succeeded) continue;
 
           rebuildPlannedByTask();
           const refreshedNext = plannedByTaskId.get(nextTaskId);
@@ -4279,9 +4356,50 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     }
 
     if (remainingGaps.length > 0) {
+      const topGapDiagnostics = computeMainZoneGaps({
+        zoneId: optMainZoneId,
+        plannedTasks: plannedTasks as any,
+        taskById,
+        getSpaceId,
+        getZoneId,
+        getZoneIdForSpace,
+        mealWindowStartMin: mealStart,
+        mealWindowEndMin: mealEnd,
+      })
+        .sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId)
+        .slice(0, 5)
+        .map((gap) => {
+          const blockingReason = findBlockingReasonForGap(gap);
+          const blockingTaskId = Number(blockingReason?.blockingTaskId ?? NaN);
+          const relocationAttempt = Number.isFinite(blockingTaskId) ? globalGapRelocationAttemptsByTaskId.get(blockingTaskId) : undefined;
+          return {
+            spaceId: gap.spaceId,
+            start: toHHMM(gap.start),
+            end: toHHMM(gap.end),
+            nextTaskId: gap.nextTaskId,
+            blockingReason: blockingReason
+              ? {
+                  type: blockingReason.type,
+                  blockingTaskId: blockingReason.blockingTaskId,
+                  blockingTaskLabel: blockingReason.blockingTaskLabel,
+                }
+              : null,
+            blockerRelocation: relocationAttempt
+              ? {
+                  attempted: relocationAttempt.attempted,
+                  succeeded: relocationAttempt.succeeded,
+                  failReasonsTop: relocationAttempt.failReasonsTop ?? [],
+                }
+              : null,
+          };
+        });
+
       warnings.push({
         code: "MAIN_ZONE_NO_IDLE_NOT_ACHIEVABLE",
         message: `No se pudo garantizar “sin tiempos muertos” en el plató principal por restricciones: ${Array.from(blockers).join(", ") || "ventanas concursantes/recursos/bloqueos"}.`,
+        details: {
+          topGaps: topGapDiagnostics,
+        },
       });
     }
 
@@ -4575,7 +4693,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     };
     const mainTargetTpl = getMainTargetTemplateId();
     const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainTargetTpl)) && Number(mainTargetTpl) > 0);
-    const canApplyLookahead2 = Boolean(canFeedMainActive && mainZoneKeepBusyStrength >= 9 && globalGroupingStrength10 >= 9);
+    const canApplyLookahead2 = Boolean(canFeedMainActive);
 
     const unlockStatsForTask = (candidate: any) => {
       if (!canApplyLookahead2 || !optMainZoneId) return { depth1: 0, depth2: 0, unlockScore: 0 };
