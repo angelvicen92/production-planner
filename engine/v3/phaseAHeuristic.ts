@@ -1230,26 +1230,28 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     { start: string; end: string }
   >;
 
-  const effectiveWindowByContestantId = new Map<number, { start: number; end: number } | null>();
+  const effectiveWindowByContestantId = new Map<number, { start: number; end: number }>();
   const getContestantEffectiveWindow = (contestantId: number | null) => {
     if (!contestantId) return null;
     const cid = Number(contestantId);
     if (effectiveWindowByContestantId.has(cid)) {
-      return effectiveWindowByContestantId.get(cid) ?? null;
+      return effectiveWindowByContestantId.get(cid) ?? { start: startDay, end: endDay };
     }
 
     const raw = contestantAvailabilityById[cid] ?? null;
     if (!raw?.start || !raw?.end) {
-      effectiveWindowByContestantId.set(cid, null);
-      return null;
+      const defaultWindow = { start: startDay, end: endDay };
+      effectiveWindowByContestantId.set(cid, defaultWindow);
+      return defaultWindow;
     }
 
     const cs = toMinutes(String(raw.start));
     const ce = toMinutes(String(raw.end));
 
     if (!Number.isFinite(cs) || !Number.isFinite(ce)) {
-      effectiveWindowByContestantId.set(cid, null);
-      return null;
+      const defaultWindow = { start: startDay, end: endDay };
+      effectiveWindowByContestantId.set(cid, defaultWindow);
+      return defaultWindow;
     }
 
     const start = Math.max(startDay, cs);
@@ -4427,6 +4429,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       toTemplateId: number;
       switchIndex: number;
       readyCountSameTemplate: number;
+      soonReadySameTemplate?: boolean;
+      soonReadyInMin?: number | null;
       blockedByDepsCount?: number;
       blockedByWindowCount?: number;
       blockedByResourcesCount?: number;
@@ -4439,6 +4443,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     toTemplateId: number;
     switchIndex: number;
     readyCountSameTemplate: number;
+    soonReadySameTemplate?: boolean;
+    soonReadyInMin?: number | null;
     blockedByDepsCount?: number;
     blockedByWindowCount?: number;
     blockedByResourcesCount?: number;
@@ -4847,19 +4853,16 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const candidateContestantId = getContestantId(t);
       const candidateEffWin = getContestantEffectiveWindow(candidateContestantId);
       const hasEarlyExitWindow = Boolean(candidateEffWin && candidateEffWin.end <= (16 * 60));
-      const hasAnyStartedTask = Boolean(candidateContestantId && (occupiedByContestant.get(candidateContestantId)?.length ?? 0) > 0);
-      const isArrivalLike = isArrivalTask(t) || String(t?.templateName ?? '').trim().toLowerCase() === 'in';
-      const isImmediatePrereqForMain = Boolean(
-        optMainZoneId &&
-        Number(getZoneId(t)) !== Number(optMainZoneId) &&
-        pendingNonMeal.some((depTarget) => {
-          if (Number(getZoneId(depTarget)) !== Number(optMainZoneId)) return false;
-          const depIds = getDepTaskIds(depTarget).map((x: any) => Number(x));
-          return depIds.includes(Number(t?.id ?? 0));
-        })
-      );
-      if (candidateContestantId && hasEarlyExitWindow && !hasAnyStartedTask && (isArrivalLike || isImmediatePrereqForMain)) {
-        s += earlyContestantChainBonus;
+      if (candidateContestantId && hasEarlyExitWindow) {
+        const duration = Math.max(5, Math.floor(Number(t?.durationOverrideMin ?? 30)));
+        const earliest = snapUp(Math.max(startDay, depsEnd(t), candidateEffWin ? candidateEffWin.start : startDay));
+        const latestStart = snapUp((candidateEffWin ? candidateEffWin.end : endDay) - duration);
+        const slack = latestStart - earliest;
+        const urgencyScore = Math.max(0, Math.min(180, 180 - Math.max(-60, Math.min(240, slack))));
+        s += earlyContestantChainBonus + urgencyScore * 1_800;
+        if (optMainZoneId && Number(zone) === Number(optMainZoneId)) {
+          s += 4_500_000;
+        }
       }
 
       if (useHeuristics && canApplyLookahead2 && mainTargetTpl && Number(zone) !== Number(optMainZoneId)) {
@@ -4910,6 +4913,15 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       ) {
         if (switchesUsedMainSpace >= maxSwitchesMainSpace) {
           return -1e15;
+        }
+        const fromTemplateId = Number(lastTemplateInMainSpace);
+        const soonReady = findSoonReadySameTemplateInMain(fromTemplateId);
+        const mainSpaceGroupingCfg = getGroupingConfigForSpace(Number(mainSpaceId));
+        if (soonReady.soonReadySameTemplate) {
+          if ((mainSpaceGroupingCfg?.level ?? 0) >= 10) {
+            return -1e15;
+          }
+          s -= 200_000_000;
         }
         s -= 50_000_000;
       }
@@ -5068,6 +5080,35 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     };
 
     const mainNowReference = snapUp(Math.max(startDay, Number(optMainZoneId ? (lastEndByZone.get(optMainZoneId) ?? startDay) : startDay)));
+    const findSoonReadySameTemplateInMain = (fromTemplateId: number): { soonReadySameTemplate: boolean; soonReadyInMin: number | null } => {
+      if (!mainSpaceId || !Number.isFinite(fromTemplateId) || fromTemplateId <= 0) {
+        return { soonReadySameTemplate: false, soonReadyInMin: null };
+      }
+      const soonReadyThreshold = 15;
+      let bestSoonReadyInMin: number | null = null;
+      for (const pendingTask of pendingNonMeal as any[]) {
+        if (Number(getSpaceId(pendingTask) ?? NaN) !== Number(mainSpaceId)) continue;
+        if (Number(pendingTask?.templateId ?? 0) !== Number(fromTemplateId)) continue;
+        if (isMealTask(pendingTask) || isArrivalTask(pendingTask) || isDepartureTask(pendingTask)) continue;
+
+        const cid = getContestantId(pendingTask);
+        const effWin = getContestantEffectiveWindow(cid);
+        const duration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
+        const earliestStart = snapUp(Math.max(mainNowReference, depsEnd(pendingTask), effWin ? effWin.start : startDay));
+        if (effWin && earliestStart + duration > effWin.end) continue;
+
+        const soonReadyInMin = Math.max(0, snapUp(earliestStart - mainNowReference));
+        if (soonReadyInMin <= soonReadyThreshold) {
+          if (bestSoonReadyInMin === null || soonReadyInMin < bestSoonReadyInMin) {
+            bestSoonReadyInMin = soonReadyInMin;
+          }
+        }
+      }
+      return {
+        soonReadySameTemplate: bestSoonReadyInMin !== null,
+        soonReadyInMin: bestSoonReadyInMin,
+      };
+    };
     const earlyMainCandidate = ready.find((candidate) => {
       if (!optMainZoneId || Number(getZoneId(candidate)) !== Number(optMainZoneId)) return false;
       const cid = getContestantId(candidate);
@@ -5126,12 +5167,15 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const toTemplateId = Number(task?.templateId ?? 0);
       if (toTemplateId > 0 && fromTemplateId !== toTemplateId) {
         const readySameTemplate = ready.filter((r) => Number(getSpaceId(r) ?? NaN) === Number(mainSpaceId) && Number(r?.templateId ?? 0) === fromTemplateId);
+        const soonReady = findSoonReadySameTemplateInMain(fromTemplateId);
         const event: {
           time: string;
           fromTemplateId: number;
           toTemplateId: number;
           switchIndex: number;
           readyCountSameTemplate: number;
+          soonReadySameTemplate?: boolean;
+          soonReadyInMin?: number | null;
           blockedByDepsCount?: number;
           blockedByWindowCount?: number;
           blockedByResourcesCount?: number;
@@ -5142,6 +5186,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           toTemplateId,
           switchIndex: switchesUsedMainSpace + 1,
           readyCountSameTemplate: readySameTemplate.length,
+          soonReadySameTemplate: soonReady.soonReadySameTemplate,
+          soonReadyInMin: soonReady.soonReadyInMin,
         };
         if (readySameTemplate.length === 0) {
           let blockedByDepsCount = 0;
@@ -5935,6 +5981,31 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         switchesUsed: switchesUsedMainSpace,
         maxSwitches: maxSwitchesMainSpace,
         blockedCandidates: blockedByMainSpaceSwitchBudget,
+      },
+    });
+  }
+
+  const switchSoftViolations = mainSpaceSwitchEvents.filter((event) =>
+    Number(event.readyCountSameTemplate ?? 0) > 0 || Boolean(event.soonReadySameTemplate),
+  );
+  if (switchSoftViolations.length > 0) {
+    warnings.push({
+      code: "MAIN_SPACE_SWITCH_SOFT_VIOLATION",
+      message: "Se detectaron switches potencialmente evitables en plató principal (plan válido, revisar continuidad).",
+      details: {
+        count: switchSoftViolations.length,
+        examples: switchSoftViolations.slice(0, 5).map((event) => ({
+          time: event.time,
+          fromTemplateId: event.fromTemplateId,
+          toTemplateId: event.toTemplateId,
+          readyCountSameTemplate: event.readyCountSameTemplate,
+          soonReadySameTemplate: Boolean(event.soonReadySameTemplate),
+          soonReadyInMin: event.soonReadyInMin ?? null,
+          reason:
+            Number(event.readyCountSameTemplate ?? 0) > 0
+              ? "switch evitable: había tareas ready del template actual"
+              : "switch evitable: template actual quedaba ready en <=15m",
+        })),
       },
     });
   }
