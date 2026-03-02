@@ -460,12 +460,35 @@ def main() -> int:
         model.Add(span_c == last_c - first_c)
         span_vars.append(span_c)
 
-    # Weighted objective: main-zone occupancy >> finish early >> warm-start distance >> near-hard breaks >> contestant span.
+    # Proxy de switches en plató principal: compactar por template dentro de cada espacio.
+    main_zone_template_dispersion_vars: List[Any] = []
+    main_zone_by_space_template: Dict[Tuple[int, int], List[int]] = {}
+    for tid in main_zone_task_ids:
+        task = tasks_by_id.get(tid) or {}
+        sid = int(task.get("spaceId") or 0)
+        tpl = int(task.get("templateId") or 0)
+        if sid <= 0 or tpl <= 0:
+            continue
+        main_zone_by_space_template.setdefault((sid, tpl), []).append(tid)
+
+    for (sid, tpl), tids in main_zone_by_space_template.items():
+        if len(tids) <= 1:
+            continue
+        first_tpl = model.NewIntVar(0, horizon, f"main_tpl_first_s{sid}_t{tpl}")
+        last_tpl = model.NewIntVar(0, horizon, f"main_tpl_last_s{sid}_t{tpl}")
+        span_tpl = model.NewIntVar(0, horizon, f"main_tpl_span_s{sid}_t{tpl}")
+        model.AddMinEquality(first_tpl, [start_vars[tid] for tid in tids])
+        model.AddMaxEquality(last_tpl, [end_vars[tid] for tid in tids])
+        model.Add(span_tpl == last_tpl - first_tpl)
+        main_zone_template_dispersion_vars.append(span_tpl)
+
+    # Weighted objective: main-zone occupancy >> finish early >> warm-start distance >> near-hard breaks >> contestant span >> main-zone switch proxy.
     W1 = 10000
     W2 = 100
     W3 = 1
     W4 = 5000
     W5 = 1
+    W6 = 8
     objective_terms = [main_zone_empty_slots * W1, makespan * W2]
     if abs_diffs:
         objective_terms.append(sum(abs_diffs) * W3)
@@ -474,6 +497,8 @@ def main() -> int:
             objective_terms.append(b * W4)
     if span_vars:
         objective_terms.append(sum(span_vars) * W5)
+    if main_zone_template_dispersion_vars:
+        objective_terms.append(sum(main_zone_template_dispersion_vars) * W6)
 
     model.Minimize(sum(objective_terms))
 
