@@ -3689,6 +3689,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
   let switchesUsedMainSpace = countMainSpaceSwitches(plannedTasks as any[]).switches;
   let lastTemplateInMainSpace = countMainSpaceSwitches(plannedTasks as any[]).lastTemplateId;
   let blockedByMainSpaceSwitchBudget = 0;
+  let blockedByMinChain = 0;
   
 
   const plannedByTaskId = new Map<number, any>();
@@ -4643,6 +4644,24 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
         }
       }
 
+      const gcfg = space ? getGroupingConfigForSpace(space) : null;
+      if (gcfg && gcfg.level >= 10 && space && !isMealTask(t) && !isArrivalTask(t) && !isDepartureTask(t)) {
+        const streak = streakByKey.get(gcfg.key);
+        if (streak && streak.templateId !== tpl && streak.streakCount < gcfg.minChain) {
+          const hasReadySameTemplateInSameSpace = ready.some((rt) =>
+            Number(getSpaceId(rt)) === Number(space) &&
+            Number(rt?.templateId ?? 0) === Number(streak.templateId) &&
+            !isMealTask(rt) &&
+            !isArrivalTask(rt) &&
+            !isDepartureTask(rt),
+          );
+          if (hasReadySameTemplateInSameSpace) {
+            blockedByMinChain += 1;
+            return -1e15;
+          }
+        }
+      }
+
       // 1.b) Plató principal: “Terminar cuanto antes”
       if (effectiveFinishEarlyWeight > 0 && optMainZoneId && zone === optMainZoneId) {
         s += effectiveFinishEarlyWeight;
@@ -4820,11 +4839,13 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     ) {
       const gap = getMainZoneGap();
       if (gap) {
-        const gapCandidates = ready.filter((t) => {
-          const zid = getZoneId(t);
-          const sid = getSpaceId(t);
-          return zid === optMainZoneId && sid === gap.spaceId;
-        });
+        const gapCandidates = ready
+          .filter((t) => {
+            const zid = getZoneId(t);
+            const sid = getSpaceId(t);
+            return zid === optMainZoneId && sid === gap.spaceId;
+          })
+          .filter((c) => scoreTaskForSelection(c) > -1e12);
 
         // Orden estable: usa el MISMO scoring global que ready.sort
         gapCandidates.sort((a, b) => {
@@ -5617,6 +5638,14 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       details: mainTemplateSwitchInsight,
     });
   }
+
+  insights.push({
+    code: "V2_MINCHAIN_BLOCKED",
+    message: `MinChain blocked candidates: ${blockedByMinChain}`,
+    details: {
+      blockedCandidates: blockedByMinChain,
+    },
+  });
 
   insights.push({
     code: "V2_MAIN_SPACE_SWITCH_BUDGET",
