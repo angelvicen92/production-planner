@@ -40,7 +40,7 @@ export const updatePlanSchema = z
   camerasAvailable: z.number().int().min(0).max(20).optional(),
 
   // ✅ Permite elegir motor por plan
-  optimizerEngine: z.enum(["v2", "v3"]).optional(),
+  optimizerEngine: z.enum(["v3"]).optional(),
 })
 .strict();
 
@@ -327,28 +327,6 @@ export const api = {
     generate: {
       method: "POST" as const,
       path: "/api/plans/:id/generate",
-      input: z
-        .object({
-          mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
-          timeLimitMs: z.number().int().positive().max(300000).optional(),
-        })
-        .strict()
-        .optional(),
-      responses: {
-        200: z.object({
-          success: z.boolean(),
-          planId: z.number(),
-          tasksUpdated: z.number(),
-          warnings: z.array(z.any()).optional(),
-          planningStats: z.record(z.any()).optional(),
-        }),
-        422: errorSchemas.infeasible,
-        404: errorSchemas.notFound,
-      },
-    },
-    generateV2: {
-      method: "POST" as const,
-      path: "/api/plans/:id/generate-v2",
       input: z
         .object({
           mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),

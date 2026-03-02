@@ -13,7 +13,7 @@ export type PlanningRun = {
   message: string | null;
   phase: string | null;
   progressPct: number;
-  engine: "v2" | "v3";
+  engine: "v3";
   requestedTimeLimitMs: number | null;
   finishedAt: string | null;
   lastTaskId: number | null;

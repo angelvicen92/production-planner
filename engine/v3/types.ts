@@ -4,7 +4,6 @@ export type EngineV3Input = EngineInput;
 export type EngineV3Output = EngineOutput;
 
 export type EngineV3Options = {
-  fallbackToV2?: boolean;
   requestId?: string;
   timeLimitMs?: number | null;
   onProgress?: (progress: {

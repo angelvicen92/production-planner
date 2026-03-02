@@ -157,18 +157,6 @@ export function useGeneratePlan() {
 }
 
 
-export function useGeneratePlanV2() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, mode, timeLimitMs }: { id: number; mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending"; timeLimitMs?: number }) =>
-      apiRequest("POST", buildUrl(api.plans.generateV2.path, { id }), { ...(mode ? { mode } : {}), ...(timeLimitMs ? { timeLimitMs } : {}) }),
-    onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) });
-      await queryClient.refetchQueries({ queryKey: planQueryKey(variables.id) });
-    },
-  });
-}
-
 export function useUpdatePlan() {
   const queryClient = useQueryClient();
 
