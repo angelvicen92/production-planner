@@ -93,6 +93,11 @@ export async function buildEngineInput(
       ? groupingWeight > 0
       : optimizer?.groupBySpaceAndTemplate !== false;
 
+  const transportWeight = Math.max(
+    0,
+    Math.min(10, Number((optimizer as any)?.weightArrivalDepartureGrouping ?? 0) || 0),
+  );
+
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
       const existingSpaceIds = new Set<number>();
@@ -562,11 +567,8 @@ export async function buildEngineInput(
         optimizer?.heuristics?.contestantStayInZone,
         optimizer?.contestantStayInZoneLevel,
       ),
-      arrivalDepartureGrouping: resolveWeight(
-        optimizationMode,
-        (optimizer as any)?.heuristics?.arrivalDepartureGrouping,
-        (optimizer as any)?.weightArrivalDepartureGrouping,
-      ),
+      // Transporte usa peso directo 0-10; no depende del modo básico/avanzado ni de heuristics para evitar desactivar batching por error.
+      arrivalDepartureGrouping: transportWeight,
       contestantTotalSpan: 0,
     },
 
