@@ -93,10 +93,10 @@ export async function buildEngineInput(
       ? groupingWeight > 0
       : optimizer?.groupBySpaceAndTemplate !== false;
 
-  const transportWeight = Math.max(
-    0,
-    Math.min(10, Number((optimizer as any)?.weightArrivalDepartureGrouping ?? 0) || 0),
-  );
+  const transportWeightRaw = Number((optimizer as any)?.weightArrivalDepartureGrouping ?? 0);
+  const transportWeight = Number.isFinite(transportWeightRaw)
+    ? Math.max(0, Math.min(10, Math.floor(transportWeightRaw)))
+    : 0;
 
   // ✅ Jerarquía de espacios (para herencia de pools)
       const allSpaces = await storage.getSpaces();
