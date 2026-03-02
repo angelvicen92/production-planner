@@ -130,7 +130,7 @@ export function computeMainZoneGaps(params: {
       if (next.start <= prev.end) continue;
       const segments = splitGapOutsideMealWindow(prev.end, next.start, mealWindowStartMin, mealWindowEndMin);
       for (const segment of segments) {
-        if (segment.end - segment.start < GRID_V2) continue;
+        if (segment.end - segment.start < GRID_PHASE_A) continue;
         gaps.push({
           zoneId: Number(zoneId),
           spaceId,
@@ -417,14 +417,14 @@ export function explainMainZoneGaps(params: {
   return reasons;
 }
 
-type SolveV2AttemptPenaltyWindow = {
+type SolveV3PhaseAPenaltyWindow = {
   spaceId: number;
   from: number;
   to: number;
   penalty: number;
 };
 
-type SolveV2AttemptProtectedSpaceWindow = {
+type SolveV3PhaseAProtectedSpaceWindow = {
   spaceId: number;
   from: number;
   to: number;
@@ -441,8 +441,8 @@ type SolveV3PhaseAOptions = {
   beamWidth?: number;
   maxMoves?: number;
   maxSteps?: number;
-  penalizeSchedulingInSpaceWindow?: SolveV2AttemptPenaltyWindow[];
-  protectedSpaceWindows?: SolveV2AttemptProtectedSpaceWindow[];
+  penalizeSchedulingInSpaceWindow?: SolveV3PhaseAPenaltyWindow[];
+  protectedSpaceWindows?: SolveV3PhaseAProtectedSpaceWindow[];
   slackPriorityBoost?: number;
 };
 
@@ -565,8 +565,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   const vanCapacity = Math.max(0, Number((input as any)?.vanCapacity ?? 0));
   const arrivalGroupingTarget = Math.max(0, Number((input as any)?.arrivalGroupingTarget ?? 0));
   const departureGroupingTarget = Math.max(0, Number((input as any)?.departureGroupingTarget ?? 0));
-  const arrivalMinGap = Math.max(GRID_V2, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
-  const departureMinGap = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
+  const arrivalMinGap = Math.max(GRID_PHASE_A, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
+  const departureMinGap = Math.max(GRID_PHASE_A, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
   const arrivalDepartureWeight = Number((input as any)?.optimizerWeights?.arrivalDepartureGrouping ?? 0);
   const arrivalBatchingEnabled = Boolean(arrivalTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && arrivalGroupingTarget > 0);
   const departureBatchingEnabled = Boolean(departureTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && departureGroupingTarget > 0);
@@ -1175,7 +1175,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   };
 
   if (arrivalBatchingEnabled) {
-    const snapGrid = (value: number) => Math.ceil(value / GRID_V2) * GRID_V2;
+    const snapGrid = (value: number) => Math.ceil(value / GRID_PHASE_A) * GRID_PHASE_A;
     const minGroup = Math.max(1, arrivalGroupingTarget);
     const cap = Math.max(1, vanCapacity);
     const minGap = arrivalMinGap;
@@ -4269,7 +4269,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         const nextStart = toMinutes(entries[i].p.startPlanned);
         const segments = splitGapOutsideMealWindow(prevEnd, nextStart, mealStart, mealEnd);
         for (const segment of segments) {
-          if (segment.end - segment.start < GRID_V2) continue;
+          if (segment.end - segment.start < GRID_PHASE_A) continue;
           remainingGaps.push({ spaceId, start: segment.start, end: segment.end });
         }
       }
@@ -4574,6 +4574,28 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
     const readyFeedersCount = feedersReady.length;
     const unlockScoreTotal = feedersReady.reduce((acc, feeder) => acc + Number(feeder.unlockScore ?? 0), 0);
+    const mainZoneKeepBusyAggressive = Boolean(
+      directorModeEnabled &&
+      optMainZoneId &&
+      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD &&
+      lastEndByZone.has(optMainZoneId),
+    );
+    const mainZoneNow = (mainZoneKeepBusyAggressive && optMainZoneId)
+      ? Number(lastEndByZone.get(optMainZoneId) ?? startDay)
+      : null;
+
+    const isMainZoneViableAtNow = (candidateTask: any): boolean => {
+      if (!mainZoneKeepBusyAggressive || mainZoneNow === null) return false;
+      if (Number(getZoneId(candidateTask) ?? NaN) !== Number(optMainZoneId)) return false;
+      const taskDuration = Math.max(5, Math.floor(Number(candidateTask?.durationOverrideMin ?? 30)));
+      const contestantId = getContestantId(candidateTask);
+      const effWin = getContestantEffectiveWindow(contestantId);
+      if (effWin && (mainZoneNow < effWin.start || (mainZoneNow + taskDuration) > effWin.end)) return false;
+      if (mainZoneNow < snapUp(Math.max(startDay, depsEnd(candidateTask)))) return false;
+      return true;
+    };
+
+    const hasViableMainZoneReadyNow = ready.some((candidate) => isMainZoneViableAtNow(candidate));
 
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
   const scoreTaskForSelection = (t: any, useHeuristics = true) => {
@@ -4600,6 +4622,10 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
             if (switches >= maxChanges && hasActiveReady) s -= 1_000_000_000;
           }
         }
+      }
+
+      if (mainZoneKeepBusyAggressive && hasViableMainZoneReadyNow && zone !== optMainZoneId) {
+        s -= 50_000_000;
       }
 
       // 1) Director mode: prioridad global de tareas de plató principal
@@ -4632,6 +4658,18 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
       if (optMainZoneId && zone === optMainZoneId) {
         const gcfg = space ? getGroupingConfigForSpace(space) : null;
+        const lastMainZoneTemplateId = Number(activeTemplateByZoneId.get(Number(optMainZoneId)) ?? NaN);
+        if (Number.isFinite(lastMainZoneTemplateId) && lastMainZoneTemplateId > 0) {
+          if (Number(tpl) === lastMainZoneTemplateId) {
+            s += 20_000_000;
+          } else {
+            const hasSameTemplateReady = ready.some((rt) =>
+              Number(getZoneId(rt) ?? NaN) === Number(optMainZoneId) &&
+              Number(rt?.templateId ?? NaN) === lastMainZoneTemplateId,
+            );
+            if (hasSameTemplateReady) s -= 5_000_000;
+          }
+        }
         if (gcfg && isGroupingEnabledForZone(zone)) {
           const streak = streakByKey.get(gcfg.key);
           if (
@@ -5782,7 +5820,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 }
 
 
-const GRID_V2 = 5;
+const GRID_PHASE_A = 5;
 
 function computeMainZoneGapStats(params: {
   plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
@@ -5823,7 +5861,7 @@ function computeMainZoneGapStats(params: {
     );
     for (const segment of segments) {
       const gap = segment.end - segment.start;
-      if (gap < GRID_V2) continue;
+      if (gap < GRID_PHASE_A) continue;
       gapCount += 1;
       gapMinutes += gap;
     }
@@ -5898,12 +5936,12 @@ export function solve_v3_phaseA_attempt(input: EngineInput, attemptOptions?: Sol
 
   const gateMaxAttempts = 60;
   const mealMaxAttempts = 10;
-  const mealStep = Math.max(GRID_V2, Math.floor(Math.max(0, mealWindowEnd - mealWindowStart) / Math.max(1, mealMaxAttempts - 1) / GRID_V2) * GRID_V2 || GRID_V2);
+  const mealStep = Math.max(GRID_PHASE_A, Math.floor(Math.max(0, mealWindowEnd - mealWindowStart) / Math.max(1, mealMaxAttempts - 1) / GRID_PHASE_A) * GRID_PHASE_A || GRID_PHASE_A);
   const mealCandidates: number[] = [];
   for (let meal = mealWindowStart; meal <= mealWindowEnd && mealCandidates.length < mealMaxAttempts; meal += mealStep) {
-    mealCandidates.push(Math.ceil(meal / GRID_V2) * GRID_V2);
+    mealCandidates.push(Math.ceil(meal / GRID_PHASE_A) * GRID_PHASE_A);
   }
-  if (!mealCandidates.includes(mealWindowEnd)) mealCandidates.push(Math.ceil(mealWindowEnd / GRID_V2) * GRID_V2);
+  if (!mealCandidates.includes(mealWindowEnd)) mealCandidates.push(Math.ceil(mealWindowEnd / GRID_PHASE_A) * GRID_PHASE_A);
 
   let bestPlan: EngineOutput | null = null;
   let bestMeta: { gate: number; meal: number; gapCount: number; gapTotal: number; mainSwitches: number } | null = null;
@@ -5947,7 +5985,7 @@ export function solve_v3_phaseA_attempt(input: EngineInput, attemptOptions?: Sol
     return switches;
   };
 
-  for (let gate = startDay; gate <= endDay && ((gate - startDay) / GRID_V2) < gateMaxAttempts; gate += GRID_V2) {
+  for (let gate = startDay; gate <= endDay && ((gate - startDay) / GRID_PHASE_A) < gateMaxAttempts; gate += GRID_PHASE_A) {
     for (const meal of mealCandidates) {
       const testMealStart = meal;
       const testMealEnd = testMealStart + mealDuration;
@@ -6105,8 +6143,8 @@ function deriveRepairPlanFromDiagnostics(input: EngineInput, diagnostics: Engine
 
   const hasShortAvailability = unplanned.some((item: any) => parseHHMMSafe(item?.reason?.details?.availabilityEnd) !== null);
   const spaceBusyCritical = unplanned.filter((item: any) => String(item?.reason?.code ?? '') === 'SPACE_BUSY' && Number.isFinite(Number(item?.reason?.details?.spaceId)));
-  const penalties: SolveV2AttemptPenaltyWindow[] = [];
-  const protectedWindows: SolveV2AttemptProtectedSpaceWindow[] = [];
+  const penalties: SolveV3PhaseAPenaltyWindow[] = [];
+  const protectedWindows: SolveV3PhaseAProtectedSpaceWindow[] = [];
   for (const item of spaceBusyCritical.slice(0, 5)) {
     const d = item?.reason?.details ?? {};
     const from = parseHHMMSafe(d?.availabilityStart);

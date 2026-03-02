@@ -6,7 +6,6 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
-import { generatePlan } from "../engine/solve";
 import { generatePlanV3 } from "../engine/v3";
 import { getUserRole, withPermissionDenied } from "./authz";
 
@@ -4217,7 +4216,7 @@ function normalizeHexColor(value: unknown): string | null {
       setImmediate(async () => {
         try {
           const engineInput = await buildEngineInput(planId, storage);
-          const result = generatePlan(engineInput);
+          const result = generatePlanV3(engineInput);
           if (!result.feasible) return;
           const planned = (result as any).plannedTasks || [];
           for (const p of planned) {
@@ -4311,7 +4310,7 @@ function normalizeHexColor(value: unknown): string | null {
       }
 
       const engineInput = await buildEngineInput(planId, storage);
-      const result = generatePlan(engineInput);
+      const result = generatePlanV3(engineInput);
 
       return res.json({
         planId,
@@ -4641,7 +4640,7 @@ function normalizeHexColor(value: unknown): string | null {
         engineInput.locks = Array.from(lockByTaskId.values());
       }
 
-      const result = generatePlan(engineInput);
+      const result = generatePlanV3(engineInput);
       if (result.feasible) return res.json({ feasible: true });
 
       const enrich = await buildReasonEnricher(planId);
@@ -4651,8 +4650,6 @@ function normalizeHexColor(value: unknown): string | null {
       return res.status(500).json({ message: e?.message || "Validation failed" });
     }
   });
-
-  const normalizeOptimizerEngine = (_raw: any): "v3" => "v3";
 
   const estimateProgressPct = (phase: string | null | undefined, plannedCount: number, totalPending: number): number => {
     const safePlanned = Number.isFinite(plannedCount) ? Math.max(0, plannedCount) : 0;
@@ -4727,7 +4724,6 @@ function normalizeHexColor(value: unknown): string | null {
         .maybeSingle();
       if (planErr) throw planErr;
       if (!planRow?.id) return res.status(404).json({ message: "Plan not found" });
-      const selectedEngine = normalizeOptimizerEngine((planRow as any)?.optimizer_engine);
       if (String((planRow as any)?.optimizer_engine ?? "") !== "v3") {
         await supabaseAdmin
           .from("plans")
@@ -4795,7 +4791,7 @@ function normalizeHexColor(value: unknown): string | null {
           planned_count: 0,
           phase: "prevalidation",
           phase_progress_pct: estimateProgressPct("prevalidation", 0, totalPending),
-          engine: selectedEngine,
+          engine: "v3",
           requested_time_limit_ms: requestedTimeLimitMs,
           request_id: requestId,
           started_at: new Date().toISOString(),

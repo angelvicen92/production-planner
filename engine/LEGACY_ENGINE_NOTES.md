@@ -3,7 +3,7 @@
 The legacy engine entrypoint is `engine/solve.ts` (`generatePlan`).
 
 ## Current status
-- Main planning endpoint `/api/plans/:id/generate` now selects `v2`/`v3` via plan feature flag and does not use legacy solve directly.
+- Main planning endpoint `/api/plans/:id/generate` now routes directly to the active V3 flow and does not use legacy solve directly.
 - Legacy solve is still referenced by debug/validation helpers and should be removed in a dedicated cleanup PR after V3 is stable.
 
 ## Candidate files for removal in follow-up PR

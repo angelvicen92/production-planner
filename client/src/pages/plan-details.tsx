@@ -4550,7 +4550,7 @@ ${reasonMessage}` : message,
               <div className="mt-4 rounded-lg border p-3 space-y-4">
                 <div className="text-sm font-semibold">Diagnóstico motor v3</div>
 
-                {errorDialog.diagnostic?.code === "V2_EMPTY_RESULT" && (
+                {errorDialog.diagnostic?.code === "V3_PHASEA_EMPTY_RESULT" && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>El motor v3 no pudo planificar ninguna tarea. Ver diagnóstico abajo.</AlertTitle>
