@@ -565,12 +565,22 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
   const vanCapacity = Math.max(0, Number((input as any)?.vanCapacity ?? 0));
   const arrivalGroupingTarget = Math.max(0, Number((input as any)?.arrivalGroupingTarget ?? 0));
   const departureGroupingTarget = Math.max(0, Number((input as any)?.departureGroupingTarget ?? 0));
+  const arrivalMinGap = Math.max(GRID_V2, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
+  const departureMinGap = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
   const arrivalDepartureWeight = Number((input as any)?.optimizerWeights?.arrivalDepartureGrouping ?? 0);
   const arrivalBatchingEnabled = Boolean(arrivalTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && arrivalGroupingTarget > 0);
   const departureBatchingEnabled = Boolean(departureTemplateName && arrivalDepartureWeight > 0 && vanCapacity > 0 && departureGroupingTarget > 0);
 
-  const isArrivalTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === arrivalTemplateName;
-  const isDepartureTask = (task: any) => String(task?.templateName ?? "").trim().toLowerCase() === departureTemplateName;
+  const isArrivalTask = (task: any) => {
+    const templateName = String(task?.templateName ?? "").trim().toLowerCase();
+    if (!templateName) return false;
+    return templateName === arrivalTemplateName;
+  };
+  const isDepartureTask = (task: any) => {
+    const templateName = String(task?.templateName ?? "").trim().toLowerCase();
+    if (!templateName) return false;
+    return templateName === departureTemplateName;
+  };
 
   const isProtectedWrapTask = (task: any) => {
     if (!task) return false;
@@ -1168,7 +1178,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
     const snapGrid = (value: number) => Math.ceil(value / GRID_V2) * GRID_V2;
     const minGroup = Math.max(1, arrivalGroupingTarget);
     const cap = Math.max(1, vanCapacity);
-    const minGap = Math.max(GRID_V2, Number((input as any)?.arrivalMinGapMinutes ?? 0) || 0);
+    const minGap = arrivalMinGap;
     const arrivals = tasksSorted
       .filter((t) => isArrivalTask(t) && String(t?.status ?? "pending") === "pending")
       .sort((a, b) => toAvailStart(getContestantId(a)) - toAvailStart(getContestantId(b)));
@@ -4955,7 +4965,7 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
 
     const minGroup = Math.max(1, departureGroupingTarget);
     const cap = Math.max(1, vanCapacity);
-    const minGap = Math.max(GRID_V2, Number((input as any)?.departureMinGapMinutes ?? 0) || 0);
+    const minGap = departureMinGap;
     const lastEndByContestantId = new Map<number, number>();
     for (const [contestantId, intervals] of occupiedByContestant.entries()) {
       const cid = Number(contestantId);
@@ -5574,6 +5584,23 @@ function generatePlanV2Single(input: EngineInput, options?: SolveV2AttemptOption
       },
     },
   ];
+  insights.push({
+    code: "V2_TRANSPORT_BATCHING",
+    message: `Transport batching: weight=${arrivalDepartureWeight} vanCap=${vanCapacity} arrivalTarget=${arrivalGroupingTarget} depTarget=${departureGroupingTarget} arrivalMinGap=${arrivalMinGap} depMinGap=${departureMinGap} enabledIn=${arrivalBatchingEnabled} enabledOut=${departureBatchingEnabled}`,
+    details: {
+      weight: arrivalDepartureWeight,
+      vanCapacity,
+      arrivalGroupingTarget,
+      departureGroupingTarget,
+      arrivalMinGap,
+      departureMinGap,
+      enabledIn: arrivalBatchingEnabled,
+      enabledOut: departureBatchingEnabled,
+      arrivalTemplateName,
+      departureTemplateName,
+    },
+  });
+
 
   if (feedMainInsightDetails) {
     insights.push({
