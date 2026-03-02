@@ -103,3 +103,74 @@ const baseInput = (tasks: any[]): EngineV3Input => ({
 }
 
 console.log("engine/v3/phaseA.spec.ts: OK");
+
+const countMainZoneSwitches = (planned: any[], taskById: Map<number, any>, mainZoneId: number) => {
+  const rows = planned
+    .map((p) => ({ ...p, task: taskById.get(Number(p.taskId)) }))
+    .filter((row) => Number(row?.task?.zoneId) === Number(mainZoneId))
+    .sort((a, b) => toMin(String(a.startPlanned)) - toMin(String(b.startPlanned)));
+  let switches = 0;
+  for (let i = 1; i < rows.length; i++) {
+    if (Number(rows[i - 1]?.task?.templateId) !== Number(rows[i]?.task?.templateId)) switches++;
+  }
+  return { switches, rows };
+};
+
+const countUnnecessaryGaps = (rows: any[]) => {
+  let gaps = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const prevEnd = toMin(String(rows[i - 1].endPlanned));
+    const nextStart = toMin(String(rows[i].startPlanned));
+    if (nextStart > prevEnd) gaps++;
+  }
+  return gaps;
+};
+
+// Robustez: cambio de ventana de concursante (19:00 -> 16:00) no debe causar caos global.
+{
+  const tasks = [
+    { id: 101, planId: 1, templateId: 9001, templateName: "IN", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 20 },
+    { id: 102, planId: 1, templateId: 9001, templateName: "IN", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 20 },
+    { id: 103, planId: 1, templateId: 9002, templateName: "PLATO", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [101] },
+    { id: 104, planId: 1, templateId: 9002, templateName: "PLATO", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [102] },
+    { id: 105, planId: 1, templateId: 9003, templateName: "OUT", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 20, dependsOnTaskIds: [103] },
+    { id: 106, planId: 1, templateId: 9003, templateName: "OUT", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 20, dependsOnTaskIds: [104] },
+  ];
+
+  const input1900 = {
+    ...baseInput(tasks),
+    workDay: { start: "09:00", end: "19:00" },
+    contestantAvailabilityById: {
+      1: { start: "09:00", end: "19:00" },
+      2: { start: "09:00", end: "19:00" },
+    },
+  } as EngineV3Input;
+
+  const input1600 = {
+    ...baseInput(tasks),
+    workDay: { start: "09:00", end: "19:00" },
+    contestantAvailabilityById: {
+      1: { start: "09:00", end: "16:00" },
+      2: { start: "09:00", end: "19:00" },
+    },
+  } as EngineV3Input;
+
+  const out1900 = generatePlanV3(input1900, { timeLimitMs: 0 });
+  const out1600 = generatePlanV3(input1600, { timeLimitMs: 0 });
+  assert.equal(out1900.hardFeasible, true);
+  assert.equal(out1600.hardFeasible, true);
+
+  const byId = new Map(tasks.map((t) => [Number(t.id), t]));
+  const m1900 = countMainZoneSwitches(out1900.plannedTasks ?? [], byId, 1);
+  const m1600 = countMainZoneSwitches(out1600.plannedTasks ?? [], byId, 1);
+  assert.ok(m1600.switches <= m1900.switches + 2, `Switches se dispararon: base=${m1900.switches} variant=${m1600.switches}`);
+
+  const gaps1900 = countUnnecessaryGaps(m1900.rows);
+  const gaps1600 = countUnnecessaryGaps(m1600.rows);
+  assert.ok(gaps1600 <= gaps1900 + 1, `Gaps innecesarios crecieron demasiado: base=${gaps1900} variant=${gaps1600}`);
+
+  const inOutTemplateIds = new Set([9001, 9003]);
+  const inOut1900 = (out1900.plannedTasks ?? []).filter((p: any) => inOutTemplateIds.has(Number(byId.get(Number(p.taskId))?.templateId))).length;
+  const inOut1600 = (out1600.plannedTasks ?? []).filter((p: any) => inOutTemplateIds.has(Number(byId.get(Number(p.taskId))?.templateId))).length;
+  assert.ok(inOut1600 >= inOut1900 - 1, `Batching IN/OUT degradado: base=${inOut1900} variant=${inOut1600}`);
+}

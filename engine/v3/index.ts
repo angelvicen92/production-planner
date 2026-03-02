@@ -1,5 +1,5 @@
 import type { EngineOutput, EngineOutputUnplanned } from "../types";
-import { solve_v2_attempt } from "../solve_v2";
+import { solve_v3_phaseA_attempt } from "./phaseAHeuristic";
 import type { EngineV3Input, EngineV3Options } from "./types";
 import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
@@ -151,7 +151,7 @@ const estimateOvertimeMinRequired = (input: EngineV3Input, maxExtraMin = 240): n
   if (end === null) return null;
 
   for (let extra = GRID_MIN; extra <= maxExtraMin; extra += GRID_MIN) {
-    const trial = solve_v2_attempt({
+    const trial = solve_v3_phaseA_attempt({
       ...input,
       workDay: { ...input.workDay, end: toHHMM(end + extra) },
     });
@@ -218,11 +218,11 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     options?.onProgress?.({
       phase: "solving_feasible",
       progressPct: 10 + Math.round(((9 - level) / 9) * 70),
-      message: `V3 Fase A: intento factible con soft level=${level}`,
+      message: `V3 Fase A: intento factible (soft level=${level}`,
     });
 
     const t0 = Date.now();
-    const out = solve_v2_attempt(cloneWithSoftLevel(input, level));
+    const out = solve_v3_phaseA_attempt(cloneWithSoftLevel(input, level));
     const ms = Math.max(0, Date.now() - t0);
     const ok = Boolean(out.complete);
     attemptsSummary.push({ level, ok, ms, topReasons: summarizeTopReasons(out), reason: `soft_level_${level}` });

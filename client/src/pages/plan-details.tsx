@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout";
 import { QueryGuard } from "@/components/QueryGuard";
-import { useGeneratePlan, useGeneratePlanV2, usePlan, useUpdatePlan } from "@/hooks/use-plans";
+import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { useParams, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -697,7 +697,6 @@ export default function PlanDetailsPage() {
   const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
 
   const generatePlan = useGeneratePlan();
-  const generatePlanV2 = useGeneratePlanV2();
   const planningRunQ = usePlanningRun(id);
 
   const updatePlan = useUpdatePlan();
@@ -1749,7 +1748,7 @@ ${reasonMessage}` : message,
 
   const isAbortLikeError = (err: any) => err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("aborted");
 
-  const openV2DiagnosticDialog = (source: any) => {
+  const openDiagnosticDialog = (source: any) => {
     const payload = source?.payload ?? source ?? {};
     const warnings = Array.isArray(source?.warnings) ? source.warnings : (Array.isArray(payload?.warnings) ? payload.warnings : []);
     const insights = Array.isArray(source?.insights) ? source.insights : (Array.isArray(payload?.insights) ? payload.insights : []);
@@ -1804,7 +1803,7 @@ ${reasonMessage}` : message,
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       const reasons = Array.isArray(data?.reasons) ? data.reasons : [];
       if (reasons.length > 0) {
-        openV2DiagnosticDialog(data);
+        openDiagnosticDialog(data);
       }
       const warnings = data?.warnings ?? [];
       if (reasons.length === 0 && Array.isArray(warnings) && warnings.length > 0) {
@@ -1959,7 +1958,7 @@ ${reasonMessage}` : message,
               size="lg"
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
               onClick={() => { void handleGenerate(); }}
-              disabled={generatePlan.isPending || generatePlanV2.isPending}
+              disabled={generatePlan.isPending}
             >
               {generatePlan.isPending ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -1992,51 +1991,6 @@ ${reasonMessage}` : message,
                 setPlanningInProgress(true);
                 setExpectedPlanningRunId(null);
                 void (async () => {
-                    try {
-                      // ✅ Este botón siempre fija motor v2 para el plan
-                      if (String((plan as any)?.optimizerEngine ?? "") !== "v2") {
-                        await updatePlan.mutateAsync({ id, patch: { optimizerEngine: "v2" } });
-                      }
-
-                      await generatePlanV2.mutateAsync({
-                        id,
-                        mode: "generate_planning",
-                        timeLimitMs: planningTimeLimitSec * 1000,
-                      });
-
-                      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                    } catch (err: any) {
-                    if (isAbortLikeError(err)) {
-                      toast({ title: "La optimización v2 tardó más de lo esperado, comprobando estado..." });
-                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                    } else {
-                      if (import.meta.env.DEV) {
-                        console.error(err);
-                      }
-                      openV2DiagnosticDialog(err);
-                      toast({
-                        title: "Error en planificador v2",
-                        description: err?.code ?? err?.detail ?? err?.message ?? "Error desconocido",
-                        variant: "destructive",
-                      });
-                    }
-                  } finally {
-                    setPlanningInProgress(false);
-                  }
-                })();
-              }}
-              disabled={generatePlan.isPending || generatePlanV2.isPending}
-            >
-              PLANIFICADOR v2
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                setPlanningInProgress(true);
-                setExpectedPlanningRunId(null);
-                void (async () => {
                   try {
                     await generatePlan.mutateAsync({ id, mode: "plan_pending", timeLimitMs: planningTimeLimitSec * 1000 });
                     await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
@@ -2051,7 +2005,7 @@ ${reasonMessage}` : message,
                   }
                 })();
               }}
-              disabled={generatePlan.isPending || generatePlanV2.isPending}
+              disabled={generatePlan.isPending}
             >
               Planificar pendientes
             </Button>
@@ -3871,7 +3825,7 @@ ${reasonMessage}` : message,
                 supportsZoom
               >
                 <div className="relative">
-                {(planningInProgress || generatePlan.isPending || generatePlanV2.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
+                {(planningInProgress || generatePlan.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
                 <PlanningTimeline
                   plan={plan as any}
                   contestants={contestants as any}
@@ -4594,18 +4548,18 @@ ${reasonMessage}` : message,
 
             {(errorDialog.diagnostic?.report || errorDialog.diagnostic?.warnings.length || errorDialog.diagnostic?.insights.length || errorDialog.diagnostic?.unplanned.length) ? (
               <div className="mt-4 rounded-lg border p-3 space-y-4">
-                <div className="text-sm font-semibold">Diagnóstico motor v2</div>
+                <div className="text-sm font-semibold">Diagnóstico motor v3</div>
 
                 {errorDialog.diagnostic?.code === "V2_EMPTY_RESULT" && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>El motor v2 no pudo planificar ninguna tarea. Ver diagnóstico abajo.</AlertTitle>
+                    <AlertTitle>El motor v3 no pudo planificar ninguna tarea. Ver diagnóstico abajo.</AlertTitle>
                   </Alert>
                 )}
 
                 {errorDialog.diagnostic?.report ? (
                   <div className="space-y-2 rounded-md border border-border bg-background/70 p-3 text-xs">
-                    <div className="font-semibold">Repair loop v2</div>
+                    <div className="font-semibold">Repair loop v3</div>
                     <div>Intentos: {Array.isArray(errorDialog.diagnostic.report?.attemptsSummary) ? errorDialog.diagnostic.report.attemptsSummary.length : 0}</div>
                     <div>Abortado por presupuesto: {errorDialog.diagnostic.report?.abortedByBudget ? "Sí" : "No"}</div>
                     {Array.isArray(errorDialog.diagnostic.report?.degradations) && errorDialog.diagnostic.report.degradations.length > 0 ? (
