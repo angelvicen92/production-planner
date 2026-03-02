@@ -4719,6 +4719,10 @@ function normalizeHexColor(value: unknown): string | null {
       const requestedTimeLimitMs = Number.isFinite(requestedTimeLimitMsRaw) && requestedTimeLimitMsRaw > 0
         ? Math.round(requestedTimeLimitMsRaw)
         : null;
+      const defaultV3MsRaw = Number(process.env.ENGINE_V3_CP_SAT_DEFAULT_MS ?? 15000);
+      const defaultV3Ms = Number.isFinite(defaultV3MsRaw) && defaultV3MsRaw > 0
+        ? Math.round(defaultV3MsRaw)
+        : 15000;
 
       const { data: planRow, error: planErr } = await supabaseAdmin
         .from("plans")
@@ -4863,10 +4867,13 @@ function normalizeHexColor(value: unknown): string | null {
 
       let result: any;
       if (selectedEngine === "v3") {
+        const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0
+          ? requestedTimeLimitMs
+          : defaultV3Ms;
         result = generatePlanV3(engineInput, {
           fallbackToV2: false,
           requestId: requestId ?? undefined,
-          timeLimitMs: requestedTimeLimitMs,
+          timeLimitMs: effectiveTimeLimitMs,
           onProgress: (progress) => {
             void updatePlanningRunProgress(
               planningRunId,
@@ -4973,12 +4980,16 @@ function normalizeHexColor(value: unknown): string | null {
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
       const insights = Array.isArray((result as any)?.insights) ? (result as any).insights : [];
       const planningStats = insights.find((x: any) => String(x?.code) === "MAIN_ZONE_GAP_STATS")?.details ?? {};
+      const qualityInsight = insights.find((x: any) => String(x?.code) === "V3_PHASE_B_QUALITY") ?? null;
+      const planningStatsWithCpSat = qualityInsight
+        ? { ...planningStats, v3PhaseBQuality: qualityInsight }
+        : planningStats;
 
       await supabaseAdmin
         .from("plans")
         .update({
           planning_warnings: warnings,
-          planning_stats: planningStats,
+          planning_stats: planningStatsWithCpSat,
         })
         .eq("id", planId);
 
@@ -5005,9 +5016,10 @@ function normalizeHexColor(value: unknown): string | null {
         planId,
         tasksUpdated: updated,
         warnings,
-        planningStats,
+        planningStats: planningStatsWithCpSat,
         reasons,
         unplanned: (result as any).unplanned ?? [],
+        insights,
         runId: planningRunId,
       });
 
