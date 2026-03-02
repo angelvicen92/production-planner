@@ -3692,6 +3692,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   let criticalContestantId: number | null = null;
   let criticalContestantSlack: number | null = null;
   const criticalContestantStartBonusApplied = 9000;
+  const earlyContestantChainBonus = 220_000;
   let blockedByMinChain = 0;
   
 
@@ -4392,7 +4393,68 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   let mainTemplateSwitchInsight:
     | { fromTpl: number; toTpl: number; hadFeedersReady: boolean; feedersReadyCount: number }
     | null = null;
-  let scoringDiagnosticDetails: { readyCount: number; mainTargetTpl: number | null; feedersReadyCount: number; usedFallback: boolean; criticalContestantId?: number | null; criticalContestantSlack?: number | null; criticalContestantStartBonusApplied?: number } | null = null;
+  let scoringDiagnosticDetails: {
+    readyCount: number;
+    mainTargetTpl: number | null;
+    feedersReadyCount: number;
+    usedFallback: boolean;
+    criticalContestantId?: number | null;
+    criticalContestantSlack?: number | null;
+    criticalContestantStartBonusApplied?: number;
+    contestantUrgencyProbe?: Array<{
+      contestantId: number;
+      name: string | null;
+      availabilityStart: string;
+      availabilityEnd: string;
+      effWin: { start: string; end: string };
+      remainingDurationTotal: number;
+      slackMin: number;
+      isCritical: boolean;
+    }>;
+    earliestFeasibleProbe?: {
+      taskId: number;
+      templateId: number;
+      contestantId: number;
+      depsEnd: string;
+      effWin: { start: string; end: string } | null;
+      earliestStartCandidate: string;
+      durationMin: number;
+      reasons: string[];
+    } | null;
+    mainSpaceSwitchEvents?: Array<{
+      time: string;
+      fromTemplateId: number;
+      toTemplateId: number;
+      switchIndex: number;
+      readyCountSameTemplate: number;
+      blockedByDepsCount?: number;
+      blockedByWindowCount?: number;
+      blockedByResourcesCount?: number;
+      topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
+    }>;
+  } | null = null;
+  const mainSpaceSwitchEvents: Array<{
+    time: string;
+    fromTemplateId: number;
+    toTemplateId: number;
+    switchIndex: number;
+    readyCountSameTemplate: number;
+    blockedByDepsCount?: number;
+    blockedByWindowCount?: number;
+    blockedByResourcesCount?: number;
+    topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
+  }> = [];
+
+  const parseTaskResourceIds = (task: any): number[] => {
+    const arr = Array.isArray(task?.assignedResourceIds)
+      ? task.assignedResourceIds
+      : Array.isArray(task?.assignedResources)
+        ? task.assignedResources
+        : [];
+    return arr
+      .map((value: any) => Number(value))
+      .filter((value: number) => Number.isFinite(value) && value > 0);
+  };
 
   while (pendingNonMeal.length) {
     const depsReadyCache = new Map<number, boolean>();
@@ -4782,6 +4844,24 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         s += criticalContestantStartBonusApplied;
       }
 
+      const candidateContestantId = getContestantId(t);
+      const candidateEffWin = getContestantEffectiveWindow(candidateContestantId);
+      const hasEarlyExitWindow = Boolean(candidateEffWin && candidateEffWin.end <= (16 * 60));
+      const hasAnyStartedTask = Boolean(candidateContestantId && (occupiedByContestant.get(candidateContestantId)?.length ?? 0) > 0);
+      const isArrivalLike = isArrivalTask(t) || String(t?.templateName ?? '').trim().toLowerCase() === 'in';
+      const isImmediatePrereqForMain = Boolean(
+        optMainZoneId &&
+        Number(getZoneId(t)) !== Number(optMainZoneId) &&
+        pendingNonMeal.some((depTarget) => {
+          if (Number(getZoneId(depTarget)) !== Number(optMainZoneId)) return false;
+          const depIds = getDepTaskIds(depTarget).map((x: any) => Number(x));
+          return depIds.includes(Number(t?.id ?? 0));
+        })
+      );
+      if (candidateContestantId && hasEarlyExitWindow && !hasAnyStartedTask && (isArrivalLike || isImmediatePrereqForMain)) {
+        s += earlyContestantChainBonus;
+      }
+
       if (useHeuristics && canApplyLookahead2 && mainTargetTpl && Number(zone) !== Number(optMainZoneId)) {
         const feederStats = feederStatsByTaskId.get(Number(t?.id ?? 0));
         const unlockScore = Number(feederStats?.unlockScore ?? 0);
@@ -4837,15 +4917,23 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       return s;
     };
 
-    const contestantUrgency = new Map<number, { windowEnd: number; remainingMinutes: number; slack: number }>();
+    const contestantUrgency = new Map<number, { windowEnd: number; windowStart: number; remainingMinutes: number; slack: number; name: string | null }>();
     for (const pendingTask of pendingNonMeal as any[]) {
       const contestantId = getContestantId(pendingTask);
       if (!contestantId) continue;
       const effWin = getContestantEffectiveWindow(contestantId);
       if (!effWin || effWin.end <= effWin.start) continue;
       const taskDuration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
-      const prev = contestantUrgency.get(contestantId) ?? { windowEnd: effWin.end, remainingMinutes: 0, slack: Number.POSITIVE_INFINITY };
+      const prev = contestantUrgency.get(contestantId) ?? {
+        windowEnd: effWin.end,
+        windowStart: effWin.start,
+        remainingMinutes: 0,
+        slack: Number.POSITIVE_INFINITY,
+        name: String(pendingTask?.contestantName ?? "").trim() || null,
+      };
       prev.windowEnd = Math.min(prev.windowEnd, effWin.end);
+      prev.windowStart = Math.max(startDay, Math.min(prev.windowStart, effWin.start));
+      if (!prev.name) prev.name = String(pendingTask?.contestantName ?? "").trim() || null;
       prev.remainingMinutes += taskDuration;
       contestantUrgency.set(contestantId, prev);
     }
@@ -4863,6 +4951,30 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       })[0] ?? null;
     criticalContestantId = (criticalContestantEntry?.[0] ?? null) as number | null;
     criticalContestantSlack = (criticalContestantEntry?.[1]?.slack ?? null) as number | null;
+
+    const urgencySorted = Array.from(contestantUrgency.entries())
+      .sort((a, b) => {
+        if (a[1].windowEnd !== b[1].windowEnd) return a[1].windowEnd - b[1].windowEnd;
+        if (a[1].slack !== b[1].slack) return a[1].slack - b[1].slack;
+        return a[0] - b[0];
+      });
+    const urgentIds = new Set<number>(urgencySorted.slice(0, 5).map(([cid]) => Number(cid)));
+    for (const [cid, metrics] of urgencySorted) {
+      if (metrics.windowEnd <= (16 * 60)) urgentIds.add(Number(cid));
+    }
+    const contestantUrgencyProbe = urgencySorted
+      .filter(([cid]) => urgentIds.has(Number(cid)))
+      .slice(0, Math.max(urgentIds.size, 5))
+      .map(([contestantId, metrics]) => ({
+        contestantId,
+        name: metrics.name,
+        availabilityStart: toHHMM(metrics.windowStart),
+        availabilityEnd: toHHMM(metrics.windowEnd),
+        effWin: { start: toHHMM(metrics.windowStart), end: toHHMM(metrics.windowEnd) },
+        remainingDurationTotal: metrics.remainingMinutes,
+        slackMin: metrics.slack,
+        isCritical: Number(contestantId) === Number(criticalContestantId),
+      }));
 
     // ✅ LOTE 6 (PRO): si el plató principal ya “ha empezado” y hay un hueco real,
     // intentamos rellenarlo con una tarea que ENCAJE exacta en ese hueco.
@@ -4955,11 +5067,126 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       return top.candidate;
     };
 
+    const mainNowReference = snapUp(Math.max(startDay, Number(optMainZoneId ? (lastEndByZone.get(optMainZoneId) ?? startDay) : startDay)));
+    const earlyMainCandidate = ready.find((candidate) => {
+      if (!optMainZoneId || Number(getZoneId(candidate)) !== Number(optMainZoneId)) return false;
+      const cid = getContestantId(candidate);
+      const effWin = getContestantEffectiveWindow(cid);
+      if (!cid || !effWin || effWin.end > (16 * 60)) return false;
+      const name = String(candidate?.templateName ?? candidate?.manualTitle ?? "").toLowerCase();
+      if (name.includes("ensayo") && (name.includes("lucia") || name.includes("lucía"))) return true;
+      return true;
+    }) ?? null;
+    const earliestFeasibleProbe = (() => {
+      if (!earlyMainCandidate) return null;
+      const taskId = Number(earlyMainCandidate?.id ?? 0);
+      const templateId = Number(earlyMainCandidate?.templateId ?? 0);
+      const contestantId = Number(getContestantId(earlyMainCandidate) ?? 0);
+      const effWin = getContestantEffectiveWindow(contestantId);
+      const duration = Math.max(5, Math.floor(Number(earlyMainCandidate?.durationOverrideMin ?? 30)));
+      const depsEndMin = snapUp(Math.max(startDay, depsEnd(earlyMainCandidate)));
+      const earliestStartCandidate = snapUp(Math.max(mainNowReference, depsEndMin, effWin ? effWin.start : startDay));
+      const reasons: string[] = [];
+      if (effWin && (earliestStartCandidate + duration > effWin.end)) {
+        reasons.push("WINDOW_OVERFLOW");
+      }
+      const requiredResources = parseTaskResourceIds(earlyMainCandidate);
+      const hasResourceConflict = requiredResources.some((rid) => {
+        const occ = occupiedByResource.get(rid) ?? [];
+        return occ.some((it) => rangesOverlap(earliestStartCandidate, earliestStartCandidate + duration, it.start, it.end));
+      });
+      if (hasResourceConflict) reasons.push("RESOURCES_NOT_AVAILABLE");
+      return {
+        taskId,
+        templateId,
+        contestantId,
+        depsEnd: toHHMM(depsEndMin),
+        effWin: effWin ? { start: toHHMM(effWin.start), end: toHHMM(effWin.end) } : null,
+        earliestStartCandidate: toHHMM(earliestStartCandidate),
+        durationMin: duration,
+        reasons,
+      };
+    })();
+
     let usedScoringFallback = false;
     let task = computeBestTask(true, false);
     if (!task) {
       task = computeBestTask(false, true);
       usedScoringFallback = Boolean(task);
+    }
+
+    if (
+      task &&
+      mainSpaceId &&
+      Number(getSpaceId(task) ?? NaN) === Number(mainSpaceId) &&
+      Number.isFinite(Number(lastTemplateInMainSpace)) &&
+      Number(lastTemplateInMainSpace) > 0
+    ) {
+      const fromTemplateId = Number(lastTemplateInMainSpace);
+      const toTemplateId = Number(task?.templateId ?? 0);
+      if (toTemplateId > 0 && fromTemplateId !== toTemplateId) {
+        const readySameTemplate = ready.filter((r) => Number(getSpaceId(r) ?? NaN) === Number(mainSpaceId) && Number(r?.templateId ?? 0) === fromTemplateId);
+        const event: {
+          time: string;
+          fromTemplateId: number;
+          toTemplateId: number;
+          switchIndex: number;
+          readyCountSameTemplate: number;
+          blockedByDepsCount?: number;
+          blockedByWindowCount?: number;
+          blockedByResourcesCount?: number;
+          topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
+        } = {
+          time: toHHMM(mainNowReference),
+          fromTemplateId,
+          toTemplateId,
+          switchIndex: switchesUsedMainSpace + 1,
+          readyCountSameTemplate: readySameTemplate.length,
+        };
+        if (readySameTemplate.length === 0) {
+          let blockedByDepsCount = 0;
+          let blockedByWindowCount = 0;
+          let blockedByResourcesCount = 0;
+          for (const pendingTask of pendingNonMeal as any[]) {
+            if (Number(getSpaceId(pendingTask) ?? NaN) !== Number(mainSpaceId)) continue;
+            if (Number(pendingTask?.templateId ?? 0) !== fromTemplateId) continue;
+            if (!depsSatisfied(pendingTask)) {
+              blockedByDepsCount += 1;
+              continue;
+            }
+            const cid = getContestantId(pendingTask);
+            const effWin = getContestantEffectiveWindow(cid);
+            const duration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
+            const earliest = snapUp(Math.max(mainNowReference, depsEnd(pendingTask), effWin ? effWin.start : startDay));
+            if (effWin && earliest + duration > effWin.end) {
+              blockedByWindowCount += 1;
+              continue;
+            }
+            const requiredResources = parseTaskResourceIds(pendingTask);
+            const hasResourceConflict = requiredResources.some((rid) => {
+              const occ = occupiedByResource.get(rid) ?? [];
+              return occ.some((it) => rangesOverlap(earliest, earliest + duration, it.start, it.end));
+            });
+            if (hasResourceConflict) blockedByResourcesCount += 1;
+          }
+          event.blockedByDepsCount = blockedByDepsCount;
+          event.blockedByWindowCount = blockedByWindowCount;
+          event.blockedByResourcesCount = blockedByResourcesCount;
+        } else {
+          const selectedScore = scoreTaskForSelection(task);
+          event.topLosingTasks = readySameTemplate
+            .map((candidate) => ({
+              taskId: Number(candidate?.id ?? 0),
+              score: Number(scoreTaskForSelection(candidate)),
+              reason: Number(scoreTaskForSelection(candidate)) < Number(selectedScore)
+                ? "LOWER_SCORE_THAN_SELECTED"
+                : "TIE_BROKEN_BY_ORDER",
+            }))
+            .sort((a, b) => b.score - a.score || a.taskId - b.taskId)
+            .slice(0, 3);
+        }
+        mainSpaceSwitchEvents.push(event);
+      }
     }
 
     scoringDiagnosticDetails = {
@@ -4970,6 +5197,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       criticalContestantId,
       criticalContestantSlack,
       criticalContestantStartBonusApplied,
+      contestantUrgencyProbe,
+      earliestFeasibleProbe,
+      mainSpaceSwitchEvents: mainSpaceSwitchEvents.slice(-20),
     };
 
     if (!task) {
