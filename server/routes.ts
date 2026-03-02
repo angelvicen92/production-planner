@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { pool } from "./db";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
@@ -14,6 +15,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  
   const ensureAdmin = async (req: any, res: any): Promise<{ ok: true; userId: string } | { ok: false }> => {
     const userId = req?.user?.id as string | undefined;
     if (!userId) {
@@ -3016,7 +3018,6 @@ function mapDeleteError(err: any, fallback: string) {
 
   // Health check
   app.get("/api/health", (req, res) => res.json({ status: "ok" }));
-  
   // Plans
   app.get(api.plans.list.path, async (req, res) => {
     const plans = await storage.getPlans();
