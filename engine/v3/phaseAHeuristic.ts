@@ -42,7 +42,7 @@ const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
 const FEED_MAIN_UNLOCK_BONUS = 300_000;
 const FEED_MAIN_SWITCH_PENALTY = 500_000;
 const MAIN_START_MAX_GAP = 15;
-const START_FALSE_PENALTY = 300_000_000;
+const START_FALSE_PENALTY = 1_000_000_000;
 
 function toMinutes(hhmm: string) {
   const value = String(hhmm ?? "").trim();
@@ -4557,14 +4557,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
     }>;
     mainStartGate?: Array<{
-      taskId: number;
+      candidateTaskId: number;
       templateId: number;
       contestantId: number | null;
       contestantName: string | null;
       candidateStart: string;
       candidateEnd: string;
       predictedGap: number;
-      nextMainReadyAfterCandidate: string | null;
+      nextMainFeasibleStart: string | null;
       delayedStartCandidate: string;
       latestStart: string;
       isDelayFeasible: boolean;
@@ -4575,14 +4575,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     falseStartsPrevented?: number;
   } | null = null;
   const mainStartGateDiagnostics: Array<{
-    taskId: number;
+    candidateTaskId: number;
     templateId: number;
     contestantId: number | null;
     contestantName: string | null;
     candidateStart: string;
     candidateEnd: string;
     predictedGap: number;
-    nextMainReadyAfterCandidate: string | null;
+    nextMainFeasibleStart: string | null;
     delayedStartCandidate: string;
     latestStart: string;
     isDelayFeasible: boolean;
@@ -4790,8 +4790,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     const shouldGateMainStart = Boolean(
       optMainZoneId &&
       !lastEndByZone.has(optMainZoneId) &&
-      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD &&
-      effectiveFinishEarlyWeight === 0,
+      mainZoneKeepBusyStrength >= DIRECTOR_MODE_KEEP_BUSY_THRESHOLD,
     );
 
     const readyFeedersCount = feedersReady.length;
@@ -4828,7 +4827,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       slackMin: number;
       candidateStart: number;
       candidateEnd: number;
-      nextMainReadyAfterCandidate: number | null;
+      nextMainFeasibleStart: number | null;
     }>();
 
     const findEarliestFeasibleStartForMainTask = (task: any, minStart: number) => {
@@ -4899,14 +4898,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           slackMin: Number.POSITIVE_INFINITY,
           candidateStart: startDay,
           candidateEnd: startDay,
-          nextMainReadyAfterCandidate: null,
+          nextMainFeasibleStart: null,
         };
       }
       const cached = mainStartGateByTaskId.get(candidateId);
       if (cached) return cached;
 
       const candidateZone = Number(getZoneId(candidate) ?? NaN);
-      if (!optMainZoneId || candidateZone !== Number(optMainZoneId) || lastEndByZone.has(optMainZoneId)) {
+      if (!shouldGateMainStart || !optMainZoneId || candidateZone !== Number(optMainZoneId) || lastEndByZone.has(optMainZoneId)) {
         const neutral = {
           penalty: 0,
           predictedGap: 0,
@@ -4917,7 +4916,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           slackMin: Number.POSITIVE_INFINITY,
           candidateStart: startDay,
           candidateEnd: startDay,
-          nextMainReadyAfterCandidate: null,
+          nextMainFeasibleStart: null,
         };
         mainStartGateByTaskId.set(candidateId, neutral);
         return neutral;
@@ -4931,21 +4930,23 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const latestStart = snapUp((effWin ? effWin.end : endDay) - duration);
       const slackMin = latestStart - candidateStart;
 
-      let nextMainReadyAfterCandidate: number | null = null;
+      let nextMainFeasibleStart: number | null = null;
       for (const pendingTask of pendingMainTasks) {
         const pendingId = Number(pendingTask?.id ?? NaN);
         if (!Number.isFinite(pendingId) || pendingId <= 0 || pendingId === candidateId) continue;
         const earliestFeasible = findEarliestFeasibleStartForMainTask(pendingTask, candidateEnd);
         if (earliestFeasible === null || earliestFeasible < candidateEnd) continue;
-        if (nextMainReadyAfterCandidate === null || earliestFeasible < nextMainReadyAfterCandidate) {
-          nextMainReadyAfterCandidate = earliestFeasible;
+        if (nextMainFeasibleStart === null || earliestFeasible < nextMainFeasibleStart) {
+          nextMainFeasibleStart = earliestFeasible;
         }
       }
 
-      const predictedGap = Math.max(0, (nextMainReadyAfterCandidate ?? candidateEnd) - candidateEnd);
-      const delayedStartCandidate = nextMainReadyAfterCandidate === null
-        ? candidateStart + predictedGap
-        : Math.max(candidateStart, nextMainReadyAfterCandidate - duration);
+      const predictedGap = nextMainFeasibleStart === null
+        ? Number.POSITIVE_INFINITY
+        : Math.max(0, nextMainFeasibleStart - candidateEnd);
+      const delayedStartCandidate = nextMainFeasibleStart === null
+        ? latestStart
+        : Math.max(candidateStart, nextMainFeasibleStart - duration);
       const isDelayFeasible = delayedStartCandidate <= latestStart;
       const allowedByNecessity = !isDelayFeasible;
       const penalty = predictedGap > MAIN_START_MAX_GAP && !allowedByNecessity ? START_FALSE_PENALTY : 0;
@@ -4959,19 +4960,19 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         slackMin,
         candidateStart,
         candidateEnd,
-        nextMainReadyAfterCandidate,
+        nextMainFeasibleStart,
       };
       if (predictedGap > MAIN_START_MAX_GAP) {
         const contestantName = String(candidate?.contestantName ?? "").trim() || null;
         mainStartGateDiagnostics.push({
-          taskId: candidateId,
+          candidateTaskId: candidateId,
           templateId: Number(candidate?.templateId ?? 0),
           contestantId: contestantId ? Number(contestantId) : null,
           contestantName,
           candidateStart: toHHMM(candidateStart),
           candidateEnd: toHHMM(candidateEnd),
           predictedGap,
-          nextMainReadyAfterCandidate: nextMainReadyAfterCandidate === null ? null : toHHMM(nextMainReadyAfterCandidate),
+          nextMainFeasibleStart: nextMainFeasibleStart === null ? null : toHHMM(nextMainFeasibleStart),
           delayedStartCandidate: toHHMM(delayedStartCandidate),
           latestStart: toHHMM(latestStart),
           isDelayFeasible,
@@ -5025,25 +5026,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       if (directorModeEnabled && optMainZoneId && zone === optMainZoneId) {
         let canForceMainStart = true;
         if (shouldGateMainStart) {
-          const readyMainByTpl = readyMainBySpaceByTpl.get(Number(space ?? NaN));
-          const readyMainStats = Array.from(readyMainByTpl?.values() ?? []).reduce<{ count: number; minutes: number } | null>(
-            (best, tplStats) => {
-              if (!best) return tplStats;
-              if (tplStats.minutes > best.minutes) return tplStats;
-              if (tplStats.minutes === best.minutes && tplStats.count > best.count) return tplStats;
-              return best;
-            },
-            null,
-          );
-          const hasReadyBlock = Boolean(
-            readyMainStats && (readyMainStats.minutes >= 60 || readyMainStats.count >= 2),
-          );
-          canForceMainStart = !hasNonMainReady || hasReadyBlock;
-          const candidateTplStats = readyMainByTpl?.get(tpl);
-          const candidateTemplateHasBlock = Boolean(
-            candidateTplStats && (candidateTplStats.minutes >= 60 || candidateTplStats.count >= 2),
-          );
-          if (!candidateTemplateHasBlock) canForceMainStart = false;
+          canForceMainStart = mainStartGate.penalty === 0;
           if (!canForceMainStart) s -= 10_000_000;
         }
         if (canForceMainStart) s += 5_000_000;
