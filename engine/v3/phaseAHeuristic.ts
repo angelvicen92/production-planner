@@ -43,7 +43,6 @@ const FEED_MAIN_UNLOCK_BONUS = 300_000;
 const FEED_MAIN_SWITCH_PENALTY = 500_000;
 const MAIN_START_MAX_GAP = 15;
 const START_FALSE_PENALTY = 300_000_000;
-const NECESSITY_SLACK_THRESHOLD = 15;
 
 function toMinutes(hhmm: string) {
   const value = String(hhmm ?? "").trim();
@@ -4566,6 +4565,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       candidateEnd: string;
       predictedGap: number;
       nextMainReadyAfterCandidate: string | null;
+      delayedStartCandidate: string;
+      latestStart: string;
+      isDelayFeasible: boolean;
       slackMin: number;
       penaltyApplied: number;
       allowedByNecessity: boolean;
@@ -4581,6 +4583,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     candidateEnd: string;
     predictedGap: number;
     nextMainReadyAfterCandidate: string | null;
+    delayedStartCandidate: string;
+    latestStart: string;
+    isDelayFeasible: boolean;
     slackMin: number;
     penaltyApplied: number;
     allowedByNecessity: boolean;
@@ -4817,11 +4822,70 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       penalty: number;
       predictedGap: number;
       allowedByNecessity: boolean;
+      delayedStartCandidate: number;
+      latestStart: number;
+      isDelayFeasible: boolean;
       slackMin: number;
       candidateStart: number;
       candidateEnd: number;
       nextMainReadyAfterCandidate: number | null;
     }>();
+
+    const findEarliestFeasibleStartForMainTask = (task: any, minStart: number) => {
+      const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+      const contestantId = getContestantId(task);
+      const effWin = getContestantEffectiveWindow(contestantId);
+      const depsReady = snapUp(Math.max(startDay, depsEnd(task), minStart));
+      let candidate = snapUp(Math.max(depsReady, effWin ? effWin.start : startDay));
+      const latestStart = snapUp((effWin ? effWin.end : endDay) - duration);
+      if (candidate > latestStart) return null;
+
+      const spaceId = Number(getSpaceId(task) ?? NaN);
+      const zoneId = Number(getZoneId(task) ?? NaN);
+      const assignedResources = parseTaskResourceIds(task);
+
+      for (let guard = 0; guard < 50; guard++) {
+        let shifted = false;
+
+        if (Number.isFinite(spaceId) && spaceId > 0) {
+          const spaceStart = findEarliestGap(occupiedBySpace.get(spaceId) ?? [], candidate, duration);
+          if (spaceStart > candidate) {
+            candidate = snapUp(spaceStart);
+            shifted = true;
+          }
+        }
+
+        if (Number.isFinite(zoneId) && zoneId > 0) {
+          const zoneStart = findEarliestGap(occupiedByZoneMeal.get(zoneId) ?? [], candidate, duration);
+          if (zoneStart > candidate) {
+            candidate = snapUp(zoneStart);
+            shifted = true;
+          }
+        }
+
+        if (contestantId) {
+          const contestantStart = findEarliestGap(occupiedByContestant.get(contestantId) ?? [], candidate, duration);
+          if (contestantStart > candidate) {
+            candidate = snapUp(contestantStart);
+            shifted = true;
+          }
+        }
+
+        for (const rid of assignedResources) {
+          const resourceStart = findEarliestGap(occupiedByResource.get(rid) ?? [], candidate, duration);
+          if (resourceStart > candidate) {
+            candidate = snapUp(resourceStart);
+            shifted = true;
+          }
+        }
+
+        if (candidate > latestStart) return null;
+        if (!shifted) return candidate;
+      }
+
+      return candidate <= latestStart ? candidate : null;
+    };
+
     const getMainStartGateForCandidate = (candidate: any) => {
       const candidateId = Number(candidate?.id ?? NaN);
       if (!Number.isFinite(candidateId) || candidateId <= 0) {
@@ -4829,6 +4893,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           penalty: 0,
           predictedGap: 0,
           allowedByNecessity: false,
+          delayedStartCandidate: startDay,
+          latestStart: startDay,
+          isDelayFeasible: false,
           slackMin: Number.POSITIVE_INFINITY,
           candidateStart: startDay,
           candidateEnd: startDay,
@@ -4844,6 +4911,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           penalty: 0,
           predictedGap: 0,
           allowedByNecessity: false,
+          delayedStartCandidate: startDay,
+          latestStart: startDay,
+          isDelayFeasible: false,
           slackMin: Number.POSITIVE_INFINITY,
           candidateStart: startDay,
           candidateEnd: startDay,
@@ -4860,34 +4930,32 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const candidateEnd = candidateStart + duration;
       const latestStart = snapUp((effWin ? effWin.end : endDay) - duration);
       const slackMin = latestStart - candidateStart;
-      const isCriticalEarlyExitTask = Boolean(
-        contestantId &&
-        Number(contestantId) === Number(criticalContestantId) &&
-        effWin &&
-        effWin.end <= (16 * 60),
-      );
 
       let nextMainReadyAfterCandidate: number | null = null;
       for (const pendingTask of pendingMainTasks) {
         const pendingId = Number(pendingTask?.id ?? NaN);
         if (!Number.isFinite(pendingId) || pendingId <= 0 || pendingId === candidateId) continue;
-        const pendingDuration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
-        const pendingContestantId = getContestantId(pendingTask);
-        const pendingEffWin = getContestantEffectiveWindow(pendingContestantId);
-        const earliest = snapUp(Math.max(startDay, depsEnd(pendingTask), pendingEffWin ? pendingEffWin.start : startDay));
-        if (pendingEffWin && earliest + pendingDuration > pendingEffWin.end) continue;
-        if (nextMainReadyAfterCandidate === null || earliest < nextMainReadyAfterCandidate) {
-          nextMainReadyAfterCandidate = earliest;
+        const earliestFeasible = findEarliestFeasibleStartForMainTask(pendingTask, candidateEnd);
+        if (earliestFeasible === null || earliestFeasible < candidateEnd) continue;
+        if (nextMainReadyAfterCandidate === null || earliestFeasible < nextMainReadyAfterCandidate) {
+          nextMainReadyAfterCandidate = earliestFeasible;
         }
       }
 
       const predictedGap = Math.max(0, (nextMainReadyAfterCandidate ?? candidateEnd) - candidateEnd);
-      const allowedByNecessity = Boolean(slackMin <= NECESSITY_SLACK_THRESHOLD || isCriticalEarlyExitTask);
+      const delayedStartCandidate = nextMainReadyAfterCandidate === null
+        ? candidateStart + predictedGap
+        : Math.max(candidateStart, nextMainReadyAfterCandidate - duration);
+      const isDelayFeasible = delayedStartCandidate <= latestStart;
+      const allowedByNecessity = !isDelayFeasible;
       const penalty = predictedGap > MAIN_START_MAX_GAP && !allowedByNecessity ? START_FALSE_PENALTY : 0;
       const decision = {
         penalty,
         predictedGap,
         allowedByNecessity,
+        delayedStartCandidate,
+        latestStart,
+        isDelayFeasible,
         slackMin,
         candidateStart,
         candidateEnd,
@@ -4904,6 +4972,9 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           candidateEnd: toHHMM(candidateEnd),
           predictedGap,
           nextMainReadyAfterCandidate: nextMainReadyAfterCandidate === null ? null : toHHMM(nextMainReadyAfterCandidate),
+          delayedStartCandidate: toHHMM(delayedStartCandidate),
+          latestStart: toHHMM(latestStart),
+          isDelayFeasible,
           slackMin,
           penaltyApplied: -penalty,
           allowedByNecessity,
@@ -5117,7 +5188,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         if (optMainZoneId && Number(zone) === Number(optMainZoneId)) {
           const allowMainExtraBonus = Boolean(
             lastEndByZone.has(Number(optMainZoneId)) ||
-            mainStartGate.slackMin <= NECESSITY_SLACK_THRESHOLD ||
+            mainStartGate.allowedByNecessity ||
             mainStartGate.predictedGap <= MAIN_START_MAX_GAP,
           );
           if (allowMainExtraBonus) {
