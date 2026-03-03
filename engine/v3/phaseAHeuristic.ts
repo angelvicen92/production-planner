@@ -43,6 +43,10 @@ const FEED_MAIN_UNLOCK_BONUS = 300_000;
 const FEED_MAIN_SWITCH_PENALTY = 500_000;
 const MAIN_START_MAX_GAP = 15;
 const START_FALSE_PENALTY = 1_000_000_000;
+const MAIN_TEMPLATE_SWITCH_FREE_DEFAULT = 2;
+const MAIN_TEMPLATE_SWITCH_PENALTY_DEFAULT = 60_000_000;
+const CRITICAL_CHAIN_MAX_DEPTH = 8;
+const CRITICAL_CHAIN_BASE_SCORE = 100;
 
 function toMinutes(hhmm: string) {
   const value = String(hhmm ?? "").trim();
@@ -3655,6 +3659,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
   const maxSwitchesMainSpace = Number.isFinite(nearHardMainSpaceSwitchesBudgetRaw)
     ? Math.max(0, Math.floor(nearHardMainSpaceSwitchesBudgetRaw))
     : 0;
+  const mainTemplateSwitchFreeRaw = Number((input as any)?.nearHardBudgets?.mainTemplateSwitchFree ?? MAIN_TEMPLATE_SWITCH_FREE_DEFAULT);
+  const mainTemplateSwitchFree = Number.isFinite(mainTemplateSwitchFreeRaw)
+    ? Math.max(0, Math.floor(mainTemplateSwitchFreeRaw))
+    : MAIN_TEMPLATE_SWITCH_FREE_DEFAULT;
+  const mainTemplateSwitchPenaltyRaw = Number((input as any)?.nearHardBudgets?.mainTemplateSwitchPenalty ?? MAIN_TEMPLATE_SWITCH_PENALTY_DEFAULT);
+  const mainTemplateSwitchPenalty = Number.isFinite(mainTemplateSwitchPenaltyRaw)
+    ? Math.max(0, Math.floor(mainTemplateSwitchPenaltyRaw))
+    : MAIN_TEMPLATE_SWITCH_PENALTY_DEFAULT;
   const mainZoneSpaceUsage = new Map<number, number>();
   if (optMainZoneId) {
     for (const task of tasksSorted as any[]) {
@@ -4511,7 +4523,12 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     return false;
   };
 
-  let feedMainInsightDetails: { mainTargetTpl: number; topFeedersReady: Array<{ taskId: number; name: string; unlockScore: number; depth1: number; depth2: number }> } | null = null;
+  let feedMainInsightDetails: {
+    mainTargetTpl: number;
+    mainTargetTemplateId: number | null;
+    topFeedersReady: Array<{ taskId: number; name: string; unlockScore: number; depth1: number; depth2: number; criticality: number }>;
+    criticalChainTopFeeders: Array<{ taskId: number; name: string; criticality: number; unlockScore: number }>;
+  } | null = null;
   let mainTemplateSwitchInsight:
     | { fromTpl: number; toTpl: number; hadFeedersReady: boolean; feedersReadyCount: number }
     | null = null;
@@ -4573,6 +4590,26 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       allowedByNecessity: boolean;
     }>;
     falseStartsPrevented?: number;
+    mainStartFalseStartFix?: Array<{
+      taskId: number;
+      preferredStart: string;
+      outcome: "applied" | "fallback";
+      reason: string;
+      gate: {
+        predictedGap: number;
+        delayedStartCandidate: string;
+        latestStart: string;
+        isDelayFeasible: boolean;
+        allowedByNecessity: boolean;
+      };
+    }>;
+    criticalChain?: {
+      mainTargetTemplateId: number | null;
+      topFeeders: Array<{ taskId: number; name: string; criticality: number; unlockScore: number }>;
+    };
+    windowPriority?: {
+      top5ByWindowBonus: Array<{ taskId: number; contestantId: number | null; name: string; windowBonus: number; effWinLenMin: number }>;
+    };
   } | null = null;
   const mainStartGateDiagnostics: Array<{
     candidateTaskId: number;
@@ -4591,6 +4628,19 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     allowedByNecessity: boolean;
   }> = [];
   const mainStartGatePreventedTaskIds = new Set<number>();
+  const mainStartFalseStartFixDiagnostics: Array<{
+    taskId: number;
+    preferredStart: string;
+    outcome: "applied" | "fallback";
+    reason: string;
+    gate: {
+      predictedGap: number;
+      delayedStartCandidate: string;
+      latestStart: string;
+      isDelayFeasible: boolean;
+      allowedByNecessity: boolean;
+    };
+  }> = [];
   const mainSpaceSwitchEvents: Array<{
     time: string;
     fromTemplateId: number;
@@ -4731,11 +4781,59 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     const canFeedMainActive = Boolean(feedMainActiveEnabled && Number.isFinite(Number(mainTargetTpl)) && Number(mainTargetTpl) > 0);
     const canApplyLookahead2 = Boolean(canFeedMainActive);
 
-    const unlockStatsForTask = (candidate: any) => {
-      if (!canApplyLookahead2 || !optMainZoneId) return { depth1: 0, depth2: 0, unlockScore: 0 };
-      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return { depth1: 0, depth2: 0, unlockScore: 0 };
+    const mainTargetTasks = pendingMainTasks.filter((task) => {
+      const taskId = Number(task?.id ?? NaN);
+      if (!Number.isFinite(taskId) || taskId <= 0) return false;
+      if (String(task?.status ?? "pending") !== "pending") return false;
+      if (mainTargetTpl && Number(task?.templateId ?? 0) !== Number(mainTargetTpl)) return false;
+      return true;
+    });
+    const mainTargetSet = new Set<number>(mainTargetTasks.map((task) => Number(task?.id ?? 0)).filter((id) => Number.isFinite(id) && id > 0));
+
+    const criticalityByTaskId = new Map<number, number>();
+    const computeCriticalityForTask = (candidate: any) => {
+      if (!canApplyLookahead2 || !optMainZoneId) return 0;
+      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return 0;
       const candidateId = Number(candidate?.id ?? 0);
-      if (!Number.isFinite(candidateId) || candidateId <= 0) return { depth1: 0, depth2: 0, unlockScore: 0 };
+      if (!Number.isFinite(candidateId) || candidateId <= 0) return 0;
+      const cached = criticalityByTaskId.get(candidateId);
+      if (Number.isFinite(cached)) return Number(cached);
+
+      let total = 0;
+      const queue: Array<{ taskId: number; depth: number }> = [{ taskId: candidateId, depth: 0 }];
+      const visitedDepth = new Map<number, number>([[candidateId, 0]]);
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (current.depth >= CRITICAL_CHAIN_MAX_DEPTH) continue;
+        const nextDepth = current.depth + 1;
+        const dependents = getDependents(current.taskId);
+        for (const depIdRaw of dependents) {
+          const depId = Number(depIdRaw);
+          if (!Number.isFinite(depId) || depId <= 0) continue;
+          if (!pendingTaskIds.has(depId)) continue;
+          const prevDepth = visitedDepth.get(depId);
+          if (Number.isFinite(prevDepth) && Number(prevDepth) <= nextDepth) continue;
+          visitedDepth.set(depId, nextDepth);
+
+          if (mainTargetSet.has(depId)) {
+            total += Math.round(CRITICAL_CHAIN_BASE_SCORE / Math.pow(2, nextDepth - 1));
+          }
+          if (nextDepth < CRITICAL_CHAIN_MAX_DEPTH) {
+            queue.push({ taskId: depId, depth: nextDepth });
+          }
+        }
+      }
+
+      criticalityByTaskId.set(candidateId, total);
+      return total;
+    };
+
+    const unlockStatsForTask = (candidate: any) => {
+      if (!canApplyLookahead2 || !optMainZoneId) return { depth1: 0, depth2: 0, unlockScore: 0, criticality: 0 };
+      if (Number(getZoneId(candidate)) === Number(optMainZoneId)) return { depth1: 0, depth2: 0, unlockScore: 0, criticality: 0 };
+      const candidateId = Number(candidate?.id ?? 0);
+      if (!Number.isFinite(candidateId) || candidateId <= 0) return { depth1: 0, depth2: 0, unlockScore: 0, criticality: 0 };
 
       let depth1 = 0;
       let depth2 = 0;
@@ -4744,7 +4842,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         const depTask = taskById.get(Number(depTaskId));
         if (!depTask) continue;
         if (Number(getZoneId(depTask) ?? depTask?.zoneId ?? 0) !== Number(optMainZoneId)) continue;
-        if (Number(depTask?.templateId ?? 0) !== Number(mainTargetTpl)) continue;
+        if (mainTargetTpl && Number(depTask?.templateId ?? 0) !== Number(mainTargetTpl)) continue;
         if (String(depTask?.status ?? "pending") !== "pending") continue;
         depth1 += 1;
 
@@ -4761,11 +4859,12 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         }
       }
 
-      const unlockScore = depth1 * 1.0 + depth2 * 0.5;
-      return { depth1, depth2, unlockScore };
+      const criticality = computeCriticalityForTask(candidate);
+      const unlockScore = depth1 * 1.0 + depth2 * 0.5 + criticality * 0.35;
+      return { depth1, depth2, unlockScore, criticality };
     };
 
-    const feederStatsByTaskId = new Map<number, { depth1: number; depth2: number; unlockScore: number }>();
+    const feederStatsByTaskId = new Map<number, { depth1: number; depth2: number; unlockScore: number; criticality: number }>();
     const feedersReady = ready
       .filter((t) => Number(getZoneId(t)) !== Number(optMainZoneId))
       .map((t) => {
@@ -4778,13 +4877,15 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           ...stats,
         };
       })
-      .filter((x) => x.unlockScore > 0)
-      .sort((a, b) => b.unlockScore - a.unlockScore || b.depth1 - a.depth1 || b.depth2 - a.depth2 || a.taskId - b.taskId);
+      .filter((x) => x.unlockScore > 0 || x.criticality > 0)
+      .sort((a, b) => b.criticality - a.criticality || b.unlockScore - a.unlockScore || b.depth1 - a.depth1 || b.depth2 - a.depth2 || a.taskId - b.taskId);
 
-    if (canApplyLookahead2 && mainTargetTpl && feedersReady.length > 0) {
+    if (canApplyLookahead2 && feedersReady.length > 0) {
       feedMainInsightDetails = {
-        mainTargetTpl: Number(mainTargetTpl),
+        mainTargetTpl: Number(mainTargetTpl ?? 0),
+        mainTargetTemplateId: mainTargetTpl ?? null,
         topFeedersReady: feedersReady.slice(0, 5),
+        criticalChainTopFeeders: feedersReady.slice(0, 5).map((f) => ({ taskId: f.taskId, name: f.name, criticality: f.criticality, unlockScore: f.unlockScore })),
       };
     }
     const shouldGateMainStart = Boolean(
@@ -5180,11 +5281,34 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         }
       }
 
+      if (candidateEffWin && candidateEffWin.end > candidateEffWin.start) {
+        const effWinLen = Math.max(1, candidateEffWin.end - candidateEffWin.start);
+        const windowBonus = effWinLen < 180
+          ? 1_600_000
+          : effWinLen < 240
+            ? 1_000_000
+            : effWinLen < 300
+              ? 600_000
+              : effWinLen < 360
+                ? 300_000
+                : 0;
+        const allowWindowPriorityBonus = !(
+          mainZoneKeepBusyAggressive &&
+          hasViableMainZoneReadyNow &&
+          Number(zone) !== Number(optMainZoneId)
+        );
+        if (allowWindowPriorityBonus) s += windowBonus;
+      }
+
       if (useHeuristics && canApplyLookahead2 && mainTargetTpl && Number(zone) !== Number(optMainZoneId)) {
         const feederStats = feederStatsByTaskId.get(Number(t?.id ?? 0));
         const unlockScore = Number(feederStats?.unlockScore ?? 0);
+        const criticality = Number(feederStats?.criticality ?? 0);
         if (unlockScore > 0) {
           s += unlockScore * FEED_MAIN_UNLOCK_BONUS;
+        }
+        if (criticality > 0) {
+          s += criticality * FEED_MAIN_UNLOCK_BONUS * 0.6;
         }
       }
 
@@ -5230,6 +5354,10 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           return -1e15;
         }
         const fromTemplateId = Number(lastTemplateInMainSpace);
+        const extraSwitches = Math.max(0, switchesUsedMainSpace - mainTemplateSwitchFree + 1);
+        if (extraSwitches > 0) {
+          s -= extraSwitches * mainTemplateSwitchPenalty;
+        }
         const soonReady = findSoonReadySameTemplateInMain(fromTemplateId);
         const mainSpaceGroupingCfg = getGroupingConfigForSpace(Number(mainSpaceId));
         if (soonReady.soonReadySameTemplate) {
@@ -5550,6 +5678,32 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       }
     }
 
+    const topWindowBonus = ready
+      .map((candidate) => {
+        const cid = getContestantId(candidate);
+        const effWin = getContestantEffectiveWindow(cid);
+        const effWinLen = effWin && effWin.end > effWin.start ? (effWin.end - effWin.start) : Number.POSITIVE_INFINITY;
+        const windowBonus = effWinLen < 180
+          ? 1_600_000
+          : effWinLen < 240
+            ? 1_000_000
+            : effWinLen < 300
+              ? 600_000
+              : effWinLen < 360
+                ? 300_000
+                : 0;
+        return {
+          taskId: Number(candidate?.id ?? 0),
+          contestantId: cid ? Number(cid) : null,
+          name: String(candidate?.templateName ?? candidate?.manualTitle ?? `Tarea #${Number(candidate?.id ?? 0)}`),
+          windowBonus,
+          effWinLenMin: Number.isFinite(effWinLen) ? effWinLen : -1,
+        };
+      })
+      .filter((row) => row.windowBonus > 0)
+      .sort((a, b) => b.windowBonus - a.windowBonus || a.effWinLenMin - b.effWinLenMin || a.taskId - b.taskId)
+      .slice(0, 5);
+
     scoringDiagnosticDetails = {
       readyCount: ready.length,
       mainTargetTpl: mainTargetTpl ?? null,
@@ -5563,6 +5717,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       mainSpaceSwitchEvents: mainSpaceSwitchEvents.slice(-20),
       mainStartGate: mainStartGateDiagnostics.slice(-20),
       falseStartsPrevented: mainStartGatePreventedTaskIds.size,
+      mainStartFalseStartFix: mainStartFalseStartFixDiagnostics.slice(-20),
+      criticalChain: {
+        mainTargetTemplateId: mainTargetTpl ?? null,
+        topFeeders: feedersReady.slice(0, 5).map((f) => ({ taskId: f.taskId, name: f.name, criticality: Number(f.criticality ?? 0), unlockScore: Number(f.unlockScore ?? 0) })),
+      },
+      windowPriority: {
+        top5ByWindowBonus: topWindowBonus,
+      },
     };
 
     if (!task) {
@@ -5586,13 +5748,84 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       };
     }
 
+    const selectedTaskId = Number(task?.id ?? 0);
+    let forcedMainStartApplied = false;
+    if (optMainZoneId && Number(getZoneId(task)) === Number(optMainZoneId) && !lastEndByZone.has(Number(optMainZoneId))) {
+      const selectedGate = getMainStartGateForCandidate(task);
+      if (
+        selectedGate.predictedGap > MAIN_START_MAX_GAP &&
+        selectedGate.isDelayFeasible === true &&
+        selectedGate.allowedByNecessity === false
+      ) {
+        const effWin = getContestantEffectiveWindow(getContestantId(task));
+        const preferredStart = snapUp(Math.max(
+          selectedGate.delayedStartCandidate,
+          depsEnd(task),
+          effWin ? effWin.start : startDay,
+          startDay,
+        ));
+        const duration = Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30)));
+        const latestStart = snapUp((effWin ? effWin.end : endDay) - duration);
+        if (preferredStart <= latestStart) {
+          forcedStartByTaskId.set(selectedTaskId, preferredStart);
+          forcedMainStartApplied = true;
+          mainStartFalseStartFixDiagnostics.push({
+            taskId: selectedTaskId,
+            preferredStart: toHHMM(preferredStart),
+            outcome: "applied",
+            reason: "GATE_DELAYED_START_APPLIED",
+            gate: {
+              predictedGap: selectedGate.predictedGap,
+              delayedStartCandidate: toHHMM(selectedGate.delayedStartCandidate),
+              latestStart: toHHMM(selectedGate.latestStart),
+              isDelayFeasible: selectedGate.isDelayFeasible,
+              allowedByNecessity: selectedGate.allowedByNecessity,
+            },
+          });
+        } else {
+          mainStartFalseStartFixDiagnostics.push({
+            taskId: selectedTaskId,
+            preferredStart: toHHMM(preferredStart),
+            outcome: "fallback",
+            reason: "PREFERRED_START_OUTSIDE_EFFECTIVE_WINDOW",
+            gate: {
+              predictedGap: selectedGate.predictedGap,
+              delayedStartCandidate: toHHMM(selectedGate.delayedStartCandidate),
+              latestStart: toHHMM(selectedGate.latestStart),
+              isDelayFeasible: selectedGate.isDelayFeasible,
+              allowedByNecessity: selectedGate.allowedByNecessity,
+            },
+          });
+        }
+      }
+    }
+
     // removemos el elegido de pending
     const idx = pendingNonMeal.findIndex(
       (x) => Number(x?.id) === Number(task?.id),
     );
     if (idx >= 0) pendingNonMeal.splice(idx, 1);
 
-    const out = scheduleNonMealTask(task) as any;
+    let out = scheduleNonMealTask(task) as any;
+    if (forcedMainStartApplied) {
+      forcedStartByTaskId.delete(selectedTaskId);
+      if (out?.scheduled === false || out?.feasible === false) {
+        mainStartFalseStartFixDiagnostics.push({
+          taskId: selectedTaskId,
+          preferredStart: "-",
+          outcome: "fallback",
+          reason: String(out?.reason?.code ?? out?.reasons?.[0]?.code ?? "FORCED_START_NOT_FEASIBLE"),
+          gate: {
+            predictedGap: Number(getMainStartGateForCandidate(task).predictedGap ?? 0),
+            delayedStartCandidate: toHHMM(Number(getMainStartGateForCandidate(task).delayedStartCandidate ?? startDay)),
+            latestStart: toHHMM(Number(getMainStartGateForCandidate(task).latestStart ?? startDay)),
+            isDelayFeasible: Boolean(getMainStartGateForCandidate(task).isDelayFeasible),
+            allowedByNecessity: Boolean(getMainStartGateForCandidate(task).allowedByNecessity),
+          },
+        });
+        out = scheduleNonMealTask(task) as any;
+      }
+    }
     if (out?.scheduled === false && out?.reason) {
       unplanned.push({ taskId: Number(task?.id), reason: out.reason });
       continue;
