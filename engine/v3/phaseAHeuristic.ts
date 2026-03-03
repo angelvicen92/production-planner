@@ -41,6 +41,9 @@ const DIRECTOR_MODE_MAX_ATTEMPTS_PER_GAP = 50;
 const DIRECTOR_MODE_MAX_GLOBAL_ATTEMPTS = 300;
 const FEED_MAIN_UNLOCK_BONUS = 300_000;
 const FEED_MAIN_SWITCH_PENALTY = 500_000;
+const MAIN_START_MAX_GAP = 15;
+const START_FALSE_PENALTY = 300_000_000;
+const NECESSITY_SLACK_THRESHOLD = 15;
 
 function toMinutes(hhmm: string) {
   const value = String(hhmm ?? "").trim();
@@ -4554,7 +4557,35 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       blockedByResourcesCount?: number;
       topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
     }>;
+    mainStartGate?: Array<{
+      taskId: number;
+      templateId: number;
+      contestantId: number | null;
+      contestantName: string | null;
+      candidateStart: string;
+      candidateEnd: string;
+      predictedGap: number;
+      nextMainReadyAfterCandidate: string | null;
+      slackMin: number;
+      penaltyApplied: number;
+      allowedByNecessity: boolean;
+    }>;
+    falseStartsPrevented?: number;
   } | null = null;
+  const mainStartGateDiagnostics: Array<{
+    taskId: number;
+    templateId: number;
+    contestantId: number | null;
+    contestantName: string | null;
+    candidateStart: string;
+    candidateEnd: string;
+    predictedGap: number;
+    nextMainReadyAfterCandidate: string | null;
+    slackMin: number;
+    penaltyApplied: number;
+    allowedByNecessity: boolean;
+  }> = [];
+  const mainStartGatePreventedTaskIds = new Set<number>();
   const mainSpaceSwitchEvents: Array<{
     time: string;
     fromTemplateId: number;
@@ -4782,6 +4813,106 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     };
 
     const hasViableMainZoneReadyNow = ready.some((candidate) => isMainZoneViableAtNow(candidate));
+    const mainStartGateByTaskId = new Map<number, {
+      penalty: number;
+      predictedGap: number;
+      allowedByNecessity: boolean;
+      slackMin: number;
+      candidateStart: number;
+      candidateEnd: number;
+      nextMainReadyAfterCandidate: number | null;
+    }>();
+    const getMainStartGateForCandidate = (candidate: any) => {
+      const candidateId = Number(candidate?.id ?? NaN);
+      if (!Number.isFinite(candidateId) || candidateId <= 0) {
+        return {
+          penalty: 0,
+          predictedGap: 0,
+          allowedByNecessity: false,
+          slackMin: Number.POSITIVE_INFINITY,
+          candidateStart: startDay,
+          candidateEnd: startDay,
+          nextMainReadyAfterCandidate: null,
+        };
+      }
+      const cached = mainStartGateByTaskId.get(candidateId);
+      if (cached) return cached;
+
+      const candidateZone = Number(getZoneId(candidate) ?? NaN);
+      if (!optMainZoneId || candidateZone !== Number(optMainZoneId) || lastEndByZone.has(optMainZoneId)) {
+        const neutral = {
+          penalty: 0,
+          predictedGap: 0,
+          allowedByNecessity: false,
+          slackMin: Number.POSITIVE_INFINITY,
+          candidateStart: startDay,
+          candidateEnd: startDay,
+          nextMainReadyAfterCandidate: null,
+        };
+        mainStartGateByTaskId.set(candidateId, neutral);
+        return neutral;
+      }
+
+      const duration = Math.max(5, Math.floor(Number(candidate?.durationOverrideMin ?? 30)));
+      const contestantId = getContestantId(candidate);
+      const effWin = getContestantEffectiveWindow(contestantId);
+      const candidateStart = snapUp(Math.max(startDay, depsEnd(candidate), effWin ? effWin.start : startDay));
+      const candidateEnd = candidateStart + duration;
+      const latestStart = snapUp((effWin ? effWin.end : endDay) - duration);
+      const slackMin = latestStart - candidateStart;
+      const isCriticalEarlyExitTask = Boolean(
+        contestantId &&
+        Number(contestantId) === Number(criticalContestantId) &&
+        effWin &&
+        effWin.end <= (16 * 60),
+      );
+
+      let nextMainReadyAfterCandidate: number | null = null;
+      for (const pendingTask of pendingMainTasks) {
+        const pendingId = Number(pendingTask?.id ?? NaN);
+        if (!Number.isFinite(pendingId) || pendingId <= 0 || pendingId === candidateId) continue;
+        const pendingDuration = Math.max(5, Math.floor(Number(pendingTask?.durationOverrideMin ?? 30)));
+        const pendingContestantId = getContestantId(pendingTask);
+        const pendingEffWin = getContestantEffectiveWindow(pendingContestantId);
+        const earliest = snapUp(Math.max(startDay, depsEnd(pendingTask), pendingEffWin ? pendingEffWin.start : startDay));
+        if (pendingEffWin && earliest + pendingDuration > pendingEffWin.end) continue;
+        if (nextMainReadyAfterCandidate === null || earliest < nextMainReadyAfterCandidate) {
+          nextMainReadyAfterCandidate = earliest;
+        }
+      }
+
+      const predictedGap = Math.max(0, (nextMainReadyAfterCandidate ?? candidateEnd) - candidateEnd);
+      const allowedByNecessity = Boolean(slackMin <= NECESSITY_SLACK_THRESHOLD || isCriticalEarlyExitTask);
+      const penalty = predictedGap > MAIN_START_MAX_GAP && !allowedByNecessity ? START_FALSE_PENALTY : 0;
+      const decision = {
+        penalty,
+        predictedGap,
+        allowedByNecessity,
+        slackMin,
+        candidateStart,
+        candidateEnd,
+        nextMainReadyAfterCandidate,
+      };
+      if (predictedGap > MAIN_START_MAX_GAP) {
+        const contestantName = String(candidate?.contestantName ?? "").trim() || null;
+        mainStartGateDiagnostics.push({
+          taskId: candidateId,
+          templateId: Number(candidate?.templateId ?? 0),
+          contestantId: contestantId ? Number(contestantId) : null,
+          contestantName,
+          candidateStart: toHHMM(candidateStart),
+          candidateEnd: toHHMM(candidateEnd),
+          predictedGap,
+          nextMainReadyAfterCandidate: nextMainReadyAfterCandidate === null ? null : toHHMM(nextMainReadyAfterCandidate),
+          slackMin,
+          penaltyApplied: -penalty,
+          allowedByNecessity,
+        });
+        if (penalty > 0) mainStartGatePreventedTaskIds.add(candidateId);
+      }
+      mainStartGateByTaskId.set(candidateId, decision);
+      return decision;
+    };
 
     // ✅ Helper: mismo scoring que usamos en ready.sort, pero para 1 tarea
   const scoreTaskForSelection = (t: any, useHeuristics = true) => {
@@ -4812,6 +4943,11 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
       if (mainZoneKeepBusyAggressive && hasViableMainZoneReadyNow && zone !== optMainZoneId) {
         s -= 50_000_000;
+      }
+
+      const mainStartGate = getMainStartGateForCandidate(t);
+      if (mainStartGate.penalty > 0) {
+        s -= mainStartGate.penalty;
       }
 
       // 1) Director mode: prioridad global de tareas de plató principal
@@ -4979,7 +5115,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         const urgencyScore = Math.max(0, Math.min(180, 180 - Math.max(-60, Math.min(240, slack))));
         s += earlyContestantChainBonus + urgencyScore * 1_800;
         if (optMainZoneId && Number(zone) === Number(optMainZoneId)) {
-          s += 4_500_000;
+          const allowMainExtraBonus = Boolean(
+            lastEndByZone.has(Number(optMainZoneId)) ||
+            mainStartGate.slackMin <= NECESSITY_SLACK_THRESHOLD ||
+            mainStartGate.predictedGap <= MAIN_START_MAX_GAP,
+          );
+          if (allowMainExtraBonus) {
+            s += 4_500_000;
+          }
         }
       }
 
@@ -5364,6 +5507,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       contestantUrgencyProbe,
       earliestFeasibleProbe,
       mainSpaceSwitchEvents: mainSpaceSwitchEvents.slice(-20),
+      mainStartGate: mainStartGateDiagnostics.slice(-20),
+      falseStartsPrevented: mainStartGatePreventedTaskIds.size,
     };
 
     if (!task) {
