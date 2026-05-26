@@ -15,3 +15,14 @@ Para probar un cambio de idioma manualmente desde consola del navegador (sin sel
 ```js
 import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 ```
+
+## Historial de cambios Codex
+
+- ID 001 — 2026-05-26 18:33 — Auditoría base, tests y trazabilidad del proyecto
+
+## Verificación básica
+
+```bash
+npm run check
+npm run test:engine
+```
