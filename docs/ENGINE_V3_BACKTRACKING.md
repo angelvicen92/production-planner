@@ -142,3 +142,9 @@ El backtracking no genera ramas que muevan blockers inamovibles.
 - Si Phase A no alcanza a materializar un blocker estructurado, la rama puede no generarse.
 - El output final completo no conserva todos los blockers de la pasada greedy fallida; las métricas del benchmark se imprimen como 0 si el resultado final no contiene `unplanned`.
 - ID 006 mantiene hard constraints: no mueve locks, `done` ni `in_progress`, no permite solapes y no cruza comida hard.
+
+## Actualización ID 007 — Selección comparativa de candidatos
+
+ID 007 cambia la aceptación del backtracking limitado: ya no basta con encontrar la primera rama completa. Las ramas exploradas dentro de `maxBacktrackAttempts`, profundidad máxima y `maxSearchMs` se puntúan con un comparador lexicográfico en `engine/v3/solutionScoring.ts`.
+
+La búsqueda conserva la mejor alternativa backtracking y la compara contra el greedy base. Backtracking solo sustituye al greedy cuando mejora en hard constraints, tareas planificadas, disponibilidad, huecos de plató principal, feeders, cambios de coach o makespan. Si no hay mejora medible, se mantiene el fallback seguro.
