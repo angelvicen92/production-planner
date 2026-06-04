@@ -213,6 +213,46 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "Greedy es completo, pero la alternativa backtracking reduce el hueco del plató principal sin violar hard constraints.",
     riskNotes: ["Selección comparativa entre ramas válidas", "Compacidad de plató principal como criterio operativo no hard"],
   },
+
+  {
+    id: "J",
+    name: "Talent restrictivo y continuidad de coach",
+    description: "Escenario compacto con cinco talents, dos coaches, feeders previos al plató principal y una salida temprana que debe priorizarse sin convertir preferencias en hard.",
+    input: baseInput([
+      { id: 9001, planId: PLAN_ID, templateId: 1901, templateName: "Coach Alpha restrictivo", zoneId: 2, spaceId: 201, contestantId: 81, contestantName: "Talent salida temprana", status: "pending", durationOverrideMin: 25, resourceRequirements: { byItem: { 9001: 1 } } },
+      { id: 9002, planId: PLAN_ID, templateId: 1902, templateName: "Main restrictivo", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 81, contestantName: "Talent salida temprana", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [9001] },
+      { id: 9003, planId: PLAN_ID, templateId: 1901, templateName: "Coach Alpha feeder 2", zoneId: 2, spaceId: 201, contestantId: 82, contestantName: "Talent Alpha 2", status: "pending", durationOverrideMin: 25, resourceRequirements: { byItem: { 9001: 1 } } },
+      { id: 9004, planId: PLAN_ID, templateId: 1902, templateName: "Main Alpha 2", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 82, contestantName: "Talent Alpha 2", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [9003] },
+      { id: 9005, planId: PLAN_ID, templateId: 1903, templateName: "Coach Beta feeder", zoneId: 2, spaceId: 202, contestantId: 83, contestantName: "Talent Beta", status: "pending", durationOverrideMin: 25, resourceRequirements: { byItem: { 9002: 1 } } },
+      { id: 9006, planId: PLAN_ID, templateId: 1902, templateName: "Main Beta", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 83, contestantName: "Talent Beta", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [9005] },
+      { id: 9007, planId: PLAN_ID, templateId: 1901, templateName: "Coach Alpha feeder 3", zoneId: 2, spaceId: 201, contestantId: 84, contestantName: "Talent Alpha 3", status: "pending", durationOverrideMin: 25, resourceRequirements: { byItem: { 9001: 1 } } },
+      { id: 9008, planId: PLAN_ID, templateId: 1902, templateName: "Main Alpha 3", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 84, contestantName: "Talent Alpha 3", status: "pending", durationOverrideMin: 30 },
+      { id: 9009, planId: PLAN_ID, templateId: 1904, templateName: "Flexible entrevista", zoneId: 2, spaceId: 202, contestantId: 85, contestantName: "Talent flexible", status: "pending", durationOverrideMin: 30 },
+    ], {
+      workDay: { start: "09:00", end: "12:00" },
+      meal: { start: "12:30", end: "13:00" },
+      planResourceItems: [
+        { id: COACH_ALPHA_PLAN_RESOURCE_ID, resourceItemId: 9001, typeId: COACH_TYPE_ID, name: "Coach Alpha", isAvailable: true },
+        { id: COACH_BETA_PLAN_RESOURCE_ID, resourceItemId: 9002, typeId: COACH_TYPE_ID, name: "Coach Beta", isAvailable: true },
+      ],
+      contestantAvailabilityById: {
+        81: { start: "09:00", end: "10:05" },
+        82: { start: "09:00", end: "12:00" },
+        83: { start: "09:00", end: "12:00" },
+        84: { start: "09:00", end: "12:00" },
+        85: { start: "09:00", end: "12:00" },
+      },
+      optimizerWeights: {
+        mainZoneKeepBusy: 8,
+        mainZoneFinishEarly: 4,
+        contestantCompact: 3,
+        groupBySpaceTemplateMatch: 2,
+        contestantStayInZone: 1,
+      },
+    }),
+    operationalExpectation: "El feeder y main del talent con salida temprana deben completarse dentro de su ventana; los feeders de Coach Alpha ofrecen una oportunidad de continuidad medible frente a alternancias A/B/A.",
+    riskNotes: ["Urgencia restrictiva soft", "Continuidad de coach/feeders soft", "Dependencias hacia plató principal detectables por dependsOnTaskIds"],
+  },
   realisticDayScenario,
  ];
 

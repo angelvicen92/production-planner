@@ -58,8 +58,8 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008");
-console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos, selección comparativa de candidatos y stress sintético sin fallar por optimización no perfecta.");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009");
+console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);

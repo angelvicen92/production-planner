@@ -1,5 +1,6 @@
 import type { EngineInput, EngineOutput } from "../types";
 import { makeStructuredBlocker } from "./blockers";
+import { calculateRestrictiveTalentUrgency, getCoachResourceIds, taskFeedsMainStage } from "./operationalPriority";
 
 export type MainZoneGapReasonType =
   | "CONTESTANT_BUSY"
@@ -4818,6 +4819,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     topLosingTasks?: Array<{ taskId: number; score: number; reason: string }>;
   }> = [];
 
+  const coachResourceIds = getCoachResourceIds(input as any);
+
   const parseTaskResourceIds = (task: any): number[] => {
     const arr = Array.isArray(task?.assignedResourceIds)
       ? task.assignedResourceIds
@@ -5436,6 +5439,25 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
       const candidateContestantId = getContestantId(t);
       const candidateEffWin = getContestantEffectiveWindow(candidateContestantId);
+      if (candidateContestantId && candidateEffWin && candidateEffWin.end > candidateEffWin.start) {
+        const taskDuration = Math.max(5, Math.floor(Number(t?.durationOverrideMin ?? 30)));
+        const urgencyMetrics = contestantUrgency.get(Number(candidateContestantId));
+        const earliest = snapUp(Math.max(startDay, depsEnd(t), candidateEffWin.start));
+        const operationalUrgency = calculateRestrictiveTalentUrgency({
+          workDayStartMin: startDay,
+          workDayEndMin: endDay,
+          availabilityStartMin: candidateEffWin.start,
+          availabilityEndMin: candidateEffWin.end,
+          remainingDurationMin: urgencyMetrics?.remainingMinutes ?? taskDuration,
+          taskDurationMin: taskDuration,
+          earliestStartMin: earliest,
+          feedsMainStage: taskFeedsMainStage(input as any, Number(t?.id ?? 0)),
+        });
+        if (operationalUrgency > 0) {
+          const allowOperationalPriority = !(mainZoneKeepBusyAggressive && hasViableMainZoneReadyNow && Number(zone) !== Number(optMainZoneId));
+          if (allowOperationalPriority) s += operationalUrgency * 2_400;
+        }
+      }
       const hasEarlyExitWindow = Boolean(candidateEffWin && candidateEffWin.end <= (16 * 60));
       if (candidateContestantId && hasEarlyExitWindow) {
         const duration = Math.max(5, Math.floor(Number(t?.durationOverrideMin ?? 30)));
@@ -5484,6 +5506,27 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         }
         if (criticality > 0) {
           s += criticality * FEED_MAIN_UNLOCK_BONUS * 0.6;
+        }
+      }
+
+      if (useHeuristics && coachResourceIds.size > 0) {
+        const candidateCoachKey = parseTaskResourceIds(t).filter((id) => coachResourceIds.has(Number(id))).sort((a, b) => a - b).join(",");
+        if (candidateCoachKey) {
+          const sortedCoachRows = plannedTasks
+            .map((p: any) => ({
+              start: parseHHMMSafe(p?.startPlanned) ?? startDay,
+              resources: Array.isArray(p?.assignedResources) ? p.assignedResources.map((id: any) => Number(id)).filter((id: number) => Number.isFinite(id) && coachResourceIds.has(id)).sort((a: number, b: number) => a - b).join(",") : "",
+            }))
+            .filter((row: any) => row.resources)
+            .sort((a: any, b: any) => b.start - a.start);
+          const previousCoachKey = sortedCoachRows[0]?.resources ?? null;
+          const beforePreviousCoachKey = sortedCoachRows[1]?.resources ?? null;
+          if (previousCoachKey && previousCoachKey === candidateCoachKey) {
+            s += taskFeedsMainStage(input as any, Number(t?.id ?? 0)) ? 850_000 : 350_000;
+          } else if (previousCoachKey && previousCoachKey !== candidateCoachKey) {
+            s -= taskFeedsMainStage(input as any, Number(t?.id ?? 0)) ? 750_000 : 250_000;
+            if (beforePreviousCoachKey && beforePreviousCoachKey === candidateCoachKey) s -= 500_000;
+          }
         }
       }
 

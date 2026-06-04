@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
-import { compareCandidateSolutions, scoreCandidateSolution } from "./solutionScoring";
+import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "./solutionScoring";
 import { generatePlanV3 } from "./index";
 import { scenarioById } from "./benchmarks/scenarios";
 import { countHardConstraintViolations } from "./benchmarks/metrics";
@@ -100,6 +100,56 @@ const output = (planned: Array<[number, string, string]>, unplanned: number[] = 
   const valid = output([[2, "09:00", "09:30"]], [1, 3]);
   const invalid = output([[1, "09:00", "09:30"], [2, "09:30", "10:00"], [3, "09:00", "09:30"]]);
   assert.ok(compareCandidateSolutions(input, valid, invalid) > 0, "hard-valid candidate beats invalid candidate even with fewer planned tasks");
+}
+
+// Test 7 — Candidate scoring prioriza timing de talent restrictivo cuando empatan hard/planned/gaps.
+{
+  const input = baseInput({
+    optimizerMainZoneId: null,
+    contestantAvailabilityById: {
+      1: { start: "09:00", end: "11:00" },
+      2: { start: "09:00", end: "10:30" },
+      3: { start: "09:00", end: "11:00" },
+    },
+  });
+  const earlyRestrictive = output([[1, "09:30", "10:00"], [2, "09:00", "09:30"], [3, "09:00", "09:30"]]);
+  const lateRestrictive = output([[1, "09:00", "09:30"], [2, "09:30", "10:00"], [3, "09:00", "09:30"]]);
+  const earlyScore = scoreCandidateSolution(input, earlyRestrictive);
+  const lateScore = scoreCandidateSolution(input, lateRestrictive);
+  assert.ok(earlyScore.restrictiveTalentLatenessPenalty < lateScore.restrictiveTalentLatenessPenalty);
+  assert.ok(compareCandidateSolutions(input, earlyRestrictive, lateRestrictive) > 0, "earlier restrictive talent wins");
+  assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", earlyScore, lateScore), /earlier restrictive talents/);
+}
+
+// Test 8 — Candidate scoring penaliza switches de coach cuando empatan hard/planned/gaps/restrictive.
+{
+  const input = baseInput({
+    optimizerMainZoneId: null,
+    planResourceItems: [
+      { id: 501, resourceItemId: 9001, typeId: 10, name: "Coach Alpha", isAvailable: true },
+      { id: 502, resourceItemId: 9002, typeId: 10, name: "Coach Beta", isAvailable: true },
+    ],
+    tasks: [
+      { id: 1, planId: 7007, templateId: 1, templateName: "Coach A1", zoneId: 2, spaceId: 201, contestantId: 1, status: "pending", durationOverrideMin: 30, resourceRequirements: { byItem: { 9001: 1 } } },
+      { id: 2, planId: 7007, templateId: 2, templateName: "Coach A2", zoneId: 2, spaceId: 202, contestantId: 2, status: "pending", durationOverrideMin: 30, resourceRequirements: { byItem: { 9001: 1 } } },
+      { id: 3, planId: 7007, templateId: 3, templateName: "Coach B", zoneId: 2, spaceId: 203, contestantId: 3, status: "pending", durationOverrideMin: 30, resourceRequirements: { byItem: { 9002: 1 } } },
+    ] as any,
+  });
+  const compactCoaches: EngineOutput = { ...output([]), plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedSpace: 201, assignedResources: [501] },
+    { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedSpace: 202, assignedResources: [501] },
+    { taskId: 3, startPlanned: "10:00", endPlanned: "10:30", assignedSpace: 203, assignedResources: [502] },
+  ] };
+  const alternatingCoaches: EngineOutput = { ...output([]), plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedSpace: 201, assignedResources: [501] },
+    { taskId: 3, startPlanned: "09:30", endPlanned: "10:00", assignedSpace: 203, assignedResources: [502] },
+    { taskId: 2, startPlanned: "10:00", endPlanned: "10:30", assignedSpace: 202, assignedResources: [501] },
+  ] };
+  const compactScore = scoreCandidateSolution(input, compactCoaches);
+  const alternatingScore = scoreCandidateSolution(input, alternatingCoaches);
+  assert.ok(compactScore.coachSwitchPenalty < alternatingScore.coachSwitchPenalty);
+  assert.ok(compareCandidateSolutions(input, compactCoaches, alternatingCoaches) > 0, "fewer coach switches wins");
+  assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, alternatingScore), /fewer coach switches/);
 }
 
 console.log("engine/v3/solutionScoring.spec.ts: OK");
