@@ -58,3 +58,10 @@ El benchmark añade **H — Elegir mejor entre dos soluciones válidas**. El esc
 ## Recomendación para ID 008
 
 La siguiente iteración recomendada es convertir CP-SAT en un solver global real o ampliar la búsqueda comparativa con un dataset real anonimizado. La opción de mayor impacto sería usar los criterios de ID 007 como función objetivo auditable para CP-SAT, manteniendo Phase A como fallback rápido y explicable.
+
+
+## Actualización ID 008
+
+El escenario I no cambia la política de candidate selection; la usa como métrica de observabilidad en escala intermedia. La comparativa con backtracking off/on queda disponible en `npm run benchmark:engine`. En la ejecución de referencia de ID 008, I no activa backtracking (`candidateSolutionsEvaluated: n/a`, `solutionSource: phaseA_greedy`) porque Phase A ya devuelve solución completa sin huecos de plató principal ni violaciones hard.
+
+La lectura operativa es que H sigue siendo el canario específico de selección comparativa, mientras que I mide si esa maquinaria aparece de forma natural en un dataset sintético realista.

@@ -1,5 +1,6 @@
 import type { BenchmarkScenario } from "./types";
 import type { EngineV3Input } from "../types";
+import { realisticDayScenario } from "./realisticDayScenario";
 
 const PLAN_ID = 4004;
 const MAIN_ZONE_ID = 1;
@@ -212,6 +213,7 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "Greedy es completo, pero la alternativa backtracking reduce el hueco del plató principal sin violar hard constraints.",
     riskNotes: ["Selección comparativa entre ramas válidas", "Compacidad de plató principal como criterio operativo no hard"],
   },
+  realisticDayScenario,
  ];
 
 export const scenarioById = new Map(benchmarkScenarios.map((scenario) => [scenario.id, scenario]));

@@ -17,7 +17,7 @@ La auditoría ID 003 documentó que la ruta principal ejecuta `generatePlanV3`, 
 - La disponibilidad restrictiva de concursantes es una fuente central de factibilidad.
 - Locks, tareas `done` y tareas `in_progress` son intocables para producto.
 
-Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cubrir ventanas restrictivas, riesgo greedy, continuidad de plató principal, coaches exclusivos, locks/ejecución y comida global.
+Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cubrir ventanas restrictivas, riesgo greedy, continuidad de plató principal, coaches exclusivos, locks/ejecución y comida global. ID 006 añade G, ID 007 añade H e ID 008 añade I como stress sintético realista.
 
 ## Escenarios incluidos
 
@@ -29,10 +29,11 @@ Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cub
 | D — Coaches encadenados | Dos coaches exclusivos, tareas de coach y tareas relacionadas de plató principal. | Solape de recursos exclusivos y activación tardía de coach restrictivo. | Completo; 5/5 tareas planificadas; 0 violaciones hard; 2 cambios de coach en la ejecución de referencia. | `coachSwitchCount` se calcula desde recursos asignados por el motor. |
 | E — Locks y ejecución intocable | Una tarea `done`, una `in_progress`, un lock manual y varias pending. | Movimiento accidental de ejecución o locks. | Completo; el motor devuelve 2/5 tareas movibles/planificables; 0 movimientos de locked/executed según métrica. | Las tareas fijas pueden no aparecer en `plannedTasks`; la métrica solo cuenta movimiento si el motor devuelve una hora distinta. |
 | F — Comida / bloque global | Comida global 10:30-11:00 con tareas antes/después y disponibilidad restrictiva. | Tareas cruzando comida si el bloque global deja de ser hard. | Completo; 3/3 tareas planificadas; 0 cruces de comida; 60 minutos de hueco main stage en la ejecución de referencia. | La comida se modela con `input.meal` como bloque global operativo. |
+| I — Jornada sintética realista | 16 talents, 80 tareas, 6 espacios, 2 coaches, 6 recursos, comida, locks, `done`/`in_progress` y feeders hacia plató principal. | Escala intermedia, priorización restrictiva, huecos de plató, coaches y efectos de locks/ejecución. | Completo; 77/80 filas planificadas; 0 violaciones hard; 0 huecos de plató principal en la ejecución de referencia. | Stress benchmark ID 008; detalle completo en `docs/ENGINE_V3_STRESS_BENCHMARK.md`. |
 
 ## Métricas
 
-Las métricas se calculan en `engine/v3/benchmarks/metrics.ts` como funciones puras sobre `EngineV3Input`, `EngineOutput` y `runtimeMs` medido por el runner.
+Las métricas puras reutilizables se calculan en `engine/v3/metrics.ts`. `engine/v3/benchmarks/metrics.ts` queda como agregador específico de benchmark sobre `EngineV3Input`, `EngineOutput`, `runtimeMs`, blockers estructurados y metadata V3.
 
 | Métrica | Significado |
 |---|---|
@@ -139,3 +140,12 @@ Cuando el output final no contiene blockers (por ejemplo porque el backtracking 
 ID 007 amplía el benchmark con el escenario **H — Elegir mejor entre dos soluciones válidas**. El escenario comprueba que el motor evalúa al menos dos candidatos y selecciona una alternativa backtracking válida cuando reduce huecos del plató principal sin introducir violaciones hard.
 
 El runner imprime nueva metadata compacta: `candidateSolutionsEvaluated`, `bestCandidateSource`, `candidateSelectionReason` y `bestCandidateScore`. Esto permite auditar por qué se eligió una rama sin inspeccionar manualmente todo el calendario.
+
+
+## Actualización ID 008 — Stress benchmark sintético
+
+ID 008 añade el escenario **I — Jornada sintética realista** y amplía la salida del runner con métricas de stress: latencia, planned/unplanned, huecos de plató, violaciones hard, locks/ejecución movidos, switches de coach, metadata de backtracking/candidate selection, blockers estructurados, warnings, razones infeasible, offset de talents restrictivos, slack de cierre, utilización de plató principal, tareas por concursante y resumen de utilización de recursos.
+
+La ejecución de referencia para I es completa, con `77 / 80` filas planificadas, `hardConstraintViolations: 0`, `mainStageGapMinutes: 0`, `coachSwitchCount: 44`, `solutionSource: phaseA_greedy` y backtracking no activado.
+
+El runner falla si un escenario completo presenta violaciones hard o si se detecta movimiento de locks/tareas `done`/`in_progress`; no falla por optimización imperfecta o por un escenario de stress partial/infeasible sin violaciones hard.
