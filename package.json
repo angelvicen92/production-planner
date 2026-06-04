@@ -8,9 +8,10 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "test": "tsx --test engine/**/*.spec.ts",
-    "test:engine": "tsx --test engine/**/*.spec.ts",
-    "db:push": "drizzle-kit push"
+    "test": "tsx --test \"engine/**/*.spec.ts\"",
+    "test:engine": "tsx --test \"engine/**/*.spec.ts\"",
+    "db:push": "drizzle-kit push",
+    "benchmark:engine": "tsx engine/v3/benchmarks/runBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
