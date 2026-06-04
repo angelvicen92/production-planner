@@ -446,6 +446,7 @@ type SolveV3PhaseAProtectedSpaceWindow = {
 
 type SolveV3PhaseAOptions = {
   mainStartGateMin?: number;
+  forcedTaskStarts?: Record<number, number>;
   mealStartMin?: number;
   chosenMealStartMin?: number;
   optimizerWeightsOverride?: Record<string, number>;
@@ -1160,6 +1161,14 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
   buildWrapInnerMapping();
   const forcedStartByTaskId = new Map<number, number>();
+  const forcedTaskStartsFromOptions = ((options as any)?.forcedTaskStarts ?? {}) as Record<number, number>;
+  for (const [taskIdRaw, startRaw] of Object.entries(forcedTaskStartsFromOptions)) {
+    const taskId = Number(taskIdRaw);
+    const start = Number(startRaw);
+    if (Number.isFinite(taskId) && taskId > 0 && Number.isFinite(start)) {
+      forcedStartByTaskId.set(taskId, Math.ceil(start / GRID_PHASE_A) * GRID_PHASE_A);
+    }
+  }
   const deferredDepartureTaskIds = new Set<number>();
   const startDay = toMinutes(input.workDay.start);
   const endDay = toMinutes(input.workDay.end);

@@ -36,6 +36,11 @@ export interface EngineBenchmarkMetrics {
   cpSatAttempted: boolean | null;
   cpSatAccepted: boolean | null;
   phaseAUsed: boolean | null;
+  backtrackingAttempted: boolean | null;
+  backtrackingAccepted: boolean | null;
+  backtrackingAttempts: number | null;
+  backtrackingBranchesExplored: number | null;
+  solutionSource: string | null;
   warningsCount: number;
   infeasibleReasonCount: number;
 }

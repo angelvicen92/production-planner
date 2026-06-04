@@ -243,6 +243,11 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     cpSatAttempted: output.v3Meta?.cpSatAttempted ?? null,
     cpSatAccepted: output.v3Meta?.cpSatAccepted ?? null,
     phaseAUsed: output.v3Meta?.phaseAUsed ?? null,
+    backtrackingAttempted: output.v3Meta?.backtrackingAttempted ?? null,
+    backtrackingAccepted: output.v3Meta?.backtrackingAccepted ?? null,
+    backtrackingAttempts: output.v3Meta?.backtrackingAttempts ?? null,
+    backtrackingBranchesExplored: output.v3Meta?.backtrackingBranchesExplored ?? null,
+    solutionSource: output.v3Meta?.solutionSource ?? null,
     warningsCount: output.warnings?.length ?? 0,
     infeasibleReasonCount: output.reasons?.length ?? 0,
   };

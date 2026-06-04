@@ -51,6 +51,11 @@ Las métricas se calculan en `engine/v3/benchmarks/metrics.ts` como funciones pu
 | `cpSatAttempted` | `output.v3Meta.cpSatAttempted` si existe; `null` si no hay metadata. |
 | `cpSatAccepted` | `output.v3Meta.cpSatAccepted` si existe; `null` si no hay metadata. |
 | `phaseAUsed` | `output.v3Meta.phaseAUsed` si existe; `null` si no hay metadata. |
+| `backtrackingAttempted` | `output.v3Meta.backtrackingAttempted` si existe; desde ID 005 indica si se activó la búsqueda limitada. |
+| `backtrackingAccepted` | `output.v3Meta.backtrackingAccepted` si existe; indica si una rama alternativa sustituyó al resultado greedy. |
+| `backtrackingAttempts` | Número de intentos de ramas alternativas reportado por `v3Meta`. |
+| `backtrackingBranchesExplored` | Número de ramas exploradas por la búsqueda limitada. |
+| `solutionSource` | Fuente final declarada por V3: `phaseA_greedy`, `phaseA_backtracking`, `cp_sat`, `fallback` o `infeasible`. |
 | `warningsCount` | Número de warnings devueltos por el motor. |
 | `infeasibleReasonCount` | Número de reasons devueltos por el motor. |
 
@@ -62,6 +67,7 @@ Ejecución de referencia con `npm run benchmark:engine`:
 
 - Los seis escenarios A-F terminan en estado completo sin violaciones hard detectadas por la suite.
 - Phase A aparece como usada en todos los escenarios (`phaseAUsed: true`).
+- Desde ID 005 el runner muestra metadata de backtracking si está presente (`backtrackingAttempted`, `backtrackingAccepted`, `backtrackingAttempts`, `backtrackingBranchesExplored`, `solutionSource`) sin romper la salida anterior.
 - CP-SAT no se intenta en esta suite porque el runner usa `timeLimitMs: 0` para mantener un benchmark rápido, determinista y centrado en la ruta Phase A caracterizada por ID 003.
 - El riesgo greedy potencial del escenario B no se manifiesta en el microcaso actual: el scoring de ventanas restrictivas encuentra solución.
 - La continuidad de plató principal queda bien en A-C-D, pero F muestra un hueco main stage esperado por comida/disponibilidad; ese hueco se reporta y no se transforma en hard.
@@ -76,7 +82,11 @@ Ejecución de referencia con `npm run benchmark:engine`:
 4. **Semántica de tareas fijas en `plannedTasks`**: E evidencia que `plannedTasks` no equivale necesariamente a “todas las tareas del plan”; las métricas deben tratar locks/ejecución por movimiento explícito, no por ausencia.
 5. **Coach switches medidos desde recursos asignados**: `coachSwitchCount` solo es fiable cuando el output incluye `assignedResources`; si un escenario no modela recursos, se devuelve `null`.
 
-## Recomendación para ID 005
+## Nota ID 005
+
+ID 005 implementa backtracking limitado mediante retry determinista de candidatos alternativos sobre Phase A. El benchmark conserva los escenarios A-F de ID 004 y añade visibilidad de metadata de backtracking; un cambio de metadata no implica por sí mismo regresión operativa si las métricas hard permanecen en cero.
+
+## Recomendación histórica para ID 005
 
 Recomendación concreta: **implementar backtracking limitado sobre Phase A**.
 
@@ -87,4 +97,4 @@ Justificación:
 - Permite mantener las reglas hard/soft actuales y usar la suite ID 004 para comparar si disminuyen falsos negativos sin deteriorar locks, ejecución, comida, dependencias ni recursos exclusivos.
 - Puede acotarse a casos de fallo o bloqueo tardío, por ejemplo reintentando un pequeño conjunto de órdenes alternativos para tareas con ventanas más restrictivas, recursos exclusivos o dependencias críticas.
 
-No se implementa ID 005 en este lote.
+ID 005 queda implementado en este lote mediante retry determinista de candidatos alternativos con metadata observable.
