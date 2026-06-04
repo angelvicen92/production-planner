@@ -1,0 +1,183 @@
+import type { EngineOutput } from "../types";
+import type { EngineV3Input } from "./types";
+import {
+  calculateCoachSwitchCount,
+  calculateMainStageGaps,
+  calculateMakespan,
+  countContestantWindowViolations,
+  countHardConstraintViolations,
+  getPlannedViews,
+  toMinutes,
+} from "./benchmarks/metrics";
+
+export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+
+export interface CandidateSolutionScore {
+  hardConstraintViolations: number;
+  plannedTasks: number;
+  unplannedTasks: number;
+  contestantWindowViolations: number;
+  mainStageGapMinutes: number;
+  mainStageGapCount: number;
+  restrictiveTalentLatenessPenalty: number;
+  dependencyFeederPenalty: number;
+  coachSwitchPenalty: number;
+  makespan: number;
+  score: string;
+  tieBreakKey: string;
+  reasons: string[];
+}
+
+const finiteOrZero = (value: number | null | undefined): number => Number.isFinite(Number(value)) ? Number(value) : 0;
+const finiteOrLarge = (value: number | null | undefined): number => Number.isFinite(Number(value)) ? Number(value) : Number.MAX_SAFE_INTEGER;
+
+const isRestrictiveWindow = (input: EngineV3Input, contestantId: number): boolean => {
+  const dayStart = toMinutes(input.workDay?.start);
+  const dayEnd = toMinutes(input.workDay?.end);
+  const window = input.contestantAvailabilityById?.[contestantId];
+  const start = toMinutes(window?.start);
+  const end = toMinutes(window?.end);
+  if (dayStart === null || dayEnd === null || start === null || end === null) return false;
+  return start > dayStart || end < dayEnd;
+};
+
+const calculateRestrictiveTalentLatenessPenalty = (input: EngineV3Input, output: EngineOutput): number => {
+  let penalty = 0;
+  for (const view of getPlannedViews(input, output)) {
+    const contestantId = Number(view.task.contestantId ?? NaN);
+    if (!Number.isFinite(contestantId) || !isRestrictiveWindow(input, contestantId)) continue;
+    const windowStart = toMinutes(input.contestantAvailabilityById?.[contestantId]?.start);
+    const start = toMinutes(view.startPlanned);
+    if (windowStart === null || start === null) continue;
+    penalty += Math.max(0, start - windowStart);
+  }
+  return penalty;
+};
+
+const getDependencyIds = (task: any): number[] => [
+  ...(Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : []),
+  ...(task.dependsOnTaskId ? [task.dependsOnTaskId] : []),
+].map(Number).filter((id) => Number.isFinite(id) && id > 0);
+
+const calculateDependencyFeederPenalty = (input: EngineV3Input, output: EngineOutput): number => {
+  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
+  if (!Number.isFinite(mainZoneId) || mainZoneId <= 0) return 0;
+  const plannedById = new Map((output.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  const taskById = new Map((input.tasks ?? []).map((task) => [Number((task as any).id), task]));
+  let penalty = 0;
+  for (const task of input.tasks ?? []) {
+    if (Number((task as any).zoneId ?? NaN) !== mainZoneId) continue;
+    const deps = getDependencyIds(task);
+    if (!deps.length) continue;
+    const planned = plannedById.get(Number((task as any).id));
+    const mainStart = toMinutes(planned?.startPlanned);
+    if (!planned || mainStart === null) {
+      penalty += 1440 * deps.length;
+      continue;
+    }
+    for (const depId of deps) {
+      const depTask = taskById.get(depId) as any;
+      const depPlanned = plannedById.get(depId);
+      const depEnd = toMinutes(depPlanned?.endPlanned);
+      if (!depTask || !depPlanned || depEnd === null) {
+        penalty += 1440;
+        continue;
+      }
+      penalty += Math.max(0, mainStart - depEnd);
+    }
+  }
+  return penalty;
+};
+
+export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutput): CandidateSolutionScore => {
+  const mainGaps = calculateMainStageGaps(input, output);
+  const hardConstraintViolations = countHardConstraintViolations(input, output);
+  const plannedTasks = output.plannedTasks?.length ?? 0;
+  const unplannedTasks = output.unplanned?.length ?? Math.max(0, (input.tasks?.length ?? 0) - plannedTasks);
+  const contestantWindowViolations = countContestantWindowViolations(input, output);
+  const mainStageGapCount = finiteOrZero(mainGaps?.count);
+  const mainStageGapMinutes = finiteOrZero(mainGaps?.minutes);
+  const restrictiveTalentLatenessPenalty = calculateRestrictiveTalentLatenessPenalty(input, output);
+  const dependencyFeederPenalty = calculateDependencyFeederPenalty(input, output);
+  const coachSwitchPenalty = finiteOrZero(calculateCoachSwitchCount(input, output));
+  const makespan = finiteOrLarge(calculateMakespan(input, output));
+  const tieBreakKey = (output.plannedTasks ?? [])
+    .map((task) => `${String(task.taskId).padStart(12, "0")}@${task.startPlanned}-${task.endPlanned}`)
+    .sort()
+    .join("|");
+
+  const reasons = [
+    `hard=${hardConstraintViolations}`,
+    `planned=${plannedTasks}`,
+    `window=${contestantWindowViolations}`,
+    `mainGaps=${mainStageGapCount}/${mainStageGapMinutes}`,
+    `restrictiveLate=${restrictiveTalentLatenessPenalty}`,
+    `feeders=${dependencyFeederPenalty}`,
+    `coachSwitch=${coachSwitchPenalty}`,
+    `makespan=${makespan === Number.MAX_SAFE_INTEGER ? "n/a" : makespan}`,
+  ];
+
+  return {
+    hardConstraintViolations,
+    plannedTasks,
+    unplannedTasks,
+    contestantWindowViolations,
+    mainStageGapMinutes,
+    mainStageGapCount,
+    restrictiveTalentLatenessPenalty,
+    dependencyFeederPenalty,
+    coachSwitchPenalty,
+    makespan,
+    score: reasons.join("; "),
+    tieBreakKey,
+    reasons,
+  };
+};
+
+const compareNumber = (a: number, b: number, lowerIsBetter: boolean): number => {
+  if (a === b) return 0;
+  return lowerIsBetter ? (a < b ? 1 : -1) : (a > b ? 1 : -1);
+};
+
+export const compareCandidateScores = (a: CandidateSolutionScore, b: CandidateSolutionScore): number => {
+  const checks: Array<[number, number, boolean]> = [
+    [a.hardConstraintViolations, b.hardConstraintViolations, true],
+    [a.plannedTasks, b.plannedTasks, false],
+    [a.contestantWindowViolations, b.contestantWindowViolations, true],
+    [a.mainStageGapCount, b.mainStageGapCount, true],
+    [a.mainStageGapMinutes, b.mainStageGapMinutes, true],
+    [a.restrictiveTalentLatenessPenalty, b.restrictiveTalentLatenessPenalty, true],
+    [a.dependencyFeederPenalty, b.dependencyFeederPenalty, true],
+    [a.coachSwitchPenalty, b.coachSwitchPenalty, true],
+    [a.makespan, b.makespan, true],
+  ];
+  for (const [left, right, lowerIsBetter] of checks) {
+    const result = compareNumber(left, right, lowerIsBetter);
+    if (result !== 0) return result;
+  }
+  return 0;
+};
+
+export const compareCandidateSolutions = (input: EngineV3Input, a: EngineOutput, b: EngineOutput): number => (
+  compareCandidateScores(scoreCandidateSolution(input, a), scoreCandidateSolution(input, b))
+);
+
+export const summarizeCandidateScore = (score: CandidateSolutionScore): string => score.score;
+
+export const explainCandidateComparison = (
+  selectedSource: CandidateSource,
+  rejectedSource: CandidateSource,
+  selected: CandidateSolutionScore,
+  rejected: CandidateSolutionScore,
+): string => {
+  if (selected.hardConstraintViolations !== rejected.hardConstraintViolations) return `${selectedSource} selected: fewer hard constraint violations`;
+  if (selected.plannedTasks !== rejected.plannedTasks) return `${selectedSource} selected: rescued ${selected.plannedTasks - rejected.plannedTasks} planned task(s)`;
+  if (selected.contestantWindowViolations !== rejected.contestantWindowViolations) return `${selectedSource} selected: fewer availability window violations`;
+  if (selected.mainStageGapCount !== rejected.mainStageGapCount) return `${selectedSource} selected: fewer main-stage gaps`;
+  if (selected.mainStageGapMinutes !== rejected.mainStageGapMinutes) return `${selectedSource} selected: fewer main-stage gap minutes`;
+  if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: restrictive talent scheduled earlier`;
+  if (selected.dependencyFeederPenalty !== rejected.dependencyFeederPenalty) return `${selectedSource} selected: better feeder/dependency timing`;
+  if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) return `${selectedSource} selected: fewer coach/resource switches`;
+  if (selected.makespan !== rejected.makespan) return `${selectedSource} selected: lower makespan`;
+  return `${selectedSource} selected: deterministic stable tie-break`;
+};

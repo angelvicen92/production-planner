@@ -133,3 +133,9 @@ El runner imprime ahora:
 - `unknownBlockersCount`
 
 Cuando el output final no contiene blockers (por ejemplo porque el backtracking aceptó una solución completa), los contadores se muestran como `0`.
+
+## Actualización ID 007 — Escenario H y metadata de selección
+
+ID 007 amplía el benchmark con el escenario **H — Elegir mejor entre dos soluciones válidas**. El escenario comprueba que el motor evalúa al menos dos candidatos y selecciona una alternativa backtracking válida cuando reduce huecos del plató principal sin introducir violaciones hard.
+
+El runner imprime nueva metadata compacta: `candidateSolutionsEvaluated`, `bestCandidateSource`, `candidateSelectionReason` y `bestCandidateScore`. Esto permite auditar por qué se eligió una rama sin inspeccionar manualmente todo el calendario.

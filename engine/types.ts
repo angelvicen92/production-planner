@@ -331,5 +331,12 @@ export interface EngineOutput {
     movableBlockersCount?: number;
     immovableBlockersCount?: number;
     unknownBlockersCount?: number;
+    candidateSolutionsEvaluated?: number;
+    bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+    bestCandidateScore?: string;
+    greedyCandidateScore?: string;
+    backtrackingBestScore?: string;
+    candidateSelectionReason?: string;
+    candidateComparisonSummary?: string;
   };
 }

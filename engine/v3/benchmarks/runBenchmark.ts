@@ -5,6 +5,7 @@ import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
 const formatNullable = (value: number | boolean | string | null): string => value === null ? "n/a" : String(value);
+const formatCompact = (value: string | null): string => value === null ? "n/a" : value.length > 140 ? `${value.slice(0, 137)}...` : value;
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
@@ -38,6 +39,10 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  backtrackingAccepted: ${formatNullable(metrics.backtrackingAccepted)}`);
   console.log(`  backtrackingAttempts: ${formatNullable(metrics.backtrackingAttempts)}`);
   console.log(`  backtrackingBranchesExplored: ${formatNullable(metrics.backtrackingBranchesExplored)}`);
+  console.log(`  candidateSolutionsEvaluated: ${formatNullable(metrics.candidateSolutionsEvaluated)}`);
+  console.log(`  bestCandidateSource: ${formatNullable(metrics.bestCandidateSource)}`);
+  console.log(`  candidateSelectionReason: ${formatNullable(metrics.candidateSelectionReason)}`);
+  console.log(`  bestCandidateScore: ${formatCompact(metrics.bestCandidateScore)}`);
   console.log(`  structuredBlockersCount: ${metrics.structuredBlockersCount}`);
   console.log(`  movableBlockersCount: ${metrics.movableBlockersCount}`);
   console.log(`  immovableBlockersCount: ${metrics.immovableBlockersCount}`);
@@ -48,8 +53,8 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006");
-console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos sin fallar por optimización no perfecta.");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007");
+console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos y selección comparativa de candidatos sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);

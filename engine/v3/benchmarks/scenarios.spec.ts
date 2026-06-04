@@ -13,7 +13,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -48,7 +48,7 @@ for (const scenario of benchmarkScenarios) {
 }
 
 // Disponibilidad de concursantes: los escenarios completos no deben planificar fuera de ventana.
-for (const id of ["A", "B", "C", "D", "F", "G"] as const) {
+for (const id of ["A", "B", "C", "D", "F", "G", "H"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantWindowViolations(scenario.input, output), 0, `scenario ${id} contestant windows`);
@@ -56,7 +56,7 @@ for (const id of ["A", "B", "C", "D", "F", "G"] as const) {
 }
 
 // No solapar concursante ni espacio en escenarios completos.
-for (const id of ["A", "B", "C", "D", "E", "F", "G"] as const) {
+for (const id of ["A", "B", "C", "D", "E", "F", "G", "H"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantOverlaps(scenario.input, output), 0, `scenario ${id} contestant overlaps`);
@@ -97,6 +97,17 @@ for (const id of ["C", "D"] as const) {
   assert.equal(output.v3Meta?.solutionSource, "phaseA_backtracking", "scenario G source");
   assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario G contestant windows");
   assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario G space overlaps");
+}
+
+// Escenario H — selección comparativa elige una alternativa válida mejor.
+{
+  const { scenario, output } = run("H");
+  assert.equal(output.complete, true, "scenario H should be complete");
+  assert.ok((output.v3Meta?.candidateSolutionsEvaluated ?? 0) >= 2, "scenario H should compare candidates");
+  assert.equal(output.v3Meta?.solutionSource, "phaseA_backtracking", "scenario H source");
+  assert.match(String(output.v3Meta?.candidateSelectionReason ?? ""), /main-stage gaps|gap/, "scenario H selection reason");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario H contestant windows");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario H space overlaps");
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

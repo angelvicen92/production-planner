@@ -4,6 +4,12 @@ import type { EngineV3Input, EngineV3Options } from "./types";
 import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
 import { getStructuredBlockers, summarizeStructuredBlockers } from "./blockers";
+import {
+  compareCandidateSolutions,
+  explainCandidateComparison,
+  scoreCandidateSolution,
+  summarizeCandidateScore,
+} from "./solutionScoring";
 
 type AttemptSummary = {
   level: number;
@@ -38,6 +44,13 @@ type BacktrackingMeta = {
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
   solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+  candidateSolutionsEvaluated?: number;
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateScore?: string;
+  greedyCandidateScore?: string;
+  backtrackingBestScore?: string;
+  candidateSelectionReason?: string;
+  candidateComparisonSummary?: string;
 };
 
 type BacktrackingBranch = {
@@ -125,6 +138,101 @@ const deriveLimitedBacktrackingBranches = (input: EngineV3Input, output: EngineO
 
 const snapToGrid = (minutes: number): number => Math.ceil(minutes / GRID_MIN) * GRID_MIN;
 
+const buildCandidateMeta = (
+  input: EngineV3Input,
+  selectedSource: "phaseA_greedy" | "phaseA_backtracking",
+  selectedOutput: EngineOutput,
+  greedyOutput: EngineOutput,
+  backtrackingOutput: EngineOutput | null,
+  evaluated: number,
+  fallbackReason?: string,
+): Partial<BacktrackingMeta> => {
+  const selectedScore = scoreCandidateSolution(input, selectedOutput);
+  const greedyScore = scoreCandidateSolution(input, greedyOutput);
+  const backtrackingScore = backtrackingOutput ? scoreCandidateSolution(input, backtrackingOutput) : null;
+  const rejectedSource = selectedSource === "phaseA_backtracking" ? "phaseA_greedy" : "phaseA_backtracking";
+  const rejectedScore = selectedSource === "phaseA_backtracking" ? greedyScore : backtrackingScore;
+  const summary = rejectedScore
+    ? explainCandidateComparison(selectedSource, rejectedSource, selectedScore, rejectedScore)
+    : "no alternative candidate improved greedy";
+
+  return {
+    backtrackingAccepted: selectedSource === "phaseA_backtracking",
+    solutionSource: selectedSource,
+    backtrackingFallbackReason: selectedSource === "phaseA_backtracking" ? undefined : fallbackReason,
+    candidateSolutionsEvaluated: evaluated,
+    bestCandidateSource: selectedSource,
+    bestCandidateScore: summarizeCandidateScore(selectedScore),
+    greedyCandidateScore: summarizeCandidateScore(greedyScore),
+    backtrackingBestScore: backtrackingScore ? summarizeCandidateScore(backtrackingScore) : undefined,
+    candidateSelectionReason: summary,
+    candidateComparisonSummary: summary,
+  };
+};
+
+const deriveComparativeBacktrackingBranches = (input: EngineV3Input, output: EngineOutput, maxBranches: number): BacktrackingBranch[] => {
+  const taskById = new Map((input.tasks ?? []).map((task: any) => [Number(task?.id ?? NaN), task]));
+  const branches: BacktrackingBranch[] = [];
+  const seen = new Set<string>();
+  const pushBranch = (taskId: number, start: number, reason: string) => {
+    if (branches.length >= maxBranches) return;
+    const task = taskById.get(taskId) as any;
+    if (!task || !isReplannableTask(task, input.locks ?? [])) return;
+    const duration = Number(task?.durationOverrideMin ?? task?.durationMin ?? NaN);
+    const endDay = toMinutes(input.workDay?.end ?? "");
+    if (!Number.isFinite(duration) || duration <= 0 || endDay === null || start + duration > endDay) return;
+    const key = `${taskId}:${start}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    branches.push({ reason, forcedTaskStarts: { [taskId]: start } });
+  };
+
+  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
+  if (Number.isFinite(mainZoneId) && mainZoneId > 0) {
+    const plannedById = new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
+    const rows = (input.tasks ?? [])
+      .filter((task: any) => Number(task?.zoneId ?? NaN) === mainZoneId)
+      .map((task: any) => ({ task, planned: plannedById.get(Number(task?.id ?? NaN)) as any }))
+      .filter((row) => row.planned?.startPlanned && row.planned?.endPlanned)
+      .sort((a, b) => (toMinutes(String(a.planned.startPlanned)) ?? 0) - (toMinutes(String(b.planned.startPlanned)) ?? 0));
+    for (let i = 1; i < rows.length; i++) {
+      const prevEnd = toMinutes(String(rows[i - 1].planned.endPlanned));
+      const currentStart = toMinutes(String(rows[i].planned.startPlanned));
+      const taskId = Number(rows[i].task?.id ?? NaN);
+      if (prevEnd !== null && currentStart !== null && currentStart > prevEnd) {
+        pushBranch(taskId, snapToGrid(prevEnd), "compact_main_stage_gap");
+      }
+    }
+  }
+
+  const dayStart = toMinutes(input.workDay?.start ?? "");
+  const availability = ((input as any)?.contestantAvailabilityById ?? {}) as Record<number, { start?: string; end?: string }>;
+  const plannedById = new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
+  for (const task of input.tasks ?? []) {
+    const contestantId = Number((task as any)?.contestantId ?? NaN);
+    const window = Number.isFinite(contestantId) ? availability[contestantId] : null;
+    const windowStart = toMinutes(window?.start ?? "");
+    const currentStart = toMinutes(String((plannedById.get(Number((task as any)?.id)) as any)?.startPlanned ?? ""));
+    if (dayStart !== null && windowStart !== null && windowStart > dayStart && currentStart !== null && currentStart > windowStart) {
+      pushBranch(Number((task as any).id), snapToGrid(windowStart), "prioritize_restrictive_availability_start");
+    }
+  }
+
+  return branches.slice(0, maxBranches);
+};
+
+const hasComparativeSelectionRisk = (input: EngineV3Input, output: EngineOutput): boolean => {
+  if (!output.complete) return false;
+  if ((input.locks ?? []).some((lock: any) => String(lock?.lockType ?? "").toLowerCase() === "time" || String(lock?.lockType ?? "").toLowerCase() === "full")) return false;
+  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
+  if (Number.isFinite(mainZoneId) && mainZoneId > 0 && (input.optimizerMainZoneOptKeepBusy || input.optimizerPrioritizeMainZone)) {
+    const branches = deriveComparativeBacktrackingBranches(input, output, 1);
+    if (branches.length > 0) return true;
+  }
+  if (hasRestrictiveAvailability(input)) return true;
+  return false;
+};
+
 const runLimitedBacktracking = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -147,60 +255,70 @@ const runLimitedBacktracking = (
     greedyFailedBeforeBacktracking: !Boolean(baseOutput.complete),
   };
 
+  const finish = (selected: EngineOutput, selectedSource: "phaseA_greedy" | "phaseA_backtracking", backtrackingBest: EngineOutput | null, fallbackReason?: string) => {
+    Object.assign(meta, buildCandidateMeta(input, selectedSource, selected, baseOutput, backtrackingBest, Math.max(1, meta.candidateSolutionsEvaluated ?? 1), fallbackReason));
+    meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
+    return { output: selected, meta };
+  };
+
   if (maxAttempts <= 0 || maxSearchMs <= 0) {
     meta.backtrackingFallbackReason = "budget_exhausted";
+    meta.candidateSolutionsEvaluated = 1;
     meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
     return { output: baseOutput, meta };
   }
 
-  const queue = deriveLimitedBacktrackingBranches(input, baseOutput, maxAttempts)
-    .map((branch) => ({ ...branch, depth: 1 }));
+  const initialBranches = baseOutput.complete
+    ? deriveComparativeBacktrackingBranches(input, baseOutput, maxAttempts)
+    : deriveLimitedBacktrackingBranches(input, baseOutput, maxAttempts);
+  const queue = initialBranches.map((branch) => ({ ...branch, depth: 1 }));
   if (!queue.length) {
     meta.backtrackingFallbackReason = "no_relevant_alternatives";
+    meta.candidateSolutionsEvaluated = 1;
     meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
     return { output: baseOutput, meta };
   }
 
-  let best = baseOutput;
-  let bestPlanned = Array.isArray(baseOutput.plannedTasks) ? baseOutput.plannedTasks.length : 0;
+  let bestBacktracking: EngineOutput | null = null;
+  meta.candidateSolutionsEvaluated = 1;
+  const seen = new Set<string>();
   while (queue.length && meta.backtrackingAttempts < maxAttempts) {
     if (Date.now() - started >= maxSearchMs) {
       meta.backtrackingFallbackReason = "budget_exhausted";
       break;
     }
     const branch = queue.shift()!;
+    const signature = Object.entries(branch.forcedTaskStarts).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|");
+    if (seen.has(signature)) continue;
+    seen.add(signature);
     meta.backtrackingAttempts += 1;
     meta.backtrackingBranchesExplored += 1;
     const out = solve_v3_phaseA_attempt(cloneWithSoftLevel(input, level), {
       maxIterations: 8000,
       forcedTaskStarts: branch.forcedTaskStarts,
     } as any);
-    const plannedCount = Array.isArray(out.plannedTasks) ? out.plannedTasks.length : 0;
-    if (plannedCount > bestPlanned) {
-      best = out;
-      bestPlanned = plannedCount;
+    meta.candidateSolutionsEvaluated += 1;
+    if (!bestBacktracking || compareCandidateSolutions(input, out, bestBacktracking) > 0) {
+      bestBacktracking = out;
     }
-    if (out.complete) {
-      meta.backtrackingAccepted = true;
-      meta.solutionSource = "phaseA_backtracking";
-      meta.backtrackingFallbackReason = undefined;
-      meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
-      return { output: out, meta };
-    }
-    if (branch.depth < maxDepth) {
+    if (!out.complete && branch.depth < maxDepth) {
       for (const next of deriveLimitedBacktrackingBranches(input, out, Math.max(0, maxAttempts - meta.backtrackingAttempts))) {
         const merged = { ...branch.forcedTaskStarts, ...next.forcedTaskStarts };
-        const signature = Object.entries(merged).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|");
-        if (!queue.some((queued) => Object.entries(queued.forcedTaskStarts).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|") === signature)) {
+        const mergedSignature = Object.entries(merged).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|");
+        if (!seen.has(mergedSignature) && !queue.some((queued) => Object.entries(queued.forcedTaskStarts).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|") === mergedSignature)) {
           queue.push({ ...next, forcedTaskStarts: merged, depth: branch.depth + 1 });
         }
       }
     }
   }
 
-  if (!meta.backtrackingFallbackReason) meta.backtrackingFallbackReason = best !== baseOutput ? "best_partial_not_complete" : "no_solution_found";
-  meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
-  return { output: best, meta };
+  if (bestBacktracking && compareCandidateSolutions(input, bestBacktracking, baseOutput) > 0) {
+    meta.backtrackingFallbackReason = undefined;
+    return finish(bestBacktracking, "phaseA_backtracking", bestBacktracking);
+  }
+
+  const reason = bestBacktracking ? "no_alternative_improved_greedy" : (meta.backtrackingFallbackReason ?? "no_solution_found");
+  return finish(baseOutput, "phaseA_greedy", bestBacktracking, reason);
 };
 
 const computeMakespanMinutes = (output: EngineOutput): number | null => {
@@ -462,7 +580,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     }
 
     const backtrackingEnabled = options?.enableLimitedBacktracking !== false && (input as any)?.enableLimitedBacktracking !== false;
-    const shouldTryBacktracking = backtrackingEnabled && !ok && ((out.unplanned?.length ?? 0) > 0 || out.hardFeasible === false || hasRestrictiveAvailability(input));
+    const shouldTryBacktracking = backtrackingEnabled && ((!ok && ((out.unplanned?.length ?? 0) > 0 || out.hardFeasible === false || hasRestrictiveAvailability(input))) || (ok && hasComparativeSelectionRisk(input, out)));
     if (shouldTryBacktracking) {
       const backtracking = runLimitedBacktracking(input, out, level, options);
       lastBacktrackingMeta = backtracking.meta;
@@ -478,7 +596,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         best = backtracking.output;
         bestPlanned = backtrackingPlanned;
       }
-      if (backtracking.output.complete) {
+      if (backtracking.output.complete && backtracking.meta.backtrackingAccepted) {
         const out = backtracking.output;
         const backtrackingAcceptedMeta = backtracking.meta;
 
@@ -657,6 +775,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatAccepted: accepted,
           cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
           fallbackReason: accepted ? undefined : optimized.message,
+          ...(lastBacktrackingMeta && !lastBacktrackingMeta.backtrackingAccepted && !lastBacktrackingMeta.greedyFailedBeforeBacktracking ? lastBacktrackingMeta : {}),
           solutionSource: accepted ? "cp_sat" : "phaseA_greedy",
         });
       }

@@ -190,6 +190,28 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "El greedy inicial deja fuera la tarea restrictiva, el backtracking retrasa el rehearsal flexible a las 10:00 y completa el plan.",
     riskNotes: ["Backtracking limitado", "Disponibilidad restrictiva de talent", "Espacio principal bloqueado por tarea flexible"],
   },
+
+  {
+    id: "H",
+    name: "Elegir mejor entre dos soluciones válidas",
+    description: "El greedy forzado entrega un plan válido pero con hueco evitable en plató principal; la búsqueda comparativa evalúa una alternativa compacta y la selecciona.",
+    input: baseInput([
+      { id: 8001, planId: PLAN_ID, templateId: 1801, templateName: "Main apertura", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 71, contestantName: "Talent apertura", status: "pending", durationOverrideMin: 30 },
+      { id: 8002, planId: PLAN_ID, templateId: 1802, templateName: "Main compactable", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 72, contestantName: "Talent compactable", status: "pending", durationOverrideMin: 30 },
+      { id: 8003, planId: PLAN_ID, templateId: 1803, templateName: "Aux paralelo", zoneId: 2, spaceId: 202, contestantId: 73, contestantName: "Talent aux", status: "pending", durationOverrideMin: 30 },
+    ], {
+      workDay: { start: "09:00", end: "11:00" },
+      contestantAvailabilityById: {
+        71: { start: "09:00", end: "11:00" },
+        72: { start: "09:00", end: "11:00" },
+        73: { start: "09:00", end: "11:00" },
+      },
+      optimizerWeights: {},
+      v3GreedyProbeForcedTaskStarts: { 8002: 10 * 60 } as any,
+    } as any),
+    operationalExpectation: "Greedy es completo, pero la alternativa backtracking reduce el hueco del plató principal sin violar hard constraints.",
+    riskNotes: ["Selección comparativa entre ramas válidas", "Compacidad de plató principal como criterio operativo no hard"],
+  },
  ];
 
 export const scenarioById = new Map(benchmarkScenarios.map((scenario) => [scenario.id, scenario]));
