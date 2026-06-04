@@ -301,4 +301,23 @@ export interface EngineOutput {
       reason?: string;
     }>;
   };
+  /**
+   * Optional non-functional diagnostics for the V3 orchestration path.
+   * Consumers may ignore this field; it is intended for audit/tests/debugging.
+   */
+  v3Meta?: {
+    prevalidationRun?: boolean;
+    prevalidationOk?: boolean;
+    phaseAUsed?: boolean;
+    phaseAFoundSolution?: boolean;
+    cpSatAttempted?: boolean;
+    cpSatFoundSolution?: boolean;
+    cpSatAccepted?: boolean;
+    cpSatReason?: string;
+    fallbackReason?: string;
+    plannedCount?: number;
+    unplannedCount?: number;
+    makespanMinutes?: number | null;
+    warningsTop?: string[];
+  };
 }

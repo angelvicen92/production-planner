@@ -26,6 +26,31 @@ const toHHMM = (minutes: number) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
 
+
+const computeMakespanMinutes = (output: EngineOutput): number | null => {
+  const startsEnds = (output.plannedTasks ?? [])
+    .map((p: any) => ({ start: toMinutes(String(p?.startPlanned ?? "")), end: toMinutes(String(p?.endPlanned ?? "")) }))
+    .filter((p) => p.start !== null && p.end !== null && Number(p.end) > Number(p.start)) as Array<{ start: number; end: number }>;
+  if (!startsEnds.length) return null;
+  const minStart = Math.min(...startsEnds.map((p) => p.start));
+  const maxEnd = Math.max(...startsEnds.map((p) => p.end));
+  return Math.max(0, maxEnd - minStart);
+};
+
+const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta"]>): EngineOutput => {
+  const warningsTop = (output.warnings ?? []).slice(0, 5).map((warning: any) => String(warning?.code ?? "WARNING"));
+  return {
+    ...output,
+    v3Meta: {
+      ...meta,
+      plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
+      unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
+      makespanMinutes: computeMakespanMinutes(output),
+      warningsTop,
+    },
+  };
+};
+
 const summarizeTopReasons = (output: EngineOutput): string[] => {
   const codes = new Map<string, number>();
   for (const item of (output.unplanned ?? [])) {
@@ -208,7 +233,19 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
   options?.onProgress?.({ phase: "prevalidation", progressPct: 5, message: "V3 Fase A: prevalidación de hard constraints" });
 
   const hardValidation = prevalidateHard(input);
-  if (hardValidation) return hardValidation;
+  if (hardValidation) {
+    return withV3Meta(hardValidation, {
+      prevalidationRun: true,
+      prevalidationOk: false,
+      phaseAUsed: false,
+      phaseAFoundSolution: false,
+      cpSatAttempted: false,
+      cpSatFoundSolution: false,
+      cpSatAccepted: false,
+      cpSatReason: "prevalidation_failed",
+      fallbackReason: "prevalidation_failed",
+    });
+  }
 
   const attemptsSummary: AttemptSummary[] = [];
   let best: EngineOutput | null = null;
@@ -257,6 +294,16 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
             },
           ],
         };
+        output = withV3Meta(output, {
+          prevalidationRun: true,
+          prevalidationOk: true,
+          phaseAUsed: true,
+          phaseAFoundSolution: true,
+          cpSatAttempted: false,
+          cpSatFoundSolution: false,
+          cpSatAccepted: false,
+          cpSatReason: "budget_0",
+        });
       }
       if (timeLimitSeconds > 0) {
         options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
@@ -290,10 +337,30 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
             attemptsSummary: output.report?.attemptsSummary ?? [],
           },
         };
+        output = withV3Meta(output, {
+          prevalidationRun: true,
+          prevalidationOk: true,
+          phaseAUsed: true,
+          phaseAFoundSolution: true,
+          cpSatAttempted: true,
+          cpSatFoundSolution: !optimized.noOptimized,
+          cpSatAccepted: accepted,
+          cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
+          fallbackReason: accepted ? undefined : optimized.message,
+        });
       }
 
       options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3: plan completo encontrado (Fase A/B)" });
-      return output;
+      return withV3Meta(output, output.v3Meta ?? {
+        prevalidationRun: true,
+        prevalidationOk: true,
+        phaseAUsed: true,
+        phaseAFoundSolution: true,
+        cpSatAttempted: false,
+        cpSatFoundSolution: false,
+        cpSatAccepted: false,
+        cpSatReason: "not_attempted",
+      });
     }
   }
 
@@ -318,6 +385,17 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         details: { executed: false, accepted: false, budgetSeconds: 0 },
       },
     ];
+    (fallback as any).v3Meta = {
+      prevalidationRun: true,
+      prevalidationOk: true,
+      phaseAUsed: true,
+      phaseAFoundSolution: false,
+      cpSatAttempted: false,
+      cpSatFoundSolution: false,
+      cpSatAccepted: false,
+      cpSatReason: "budget_0",
+      fallbackReason: "phase_a_incomplete",
+    };
   }
   if (timeLimitSeconds > 0) {
     options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
@@ -343,8 +421,20 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       },
     };
 
+    (fallback as any).v3Meta = {
+      prevalidationRun: true,
+      prevalidationOk: true,
+      phaseAUsed: true,
+      phaseAFoundSolution: false,
+      cpSatAttempted: true,
+      cpSatFoundSolution: !optimized.noOptimized,
+      cpSatAccepted: accepted && Boolean(optimized.output.complete),
+      cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted_but_incomplete" : "candidate_validation_failed",
+      fallbackReason: optimized.noOptimized ? optimized.message : accepted ? "cp_sat_incomplete" : "candidate_validation_failed",
+    };
+
     if (accepted && optimized.output.complete) {
-      return {
+      return withV3Meta({
         ...optimized.output,
         insights: [...insights, qualityInsight],
         report: {
@@ -355,7 +445,16 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           ],
           attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
         },
-      };
+      }, {
+        prevalidationRun: true,
+        prevalidationOk: true,
+        phaseAUsed: true,
+        phaseAFoundSolution: false,
+        cpSatAttempted: true,
+        cpSatFoundSolution: true,
+        cpSatAccepted: true,
+        cpSatReason: "accepted_partial_completion",
+      });
     }
   }
 
@@ -374,7 +473,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
 
   options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3 Fase A: sin plan completo, devolviendo diagnóstico" });
 
-  return {
+  return withV3Meta({
     ...fallback,
     feasible: false,
     complete: false,
@@ -385,5 +484,12 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       degradations: attemptsSummary.map((a) => `soft_${a.level}`),
       attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
     },
-  };
+  }, {
+    ...((fallback as any).v3Meta ?? {}),
+    prevalidationRun: true,
+    prevalidationOk: true,
+    phaseAUsed: true,
+    phaseAFoundSolution: false,
+    fallbackReason: rescue.canOvertime ? "needs_user_approval_overtime" : "phase_a_incomplete",
+  });
 }
