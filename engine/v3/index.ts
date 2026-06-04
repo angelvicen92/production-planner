@@ -27,6 +27,161 @@ const toHHMM = (minutes: number) => {
 };
 
 
+
+type BacktrackingMeta = {
+  backtrackingAttempted: boolean;
+  backtrackingAccepted: boolean;
+  backtrackingAttempts: number;
+  backtrackingBranchesExplored: number;
+  backtrackingTimeMs: number;
+  backtrackingFallbackReason?: string;
+  greedyFailedBeforeBacktracking: boolean;
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+};
+
+type BacktrackingBranch = {
+  reason: string;
+  forcedTaskStarts: Record<number, number>;
+};
+
+const isReplannableTask = (task: any, locks: any[]): boolean => {
+  const status = String(task?.status ?? "pending");
+  if (status === "done" || status === "in_progress") return false;
+  if (Boolean(task?.isManualBlock)) return false;
+  const taskId = Number(task?.id ?? NaN);
+  return !locks.some((lock: any) => {
+    const lockTaskId = Number(lock?.taskId ?? NaN);
+    if (lockTaskId !== taskId) return false;
+    const lockType = String(lock?.lockType ?? "").toLowerCase();
+    return lockType === "time" || lockType === "full";
+  });
+};
+
+const hasRestrictiveAvailability = (input: EngineV3Input): boolean => {
+  const dayStart = toMinutes(input.workDay?.start ?? "");
+  const dayEnd = toMinutes(input.workDay?.end ?? "");
+  const availability = ((input as any)?.contestantAvailabilityById ?? {}) as Record<number, { start?: string; end?: string }>;
+  return Object.values(availability).some((window) => {
+    const start = toMinutes(String(window?.start ?? ""));
+    const end = toMinutes(String(window?.end ?? ""));
+    if (start === null || end === null || dayStart === null || dayEnd === null) return false;
+    return start > dayStart || end < dayEnd;
+  });
+};
+
+const deriveLimitedBacktrackingBranches = (input: EngineV3Input, output: EngineOutput, maxBranches: number): BacktrackingBranch[] => {
+  const taskById = new Map((input.tasks ?? []).map((task: any) => [Number(task?.id ?? NaN), task]));
+  const branches: BacktrackingBranch[] = [];
+  const seen = new Set<string>();
+  const pushBranch = (taskId: number, start: number, reason: string) => {
+    const task = taskById.get(taskId) as any;
+    if (!task || !isReplannableTask(task, input.locks ?? [])) return;
+    const duration = Number(task?.durationOverrideMin ?? task?.durationMin ?? NaN);
+    const endDay = toMinutes(input.workDay?.end ?? "");
+    if (!Number.isFinite(duration) || duration <= 0 || endDay === null || start + duration > endDay) return;
+    const key = `${taskId}:${start}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    branches.push({ reason, forcedTaskStarts: { [taskId]: start } });
+  };
+
+  for (const item of output.unplanned ?? []) {
+    if (branches.length >= maxBranches) break;
+    const details = (item as any)?.reason?.details ?? {};
+    const availabilityEnd = toMinutes(String(details.availabilityEnd ?? ""));
+    const suggested = toMinutes(String(details.suggested ?? ""));
+    const blockingTasks = Array.isArray(details.blockingTasks) ? details.blockingTasks : [];
+    for (const blocker of blockingTasks) {
+      if (branches.length >= maxBranches) break;
+      const blockerId = Number(blocker?.taskId ?? NaN);
+      if (!Number.isFinite(blockerId) || blockerId <= 0) continue;
+      if (availabilityEnd !== null) pushBranch(blockerId, snapToGrid(availabilityEnd), "after_restrictive_availability_end");
+      if (suggested !== null) pushBranch(blockerId, snapToGrid(suggested), "engine_suggested_start");
+    }
+  }
+  return branches.slice(0, maxBranches);
+};
+
+const snapToGrid = (minutes: number): number => Math.ceil(minutes / GRID_MIN) * GRID_MIN;
+
+const runLimitedBacktracking = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  level: number,
+  options?: EngineV3Options,
+): { output: EngineOutput; meta: BacktrackingMeta } => {
+  const started = Date.now();
+  const maxAttemptsRaw = Number(options?.maxBacktrackAttempts ?? (input as any)?.maxBacktrackAttempts ?? 50);
+  const maxDepthRaw = Number(options?.maxBacktrackDepth ?? (input as any)?.maxBacktrackDepth ?? 2);
+  const maxSearchMsRaw = Number(options?.maxSearchMs ?? (input as any)?.maxSearchMs ?? 150);
+  const maxAttempts = Math.max(0, Math.min(50, Number.isFinite(maxAttemptsRaw) ? Math.floor(maxAttemptsRaw) : 50));
+  const maxDepth = Math.max(1, Math.min(2, Number.isFinite(maxDepthRaw) ? Math.floor(maxDepthRaw) : 2));
+  const maxSearchMs = Math.max(0, Math.min(1000, Number.isFinite(maxSearchMsRaw) ? Math.floor(maxSearchMsRaw) : 150));
+  const meta: BacktrackingMeta = {
+    backtrackingAttempted: true,
+    backtrackingAccepted: false,
+    backtrackingAttempts: 0,
+    backtrackingBranchesExplored: 0,
+    backtrackingTimeMs: 0,
+    greedyFailedBeforeBacktracking: !Boolean(baseOutput.complete),
+  };
+
+  if (maxAttempts <= 0 || maxSearchMs <= 0) {
+    meta.backtrackingFallbackReason = "budget_exhausted";
+    meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
+    return { output: baseOutput, meta };
+  }
+
+  const queue = deriveLimitedBacktrackingBranches(input, baseOutput, maxAttempts)
+    .map((branch) => ({ ...branch, depth: 1 }));
+  if (!queue.length) {
+    meta.backtrackingFallbackReason = "no_relevant_alternatives";
+    meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
+    return { output: baseOutput, meta };
+  }
+
+  let best = baseOutput;
+  let bestPlanned = Array.isArray(baseOutput.plannedTasks) ? baseOutput.plannedTasks.length : 0;
+  while (queue.length && meta.backtrackingAttempts < maxAttempts) {
+    if (Date.now() - started >= maxSearchMs) {
+      meta.backtrackingFallbackReason = "budget_exhausted";
+      break;
+    }
+    const branch = queue.shift()!;
+    meta.backtrackingAttempts += 1;
+    meta.backtrackingBranchesExplored += 1;
+    const out = solve_v3_phaseA_attempt(cloneWithSoftLevel(input, level), {
+      maxIterations: 8000,
+      forcedTaskStarts: branch.forcedTaskStarts,
+    } as any);
+    const plannedCount = Array.isArray(out.plannedTasks) ? out.plannedTasks.length : 0;
+    if (plannedCount > bestPlanned) {
+      best = out;
+      bestPlanned = plannedCount;
+    }
+    if (out.complete) {
+      meta.backtrackingAccepted = true;
+      meta.solutionSource = "phaseA_backtracking";
+      meta.backtrackingFallbackReason = undefined;
+      meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
+      return { output: out, meta };
+    }
+    if (branch.depth < maxDepth) {
+      for (const next of deriveLimitedBacktrackingBranches(input, out, Math.max(0, maxAttempts - meta.backtrackingAttempts))) {
+        const merged = { ...branch.forcedTaskStarts, ...next.forcedTaskStarts };
+        const signature = Object.entries(merged).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|");
+        if (!queue.some((queued) => Object.entries(queued.forcedTaskStarts).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join("|") === signature)) {
+          queue.push({ ...next, forcedTaskStarts: merged, depth: branch.depth + 1 });
+        }
+      }
+    }
+  }
+
+  if (!meta.backtrackingFallbackReason) meta.backtrackingFallbackReason = best !== baseOutput ? "best_partial_not_complete" : "no_solution_found";
+  meta.backtrackingTimeMs = Math.max(0, Date.now() - started);
+  return { output: best, meta };
+};
+
 const computeMakespanMinutes = (output: EngineOutput): number | null => {
   const startsEnds = (output.plannedTasks ?? [])
     .map((p: any) => ({ start: toMinutes(String(p?.startPlanned ?? "")), end: toMinutes(String(p?.endPlanned ?? "")) }))
@@ -42,6 +197,11 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
   return {
     ...output,
     v3Meta: {
+      backtrackingAttempted: false,
+      backtrackingAccepted: false,
+      backtrackingAttempts: 0,
+      backtrackingBranchesExplored: 0,
+      backtrackingTimeMs: 0,
       ...meta,
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
@@ -244,12 +404,14 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       cpSatAccepted: false,
       cpSatReason: "prevalidation_failed",
       fallbackReason: "prevalidation_failed",
+      solutionSource: "infeasible",
     });
   }
 
   const attemptsSummary: AttemptSummary[] = [];
   let best: EngineOutput | null = null;
   let bestPlanned = -1;
+  let lastBacktrackingMeta: BacktrackingMeta | null = null;
 
   for (let level = 9; level >= 0; level--) {
     options?.onProgress?.({
@@ -268,6 +430,124 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     if (plannedCount > bestPlanned) {
       best = out;
       bestPlanned = plannedCount;
+    }
+
+    const backtrackingEnabled = options?.enableLimitedBacktracking !== false && (input as any)?.enableLimitedBacktracking !== false;
+    const shouldTryBacktracking = backtrackingEnabled && !ok && ((out.unplanned?.length ?? 0) > 0 || out.hardFeasible === false || hasRestrictiveAvailability(input));
+    if (shouldTryBacktracking) {
+      const backtracking = runLimitedBacktracking(input, out, level, options);
+      lastBacktrackingMeta = backtracking.meta;
+      attemptsSummary.push({
+        level,
+        ok: Boolean(backtracking.output.complete),
+        ms: backtracking.meta.backtrackingTimeMs,
+        topReasons: summarizeTopReasons(backtracking.output),
+        reason: `limited_backtracking_${level}`,
+      });
+      const backtrackingPlanned = Array.isArray(backtracking.output.plannedTasks) ? backtracking.output.plannedTasks.length : 0;
+      if (backtrackingPlanned > bestPlanned) {
+        best = backtracking.output;
+        bestPlanned = backtrackingPlanned;
+      }
+      if (backtracking.output.complete) {
+        const out = backtracking.output;
+        const backtrackingAcceptedMeta = backtracking.meta;
+
+        let output: EngineOutput = {
+          ...out,
+          report: {
+            repairsTried: attemptsSummary.length - 1,
+            degradations: attemptsSummary.filter((a) => !a.ok).map((a) => `soft_${a.level}`),
+            attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
+          },
+        };
+
+        const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
+        if (timeLimitSeconds <= 0) {
+          const insights = Array.isArray((output as any).insights) ? (output as any).insights : [];
+          output = {
+            ...output,
+            insights: [
+              ...insights,
+              {
+                code: "V3_PHASE_B_QUALITY",
+                message: "CP-SAT omitido por presupuesto 0",
+                details: { executed: false, accepted: false, budgetSeconds: 0 },
+              },
+            ],
+          };
+          output = withV3Meta(output, {
+            prevalidationRun: true,
+            prevalidationOk: true,
+            phaseAUsed: true,
+            phaseAFoundSolution: true,
+            cpSatAttempted: false,
+            cpSatFoundSolution: false,
+            cpSatAccepted: false,
+            cpSatReason: "budget_0",
+            ...backtrackingAcceptedMeta,
+          });
+        }
+        if (timeLimitSeconds > 0) {
+          options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
+          const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
+          const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
+          const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+          const chosenOutput = accepted ? optimized.output : output;
+          const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
+          const qualityInsight = {
+            code: "V3_PHASE_B_QUALITY",
+            message: optimized.noOptimized
+              ? optimized.message
+              : accepted
+                ? optimized.message
+                : "CP-SAT produjo candidato con potenciales hard rotas; se conserva Fase A.",
+            details: {
+              ...optimized.quality,
+              accepted,
+              noOptimized: Boolean(optimized.noOptimized),
+              candidateErrors,
+              degradations: optimized.degradations,
+              technical: optimized.technicalDetails,
+            },
+          };
+          output = {
+            ...chosenOutput,
+            insights: [...insights, qualityInsight],
+            report: {
+              repairsTried: output.report?.repairsTried ?? 0,
+              degradations: [...(output.report?.degradations ?? []), ...optimized.degradations.map((d: any) => `near_hard:${d.rule}:${d.taskId}`)],
+              attemptsSummary: output.report?.attemptsSummary ?? [],
+            },
+          };
+          output = withV3Meta(output, {
+            prevalidationRun: true,
+            prevalidationOk: true,
+            phaseAUsed: true,
+            phaseAFoundSolution: true,
+            cpSatAttempted: true,
+            cpSatFoundSolution: !optimized.noOptimized,
+            cpSatAccepted: accepted,
+            cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
+            fallbackReason: accepted ? undefined : optimized.message,
+            ...backtrackingAcceptedMeta,
+            solutionSource: accepted ? "cp_sat" : "phaseA_backtracking",
+          });
+        }
+
+        options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3: plan completo encontrado (Fase A/backtracking/B)" });
+        return withV3Meta(output, output.v3Meta ?? {
+          prevalidationRun: true,
+          prevalidationOk: true,
+          phaseAUsed: true,
+          phaseAFoundSolution: true,
+          cpSatAttempted: false,
+          cpSatFoundSolution: false,
+          cpSatAccepted: false,
+          cpSatReason: "not_attempted",
+          ...backtrackingAcceptedMeta,
+        });
+      }
     }
 
     if (ok) {
@@ -303,6 +583,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatFoundSolution: false,
           cpSatAccepted: false,
           cpSatReason: "budget_0",
+          solutionSource: "phaseA_greedy",
         });
       }
       if (timeLimitSeconds > 0) {
@@ -347,6 +628,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatAccepted: accepted,
           cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
           fallbackReason: accepted ? undefined : optimized.message,
+          solutionSource: accepted ? "cp_sat" : "phaseA_greedy",
         });
       }
 
@@ -360,6 +642,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         cpSatFoundSolution: false,
         cpSatAccepted: false,
         cpSatReason: "not_attempted",
+        solutionSource: "phaseA_greedy",
       });
     }
   }
@@ -395,6 +678,15 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       cpSatAccepted: false,
       cpSatReason: "budget_0",
       fallbackReason: "phase_a_incomplete",
+      ...(lastBacktrackingMeta ?? {
+        backtrackingAttempted: false,
+        backtrackingAccepted: false,
+        backtrackingAttempts: 0,
+        backtrackingBranchesExplored: 0,
+        backtrackingTimeMs: 0,
+        greedyFailedBeforeBacktracking: true,
+      }),
+      solutionSource: "fallback",
     };
   }
   if (timeLimitSeconds > 0) {
@@ -431,6 +723,15 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       cpSatAccepted: accepted && Boolean(optimized.output.complete),
       cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted_but_incomplete" : "candidate_validation_failed",
       fallbackReason: optimized.noOptimized ? optimized.message : accepted ? "cp_sat_incomplete" : "candidate_validation_failed",
+      ...(lastBacktrackingMeta ?? {
+        backtrackingAttempted: false,
+        backtrackingAccepted: false,
+        backtrackingAttempts: 0,
+        backtrackingBranchesExplored: 0,
+        backtrackingTimeMs: 0,
+        greedyFailedBeforeBacktracking: true,
+      }),
+      solutionSource: accepted && optimized.output.complete ? "cp_sat" : "fallback",
     };
 
     if (accepted && optimized.output.complete) {
@@ -454,6 +755,8 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         cpSatFoundSolution: true,
         cpSatAccepted: true,
         cpSatReason: "accepted_partial_completion",
+        ...(lastBacktrackingMeta ?? {}),
+        solutionSource: "cp_sat",
       });
     }
   }
@@ -491,5 +794,14 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     phaseAUsed: true,
     phaseAFoundSolution: false,
     fallbackReason: rescue.canOvertime ? "needs_user_approval_overtime" : "phase_a_incomplete",
+    ...(lastBacktrackingMeta ?? {
+      backtrackingAttempted: false,
+      backtrackingAccepted: false,
+      backtrackingAttempts: 0,
+      backtrackingBranchesExplored: 0,
+      backtrackingTimeMs: 0,
+      greedyFailedBeforeBacktracking: true,
+    }),
+    solutionSource: rescue.canOvertime ? "fallback" : "infeasible",
   });
 }

@@ -4,7 +4,7 @@ import { calculateMetrics } from "./metrics";
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
-const formatNullable = (value: number | boolean | null): string => value === null ? "n/a" : String(value);
+const formatNullable = (value: number | boolean | string | null): string => value === null ? "n/a" : String(value);
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
@@ -34,6 +34,11 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  cpSatAttempted: ${formatNullable(metrics.cpSatAttempted)}`);
   console.log(`  cpSatAccepted: ${formatNullable(metrics.cpSatAccepted)}`);
   console.log(`  phaseAUsed: ${formatNullable(metrics.phaseAUsed)}`);
+  console.log(`  backtrackingAttempted: ${formatNullable(metrics.backtrackingAttempted)}`);
+  console.log(`  backtrackingAccepted: ${formatNullable(metrics.backtrackingAccepted)}`);
+  console.log(`  backtrackingAttempts: ${formatNullable(metrics.backtrackingAttempts)}`);
+  console.log(`  backtrackingBranchesExplored: ${formatNullable(metrics.backtrackingBranchesExplored)}`);
+  console.log(`  solutionSource: ${formatNullable(metrics.solutionSource)}`);
   console.log(`  warningsCount: ${metrics.warningsCount}`);
   console.log(`  infeasibleReasonCount: ${metrics.infeasibleReasonCount}`);
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);

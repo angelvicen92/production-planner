@@ -315,6 +315,14 @@ export interface EngineOutput {
     cpSatAccepted?: boolean;
     cpSatReason?: string;
     fallbackReason?: string;
+    backtrackingAttempted?: boolean;
+    backtrackingAccepted?: boolean;
+    backtrackingAttempts?: number;
+    backtrackingBranchesExplored?: number;
+    backtrackingTimeMs?: number;
+    backtrackingFallbackReason?: string;
+    greedyFailedBeforeBacktracking?: boolean;
+    solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
     plannedCount?: number;
     unplannedCount?: number;
     makespanMinutes?: number | null;

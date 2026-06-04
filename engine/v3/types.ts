@@ -6,6 +6,10 @@ export type EngineV3Output = EngineOutput;
 export type EngineV3Options = {
   requestId?: string;
   timeLimitMs?: number | null;
+  enableLimitedBacktracking?: boolean;
+  maxBacktrackAttempts?: number;
+  maxBacktrackDepth?: number;
+  maxSearchMs?: number;
   onProgress?: (progress: {
     phase: "prevalidation" | "build_input" | "solving_feasible" | "optimizing" | "persisting";
     progressPct: number;
