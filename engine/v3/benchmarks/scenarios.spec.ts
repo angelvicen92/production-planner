@@ -13,7 +13,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -108,6 +108,28 @@ for (const id of ["C", "D"] as const) {
   assert.match(String(output.v3Meta?.candidateSelectionReason ?? ""), /main-stage gaps|gap/, "scenario H selection reason");
   assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario H contestant windows");
   assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario H space overlaps");
+}
+
+// Escenario I — stress sintético realista: puede ser complete o partial, pero nunca debe aceptar violaciones hard.
+{
+  const { scenario, output } = run("I");
+  const contestantIds = new Set((scenario.input.tasks ?? []).map((task: any) => Number(task.contestantId)).filter((id: number) => Number.isFinite(id) && id > 0));
+  assert.ok(contestantIds.size >= 12 && contestantIds.size <= 18, "scenario I should model 12-18 talents");
+  assert.ok((scenario.input.tasks ?? []).length >= 60, "scenario I should include at least 60 tasks");
+  assert.ok((scenario.input.planResourceItems ?? []).some((resource: any) => String(resource.name).includes("Coach")), "scenario I should include coaches");
+  assert.ok(Number(scenario.input.optimizerMainZoneId ?? 0) > 0, "scenario I should define a main stage zone");
+  assert.ok((scenario.input.locks ?? []).length >= 1, "scenario I should include manual locks");
+  assert.ok((scenario.input.tasks ?? []).some((task: any) => task.status === "done"), "scenario I should include a done task");
+  assert.ok((scenario.input.tasks ?? []).some((task: any) => task.status === "in_progress"), "scenario I should include an in_progress task");
+
+  assert.equal(countContestantOverlaps(scenario.input, output), 0, "scenario I contestant overlaps");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario I space overlaps");
+  assert.equal(countExclusiveResourceOverlaps(scenario.input, output), 0, "scenario I exclusive resource overlaps");
+  assert.equal(countExecutedTaskMoved(scenario.input, output), 0, "scenario I done/in_progress tasks must not move");
+  assert.equal(countLockedTaskMoved(scenario.input, output), 0, "scenario I manual locks must be respected");
+  assert.equal(countMealCrossings(scenario.input, output), 0, "scenario I tasks must not cross hard meal block");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario I contestant availability windows");
+  assert.equal(countDependencyViolations(scenario.input, output), 0, "scenario I dependencies");
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

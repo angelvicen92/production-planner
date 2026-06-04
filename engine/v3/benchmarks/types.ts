@@ -1,7 +1,8 @@
-import type { EngineOutput, TaskInput } from "../../types";
+import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
+import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -33,6 +34,11 @@ export interface EngineBenchmarkMetrics {
   lockedTaskMovedCount: number;
   executedTaskMovedCount: number;
   coachSwitchCount: number | null;
+  restrictiveTalentAverageStartOffset: number | null;
+  restrictiveTalentLatestFinishSlack: number | null;
+  mainStageUtilizationPercent: number | null;
+  tasksPerContestantMinMax: string | null;
+  resourceUtilizationSummary: string | null;
   cpSatAttempted: boolean | null;
   cpSatAccepted: boolean | null;
   phaseAUsed: boolean | null;
@@ -53,10 +59,4 @@ export interface EngineBenchmarkMetrics {
   infeasibleReasonCount: number;
 }
 
-export interface PlannedTaskView {
-  taskId: number;
-  startPlanned: string;
-  endPlanned: string;
-  assignedResources: number[];
-  task: TaskInput;
-}
+export type { PlannedTaskView };

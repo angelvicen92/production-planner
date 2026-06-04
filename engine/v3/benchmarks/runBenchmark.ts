@@ -4,8 +4,8 @@ import { calculateMetrics } from "./metrics";
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
-const formatNullable = (value: number | boolean | string | null): string => value === null ? "n/a" : String(value);
-const formatCompact = (value: string | null): string => value === null ? "n/a" : value.length > 140 ? `${value.slice(0, 137)}...` : value;
+const formatNullable = (value: number | boolean | string | null | undefined): string => value === null || value === undefined ? "n/a" : String(value);
+const formatCompact = (value: string | null | undefined): string => value === null || value === undefined ? "n/a" : value.length > 140 ? `${value.slice(0, 137)}...` : value;
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
@@ -32,6 +32,11 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  lockedTaskMovedCount: ${metrics.lockedTaskMovedCount}`);
   console.log(`  executedTaskMovedCount: ${metrics.executedTaskMovedCount}`);
   console.log(`  coachSwitchCount: ${formatNullable(metrics.coachSwitchCount)}`);
+  console.log(`  restrictiveTalentAverageStartOffset: ${formatNullable(metrics.restrictiveTalentAverageStartOffset)}`);
+  console.log(`  restrictiveTalentLatestFinishSlack: ${formatNullable(metrics.restrictiveTalentLatestFinishSlack)}`);
+  console.log(`  mainStageUtilizationPercent: ${formatNullable(metrics.mainStageUtilizationPercent)}`);
+  console.log(`  tasksPerContestantMinMax: ${formatNullable(metrics.tasksPerContestantMinMax)}`);
+  console.log(`  resourceUtilizationSummary: ${formatCompact(metrics.resourceUtilizationSummary)}`);
   console.log(`  cpSatAttempted: ${formatNullable(metrics.cpSatAttempted)}`);
   console.log(`  cpSatAccepted: ${formatNullable(metrics.cpSatAccepted)}`);
   console.log(`  phaseAUsed: ${formatNullable(metrics.phaseAUsed)}`);
@@ -53,19 +58,40 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007");
-console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos y selección comparativa de candidatos sin fallar por optimización no perfecta.");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008");
+console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos, selección comparativa de candidatos y stress sintético sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);
 
+
+const stressScenario = benchmarkScenarios.find((scenario) => scenario.id === "I");
+if (stressScenario) {
+  const offStart = performance.now();
+  const offOutput = generatePlanV3(stressScenario.input, { timeLimitMs: 0, requestId: "benchmark-I-backtracking-off", enableLimitedBacktracking: false });
+  const offMetrics = calculateMetrics(stressScenario.input, offOutput, Math.round(performance.now() - offStart));
+  const onResult = results.find((result) => result.scenario.id === "I");
+  if (onResult) {
+    console.log("\nComparativa escenario I — backtracking off/on");
+    console.log(`  off: planned=${offMetrics.plannedTasks}, mainStageGapMinutes=${formatNullable(offMetrics.mainStageGapMinutes)}, runtimeMs=${offMetrics.runtimeMs}, candidateSolutionsEvaluated=${formatNullable(offMetrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(offMetrics.solutionSource)}`);
+    console.log(`  on : planned=${onResult.metrics.plannedTasks}, mainStageGapMinutes=${formatNullable(onResult.metrics.mainStageGapMinutes)}, runtimeMs=${onResult.metrics.runtimeMs}, candidateSolutionsEvaluated=${formatNullable(onResult.metrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(onResult.metrics.solutionSource)}`);
+  }
+}
+
 const completed = results.filter((result) => result.output.complete).length;
 const hardViolationsInCompleted = results.filter((result) => result.output.complete && result.metrics.hardConstraintViolations > 0).length;
+const movedFixedTasks = results.filter((result) => result.metrics.lockedTaskMovedCount > 0 || result.metrics.executedTaskMovedCount > 0).length;
 const knownRisks = results.filter((result) => result.scenario.knownRisk).length;
 
 console.log("\nResumen");
 console.log(`  escenarios: ${results.length}`);
 console.log(`  completos: ${completed}`);
 console.log(`  completos con hardConstraintViolations: ${hardViolationsInCompleted}`);
+console.log(`  escenarios con locks/ejecución movidos: ${movedFixedTasks}`);
 console.log(`  escenarios con riesgo conocido documentado: ${knownRisks}`);
-console.log("  exitCode: 0 salvo excepción técnica");
+if (hardViolationsInCompleted > 0 || movedFixedTasks > 0) {
+  process.exitCode = 1;
+  console.log("  exitCode: 1 por violación hard en escenario completo o movimiento de lock/ejecución");
+} else {
+  console.log("  exitCode: 0 salvo excepción técnica");
+}

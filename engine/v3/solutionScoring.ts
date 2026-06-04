@@ -8,7 +8,7 @@ import {
   countHardConstraintViolations,
   getPlannedViews,
   toMinutes,
-} from "./benchmarks/metrics";
+} from "./metrics";
 
 export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
 
