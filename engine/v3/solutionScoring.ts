@@ -1,14 +1,13 @@
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import {
-  calculateCoachSwitchCount,
   calculateMainStageGaps,
   calculateMakespan,
   countContestantWindowViolations,
   countHardConstraintViolations,
-  getPlannedViews,
   toMinutes,
 } from "./metrics";
+import { calculateCoachSwitchPenalty, calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
 
 export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
 
@@ -30,34 +29,6 @@ export interface CandidateSolutionScore {
 
 const finiteOrZero = (value: number | null | undefined): number => Number.isFinite(Number(value)) ? Number(value) : 0;
 const finiteOrLarge = (value: number | null | undefined): number => Number.isFinite(Number(value)) ? Number(value) : Number.MAX_SAFE_INTEGER;
-
-const isRestrictiveWindow = (input: EngineV3Input, contestantId: number): boolean => {
-  const dayStart = toMinutes(input.workDay?.start);
-  const dayEnd = toMinutes(input.workDay?.end);
-  const window = input.contestantAvailabilityById?.[contestantId];
-  const start = toMinutes(window?.start);
-  const end = toMinutes(window?.end);
-  if (dayStart === null || dayEnd === null || start === null || end === null) return false;
-  return start > dayStart || end < dayEnd;
-};
-
-const calculateRestrictiveTalentLatenessPenalty = (input: EngineV3Input, output: EngineOutput): number => {
-  let penalty = 0;
-  for (const view of getPlannedViews(input, output)) {
-    const contestantId = Number(view.task.contestantId ?? NaN);
-    if (!Number.isFinite(contestantId) || !isRestrictiveWindow(input, contestantId)) continue;
-    const windowStart = toMinutes(input.contestantAvailabilityById?.[contestantId]?.start);
-    const start = toMinutes(view.startPlanned);
-    if (windowStart === null || start === null) continue;
-    penalty += Math.max(0, start - windowStart);
-  }
-  return penalty;
-};
-
-const getDependencyIds = (task: any): number[] => [
-  ...(Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : []),
-  ...(task.dependsOnTaskId ? [task.dependsOnTaskId] : []),
-].map(Number).filter((id) => Number.isFinite(id) && id > 0);
 
 const calculateDependencyFeederPenalty = (input: EngineV3Input, output: EngineOutput): number => {
   const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
@@ -99,7 +70,7 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
   const mainStageGapMinutes = finiteOrZero(mainGaps?.minutes);
   const restrictiveTalentLatenessPenalty = calculateRestrictiveTalentLatenessPenalty(input, output);
   const dependencyFeederPenalty = calculateDependencyFeederPenalty(input, output);
-  const coachSwitchPenalty = finiteOrZero(calculateCoachSwitchCount(input, output));
+  const coachSwitchPenalty = finiteOrZero(calculateCoachSwitchPenalty(input, output));
   const makespan = finiteOrLarge(calculateMakespan(input, output));
   const tieBreakKey = (output.plannedTasks ?? [])
     .map((task) => `${String(task.taskId).padStart(12, "0")}@${task.startPlanned}-${task.endPlanned}`)
@@ -175,9 +146,9 @@ export const explainCandidateComparison = (
   if (selected.contestantWindowViolations !== rejected.contestantWindowViolations) return `${selectedSource} selected: fewer availability window violations`;
   if (selected.mainStageGapCount !== rejected.mainStageGapCount) return `${selectedSource} selected: fewer main-stage gaps`;
   if (selected.mainStageGapMinutes !== rejected.mainStageGapMinutes) return `${selectedSource} selected: fewer main-stage gap minutes`;
-  if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: restrictive talent scheduled earlier`;
+  if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: earlier restrictive talents`;
   if (selected.dependencyFeederPenalty !== rejected.dependencyFeederPenalty) return `${selectedSource} selected: better feeder/dependency timing`;
-  if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) return `${selectedSource} selected: fewer coach/resource switches`;
+  if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) return `${selectedSource} selected: fewer coach switches`;
   if (selected.makespan !== rejected.makespan) return `${selectedSource} selected: lower makespan`;
   return `${selectedSource} selected: deterministic stable tie-break`;
 };

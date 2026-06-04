@@ -4,6 +4,8 @@ import {
   countContestantOverlaps,
   countContestantWindowViolations,
   countDependencyViolations,
+  calculateCoachSwitchCount,
+  calculateRestrictiveTalentAverageStartOffset,
   countExclusiveResourceOverlaps,
   countExecutedTaskMoved,
   countLockedTaskMoved,
@@ -13,7 +15,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -48,7 +50,7 @@ for (const scenario of benchmarkScenarios) {
 }
 
 // Disponibilidad de concursantes: los escenarios completos no deben planificar fuera de ventana.
-for (const id of ["A", "B", "C", "D", "F", "G", "H"] as const) {
+for (const id of ["A", "B", "C", "D", "F", "G", "H", "J"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantWindowViolations(scenario.input, output), 0, `scenario ${id} contestant windows`);
@@ -56,7 +58,7 @@ for (const id of ["A", "B", "C", "D", "F", "G", "H"] as const) {
 }
 
 // No solapar concursante ni espacio en escenarios completos.
-for (const id of ["A", "B", "C", "D", "E", "F", "G", "H"] as const) {
+for (const id of ["A", "B", "C", "D", "E", "F", "G", "H", "J"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantOverlaps(scenario.input, output), 0, `scenario ${id} contestant overlaps`);
@@ -81,7 +83,7 @@ for (const id of ["A", "B", "C", "D", "E", "F", "G", "H"] as const) {
 }
 
 // Dependencias modeladas en escenarios C y D.
-for (const id of ["C", "D"] as const) {
+for (const id of ["C", "D", "J"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countDependencyViolations(scenario.input, output), 0, `scenario ${id} dependencies`);
@@ -108,6 +110,23 @@ for (const id of ["C", "D"] as const) {
   assert.match(String(output.v3Meta?.candidateSelectionReason ?? ""), /main-stage gaps|gap/, "scenario H selection reason");
   assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario H contestant windows");
   assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario H space overlaps");
+}
+
+// Escenario J — calidad operativa en caso compacto con salida temprana y continuidad de coach/feeders.
+{
+  const { scenario, output } = run("J");
+  assert.equal(output.complete, true, "scenario J should remain complete");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario J contestant windows");
+  assert.equal(countDependencyViolations(scenario.input, output), 0, "scenario J dependencies");
+  assert.equal(countExclusiveResourceOverlaps(scenario.input, output), 0, "scenario J exclusive coach overlaps");
+  const planned = plannedById(output);
+  const restrictiveFeeder = planned.get(9001) as any;
+  const restrictiveMain = planned.get(9002) as any;
+  assert.ok(restrictiveFeeder && restrictiveMain, "scenario J restrictive feeder and main should be planned");
+  assert.equal(restrictiveFeeder.startPlanned, "09:00", "restrictive feeder should be first in its coach chain");
+  assert.ok(String(restrictiveMain.endPlanned) <= "10:05", "restrictive main must finish before early exit");
+  assert.ok((calculateRestrictiveTalentAverageStartOffset(scenario.input, output) ?? 999) <= 20, "restrictive timing should stay early in scenario J");
+  assert.ok((calculateCoachSwitchCount(scenario.input, output) ?? 999) <= 4, "scenario J should keep coach switches bounded");
 }
 
 // Escenario I — stress sintético realista: puede ser complete o partial, pero nunca debe aceptar violaciones hard.

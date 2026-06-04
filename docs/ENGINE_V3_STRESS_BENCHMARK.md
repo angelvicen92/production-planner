@@ -1,4 +1,4 @@
-# ENGINE V3 STRESS BENCHMARK — ID 008
+# ENGINE V3 STRESS BENCHMARK — ID 008 + ID 009
 
 ## Objetivo
 
@@ -96,4 +96,25 @@ Justificación:
 - Las señales operativas más visibles son `restrictiveTalentAverageStartOffset=48` y `coachSwitchCount=44`.
 - Mejorar estas heurísticas dará criterios más sólidos y auditables para una futura función objetivo CP-SAT global.
 
-No implementar ID 009 todavía.
+ID 009 implementa esa recomendación como prioridad soft y añade el escenario J; el siguiente paso recomendado queda documentado en `docs/ENGINE_V3_OPERATIONAL_PRIORITY.md`.
+
+
+## Actualización ID 009 — escenario J e impacto en I
+
+ID 009 añade **J — Talent restrictivo y continuidad de coach** al benchmark. Resultado de referencia:
+
+- `plannedTasks / totalTasks: 9 / 9`
+- `runtimeMs: 2`
+- `mainStageGapMinutes: 0`
+- `hardConstraintViolations: 0`
+- `coachSwitchCount: 2`
+- `restrictiveTalentAverageStartOffset: 13`
+- `restrictiveTalentLatestFinishSlack: 10`
+- `solutionSource: phaseA_greedy`
+
+El escenario I se mantiene seguro tras ID 009:
+
+- Antes ID 008: `restrictiveTalentAverageStartOffset=48`, `restrictiveTalentLatestFinishSlack=25`, `coachSwitchCount=44`, `mainStageGapMinutes=0`, `hardConstraintViolations=0`, `runtimeMs=57`.
+- Después ID 009: `restrictiveTalentAverageStartOffset=48`, `restrictiveTalentLatestFinishSlack=25`, `coachSwitchCount=44`, `mainStageGapMinutes=0`, `hardConstraintViolations=0`, `runtimeMs=53`.
+
+La ausencia de mejora numérica en I se documenta como tradeoff operativo: el plan ya estaba dominado por 0 huecos de plató principal y restricciones hard. La mejora medible queda demostrada en J y en tests unitarios de scoring, sin romper A-I.

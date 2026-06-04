@@ -65,3 +65,14 @@ La siguiente iteración recomendada es convertir CP-SAT en un solver global real
 El escenario I no cambia la política de candidate selection; la usa como métrica de observabilidad en escala intermedia. La comparativa con backtracking off/on queda disponible en `npm run benchmark:engine`. En la ejecución de referencia de ID 008, I no activa backtracking (`candidateSolutionsEvaluated: n/a`, `solutionSource: phaseA_greedy`) porque Phase A ya devuelve solución completa sin huecos de plató principal ni violaciones hard.
 
 La lectura operativa es que H sigue siendo el canario específico de selección comparativa, mientras que I mide si esa maquinaria aparece de forma natural en un dataset sintético realista.
+
+## Actualización ID 009
+
+ID 009 hace explícitos dos criterios que ya estaban en el orden lexicográfico pero quedaban poco documentados:
+
+- `restrictiveTalentLatenessPenalty` ahora pondera el retraso de tareas de talents con ventanas restrictivas por una urgencia operativa pura: salida temprana, slack restante, tamaño de ventana y si la tarea alimenta una tarea de plató principal.
+- `coachSwitchPenalty` cuenta switches de recursos tipo coach (`typeId=10` o nombre que contiene `Coach`) y añade coste extra a alternancias A/B/A y a cambios en feeders que desbloquean el plató principal.
+
+Ambos siguen siendo criterios **soft**: solo ordenan candidatos cuando hard constraints, tareas planificadas, disponibilidad y huecos de plató principal ya empatan o no deciden. Las razones legibles quedan alineadas con el criterio ganador, por ejemplo `phaseA_backtracking selected: earlier restrictive talents` o `phaseA_backtracking selected: fewer coach switches`.
+
+El escenario J confirma el criterio en un caso compacto; el escenario I sigue siendo el stress de escala, donde Phase A greedy ya completa y no activa candidate selection comparativa.
