@@ -1,4 +1,5 @@
 import type { EngineInput, EngineOutput } from "../types";
+import { makeStructuredBlocker } from "./blockers";
 
 export type MainZoneGapReasonType =
   | "CONTESTANT_BUSY"
@@ -1430,6 +1431,59 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     if (ls && le) lockedTaskIds.add(taskId);
   }
 
+  const isTaskMovableForStructuredBlocker = (taskId: number) => {
+    const blockingTask = taskById.get(Number(taskId)) as any;
+    if (!blockingTask) return false;
+    const status = String(blockingTask?.status ?? "pending").trim().toLowerCase();
+    if (status === "done" || status === "in_progress") return false;
+    if (lockedTaskIds.has(Number(taskId))) return false;
+    if (Boolean(blockingTask?.isManualBlock)) return false;
+    return true;
+  };
+
+  const getBlockerStatus = (taskId: number) => String((taskById.get(Number(taskId)) as any)?.status ?? "pending").trim().toLowerCase();
+
+  const getBlockerLockType = (taskId: number) => {
+    const lock = (((input as any)?.locks ?? []) as any[]).find((l) => Number(l?.taskId) === Number(taskId));
+    return lock ? String(lock?.lockType ?? "").toLowerCase() : undefined;
+  };
+
+  const structuredFromIntervals = (params: {
+    blockerType: "space" | "contestant" | "resource" | "coach";
+    blockedTaskId: number;
+    intervals: Interval[];
+    from: number;
+    to: number;
+    suggested?: number;
+    spaceId?: number | null;
+    contestantId?: number | null;
+    resourceId?: number | null;
+    reasonCode: string;
+  }) => params.intervals
+    .filter((it) => rangesOverlap(Number(it.start), Number(it.end), params.from, params.to))
+    .slice(0, 8)
+    .map((it) => {
+      const blockingTaskId = Number(it.taskId);
+      const status = getBlockerStatus(blockingTaskId);
+      const lockType = getBlockerLockType(blockingTaskId);
+      return makeStructuredBlocker({
+        blockerType: status === "done" || status === "in_progress" ? "executed" : lockedTaskIds.has(blockingTaskId) ? "lock" : params.blockerType,
+        blockedTaskId: Number(params.blockedTaskId),
+        blockingTaskId,
+        spaceId: params.spaceId ?? undefined,
+        contestantId: params.contestantId ?? undefined,
+        resourceId: params.resourceId ?? undefined,
+        start: toHHMM(Number(it.start)),
+        end: toHHMM(Number(it.end)),
+        suggestedAlternativeStart: Number.isFinite(Number(params.suggested)) ? toHHMM(Number(params.suggested)) : undefined,
+        reasonCode: params.reasonCode,
+        severity: "hard",
+        movable: isTaskMovableForStructuredBlocker(blockingTaskId),
+        status,
+        lockType,
+      });
+    });
+
   // Pre-cargar ocupación de tareas ya en curso/terminadas (inmovibles)
   for (const task of tasks as any[]) {
     const status = String(task?.status ?? "pending");
@@ -2108,6 +2162,17 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
               workDayStart: toHHMM(startDay),
               workDayEnd: toHHMM(endDay),
               duration,
+              structuredBlockers: [makeStructuredBlocker({
+                blockerType: "availability",
+                blockedTaskId: taskId,
+                contestantId: contestantId ?? undefined,
+                availabilityStart: toHHMM(effWin.start),
+                availabilityEnd: toHHMM(effWin.end),
+                duration,
+                reasonCode: "CONTESTANT_NO_AVAILABILITY",
+                severity: "hard",
+                movable: false,
+              })],
             },
           },
         } as any;
@@ -2138,6 +2203,34 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         : start;
       if (candidate !== start) {
         const overlappedProtectedWindow = spaceWindowsForTask.find((w) => rangesOverlap(start, start + duration, w.from, w.to));
+        const structuredBlockers = [
+          ...structuredFromIntervals({
+            blockerType: "space",
+            blockedTaskId: taskId,
+            intervals: spaceOcc,
+            from: start,
+            to: start + duration,
+            suggested: candidate,
+            spaceId: effectiveSpaceId,
+            reasonCode: "SPACE_BUSY",
+          }),
+          ...(overlappedProtectedWindow
+            ? [makeStructuredBlocker({
+                blockerType: "space",
+                blockedTaskId: taskId,
+                blockingTaskId: overlappedProtectedWindow.ownerTaskId,
+                spaceId: effectiveSpaceId ?? undefined,
+                start: toHHMM(overlappedProtectedWindow.from),
+                end: toHHMM(overlappedProtectedWindow.to),
+                suggestedAlternativeStart: toHHMM(candidate),
+                reasonCode: "SPACE_BUSY",
+                severity: "hard",
+                movable: isTaskMovableForStructuredBlocker(Number(overlappedProtectedWindow.ownerTaskId)),
+                status: getBlockerStatus(Number(overlappedProtectedWindow.ownerTaskId)),
+                lockType: getBlockerLockType(Number(overlappedProtectedWindow.ownerTaskId)),
+              })]
+            : []),
+        ];
         lastBump = {
           code: "SPACE_BUSY",
           message: `Espacio ocupado para "${String(task?.templateName ?? `tarea ${taskId}`)}"`,
@@ -2145,6 +2238,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
             spaceId: effectiveSpaceId,
             from: toHHMM(start),
             suggested: toHHMM(candidate),
+            structuredBlockers,
             ...(overlappedProtectedWindow
               ? {
                   protectedWindow: {
@@ -2170,6 +2264,15 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
             details: {
               zoneId: effectiveZoneId,
               suggested: toHHMM(candidate),
+              structuredBlockers: structuredFromIntervals({
+                blockerType: "meal",
+                blockedTaskId: taskId,
+                intervals: zOcc,
+                from: prevCandidate,
+                to: prevCandidate + duration,
+                suggested: candidate,
+                reasonCode: "ZONE_MEAL_BLOCK",
+              } as any),
             },
           };
         }
@@ -2198,6 +2301,16 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
             details: {
               contestantId,
               suggested: toHHMM(candidate),
+              structuredBlockers: structuredFromIntervals({
+                blockerType: "contestant",
+                blockedTaskId: taskId,
+                intervals: cOcc,
+                from: prevCandidate,
+                to: prevCandidate + duration,
+                suggested: candidate,
+                contestantId,
+                reasonCode: "CONTESTANT_BUSY",
+              }),
             },
           };
         }
@@ -2224,6 +2337,46 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         const startsBeforeAvailability = Boolean(effWin) && startDay < Number(effWin?.start);
         const code = lastBump?.code ?? (effWin ? "CONTESTANT_NOT_AVAILABLE" : "NO_TIME");
         const message = lastBump?.message ?? `No hay hueco para "${String(task?.templateName ?? "tarea").trim() || `tarea ${taskId}`}" dentro de la disponibilidad de ${task?.contestantName ?? `concursante ${contestantId}`}.`;
+        const lastDetails = (lastBump?.details ?? {}) as any;
+        const existingStructuredBlockers = Array.isArray(lastDetails.structuredBlockers) ? lastDetails.structuredBlockers : [];
+        const resourceStructuredBlockers = String(lastBump?.code ?? "") === "RESOURCE_NOT_AVAILABLE"
+          ? (Array.isArray(lastDetails.candidates) ? lastDetails.candidates : [])
+              .flatMap((candidateRow: any) => {
+                const conflict = candidateRow?.firstConflict;
+                const blockingTaskId = Number(conflict?.taskId ?? NaN);
+                const resourceId = Number(candidateRow?.pid ?? NaN);
+                if (!Number.isFinite(blockingTaskId) || blockingTaskId <= 0) return [];
+                const status = getBlockerStatus(blockingTaskId);
+                return [makeStructuredBlocker({
+                  blockerType: Number(candidateRow?.typeId) === 10 ? "coach" : "resource",
+                  blockedTaskId: taskId,
+                  blockingTaskId,
+                  resourceId,
+                  start: String(conflict?.start ?? ""),
+                  end: String(conflict?.end ?? ""),
+                  suggestedAlternativeStart: lastDetails.suggested,
+                  reasonCode: "RESOURCE_NOT_AVAILABLE",
+                  severity: "hard",
+                  movable: isTaskMovableForStructuredBlocker(blockingTaskId),
+                  status,
+                  lockType: getBlockerLockType(blockingTaskId),
+                })];
+              })
+          : [];
+        const availabilityBlocker = makeStructuredBlocker({
+          blockerType: "availability",
+          blockedTaskId: taskId,
+          contestantId: contestantId ?? undefined,
+          availabilityStart: effWin ? toHHMM(effWin.start) : undefined,
+          availabilityEnd: effWin ? toHHMM(effWin.end) : undefined,
+          duration,
+          start: effWin ? toHHMM(effWin.start) : toHHMM(startDay),
+          end: toHHMM(maxEndAllowed),
+          reasonCode: code,
+          severity: "hard",
+          movable: false,
+        });
+        const structuredBlockers = [...existingStructuredBlockers, ...resourceStructuredBlockers, availabilityBlocker];
         return {
           scheduled: false,
           reason: {
@@ -2239,18 +2392,19 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
               startsBeforeAvailability,
               maxEndAllowed: toHHMM(maxEndAllowed),
               ...(lastBump?.details ?? {}),
+              structuredBlockers,
               blockingTasks:
-                (lastBump?.code === "SPACE_BUSY" && Number.isFinite(Number((lastBump as any)?.details?.spaceId)))
-                  ? (occupiedBySpace.get(Number((lastBump as any)?.details?.spaceId)) ?? [])
-                      .filter((it) => rangesOverlap(it.start, it.end, effWin ? effWin.start : startDay, maxEndAllowed))
+                structuredBlockers.some((blocker: any) => Number.isFinite(Number(blocker?.blockingTaskId)))
+                  ? structuredBlockers
+                      .filter((blocker: any) => Number.isFinite(Number(blocker?.blockingTaskId)))
                       .slice(0, 8)
-                      .map((it) => {
-                        const bt = taskById.get(Number(it.taskId));
+                      .map((blocker: any) => {
+                        const bt = taskById.get(Number(blocker.blockingTaskId));
                         return {
-                          taskId: Number(it.taskId),
-                          label: String(bt?.templateName ?? bt?.manualTitle ?? `Tarea #${Number(it.taskId)}`),
-                          start: toHHMM(Number(it.start)),
-                          end: toHHMM(Number(it.end)),
+                          taskId: Number(blocker.blockingTaskId),
+                          label: String(bt?.templateName ?? bt?.manualTitle ?? `Tarea #${Number(blocker.blockingTaskId)}`),
+                          start: blocker.start,
+                          end: blocker.end,
                         };
                       })
                   : undefined,
@@ -4708,7 +4862,19 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         message:
           `No se puede planificar "${String(t?.templateName ?? `tarea ${t?.id}`)}" porque faltan tareas previas requeridas.`,
         taskId,
-        details: { missingDependencyTaskIds: depIds, missingDependencies },
+        details: {
+          missingDependencyTaskIds: depIds,
+          missingDependencies,
+          structuredBlockers: depIds.map((depId: number) => makeStructuredBlocker({
+            blockerType: "dependency",
+            blockedTaskId: taskId,
+            dependencyTaskId: Number(depId),
+            blockingTaskId: Number(depId),
+            reasonCode: "DEPENDENCY_NOT_SCHEDULED",
+            severity: "hard",
+            movable: false,
+          })),
+        },
       };
       if (hardLocked) return hardInfeasible([reason]);
       unplanned.push({ taskId, reason });

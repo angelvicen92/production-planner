@@ -38,13 +38,17 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  backtrackingAccepted: ${formatNullable(metrics.backtrackingAccepted)}`);
   console.log(`  backtrackingAttempts: ${formatNullable(metrics.backtrackingAttempts)}`);
   console.log(`  backtrackingBranchesExplored: ${formatNullable(metrics.backtrackingBranchesExplored)}`);
+  console.log(`  structuredBlockersCount: ${metrics.structuredBlockersCount}`);
+  console.log(`  movableBlockersCount: ${metrics.movableBlockersCount}`);
+  console.log(`  immovableBlockersCount: ${metrics.immovableBlockersCount}`);
+  console.log(`  unknownBlockersCount: ${metrics.unknownBlockersCount}`);
   console.log(`  solutionSource: ${formatNullable(metrics.solutionSource)}`);
   console.log(`  warningsCount: ${metrics.warningsCount}`);
   console.log(`  infeasibleReasonCount: ${metrics.infeasibleReasonCount}`);
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006");
 console.log("Benchmark operativo reproducible: no modifica lógica del motor y reporta riesgos conocidos sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);

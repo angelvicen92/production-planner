@@ -13,7 +13,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -48,7 +48,7 @@ for (const scenario of benchmarkScenarios) {
 }
 
 // Disponibilidad de concursantes: los escenarios completos no deben planificar fuera de ventana.
-for (const id of ["A", "B", "C", "D", "F"] as const) {
+for (const id of ["A", "B", "C", "D", "F", "G"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantWindowViolations(scenario.input, output), 0, `scenario ${id} contestant windows`);
@@ -56,7 +56,7 @@ for (const id of ["A", "B", "C", "D", "F"] as const) {
 }
 
 // No solapar concursante ni espacio en escenarios completos.
-for (const id of ["A", "B", "C", "D", "E", "F"] as const) {
+for (const id of ["A", "B", "C", "D", "E", "F", "G"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantOverlaps(scenario.input, output), 0, `scenario ${id} contestant overlaps`);
@@ -86,6 +86,17 @@ for (const id of ["C", "D"] as const) {
   if (output.complete) {
     assert.equal(countDependencyViolations(scenario.input, output), 0, `scenario ${id} dependencies`);
   }
+}
+
+// Escenario G — backtracking limitado debe activarse y aceptar una solución completa.
+{
+  const { scenario, output } = run("G");
+  assert.equal(output.complete, true, "scenario G should be complete after limited backtracking");
+  assert.equal(output.v3Meta?.backtrackingAttempted, true, "scenario G should attempt backtracking");
+  assert.equal(output.v3Meta?.backtrackingAccepted, true, "scenario G should accept backtracking");
+  assert.equal(output.v3Meta?.solutionSource, "phaseA_backtracking", "scenario G source");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario G contestant windows");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario G space overlaps");
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

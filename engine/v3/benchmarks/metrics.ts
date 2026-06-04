@@ -1,6 +1,7 @@
 import type { EngineOutput, TaskInput, TimeWindow } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { EngineBenchmarkMetrics, PlannedTaskView } from "./types";
+import { summarizeStructuredBlockers } from "../blockers";
 
 export const toMinutes = (hhmm: string | null | undefined): number | null => {
   if (!hhmm) return null;
@@ -227,6 +228,7 @@ export const countHardConstraintViolations = (input: EngineV3Input, output: Engi
 
 export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, runtimeMs: number): EngineBenchmarkMetrics => {
   const mainGaps = calculateMainStageGaps(input, output);
+  const blockerSummary = summarizeStructuredBlockers(output);
   return {
     totalTasks: input.tasks.length,
     plannedTasks: output.plannedTasks?.length ?? 0,
@@ -247,6 +249,7 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     backtrackingAccepted: output.v3Meta?.backtrackingAccepted ?? null,
     backtrackingAttempts: output.v3Meta?.backtrackingAttempts ?? null,
     backtrackingBranchesExplored: output.v3Meta?.backtrackingBranchesExplored ?? null,
+    ...blockerSummary,
     solutionSource: output.v3Meta?.solutionSource ?? null,
     warningsCount: output.warnings?.length ?? 0,
     infeasibleReasonCount: output.reasons?.length ?? 0,
