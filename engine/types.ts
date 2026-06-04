@@ -327,5 +327,9 @@ export interface EngineOutput {
     unplannedCount?: number;
     makespanMinutes?: number | null;
     warningsTop?: string[];
+    structuredBlockersCount?: number;
+    movableBlockersCount?: number;
+    immovableBlockersCount?: number;
+    unknownBlockersCount?: number;
   };
 }

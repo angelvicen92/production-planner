@@ -110,3 +110,78 @@ const relevantSignature = (output: any) => ({
 }
 
 console.log("engine/v3/limitedBacktracking.spec.ts: OK");
+
+// Test 5 — blocker estructurado de espacio.
+{
+  const input = baseInput({
+    workDay: { start: "09:00", end: "10:00" },
+    contestantAvailabilityById: { 2: { start: "09:00", end: "10:00" } },
+    tasks: [
+      { id: 101, planId: 1, templateId: 101, templateName: "Restrictive first", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 60 },
+      { id: 102, planId: 1, templateId: 102, templateName: "Blocked by space", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    ] as any,
+  });
+  const output = solve_v3_phaseA_attempt(input, { forcedTaskStarts: { 102: 9 * 60 }, maxIterations: 8000 } as any) as any;
+  const blocker = output.unplanned?.[0]?.reason?.details?.structuredBlockers?.find((item: any) => item.blockerType === "space");
+  assert.ok(blocker, "space structured blocker should be present");
+  assert.equal(blocker.blockedTaskId, 102);
+  assert.equal(blocker.blockingTaskId, 101);
+  assert.equal(blocker.start, "09:00");
+  assert.equal(blocker.end, "10:00");
+}
+
+// Test 6 — blocker estructurado de disponibilidad restrictiva.
+{
+  const input = baseInput({
+    workDay: { start: "09:00", end: "10:00" },
+    contestantAvailabilityById: { 2: { start: "09:00", end: "09:30" } },
+    tasks: [
+      { id: 111, planId: 1, templateId: 111, templateName: "Too long for availability", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 60 },
+      { id: 112, planId: 1, templateId: 112, templateName: "Other planned", zoneId: 1, spaceId: 12, contestantId: 3, status: "pending", durationOverrideMin: 30 },
+    ] as any,
+  });
+  const output = solve_v3_phaseA_attempt(input, { maxIterations: 8000 } as any) as any;
+  const item = output.unplanned?.find((row: any) => row.taskId === 111);
+  const blocker = item?.reason?.details?.structuredBlockers?.find((entry: any) => entry.blockerType === "availability");
+  assert.ok(blocker, "availability structured blocker should be present");
+  assert.equal(blocker.blockedTaskId, 111);
+  assert.equal(blocker.availabilityStart, "09:00");
+  assert.equal(blocker.availabilityEnd, "09:30");
+  assert.equal(blocker.duration, 60);
+}
+
+// Test 7 — blocker inamovible por lock y backtracking no lo mueve.
+{
+  const input = baseInput({
+    workDay: { start: "09:00", end: "10:00" },
+    contestantAvailabilityById: { 2: { start: "09:00", end: "10:00" } },
+    locks: [{ id: 1, planId: 1, taskId: 121, lockType: "time", lockedStart: "09:00", lockedEnd: "09:30" }],
+    tasks: [
+      { id: 121, planId: 1, templateId: 121, templateName: "Locked blocker", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", startPlanned: "09:00", endPlanned: "09:30", durationOverrideMin: 30 },
+      { id: 122, planId: 1, templateId: 122, templateName: "Blocked by lock", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 60 },
+      { id: 123, planId: 1, templateId: 123, templateName: "Other planned", zoneId: 1, spaceId: 12, contestantId: 3, status: "pending", durationOverrideMin: 30 },
+    ] as any,
+  });
+  const phaseA = solve_v3_phaseA_attempt(input, { maxIterations: 8000 } as any) as any;
+  const lockBlocker = phaseA.unplanned?.[0]?.reason?.details?.structuredBlockers?.find((entry: any) => entry.blockerType === "lock");
+  assert.ok(lockBlocker, "lock structured blocker should be present");
+  assert.equal(lockBlocker.movable, false);
+  const output = generatePlanV3(input, { timeLimitMs: 0, enableLimitedBacktracking: true });
+  assert.notEqual(output.v3Meta?.backtrackingAccepted, true, "backtracking must not accept by moving a lock");
+  assert.equal(countLockedTaskMoved(input, output), 0);
+}
+
+// Test 8 — escenario G: backtracking real aceptado.
+{
+  const { scenarioById } = await import("./benchmarks/scenarios");
+  const scenario = scenarioById.get("G");
+  assert.ok(scenario, "scenario G should exist");
+  const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
+  assert.equal(output.complete, true);
+  assert.equal(output.v3Meta?.backtrackingAttempted, true);
+  assert.equal(output.v3Meta?.backtrackingAccepted, true);
+  assert.equal(output.v3Meta?.solutionSource, "phaseA_backtracking");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0);
+  assert.equal(countContestantOverlaps(scenario.input, output), 0);
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0);
+}

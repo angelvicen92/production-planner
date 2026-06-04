@@ -98,3 +98,38 @@ Justificación:
 - Puede acotarse a casos de fallo o bloqueo tardío, por ejemplo reintentando un pequeño conjunto de órdenes alternativos para tareas con ventanas más restrictivas, recursos exclusivos o dependencias críticas.
 
 ID 005 queda implementado en este lote mediante retry determinista de candidatos alternativos con metadata observable.
+
+## Actualización ID 006 — Escenario G y métricas de blockers
+
+ID 006 amplía el benchmark con el escenario **G — Backtracking activa y recupera solución**.
+
+### Escenario G
+
+El caso modela un plató principal compartido por:
+
+- una tarea flexible de rehearsal con disponibilidad 09:00-11:00;
+- una tarea restrictiva de un talent con salida temprana, disponible solo 09:00-10:00.
+
+La pasada greedy de diagnóstico reproduce una decisión temprana que deja fuera a la tarea restrictiva. El backtracking limitado usa los blockers estructurados de disponibilidad/espacio para probar una rama alternativa y retrasa la tarea flexible a las 10:00.
+
+Resultado de referencia de `npm run benchmark:engine` en ID 006:
+
+- `status: complete`
+- `plannedTasks / totalTasks: 2 / 2`
+- `hardConstraintViolations: 0`
+- `backtrackingAttempted: true`
+- `backtrackingAccepted: true`
+- `backtrackingAttempts: 1`
+- `backtrackingBranchesExplored: 1`
+- `solutionSource: phaseA_backtracking`
+
+### Nuevas métricas
+
+El runner imprime ahora:
+
+- `structuredBlockersCount`
+- `movableBlockersCount`
+- `immovableBlockersCount`
+- `unknownBlockersCount`
+
+Cuando el output final no contiene blockers (por ejemplo porque el backtracking aceptó una solución completa), los contadores se muestran como `0`.

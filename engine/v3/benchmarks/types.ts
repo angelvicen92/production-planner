@@ -1,7 +1,7 @@
 import type { EngineOutput, TaskInput } from "../../types";
 import type { EngineV3Input } from "../types";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -40,6 +40,10 @@ export interface EngineBenchmarkMetrics {
   backtrackingAccepted: boolean | null;
   backtrackingAttempts: number | null;
   backtrackingBranchesExplored: number | null;
+  structuredBlockersCount: number;
+  movableBlockersCount: number;
+  immovableBlockersCount: number;
+  unknownBlockersCount: number;
   solutionSource: string | null;
   warningsCount: number;
   infeasibleReasonCount: number;

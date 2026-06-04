@@ -3,6 +3,7 @@ import { solve_v3_phaseA_attempt } from "./phaseAHeuristic";
 import type { EngineV3Input, EngineV3Options } from "./types";
 import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
+import { getStructuredBlockers, summarizeStructuredBlockers } from "./blockers";
 
 type AttemptSummary = {
   level: number;
@@ -87,16 +88,36 @@ const deriveLimitedBacktrackingBranches = (input: EngineV3Input, output: EngineO
 
   for (const item of output.unplanned ?? []) {
     if (branches.length >= maxBranches) break;
+    const blockedTaskId = Number((item as any)?.taskId ?? (item as any)?.reason?.taskId ?? NaN);
     const details = (item as any)?.reason?.details ?? {};
+    const availabilityStart = toMinutes(String(details.availabilityStart ?? ""));
     const availabilityEnd = toMinutes(String(details.availabilityEnd ?? ""));
     const suggested = toMinutes(String(details.suggested ?? ""));
+    const structuredBlockers = getStructuredBlockers(details);
+
+    for (const blocker of structuredBlockers) {
+      if (branches.length >= maxBranches) break;
+      const blockerId = Number(blocker.blockingTaskId ?? NaN);
+      const blockerEnd = toMinutes(String(blocker.end ?? ""));
+      const alternativeStart = toMinutes(String(blocker.suggestedAlternativeStart ?? ""));
+
+      if (blocker.blockerType === "availability" && availabilityStart !== null && Number.isFinite(blockedTaskId) && blockedTaskId > 0) {
+        pushBranch(blockedTaskId, snapToGrid(availabilityStart), "reserve_restrictive_availability_start");
+      }
+
+      if (!blocker.movable || !Number.isFinite(blockerId) || blockerId <= 0) continue;
+      if (availabilityEnd !== null) pushBranch(blockerId, snapToGrid(availabilityEnd), `${blocker.blockerType}_after_restrictive_availability_end`);
+      if (blockerEnd !== null) pushBranch(blockerId, snapToGrid(blockerEnd), `${blocker.blockerType}_after_blocker_end`);
+      if (alternativeStart !== null && alternativeStart !== suggested) pushBranch(blockerId, snapToGrid(alternativeStart), `${blocker.blockerType}_structured_alternative_start`);
+    }
+
     const blockingTasks = Array.isArray(details.blockingTasks) ? details.blockingTasks : [];
     for (const blocker of blockingTasks) {
       if (branches.length >= maxBranches) break;
       const blockerId = Number(blocker?.taskId ?? NaN);
       if (!Number.isFinite(blockerId) || blockerId <= 0) continue;
-      if (availabilityEnd !== null) pushBranch(blockerId, snapToGrid(availabilityEnd), "after_restrictive_availability_end");
-      if (suggested !== null) pushBranch(blockerId, snapToGrid(suggested), "engine_suggested_start");
+      if (availabilityEnd !== null) pushBranch(blockerId, snapToGrid(availabilityEnd), "legacy_after_restrictive_availability_end");
+      if (suggested !== null) pushBranch(blockerId, snapToGrid(suggested), "legacy_engine_suggested_start");
     }
   }
   return branches.slice(0, maxBranches);
@@ -194,6 +215,7 @@ const computeMakespanMinutes = (output: EngineOutput): number | null => {
 
 const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta"]>): EngineOutput => {
   const warningsTop = (output.warnings ?? []).slice(0, 5).map((warning: any) => String(warning?.code ?? "WARNING"));
+  const blockerSummary = summarizeStructuredBlockers(output);
   return {
     ...output,
     v3Meta: {
@@ -207,6 +229,7 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
       makespanMinutes: computeMakespanMinutes(output),
       warningsTop,
+      ...blockerSummary,
     },
   };
 };
@@ -421,7 +444,13 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     });
 
     const t0 = Date.now();
-    const out = solve_v3_phaseA_attempt(cloneWithSoftLevel(input, level));
+    const greedyProbeForcedTaskStarts = (input as any)?.v3GreedyProbeForcedTaskStarts;
+    const out = solve_v3_phaseA_attempt(
+      cloneWithSoftLevel(input, level),
+      greedyProbeForcedTaskStarts && typeof greedyProbeForcedTaskStarts === "object"
+        ? { forcedTaskStarts: greedyProbeForcedTaskStarts, maxIterations: 8000 } as any
+        : undefined,
+    );
     const ms = Math.max(0, Date.now() - t0);
     const ok = Boolean(out.complete);
     attemptsSummary.push({ level, ok, ms, topReasons: summarizeTopReasons(out), reason: `soft_level_${level}` });

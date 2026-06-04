@@ -169,6 +169,27 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "Ninguna tarea debe cruzar comida si el modelo actual la trata como hard; el benchmark lo reporta como bloque global del input.",
     riskNotes: ["La comida global se modela mediante input.meal y el motor debe evitar cruces"],
   },
-];
+  {
+    id: "G",
+    name: "Backtracking activa y recupera solución",
+    description: "Una decisión greedy temprana ocupa el plató principal con una tarea flexible y deja fuera a un talent con salida temprana; el backtracking retrasa el blocker flexible.",
+    input: baseInput([
+      { id: 7001, planId: PLAN_ID, templateId: 1701, templateName: "Rehearsal flexible main", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 61, contestantName: "Talent flexible", status: "pending", durationOverrideMin: 60 },
+      { id: 7002, planId: PLAN_ID, templateId: 1702, templateName: "Main restrictivo salida temprana", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 62, contestantName: "Talent salida temprana", status: "pending", durationOverrideMin: 60 },
+    ], {
+      workDay: { start: "09:00", end: "11:00" },
+      contestantAvailabilityById: {
+        61: { start: "09:00", end: "11:00" },
+        62: { start: "09:00", end: "10:00" },
+      },
+      // Probe determinista del falso negativo greedy: fuerza la primera pasada a tomar
+      // primero la tarea flexible; el backtracking debe derivar el blocker estructurado
+      // y recuperar la solución operativa sin relajar hard constraints.
+      v3GreedyProbeForcedTaskStarts: { 7002: 10 * 60 } as any,
+    } as any),
+    operationalExpectation: "El greedy inicial deja fuera la tarea restrictiva, el backtracking retrasa el rehearsal flexible a las 10:00 y completa el plan.",
+    riskNotes: ["Backtracking limitado", "Disponibilidad restrictiva de talent", "Espacio principal bloqueado por tarea flexible"],
+  },
+ ];
 
 export const scenarioById = new Map(benchmarkScenarios.map((scenario) => [scenario.id, scenario]));

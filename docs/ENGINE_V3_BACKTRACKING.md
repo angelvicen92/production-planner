@@ -93,3 +93,52 @@ En la ejecución de referencia de ID 005 los escenarios A-F siguen pasando sin v
 Recomendación: **convertir CP-SAT en un solver global real o, como paso intermedio, ampliar el diagnóstico estructurado de blockers de Phase A**.
 
 La ruta más sólida a largo plazo es un CP-SAT global que modele ventanas, espacios, concursantes, recursos exclusivos, comidas, dependencias, locks y tareas en ejecución desde cero. Si se prefiere una evolución incremental, el siguiente paso debería mejorar los diagnósticos de blockers para recursos/coaches/feeders, de modo que el backtracking limitado pueda generar ramas alternativas más completas sin relajar hard constraints.
+
+## Diagnóstico estructurado de blockers — ID 006
+
+ID 006 añade un contrato interno compatible en `reason.details.structuredBlockers` para que Phase A no dependa solo de mensajes o campos legacy (`blockingTasks`, `suggested`, `availabilityEnd`). El helper puro `engine/v3/blockers.ts` normaliza blockers sin eliminar `reason.details` existente.
+
+### Tipos soportados
+
+- `space`: un espacio ya está ocupado por otra tarea o ventana protegida.
+- `contestant`: el concursante tiene otro intervalo incompatible.
+- `resource`: un recurso exclusivo requerido está ocupado.
+- `coach`: subtipo operativo de recurso cuando el recurso bloqueante corresponde a un coach.
+- `availability`: la tarea no cabe dentro de la ventana efectiva del concursante o del día.
+- `dependency`: una dependencia requerida no está planificada.
+- `meal`: bloque de comida/pausa global o de zona.
+- `lock`: el blocker es una tarea con lock de tiempo/full.
+- `executed`: el blocker está `done` o `in_progress`.
+- `unknown`: reservado para diagnósticos incompletos que no deben ocultarse.
+
+### Campos estables
+
+Cada blocker incluye, cuando el dato existe, `blockedTaskId`, `blockingTaskId`, `spaceId`, `contestantId`, `resourceId`, `start`, `end`, `suggestedAlternativeStart`, `reasonCode`, `severity`, `movable`, `status`, `lockType`, `availabilityStart`, `availabilityEnd` y `duration`.
+
+### Cómo alimenta backtracking
+
+`deriveLimitedBacktrackingBranches` consume primero `structuredBlockers` y mantiene fallback a `blockingTasks` legacy. Las ramas actuales son acotadas y deterministas:
+
+1. reservar el inicio de ventana para una tarea con blocker `availability`;
+2. retrasar blockers `space`, `resource`, `coach` o `contestant` marcados como `movable` hasta `availabilityEnd` cuando una ventana restrictiva quedó bloqueada;
+3. usar el fin del blocker o `suggestedAlternativeStart` como alternativas adicionales;
+4. deduplicar ramas por `taskId:start` y respetar `maxBacktrackAttempts`, `maxBacktrackDepth` y `maxSearchMs`.
+
+### Blockers movibles e inamovibles
+
+Son movibles solo las tareas pendientes sin lock de tiempo/full y que no son bloques manuales. Son inamovibles:
+
+- tareas `done`;
+- tareas `in_progress`;
+- locks de tiempo/full;
+- bloques manuales;
+- blockers puramente de disponibilidad o dependencia sin tarea desplazable.
+
+El backtracking no genera ramas que muevan blockers inamovibles.
+
+### Límites actuales
+
+- No es búsqueda exhaustiva global ni reemplaza CP-SAT.
+- Si Phase A no alcanza a materializar un blocker estructurado, la rama puede no generarse.
+- El output final completo no conserva todos los blockers de la pasada greedy fallida; las métricas del benchmark se imprimen como 0 si el resultado final no contiene `unplanned`.
+- ID 006 mantiene hard constraints: no mueve locks, `done` ni `in_progress`, no permite solapes y no cruza comida hard.
