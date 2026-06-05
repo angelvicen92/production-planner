@@ -48,6 +48,10 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  bestCandidateSource: ${formatNullable(metrics.bestCandidateSource)}`);
   console.log(`  candidateSelectionReason: ${formatNullable(metrics.candidateSelectionReason)}`);
   console.log(`  bestCandidateScore: ${formatCompact(metrics.bestCandidateScore)}`);
+  console.log(`  neighborhoodSearchAttempted: ${formatNullable(metrics.neighborhoodSearchAttempted)}`);
+  console.log(`  neighborhoodCandidatesGenerated: ${formatNullable(metrics.neighborhoodCandidatesGenerated)}`);
+  console.log(`  neighborhoodCandidateAccepted: ${formatNullable(metrics.neighborhoodCandidateAccepted)}`);
+  console.log(`  neighborhoodAcceptedReason: ${formatNullable(metrics.neighborhoodAcceptedReason)}`);
   console.log(`  structuredBlockersCount: ${metrics.structuredBlockersCount}`);
   console.log(`  movableBlockersCount: ${metrics.movableBlockersCount}`);
   console.log(`  immovableBlockersCount: ${metrics.immovableBlockersCount}`);
@@ -58,8 +62,8 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009");
-console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches sin fallar por optimización no perfecta.");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010");
+console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);
@@ -68,13 +72,13 @@ for (const result of results) printResult(result);
 const stressScenario = benchmarkScenarios.find((scenario) => scenario.id === "I");
 if (stressScenario) {
   const offStart = performance.now();
-  const offOutput = generatePlanV3(stressScenario.input, { timeLimitMs: 0, requestId: "benchmark-I-backtracking-off", enableLimitedBacktracking: false });
+  const offOutput = generatePlanV3({ ...stressScenario.input, enableOperationalNeighborhoods: false } as any, { timeLimitMs: 0, requestId: "benchmark-I-neighborhood-off", enableLimitedBacktracking: false });
   const offMetrics = calculateMetrics(stressScenario.input, offOutput, Math.round(performance.now() - offStart));
   const onResult = results.find((result) => result.scenario.id === "I");
   if (onResult) {
-    console.log("\nComparativa escenario I — backtracking off/on");
-    console.log(`  off: planned=${offMetrics.plannedTasks}, mainStageGapMinutes=${formatNullable(offMetrics.mainStageGapMinutes)}, runtimeMs=${offMetrics.runtimeMs}, candidateSolutionsEvaluated=${formatNullable(offMetrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(offMetrics.solutionSource)}`);
-    console.log(`  on : planned=${onResult.metrics.plannedTasks}, mainStageGapMinutes=${formatNullable(onResult.metrics.mainStageGapMinutes)}, runtimeMs=${onResult.metrics.runtimeMs}, candidateSolutionsEvaluated=${formatNullable(onResult.metrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(onResult.metrics.solutionSource)}`);
+    console.log("\nComparativa escenario I — neighborhoods off/on");
+    console.log(`  off: planned=${offMetrics.plannedTasks}, mainStageGapMinutes=${formatNullable(offMetrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(offMetrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(offMetrics.coachSwitchCount)}, runtimeMs=${offMetrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(offMetrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(offMetrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(offMetrics.solutionSource)}`);
+    console.log(`  on : planned=${onResult.metrics.plannedTasks}, mainStageGapMinutes=${formatNullable(onResult.metrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(onResult.metrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(onResult.metrics.coachSwitchCount)}, runtimeMs=${onResult.metrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(onResult.metrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(onResult.metrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(onResult.metrics.solutionSource)}`);
   }
 }
 

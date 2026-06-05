@@ -5,11 +5,17 @@ import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
 import { getStructuredBlockers, summarizeStructuredBlockers } from "./blockers";
 import {
+  compareCandidateScores,
   compareCandidateSolutions,
   explainCandidateComparison,
   scoreCandidateSolution,
   summarizeCandidateScore,
 } from "./solutionScoring";
+import {
+  generateOperationalNeighborhoodCandidates,
+  shouldAttemptOperationalNeighborhoods,
+  type OperationalNeighborhoodReason,
+} from "./operationalNeighborhoods";
 
 type AttemptSummary = {
   level: number;
@@ -43,14 +49,19 @@ type BacktrackingMeta = {
   backtrackingTimeMs: number;
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
-  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
   candidateSolutionsEvaluated?: number;
-  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
   bestCandidateScore?: string;
   greedyCandidateScore?: string;
   backtrackingBestScore?: string;
   candidateSelectionReason?: string;
   candidateComparisonSummary?: string;
+  neighborhoodSearchAttempted?: boolean;
+  neighborhoodCandidatesGenerated?: number;
+  neighborhoodCandidateAccepted?: boolean;
+  neighborhoodAcceptedReason?: string;
+  neighborhoodSearchTimeMs?: number;
 };
 
 type BacktrackingBranch = {
@@ -321,6 +332,68 @@ const runLimitedBacktracking = (
   return finish(baseOutput, "phaseA_greedy", bestBacktracking, reason);
 };
 
+
+const runOperationalNeighborhoodSelection = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  baseSource: "phaseA_greedy" | "phaseA_backtracking",
+): { output: EngineOutput; meta: Partial<BacktrackingMeta> } => {
+  const started = Date.now();
+  const attempted = shouldAttemptOperationalNeighborhoods(input, baseOutput);
+  const baseScore = scoreCandidateSolution(input, baseOutput);
+  if (!attempted) {
+    return {
+      output: baseOutput,
+      meta: {
+        neighborhoodSearchAttempted: false,
+        neighborhoodCandidatesGenerated: 0,
+        neighborhoodCandidateAccepted: false,
+        neighborhoodSearchTimeMs: Math.max(0, Date.now() - started),
+        solutionSource: baseSource,
+      },
+    };
+  }
+
+  const candidates = generateOperationalNeighborhoodCandidates(input, baseOutput);
+  let bestOutput = baseOutput;
+  let bestReason: OperationalNeighborhoodReason | null = null;
+  let bestScore = baseScore;
+  for (const candidate of candidates) {
+    const candidateScore = scoreCandidateSolution(input, candidate.output);
+    if (compareCandidateSolutions(input, candidate.output, bestOutput) > 0) {
+      bestOutput = candidate.output;
+      bestReason = candidate.reason;
+      bestScore = candidateScore;
+    }
+  }
+
+  const accepted = bestOutput !== baseOutput;
+  const comparison = accepted
+    ? explainCandidateComparison("operational_neighborhood", baseSource, bestScore, baseScore)
+    : (candidates.length
+      ? explainCandidateComparison(baseSource, "operational_neighborhood", baseScore, candidates.map((candidate) => scoreCandidateSolution(input, candidate.output)).sort((a, b) => compareCandidateScores(b, a))[0])
+      : "no operational neighborhood candidate generated");
+
+  return {
+    output: bestOutput,
+    meta: {
+      neighborhoodSearchAttempted: true,
+      neighborhoodCandidatesGenerated: candidates.length,
+      neighborhoodCandidateAccepted: accepted,
+      neighborhoodAcceptedReason: accepted ? bestReason ?? comparison : undefined,
+      neighborhoodSearchTimeMs: Math.max(0, Date.now() - started),
+      solutionSource: accepted ? "operational_neighborhood" : baseSource,
+      candidateSolutionsEvaluated: 1 + candidates.length,
+      bestCandidateSource: accepted ? "operational_neighborhood" : baseSource,
+      bestCandidateScore: summarizeCandidateScore(bestScore),
+      greedyCandidateScore: baseSource === "phaseA_greedy" ? summarizeCandidateScore(baseScore) : undefined,
+      backtrackingBestScore: baseSource === "phaseA_backtracking" ? summarizeCandidateScore(baseScore) : undefined,
+      candidateSelectionReason: comparison,
+      candidateComparisonSummary: comparison,
+    },
+  };
+};
+
 const computeMakespanMinutes = (output: EngineOutput): number | null => {
   const startsEnds = (output.plannedTasks ?? [])
     .map((p: any) => ({ start: toMinutes(String(p?.startPlanned ?? "")), end: toMinutes(String(p?.endPlanned ?? "")) }))
@@ -342,6 +415,10 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       backtrackingAttempts: 0,
       backtrackingBranchesExplored: 0,
       backtrackingTimeMs: 0,
+      neighborhoodSearchAttempted: false,
+      neighborhoodCandidatesGenerated: 0,
+      neighborhoodCandidateAccepted: false,
+      neighborhoodSearchTimeMs: 0,
       ...meta,
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
@@ -608,6 +685,9 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
             attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
           },
         };
+        const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
+        output = neighborhoodSelection.output;
+        const backtrackingNeighborhoodMeta = { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta };
 
         const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
         if (timeLimitSeconds <= 0) {
@@ -632,7 +712,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
             cpSatFoundSolution: false,
             cpSatAccepted: false,
             cpSatReason: "budget_0",
-            ...backtrackingAcceptedMeta,
+            ...backtrackingNeighborhoodMeta,
           });
         }
         if (timeLimitSeconds > 0) {
@@ -677,8 +757,8 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
             cpSatAccepted: accepted,
             cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
             fallbackReason: accepted ? undefined : optimized.message,
-            ...backtrackingAcceptedMeta,
-            solutionSource: accepted ? "cp_sat" : "phaseA_backtracking",
+            ...backtrackingNeighborhoodMeta,
+            solutionSource: accepted ? "cp_sat" : backtrackingNeighborhoodMeta.solutionSource,
           });
         }
 
@@ -692,7 +772,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatFoundSolution: false,
           cpSatAccepted: false,
           cpSatReason: "not_attempted",
-          ...backtrackingAcceptedMeta,
+          ...backtrackingNeighborhoodMeta,
         });
       }
     }
@@ -706,6 +786,9 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
         },
       };
+      const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
+      output = neighborhoodSelection.output;
+      const greedyNeighborhoodMeta = neighborhoodSelection.meta;
 
       const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
       if (timeLimitSeconds <= 0) {
@@ -730,7 +813,8 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatFoundSolution: false,
           cpSatAccepted: false,
           cpSatReason: "budget_0",
-          solutionSource: "phaseA_greedy",
+          ...greedyNeighborhoodMeta,
+          solutionSource: greedyNeighborhoodMeta.solutionSource ?? "phaseA_greedy",
         });
       }
       if (timeLimitSeconds > 0) {
@@ -776,7 +860,8 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           cpSatReason: optimized.noOptimized ? optimized.message : accepted ? "accepted" : "candidate_validation_failed",
           fallbackReason: accepted ? undefined : optimized.message,
           ...(lastBacktrackingMeta && !lastBacktrackingMeta.backtrackingAccepted && !lastBacktrackingMeta.greedyFailedBeforeBacktracking ? lastBacktrackingMeta : {}),
-          solutionSource: accepted ? "cp_sat" : "phaseA_greedy",
+          ...greedyNeighborhoodMeta,
+          solutionSource: accepted ? "cp_sat" : greedyNeighborhoodMeta.solutionSource ?? "phaseA_greedy",
         });
       }
 
@@ -790,7 +875,8 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         cpSatFoundSolution: false,
         cpSatAccepted: false,
         cpSatReason: "not_attempted",
-        solutionSource: "phaseA_greedy",
+        ...greedyNeighborhoodMeta,
+        solutionSource: greedyNeighborhoodMeta.solutionSource ?? "phaseA_greedy",
       });
     }
   }

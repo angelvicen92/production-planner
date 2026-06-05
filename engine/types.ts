@@ -322,7 +322,7 @@ export interface EngineOutput {
     backtrackingTimeMs?: number;
     backtrackingFallbackReason?: string;
     greedyFailedBeforeBacktracking?: boolean;
-    solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+    solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
     plannedCount?: number;
     unplannedCount?: number;
     makespanMinutes?: number | null;
@@ -332,11 +332,16 @@ export interface EngineOutput {
     immovableBlockersCount?: number;
     unknownBlockersCount?: number;
     candidateSolutionsEvaluated?: number;
-    bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "cp_sat" | "fallback" | "infeasible";
+    bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
     bestCandidateScore?: string;
     greedyCandidateScore?: string;
     backtrackingBestScore?: string;
     candidateSelectionReason?: string;
     candidateComparisonSummary?: string;
+    neighborhoodSearchAttempted?: boolean;
+    neighborhoodCandidatesGenerated?: number;
+    neighborhoodCandidateAccepted?: boolean;
+    neighborhoodAcceptedReason?: string;
+    neighborhoodSearchTimeMs?: number;
   };
 }
