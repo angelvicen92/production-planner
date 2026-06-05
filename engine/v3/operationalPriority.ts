@@ -1,6 +1,6 @@
 import type { EngineOutput, TaskInput } from "../types";
 import type { EngineV3Input } from "./types";
-import { getPlannedViews, toMinutes } from "./metrics";
+import { calculateCoachSwitchMetrics, getPlannedViews, toMinutes } from "./metrics";
 
 export interface RestrictiveTalentUrgencyInput {
   workDayStartMin: number | null | undefined;
@@ -104,53 +104,7 @@ export const calculateRestrictiveTalentLatenessPenalty = (input: EngineV3Input, 
   return Math.round(penalty);
 };
 
-const resourcesForTask = (task: TaskInput): number[] => {
-  const byItem = Object.keys(task.resourceRequirements?.byItem ?? {}).map(Number);
-  const assigned = Array.isArray(task.assignedResourceIds) ? task.assignedResourceIds.map(Number) : [];
-  return [...byItem, ...assigned].filter((id) => Number.isFinite(id) && id > 0);
-};
+export { getCoachResourceIds } from "./metrics";
 
-export const getCoachResourceIds = (input: EngineV3Input): Set<number> => {
-  const ids = new Set<number>();
-  for (const resource of input.planResourceItems ?? []) {
-    const id = Number(resource.id);
-    const typeId = Number(resource.typeId ?? NaN);
-    const name = String(resource.name ?? "").toLowerCase();
-    if (Number.isFinite(id) && id > 0 && (typeId === 10 || name.includes("coach"))) ids.add(id);
-  }
-  for (const task of input.tasks ?? []) {
-    for (const id of resourcesForTask(task as TaskInput)) {
-      const inventory = (input.planResourceItems ?? []).find((resource) => Number(resource.id) === id);
-      if (Number(inventory?.typeId ?? NaN) === 10 || String(inventory?.name ?? "").toLowerCase().includes("coach")) ids.add(id);
-    }
-  }
-  return ids;
-};
-
-export const calculateCoachSwitchPenalty = (input: EngineV3Input, output: EngineOutput): number => {
-  const coachIds = getCoachResourceIds(input);
-  if (!coachIds.size) return 0;
-  const rows = getPlannedViews(input, output)
-    .map((view) => ({
-      start: toMinutes(view.startPlanned) ?? 0,
-      taskId: view.taskId,
-      coachKey: view.assignedResources.filter((id) => coachIds.has(Number(id))).sort((a, b) => a - b).join(","),
-      feedsMain: taskFeedsMainStage(input, Number(view.task.id)),
-    }))
-    .filter((row) => row.coachKey)
-    .sort((a, b) => a.start - b.start || a.taskId - b.taskId);
-
-  let penalty = 0;
-  let previous: string | null = null;
-  let beforePrevious: string | null = null;
-  for (const row of rows) {
-    if (previous !== null && row.coachKey !== previous) {
-      penalty += 1;
-      if (row.feedsMain) penalty += 1;
-      if (beforePrevious !== null && row.coachKey === beforePrevious) penalty += 1;
-    }
-    beforePrevious = previous;
-    previous = row.coachKey;
-  }
-  return penalty;
-};
+export const calculateCoachSwitchPenalty = (input: EngineV3Input, output: EngineOutput): number =>
+  calculateCoachSwitchMetrics(input, output).weightedPenalty;

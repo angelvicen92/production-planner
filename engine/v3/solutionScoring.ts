@@ -1,13 +1,11 @@
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import {
-  calculateMainStageGaps,
-  calculateMakespan,
+  calculateOperationalMetrics,
   countContestantWindowViolations,
-  countHardConstraintViolations,
   toMinutes,
 } from "./metrics";
-import { calculateCoachSwitchPenalty, calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
+import { calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
 
 export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
 
@@ -20,7 +18,9 @@ export interface CandidateSolutionScore {
   mainStageGapCount: number;
   restrictiveTalentLatenessPenalty: number;
   dependencyFeederPenalty: number;
+  coachSwitchCount: number | null;
   coachSwitchPenalty: number;
+  restrictiveTalentAverageStartOffset: number | null;
   makespan: number;
   score: string;
   tieBreakKey: string;
@@ -61,17 +61,19 @@ const calculateDependencyFeederPenalty = (input: EngineV3Input, output: EngineOu
 };
 
 export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutput): CandidateSolutionScore => {
-  const mainGaps = calculateMainStageGaps(input, output);
-  const hardConstraintViolations = countHardConstraintViolations(input, output);
+  const operationalMetrics = calculateOperationalMetrics(input, output);
+  const hardConstraintViolations = operationalMetrics.hardConstraintViolations;
   const plannedTasks = output.plannedTasks?.length ?? 0;
   const unplannedTasks = output.unplanned?.length ?? Math.max(0, (input.tasks?.length ?? 0) - plannedTasks);
   const contestantWindowViolations = countContestantWindowViolations(input, output);
-  const mainStageGapCount = finiteOrZero(mainGaps?.count);
-  const mainStageGapMinutes = finiteOrZero(mainGaps?.minutes);
+  const mainStageGapCount = finiteOrZero(operationalMetrics.mainStageGapCount);
+  const mainStageGapMinutes = finiteOrZero(operationalMetrics.mainStageGapMinutes);
   const restrictiveTalentLatenessPenalty = calculateRestrictiveTalentLatenessPenalty(input, output);
   const dependencyFeederPenalty = calculateDependencyFeederPenalty(input, output);
-  const coachSwitchPenalty = finiteOrZero(calculateCoachSwitchPenalty(input, output));
-  const makespan = finiteOrLarge(calculateMakespan(input, output));
+  const coachSwitchCount = operationalMetrics.coachSwitchCount;
+  const coachSwitchPenalty = finiteOrZero(operationalMetrics.coachSwitchPenalty);
+  const restrictiveTalentAverageStartOffset = operationalMetrics.restrictiveTalentAverageStartOffset;
+  const makespan = finiteOrLarge(operationalMetrics.makespan);
   const tieBreakKey = (output.plannedTasks ?? [])
     .map((task) => `${String(task.taskId).padStart(12, "0")}@${task.startPlanned}-${task.endPlanned}`)
     .sort()
@@ -84,7 +86,8 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     `mainGaps=${mainStageGapCount}/${mainStageGapMinutes}`,
     `restrictiveLate=${restrictiveTalentLatenessPenalty}`,
     `feeders=${dependencyFeederPenalty}`,
-    `coachSwitch=${coachSwitchPenalty}`,
+    `coachSwitchCount=${coachSwitchCount ?? "n/a"}`,
+    `coachSwitchPenalty=${coachSwitchPenalty}`,
     `makespan=${makespan === Number.MAX_SAFE_INTEGER ? "n/a" : makespan}`,
   ];
 
@@ -97,7 +100,9 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     mainStageGapCount,
     restrictiveTalentLatenessPenalty,
     dependencyFeederPenalty,
+    coachSwitchCount,
     coachSwitchPenalty,
+    restrictiveTalentAverageStartOffset,
     makespan,
     score: reasons.join("; "),
     tieBreakKey,
@@ -148,7 +153,15 @@ export const explainCandidateComparison = (
   if (selected.mainStageGapMinutes !== rejected.mainStageGapMinutes) return `${selectedSource} selected: fewer main-stage gap minutes`;
   if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: earlier restrictive talents`;
   if (selected.dependencyFeederPenalty !== rejected.dependencyFeederPenalty) return `${selectedSource} selected: better feeder/dependency timing`;
-  if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) return `${selectedSource} selected: fewer coach switches`;
+  if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) {
+    if (selected.coachSwitchCount !== null && rejected.coachSwitchCount !== null && selected.coachSwitchCount < rejected.coachSwitchCount) {
+      return `${selectedSource} selected: fewer coach switches`;
+    }
+    const rawComparison = selected.coachSwitchCount === rejected.coachSwitchCount
+      ? "raw coach-switch count unchanged"
+      : `raw coach-switch count ${selected.coachSwitchCount ?? "n/a"} vs ${rejected.coachSwitchCount ?? "n/a"}`;
+    return `${selectedSource} selected: lower weighted coach-switch penalty (${rawComparison})`;
+  }
   if (selected.makespan !== rejected.makespan) return `${selectedSource} selected: lower makespan`;
   return `${selectedSource} selected: deterministic stable tie-break`;
 };

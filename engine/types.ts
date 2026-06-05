@@ -338,6 +338,15 @@ export interface EngineOutput {
     backtrackingBestScore?: string;
     candidateSelectionReason?: string;
     candidateComparisonSummary?: string;
+    selectedCandidateMetrics?: {
+      coachSwitchCount: number | null;
+      coachSwitchPenalty: number;
+      restrictiveTalentAverageStartOffset: number | null;
+      mainStageGapMinutes: number | null;
+      mainStageGapCount: number | null;
+      makespan: number | null;
+      hardConstraintViolations: number;
+    };
     neighborhoodSearchAttempted?: boolean;
     neighborhoodCandidatesGenerated?: number;
     neighborhoodCandidateAccepted?: boolean;

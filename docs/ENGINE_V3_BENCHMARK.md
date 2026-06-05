@@ -187,3 +187,36 @@ Resultado de referencia de I tras ID 010:
 - `solutionSource: operational_neighborhood`
 
 La comparación del runner imprime I con vecindarios off/on. En la referencia ID 010, apagar vecindarios conserva la seguridad (`hardConstraintViolations: 0`, `mainStageGapMinutes: 0`) y encenderlos permite evaluar 3 candidatos locales y aceptar uno sin mover locks ni ejecución.
+
+## ID 011 — Consistencia entre scoring y métricas
+
+### Divergencia corregida
+
+Hasta ID 010, el scoring y el runner etiquetaban dos magnitudes diferentes como si fueran comparables:
+
+- el scoring usaba `coachSwitchPenalty`, limitada a recursos coach y ponderada por alternancias A/B/A y feeders de plató;
+- el benchmark calculaba `coachSwitchCount` comparando todos los `assignedResources`, por lo que escenario I imprimía `44` frente a `coachSwitch=32` en `bestCandidateScore`.
+
+ID 011 introduce una fuente única en `engine/v3/metrics.ts`. El benchmark y el scoring calculan sobre el mismo output final:
+
+- `coachSwitchCount` (conteo bruto, solo coaches);
+- `coachSwitchPenalty` (penalización ponderada usada para ordenar candidatos);
+- timing medio de talents restrictivos;
+- huecos de plató principal;
+- makespan;
+- violaciones hard.
+
+El runner imprime `selectedCandidateMetrics` y `selectedCandidateMetricsConsistent`. Una divergencia entre el snapshot elegido y el output final se muestra con `⚠️ METRICS DIVERGENCE` y hace fallar el benchmark.
+
+### Lectura honesta de `candidateSelectionReason`
+
+- `fewer coach switches`: el conteo bruto de coaches del candidato seleccionado es menor.
+- `lower weighted coach-switch penalty (...)`: mejora la función ponderada, pero el conteo bruto no baja; el texto incluye si queda igual o cuál fue la comparación.
+
+### Resultado de referencia de escenario I
+
+Antes de aplicar el vecindario (off): `coachSwitchCount=14`, `coachSwitchPenalty=40`.
+
+Después de seleccionar `operational_neighborhood` (on): `coachSwitchCount=12`, `coachSwitchPenalty=32`, `mainStageGapMinutes=0`, `restrictiveTalentAverageStartOffset=48`, `hardConstraintViolations=0` y `selectedCandidateMetricsConsistent=true`.
+
+El valor histórico `coachSwitchCount=44` queda explicado como conteo de cambios de cualquier recurso asignado y deja de presentarse como métrica de coaches.

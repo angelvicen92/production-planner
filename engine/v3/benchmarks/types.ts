@@ -34,6 +34,7 @@ export interface EngineBenchmarkMetrics {
   lockedTaskMovedCount: number;
   executedTaskMovedCount: number;
   coachSwitchCount: number | null;
+  coachSwitchPenalty: number;
   restrictiveTalentAverageStartOffset: number | null;
   restrictiveTalentLatestFinishSlack: number | null;
   mainStageUtilizationPercent: number | null;
@@ -50,6 +51,8 @@ export interface EngineBenchmarkMetrics {
   bestCandidateSource: string | null;
   candidateSelectionReason: string | null;
   bestCandidateScore: string | null;
+  selectedCandidateMetrics: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"] | null;
+  selectedCandidateMetricsConsistent: boolean | null;
   neighborhoodSearchAttempted: boolean | null;
   neighborhoodCandidatesGenerated: number | null;
   neighborhoodCandidateAccepted: boolean | null;
