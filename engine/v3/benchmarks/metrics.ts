@@ -4,6 +4,7 @@ import type { EngineBenchmarkMetrics } from "./types";
 import { summarizeStructuredBlockers } from "../blockers";
 export {
   calculateCoachSwitchCount,
+  calculateOperationalMetrics,
   calculateMainStageGaps,
   calculateMainStageUtilizationPercent,
   calculateMakespan,
@@ -26,6 +27,7 @@ export {
 
 import {
   calculateCoachSwitchCount,
+  calculateOperationalMetrics,
   calculateMainStageGaps,
   calculateMainStageUtilizationPercent,
   calculateMakespan,
@@ -47,23 +49,35 @@ import {
 } from "../metrics";
 
 export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, runtimeMs: number): EngineBenchmarkMetrics => {
-  const mainGaps = calculateMainStageGaps(input, output);
+  const operationalMetrics = calculateOperationalMetrics(input, output);
+  const mainGaps = { count: operationalMetrics.mainStageGapCount, minutes: operationalMetrics.mainStageGapMinutes };
+  const selectedCandidateMetrics = output.v3Meta?.selectedCandidateMetrics ?? null;
+  const selectedCandidateMetricsConsistent = selectedCandidateMetrics === null ? null : (
+    selectedCandidateMetrics.coachSwitchCount === operationalMetrics.coachSwitchCount
+    && selectedCandidateMetrics.coachSwitchPenalty === operationalMetrics.coachSwitchPenalty
+    && selectedCandidateMetrics.restrictiveTalentAverageStartOffset === operationalMetrics.restrictiveTalentAverageStartOffset
+    && selectedCandidateMetrics.mainStageGapMinutes === operationalMetrics.mainStageGapMinutes
+    && selectedCandidateMetrics.mainStageGapCount === operationalMetrics.mainStageGapCount
+    && selectedCandidateMetrics.makespan === operationalMetrics.makespan
+    && selectedCandidateMetrics.hardConstraintViolations === operationalMetrics.hardConstraintViolations
+  );
   const tasksPerContestant = calculateTasksPerContestantMinMax(input);
   const blockerSummary = summarizeStructuredBlockers(output);
   return {
     totalTasks: input.tasks.length,
     plannedTasks: output.plannedTasks?.length ?? 0,
     unplannedTasks: output.unplanned?.length ?? Math.max(0, input.tasks.length - (output.plannedTasks?.length ?? 0)),
-    makespan: calculateMakespan(input, output),
+    makespan: operationalMetrics.makespan,
     runtimeMs,
-    mainStageGapMinutes: mainGaps?.minutes ?? null,
-    mainStageGapCount: mainGaps?.count ?? null,
+    mainStageGapMinutes: mainGaps.minutes,
+    mainStageGapCount: mainGaps.count,
     contestantWindowViolations: countContestantWindowViolations(input, output),
-    hardConstraintViolations: countHardConstraintViolations(input, output),
+    hardConstraintViolations: operationalMetrics.hardConstraintViolations,
     lockedTaskMovedCount: countLockedTaskMoved(input, output),
     executedTaskMovedCount: countExecutedTaskMoved(input, output),
-    coachSwitchCount: calculateCoachSwitchCount(input, output),
-    restrictiveTalentAverageStartOffset: calculateRestrictiveTalentAverageStartOffset(input, output),
+    coachSwitchCount: operationalMetrics.coachSwitchCount,
+    coachSwitchPenalty: operationalMetrics.coachSwitchPenalty,
+    restrictiveTalentAverageStartOffset: operationalMetrics.restrictiveTalentAverageStartOffset,
     restrictiveTalentLatestFinishSlack: calculateRestrictiveTalentLatestFinishSlack(input, output),
     mainStageUtilizationPercent: calculateMainStageUtilizationPercent(input, output),
     tasksPerContestantMinMax: tasksPerContestant ? `${tasksPerContestant.min}-${tasksPerContestant.max}` : null,
@@ -79,6 +93,8 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     bestCandidateSource: output.v3Meta?.bestCandidateSource ?? null,
     candidateSelectionReason: output.v3Meta?.candidateSelectionReason ?? null,
     bestCandidateScore: output.v3Meta?.bestCandidateScore ?? null,
+    selectedCandidateMetrics,
+    selectedCandidateMetricsConsistent,
     neighborhoodSearchAttempted: output.v3Meta?.neighborhoodSearchAttempted ?? null,
     neighborhoodCandidatesGenerated: output.v3Meta?.neighborhoodCandidatesGenerated ?? null,
     neighborhoodCandidateAccepted: output.v3Meta?.neighborhoodCandidateAccepted ?? null,

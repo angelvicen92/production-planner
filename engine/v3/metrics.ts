@@ -197,20 +197,74 @@ export const calculateMainStageGaps = (input: EngineV3Input, output: EngineOutpu
   return { count, minutes };
 };
 
-export const calculateCoachSwitchCount = (input: EngineV3Input, output: EngineOutput): number | null => {
-  const rows = getPlannedViews(input, output)
-    .filter((view) => view.assignedResources.length > 0)
-    .sort((a, b) => (toMinutes(a.startPlanned) ?? 0) - (toMinutes(b.startPlanned) ?? 0));
-  if (!rows.length) return null;
-  let switches = 0;
-  let previous = rows[0].assignedResources.join(",");
-  for (const row of rows.slice(1)) {
-    const current = row.assignedResources.join(",");
-    if (current && previous && current !== previous) switches++;
-    previous = current;
-  }
-  return switches;
+const resourcesForTask = (task: TaskInput): number[] => {
+  const byItem = Object.keys(task.resourceRequirements?.byItem ?? {}).map(Number);
+  const assigned = Array.isArray(task.assignedResourceIds) ? task.assignedResourceIds.map(Number) : [];
+  return [...byItem, ...assigned].filter((id) => Number.isFinite(id) && id > 0);
 };
+
+export const getCoachResourceIds = (input: EngineV3Input): Set<number> => {
+  const coachIds = new Set<number>();
+  const inventoryById = new Map((input.planResourceItems ?? []).map((resource) => [Number(resource.id), resource]));
+  const addIfCoach = (id: number): void => {
+    const resource = inventoryById.get(id);
+    const typeId = Number(resource?.typeId ?? NaN);
+    const name = String(resource?.name ?? "").toLowerCase();
+    if (Number.isFinite(id) && id > 0 && (typeId === 10 || name.includes("coach"))) coachIds.add(id);
+  };
+  for (const id of inventoryById.keys()) addIfCoach(id);
+  for (const task of input.tasks ?? []) for (const id of resourcesForTask(task)) addIfCoach(id);
+  return coachIds;
+};
+
+export interface CoachSwitchMetrics {
+  count: number | null;
+  weightedPenalty: number;
+}
+
+export const calculateCoachSwitchMetrics = (input: EngineV3Input, output: EngineOutput): CoachSwitchMetrics => {
+  const coachIds = getCoachResourceIds(input);
+  if (!coachIds.size) return { count: null, weightedPenalty: 0 };
+  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
+  const feederTaskIds = new Set<number>();
+  if (Number.isFinite(mainZoneId) && mainZoneId > 0) {
+    for (const task of input.tasks ?? []) {
+      if (Number(task.zoneId ?? NaN) !== mainZoneId) continue;
+      for (const dependencyId of [
+        ...(Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : []),
+        ...(task.dependsOnTaskId ? [task.dependsOnTaskId] : []),
+      ].map(Number).filter((id) => Number.isFinite(id) && id > 0)) feederTaskIds.add(dependencyId);
+    }
+  }
+  const rows = getPlannedViews(input, output)
+    .map((view) => ({
+      start: toMinutes(view.startPlanned) ?? 0,
+      taskId: view.taskId,
+      coachKey: view.assignedResources.filter((id) => coachIds.has(Number(id))).sort((a, b) => a - b).join(","),
+      feedsMain: feederTaskIds.has(view.taskId),
+    }))
+    .filter((row) => row.coachKey)
+    .sort((a, b) => a.start - b.start || a.taskId - b.taskId);
+  if (!rows.length) return { count: null, weightedPenalty: 0 };
+
+  let count = 0;
+  let weightedPenalty = 0;
+  let previous: string | null = null;
+  let beforePrevious: string | null = null;
+  for (const row of rows) {
+    if (previous !== null && row.coachKey !== previous) {
+      count += 1;
+      weightedPenalty += 1;
+      if (row.feedsMain) weightedPenalty += 1;
+      if (beforePrevious !== null && row.coachKey === beforePrevious) weightedPenalty += 1;
+    }
+    beforePrevious = previous;
+    previous = row.coachKey;
+  }
+  return { count, weightedPenalty };
+};
+
+export const calculateCoachSwitchCount = (input: EngineV3Input, output: EngineOutput): number | null => calculateCoachSwitchMetrics(input, output).count;
 
 export const calculateMakespan = (input: EngineV3Input, output: EngineOutput): number | null => {
   const views = getPlannedViews(input, output);
@@ -318,3 +372,27 @@ export const countHardConstraintViolations = (input: EngineV3Input, output: Engi
   countDependencyViolations(input, output)
 );
 
+
+export interface OperationalMetricsSnapshot {
+  coachSwitchCount: number | null;
+  coachSwitchPenalty: number;
+  restrictiveTalentAverageStartOffset: number | null;
+  mainStageGapMinutes: number | null;
+  mainStageGapCount: number | null;
+  makespan: number | null;
+  hardConstraintViolations: number;
+}
+
+export const calculateOperationalMetrics = (input: EngineV3Input, output: EngineOutput): OperationalMetricsSnapshot => {
+  const coachSwitches = calculateCoachSwitchMetrics(input, output);
+  const mainStageGaps = calculateMainStageGaps(input, output);
+  return {
+    coachSwitchCount: coachSwitches.count,
+    coachSwitchPenalty: coachSwitches.weightedPenalty,
+    restrictiveTalentAverageStartOffset: calculateRestrictiveTalentAverageStartOffset(input, output),
+    mainStageGapMinutes: mainStageGaps?.minutes ?? null,
+    mainStageGapCount: mainStageGaps?.count ?? null,
+    makespan: calculateMakespan(input, output),
+    hardConstraintViolations: countHardConstraintViolations(input, output),
+  };
+};

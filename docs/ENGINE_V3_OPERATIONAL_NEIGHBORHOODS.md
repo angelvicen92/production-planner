@@ -111,3 +111,24 @@ Lectura: I sigue seguro, completo y sin huecos de plató. El vecindario encuentr
 ## Recomendación para ID 011
 
 Antes de CP-SAT global completo, ampliar el vecindario con movimientos de cadena acotados de 2-3 tareas y swaps no necesariamente de igual duración, siempre manteniendo validación hard y presupuesto determinista. Si eso no mueve I de forma observable en métricas agregadas, el siguiente paso debería ser modelar una Fase B CP-SAT global con ventanas, locks, dependencias, comida y recursos exclusivos como constraints de primer nivel.
+
+## ID 011 — Consistencia entre scoring y métricas
+
+La divergencia de ID 010 no era un cambio oculto del plan seleccionado, sino dos definiciones distintas bajo nombres demasiado parecidos: `bestCandidateScore` mostraba la penalización ponderada de coaches (`coachSwitchPenalty=32`), mientras el benchmark contaba cualquier cambio del conjunto completo de `assignedResources` (`coachSwitchCount=44`), incluyendo recursos que no eran coaches.
+
+ID 011 centraliza en `engine/v3/metrics.ts` las métricas operativas del output: violaciones hard, huecos de plató principal, makespan, timing medio de talents restrictivos y métricas de coaches. `coachSwitchCount` cuenta ahora exclusivamente transiciones entre coaches; `coachSwitchPenalty` conserva la función objetivo ponderada de ID 009 (switch base, coste extra A/B/A y coste extra cuando el cambio afecta a un feeder de plató). Scoring y benchmark consumen el mismo cálculo puro.
+
+El output guarda además `selectedCandidateMetrics`, un snapshot compacto de las métricas de la solución seleccionada. El benchmark recalcula las métricas sobre el output final, imprime el snapshot y marca/falla una ejecución si ambos divergen.
+
+### Escenario I después de ID 011
+
+Comparación reproducible con vecindarios off/on:
+
+- `coachSwitchCount`: **14 → 12**.
+- `coachSwitchPenalty`: **40 → 32**.
+- `restrictiveTalentAverageStartOffset`: **48 → 48**.
+- `mainStageGapMinutes`: **0 → 0**.
+- `hardConstraintViolations`: **0 → 0**.
+- `selectedCandidateMetricsConsistent`: **true**.
+
+Por tanto, en I la razón `operational_neighborhood selected: fewer coach switches` sí describe una mejora real del conteo bruto de coaches. Si en otro escenario solo baja la penalización ponderada y no el conteo, la razón pasa a decir explícitamente `lower weighted coach-switch penalty` e indica la comparación del conteo bruto; ya no afirma una reducción inexistente.

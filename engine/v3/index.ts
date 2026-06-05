@@ -57,6 +57,7 @@ type BacktrackingMeta = {
   backtrackingBestScore?: string;
   candidateSelectionReason?: string;
   candidateComparisonSummary?: string;
+  selectedCandidateMetrics?: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"];
   neighborhoodSearchAttempted?: boolean;
   neighborhoodCandidatesGenerated?: number;
   neighborhoodCandidateAccepted?: boolean;
@@ -178,6 +179,15 @@ const buildCandidateMeta = (
     backtrackingBestScore: backtrackingScore ? summarizeCandidateScore(backtrackingScore) : undefined,
     candidateSelectionReason: summary,
     candidateComparisonSummary: summary,
+    selectedCandidateMetrics: {
+      coachSwitchCount: selectedScore.coachSwitchCount,
+      coachSwitchPenalty: selectedScore.coachSwitchPenalty,
+      restrictiveTalentAverageStartOffset: selectedScore.restrictiveTalentAverageStartOffset,
+      mainStageGapMinutes: selectedScore.mainStageGapMinutes,
+      mainStageGapCount: selectedScore.mainStageGapCount,
+      makespan: selectedScore.makespan === Number.MAX_SAFE_INTEGER ? null : selectedScore.makespan,
+      hardConstraintViolations: selectedScore.hardConstraintViolations,
+    },
   };
 };
 
@@ -390,6 +400,15 @@ const runOperationalNeighborhoodSelection = (
       backtrackingBestScore: baseSource === "phaseA_backtracking" ? summarizeCandidateScore(baseScore) : undefined,
       candidateSelectionReason: comparison,
       candidateComparisonSummary: comparison,
+      selectedCandidateMetrics: {
+        coachSwitchCount: bestScore.coachSwitchCount,
+        coachSwitchPenalty: bestScore.coachSwitchPenalty,
+        restrictiveTalentAverageStartOffset: bestScore.restrictiveTalentAverageStartOffset,
+        mainStageGapMinutes: bestScore.mainStageGapMinutes,
+        mainStageGapCount: bestScore.mainStageGapCount,
+        makespan: bestScore.makespan === Number.MAX_SAFE_INTEGER ? null : bestScore.makespan,
+        hardConstraintViolations: bestScore.hardConstraintViolations,
+      },
     },
   };
 };

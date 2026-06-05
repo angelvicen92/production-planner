@@ -4,7 +4,7 @@ import type { EngineV3Input } from "./types";
 import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "./solutionScoring";
 import { generatePlanV3 } from "./index";
 import { scenarioById } from "./benchmarks/scenarios";
-import { countHardConstraintViolations } from "./benchmarks/metrics";
+import { calculateMetrics, countHardConstraintViolations } from "./benchmarks/metrics";
 
 const baseInput = (overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
   planId: 7007,
@@ -148,8 +148,16 @@ const output = (planned: Array<[number, string, string]>, unplanned: number[] = 
   const compactScore = scoreCandidateSolution(input, compactCoaches);
   const alternatingScore = scoreCandidateSolution(input, alternatingCoaches);
   assert.ok(compactScore.coachSwitchPenalty < alternatingScore.coachSwitchPenalty);
+  assert.equal(compactScore.coachSwitchCount, calculateMetrics(input, compactCoaches, 0).coachSwitchCount, "scoring and benchmark must share coach-switch count");
+  assert.equal(compactScore.coachSwitchPenalty, calculateMetrics(input, compactCoaches, 0).coachSwitchPenalty, "scoring and benchmark must share weighted coach-switch penalty");
   assert.ok(compareCandidateSolutions(input, compactCoaches, alternatingCoaches) > 0, "fewer coach switches wins");
   assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, alternatingScore), /fewer coach switches/);
+  const weightedOnlyScore = { ...alternatingScore, coachSwitchCount: compactScore.coachSwitchCount, coachSwitchPenalty: compactScore.coachSwitchPenalty + 1 };
+  assert.match(
+    explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, weightedOnlyScore),
+    /lower weighted coach-switch penalty \(raw coach-switch count unchanged\)/,
+    "selection reason must not claim fewer raw switches when only the weighted penalty improves",
+  );
 }
 
 console.log("engine/v3/solutionScoring.spec.ts: OK");

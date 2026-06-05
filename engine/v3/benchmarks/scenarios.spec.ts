@@ -11,6 +11,7 @@ import {
   countLockedTaskMoved,
   countMealCrossings,
   countSpaceOverlaps,
+  calculateMetrics,
 } from "./metrics";
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
@@ -161,6 +162,9 @@ for (const id of ["C", "D", "J"] as const) {
   assert.equal(countMealCrossings(scenario.input, output), 0, "scenario I tasks must not cross hard meal block");
   assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario I contestant availability windows");
   assert.equal(countDependencyViolations(scenario.input, output), 0, "scenario I dependencies");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true, "scenario I selected metrics must describe the final output");
+  assert.equal(output.v3Meta?.selectedCandidateMetrics?.coachSwitchCount, metrics.coachSwitchCount, "scenario I metadata and benchmark coach-switch count");
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");
