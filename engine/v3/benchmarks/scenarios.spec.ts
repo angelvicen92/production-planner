@@ -15,7 +15,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -50,7 +50,7 @@ for (const scenario of benchmarkScenarios) {
 }
 
 // Disponibilidad de concursantes: los escenarios completos no deben planificar fuera de ventana.
-for (const id of ["A", "B", "C", "D", "F", "G", "H", "J"] as const) {
+for (const id of ["A", "B", "C", "D", "F", "G", "H", "J", "K"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantWindowViolations(scenario.input, output), 0, `scenario ${id} contestant windows`);
@@ -58,7 +58,7 @@ for (const id of ["A", "B", "C", "D", "F", "G", "H", "J"] as const) {
 }
 
 // No solapar concursante ni espacio en escenarios completos.
-for (const id of ["A", "B", "C", "D", "E", "F", "G", "H", "J"] as const) {
+for (const id of ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"] as const) {
   const { scenario, output } = run(id);
   if (output.complete) {
     assert.equal(countContestantOverlaps(scenario.input, output), 0, `scenario ${id} contestant overlaps`);
@@ -127,6 +127,18 @@ for (const id of ["C", "D", "J"] as const) {
   assert.ok(String(restrictiveMain.endPlanned) <= "10:05", "restrictive main must finish before early exit");
   assert.ok((calculateRestrictiveTalentAverageStartOffset(scenario.input, output) ?? 999) <= 20, "restrictive timing should stay early in scenario J");
   assert.ok((calculateCoachSwitchCount(scenario.input, output) ?? 999) <= 4, "scenario J should keep coach switches bounded");
+}
+
+
+// Escenario K — vecindario operativo mejora un plan completo.
+{
+  const { scenario, output } = run("K");
+  assert.equal(output.complete, true, "scenario K should remain complete");
+  assert.equal(output.v3Meta?.neighborhoodSearchAttempted, true, "scenario K should attempt neighborhoods");
+  assert.equal(output.v3Meta?.neighborhoodCandidateAccepted, true, "scenario K should accept a neighborhood candidate");
+  assert.equal(output.v3Meta?.solutionSource, "operational_neighborhood", "scenario K source");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario K contestant windows");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario K space overlaps");
 }
 
 // Escenario I — stress sintético realista: puede ser complete o partial, pero nunca debe aceptar violaciones hard.

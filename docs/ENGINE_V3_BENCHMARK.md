@@ -149,3 +149,41 @@ ID 008 añade el escenario **I — Jornada sintética realista** y amplía la sa
 La ejecución de referencia para I es completa, con `77 / 80` filas planificadas, `hardConstraintViolations: 0`, `mainStageGapMinutes: 0`, `coachSwitchCount: 44`, `solutionSource: phaseA_greedy` y backtracking no activado.
 
 El runner falla si un escenario completo presenta violaciones hard o si se detecta movimiento de locks/tareas `done`/`in_progress`; no falla por optimización imperfecta o por un escenario de stress partial/infeasible sin violaciones hard.
+
+## Actualización ID 010 — Vecindarios operativos y escenario K
+
+ID 010 amplía el benchmark con la metadata de vecindarios operativos acotados:
+
+- `neighborhoodSearchAttempted`
+- `neighborhoodCandidatesGenerated`
+- `neighborhoodCandidateAccepted`
+- `neighborhoodAcceptedReason`
+
+También añade **K — Vecindario mejora plan completo**, un caso compacto donde Phase A greedy ya completa, pero un vecindario local mejora el timing de un talent restrictivo sin aumentar `mainStageGapMinutes` ni introducir violaciones hard.
+
+Resultado de referencia de K:
+
+- `plannedTasks / totalTasks: 4 / 4`
+- `hardConstraintViolations: 0`
+- `mainStageGapMinutes: 0`
+- `restrictiveTalentAverageStartOffset: 0`
+- `candidateSolutionsEvaluated: 2`
+- `neighborhoodCandidatesGenerated: 1`
+- `neighborhoodCandidateAccepted: true`
+- `neighborhoodAcceptedReason: advance_restrictive_talent`
+- `solutionSource: operational_neighborhood`
+
+Resultado de referencia de I tras ID 010:
+
+- `plannedTasks / totalTasks: 77 / 80`
+- `hardConstraintViolations: 0`
+- `mainStageGapMinutes: 0`
+- `restrictiveTalentAverageStartOffset: 48`
+- `coachSwitchCount: 44`
+- `candidateSolutionsEvaluated: 4`
+- `neighborhoodCandidatesGenerated: 3`
+- `neighborhoodCandidateAccepted: true`
+- `neighborhoodAcceptedReason: coach_block_compaction`
+- `solutionSource: operational_neighborhood`
+
+La comparación del runner imprime I con vecindarios off/on. En la referencia ID 010, apagar vecindarios conserva la seguridad (`hardConstraintViolations: 0`, `mainStageGapMinutes: 0`) y encenderlos permite evaluar 3 candidatos locales y aceptar uno sin mover locks ni ejecución.

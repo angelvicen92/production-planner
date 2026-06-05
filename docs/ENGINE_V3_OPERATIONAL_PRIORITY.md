@@ -92,3 +92,15 @@ Lectura: en I no baja el offset ni el número de switches porque Phase A ya esta
 La recomendación para ID 010 es **ampliar la búsqueda comparativa con vecindarios operativos acotados** antes de abordar un CP-SAT global completo. Motivo: ID 009 ya da métricas y criterios auditables; el siguiente salto de calidad probablemente vendrá de generar más candidatos deterministas sobre el mismo motor, por ejemplo swaps locales de feeders/coaches y adelantos de talents restrictivos, manteniendo Phase A como fallback rápido y CP-SAT como vía futura.
 
 No implementar ID 010 todavía.
+
+## Actualización ID 010 — Vecindarios operativos acotados
+
+ID 010 implementa la recomendación anterior mediante `engine/v3/operationalNeighborhoods.ts`. La prioridad operativa de ID 009 pasa a tener una segunda vía: además de ordenar decisiones greedy, ahora genera candidatos locales sobre planes completos para que candidate selection pueda elegir una solución mejor.
+
+Los vecindarios implementados son:
+
+- adelanto de talents restrictivos por swap local de slots compatibles;
+- compacción local de bloques de coach en patrones A/B/A;
+- filtro hard de seguridad que rechaza cualquier candidato con violaciones o con más huecos de plató principal.
+
+En el benchmark ID 010, el escenario K demuestra aceptación de `advance_restrictive_talent`; el escenario I sigue con `hardConstraintViolations: 0` y `mainStageGapMinutes: 0`, y acepta un candidato `coach_block_compaction` sin degradar hard constraints.

@@ -253,6 +253,30 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "El feeder y main del talent con salida temprana deben completarse dentro de su ventana; los feeders de Coach Alpha ofrecen una oportunidad de continuidad medible frente a alternancias A/B/A.",
     riskNotes: ["Urgencia restrictiva soft", "Continuidad de coach/feeders soft", "Dependencias hacia plató principal detectables por dependsOnTaskIds"],
   },
+
+  {
+    id: "K",
+    name: "Vecindario mejora plan completo",
+    description: "Greedy completo pero forzado a dejar tarde a un talent restrictivo; el vecindario operativo intercambia slots compatibles y mejora el timing sin aumentar huecos de plató ni violar hard constraints.",
+    input: baseInput([
+      { id: 10001, planId: PLAN_ID, templateId: 2001, templateName: "Aux flexible temprano", zoneId: 2, spaceId: 201, contestantId: 91, contestantName: "Talent flexible", status: "pending", durationOverrideMin: 30 },
+      { id: 10002, planId: PLAN_ID, templateId: 2002, templateName: "Aux restrictivo compactable", zoneId: 2, spaceId: 202, contestantId: 92, contestantName: "Talent salida temprana", status: "pending", durationOverrideMin: 30 },
+      { id: 10003, planId: PLAN_ID, templateId: 2003, templateName: "Main continuo 1", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 93, contestantName: "Talent main 1", status: "pending", durationOverrideMin: 30 },
+      { id: 10004, planId: PLAN_ID, templateId: 2004, templateName: "Main continuo 2", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 94, contestantName: "Talent main 2", status: "pending", durationOverrideMin: 30 },
+    ], {
+      workDay: { start: "09:00", end: "11:00" },
+      contestantAvailabilityById: {
+        91: { start: "09:00", end: "11:00" },
+        92: { start: "09:00", end: "10:00" },
+        93: { start: "09:00", end: "11:00" },
+        94: { start: "09:00", end: "11:00" },
+      },
+      enableLimitedBacktracking: false,
+      v3GreedyProbeForcedTaskStarts: { 10002: 9 * 60 + 30 } as any,
+    } as any),
+    operationalExpectation: "El vecindario advance_restrictive_talent debe adelantar el talent de salida temprana, mantener mainStageGapMinutes en 0 y conservar hardConstraintViolations en 0.",
+    riskNotes: ["Vecindario determinista acotado", "No reemplaza solver global", "Backtracking desactivado en el escenario para aislar la mejora del vecindario"],
+  },
   realisticDayScenario,
  ];
 
