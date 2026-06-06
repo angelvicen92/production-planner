@@ -17,7 +17,7 @@ import { benchmarkScenarios, scenarioById } from "./scenarios";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = scenario.cpSatPilotSeedOutput
@@ -216,7 +216,8 @@ for (const id of ["C", "D", "J"] as const) {
   assert.equal(countDependencyViolations(scenario.input, output), 0, "scenario L dependencies");
 
   const metrics = calculateMetrics(scenario.input, output, 0);
-  if (output.complete) assert.equal(metrics.hardConstraintViolations, 0, "complete scenario L must have no hard violations");
+  assert.equal(output.complete, true, "scenario L must remain complete");
+  assert.equal(metrics.hardConstraintViolations, 0, "scenario L must have no hard violations");
   assert.ok(output.v3Meta?.cpSatPilotReason, "scenario L must report pilot attempt or deterministic skip reason");
   assert.ok((output.v3Meta?.cpSatSegmentsAttempted ?? 0) >= 1 || output.v3Meta?.cpSatPilotReason === "no_valid_segments", "scenario L must attempt a bounded segment or explain deterministically why none is valid");
   assert.notEqual(output.v3Meta?.cpSatPilotReason, "task_limit_exceeded", "scenario L must not stop at the global task limit when valid segmentation is available");
@@ -287,6 +288,18 @@ for (const id of ["C", "D", "J"] as const) {
   assert.ok((metrics.mainStageGapMinutes ?? 999) < baselineGap);
   assert.equal(metrics.hardConstraintViolations, 0);
   assert.equal(metrics.selectedCandidateMetricsConsistent, true);
+}
+
+
+// Escenario Q — diagnóstico informativo de bundles sin alterar hard constraints.
+{
+  const { scenario, output } = run("Q");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  assert.equal(output.complete, true);
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.ok((metrics.compositeResourceCandidateCount ?? 0) > 0);
+  assert.ok((metrics.resourceDiagnosticWarnings?.length ?? 0) > 0);
+  assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("RESOURCE_BUNDLE_CONFLICT")));
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

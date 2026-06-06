@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -42,6 +42,11 @@ export interface EngineBenchmarkMetrics {
   mainStageUtilizationPercent: number | null;
   tasksPerContestantMinMax: string | null;
   resourceUtilizationSummary: string | null;
+  resourcePoolPressureSummary: string | null;
+  maxAnyOfPoolConcurrency: number | null;
+  resourceSwitchCount: number | null;
+  compositeResourceCandidateCount: number | null;
+  resourceDiagnosticWarnings: string[] | null;
   cpSatAttempted: boolean | null;
   cpSatAccepted: boolean | null;
   cpSatPilotAttempted: boolean | null;

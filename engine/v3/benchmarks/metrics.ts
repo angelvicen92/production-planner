@@ -2,6 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { EngineBenchmarkMetrics } from "./types";
 import { summarizeStructuredBlockers } from "../blockers";
+import { diagnoseCompositeResources } from "../resourceDiagnostics";
 export {
   calculateCoachSwitchCount,
   calculateOperationalMetrics,
@@ -50,6 +51,7 @@ import {
 
 export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, runtimeMs: number): EngineBenchmarkMetrics => {
   const operationalMetrics = calculateOperationalMetrics(input, output);
+  const resourceDiagnostics = diagnoseCompositeResources(input, output);
   const mainGaps = { count: operationalMetrics.mainStageGapCount, minutes: operationalMetrics.mainStageGapMinutes };
   const selectedCandidateMetrics = output.v3Meta?.selectedCandidateMetrics ?? null;
   const selectedCandidateMetricsConsistent = selectedCandidateMetrics === null ? null : (
@@ -82,6 +84,15 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     mainStageUtilizationPercent: calculateMainStageUtilizationPercent(input, output),
     tasksPerContestantMinMax: tasksPerContestant ? `${tasksPerContestant.min}-${tasksPerContestant.max}` : null,
     resourceUtilizationSummary: calculateResourceUtilizationSummary(input, output),
+    resourcePoolPressureSummary: resourceDiagnostics.resourcePoolPressureSummary,
+    maxAnyOfPoolConcurrency: resourceDiagnostics.maxAnyOfPoolConcurrency,
+    resourceSwitchCount: resourceDiagnostics.resourceSwitchCount,
+    compositeResourceCandidateCount: resourceDiagnostics.resourceSwitchCount === null && resourceDiagnostics.resourcePoolPressureSummary === null
+      ? null
+      : resourceDiagnostics.compositeResourceCandidateCount,
+    resourceDiagnosticWarnings: resourceDiagnostics.resourceSwitchCount === null && resourceDiagnostics.resourcePoolPressureSummary === null
+      ? null
+      : resourceDiagnostics.resourceDiagnosticWarnings.map((warning) => `${warning.code}: ${warning.message}`),
     cpSatAttempted: output.v3Meta?.cpSatAttempted ?? null,
     cpSatAccepted: output.v3Meta?.cpSatAccepted ?? null,
     cpSatPilotAttempted: output.v3Meta?.cpSatPilotAttempted ?? null,
