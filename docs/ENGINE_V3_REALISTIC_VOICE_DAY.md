@@ -162,3 +162,18 @@ En L se intentaron tres segmentos de tamaños `18`, `15` y `11`. El segmento de 
 Los invariantes permanecen intactos: 99 filas planificadas, cero unplanned, cero hard violations, cero movimientos de locks o tareas ejecutadas y `selectedCandidateMetricsConsistent=true`. La lectura honesta es que segmentar desbloquea optimización matemática útil en L, pero todavía no resuelve el hueco principal.
 
 El riesgo residual es la falta de composición entre segmentos y la dependencia de asignaciones de recursos ya resueltas. ID 017 debería medir OR-Tools real por clase de segmento y estudiar una cadena de dos segmentos con presupuesto fijo, no ampliar el scope global.
+
+## ID 017 — Diagnóstico de recursos compuestos en L
+
+El escenario L mantiene el resultado hard-válido tras incorporar diagnósticos no invasivos: 99 tareas planificadas, `hardConstraintViolations=0`, `mainStageGapMinutes=10`, `restrictiveTalentAverageStartOffset=103`, `coachSwitchCount=15` y métricas seleccionadas consistentes.
+
+La lectura operativa nueva es:
+
+- cámara anyOf quantity 1: 60 tareas, pico 5 y demanda `5/5`; 12 tareas quedan sin margen ante la pérdida de una cámara;
+- sonido anyOf quantity 1: 84 tareas, pico nominal 5 y demanda `5/4`; 54 tareas aparecen frágiles;
+- cámara quantity 2 de Main Stage: 20 tareas, pico 1 y demanda `2/5`;
+- `resourceSwitchCount=67` por espacio/categoría;
+- `compositeResourceCandidateCount=54` entre pares recurso-recurso y recurso-espacio;
+- 16 warnings informativos de fragilidad o asociación, sin convertir ninguno en hard.
+
+El pico nominal de sonido superior a la capacidad es un hallazgo diagnóstico del contrato actual, no una declaración de infeasibility añadida. Confirma el riesgo ya documentado: los pools exclusivos no expresan por sí solos kits, operadores, setups ni continuidad de equipos. El detalle metodológico y el escenario Q están en `docs/ENGINE_V3_RESOURCE_DIAGNOSTICS.md`.

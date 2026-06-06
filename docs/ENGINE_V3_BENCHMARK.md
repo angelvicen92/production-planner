@@ -386,3 +386,20 @@ P modela 32 tareas relacionadas (16 Main Stage y 16 feeders), por encima del lí
 ### Riesgos residuales
 
 La segmentación sigue siendo local, no decide recursos alternativos complejos y no combina todavía mejoras de varios segmentos sobre estados sucesivos. Los runtimes impresos dependen del entorno y no forman parte de los asserts. Para ID 017 se recomienda medir OR-Tools instalado por tipo/tamaño y probar composición de dos segmentos con validación hard completa después de cada candidato; no se recomienda subir el límite global.
+
+## ID 017 — Diagnóstico operativo de recursos compuestos
+
+El benchmark incorpora un diagnóstico puro posterior al solve. No modifica el output seleccionado ni la factibilidad y añade `resourcePoolPressureSummary`, `maxAnyOfPoolConcurrency`, `resourceSwitchCount`, `compositeResourceCandidateCount` y `resourceDiagnosticWarnings`. Los escenarios sin recursos analizables muestran `n/a`.
+
+Resultados de referencia:
+
+| Escenario | Estado | Hard | Presión anyOf | Pico | Switches | Candidatos | Warnings |
+|---|---:|---:|---|---:|---:|---:|---|
+| I | complete, 77/77 | 0 | mic `2/2`; camera `1/2` | 2 | 14 | 5 | fragilidad de mic |
+| L | complete, 99/104 | 0 | camera `5/5`; sound nominal `5/4`; Main Stage camera `2/5` | 5 | 67 | 54 | fragilidad + asociaciones inconsistentes/concurrentes |
+| P | complete, 32/32 | 0 | `n/a` | `n/a` | `n/a` | `n/a` | `n/a` |
+| Q | complete, 6/6 | 0 | camera `2/2`; sound `2/2` | 2 | 2 | 6 | fragilidad + dos cruces de bundle |
+
+Q está construido para que dos parejas cámara/sonido sean recurrentes y una última franja use combinaciones cruzadas simultáneas. El benchmark termina con 17 escenarios completos, cero escenarios completos con hard violations, cero movimientos de locks/ejecución y cero divergencias de métricas seleccionadas.
+
+La presión nominal de L no es una nueva constraint: hace visible la diferencia entre pools individuales y equipos técnicos reales. La especificación completa, límites y recomendación para ID 018 están en `docs/ENGINE_V3_RESOURCE_DIAGNOSTICS.md`.

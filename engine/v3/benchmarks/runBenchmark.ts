@@ -61,6 +61,11 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  mainStageUtilizationPercent: ${formatNullable(metrics.mainStageUtilizationPercent)}`);
   console.log(`  tasksPerContestantMinMax: ${formatNullable(metrics.tasksPerContestantMinMax)}`);
   console.log(`  resourceUtilizationSummary: ${formatCompact(metrics.resourceUtilizationSummary)}`);
+  console.log(`  resourcePoolPressureSummary: ${formatCompact(metrics.resourcePoolPressureSummary)}`);
+  console.log(`  maxAnyOfPoolConcurrency: ${formatNullable(metrics.maxAnyOfPoolConcurrency)}`);
+  console.log(`  resourceSwitchCount: ${formatNullable(metrics.resourceSwitchCount)}`);
+  console.log(`  compositeResourceCandidateCount: ${formatNullable(metrics.compositeResourceCandidateCount)}`);
+  console.log(`  resourceDiagnosticWarnings: ${metrics.resourceDiagnosticWarnings === null ? "n/a" : metrics.resourceDiagnosticWarnings.length > 0 ? formatCompact(metrics.resourceDiagnosticWarnings.join(" | ")) : "[]"}`);
   console.log(`  cpSatAttempted: ${formatNullable(metrics.cpSatAttempted)}`);
   console.log(`  cpSatAccepted: ${formatNullable(metrics.cpSatAccepted)}`);
   console.log(`  cpSatPilotAttempted: ${formatNullable(metrics.cpSatPilotAttempted)}`);
@@ -108,7 +113,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
