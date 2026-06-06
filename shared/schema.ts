@@ -1,7 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, pgEnum, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, pgEnum, date, uuid, bigint, index, uniqueIndex, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Enums
 export const resourceTypeEnum = pgEnum('resource_type', ['auxiliar', 'coach', 'presenter']);
@@ -146,6 +146,66 @@ export const resources = pgTable("resources", {
   type: resourceTypeEnum("type").notNull(),
   name: text("name").notNull(),
 });
+
+// 4.1 resource_types/resource_items (catálogo unitario existente)
+export const resourceTypes = pgTable("resource_types", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+});
+
+export const resourceItems = pgTable("resource_items", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  typeId: bigint("type_id", { mode: "number" }).notNull().references(() => resourceTypes.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+}, (table) => ({
+  typeIdx: index("idx_resource_items_type").on(table.typeId),
+}));
+
+// 4.2 resource bundles (catálogo aditivo de equipos compuestos)
+export const resourceBundles = pgTable("resource_bundles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  bundleType: text("bundle_type").notNull().default("composite"),
+  isActive: boolean("is_active").notNull().default(true),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  isActiveIdx: index("resource_bundles_is_active_idx").on(table.isActive),
+}));
+
+export const resourceBundleComponents = pgTable("resource_bundle_components", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bundleId: uuid("bundle_id").notNull().references(() => resourceBundles.id, { onDelete: "cascade" }),
+  resourceId: bigint("resource_id", { mode: "number" }).references(() => resources.id, { onDelete: "cascade" }),
+  resourceItemId: bigint("resource_item_id", { mode: "number" }).references(() => resourceItems.id, { onDelete: "cascade" }),
+  componentRole: text("component_role").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  isRequired: boolean("is_required").notNull().default(true),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  bundleIdx: index("resource_bundle_components_bundle_id_idx").on(table.bundleId),
+  resourceIdx: index("resource_bundle_components_resource_id_idx").on(table.resourceId).where(sql`${table.resourceId} IS NOT NULL`),
+  resourceItemIdx: index("resource_bundle_components_resource_item_id_idx").on(table.resourceItemId).where(sql`${table.resourceItemId} IS NOT NULL`),
+  positiveQuantity: check("resource_bundle_components_quantity_check", sql`${table.quantity} > 0`),
+  singleSource: check("resource_bundle_components_single_source", sql`num_nonnulls(${table.resourceId}, ${table.resourceItemId}) = 1`),
+}));
+
+export const resourceBundleSpaceAffinities = pgTable("resource_bundle_space_affinities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bundleId: uuid("bundle_id").notNull().references(() => resourceBundles.id, { onDelete: "cascade" }),
+  spaceId: bigint("space_id", { mode: "number" }).notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  affinityScore: integer("affinity_score").notNull().default(0),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+}, (table) => ({
+  bundleIdx: index("resource_bundle_space_affinities_bundle_id_idx").on(table.bundleId),
+  spaceIdx: index("resource_bundle_space_affinities_space_id_idx").on(table.spaceId),
+  bundleSpaceUnique: uniqueIndex("resource_bundle_space_affinities_bundle_space_key").on(table.bundleId, table.spaceId),
+}));
 
 // 5. resource_availability
 export const resourceAvailability = pgTable("resource_availability", {
@@ -305,6 +365,32 @@ export const spacesRelations = relations(spaces, ({ one }) => ({
   zone: one(zones, { fields: [spaces.zoneId], references: [zones.id] }),
 }));
 
+
+export const resourceTypesRelations = relations(resourceTypes, ({ many }) => ({
+  items: many(resourceItems),
+}));
+
+export const resourceItemsRelations = relations(resourceItems, ({ one, many }) => ({
+  type: one(resourceTypes, { fields: [resourceItems.typeId], references: [resourceTypes.id] }),
+  bundleComponents: many(resourceBundleComponents),
+}));
+
+export const resourceBundlesRelations = relations(resourceBundles, ({ many }) => ({
+  components: many(resourceBundleComponents),
+  spaceAffinities: many(resourceBundleSpaceAffinities),
+}));
+
+export const resourceBundleComponentsRelations = relations(resourceBundleComponents, ({ one }) => ({
+  bundle: one(resourceBundles, { fields: [resourceBundleComponents.bundleId], references: [resourceBundles.id] }),
+  resource: one(resources, { fields: [resourceBundleComponents.resourceId], references: [resources.id] }),
+  resourceItem: one(resourceItems, { fields: [resourceBundleComponents.resourceItemId], references: [resourceItems.id] }),
+}));
+
+export const resourceBundleSpaceAffinitiesRelations = relations(resourceBundleSpaceAffinities, ({ one }) => ({
+  bundle: one(resourceBundles, { fields: [resourceBundleSpaceAffinities.bundleId], references: [resourceBundles.id] }),
+  space: one(spaces, { fields: [resourceBundleSpaceAffinities.spaceId], references: [spaces.id] }),
+}));
+
 export const dailyTasksRelations = relations(dailyTasks, ({ one, many }) => ({
   plan: one(plans, { fields: [dailyTasks.planId], references: [plans.id] }),
   template: one(taskTemplates, { fields: [dailyTasks.templateId], references: [taskTemplates.id] }),
@@ -316,6 +402,9 @@ export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
 export const insertSpaceSchema = createInsertSchema(spaces).omit({ id: true });
 export const insertResourceSchema = createInsertSchema(resources).omit({ id: true });
+export const insertResourceBundleSchema = createInsertSchema(resourceBundles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertResourceBundleComponentSchema = createInsertSchema(resourceBundleComponents).omit({ id: true, createdAt: true });
+export const insertResourceBundleSpaceAffinitySchema = createInsertSchema(resourceBundleSpaceAffinities).omit({ id: true });
 export const insertAvailabilitySchema = createInsertSchema(resourceAvailability).omit({ id: true });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true });
 export const insertResourcePoolSchema = createInsertSchema(resourcePools).omit({ id: true });
@@ -347,6 +436,14 @@ export type InsertLock = z.infer<typeof insertLockSchema>;
 
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
+export type ResourceType = typeof resourceTypes.$inferSelect;
+export type ResourceItem = typeof resourceItems.$inferSelect;
+export type ResourceBundle = typeof resourceBundles.$inferSelect;
+export type InsertResourceBundle = z.infer<typeof insertResourceBundleSchema>;
+export type ResourceBundleComponent = typeof resourceBundleComponents.$inferSelect;
+export type InsertResourceBundleComponent = z.infer<typeof insertResourceBundleComponentSchema>;
+export type ResourceBundleSpaceAffinity = typeof resourceBundleSpaceAffinities.$inferSelect;
+export type InsertResourceBundleSpaceAffinity = z.infer<typeof insertResourceBundleSpaceAffinitySchema>;
 export type ResourcePool = typeof resourcePools.$inferSelect;
 export type PlanResourcePool = typeof planResourcePools.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
