@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -10,6 +10,7 @@ export interface BenchmarkScenario {
   description: string;
   input: EngineV3Input;
   neighborhoodSeedOutput?: EngineOutput;
+  cpSatPilotSeedOutput?: EngineOutput;
   operationalExpectation: string;
   riskNotes: string[];
   knownRisk?: string;
@@ -43,6 +44,12 @@ export interface EngineBenchmarkMetrics {
   resourceUtilizationSummary: string | null;
   cpSatAttempted: boolean | null;
   cpSatAccepted: boolean | null;
+  cpSatPilotAttempted: boolean | null;
+  cpSatPilotAccepted: boolean | null;
+  cpSatPilotTaskCount: number | null;
+  cpSatPilotRuntimeMs: number | null;
+  cpSatPilotReason: string | null;
+  cpSatPilotImprovementSummary: string | null;
   phaseAUsed: boolean | null;
   backtrackingAttempted: boolean | null;
   backtrackingAccepted: boolean | null;

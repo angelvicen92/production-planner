@@ -144,3 +144,11 @@ Sobre el escenario L completo de ID 013, la expansión depth 2 genera 2 candidat
 El mejor candidato aceptado es depth 1 (`main_stage_gap_fill` como tipo operativo) y no elimina el hueco; mejora el timing restrictivo agregado de 106 a 105 minutos. La alternativa depth 2 fue validada, pero no superó ese candidato en el scoring lexicográfico. Por tanto, ID 014 no fuerza una aceptación de cadena en L: demuestra expansión real y conserva seguridad.
 
 Como contraste controlado, N sí necesita la cadena `feeder_advance -> main_stage_gap_fill`: el primer movimiento prepara la dependencia y el segundo reduce el hueco de 10 a 0 minutos sin violaciones hard.
+
+## ID 015 — Resultado del CP-SAT pilot en L
+
+El selector del piloto identifica 52 tareas relacionadas con Main Stage, sus feeders directos, talents restrictivos y coaches ya asignados. Como el límite seguro es 30, L no invoca el solver y reporta `cpSatPilotReason=task_limit_exceeded`, `cpSatPilotAttempted=false` y `cpSatPilotAccepted=false`.
+
+La solución final permanece en `operational_neighborhood`: 99 tareas planificadas, cero unplanned, `mainStageGapMinutes=10`, `restrictiveTalentAverageStartOffset=105`, `coachSwitchCount=16`, `hardConstraintViolations=0`, locks y tareas ejecutadas sin movimiento, y métricas seleccionadas consistentes. Este resultado es deliberadamente conservador: ID 015 no amplía el límite para fabricar una mejora en L.
+
+Para ID 016 se recomienda recortar el subproblema por una ventana crítica alrededor del hueco de Main Stage, manteniendo feeders transitivos necesarios y el entorno restante fijo. Eso permitiría probar optimización matemática real sobre L sin saltar todavía a un solver global.

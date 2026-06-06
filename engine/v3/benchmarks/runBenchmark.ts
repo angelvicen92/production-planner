@@ -1,6 +1,8 @@
 import { performance } from "node:perf_hooks";
 import { generatePlanV3, runOperationalNeighborhoodSelection } from "../index";
 import { calculateMetrics } from "./metrics";
+import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
+import { scoreCandidateSolution } from "../solutionScoring";
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
@@ -9,12 +11,26 @@ const formatCompact = (value: string | null | undefined): string => value === nu
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
-  const output = scenario.neighborhoodSeedOutput
+  const output = scenario.cpSatPilotSeedOutput
     ? (() => {
-      const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput, "phaseA_greedy");
-      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta } };
+      const selected = runMainStageCpSatPilot(scenario.input, scenario.cpSatPilotSeedOutput!);
+      const score = scoreCandidateSolution(scenario.input, selected.output);
+      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: {
+        coachSwitchCount: score.coachSwitchCount,
+        coachSwitchPenalty: score.coachSwitchPenalty,
+        restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
+        mainStageGapMinutes: score.mainStageGapMinutes,
+        mainStageGapCount: score.mainStageGapCount,
+        makespan: score.makespan === Number.MAX_SAFE_INTEGER ? null : score.makespan,
+        hardConstraintViolations: score.hardConstraintViolations,
+      } } };
     })()
-    : generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `benchmark-${scenario.id}` });
+    : scenario.neighborhoodSeedOutput
+      ? (() => {
+        const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput!, "phaseA_greedy");
+        return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta } };
+      })()
+      : generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `benchmark-${scenario.id}` });
   const runtimeMs = Math.round(performance.now() - start);
   const metrics = calculateMetrics(scenario.input, output, runtimeMs);
   return { scenario, output, runtimeMs, metrics };
@@ -47,6 +63,12 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  resourceUtilizationSummary: ${formatCompact(metrics.resourceUtilizationSummary)}`);
   console.log(`  cpSatAttempted: ${formatNullable(metrics.cpSatAttempted)}`);
   console.log(`  cpSatAccepted: ${formatNullable(metrics.cpSatAccepted)}`);
+  console.log(`  cpSatPilotAttempted: ${formatNullable(metrics.cpSatPilotAttempted)}`);
+  console.log(`  cpSatPilotAccepted: ${formatNullable(metrics.cpSatPilotAccepted)}`);
+  console.log(`  cpSatPilotTaskCount: ${formatNullable(metrics.cpSatPilotTaskCount)}`);
+  console.log(`  cpSatPilotRuntimeMs: ${formatNullable(metrics.cpSatPilotRuntimeMs)}`);
+  console.log(`  cpSatPilotReason: ${formatNullable(metrics.cpSatPilotReason)}`);
+  console.log(`  cpSatPilotImprovementSummary: ${formatCompact(metrics.cpSatPilotImprovementSummary)}`);
   console.log(`  phaseAUsed: ${formatNullable(metrics.phaseAUsed)}`);
   console.log(`  backtrackingAttempted: ${formatNullable(metrics.backtrackingAttempted)}`);
   console.log(`  backtrackingAccepted: ${formatNullable(metrics.backtrackingAccepted)}`);
@@ -80,7 +102,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);

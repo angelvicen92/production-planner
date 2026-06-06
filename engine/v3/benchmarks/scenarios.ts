@@ -335,6 +335,48 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "Feeder advance aislado mantiene el hueco; la cadena feeder_advance -> main_stage_gap_fill lo elimina sin hard violations.",
     riskNotes: ["Seed completo y determinista para aislar la búsqueda local depth 2", "No sustituye el benchmark end-to-end de L", "Sin aleatoriedad ni búsqueda global"],
   },
+  {
+    id: "O",
+    name: "CP-SAT pilot mejora Main Stage + feeders",
+    description: "Subproblema acotado con tres actuaciones, dos feeders directos, un talent restrictivo y dos coaches; el warm start es válido pero deja un hueco evitable.",
+    input: baseInput([
+      { id: 15001, planId: PLAN_ID, templateId: 2501, templateName: "Main Stage apertura O", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 151, contestantName: "Talent apertura O", status: "pending", durationOverrideMin: 30 },
+      { id: 15002, planId: PLAN_ID, templateId: 2502, templateName: "Feeder Coach Alpha O", zoneId: 2, spaceId: 201, contestantId: 152, contestantName: "Talent restrictivo O", status: "pending", durationOverrideMin: 20 },
+      { id: 15003, planId: PLAN_ID, templateId: 2503, templateName: "Main Stage restrictivo O", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 152, contestantName: "Talent restrictivo O", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [15002] },
+      { id: 15004, planId: PLAN_ID, templateId: 2504, templateName: "Feeder Coach Beta O", zoneId: 2, spaceId: 202, contestantId: 153, contestantName: "Talent cierre O", status: "pending", durationOverrideMin: 20 },
+      { id: 15005, planId: PLAN_ID, templateId: 2505, templateName: "Main Stage cierre O", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 153, contestantName: "Talent cierre O", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [15004] },
+    ], {
+      workDay: { start: "09:00", end: "11:30" },
+      meal: { start: "12:00", end: "12:30" },
+      contestantAvailabilityById: {
+        151: { start: "09:00", end: "11:30" },
+        152: { start: "09:00", end: "10:30" },
+        153: { start: "09:00", end: "11:30" },
+      },
+      planResourceItems: [
+        { id: COACH_ALPHA_PLAN_RESOURCE_ID, resourceItemId: 9001, typeId: COACH_TYPE_ID, name: "Coach Alpha", isAvailable: true },
+        { id: COACH_BETA_PLAN_RESOURCE_ID, resourceItemId: 9002, typeId: COACH_TYPE_ID, name: "Coach Beta", isAvailable: true },
+      ],
+      enableLimitedBacktracking: false,
+      enableOperationalNeighborhoods: false,
+    } as any),
+    cpSatPilotSeedOutput: {
+      feasible: true,
+      complete: true,
+      hardFeasible: true,
+      plannedTasks: [
+        { taskId: 15001, startPlanned: "09:00", endPlanned: "09:30" },
+        { taskId: 15002, startPlanned: "09:20", endPlanned: "09:40", assignedResources: [COACH_ALPHA_PLAN_RESOURCE_ID] },
+        { taskId: 15003, startPlanned: "09:50", endPlanned: "10:20" },
+        { taskId: 15004, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [COACH_BETA_PLAN_RESOURCE_ID] },
+        { taskId: 15005, startPlanned: "10:20", endPlanned: "10:50" },
+      ],
+      unplanned: [],
+      warnings: [],
+    },
+    operationalExpectation: "El piloto CP-SAT debe compactar Main Stage, conservar feeders antes de sus actuaciones y ser seleccionado por el comparador común sin violaciones hard.",
+    riskNotes: ["Piloto limitado a cinco tareas", "Dos coaches modelados como recursos exclusivos", "Warm start válido deliberadamente subóptimo"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];
