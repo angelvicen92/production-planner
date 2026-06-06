@@ -336,3 +336,14 @@ Resultado ID 014:
 ### Riesgos residuales y siguiente paso
 
 La cobertura sigue siendo local y las cadenas están enumeradas explícitamente. ID 015 debería estudiar movimientos compactos de 2-3 tareas con duraciones distintas y telemetría de cadenas rechazadas; CP-SAT global debe reservarse para cuando estos operadores acotados dejen de producir mejoras medibles.
+
+## ID 015 — CP-SAT pilot Main Stage + feeders
+
+El runner añade `cpSatPilotAttempted`, `cpSatPilotAccepted`, `cpSatPilotTaskCount`, `cpSatPilotRuntimeMs`, `cpSatPilotReason` y `cpSatPilotImprovementSummary`.
+
+| Escenario | Attempted | Accepted | Task count | Razón | Main gap | Hard | Source |
+|---|---:|---:|---:|---|---:|---:|---|
+| O — CP-SAT pilot | sí | sí | 5 | `accepted` | 20 → 0 | 0 | `cp_sat_pilot` |
+| L — Jornada tipo La Voz | no | no | 52 | `task_limit_exceeded` | 10 | 0 | `operational_neighborhood` |
+
+O demuestra que el candidato adicional pasa por el comparador común y mejora un warm start válido. L documenta el límite en vez de ejecutar un subproblema excesivo. En el entorno CI de referencia OR-Tools no está instalado y O usa el fallback determinista del seam; la ruta Python queda preparada para fijar únicamente los IDs seleccionados cuando OR-Tools está disponible.

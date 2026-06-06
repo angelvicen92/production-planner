@@ -77,10 +77,16 @@ const scoreWarmStart = (input: EngineV3Input, warmStart: EngineOutput) => {
   return { score, gap, switches };
 };
 
+export type CpSatOptimizationOptions = {
+  movableTaskIds?: number[];
+  pilotMode?: boolean;
+};
+
 export function optimizeWithCpSat(
   input: EngineV3Input,
   warmStart: EngineOutput,
   timeLimitSeconds: number,
+  options: CpSatOptimizationOptions = {},
 ): CpSatOptimizationResult {
   const warmScore = scoreWarmStart(input, warmStart);
 
@@ -108,6 +114,8 @@ export function optimizeWithCpSat(
     engineInput: input,
     warmStart,
     timeLimitSeconds,
+    movableTaskIds: options.movableTaskIds,
+    pilotMode: options.pilotMode ?? false,
   });
 
   const py = spawnSync("python3", [SCRIPT_PATH], {

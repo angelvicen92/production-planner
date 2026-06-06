@@ -93,6 +93,8 @@ def main() -> int:
     engine_input = payload.get("engineInput") or {}
     warm = payload.get("warmStart") or {}
     time_limit_seconds = float(payload.get("timeLimitSeconds") or 0)
+    pilot_mode = bool(payload.get("pilotMode"))
+    requested_movable_ids = {int(v) for v in (payload.get("movableTaskIds") or [])}
 
     warm_planned = list(warm.get("plannedTasks") or [])
     if time_limit_seconds <= 0:
@@ -254,7 +256,8 @@ def main() -> int:
         fixed_by_status = str(t.get("status") or "pending") in ["in_progress", "done", "cancelled"]
         lock = locks_by_task.get(tid)
         fixed_by_lock = lock is not None
-        fixed = fixed_by_status or fixed_by_lock
+        fixed_by_pilot_scope = pilot_mode and tid not in requested_movable_ids
+        fixed = fixed_by_status or fixed_by_lock or fixed_by_pilot_scope
 
         lock_slot = None
         if fixed_by_lock and lock is not None:
@@ -331,8 +334,21 @@ def main() -> int:
         if len(items) > 1:
             model.AddNoOverlap(items)
 
-    # Dependencies
-    for tid in movable_task_ids:
+    # Hard global meal block: movable tasks must remain fully before or after it.
+    meal = engine_input.get("meal") or {}
+    meal_start_raw = meal.get("start")
+    meal_end_raw = meal.get("end")
+    if meal_start_raw and meal_end_raw:
+        meal_start_slot = (parse_hhmm(str(meal_start_raw)) - work_start) // grid
+        meal_end_slot = (parse_hhmm(str(meal_end_raw)) - work_start) // grid
+        if meal_end_slot > meal_start_slot:
+            for tid in movable_task_ids:
+                before_meal = model.NewBoolVar(f"before_meal_{tid}")
+                model.Add(end_vars[tid] <= meal_start_slot).OnlyEnforceIf(before_meal)
+                model.Add(start_vars[tid] >= meal_end_slot).OnlyEnforceIf(before_meal.Not())
+
+    # Dependencies (including fixed environment tasks when both endpoints are modeled)
+    for tid in start_vars.keys():
         t = tasks_by_id.get(tid, {})
         deps = t.get("dependsOnTaskIds") or []
         dur_prev = 0
@@ -527,7 +543,7 @@ def main() -> int:
         sys.stdout.write(json.dumps(out))
         return 0
 
-    optimized_planned: List[Dict[str, Any]] = []
+    solved_rows: Dict[int, Dict[str, Any]] = {}
     for tid in sorted(start_vars.keys()):
         warm_task = planning_rows_by_tid.get(tid) or {}
         t = tasks_by_id.get(tid) or {}
@@ -535,14 +551,21 @@ def main() -> int:
         dur_slots = duration_slots_by_tid.get(tid, 1)
         start_m = work_start + s * grid
         end_m = start_m + dur_slots * grid
-        optimized_planned.append({
+        solved_rows[tid] = {
             **warm_task,
             "taskId": tid,
             "startPlanned": to_hhmm(start_m),
             "endPlanned": to_hhmm(end_m),
             "assignedResources": warm_task.get("assignedResources") or [],
             "assignedSpace": warm_task.get("assignedSpace") if "assignedSpace" in warm_task else t.get("spaceId"),
-        })
+        }
+
+    # A pilot may only rewrite rows already emitted by Phase A. Protected/fixed rows
+    # remain environmental intervals and are never added to the persistence payload.
+    optimized_planned: List[Dict[str, Any]] = []
+    for warm_row in warm_planned:
+        tid = int(warm_row.get("taskId") or -1)
+        optimized_planned.append(solved_rows.get(tid, warm_row) if (not pilot_mode or tid in requested_movable_ids) else warm_row)
 
     baseline_score, baseline_gap, baseline_switches = score_plan(engine_input, warm_planned)
     optimized_score, optimized_gap, optimized_switches = score_plan(engine_input, optimized_planned)
@@ -593,6 +616,8 @@ def main() -> int:
             f"makespanOptimizedMinutes={optimized_makespan}",
             f"mainZoneSlotVars={total_slots_main}",
             f"mainZoneCoverVars={len(occ_cover_vars)}",
+            f"pilotMode={pilot_mode}",
+            f"pilotMovableTasks={len(requested_movable_ids)}",
         ],
     }
     sys.stdout.write(json.dumps(out))

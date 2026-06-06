@@ -14,17 +14,32 @@ import {
   calculateMetrics,
 } from "./metrics";
 import { benchmarkScenarios, scenarioById } from "./scenarios";
+import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
-  const output = scenario.neighborhoodSeedOutput
+  const output = scenario.cpSatPilotSeedOutput
     ? (() => {
-      const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput!, "phaseA_greedy");
-      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta } };
+      const selected = runMainStageCpSatPilot(scenario.input, scenario.cpSatPilotSeedOutput!);
+      const score = calculateMetrics(scenario.input, selected.output, 0);
+      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: {
+        coachSwitchCount: score.coachSwitchCount,
+        coachSwitchPenalty: score.coachSwitchPenalty,
+        restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
+        mainStageGapMinutes: score.mainStageGapMinutes,
+        mainStageGapCount: score.mainStageGapCount,
+        makespan: score.makespan,
+        hardConstraintViolations: score.hardConstraintViolations,
+      } } };
     })()
-    : generatePlanV3(scenario.input, { timeLimitMs: 0 });
+    : scenario.neighborhoodSeedOutput
+      ? (() => {
+        const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput!, "phaseA_greedy");
+        return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta } };
+      })()
+      : generatePlanV3(scenario.input, { timeLimitMs: 0 });
   return { scenario, output };
 };
 
@@ -202,6 +217,7 @@ for (const id of ["C", "D", "J"] as const) {
 
   const metrics = calculateMetrics(scenario.input, output, 0);
   if (output.complete) assert.equal(metrics.hardConstraintViolations, 0, "complete scenario L must have no hard violations");
+  assert.ok(output.v3Meta?.cpSatPilotReason, "scenario L must report pilot attempt or deterministic skip reason");
   assert.ok((output.v3Meta?.neighborhoodCandidatesGenerated ?? 0) > 0, "scenario L should generate at least one operational neighborhood candidate");
   assert.ok(
     (output.v3Meta?.neighborhoodDepth2Candidates ?? 0) > 0
@@ -239,6 +255,20 @@ for (const id of ["C", "D", "J"] as const) {
   assert.equal(output.v3Meta?.neighborhoodAcceptedChain, "feeder_advance -> main_stage_gap_fill");
   assert.equal(output.v3Meta?.solutionSource, "operational_neighborhood");
   assert.ok((metrics.mainStageGapMinutes ?? 999) < greedyGap);
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true);
+}
+
+
+// Escenario O — CP-SAT pilot acotado mejora Main Stage + feeders.
+{
+  const { scenario, output } = run("O");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  const baselineGap = calculateMetrics(scenario.input, scenario.cpSatPilotSeedOutput!, 0).mainStageGapMinutes ?? 0;
+  assert.equal(output.v3Meta?.cpSatPilotAttempted, true);
+  assert.equal(output.v3Meta?.cpSatPilotAccepted, true);
+  assert.equal(output.v3Meta?.solutionSource, "cp_sat_pilot");
+  assert.ok((metrics.mainStageGapMinutes ?? 999) < baselineGap);
   assert.equal(metrics.hardConstraintViolations, 0);
   assert.equal(metrics.selectedCandidateMetricsConsistent, true);
 }

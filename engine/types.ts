@@ -322,7 +322,7 @@ export interface EngineOutput {
     backtrackingTimeMs?: number;
     backtrackingFallbackReason?: string;
     greedyFailedBeforeBacktracking?: boolean;
-    solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
+    solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
     plannedCount?: number;
     unplannedCount?: number;
     makespanMinutes?: number | null;
@@ -332,7 +332,7 @@ export interface EngineOutput {
     immovableBlockersCount?: number;
     unknownBlockersCount?: number;
     candidateSolutionsEvaluated?: number;
-    bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
+    bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
     bestCandidateScore?: string;
     greedyCandidateScore?: string;
     backtrackingBestScore?: string;
@@ -360,5 +360,11 @@ export interface EngineOutput {
     neighborhoodTypesAttempted?: string[];
     neighborhoodTypesGenerated?: string[];
     neighborhoodRejectedReasons?: Record<string, number>;
+    cpSatPilotAttempted?: boolean;
+    cpSatPilotAccepted?: boolean;
+    cpSatPilotTaskCount?: number;
+    cpSatPilotRuntimeMs?: number;
+    cpSatPilotReason?: string;
+    cpSatPilotImprovementSummary?: string;
   };
 }

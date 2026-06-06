@@ -7,7 +7,7 @@ import {
 } from "./metrics";
 import { calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
 
-export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
+export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
 
 export interface CandidateSolutionScore {
   hardConstraintViolations: number;

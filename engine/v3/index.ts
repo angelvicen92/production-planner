@@ -16,6 +16,7 @@ import {
   shouldAttemptOperationalNeighborhoods,
   type OperationalNeighborhoodReason,
 } from "./operationalNeighborhoods";
+import { runMainStageCpSatPilot, type MainStageCpSatPilotMeta } from "./mainStageCpSatPilot";
 
 type AttemptSummary = {
   level: number;
@@ -49,9 +50,9 @@ type BacktrackingMeta = {
   backtrackingTimeMs: number;
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
-  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   candidateSolutionsEvaluated?: number;
-  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   bestCandidateScore?: string;
   greedyCandidateScore?: string;
   backtrackingBestScore?: string;
@@ -71,6 +72,12 @@ type BacktrackingMeta = {
   neighborhoodTypesAttempted?: string[];
   neighborhoodTypesGenerated?: string[];
   neighborhoodRejectedReasons?: Record<string, number>;
+  cpSatPilotAttempted?: boolean;
+  cpSatPilotAccepted?: boolean;
+  cpSatPilotTaskCount?: number;
+  cpSatPilotRuntimeMs?: number;
+  cpSatPilotReason?: string;
+  cpSatPilotImprovementSummary?: string;
 };
 
 type BacktrackingBranch = {
@@ -433,6 +440,40 @@ export const runOperationalNeighborhoodSelection = (
   };
 };
 
+const runCpSatPilotSelection = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  baseMeta: Partial<BacktrackingMeta>,
+): { output: EngineOutput; meta: Partial<BacktrackingMeta> & MainStageCpSatPilotMeta } => {
+  const pilot = runMainStageCpSatPilot(input, baseOutput);
+  const selectedScore = scoreCandidateSolution(input, pilot.output);
+  const evaluated = Number(baseMeta.candidateSolutionsEvaluated ?? 1) + (pilot.meta.cpSatPilotAttempted ? 1 : 0);
+  return {
+    output: pilot.output,
+    meta: {
+      ...baseMeta,
+      ...pilot.meta,
+      candidateSolutionsEvaluated: evaluated,
+      bestCandidateSource: pilot.meta.cpSatPilotAccepted ? "cp_sat_pilot" : baseMeta.bestCandidateSource,
+      bestCandidateScore: summarizeCandidateScore(selectedScore),
+      candidateSelectionReason: pilot.meta.cpSatPilotAccepted
+        ? pilot.meta.cpSatPilotImprovementSummary
+        : baseMeta.candidateSelectionReason,
+      candidateComparisonSummary: pilot.meta.cpSatPilotImprovementSummary ?? baseMeta.candidateComparisonSummary,
+      solutionSource: pilot.meta.cpSatPilotAccepted ? "cp_sat_pilot" : baseMeta.solutionSource,
+      selectedCandidateMetrics: {
+        coachSwitchCount: selectedScore.coachSwitchCount,
+        coachSwitchPenalty: selectedScore.coachSwitchPenalty,
+        restrictiveTalentAverageStartOffset: selectedScore.restrictiveTalentAverageStartOffset,
+        mainStageGapMinutes: selectedScore.mainStageGapMinutes,
+        mainStageGapCount: selectedScore.mainStageGapCount,
+        makespan: selectedScore.makespan === Number.MAX_SAFE_INTEGER ? null : selectedScore.makespan,
+        hardConstraintViolations: selectedScore.hardConstraintViolations,
+      },
+    },
+  };
+};
+
 const computeMakespanMinutes = (output: EngineOutput): number | null => {
   const startsEnds = (output.plannedTasks ?? [])
     .map((p: any) => ({ start: toMinutes(String(p?.startPlanned ?? "")), end: toMinutes(String(p?.endPlanned ?? "")) }))
@@ -726,7 +767,9 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         };
         const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
         output = neighborhoodSelection.output;
-        const backtrackingNeighborhoodMeta = { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta };
+        const pilotSelection = runCpSatPilotSelection(input, output, { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta });
+        output = pilotSelection.output;
+        const backtrackingNeighborhoodMeta = pilotSelection.meta;
 
         const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
         if (timeLimitSeconds <= 0) {
@@ -758,7 +801,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
           const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
           const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
-          const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+          const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, output) > 0;
           const chosenOutput = accepted ? optimized.output : output;
           const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
           const qualityInsight = {
@@ -827,7 +870,9 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
       };
       const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
       output = neighborhoodSelection.output;
-      const greedyNeighborhoodMeta = neighborhoodSelection.meta;
+      const pilotSelection = runCpSatPilotSelection(input, output, neighborhoodSelection.meta);
+      output = pilotSelection.output;
+      const greedyNeighborhoodMeta = pilotSelection.meta;
 
       const timeLimitSeconds = Math.floor(Math.max(0, Number(options?.timeLimitMs ?? 0)) / 1000);
       if (timeLimitSeconds <= 0) {
@@ -860,7 +905,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
         const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
         const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
-        const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+        const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, output) > 0;
         const chosenOutput = accepted ? optimized.output : output;
         const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
         const qualityInsight = {
@@ -966,7 +1011,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
     const optimized = optimizeWithCpSat(input, fallback, timeLimitSeconds);
     const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, fallback, optimized.output);
-    const accepted = !optimized.noOptimized && candidateErrors.length === 0;
+    const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, fallback) > 0;
     const optimizedOutput = accepted ? optimized.output : fallback;
     const insights = Array.isArray((optimizedOutput as any).insights) ? (optimizedOutput as any).insights : [];
     const qualityInsight = {
