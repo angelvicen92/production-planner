@@ -152,3 +152,13 @@ El selector del piloto identifica 52 tareas relacionadas con Main Stage, sus fee
 La solución final permanece en `operational_neighborhood`: 99 tareas planificadas, cero unplanned, `mainStageGapMinutes=10`, `restrictiveTalentAverageStartOffset=105`, `coachSwitchCount=16`, `hardConstraintViolations=0`, locks y tareas ejecutadas sin movimiento, y métricas seleccionadas consistentes. Este resultado es deliberadamente conservador: ID 015 no amplía el límite para fabricar una mejora en L.
 
 Para ID 016 se recomienda recortar el subproblema por una ventana crítica alrededor del hueco de Main Stage, manteniendo feeders transitivos necesarios y el entorno restante fijo. Eso permitiría probar optimización matemática real sobre L sin saltar todavía a un solver global.
+
+## ID 016 — Segmentación CP-SAT en L
+
+ID 016 mantiene el scope global de Main Stage + feeders como diagnóstico (`52` tareas), pero no amplía el límite monolítico. En su lugar selecciona hasta tres bloques críticos de máximo 18 tareas, con prioridad para huecos de Main Stage, talents restrictivos y bloques locales de coach.
+
+En L se intentaron tres segmentos de tamaños `18`, `15` y `11`. El segmento de hueco no mejoró la solución; un segmento de talent restrictivo sí fue seleccionado por el comparador común y el segundo no mejoró al candidato ya elegido. El resultado pasa de `solutionSource=operational_neighborhood` a `solutionSource=cp_sat_pilot`, mantiene el hueco de Main Stage en 10 minutos y mejora el timing/continuidad agregados: offset restrictivo `105 → 103`, cambios de coach `16 → 15` y penalización de coach `46 → 42`.
+
+Los invariantes permanecen intactos: 99 filas planificadas, cero unplanned, cero hard violations, cero movimientos de locks o tareas ejecutadas y `selectedCandidateMetricsConsistent=true`. La lectura honesta es que segmentar desbloquea optimización matemática útil en L, pero todavía no resuelve el hueco principal.
+
+El riesgo residual es la falta de composición entre segmentos y la dependencia de asignaciones de recursos ya resueltas. ID 017 debería medir OR-Tools real por clase de segmento y estudiar una cadena de dos segmentos con presupuesto fijo, no ampliar el scope global.

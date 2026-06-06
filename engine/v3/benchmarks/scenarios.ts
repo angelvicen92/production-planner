@@ -51,6 +51,27 @@ const baseInput = (tasks: any[], overrides: Partial<EngineV3Input> = {}): Engine
   ...overrides,
 });
 
+const scenarioPTasks = Array.from({ length: 16 }, (_, index) => {
+  const talentId = 201 + index;
+  const feederId = 16000 + index * 2;
+  const mainId = feederId + 1;
+  return [
+    { id: feederId, planId: PLAN_ID, templateId: 2600 + index * 2, templateName: `Feeder P ${index + 1}`, zoneId: 2, spaceId: 300 + index, contestantId: talentId, contestantName: `Talent P ${index + 1}`, status: "pending", durationOverrideMin: 20 },
+    { id: mainId, planId: PLAN_ID, templateId: 2601 + index * 2, templateName: `Main Stage P ${index + 1}`, zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: talentId, contestantName: `Talent P ${index + 1}`, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [feederId] },
+  ];
+}).flat();
+
+const scenarioPSeedTasks = Array.from({ length: 16 }, (_, index) => {
+  const feederId = 16000 + index * 2;
+  const mainId = feederId + 1;
+  const feederStart = 8 * 60 + 30;
+  const mainStart = 9 * 60 + index * 30 + (index === 15 ? 10 : 0);
+  return [
+    { taskId: feederId, startPlanned: `${String(Math.floor(feederStart / 60)).padStart(2, "0")}:${String(feederStart % 60).padStart(2, "0")}`, endPlanned: "08:50" },
+    { taskId: mainId, startPlanned: `${String(Math.floor(mainStart / 60)).padStart(2, "0")}:${String(mainStart % 60).padStart(2, "0")}`, endPlanned: `${String(Math.floor((mainStart + 30) / 60)).padStart(2, "0")}:${String((mainStart + 30) % 60).padStart(2, "0")}` },
+  ];
+}).flat();
+
 export const benchmarkScenarios: BenchmarkScenario[] = [
   {
     id: "A",
@@ -376,6 +397,22 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     },
     operationalExpectation: "El piloto CP-SAT debe compactar Main Stage, conservar feeders antes de sus actuaciones y ser seleccionado por el comparador común sin violaciones hard.",
     riskNotes: ["Piloto limitado a cinco tareas", "Dos coaches modelados como recursos exclusivos", "Warm start válido deliberadamente subóptimo"],
+  },
+  {
+    id: "P",
+    name: "CP-SAT segment mejora hueco local en Main Stage",
+    description: "El scope completo Main Stage + feeders contiene 32 tareas y excede el piloto global, pero un segmento local de hueco permanece por debajo de 18 y puede compactarse.",
+    input: baseInput(scenarioPTasks, {
+      workDay: { start: "08:30", end: "18:00" },
+      meal: { start: "18:00", end: "18:30" },
+      contestantAvailabilityById: Object.fromEntries(Array.from({ length: 16 }, (_, index) => [201 + index, { start: "08:30", end: index === 15 ? "17:30" : "18:00" }])),
+      enableLimitedBacktracking: false,
+      enableOperationalNeighborhoods: false,
+      spaceNameById: { [MAIN_STAGE_SPACE_ID]: "Plató principal P", ...Object.fromEntries(Array.from({ length: 16 }, (_, index) => [300 + index, `Feeder P ${index + 1}`])) },
+    } as any),
+    cpSatPilotSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: scenarioPSeedTasks, unplanned: [], warnings: [] },
+    operationalExpectation: "La selección global queda fuera de límite, se intenta al menos un gap segment y el candidato aceptado elimina el hueco local sin violaciones hard.",
+    riskNotes: ["Scope global simulado con 32 tareas", "Segmentos limitados a 18 tareas", "Warm start determinista con hueco local de 10 minutos"],
   },
   realisticDayScenario,
   realisticVoiceDayScenario,

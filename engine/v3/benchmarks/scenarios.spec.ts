@@ -218,6 +218,8 @@ for (const id of ["C", "D", "J"] as const) {
   const metrics = calculateMetrics(scenario.input, output, 0);
   if (output.complete) assert.equal(metrics.hardConstraintViolations, 0, "complete scenario L must have no hard violations");
   assert.ok(output.v3Meta?.cpSatPilotReason, "scenario L must report pilot attempt or deterministic skip reason");
+  assert.ok((output.v3Meta?.cpSatSegmentsAttempted ?? 0) >= 1 || output.v3Meta?.cpSatPilotReason === "no_valid_segments", "scenario L must attempt a bounded segment or explain deterministically why none is valid");
+  assert.notEqual(output.v3Meta?.cpSatPilotReason, "task_limit_exceeded", "scenario L must not stop at the global task limit when valid segmentation is available");
   assert.ok((output.v3Meta?.neighborhoodCandidatesGenerated ?? 0) > 0, "scenario L should generate at least one operational neighborhood candidate");
   assert.ok(
     (output.v3Meta?.neighborhoodDepth2Candidates ?? 0) > 0
@@ -267,6 +269,20 @@ for (const id of ["C", "D", "J"] as const) {
   const baselineGap = calculateMetrics(scenario.input, scenario.cpSatPilotSeedOutput!, 0).mainStageGapMinutes ?? 0;
   assert.equal(output.v3Meta?.cpSatPilotAttempted, true);
   assert.equal(output.v3Meta?.cpSatPilotAccepted, true);
+  assert.equal(output.v3Meta?.solutionSource, "cp_sat_pilot");
+  assert.ok((metrics.mainStageGapMinutes ?? 999) < baselineGap);
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true);
+}
+
+// Escenario P — el scope global excede el límite, pero un segmento local mejora el hueco.
+{
+  const { scenario, output } = run("P");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  const baselineGap = calculateMetrics(scenario.input, scenario.cpSatPilotSeedOutput!, 0).mainStageGapMinutes ?? 0;
+  assert.equal(output.v3Meta?.cpSatPilotAttempted, true);
+  assert.ok((output.v3Meta?.cpSatSegmentsAttempted ?? 0) >= 1);
+  assert.ok((output.v3Meta?.cpSatSegmentsAccepted ?? 0) >= 1);
   assert.equal(output.v3Meta?.solutionSource, "cp_sat_pilot");
   assert.ok((metrics.mainStageGapMinutes ?? 999) < baselineGap);
   assert.equal(metrics.hardConstraintViolations, 0);

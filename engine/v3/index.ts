@@ -78,6 +78,12 @@ type BacktrackingMeta = {
   cpSatPilotRuntimeMs?: number;
   cpSatPilotReason?: string;
   cpSatPilotImprovementSummary?: string;
+  cpSatSegmentsAttempted?: number;
+  cpSatSegmentsAccepted?: number;
+  cpSatSegmentReasons?: string[];
+  cpSatSegmentTaskCounts?: number[];
+  cpSatBestSegmentKind?: "gap" | "restrictive_talent" | "coach_block";
+  cpSatSegmentImprovementSummary?: string;
 };
 
 type BacktrackingBranch = {
@@ -447,7 +453,7 @@ const runCpSatPilotSelection = (
 ): { output: EngineOutput; meta: Partial<BacktrackingMeta> & MainStageCpSatPilotMeta } => {
   const pilot = runMainStageCpSatPilot(input, baseOutput);
   const selectedScore = scoreCandidateSolution(input, pilot.output);
-  const evaluated = Number(baseMeta.candidateSolutionsEvaluated ?? 1) + (pilot.meta.cpSatPilotAttempted ? 1 : 0);
+  const evaluated = Number(baseMeta.candidateSolutionsEvaluated ?? 1) + Number(pilot.meta.cpSatSegmentsAttempted ?? (pilot.meta.cpSatPilotAttempted ? 1 : 0));
   return {
     output: pilot.output,
     meta: {

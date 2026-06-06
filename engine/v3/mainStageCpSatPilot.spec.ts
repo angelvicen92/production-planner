@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
-import { runMainStageCpSatPilot, selectMainStageCpSatSubproblem, type MainStageCpSatSolver } from "./mainStageCpSatPilot";
+import { MAIN_STAGE_CP_SAT_SEGMENT_MAX_TASKS, runMainStageCpSatPilot, selectMainStageCpSatSegments, selectMainStageCpSatSubproblem, type MainStageCpSatSolver } from "./mainStageCpSatPilot";
 import { countContestantWindowViolations, countDependencyViolations } from "./metrics";
 
 const input: EngineV3Input = {
@@ -94,4 +94,48 @@ test("pilot rejects a candidate with hard violations", () => {
   assert.equal(result.meta.cpSatPilotAccepted, false);
   assert.equal(result.meta.cpSatPilotReason, "candidate_validation_failed");
   assert.deepEqual(result.output.plannedTasks, warmStart.plannedTasks);
+});
+
+
+test("gap segment includes nearby Main Stage tasks and their direct feeders", () => {
+  const selection = selectMainStageCpSatSegments(input, warmStart);
+  const gap = selection.segments.find((segment) => segment.kind === "gap");
+  assert.ok(gap);
+  assert.ok(gap.mainStageTaskIds.includes(1));
+  assert.ok(gap.mainStageTaskIds.includes(3));
+  assert.ok(gap.feederTaskIds.includes(2));
+  assert.ok(gap.taskIds.includes(2));
+});
+
+test("segment selector never includes done, in_progress or locked tasks", () => {
+  const selection = selectMainStageCpSatSegments(input, warmStart);
+  const selectedIds = selection.segments.flatMap((segment) => segment.taskIds);
+  assert.ok(!selectedIds.includes(4));
+  assert.ok(!selectedIds.includes(5));
+  assert.ok(!selectedIds.includes(6));
+  assert.ok(selection.excludedTaskIds.includes(4));
+  assert.ok(selection.excludedTaskIds.includes(5));
+  assert.ok(selection.excludedTaskIds.includes(6));
+});
+
+test("restrictive talent segments prioritize the earliest departure", () => {
+  const prioritizedInput: EngineV3Input = {
+    ...input,
+    tasks: [
+      ...(input.tasks as any[]),
+      { id: 7, planId: 15, templateId: 7, templateName: "Main earlier departure", zoneId: 1, spaceId: 101, contestantId: 7, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [8] },
+      { id: 8, planId: 15, templateId: 8, templateName: "Feeder earlier departure", zoneId: 2, spaceId: 203, contestantId: 7, status: "pending", durationOverrideMin: 20 },
+    ] as any,
+    contestantAvailabilityById: { ...input.contestantAvailabilityById, 7: { start: "09:00", end: "10:00" } },
+  };
+  const prioritizedWarm: EngineOutput = { ...warmStart, plannedTasks: [...warmStart.plannedTasks, { taskId: 8, startPlanned: "09:00", endPlanned: "09:20" }, { taskId: 7, startPlanned: "10:30", endPlanned: "11:00" }] };
+  const restrictiveSegments = selectMainStageCpSatSegments(prioritizedInput, prioritizedWarm, 18, 10).segments.filter((segment) => segment.kind === "restrictive_talent");
+  assert.equal(restrictiveSegments[0]?.restrictiveTalentIds[0], 7);
+});
+
+test("every CP-SAT segment respects the configured task limit", () => {
+  const selection = selectMainStageCpSatSegments(input, warmStart, 2, 10);
+  assert.ok(selection.segments.length > 0);
+  assert.ok(selection.segments.every((segment) => segment.taskIds.length <= 2));
+  assert.equal(MAIN_STAGE_CP_SAT_SEGMENT_MAX_TASKS, 18);
 });

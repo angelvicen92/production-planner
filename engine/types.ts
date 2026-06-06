@@ -366,5 +366,11 @@ export interface EngineOutput {
     cpSatPilotRuntimeMs?: number;
     cpSatPilotReason?: string;
     cpSatPilotImprovementSummary?: string;
+    cpSatSegmentsAttempted?: number;
+    cpSatSegmentsAccepted?: number;
+    cpSatSegmentReasons?: string[];
+    cpSatSegmentTaskCounts?: number[];
+    cpSatBestSegmentKind?: "gap" | "restrictive_talent" | "coach_block";
+    cpSatSegmentImprovementSummary?: string;
   };
 }

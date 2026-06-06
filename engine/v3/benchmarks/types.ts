@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -50,6 +50,12 @@ export interface EngineBenchmarkMetrics {
   cpSatPilotRuntimeMs: number | null;
   cpSatPilotReason: string | null;
   cpSatPilotImprovementSummary: string | null;
+  cpSatSegmentsAttempted: number | null;
+  cpSatSegmentsAccepted: number | null;
+  cpSatSegmentReasons: string[] | null;
+  cpSatSegmentTaskCounts: number[] | null;
+  cpSatBestSegmentKind: string | null;
+  cpSatSegmentImprovementSummary: string | null;
   phaseAUsed: boolean | null;
   backtrackingAttempted: boolean | null;
   backtrackingAccepted: boolean | null;
