@@ -93,3 +93,17 @@ Orden recomendado:
 6. dejar la UI admin para cuando el contrato y las reglas de validación estén estabilizados.
 
 No se recomienda saltar directamente a CP-SAT con bundles inferidos: una coocurrencia estadística puede responder a disponibilidad circunstancial y no a una regla operativa real.
+
+## ID 018 — Modelo persistente disponible, diagnóstico aún informativo
+
+ID 018 añade el catálogo persistente `resource_bundles`, sus componentes y afinidades por espacio mediante `supabase/migrations/066_resource_bundles.sql`. Es un modelo aditivo: no sustituye recursos, items, componentes históricos, pools o availability, y ninguna tarea queda obligada a referenciar un bundle.
+
+Los `compositeResourceCandidates` del diagnóstico exponen ahora una forma preparada para revisión y persistencia futura:
+
+- `suggestedBundleName`;
+- `componentResourceIds`, usando IDs globales de `resource_items` cuando están disponibles y nunca IDs del snapshot del plan;
+- `componentRoles`, inferidos por categoría nominal/tipo;
+- `observedCount`;
+- `confidence` entre 0 y 1 como consistencia informativa de la observación.
+
+Se conserva `occurrenceCount` como alias compatible para consumidores y benchmarks existentes. El diagnóstico no lee las tablas nuevas, no crea bundles automáticamente y no participa en hard constraints, scoring, selección de candidatos, Phase A o CP-SAT. El contrato y los riesgos del modelo persistente se documentan en `docs/RESOURCE_BUNDLES_MODEL.md`.

@@ -17,7 +17,15 @@ export interface CompositeResourceCandidate {
   kind: "resource_pair" | "resource_space";
   left: string;
   right: string;
+  /** Backward-compatible alias retained for existing benchmark consumers. */
   occurrenceCount: number;
+  suggestedBundleName: string;
+  /** Global resource_items IDs when available; never plan snapshot IDs. */
+  componentResourceIds: number[];
+  componentRoles: string[];
+  observedCount: number;
+  /** Informative 0..1 consistency ratio; it does not affect feasibility or scoring. */
+  confidence: number;
 }
 
 export interface ResourceSwitchDetail {
@@ -191,14 +199,40 @@ const collectPairObservations = (scheduled: ScheduledTask[]): PairObservation[] 
 };
 
 const calculateCompositeCandidates = (input: EngineV3Input, scheduled: ScheduledTask[], observations: PairObservation[]): CompositeResourceCandidate[] => {
+  const maxObservationByCategory = new Map<string, number>();
+  for (const observation of observations) {
+    maxObservationByCategory.set(
+      observation.categoryKey,
+      Math.max(maxObservationByCategory.get(observation.categoryKey) ?? 0, observation.taskIds.length),
+    );
+  }
+
   const resourceCandidates = observations
     .filter((observation) => observation.taskIds.length >= 2)
-    .map((observation): CompositeResourceCandidate => ({
-      kind: "resource_pair",
-      left: resourceLabel(observation.left),
-      right: resourceLabel(observation.right),
-      occurrenceCount: observation.taskIds.length,
-    }));
+    .map((observation): CompositeResourceCandidate => {
+      const observedCount = observation.taskIds.length;
+      const categoryMaximum = maxObservationByCategory.get(observation.categoryKey) ?? observedCount;
+      return {
+        kind: "resource_pair",
+        left: resourceLabel(observation.left),
+        right: resourceLabel(observation.right),
+        occurrenceCount: observedCount,
+        suggestedBundleName: `${observation.left.name} + ${observation.right.name}`,
+        componentResourceIds: [observation.left.resourceItemId, observation.right.resourceItemId]
+          .map(Number)
+          .filter((id) => Number.isFinite(id) && id > 0),
+        componentRoles: [resourceCategory(observation.left), resourceCategory(observation.right)],
+        observedCount,
+        confidence: Number((observedCount / Math.max(1, categoryMaximum)).toFixed(2)),
+      };
+    });
+
+  const assignmentCountByResource = new Map<number, number>();
+  for (const scheduledTask of scheduled) {
+    for (const resource of scheduledTask.assignedResources) {
+      assignmentCountByResource.set(resource.id, (assignmentCountByResource.get(resource.id) ?? 0) + 1);
+    }
+  }
 
   const resourceSpaceCounts = new Map<string, CompositeResourceCandidate>();
   for (const scheduledTask of scheduled) {
@@ -212,14 +246,23 @@ const calculateCompositeCandidates = (input: EngineV3Input, scheduled: Scheduled
         left: resourceLabel(resource),
         right: `${spaceName} (#${spaceId})`,
         occurrenceCount: 0,
+        suggestedBundleName: `${resource.name} @ ${spaceName}`,
+        componentResourceIds: Number.isFinite(Number(resource.resourceItemId)) && Number(resource.resourceItemId) > 0
+          ? [Number(resource.resourceItemId)]
+          : [],
+        componentRoles: [resourceCategory(resource)],
+        observedCount: 0,
+        confidence: 0,
       };
       candidate.occurrenceCount += 1;
+      candidate.observedCount += 1;
+      candidate.confidence = Number((candidate.observedCount / Math.max(1, assignmentCountByResource.get(resource.id) ?? 0)).toFixed(2));
       resourceSpaceCounts.set(key, candidate);
     }
   }
 
-  return [...resourceCandidates, ...[...resourceSpaceCounts.values()].filter((candidate) => candidate.occurrenceCount >= 2)]
-    .sort((left, right) => right.occurrenceCount - left.occurrenceCount || left.left.localeCompare(right.left) || left.right.localeCompare(right.right));
+  return [...resourceCandidates, ...[...resourceSpaceCounts.values()].filter((candidate) => candidate.observedCount >= 2)]
+    .sort((left, right) => right.observedCount - left.observedCount || left.left.localeCompare(right.left) || left.right.localeCompare(right.right));
 };
 
 const calculateSwitches = (input: EngineV3Input, scheduled: ScheduledTask[]): ResourceSwitchDetail[] => {

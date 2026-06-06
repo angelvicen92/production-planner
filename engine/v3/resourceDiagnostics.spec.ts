@@ -66,7 +66,14 @@ const output = (plannedTasks: EngineOutput["plannedTasks"]): EngineOutput => ({
     { taskId: 11, startPlanned: "09:20", endPlanned: "09:40", assignedResources: [CAMERA_1, SOUND_1] },
     { taskId: 12, startPlanned: "09:40", endPlanned: "10:00", assignedResources: [CAMERA_2, SOUND_2] },
   ]));
-  assert.ok(diagnostic.compositeResourceCandidates.some((candidate) => candidate.kind === "resource_pair" && candidate.left.includes("Camera 1") && candidate.right.includes("Sound 1") && candidate.occurrenceCount === 2));
+  const pairCandidate = diagnostic.compositeResourceCandidates.find((candidate) => candidate.kind === "resource_pair" && candidate.left.includes("Camera 1") && candidate.right.includes("Sound 1"));
+  assert.ok(pairCandidate);
+  assert.equal(pairCandidate.occurrenceCount, 2);
+  assert.equal(pairCandidate.observedCount, 2);
+  assert.equal(pairCandidate.suggestedBundleName, "Camera 1 + Sound 1");
+  assert.deepEqual(pairCandidate.componentResourceIds, [1001, 2001]);
+  assert.deepEqual(pairCandidate.componentRoles, ["camera", "sound"]);
+  assert.equal(pairCandidate.confidence, 1);
   assert.ok(diagnostic.compositeResourceCandidateCount > 0);
 }
 
