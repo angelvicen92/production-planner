@@ -69,6 +69,12 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  cpSatPilotRuntimeMs: ${formatNullable(metrics.cpSatPilotRuntimeMs)}`);
   console.log(`  cpSatPilotReason: ${formatNullable(metrics.cpSatPilotReason)}`);
   console.log(`  cpSatPilotImprovementSummary: ${formatCompact(metrics.cpSatPilotImprovementSummary)}`);
+  console.log(`  cpSatSegmentsAttempted: ${formatNullable(metrics.cpSatSegmentsAttempted)}`);
+  console.log(`  cpSatSegmentsAccepted: ${formatNullable(metrics.cpSatSegmentsAccepted)}`);
+  console.log(`  cpSatSegmentReasons: ${metrics.cpSatSegmentReasons?.join(",") ?? "n/a"}`);
+  console.log(`  cpSatSegmentTaskCounts: ${metrics.cpSatSegmentTaskCounts?.join(",") ?? "n/a"}`);
+  console.log(`  cpSatBestSegmentKind: ${formatNullable(metrics.cpSatBestSegmentKind)}`);
+  console.log(`  cpSatSegmentImprovementSummary: ${formatCompact(metrics.cpSatSegmentImprovementSummary)}`);
   console.log(`  phaseAUsed: ${formatNullable(metrics.phaseAUsed)}`);
   console.log(`  backtrackingAttempted: ${formatNullable(metrics.backtrackingAttempted)}`);
   console.log(`  backtrackingAccepted: ${formatNullable(metrics.backtrackingAccepted)}`);
@@ -102,7 +108,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);

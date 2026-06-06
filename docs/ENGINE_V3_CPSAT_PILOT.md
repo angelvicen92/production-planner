@@ -66,3 +66,63 @@ No se fuerza una aceptación ni se amplía silenciosamente el presupuesto.
 ## Recomendación para ID 016
 
 Priorizar una **descomposición por ventana crítica de Main Stage** para reducir L de 52 a menos de 30 tareas sin relajar hard constraints. En paralelo, preparar un dataset real anonimizado y modelar explícitamente kits de cámara/sonido antes de ampliar el piloto a recursos alternativos. No se recomienda aún un CP-SAT global ni exponer controles nuevos en UI.
+
+## ID 016 — Segmentación CP-SAT
+
+### Por qué no se amplía el límite global
+
+El scope monolítico de L continúa conteniendo 52 tareas modelables. Aumentar de forma directa el límite de 30 habría mezclado más intervalos, recursos y dependencias en una sola llamada sin disponer todavía de una medición fiable de runtime con OR-Tools ni de una descomposición operativa auditable. ID 016 conserva ese diagnóstico global, pero deja de usarlo como puerta única: la ejecución real se limita a bloques críticos pequeños y mantiene fijo el resto del warm start.
+
+### Selector determinista
+
+El piloto genera, en este orden, hasta tres segmentos no duplicados:
+
+1. **Gap segment**: actuaciones de Main Stage alrededor de un hueco, sus feeders directos y blockers locales movibles que comparten espacio o recursos.
+2. **Restrictive talent segment**: actuación y feeders del talent restrictivo, priorizando por hora de salida más temprana, más tareas próximas que compiten por espacio o recurso.
+3. **Coach block segment**: feeders locales asignados al mismo coach y actuaciones de Main Stage que dependen directamente de ellos.
+
+`done`, `in_progress`, `cancelled`, bloques manuales y locks `time/full` se excluyen antes de construir cualquier segmento. También se excluyen tareas sin warm start o sin datos suficientes para el modelo. Cada segmento contiene como máximo 18 tareas, se evalúan como máximo tres por plan y cada llamada recibe 0,5 segundos. No se usa aleatoriedad.
+
+Cada resultado vuelve a pasar por `validateOptimizedCandidate`, por el conteo común de hard violations y por `compareCandidateSolutions`. Un candidato con una sola violación hard se descarta; un candidato válido que no supere a la solución seleccionada se documenta como `candidate_not_better`. La metadata añade intentos, aceptaciones, razones, tamaños, tipo del mejor segmento y resumen por segmento sin retirar los campos de ID 015.
+
+### Resultado L
+
+El scope global sigue reportando 52 tareas, pero ya no termina en `task_limit_exceeded`. La ejecución de referencia seleccionó tres segmentos de 18, 15 y 11 tareas: el gap segment no mejoró, el primer segmento de talent restrictivo fue aceptado y el segundo no superó al candidato seleccionado.
+
+Resultado final observado:
+
+- `cpSatPilotAttempted=true`;
+- `cpSatSegmentsAttempted=3`;
+- `cpSatSegmentsAccepted=1`;
+- `cpSatBestSegmentKind=restrictive_talent`;
+- `solutionSource=cp_sat_pilot`;
+- `mainStageGapMinutes=10` (sin cambio);
+- `restrictiveTalentAverageStartOffset: 105 → 103`;
+- `coachSwitchCount: 16 → 15`;
+- `coachSwitchPenalty: 46 → 42`;
+- `hardConstraintViolations=0`;
+- `selectedCandidateMetricsConsistent=true`.
+
+La mejora es real pero acotada: la segmentación no elimina todavía el hueco de L y no se fuerza la aceptación del gap segment.
+
+### Resultado P
+
+P contiene 16 actuaciones y 16 feeders. El scope monolítico suma 32 tareas y supera el límite global histórico, mientras el segmento alrededor del hueco final contiene 8 tareas. El gap segment compacta el cierre de Main Stage:
+
+- `mainStageGapMinutes: 10 → 0`;
+- `cpSatPilotAttempted=true`;
+- `cpSatSegmentsAttempted=2`;
+- `cpSatSegmentsAccepted=1`;
+- `cpSatBestSegmentKind=gap`;
+- `solutionSource=cp_sat_pilot`;
+- `hardConstraintViolations=0`;
+- `selectedCandidateMetricsConsistent=true`.
+
+### Riesgos residuales y recomendación ID 017
+
+- Los segmentos se resuelven como candidatos independientes contra el mismo warm start; todavía no se compone una cadena CP-SAT multi-segmento.
+- El selector de blockers es local y conservador; puede omitir una cadena transitiva útil fuera de la ventana.
+- El coach block usa asignaciones ya resueltas y no decide kits ni recursos alternativos complejos.
+- El fallback determinista mantiene CI reproducible, pero el rendimiento y la calidad deben medirse también con OR-Tools instalado.
+
+Para ID 017 se recomienda instrumentar el rendimiento real de OR-Tools por tipo de segmento y estudiar una composición determinista de como máximo dos segmentos aceptados, revalidando el plan completo tras cada paso. No se recomienda aún CP-SAT global.

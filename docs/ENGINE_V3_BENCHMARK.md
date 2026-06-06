@@ -347,3 +347,42 @@ El runner añade `cpSatPilotAttempted`, `cpSatPilotAccepted`, `cpSatPilotTaskCou
 | L — Jornada tipo La Voz | no | no | 52 | `task_limit_exceeded` | 10 | 0 | `operational_neighborhood` |
 
 O demuestra que el candidato adicional pasa por el comparador común y mejora un warm start válido. L documenta el límite en vez de ejecutar un subproblema excesivo. En el entorno CI de referencia OR-Tools no está instalado y O usa el fallback determinista del seam; la ruta Python queda preparada para fijar únicamente los IDs seleccionados cuando OR-Tools está disponible.
+
+## ID 016 — Segmentación CP-SAT
+
+ID 016 sustituye la puerta monolítica del piloto por selección determinista de bloques críticos, sin cambiar hard constraints ni elevar el límite global. Los tipos evaluables son `gap`, `restrictive_talent` y `coach_block`, en ese orden. Cada bloque tiene un máximo de 18 tareas, cada plan evalúa como máximo tres y cada llamada usa un presupuesto bajo de 0,5 segundos. El benchmark imprime `cpSatSegmentsAttempted`, `cpSatSegmentsAccepted`, razones, tamaños, mejor tipo y resumen de resultados.
+
+### L antes/después
+
+| Métrica | ID 015 | ID 016 |
+|---|---:|---:|
+| Scope global detectado | 52 | 52 |
+| Motivo/resultado CP-SAT | `task_limit_exceeded` | `accepted` |
+| Segmentos intentados/aceptados | 0 / 0 | 3 / 1 |
+| Tamaños de segmento | n/a | 18, 15, 11 |
+| Main Stage gap | 10 | 10 |
+| Offset restrictivo medio | 105 | 103 |
+| Coach switches | 16 | 15 |
+| Coach penalty | 46 | 42 |
+| Hard violations | 0 | 0 |
+| Métricas seleccionadas consistentes | true | true |
+| Solution source | `operational_neighborhood` | `cp_sat_pilot` |
+
+El gap segment de L no fue aceptado; la mejora procede de un restrictive talent segment. No se atribuye al solver una eliminación del hueco que no ocurrió.
+
+### Escenario P — CP-SAT segment mejora hueco local
+
+P modela 32 tareas relacionadas (16 Main Stage y 16 feeders), por encima del límite global de 30. El selector encuentra un gap segment de 8 tareas y un restrictive talent segment de 4. Se intentan ambos y se acepta el gap segment:
+
+- `mainStageGapMinutes: 10 → 0`;
+- `cpSatPilotAttempted=true`;
+- `cpSatSegmentsAttempted=2`;
+- `cpSatSegmentsAccepted=1`;
+- `cpSatBestSegmentKind=gap`;
+- `solutionSource=cp_sat_pilot`;
+- `hardConstraintViolations=0`;
+- `selectedCandidateMetricsConsistent=true`.
+
+### Riesgos residuales
+
+La segmentación sigue siendo local, no decide recursos alternativos complejos y no combina todavía mejoras de varios segmentos sobre estados sucesivos. Los runtimes impresos dependen del entorno y no forman parte de los asserts. Para ID 017 se recomienda medir OR-Tools instalado por tipo/tamaño y probar composición de dos segmentos con validación hard completa después de cada candidato; no se recomienda subir el límite global.
