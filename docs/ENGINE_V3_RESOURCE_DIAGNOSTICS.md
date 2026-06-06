@@ -107,3 +107,19 @@ Los `compositeResourceCandidates` del diagnóstico exponen ahora una forma prepa
 - `confidence` entre 0 y 1 como consistencia informativa de la observación.
 
 Se conserva `occurrenceCount` como alias compatible para consumidores y benchmarks existentes. El diagnóstico no lee las tablas nuevas, no crea bundles automáticamente y no participa en hard constraints, scoring, selección de candidatos, Phase A o CP-SAT. El contrato y los riesgos del modelo persistente se documentan en `docs/RESOURCE_BUNDLES_MODEL.md`.
+
+## ID 019 — Bundles declarados en diagnóstico
+
+El diagnóstico mantiene los candidatos inferidos de ID 017 y añade la comparación con el catálogo declarado. Para cada tarea planificada traduce sus `assignedResources` del snapshot a `resourceItemId`, identifica bundles usados y calcula:
+
+- `declaredResourceBundleCount`;
+- `bundleComponentUsageCount`;
+- `partialBundleUsageWarnings`;
+- `bundleSpaceAffinityMatches`;
+- `bundleSpaceAffinityMismatches`;
+- `bundleSwitchPenalty`;
+- `declaredBundleCandidateMatches`.
+
+Las advertencias `PARTIAL_DECLARED_BUNDLE` y `BUNDLE_SPACE_AFFINITY_MISMATCH` son informativas. La primera aparece cuando se usa al menos un componente de un bundle pero faltan componentes requeridos; la segunda, cuando un bundle usado tiene afinidades declaradas pero el espacio actual no tiene afinidad positiva. Los switches se cuentan determinísticamente entre tareas consecutivas del mismo espacio que usan firmas de bundle distintas.
+
+El diagnóstico sigue sin modificar el output. Los bundles inferidos y declarados pueden coincidir (`declaredBundleCandidateMatches`) o divergir; esa diferencia sirve para revisión operativa, no para crear reglas automáticamente.

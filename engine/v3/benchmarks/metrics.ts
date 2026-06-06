@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { EngineBenchmarkMetrics } from "./types";
 import { summarizeStructuredBlockers } from "../blockers";
-import { diagnoseCompositeResources } from "../resourceDiagnostics";
+import { calculateDeclaredBundleMetrics, diagnoseCompositeResources } from "../resourceDiagnostics";
 export {
   calculateCoachSwitchCount,
   calculateOperationalMetrics,
@@ -52,11 +52,17 @@ import {
 export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, runtimeMs: number): EngineBenchmarkMetrics => {
   const operationalMetrics = calculateOperationalMetrics(input, output);
   const resourceDiagnostics = diagnoseCompositeResources(input, output);
+  const declaredBundleMetrics = calculateDeclaredBundleMetrics(input, output);
   const mainGaps = { count: operationalMetrics.mainStageGapCount, minutes: operationalMetrics.mainStageGapMinutes };
   const selectedCandidateMetrics = output.v3Meta?.selectedCandidateMetrics ?? null;
   const selectedCandidateMetricsConsistent = selectedCandidateMetrics === null ? null : (
     selectedCandidateMetrics.coachSwitchCount === operationalMetrics.coachSwitchCount
     && selectedCandidateMetrics.coachSwitchPenalty === operationalMetrics.coachSwitchPenalty
+    && selectedCandidateMetrics.bundleCoherencePenalty === declaredBundleMetrics.bundleCoherencePenalty
+    && selectedCandidateMetrics.bundleSwitchPenalty === resourceDiagnostics.bundleSwitchPenalty
+    && selectedCandidateMetrics.partialBundleUsageWarnings === resourceDiagnostics.partialBundleUsageWarnings
+    && selectedCandidateMetrics.bundleSpaceAffinityMatches === resourceDiagnostics.bundleSpaceAffinityMatches
+    && selectedCandidateMetrics.bundleSpaceAffinityMismatches === resourceDiagnostics.bundleSpaceAffinityMismatches
     && selectedCandidateMetrics.restrictiveTalentAverageStartOffset === operationalMetrics.restrictiveTalentAverageStartOffset
     && selectedCandidateMetrics.mainStageGapMinutes === operationalMetrics.mainStageGapMinutes
     && selectedCandidateMetrics.mainStageGapCount === operationalMetrics.mainStageGapCount
@@ -90,6 +96,13 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     compositeResourceCandidateCount: resourceDiagnostics.resourceSwitchCount === null && resourceDiagnostics.resourcePoolPressureSummary === null
       ? null
       : resourceDiagnostics.compositeResourceCandidateCount,
+    declaredResourceBundleCount: resourceDiagnostics.declaredResourceBundleCount,
+    bundleComponentUsageCount: resourceDiagnostics.bundleComponentUsageCount,
+    partialBundleUsageWarnings: resourceDiagnostics.partialBundleUsageWarnings,
+    bundleSpaceAffinityMatches: resourceDiagnostics.bundleSpaceAffinityMatches,
+    bundleSpaceAffinityMismatches: resourceDiagnostics.bundleSpaceAffinityMismatches,
+    bundleSwitchPenalty: resourceDiagnostics.bundleSwitchPenalty,
+    declaredBundleCandidateMatches: resourceDiagnostics.declaredBundleCandidateMatches,
     resourceDiagnosticWarnings: resourceDiagnostics.resourceSwitchCount === null && resourceDiagnostics.resourcePoolPressureSummary === null
       ? null
       : resourceDiagnostics.resourceDiagnosticWarnings.map((warning) => `${warning.code}: ${warning.message}`),

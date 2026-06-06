@@ -196,6 +196,10 @@ export interface IStorage {
     Record<number, Array<{ componentResourceItemId: number; quantity: number }>>
   >;
 
+  getResourceBundles(): Promise<any[]>;
+  getResourceBundleComponents(): Promise<any[]>;
+  getResourceBundleSpaceAffinities(): Promise<any[]>;
+
   // Space Resource Assignments (per plan)
   // Key: spaceId -> planResourceItemIds
   getSpaceResourceAssignmentsForPlan(
@@ -2781,6 +2785,38 @@ export class SupabaseStorage implements IStorage {
     }
 
     return out;
+  }
+
+  async getResourceBundles(): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from("resource_bundles")
+      .select("id, name, description, bundle_type, is_active, metadata")
+      .eq("is_active", true)
+      .order("name", { ascending: true })
+      .order("id", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async getResourceBundleComponents(): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from("resource_bundle_components")
+      .select("id, bundle_id, resource_id, resource_item_id, component_role, quantity, is_required, metadata")
+      .order("bundle_id", { ascending: true })
+      .order("component_role", { ascending: true })
+      .order("id", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async getResourceBundleSpaceAffinities(): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from("resource_bundle_space_affinities")
+      .select("id, bundle_id, space_id, affinity_score, metadata")
+      .order("bundle_id", { ascending: true })
+      .order("space_id", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
   }
 
   async getSpaceResourceAssignmentsForPlan(

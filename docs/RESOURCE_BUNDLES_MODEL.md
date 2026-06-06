@@ -88,3 +88,11 @@ Recomendación para ID 019: definir el contrato de lectura/API y un validador de
 - No se valida compatibilidad técnica entre componentes más allá de integridad referencial y cantidad positiva.
 - El borrado en cascada de un recurso elimina la declaración de componente; una futura capa de servicio puede preferir impedir el borrado o desactivar catálogos.
 - Los candidatos estadísticos pueden reflejar coincidencia circunstancial y requieren validación humana antes de persistirse.
+
+## ID 019 — Lectura por Motor V3 y señal soft
+
+El catálogo persistente pasa a formar parte opcional de `EngineInput` mediante `resourceBundles`, `resourceBundleComponents` y `resourceBundleSpaceAffinities`. `buildEngineInput` solicita las tres colecciones al storage, que las lee con el cliente administrativo ya utilizado por el backend. Las tablas vacías producen arrays vacíos y cualquier despliegue transitorio sin el catálogo conserva el fallback seguro del constructor de input.
+
+La identidad que conecta el snapshot del plan con un componente declarado es `resource_items.id`: cada `plan_resource_items.resource_item_id` se compara con `resource_bundle_components.resource_item_id`. Los componentes basados solo en `resources.id` se transportan en el contrato, pero todavía no intervienen en el scoring porque no existe una correspondencia inequívoca con el snapshot `plan_resource_items`.
+
+Los bundles activos aportan diagnóstico y desempate soft. No cambian disponibilidad, asignación hard, pools, locks, tareas ejecutadas ni factibilidad. Una tarea no necesita bundle y un plan sin bundles conserva score neutral (`bundleCoherencePenalty=0`). No se añade migración ni policy RLS en ID 019.

@@ -2,28 +2,45 @@ import { performance } from "node:perf_hooks";
 import { generatePlanV3, runOperationalNeighborhoodSelection } from "../index";
 import { calculateMetrics } from "./metrics";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
-import { scoreCandidateSolution } from "../solutionScoring";
+import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
 const formatNullable = (value: number | boolean | string | null | undefined): string => value === null || value === undefined ? "n/a" : String(value);
 const formatCompact = (value: string | null | undefined): string => value === null || value === undefined ? "n/a" : value.length > 140 ? `${value.slice(0, 137)}...` : value;
 
+const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
+  coachSwitchCount: score.coachSwitchCount,
+  coachSwitchPenalty: score.coachSwitchPenalty,
+  bundleCoherencePenalty: score.bundleCoherencePenalty,
+  bundleSwitchPenalty: score.bundleSwitchPenalty,
+  partialBundleUsageWarnings: score.partialBundleUsageWarnings,
+  bundleSpaceAffinityMatches: score.bundleSpaceAffinityMatches,
+  bundleSpaceAffinityMismatches: score.bundleSpaceAffinityMismatches,
+  restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
+  mainStageGapMinutes: score.mainStageGapMinutes,
+  mainStageGapCount: score.mainStageGapCount,
+  makespan: score.makespan === Number.MAX_SAFE_INTEGER ? null : score.makespan,
+  hardConstraintViolations: score.hardConstraintViolations,
+});
+
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
-  const output = scenario.cpSatPilotSeedOutput
+  const output = scenario.benchmarkCandidateOutputs
+    ? (() => {
+      const [first, second] = scenario.benchmarkCandidateOutputs;
+      const selected = compareCandidateSolutions(scenario.input, first, second) >= 0 ? first : second;
+      const rejected = selected === first ? second : first;
+      const selectedScore = scoreCandidateSolution(scenario.input, selected);
+      const rejectedScore = scoreCandidateSolution(scenario.input, rejected);
+      const reason = explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", selectedScore, rejectedScore);
+      return { ...selected, v3Meta: { ...(selected.v3Meta ?? {}), candidateSolutionsEvaluated: 2, bestCandidateSource: "phaseA_backtracking" as const, solutionSource: "phaseA_backtracking" as const, candidateSelectionReason: reason, candidateComparisonSummary: reason, bestCandidateScore: selectedScore.score, selectedCandidateMetrics: selectedMetricsFromScore(selectedScore) } };
+    })()
+    : scenario.cpSatPilotSeedOutput
     ? (() => {
       const selected = runMainStageCpSatPilot(scenario.input, scenario.cpSatPilotSeedOutput!);
       const score = scoreCandidateSolution(scenario.input, selected.output);
-      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: {
-        coachSwitchCount: score.coachSwitchCount,
-        coachSwitchPenalty: score.coachSwitchPenalty,
-        restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
-        mainStageGapMinutes: score.mainStageGapMinutes,
-        mainStageGapCount: score.mainStageGapCount,
-        makespan: score.makespan === Number.MAX_SAFE_INTEGER ? null : score.makespan,
-        hardConstraintViolations: score.hardConstraintViolations,
-      } } };
+      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: selectedMetricsFromScore(score) } };
     })()
     : scenario.neighborhoodSeedOutput
       ? (() => {
@@ -65,6 +82,13 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  maxAnyOfPoolConcurrency: ${formatNullable(metrics.maxAnyOfPoolConcurrency)}`);
   console.log(`  resourceSwitchCount: ${formatNullable(metrics.resourceSwitchCount)}`);
   console.log(`  compositeResourceCandidateCount: ${formatNullable(metrics.compositeResourceCandidateCount)}`);
+  console.log(`  declaredResourceBundleCount: ${metrics.declaredResourceBundleCount}`);
+  console.log(`  bundleComponentUsageCount: ${metrics.bundleComponentUsageCount}`);
+  console.log(`  partialBundleUsageWarnings: ${metrics.partialBundleUsageWarnings}`);
+  console.log(`  bundleSpaceAffinityMatches: ${metrics.bundleSpaceAffinityMatches}`);
+  console.log(`  bundleSpaceAffinityMismatches: ${metrics.bundleSpaceAffinityMismatches}`);
+  console.log(`  bundleSwitchPenalty: ${metrics.bundleSwitchPenalty}`);
+  console.log(`  declaredBundleCandidateMatches: ${metrics.declaredBundleCandidateMatches}`);
   console.log(`  resourceDiagnosticWarnings: ${metrics.resourceDiagnosticWarnings === null ? "n/a" : metrics.resourceDiagnosticWarnings.length > 0 ? formatCompact(metrics.resourceDiagnosticWarnings.join(" | ")) : "[]"}`);
   console.log(`  cpSatAttempted: ${formatNullable(metrics.cpSatAttempted)}`);
   console.log(`  cpSatAccepted: ${formatNullable(metrics.cpSatAccepted)}`);
@@ -113,7 +137,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);

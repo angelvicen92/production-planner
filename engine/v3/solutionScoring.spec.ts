@@ -161,3 +161,19 @@ const output = (planned: Array<[number, string, string]>, unplanned: number[] = 
 }
 
 console.log("engine/v3/solutionScoring.spec.ts: OK");
+
+// ID 019 — sin bundles el score permanece neutral; con bundles gana la coherencia declarada tras empatar criterios críticos.
+{
+  const scenario = scenarioById.get("R");
+  assert.ok(scenario?.benchmarkCandidateOutputs, "scenario R should expose two valid candidates");
+  const [coherent, incoherent] = scenario.benchmarkCandidateOutputs;
+  const withoutBundles = {
+    ...scenario.input,
+    resourceBundles: undefined,
+    resourceBundleComponents: undefined,
+    resourceBundleSpaceAffinities: undefined,
+  };
+  assert.equal(compareCandidateSolutions(withoutBundles, coherent, incoherent), 0);
+  assert.ok(compareCandidateSolutions(scenario.input, coherent, incoherent) > 0);
+  assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", scoreCandidateSolution(scenario.input, coherent), scoreCandidateSolution(scenario.input, incoherent)), /bundle|resource coherence/i);
+}
