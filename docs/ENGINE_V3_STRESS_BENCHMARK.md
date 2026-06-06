@@ -118,3 +118,11 @@ El escenario I se mantiene seguro tras ID 009:
 - Después ID 009: `restrictiveTalentAverageStartOffset=48`, `restrictiveTalentLatestFinishSlack=25`, `coachSwitchCount=44`, `mainStageGapMinutes=0`, `hardConstraintViolations=0`, `runtimeMs=53`.
 
 La ausencia de mejora numérica en I se documenta como tradeoff operativo: el plan ya estaba dominado por 0 huecos de plató principal y restricciones hard. La mejora medible queda demostrada en J y en tests unitarios de scoring, sin romper A-I.
+
+## Actualización ID 012 — siguiente nivel de stress realista
+
+El escenario I se conserva como stress sintético intermedio y sigue siendo útil para medir la mejora de neighborhoods sobre coaches (`coachSwitchCount` 14 → 12 y `coachSwitchPenalty` 40 → 32 en la ejecución de referencia ID 012).
+
+ID 012 añade el escenario L, que eleva la escala a 20 talents, 104 tareas, 10 espacios y recursos exclusivos de cámara/sonido. L completa con 0 hard violations, un hueco de Main Stage de 10 minutos, 98% de utilización y runtime de referencia de 107 ms. A diferencia de I, sus neighborhoods no generan candidatos, lo que delimita el alcance actual de la búsqueda operacional ante cadenas de dependencias y pools de recursos más ricos.
+
+El análisis completo de L vive en `docs/ENGINE_V3_REALISTIC_VOICE_DAY.md`; I no se sustituye porque ambos escenarios observan riesgos distintos y complementarios.

@@ -1,6 +1,7 @@
 import type { BenchmarkScenario } from "./types";
 import type { EngineV3Input } from "../types";
 import { realisticDayScenario } from "./realisticDayScenario";
+import { realisticVoiceDayScenario } from "./realisticVoiceDayScenario";
 
 const PLAN_ID = 4004;
 const MAIN_ZONE_ID = 1;
@@ -278,6 +279,7 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     riskNotes: ["Vecindario determinista acotado", "No reemplaza solver global", "Backtracking desactivado en el escenario para aislar la mejora del vecindario"],
   },
   realisticDayScenario,
+  realisticVoiceDayScenario,
  ];
 
 export const scenarioById = new Map(benchmarkScenarios.map((scenario) => [scenario.id, scenario]));
