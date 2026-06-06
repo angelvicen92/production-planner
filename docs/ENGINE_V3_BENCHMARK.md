@@ -254,3 +254,41 @@ Resultado de referencia:
 El runner imprime ahora `totalTasks`, `plannedTasks` y `unplannedTasks` como campos separados y ejecuta una comparación neighborhoods off/on también para L. En la referencia, off/on conserva las mismas métricas de calidad (`planned=99`, hueco de plató 10, offset restrictivo 106, 16 cambios de coach y penalización 46); el runtime fue 79 ms off y 107 ms on.
 
 La descripción completa, lectura operativa, riesgos y recomendación para ID 013 están en `docs/ENGINE_V3_REALISTIC_VOICE_DAY.md`.
+
+## ID 013 — Vecindarios feeder-aware
+
+ID 013 añade el escenario **M — Feeder-aware neighborhood improves Main Stage** y amplía la instrumentación de vecindarios. Las cifras de runtime son orientativas y dependen de la máquina; los invariantes funcionales son los criterios estables.
+
+| Escenario | Candidates | Accepted | Source | Main gap final | Hard violations | Metrics consistent |
+|---|---:|---:|---|---:|---:|---:|
+| L — Jornada tipo La Voz | 1 | no | `phaseA_greedy` | 10 min | 0 | sí |
+| M — Feeder-aware improvement | 2 | sí | `operational_neighborhood` | 0 min | 0 | sí |
+
+### Lectura de L antes/después
+
+| Métrica | ID 012 | ID 013 |
+|---|---:|---:|
+| neighborhoodCandidatesGenerated | 0 | 1 |
+| candidateSolutionsEvaluated | 1 | 2 |
+| neighborhoodCandidateAccepted | no | no |
+| mainStageGapMinutes | 10 | 10 |
+| restrictiveTalentAverageStartOffset | 106 | 106 |
+| coachSwitchCount | 16 | 16 |
+| hardConstraintViolations | 0 | 0 |
+
+L ya alcanza el objetivo mínimo de generar un vecino hard-válido. No se acepta porque el swap feeder encontrado empata con la solución greedy en gaps, lateness restrictiva, feeders, coaches y makespan. El motor conserva el desempate estable y no fabrica una mejora.
+
+### Escenario M
+
+M contiene una apertura de Main Stage, un Vocal feeder tardío, una actuación dependiente y un talent semi-restrictivo. La solución greedy completa deja una oportunidad local; la búsqueda genera dos vecinos y selecciona uno que compacta Main Stage. El resultado final cumple:
+
+- `neighborhoodSearchAttempted=true`;
+- `neighborhoodCandidatesGenerated=2`;
+- `neighborhoodCandidateAccepted=true`;
+- `solutionSource=operational_neighborhood`;
+- `hardConstraintViolations=0`;
+- `selectedCandidateMetricsConsistent=true`.
+
+### Riesgos residuales y recomendación para ID 014
+
+El principal límite es que cada vecino parte del mismo plan base. La recomendación para **ID 014** es una búsqueda local de profundidad dos, todavía determinista y con presupuesto estricto, que permita encadenar `feeder_advance` seguido de `main_stage_gap_fill`. Debe conservar el límite hard-first, evitar beam search amplio y medir explícitamente coste de runtime en I, L y M.

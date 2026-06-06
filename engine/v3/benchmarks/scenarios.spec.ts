@@ -16,7 +16,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -197,9 +197,22 @@ for (const id of ["C", "D", "J"] as const) {
 
   const metrics = calculateMetrics(scenario.input, output, 0);
   if (output.complete) assert.equal(metrics.hardConstraintViolations, 0, "complete scenario L must have no hard violations");
+  assert.ok((output.v3Meta?.neighborhoodCandidatesGenerated ?? 0) > 0, "scenario L should generate at least one operational neighborhood candidate");
   if (metrics.selectedCandidateMetrics !== null) {
     assert.equal(metrics.selectedCandidateMetricsConsistent, true, "scenario L selected metrics must describe final output");
   }
+}
+
+// Escenario M — un vecindario feeder-aware mejora y es seleccionado.
+{
+  const { scenario, output } = run("M");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  assert.equal(output.v3Meta?.neighborhoodSearchAttempted, true);
+  assert.ok((output.v3Meta?.neighborhoodCandidatesGenerated ?? 0) > 0);
+  assert.equal(output.v3Meta?.neighborhoodCandidateAccepted, true);
+  assert.equal(output.v3Meta?.solutionSource, "operational_neighborhood");
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true);
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

@@ -63,6 +63,9 @@ type BacktrackingMeta = {
   neighborhoodCandidateAccepted?: boolean;
   neighborhoodAcceptedReason?: string;
   neighborhoodSearchTimeMs?: number;
+  neighborhoodTypesAttempted?: string[];
+  neighborhoodTypesGenerated?: string[];
+  neighborhoodRejectedReasons?: Record<string, number>;
 };
 
 type BacktrackingBranch = {
@@ -364,7 +367,8 @@ const runOperationalNeighborhoodSelection = (
     };
   }
 
-  const candidates = generateOperationalNeighborhoodCandidates(input, baseOutput);
+  const neighborhoodDiagnostics = { attemptedTypes: [] as OperationalNeighborhoodReason[], generatedTypes: [] as OperationalNeighborhoodReason[], rejectedReasons: {} as Record<string, number> };
+  const candidates = generateOperationalNeighborhoodCandidates(input, baseOutput, { diagnostics: neighborhoodDiagnostics });
   let bestOutput = baseOutput;
   let bestReason: OperationalNeighborhoodReason | null = null;
   let bestScore = baseScore;
@@ -392,6 +396,9 @@ const runOperationalNeighborhoodSelection = (
       neighborhoodCandidateAccepted: accepted,
       neighborhoodAcceptedReason: accepted ? bestReason ?? comparison : undefined,
       neighborhoodSearchTimeMs: Math.max(0, Date.now() - started),
+      neighborhoodTypesAttempted: neighborhoodDiagnostics.attemptedTypes,
+      neighborhoodTypesGenerated: neighborhoodDiagnostics.generatedTypes,
+      neighborhoodRejectedReasons: neighborhoodDiagnostics.rejectedReasons,
       solutionSource: accepted ? "operational_neighborhood" : baseSource,
       candidateSolutionsEvaluated: 1 + candidates.length,
       bestCandidateSource: accepted ? "operational_neighborhood" : baseSource,

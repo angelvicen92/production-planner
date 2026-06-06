@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -58,6 +58,9 @@ export interface EngineBenchmarkMetrics {
   neighborhoodCandidateAccepted: boolean | null;
   neighborhoodAcceptedReason: string | null;
   neighborhoodSearchTimeMs: number | null;
+  neighborhoodTypesAttempted: string[] | null;
+  neighborhoodTypesGenerated: string[] | null;
+  neighborhoodRejectedReasons: Record<string, number> | null;
   structuredBlockersCount: number;
   movableBlockersCount: number;
   immovableBlockersCount: number;

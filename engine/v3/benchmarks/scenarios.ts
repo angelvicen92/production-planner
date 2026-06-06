@@ -278,6 +278,27 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "El vecindario advance_restrictive_talent debe adelantar el talent de salida temprana, mantener mainStageGapMinutes en 0 y conservar hardConstraintViolations en 0.",
     riskNotes: ["Vecindario determinista acotado", "No reemplaza solver global", "Backtracking desactivado en el escenario para aislar la mejora del vecindario"],
   },
+  {
+    id: "M",
+    name: "Feeder-aware neighborhood improves Main Stage",
+    description: "Microescenario con un hueco pequeño en Main Stage y un feeder tardío de un talent semi-restrictivo que puede adelantarse de forma segura.",
+    input: baseInput([
+      { id: 13001, planId: PLAN_ID, templateId: 2301, templateName: "Main Stage apertura", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 131, contestantName: "Talent apertura", status: "pending", durationOverrideMin: 30 },
+      { id: 13002, planId: PLAN_ID, templateId: 2302, templateName: "Vocal feeder restrictivo", zoneId: 2, spaceId: 201, contestantId: 132, contestantName: "Talent semi-restrictivo", status: "pending", durationOverrideMin: 20 },
+      { id: 13003, planId: PLAN_ID, templateId: 2303, templateName: "Main Stage restrictivo", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 132, contestantName: "Talent semi-restrictivo", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [13002] },
+    ], {
+      workDay: { start: "09:00", end: "11:30" },
+      meal: { start: "12:00", end: "12:30" },
+      contestantAvailabilityById: {
+        131: { start: "09:00", end: "11:30" },
+        132: { start: "09:00", end: "10:45" },
+      },
+      enableLimitedBacktracking: false,
+      v3GreedyProbeForcedTaskStarts: { 13001: 9 * 60, 13002: 9 * 60 + 30 } as any,
+    } as any),
+    operationalExpectation: "La búsqueda feeder-aware debe generar alternativas válidas y aceptar una que reduzca el hueco de Main Stage o adelante al talent semi-restrictivo, sin violaciones hard.",
+    riskNotes: ["Caso determinista aislado", "Demuestra mejora feeder-aware aceptada", "No exige búsqueda global ni combinación exhaustiva de movimientos"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

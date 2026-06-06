@@ -42,7 +42,7 @@ El lote es deliberadamente determinista y no cambia el comportamiento funcional 
 - Dos tareas pending tienen locks manuales de tiempo.
 - Los tests verifican no solape de talent, espacio y recurso exclusivo; no movimiento de `done`, `in_progress` y locks; comida; disponibilidad; dependencias; y ausencia de hard violations en un output completo.
 
-## Resultado actual
+## Resultado histórico de ID 012
 
 Resultado resumido de `npm run benchmark:engine` en la ejecución de referencia de ID 012:
 
@@ -89,23 +89,50 @@ Con neighborhoods activos se evalúa la solución greedy, pero no se genera un v
 - **Main Stage queda casi compacto**, con un único hueco de 10 minutos y 98% de utilización dentro de su span. No es una solución perfecta, pero el hueco es pequeño frente a una carga de 20 actuaciones.
 - **Los cinco talents restrictivos respetan disponibilidad**, aunque el offset medio de inicio de 106 minutos indica que la prioridad soft todavía deja margen para resolverlos antes. El slack mínimo agregado de referencia es 28 minutos, por lo que no quedan al borde inmediato de incumplimiento.
 - **Los coaches son factibles pero no óptimos:** 16 cambios y penalización 46 muestran alternancia operativa relevante. El escenario I sí mejora con el vecindario de compactación, mientras L no produce candidatos; el patrón más rico de recursos/dependencias queda fuera de los movimientos actuales.
-- **Los neighborhoods no ayudan en L** en la ejecución de referencia: fueron intentados, generaron cero candidatos y se conservó `phaseA_greedy`.
+- **En ID 012 los neighborhoods no ayudaban en L**: fueron intentados, generaron cero candidatos y se conservó `phaseA_greedy`.
 - **El runtime es aceptable para benchmark local:** 107 ms con neighborhoods y 79 ms sin ellos en la ejecución documentada. Estos valores no son SLA y pueden variar por máquina.
 
 ## Riesgos detectados
 
 1. El modelo de cámara y sonido representa exclusividad mediante pools `anyOf`, pero no modela operador, kit compuesto, configuración, desplazamiento ni tiempo de setup/strike.
-2. Los neighborhoods existentes no generan candidatos para la combinación de feeders, recursos y dependencias de L; solo comparar la solución greedy no mejora la jornada.
+2. En ID 012 los neighborhoods existentes no generaban candidatos para la combinación de feeders, recursos y dependencias de L; solo comparar la solución greedy no mejora la jornada.
 3. Queda un hueco de 10 minutos en Main Stage pese a la prioridad fuerte de continuidad.
 4. El offset medio de 106 minutos para talents restrictivos es seguro en hard, pero todavía mejorable como criterio operativo.
 5. `plannedTasks` excluye filas fijas, por lo que debe leerse junto con `unplannedTasks`, `complete` y las métricas de movimiento.
 6. La comida global se coloca tarde para que el escenario sea un canario estable de no cruce; falta validar una pausa central realista con modelado explícito de recursos/equipos y continuidad de plató a ambos lados.
 7. El dataset sigue siendo sintético: no captura incidencias, cambios de estado, tiempos de traslado reales ni distribuciones históricas de duración.
 
-## Recomendación para ID 013
+## Recomendación histórica previa a ID 013
 
 Prioridad recomendada: **mejorar el modelado de recursos de cámara/sonido** antes de ampliar más vecindarios.
 
 La razón concreta es que L ya completa y conserva todos los hard constraints, pero su aproximación más débil está en los equipos técnicos: una cámara o sonido se trata como un recurso individual intercambiable. Modelar kits/equipos compuestos, compatibilidades y tiempos de cambio permitiría que el siguiente benchmark mida decisiones realmente operativas y evitaría optimizar vecindarios sobre una representación demasiado simplificada.
 
-ID 013 no se implementa en este lote.
+Esta recomendación cerraba el lote ID 012; la sección posterior documenta la implementación efectiva de ID 013.
+
+## ID 013 — Resultado feeder-aware en L
+
+La ejecución de referencia posterior a ID 013 conserva la jornada completa y sus invariantes:
+
+| Métrica | L con ID 013 |
+|---|---:|
+| status | `complete` |
+| plannedTasks | 99 |
+| unplannedTasks | 0 |
+| mainStageGapMinutes | 10 |
+| mainStageGapCount | 1 |
+| restrictiveTalentAverageStartOffset | 106 min |
+| coachSwitchCount | 16 |
+| hardConstraintViolations | 0 |
+| lockedTaskMovedCount | 0 |
+| executedTaskMovedCount | 0 |
+| neighborhoodSearchAttempted | `true` |
+| neighborhoodCandidatesGenerated | 1 |
+| neighborhoodCandidateAccepted | `false` |
+| candidateSolutionsEvaluated | 2 |
+| solutionSource | `phaseA_greedy` |
+| selectedCandidateMetricsConsistent | `true` |
+
+El cambio relevante frente a ID 012 es que L pasa de **0 a 1 candidato válido**. El candidato procede del vecindario `feeder_advance`, pero empata con greedy en la jerarquía completa del comparador; por ello no se acepta. Esto demuestra cobertura real sobre feeders densos sin forzar una mejora inexistente ni relajar constraints.
+
+El hueco de 10 minutos y los 16 cambios de coach permanecen como objetivos residuales. Para mejorarlos hará falta combinar movimientos secuenciales o incorporar una evaluación local que permita preparar un feeder y, en un segundo paso, rellenar Main Stage.

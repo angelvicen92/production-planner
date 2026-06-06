@@ -2,26 +2,41 @@ import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import {
   calculateMainStageGaps,
+  countExecutedTaskMoved,
   countHardConstraintViolations,
+  countLockedTaskMoved,
   getPlannedViews,
   toMinutes,
 } from "./metrics";
 import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 
-export type OperationalNeighborhoodReason = "advance_restrictive_talent" | "coach_block_compaction";
+export type OperationalNeighborhoodReason =
+  | "main_stage_gap_fill"
+  | "feeder_advance"
+  | "coach_block_compaction"
+  | "restrictive_talent_bundle"
+  | "advance_restrictive_talent";
 
 export interface OperationalNeighborhoodCandidate {
   output: EngineOutput;
   reason: OperationalNeighborhoodReason;
 }
 
+export interface OperationalNeighborhoodDiagnostics {
+  attemptedTypes: OperationalNeighborhoodReason[];
+  generatedTypes: OperationalNeighborhoodReason[];
+  rejectedReasons: Record<string, number>;
+}
+
 export interface OperationalNeighborhoodOptions {
   maxCandidates?: number;
   maxAttemptsPerNeighborhood?: number;
+  diagnostics?: OperationalNeighborhoodDiagnostics;
 }
 
-const DEFAULT_MAX_CANDIDATES = 20;
-const DEFAULT_MAX_ATTEMPTS_PER_NEIGHBORHOOD = 5;
+const DEFAULT_MAX_CANDIDATES = 30;
+const DEFAULT_MAX_ATTEMPTS_PER_NEIGHBORHOOD = 10;
+const MAX_SMALL_GAP_MINUTES = 30;
 
 const toHHMM = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
@@ -51,6 +66,20 @@ const fixedTaskIds = (input: EngineV3Input): Set<number> => {
   return ids;
 };
 
+const cloneWithMoves = (output: EngineOutput, moves: Map<number, number>): EngineOutput | null => {
+  if (!moves.size || moves.size > 3) return null;
+  let moved = 0;
+  const plannedTasks = (output.plannedTasks ?? []).map((planned) => {
+    const start = moves.get(Number(planned.taskId));
+    if (start === undefined) return { ...planned };
+    const duration = durationOf(planned);
+    if (duration === null) return { ...planned };
+    moved += 1;
+    return { ...planned, startPlanned: toHHMM(start), endPlanned: toHHMM(start + duration) };
+  });
+  return moved === moves.size ? { ...output, plannedTasks } : null;
+};
+
 const cloneWithSwappedTimes = (output: EngineOutput, leftTaskId: number, rightTaskId: number): EngineOutput | null => {
   const left = (output.plannedTasks ?? []).find((planned) => Number(planned.taskId) === leftTaskId);
   const right = (output.plannedTasks ?? []).find((planned) => Number(planned.taskId) === rightTaskId);
@@ -59,28 +88,18 @@ const cloneWithSwappedTimes = (output: EngineOutput, leftTaskId: number, rightTa
   const rightDuration = durationOf(right);
   const leftStart = toMinutes(left.startPlanned);
   const rightStart = toMinutes(right.startPlanned);
-  if (leftDuration === null || rightDuration === null || leftStart === null || rightStart === null) return null;
-  if (leftDuration !== rightDuration) return null;
-
-  return {
-    ...output,
-    plannedTasks: (output.plannedTasks ?? []).map((planned) => {
-      if (Number(planned.taskId) === leftTaskId) {
-        return { ...planned, startPlanned: toHHMM(rightStart), endPlanned: toHHMM(rightStart + leftDuration) };
-      }
-      if (Number(planned.taskId) === rightTaskId) {
-        return { ...planned, startPlanned: toHHMM(leftStart), endPlanned: toHHMM(leftStart + rightDuration) };
-      }
-      return { ...planned };
-    }),
-  };
+  if (leftDuration === null || rightDuration === null || leftStart === null || rightStart === null || leftDuration !== rightDuration) return null;
+  return cloneWithMoves(output, new Map([[leftTaskId, rightStart], [rightTaskId, leftStart]]));
 };
 
 const mainGapMinutes = (input: EngineV3Input, output: EngineOutput): number => calculateMainStageGaps(input, output)?.minutes ?? 0;
 
-const candidateIsSafe = (input: EngineV3Input, baseOutput: EngineOutput, candidate: EngineOutput): boolean => {
-  if (countHardConstraintViolations(input, candidate) > 0) return false;
-  return mainGapMinutes(input, candidate) <= mainGapMinutes(input, baseOutput);
+const candidateSafetyReason = (input: EngineV3Input, baseOutput: EngineOutput, candidate: EngineOutput): string | null => {
+  if (countHardConstraintViolations(input, candidate) > countHardConstraintViolations(input, baseOutput)) return "hard_constraint_violation";
+  if (countLockedTaskMoved(input, candidate) > countLockedTaskMoved(input, baseOutput)) return "locked_task_moved";
+  if (countExecutedTaskMoved(input, candidate) > countExecutedTaskMoved(input, baseOutput)) return "executed_task_moved";
+  if (mainGapMinutes(input, candidate) > mainGapMinutes(input, baseOutput)) return "main_stage_gap_increased";
+  return null;
 };
 
 const candidateSignature = (output: EngineOutput): string => (output.plannedTasks ?? [])
@@ -99,6 +118,10 @@ const isRestrictiveTask = (input: EngineV3Input, task: any): boolean => {
   return windowStart > dayStart || windowEnd < dayEnd;
 };
 
+const incrementRejected = (diagnostics: OperationalNeighborhoodDiagnostics, reason: string): void => {
+  diagnostics.rejectedReasons[reason] = (diagnostics.rejectedReasons[reason] ?? 0) + 1;
+};
+
 const appendIfSafe = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -107,97 +130,212 @@ const appendIfSafe = (
   results: OperationalNeighborhoodCandidate[],
   seen: Set<string>,
   maxCandidates: number,
+  diagnostics: OperationalNeighborhoodDiagnostics,
 ): boolean => {
-  if (!candidate || results.length >= maxCandidates) return false;
-  if (!candidateIsSafe(input, baseOutput, candidate)) return false;
+  if (!candidate || results.length >= maxCandidates) {
+    if (!candidate) incrementRejected(diagnostics, "invalid_move");
+    return false;
+  }
+  const unsafeReason = candidateSafetyReason(input, baseOutput, candidate);
+  if (unsafeReason) {
+    incrementRejected(diagnostics, unsafeReason);
+    return false;
+  }
   const signature = candidateSignature(candidate);
-  if (seen.has(signature)) return false;
+  if (seen.has(signature)) {
+    incrementRejected(diagnostics, "duplicate_candidate");
+    return false;
+  }
   seen.add(signature);
   results.push({ output: candidate, reason });
+  if (!diagnostics.generatedTypes.includes(reason)) diagnostics.generatedTypes.push(reason);
   return true;
 };
 
-const generateAdvanceRestrictiveTalentCandidates = (
-  input: EngineV3Input,
-  output: EngineOutput,
-  maxAttempts: number,
-  maxCandidates: number,
-  results: OperationalNeighborhoodCandidate[],
-  seen: Set<string>,
+const candidateAnchors = (input: EngineV3Input, output: EngineOutput, before: number): number[] => {
+  const dayStart = toMinutes(input.workDay?.start);
+  const anchors = new Set<number>();
+  if (dayStart !== null && dayStart < before) anchors.add(dayStart);
+  for (const planned of output.plannedTasks ?? []) {
+    const end = toMinutes(planned.endPlanned);
+    if (end !== null && end < before) anchors.add(end);
+  }
+  return [...anchors].sort((a, b) => a - b);
+};
+
+const mainTaskIds = (input: EngineV3Input): Set<number> => {
+  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
+  return new Set((input.tasks ?? [])
+    .filter((task: any) => Number(task.zoneId ?? NaN) === mainZoneId)
+    .map((task: any) => Number(task.id)));
+};
+
+const feederTaskIds = (input: EngineV3Input): Set<number> => {
+  const mainIds = mainTaskIds(input);
+  const feeders = new Set<number>();
+  for (const task of input.tasks ?? []) {
+    if (!mainIds.has(Number((task as any).id))) continue;
+    for (const dependencyId of getDependencyIds(task)) feeders.add(dependencyId);
+  }
+  return feeders;
+};
+
+const generateMainStageGapFillCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
 ): void => {
+  const reason: OperationalNeighborhoodReason = "main_stage_gap_fill";
+  diagnostics.attemptedTypes.push(reason);
   const fixed = fixedTaskIds(input);
-  const taskById = new Map((input.tasks ?? []).map((task: any) => [Number(task.id), task]));
-  const plannedById = new Map((output.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
-  const rows = getPlannedViews(input, output)
-    .filter((view) => !fixed.has(view.taskId) && isRestrictiveTask(input, view.task))
+  const mainIds = mainTaskIds(input);
+  const rows = (output.plannedTasks ?? [])
+    .filter((planned) => mainIds.has(Number(planned.taskId)))
+    .map((planned) => ({ planned, taskId: Number(planned.taskId), start: toMinutes(planned.startPlanned) ?? 0, end: toMinutes(planned.endPlanned) ?? 0 }))
+    .sort((a, b) => a.start - b.start || a.taskId - b.taskId);
+  let attempts = 0;
+  for (let i = 1; i < rows.length && attempts < maxAttempts && results.length < maxCandidates; i++) {
+    const gapStart = rows[i - 1].end;
+    const gapEnd = rows[i].start;
+    const gap = gapEnd - gapStart;
+    if (gap <= 0 || gap > MAX_SMALL_GAP_MINUTES) continue;
+    for (let j = i; j < rows.length && attempts < maxAttempts && results.length < maxCandidates; j++) {
+      const row = rows[j];
+      const duration = durationOf(row.planned);
+      if (fixed.has(row.taskId) || duration === null || duration > gap) continue;
+      attempts += 1;
+      appendIfSafe(input, output, cloneWithMoves(output, new Map([[row.taskId, gapStart]])), reason, results, seen, maxCandidates, diagnostics);
+    }
+  }
+};
+
+const generateFeederAdvanceCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+): void => {
+  const reason: OperationalNeighborhoodReason = "feeder_advance";
+  diagnostics.attemptedTypes.push(reason);
+  const fixed = fixedTaskIds(input);
+  const feeders = feederTaskIds(input);
+  const views = getPlannedViews(input, output)
+    .filter((view) => feeders.has(view.taskId) && !fixed.has(view.taskId))
+    .map((view) => ({ ...view, start: toMinutes(view.startPlanned) ?? 0 }))
+    .sort((a, b) => Number(isRestrictiveTask(input, b.task)) - Number(isRestrictiveTask(input, a.task)) || b.start - a.start || a.taskId - b.taskId);
+  let attempts = 0;
+  const chronological = [...views].sort((a, b) => a.start - b.start || a.taskId - b.taskId);
+  for (let laterIndex = chronological.length - 1; laterIndex > 0 && attempts < maxAttempts; laterIndex--) {
+    const later = chronological[laterIndex];
+    for (let earlierIndex = 0; earlierIndex < laterIndex && attempts < maxAttempts; earlierIndex++) {
+      const earlier = chronological[earlierIndex];
+      if (Number(earlier.task.spaceId ?? NaN) !== Number(later.task.spaceId ?? NaN)) continue;
+      const earlierPlanned = (output.plannedTasks ?? []).find((planned) => Number(planned.taskId) === earlier.taskId);
+      const laterPlanned = (output.plannedTasks ?? []).find((planned) => Number(planned.taskId) === later.taskId);
+      if (!earlierPlanned || !laterPlanned || durationOf(earlierPlanned) !== durationOf(laterPlanned)) continue;
+      attempts += 1;
+      appendIfSafe(input, output, cloneWithSwappedTimes(output, earlier.taskId, later.taskId), reason, results, seen, maxCandidates, diagnostics);
+      if (results.length >= maxCandidates) return;
+    }
+  }
+  for (const view of views) {
+    for (const anchor of candidateAnchors(input, output, view.start)) {
+      if (attempts >= maxAttempts || results.length >= maxCandidates) return;
+      attempts += 1;
+      appendIfSafe(input, output, cloneWithMoves(output, new Map([[view.taskId, anchor]])), reason, results, seen, maxCandidates, diagnostics);
+    }
+  }
+};
+
+const generateAdvanceRestrictiveTalentCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+): void => {
+  const reason: OperationalNeighborhoodReason = "advance_restrictive_talent";
+  diagnostics.attemptedTypes.push(reason);
+  const fixed = fixedTaskIds(input);
+  const mainIds = mainTaskIds(input);
+  const views = getPlannedViews(input, output)
+    .filter((view) => isRestrictiveTask(input, view.task) && !fixed.has(view.taskId))
     .map((view) => ({ ...view, start: toMinutes(view.startPlanned) ?? 0 }))
     .sort((a, b) => b.start - a.start || a.taskId - b.taskId);
-
   let attempts = 0;
-  for (const restrictive of rows) {
-    if (attempts >= maxAttempts || results.length >= maxCandidates) break;
-    const restrictivePlanned = plannedById.get(restrictive.taskId);
-    const restrictiveDuration = restrictivePlanned ? durationOf(restrictivePlanned) : null;
-    if (restrictiveDuration === null) continue;
-    const dependencyIds = getDependencyIds(restrictive.task);
-    const earlierRows = getPlannedViews(input, output)
-      .filter((view) => view.taskId !== restrictive.taskId && !fixed.has(view.taskId))
-      .map((view) => ({ ...view, start: toMinutes(view.startPlanned) ?? 0, planned: plannedById.get(view.taskId) }))
-      .filter((view) => view.start < restrictive.start && durationOf(view.planned as any) === restrictiveDuration)
-      .sort((a, b) => a.start - b.start || a.taskId - b.taskId);
-    for (const earlier of earlierRows) {
-      if (attempts >= maxAttempts || results.length >= maxCandidates) break;
-      const earlierTask = taskById.get(earlier.taskId) as any;
-      if (getDependencyIds(earlierTask).includes(restrictive.taskId)) continue;
-      if (dependencyIds.includes(earlier.taskId)) continue;
+  for (const view of views) {
+    for (const anchor of candidateAnchors(input, output, view.start)) {
+      if (attempts >= maxAttempts || results.length >= maxCandidates) return;
       attempts += 1;
-      appendIfSafe(input, output, cloneWithSwappedTimes(output, restrictive.taskId, earlier.taskId), "advance_restrictive_talent", results, seen, maxCandidates);
+      const candidate = cloneWithMoves(output, new Map([[view.taskId, anchor]]));
+      const effectiveReason = candidate && mainIds.has(view.taskId) && mainGapMinutes(input, candidate) < mainGapMinutes(input, output)
+        ? "main_stage_gap_fill"
+        : reason;
+      appendIfSafe(input, output, candidate, effectiveReason, results, seen, maxCandidates, diagnostics);
     }
   }
 };
 
 const generateCoachBlockCompactionCandidates = (
-  input: EngineV3Input,
-  output: EngineOutput,
-  maxAttempts: number,
-  maxCandidates: number,
-  results: OperationalNeighborhoodCandidate[],
-  seen: Set<string>,
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
 ): void => {
+  const reason: OperationalNeighborhoodReason = "coach_block_compaction";
+  diagnostics.attemptedTypes.push(reason);
   const fixed = fixedTaskIds(input);
   const coachIds = getCoachResourceIds(input);
   if (!coachIds.size) return;
   const rows = getPlannedViews(input, output)
-    .map((view) => ({
-      ...view,
-      start: toMinutes(view.startPlanned) ?? 0,
-      coachKey: view.assignedResources.filter((id) => coachIds.has(Number(id))).sort((a, b) => a - b).join(","),
-    }))
-    .filter((row) => row.coachKey && !fixed.has(row.taskId))
+    .map((view) => ({ ...view, start: toMinutes(view.startPlanned) ?? 0, coachKey: view.assignedResources.filter((id) => coachIds.has(Number(id))).sort((a, b) => a - b).join(",") }))
+    .filter((row) => row.coachKey)
     .sort((a, b) => a.start - b.start || a.taskId - b.taskId);
-
   let attempts = 0;
   for (let i = 0; i + 2 < rows.length && attempts < maxAttempts && results.length < maxCandidates; i++) {
-    const a = rows[i];
-    const b = rows[i + 1];
-    const c = rows[i + 2];
-    if (a.coachKey !== c.coachKey || a.coachKey === b.coachKey) continue;
+    const [a, b, c] = [rows[i], rows[i + 1], rows[i + 2]];
+    if (a.coachKey !== c.coachKey || a.coachKey === b.coachKey || fixed.has(b.taskId) || fixed.has(c.taskId)) continue;
     attempts += 1;
-    appendIfSafe(input, output, cloneWithSwappedTimes(output, b.taskId, c.taskId), "coach_block_compaction", results, seen, maxCandidates);
+    appendIfSafe(input, output, cloneWithSwappedTimes(output, b.taskId, c.taskId), reason, results, seen, maxCandidates, diagnostics);
+  }
+};
+
+const generateRestrictiveTalentBundleCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+): void => {
+  const reason: OperationalNeighborhoodReason = "restrictive_talent_bundle";
+  diagnostics.attemptedTypes.push(reason);
+  const fixed = fixedTaskIds(input);
+  const feeders = feederTaskIds(input);
+  const grouped = new Map<number, ReturnType<typeof getPlannedViews>>();
+  for (const view of getPlannedViews(input, output)) {
+    const contestantId = Number(view.task.contestantId ?? NaN);
+    if (!Number.isFinite(contestantId) || fixed.has(view.taskId) || !feeders.has(view.taskId) || !isRestrictiveTask(input, view.task)) continue;
+    grouped.set(contestantId, [...(grouped.get(contestantId) ?? []), view]);
+  }
+  let attempts = 0;
+  for (const contestantId of [...grouped.keys()].sort((a, b) => a - b)) {
+    const chain = (grouped.get(contestantId) ?? [])
+      .sort((a, b) => (toMinutes(a.startPlanned) ?? 0) - (toMinutes(b.startPlanned) ?? 0) || a.taskId - b.taskId)
+      .slice(0, 3);
+    if (chain.length < 2) continue;
+    const firstStart = toMinutes(chain[0].startPlanned);
+    if (firstStart === null) continue;
+    for (const anchor of candidateAnchors(input, output, firstStart)) {
+      if (attempts >= maxAttempts || results.length >= maxCandidates) return;
+      const delta = firstStart - anchor;
+      const moves = new Map<number, number>();
+      for (const view of chain) {
+        const start = toMinutes(view.startPlanned);
+        if (start !== null) moves.set(view.taskId, start - delta);
+      }
+      attempts += 1;
+      appendIfSafe(input, output, cloneWithMoves(output, moves), reason, results, seen, maxCandidates, diagnostics);
+    }
   }
 };
 
 export const shouldAttemptOperationalNeighborhoods = (input: EngineV3Input, output: EngineOutput): boolean => {
-  if ((input as any)?.enableOperationalNeighborhoods === false) return false;
-  if (!output.complete) return false;
-  if (countHardConstraintViolations(input, output) > 0) return false;
+  if ((input as any)?.enableOperationalNeighborhoods === false || !output.complete || countHardConstraintViolations(input, output) > 0) return false;
   const views = getPlannedViews(input, output);
   if (views.some((view) => isRestrictiveTask(input, view.task))) return true;
+  if ((calculateMainStageGaps(input, output)?.count ?? 0) > 0) return true;
   const coachIds = getCoachResourceIds(input);
-  const coachRows = views.filter((view) => view.assignedResources.some((id) => coachIds.has(Number(id))));
-  if (coachRows.length >= 3) return true;
-  const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
-  return Number.isFinite(mainZoneId) && mainZoneId > 0 && views.some((view) => Number(view.task.zoneId ?? NaN) === mainZoneId && getDependencyIds(view.task).length > 0);
+  if (views.filter((view) => view.assignedResources.some((id) => coachIds.has(Number(id)))).length >= 3) return true;
+  return feederTaskIds(input).size > 0;
 };
 
 export const generateOperationalNeighborhoodCandidates = (
@@ -205,15 +343,18 @@ export const generateOperationalNeighborhoodCandidates = (
   output: EngineOutput,
   options: OperationalNeighborhoodOptions = {},
 ): OperationalNeighborhoodCandidate[] => {
-  if (!output.complete) return [];
-  if (countHardConstraintViolations(input, output) > 0) return [];
+  const diagnostics = options.diagnostics ?? { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} };
+  if (!output.complete || countHardConstraintViolations(input, output) > 0) return [];
   const maxCandidates = Math.max(0, Math.min(DEFAULT_MAX_CANDIDATES, Math.floor(Number(options.maxCandidates ?? DEFAULT_MAX_CANDIDATES))));
   const maxAttempts = Math.max(0, Math.min(DEFAULT_MAX_ATTEMPTS_PER_NEIGHBORHOOD, Math.floor(Number(options.maxAttemptsPerNeighborhood ?? DEFAULT_MAX_ATTEMPTS_PER_NEIGHBORHOOD))));
   if (maxCandidates <= 0 || maxAttempts <= 0) return [];
 
   const results: OperationalNeighborhoodCandidate[] = [];
   const seen = new Set<string>([candidateSignature(output)]);
-  generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen);
-  generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen);
+  generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  generateRestrictiveTalentBundleCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   return results.slice(0, maxCandidates);
 };
