@@ -90,3 +90,38 @@ const output = (plannedTasks: EngineOutput["plannedTasks"]): EngineOutput => ({
   assert.equal(diagnostic.resourceSwitchCount, 2);
   assert.deepEqual(diagnostic.resourceSwitchDetails.map((detail) => [detail.spaceName, detail.resourceCategory, detail.switchCount]), [["Main Stage", "camera", 2]]);
 }
+
+const declaredBundleInput = (tasks: EngineV3Input["tasks"]): EngineV3Input => ({
+  ...input(tasks),
+  resourceBundles: [
+    { id: "bundle-a", name: "Camera 1 + Sound 1", isActive: true },
+    { id: "bundle-b", name: "Camera 2 + Sound 2", isActive: true },
+  ],
+  resourceBundleComponents: [
+    { bundleId: "bundle-a", resourceItemId: 1001, componentRole: "camera", quantity: 1, isRequired: true },
+    { bundleId: "bundle-a", resourceItemId: 2001, componentRole: "sound", quantity: 1, isRequired: true },
+    { bundleId: "bundle-b", resourceItemId: 1002, componentRole: "camera", quantity: 1, isRequired: true },
+    { bundleId: "bundle-b", resourceItemId: 2002, componentRole: "sound", quantity: 1, isRequired: true },
+  ],
+  resourceBundleSpaceAffinities: [
+    { bundleId: "bundle-a", spaceId: 2, affinityScore: 5 },
+    { bundleId: "bundle-b", spaceId: 3, affinityScore: 5 },
+  ],
+});
+
+{
+  const diagnostic = diagnoseCompositeResources(declaredBundleInput([
+    { id: 30, planId: 17, templateId: 1, status: "pending", spaceId: 2 },
+    { id: 31, planId: 17, templateId: 1, status: "pending", spaceId: 1 },
+  ]), output([
+    { taskId: 30, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [CAMERA_1, SOUND_1] },
+    { taskId: 31, startPlanned: "09:20", endPlanned: "09:40", assignedResources: [CAMERA_2] },
+  ]));
+  assert.equal(diagnostic.declaredResourceBundleCount, 2);
+  assert.equal(diagnostic.bundleComponentUsageCount, 3);
+  assert.equal(diagnostic.partialBundleUsageWarnings, 1);
+  assert.equal(diagnostic.bundleSpaceAffinityMatches, 1);
+  assert.equal(diagnostic.bundleSpaceAffinityMismatches, 1);
+  assert.ok(diagnostic.resourceDiagnosticWarnings.some((warning) => warning.code === "PARTIAL_DECLARED_BUNDLE"));
+  assert.ok(diagnostic.resourceDiagnosticWarnings.some((warning) => warning.code === "BUNDLE_SPACE_AFFINITY_MISMATCH"));
+}

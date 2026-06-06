@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -11,6 +11,7 @@ export interface BenchmarkScenario {
   input: EngineV3Input;
   neighborhoodSeedOutput?: EngineOutput;
   cpSatPilotSeedOutput?: EngineOutput;
+  benchmarkCandidateOutputs?: [EngineOutput, EngineOutput];
   operationalExpectation: string;
   riskNotes: string[];
   knownRisk?: string;
@@ -46,6 +47,13 @@ export interface EngineBenchmarkMetrics {
   maxAnyOfPoolConcurrency: number | null;
   resourceSwitchCount: number | null;
   compositeResourceCandidateCount: number | null;
+  declaredResourceBundleCount: number;
+  bundleComponentUsageCount: number;
+  partialBundleUsageWarnings: number;
+  bundleSpaceAffinityMatches: number;
+  bundleSpaceAffinityMismatches: number;
+  bundleSwitchPenalty: number;
+  declaredBundleCandidateMatches: number;
   resourceDiagnosticWarnings: string[] | null;
   cpSatAttempted: boolean | null;
   cpSatAccepted: boolean | null;

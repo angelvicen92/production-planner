@@ -95,6 +95,34 @@ export interface ResourceItemComponentInput {
   quantity: number;
 }
 
+export interface ResourceBundleInput {
+  id: string;
+  name: string;
+  description?: string | null;
+  bundleType?: string;
+  isActive?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ResourceBundleComponentInput {
+  id?: string;
+  bundleId: string;
+  resourceId?: number | null;
+  resourceItemId?: number | null;
+  componentRole: string;
+  quantity: number;
+  isRequired: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ResourceBundleSpaceAffinityInput {
+  id?: string;
+  bundleId: string;
+  spaceId: number;
+  affinityScore: number;
+  metadata?: Record<string, unknown>;
+}
+
 export interface EngineInput {
   planId: number;
   workDay: TimeWindow;
@@ -146,6 +174,11 @@ export interface EngineInput {
   // ✅ Componentes de recursos compuestos (por resource_item_id)
   // Key: parent resourceItemId -> components
   resourceItemComponents: Record<number, ResourceItemComponentInput[]>;
+
+  // Catálogo operativo opcional. Es una señal soft: nunca condiciona factibilidad.
+  resourceBundles?: ResourceBundleInput[];
+  resourceBundleComponents?: ResourceBundleComponentInput[];
+  resourceBundleSpaceAffinities?: ResourceBundleSpaceAffinityInput[];
 
   // ✅ Disponibilidad por concursante (override del plan)
   // Key: contestantId -> ventana HH:mm
@@ -341,6 +374,11 @@ export interface EngineOutput {
     selectedCandidateMetrics?: {
       coachSwitchCount: number | null;
       coachSwitchPenalty: number;
+      bundleCoherencePenalty: number;
+      bundleSwitchPenalty: number;
+      partialBundleUsageWarnings: number;
+      bundleSpaceAffinityMatches: number;
+      bundleSpaceAffinityMismatches: number;
       restrictiveTalentAverageStartOffset: number | null;
       mainStageGapMinutes: number | null;
       mainStageGapCount: number | null;

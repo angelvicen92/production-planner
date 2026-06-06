@@ -458,6 +458,53 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "El plan permanece completo y hard-válido; el benchmark identifica candidatos recurrentes, presión anyOf, switches y al menos una advertencia informativa por el cruce de bundles.",
     riskNotes: ["Seed determinista dedicado al diagnóstico", "Las advertencias no bloquean ni cambian el plan", "Dos bundles recurrentes y un cruce concurrente deliberado"],
   },
+  {
+    id: "R",
+    name: "Resource bundles soft scoring",
+    description: "Dos candidatos hard-válidos empatan en criterios críticos; la selección soft favorece continuidad y afinidad del bundle declarado.",
+    input: baseInput([
+      { id: 18001, planId: PLAN_ID, templateId: 2801, templateName: "Set bundle toma 1", zoneId: 2, spaceId: 501, contestantId: 401, status: "pending", durationOverrideMin: 20, resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [18101, 18102] }, { quantity: 1, resourceItemIds: [18201, 18202] }] } },
+      { id: 18002, planId: PLAN_ID, templateId: 2801, templateName: "Set bundle toma 2", zoneId: 2, spaceId: 501, contestantId: 402, status: "pending", durationOverrideMin: 20, resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [18101, 18102] }, { quantity: 1, resourceItemIds: [18201, 18202] }] } },
+    ], {
+      workDay: { start: "09:00", end: "10:00" },
+      meal: { start: "12:00", end: "12:30" },
+      optimizerMainZoneId: 2, optimizerPrioritizeMainZone: false,
+      spaceNameById: { 501: "Bundle Stage", 502: "Alternate Stage" },
+      planResourceItems: [
+        { id: 18511, resourceItemId: 18101, typeId: 12, name: "Camera A", isAvailable: true },
+        { id: 18512, resourceItemId: 18102, typeId: 12, name: "Camera B", isAvailable: true },
+        { id: 18521, resourceItemId: 18201, typeId: 13, name: "Sound A", isAvailable: true },
+        { id: 18522, resourceItemId: 18202, typeId: 13, name: "Sound B", isAvailable: true },
+      ],
+      resourceBundles: [
+        { id: "bundle-a", name: "Camera A + Sound A", isActive: true },
+        { id: "bundle-b", name: "Camera B + Sound B", isActive: true },
+      ],
+      resourceBundleComponents: [
+        { bundleId: "bundle-a", resourceItemId: 18101, componentRole: "camera", quantity: 1, isRequired: true },
+        { bundleId: "bundle-a", resourceItemId: 18201, componentRole: "sound", quantity: 1, isRequired: true },
+        { bundleId: "bundle-b", resourceItemId: 18102, componentRole: "camera", quantity: 1, isRequired: true },
+        { bundleId: "bundle-b", resourceItemId: 18202, componentRole: "sound", quantity: 1, isRequired: true },
+      ],
+      resourceBundleSpaceAffinities: [
+        { bundleId: "bundle-a", spaceId: 501, affinityScore: 5 },
+        { bundleId: "bundle-b", spaceId: 502, affinityScore: 5 },
+      ],
+      enableLimitedBacktracking: false, enableOperationalNeighborhoods: false,
+    } as any),
+    benchmarkCandidateOutputs: [
+      { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+        { taskId: 18001, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [18511, 18521] },
+        { taskId: 18002, startPlanned: "09:20", endPlanned: "09:40", assignedResources: [18511, 18521] },
+      ], unplanned: [], warnings: [] },
+      { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+        { taskId: 18001, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [18511, 18521] },
+        { taskId: 18002, startPlanned: "09:20", endPlanned: "09:40", assignedResources: [18512, 18522] },
+      ], unplanned: [], warnings: [] },
+    ],
+    operationalExpectation: "La solución coherente mantiene bundle A en su espacio afín y se selecciona solo después de empatar hard constraints y métricas críticas.",
+    riskNotes: ["Bundles siguen siendo soft", "Afinidad no bloqueante", "Comparación determinista de dos candidatos válidos"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

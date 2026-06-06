@@ -15,24 +15,42 @@ import {
 } from "./metrics";
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
+import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q") => {
+const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
+  coachSwitchCount: score.coachSwitchCount,
+  coachSwitchPenalty: score.coachSwitchPenalty,
+  bundleCoherencePenalty: score.bundleCoherencePenalty,
+  bundleSwitchPenalty: score.bundleSwitchPenalty,
+  partialBundleUsageWarnings: score.partialBundleUsageWarnings,
+  bundleSpaceAffinityMatches: score.bundleSpaceAffinityMatches,
+  bundleSpaceAffinityMismatches: score.bundleSpaceAffinityMismatches,
+  restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
+  mainStageGapMinutes: score.mainStageGapMinutes,
+  mainStageGapCount: score.mainStageGapCount,
+  makespan: score.makespan === Number.MAX_SAFE_INTEGER ? null : score.makespan,
+  hardConstraintViolations: score.hardConstraintViolations,
+});
+
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
-  const output = scenario.cpSatPilotSeedOutput
+  const output = scenario.benchmarkCandidateOutputs
+    ? (() => {
+      const [first, second] = scenario.benchmarkCandidateOutputs;
+      const selected = compareCandidateSolutions(scenario.input, first, second) >= 0 ? first : second;
+      const rejected = selected === first ? second : first;
+      const selectedScore = scoreCandidateSolution(scenario.input, selected);
+      const rejectedScore = scoreCandidateSolution(scenario.input, rejected);
+      const reason = explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", selectedScore, rejectedScore);
+      return { ...selected, v3Meta: { ...(selected.v3Meta ?? {}), candidateSolutionsEvaluated: 2, bestCandidateSource: "phaseA_backtracking" as const, solutionSource: "phaseA_backtracking" as const, candidateSelectionReason: reason, candidateComparisonSummary: reason, bestCandidateScore: selectedScore.score, selectedCandidateMetrics: selectedMetricsFromScore(selectedScore) } };
+    })()
+    : scenario.cpSatPilotSeedOutput
     ? (() => {
       const selected = runMainStageCpSatPilot(scenario.input, scenario.cpSatPilotSeedOutput!);
-      const score = calculateMetrics(scenario.input, selected.output, 0);
-      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: {
-        coachSwitchCount: score.coachSwitchCount,
-        coachSwitchPenalty: score.coachSwitchPenalty,
-        restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
-        mainStageGapMinutes: score.mainStageGapMinutes,
-        mainStageGapCount: score.mainStageGapCount,
-        makespan: score.makespan,
-        hardConstraintViolations: score.hardConstraintViolations,
-      } } };
+      const score = scoreCandidateSolution(scenario.input, selected.output);
+      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta, solutionSource: selected.meta.cpSatPilotAccepted ? "cp_sat_pilot" : "phaseA_greedy", selectedCandidateMetrics: selectedMetricsFromScore(score) } };
     })()
     : scenario.neighborhoodSeedOutput
       ? (() => {
@@ -300,6 +318,18 @@ for (const id of ["C", "D", "J"] as const) {
   assert.ok((metrics.compositeResourceCandidateCount ?? 0) > 0);
   assert.ok((metrics.resourceDiagnosticWarnings?.length ?? 0) > 0);
   assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("RESOURCE_BUNDLE_CONFLICT")));
+}
+
+// Escenario R — bundles declarados actúan solo como desempate soft.
+{
+  const { scenario, output } = run("R");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  assert.equal(output.complete, true);
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.ok(metrics.declaredResourceBundleCount > 0);
+  assert.ok(metrics.bundleSpaceAffinityMatches > 0);
+  assert.match(String(metrics.candidateSelectionReason), /bundle|resource coherence/i);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true);
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

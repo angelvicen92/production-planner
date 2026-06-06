@@ -36,6 +36,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 016 — 2026-05-30 23:59 — Segmentación CP-SAT por bloques críticos de Main Stage en Motor V3
 - ID 017 — 2026-05-30 23:59 — Diagnóstico operativo de recursos compuestos en Motor V3 sin cambios DB
 - ID 018 — 2026-05-30 23:59 — Modelo DB aditivo de resource bundles y componentes
+- ID 019 — 2026-05-30 23:59 — Resource bundles como señal soft no vinculante en Motor V3
 
 ## Verificación básica
 

@@ -53,6 +53,42 @@ export async function buildEngineInput(
       ? camerasFromResources
       : (p.cameras_available ?? p.camerasAvailable ?? 0);
 
+  const [resourceBundleRows, resourceBundleComponentRows, resourceBundleAffinityRows] = await Promise.all([
+    safe(() => storage.getResourceBundles(), [] as any[]),
+    safe(() => storage.getResourceBundleComponents(), [] as any[]),
+    safe(() => storage.getResourceBundleSpaceAffinities(), [] as any[]),
+  ]);
+  const resourceBundles = resourceBundleRows.map((row: any) => ({
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    description: row.description ?? null,
+    bundleType: String(row.bundle_type ?? row.bundleType ?? "composite"),
+    isActive: row.is_active ?? row.isActive ?? true,
+    metadata: row.metadata ?? {},
+  }));
+  const activeBundleIds = new Set(resourceBundles.filter((bundle) => bundle.isActive !== false).map((bundle) => bundle.id));
+  const resourceBundleComponents = resourceBundleComponentRows
+    .map((row: any) => ({
+      id: row.id == null ? undefined : String(row.id),
+      bundleId: String(row.bundle_id ?? row.bundleId ?? ""),
+      resourceId: row.resource_id == null && row.resourceId == null ? null : Number(row.resource_id ?? row.resourceId),
+      resourceItemId: row.resource_item_id == null && row.resourceItemId == null ? null : Number(row.resource_item_id ?? row.resourceItemId),
+      componentRole: String(row.component_role ?? row.componentRole ?? "component"),
+      quantity: Math.max(1, Number(row.quantity ?? 1) || 1),
+      isRequired: row.is_required ?? row.isRequired ?? true,
+      metadata: row.metadata ?? {},
+    }))
+    .filter((component) => activeBundleIds.has(component.bundleId));
+  const resourceBundleSpaceAffinities = resourceBundleAffinityRows
+    .map((row: any) => ({
+      id: row.id == null ? undefined : String(row.id),
+      bundleId: String(row.bundle_id ?? row.bundleId ?? ""),
+      spaceId: Number(row.space_id ?? row.spaceId),
+      affinityScore: Number(row.affinity_score ?? row.affinityScore ?? 0) || 0,
+      metadata: row.metadata ?? {},
+    }))
+    .filter((affinity) => activeBundleIds.has(affinity.bundleId) && Number.isFinite(affinity.spaceId) && affinity.spaceId > 0);
+
   // Recursos anclados a ZONAS (snapshot/override por plan)
   const zoneResourceAssignments =
     (await safe(() => storage.getZoneResourceAssignmentsForPlan(planId), {})) ?? {};
@@ -511,6 +547,9 @@ export async function buildEngineInput(
     spaceResourceTypeRequirements,
         planResourceItems,
         resourceItemComponents,
+        resourceBundles,
+        resourceBundleComponents,
+        resourceBundleSpaceAffinities,
 
         contestantAvailabilityById,
 

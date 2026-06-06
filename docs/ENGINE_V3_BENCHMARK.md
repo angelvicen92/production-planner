@@ -403,3 +403,21 @@ Resultados de referencia:
 Q está construido para que dos parejas cámara/sonido sean recurrentes y una última franja use combinaciones cruzadas simultáneas. El benchmark termina con 17 escenarios completos, cero escenarios completos con hard violations, cero movimientos de locks/ejecución y cero divergencias de métricas seleccionadas.
 
 La presión nominal de L no es una nueva constraint: hace visible la diferencia entre pools individuales y equipos técnicos reales. La especificación completa, límites y recomendación para ID 018 están en `docs/ENGINE_V3_RESOURCE_DIAGNOSTICS.md`.
+
+## ID 019 — Escenario R: Resource bundles soft scoring
+
+R declara dos bundles cámara/sonido y afinidades distintas por espacio. El benchmark expone dos outputs completos y hard-válidos con el mismo número de tareas, ventanas, huecos, prioridades, coach penalty y makespan:
+
+- candidato coherente: mantiene `Camera A + Sound A` durante las dos tareas en el espacio afín;
+- candidato alternativo: cambia a `Camera B + Sound B` en la segunda tarea, provocando un switch y un mismatch de afinidad.
+
+El comparador común selecciona el candidato coherente únicamente después de empatar los criterios críticos. El resultado esperado y verificado es:
+
+- `complete=true`;
+- `hardConstraintViolations=0`;
+- `declaredResourceBundleCount=2`;
+- `bundleSpaceAffinityMatches=2`;
+- `candidateSelectionReason` explica mejor coherencia de bundle/recurso;
+- `selectedCandidateMetricsConsistent=true`.
+
+El runner imprime también uso de componentes, parciales, matches/mismatches, switch penalty y coincidencias entre bundles declarados y candidatos inferidos. R no prueba enforcement: prueba un desempate soft determinista.

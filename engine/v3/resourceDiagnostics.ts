@@ -36,7 +36,7 @@ export interface ResourceSwitchDetail {
 }
 
 export interface ResourceDiagnosticWarning {
-  code: "COMPOSITE_RESOURCE_INCONSISTENCY" | "RESOURCE_BUNDLE_CONFLICT" | "ANYOF_POOL_FRAGILITY";
+  code: "COMPOSITE_RESOURCE_INCONSISTENCY" | "RESOURCE_BUNDLE_CONFLICT" | "ANYOF_POOL_FRAGILITY" | "PARTIAL_DECLARED_BUNDLE" | "BUNDLE_SPACE_AFFINITY_MISMATCH";
   message: string;
   taskIds: number[];
 }
@@ -50,7 +50,25 @@ export interface ResourceDiagnostics {
   compositeResourceCandidates: CompositeResourceCandidate[];
   compositeResourceCandidateCount: number;
   resourceBundleConflictCount: number;
+  declaredResourceBundleCount: number;
+  bundleComponentUsageCount: number;
+  partialBundleUsageWarnings: number;
+  bundleSpaceAffinityMatches: number;
+  bundleSpaceAffinityMismatches: number;
+  bundleSwitchPenalty: number;
+  declaredBundleCandidateMatches: number;
   resourceDiagnosticWarnings: ResourceDiagnosticWarning[];
+}
+
+export interface DeclaredBundleMetrics {
+  declaredResourceBundleCount: number;
+  bundleComponentUsageCount: number;
+  partialBundleUsageWarnings: number;
+  bundleSpaceAffinityMatches: number;
+  bundleSpaceAffinityMismatches: number;
+  bundleSwitchPenalty: number;
+  bundleCoherencePenalty: number;
+  warnings: ResourceDiagnosticWarning[];
 }
 
 type ScheduledTask = {
@@ -105,6 +123,124 @@ const getScheduledTasks = (input: EngineV3Input, output: EngineOutput): Schedule
     return [{ task, start, end, assignedResources }];
   });
 };
+
+
+const calculateDeclaredBundleMetricsFromScheduled = (input: EngineV3Input, scheduled: ScheduledTask[]): DeclaredBundleMetrics => {
+  const bundles = (input.resourceBundles ?? []).filter((bundle) => bundle.isActive !== false);
+  if (bundles.length === 0) {
+    return {
+      declaredResourceBundleCount: 0,
+      bundleComponentUsageCount: 0,
+      partialBundleUsageWarnings: 0,
+      bundleSpaceAffinityMatches: 0,
+      bundleSpaceAffinityMismatches: 0,
+      bundleSwitchPenalty: 0,
+      bundleCoherencePenalty: 0,
+      warnings: [],
+    };
+  }
+
+  const activeIds = new Set(bundles.map((bundle) => bundle.id));
+  const componentsByBundle = new Map<string, NonNullable<EngineV3Input["resourceBundleComponents"]>>();
+  for (const component of input.resourceBundleComponents ?? []) {
+    if (!activeIds.has(component.bundleId) || component.resourceItemId == null) continue;
+    const rows = componentsByBundle.get(component.bundleId) ?? [];
+    rows.push(component);
+    componentsByBundle.set(component.bundleId, rows);
+  }
+  const affinitiesByBundle = new Map<string, NonNullable<EngineV3Input["resourceBundleSpaceAffinities"]>>();
+  for (const affinity of input.resourceBundleSpaceAffinities ?? []) {
+    if (!activeIds.has(affinity.bundleId)) continue;
+    const rows = affinitiesByBundle.get(affinity.bundleId) ?? [];
+    rows.push(affinity);
+    affinitiesByBundle.set(affinity.bundleId, rows);
+  }
+
+  let bundleComponentUsageCount = 0;
+  let partialBundleUsageWarnings = 0;
+  let bundleSpaceAffinityMatches = 0;
+  let bundleSpaceAffinityMismatches = 0;
+  let affinityReward = 0;
+  let affinityPenalty = 0;
+  const warnings: ResourceDiagnosticWarning[] = [];
+  const usageBySpace = new Map<number, Array<{ start: number; bundleIds: string[] }>>();
+
+  for (const scheduledTask of scheduled) {
+    const assignedCounts = new Map<number, number>();
+    for (const resource of scheduledTask.assignedResources) {
+      assignedCounts.set(resource.resourceItemId, (assignedCounts.get(resource.resourceItemId) ?? 0) + 1);
+    }
+    const usedBundleIds: string[] = [];
+    for (const bundle of bundles) {
+      const components = componentsByBundle.get(bundle.id) ?? [];
+      if (components.length === 0) continue;
+      const usedComponents = components.filter((component) => (assignedCounts.get(Number(component.resourceItemId)) ?? 0) > 0);
+      if (usedComponents.length === 0) continue;
+      usedBundleIds.push(bundle.id);
+      bundleComponentUsageCount += usedComponents.reduce((total, component) => total + Math.min(
+        assignedCounts.get(Number(component.resourceItemId)) ?? 0,
+        Math.max(1, Number(component.quantity) || 1),
+      ), 0);
+      const required = components.filter((component) => component.isRequired !== false);
+      const complete = required.every((component) => (assignedCounts.get(Number(component.resourceItemId)) ?? 0) >= Math.max(1, Number(component.quantity) || 1));
+      if (!complete && required.length > 1) {
+        partialBundleUsageWarnings += 1;
+        warnings.push({
+          code: "PARTIAL_DECLARED_BUNDLE",
+          message: `La tarea ${scheduledTask.task.id} usa parcialmente el bundle declarado ${bundle.name}.`,
+          taskIds: [Number(scheduledTask.task.id)],
+        });
+      }
+
+      const affinities = affinitiesByBundle.get(bundle.id) ?? [];
+      if (affinities.length > 0) {
+        const current = affinities.find((affinity) => Number(affinity.spaceId) === Number(scheduledTask.task.spaceId));
+        if (current && current.affinityScore > 0) {
+          bundleSpaceAffinityMatches += 1;
+          affinityReward += current.affinityScore;
+        } else {
+          bundleSpaceAffinityMismatches += 1;
+          const best = Math.max(0, ...affinities.map((affinity) => Number(affinity.affinityScore) || 0));
+          affinityPenalty += Math.max(1, best);
+          warnings.push({
+            code: "BUNDLE_SPACE_AFFINITY_MISMATCH",
+            message: `El bundle declarado ${bundle.name} se usa en un espacio sin afinidad positiva declarada.`,
+            taskIds: [Number(scheduledTask.task.id)],
+          });
+        }
+      }
+    }
+    const spaceId = Number(scheduledTask.task.spaceId ?? NaN);
+    if (usedBundleIds.length > 0 && Number.isFinite(spaceId) && spaceId > 0) {
+      const rows = usageBySpace.get(spaceId) ?? [];
+      rows.push({ start: scheduledTask.start, bundleIds: usedBundleIds.sort() });
+      usageBySpace.set(spaceId, rows);
+    }
+  }
+
+  let bundleSwitchPenalty = 0;
+  for (const rows of usageBySpace.values()) {
+    rows.sort((left, right) => left.start - right.start || left.bundleIds.join(",").localeCompare(right.bundleIds.join(",")));
+    for (let index = 1; index < rows.length; index += 1) {
+      if (rows[index - 1].bundleIds.join(",") !== rows[index].bundleIds.join(",")) bundleSwitchPenalty += 1;
+    }
+  }
+
+  return {
+    declaredResourceBundleCount: bundles.length,
+    bundleComponentUsageCount,
+    partialBundleUsageWarnings,
+    bundleSpaceAffinityMatches,
+    bundleSpaceAffinityMismatches,
+    bundleSwitchPenalty,
+    bundleCoherencePenalty: (partialBundleUsageWarnings * 10) + (bundleSwitchPenalty * 5) + affinityPenalty - affinityReward,
+    warnings: warnings.sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
+  };
+};
+
+export const calculateDeclaredBundleMetrics = (input: EngineV3Input, output: EngineOutput): DeclaredBundleMetrics => (
+  calculateDeclaredBundleMetricsFromScheduled(input, getScheduledTasks(input, output))
+);
 
 const calculatePeakConcurrency = (tasks: ScheduledTask[]): number => {
   const events = tasks.flatMap((task) => [
@@ -363,7 +499,19 @@ export const diagnoseCompositeResources = (input: EngineV3Input, output: EngineO
   const pairObservations = collectPairObservations(scheduled);
   const compositeResourceCandidates = calculateCompositeCandidates(input, scheduled, pairObservations);
   const resourceSwitchDetails = calculateSwitches(input, scheduled);
-  const { warnings: resourceDiagnosticWarnings, conflictCount: resourceBundleConflictCount } = calculateWarnings(scheduled, resourcePoolPressure, pairObservations);
+  const { warnings: inferredWarnings, conflictCount: resourceBundleConflictCount } = calculateWarnings(scheduled, resourcePoolPressure, pairObservations);
+  const declaredBundleMetrics = calculateDeclaredBundleMetricsFromScheduled(input, scheduled);
+  const resourceDiagnosticWarnings = [...inferredWarnings, ...declaredBundleMetrics.warnings]
+    .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message));
+  const declaredComponentSets = new Set((input.resourceBundles ?? []).map((bundle) => (input.resourceBundleComponents ?? [])
+    .filter((component) => component.bundleId === bundle.id && component.resourceItemId != null)
+    .map((component) => Number(component.resourceItemId))
+    .sort((left, right) => left - right)
+    .join(","))
+    .filter(Boolean));
+  const declaredBundleCandidateMatches = compositeResourceCandidates.filter((candidate) => (
+    candidate.kind === "resource_pair" && declaredComponentSets.has([...candidate.componentResourceIds].sort((left, right) => left - right).join(","))
+  )).length;
   const resourceSwitchCount = resourceSwitchDetails.length > 0
     ? resourceSwitchDetails.reduce((total, detail) => total + detail.switchCount, 0)
     : scheduled.some((task) => task.assignedResources.length > 0) ? 0 : null;
@@ -379,6 +527,13 @@ export const diagnoseCompositeResources = (input: EngineV3Input, output: EngineO
     compositeResourceCandidates,
     compositeResourceCandidateCount: compositeResourceCandidates.length,
     resourceBundleConflictCount,
+    declaredResourceBundleCount: declaredBundleMetrics.declaredResourceBundleCount,
+    bundleComponentUsageCount: declaredBundleMetrics.bundleComponentUsageCount,
+    partialBundleUsageWarnings: declaredBundleMetrics.partialBundleUsageWarnings,
+    bundleSpaceAffinityMatches: declaredBundleMetrics.bundleSpaceAffinityMatches,
+    bundleSpaceAffinityMismatches: declaredBundleMetrics.bundleSpaceAffinityMismatches,
+    bundleSwitchPenalty: declaredBundleMetrics.bundleSwitchPenalty,
+    declaredBundleCandidateMatches,
     resourceDiagnosticWarnings,
   };
 };
