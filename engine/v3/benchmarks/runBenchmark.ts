@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import { generatePlanV3 } from "../index";
+import { generatePlanV3, runOperationalNeighborhoodSelection } from "../index";
 import { calculateMetrics } from "./metrics";
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
@@ -9,7 +9,12 @@ const formatCompact = (value: string | null | undefined): string => value === nu
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
-  const output = generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `benchmark-${scenario.id}` });
+  const output = scenario.neighborhoodSeedOutput
+    ? (() => {
+      const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput, "phaseA_greedy");
+      return { ...selected.output, v3Meta: { ...(selected.output.v3Meta ?? {}), ...selected.meta } };
+    })()
+    : generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `benchmark-${scenario.id}` });
   const runtimeMs = Math.round(performance.now() - start);
   const metrics = calculateMetrics(scenario.input, output, runtimeMs);
   return { scenario, output, runtimeMs, metrics };
@@ -55,6 +60,11 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  selectedCandidateMetricsConsistent: ${formatNullable(metrics.selectedCandidateMetricsConsistent)}${metrics.selectedCandidateMetricsConsistent === false ? " ⚠️ METRICS DIVERGENCE" : ""}`);
   console.log(`  neighborhoodSearchAttempted: ${formatNullable(metrics.neighborhoodSearchAttempted)}`);
   console.log(`  neighborhoodCandidatesGenerated: ${formatNullable(metrics.neighborhoodCandidatesGenerated)}`);
+  console.log(`  neighborhoodSearchDepth: ${formatNullable(metrics.neighborhoodSearchDepth)}`);
+  console.log(`  neighborhoodDepth1Candidates: ${formatNullable(metrics.neighborhoodDepth1Candidates)}`);
+  console.log(`  neighborhoodDepth2Candidates: ${formatNullable(metrics.neighborhoodDepth2Candidates)}`);
+  console.log(`  neighborhoodChainsEvaluated: ${formatNullable(metrics.neighborhoodChainsEvaluated)}`);
+  console.log(`  neighborhoodAcceptedChain: ${formatNullable(metrics.neighborhoodAcceptedChain)}`);
   console.log(`  neighborhoodCandidateAccepted: ${formatNullable(metrics.neighborhoodCandidateAccepted)}`);
   console.log(`  neighborhoodAcceptedReason: ${formatNullable(metrics.neighborhoodAcceptedReason)}`);
   console.log(`  neighborhoodTypesAttempted: ${metrics.neighborhoodTypesAttempted?.join(",") ?? "n/a"}`);

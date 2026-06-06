@@ -2,13 +2,14 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
   name: string;
   description: string;
   input: EngineV3Input;
+  neighborhoodSeedOutput?: EngineOutput;
   operationalExpectation: string;
   riskNotes: string[];
   knownRisk?: string;
@@ -55,6 +56,11 @@ export interface EngineBenchmarkMetrics {
   selectedCandidateMetricsConsistent: boolean | null;
   neighborhoodSearchAttempted: boolean | null;
   neighborhoodCandidatesGenerated: number | null;
+  neighborhoodSearchDepth: number | null;
+  neighborhoodDepth1Candidates: number | null;
+  neighborhoodDepth2Candidates: number | null;
+  neighborhoodChainsEvaluated: number | null;
+  neighborhoodAcceptedChain: string | null;
   neighborhoodCandidateAccepted: boolean | null;
   neighborhoodAcceptedReason: string | null;
   neighborhoodSearchTimeMs: number | null;

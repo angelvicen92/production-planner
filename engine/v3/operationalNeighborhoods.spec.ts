@@ -4,13 +4,17 @@ import type { EngineV3Input } from "./types";
 import { generatePlanV3 } from "./index";
 import {
   generateOperationalNeighborhoodCandidates,
+  generateOperationalNeighborhoodSearchCandidates,
 } from "./operationalNeighborhoods";
 import {
   calculateCoachSwitchCount,
   calculateMainStageGaps,
   calculateRestrictiveTalentAverageStartOffset,
   countDependencyViolations,
+  countExecutedTaskMoved,
   countHardConstraintViolations,
+  countLockedTaskMoved,
+  countContestantWindowViolations,
 } from "./metrics";
 
 const PLAN_ID = 91010;
@@ -257,6 +261,54 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
   const candidate = generateOperationalNeighborhoodCandidates(input, output).find((item) => item.reason === "restrictive_talent_bundle");
   assert.ok(candidate, "a two-feeder restrictive bundle should be generated");
   assert.equal(countDependencyViolations(input, candidate.output), 0, "bundle must preserve dependency order");
+}
+
+
+// 11. Depth 2 encadena feeder_advance -> main_stage_gap_fill sin mover fijos ni romper hard constraints.
+{
+  const input = baseInput([
+    { id: 100, planId: PLAN_ID, templateId: 100, zoneId: 1, spaceId: 101, contestantId: 100, status: "pending", durationOverrideMin: 30 },
+    { id: 101, planId: PLAN_ID, templateId: 101, zoneId: 2, spaceId: 201, contestantId: 101, status: "pending", durationOverrideMin: 20 },
+    { id: 102, planId: PLAN_ID, templateId: 102, zoneId: 1, spaceId: 101, contestantId: 101, status: "done", durationOverrideMin: 30, startPlanned: "11:00", endPlanned: "11:30", dependsOnTaskIds: [101] },
+    { id: 103, planId: PLAN_ID, templateId: 103, zoneId: 2, spaceId: 201, contestantId: 103, status: "pending", durationOverrideMin: 20 },
+    { id: 104, planId: PLAN_ID, templateId: 104, zoneId: 1, spaceId: 101, contestantId: 103, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [103] },
+    { id: 105, planId: PLAN_ID, templateId: 105, zoneId: 2, spaceId: 205, contestantId: 105, status: "in_progress", durationOverrideMin: 20, startPlanned: "10:30", endPlanned: "10:50" },
+    { id: 106, planId: PLAN_ID, templateId: 106, zoneId: 2, spaceId: 206, contestantId: 106, status: "pending", durationOverrideMin: 20 },
+  ], {
+    locks: [{ id: 106, planId: PLAN_ID, taskId: 106, lockType: "time", lockedStart: "10:50", lockedEnd: "11:10" }],
+    contestantAvailabilityById: {
+      100: { start: "09:00", end: "11:30" },
+      101: { start: "09:00", end: "11:30" },
+      103: { start: "09:00", end: "10:30" },
+      105: { start: "09:00", end: "11:30" },
+      106: { start: "09:00", end: "11:30" },
+    },
+  });
+  const output = completeOutput([
+    { taskId: 100, startPlanned: "09:00", endPlanned: "09:30" },
+    { taskId: 101, startPlanned: "09:00", endPlanned: "09:20" },
+    { taskId: 103, startPlanned: "09:20", endPlanned: "09:40" },
+    { taskId: 104, startPlanned: "09:40", endPlanned: "10:10" },
+    { taskId: 105, startPlanned: "10:30", endPlanned: "10:50" },
+    { taskId: 106, startPlanned: "10:50", endPlanned: "11:10" },
+  ]);
+  const search = generateOperationalNeighborhoodSearchCandidates(input, output);
+  const chained = search.candidates.find((candidate) => candidate.depth === 2 && candidate.chain?.join(" -> ") === "feeder_advance -> main_stage_gap_fill");
+  assert.ok(chained, "depth 2 feeder/main-stage chain should be generated");
+  assert.ok(search.depth1Candidates <= 10);
+  assert.ok(search.depth2Candidates <= 20);
+  assert.ok(search.candidates.length <= 30);
+  assert.deepEqual(byId(chained.output).get(105), byId(output).get(105), "in_progress task must remain fixed at depth 2");
+  assert.deepEqual(byId(chained.output).get(106), byId(output).get(106), "locked task must remain fixed at depth 2");
+  assert.equal(countExecutedTaskMoved(input, chained.output), 0);
+  assert.equal(countLockedTaskMoved(input, chained.output), 0);
+  assert.equal(countDependencyViolations(input, chained.output), 0);
+  assert.equal(countContestantWindowViolations(input, chained.output), 0);
+  assert.equal(countHardConstraintViolations(input, chained.output), 0);
+  assert.ok((calculateMainStageGaps(input, chained.output)?.minutes ?? 999) < (calculateMainStageGaps(input, output)?.minutes ?? 0));
+  for (const candidate of search.candidates) {
+    assert.equal(countHardConstraintViolations(input, candidate.output), 0, "depth 1/2 candidates with hard violations must be rejected");
+  }
 }
 
 console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");

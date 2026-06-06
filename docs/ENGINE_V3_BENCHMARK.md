@@ -292,3 +292,47 @@ M contiene una apertura de Main Stage, un Vocal feeder tardío, una actuación d
 ### Riesgos residuales y recomendación para ID 014
 
 El principal límite es que cada vecino parte del mismo plan base. La recomendación para **ID 014** es una búsqueda local de profundidad dos, todavía determinista y con presupuesto estricto, que permita encadenar `feeder_advance` seguido de `main_stage_gap_fill`. Debe conservar el límite hard-first, evitar beam search amplio y medir explícitamente coste de runtime en I, L y M.
+
+## ID 014 — Búsqueda local depth 2
+
+### Límites y cadenas
+
+La búsqueda parte del greedy completo, genera hasta 10 candidatos depth 1 y expande cada candidato elegible con hasta 5 hijos. El presupuesto global es de 30 soluciones evaluadas incluyendo el greedy base. El orden es estable y no usa aleatoriedad ni cortes por runtime exacto.
+
+Cadenas habilitadas: `feeder_advance -> main_stage_gap_fill`, `restrictive_talent_bundle -> feeder_advance`, `coach_block_compaction -> main_stage_gap_fill` y `feeder_advance -> coach_block_compaction`.
+
+### Escenario L
+
+| Métrica | ID 013 | ID 014 |
+|---|---:|---:|
+| Candidatos depth 1 | 1 | 2 |
+| Candidatos depth 2 | 0 | 1 |
+| Cadenas evaluadas | 0 | 1 |
+| Main Stage gap | 10 min | 10 min |
+| Coach switches | 16 | 16 |
+| Inicio medio talent restrictivo | 106 min | 105 min |
+| Hard violations | 0 | 0 |
+| Métricas seleccionadas consistentes | true | true |
+
+La cadena depth 2 no gana en L; el candidato depth 1 aceptado mejora un minuto el timing restrictivo sin empeorar el hueco. No se fuerza una mejora falsa de Main Stage.
+
+### Escenario N
+
+N aísla la búsqueda local sobre un plan completo determinista. El greedy seed tiene un hueco de Main Stage de 10 minutos. `feeder_advance` por sí solo mantiene ese hueco; `main_stage_gap_fill` solo es hard-válido después del swap de feeders.
+
+Resultado ID 014:
+
+- `neighborhoodSearchAttempted=true`;
+- `neighborhoodSearchDepth=2`;
+- `neighborhoodDepth1Candidates=1`;
+- `neighborhoodDepth2Candidates=1`;
+- `neighborhoodChainsEvaluated=1`;
+- `neighborhoodAcceptedChain=feeder_advance -> main_stage_gap_fill`;
+- `solutionSource=operational_neighborhood`;
+- `mainStageGapMinutes: 10 -> 0`;
+- `hardConstraintViolations=0`;
+- `selectedCandidateMetricsConsistent=true`.
+
+### Riesgos residuales y siguiente paso
+
+La cobertura sigue siendo local y las cadenas están enumeradas explícitamente. ID 015 debería estudiar movimientos compactos de 2-3 tareas con duraciones distintas y telemetría de cadenas rechazadas; CP-SAT global debe reservarse para cuando estos operadores acotados dejen de producir mejoras medibles.

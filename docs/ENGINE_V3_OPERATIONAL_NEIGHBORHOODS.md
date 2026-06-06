@@ -167,3 +167,57 @@ ID 013 amplía la búsqueda local para jornadas ricas en dependencias sin conver
 3. La compactación de coach sigue limitada a patrones locales A/B/A y tareas de igual duración.
 4. Los candidatos se generan respecto de la misma solución base; todavía no se encadenan iterativamente feeder advance + gap fill.
 5. Un candidato hard-válido puede empatar en todas las métricas actuales, como ocurre en L, y se conserva correctamente la solución base.
+
+## ID 014 — Búsqueda local depth 2
+
+ID 013 dejaba casos donde un movimiento seguro era preparatorio pero no suficiente: adelantar un feeder podía conservar exactamente el mismo hueco de Main Stage, y solo después de ese movimiento una tarea de plató podía ocupar el hueco sin romper su dependencia. La selección depth 1 no podía observar la mejora conjunta.
+
+ID 014 mantiene el plan greedy completo como raíz y añade una expansión determinista de profundidad máxima 2:
+
+- hasta 10 candidatos depth 1;
+- hasta 5 candidatos depth 2 por padre;
+- hasta 30 soluciones evaluadas contando el greedy base (29 candidatos de vecindario como máximo);
+- orden estable por score, tipo de vecindario y firma `taskId@start-end`;
+- sin aleatoriedad y sin decisiones dependientes del runtime exacto;
+- validación hard después de cada movimiento y otra vez contra la raíz greedy.
+
+Cadenas activas:
+
+1. `feeder_advance -> main_stage_gap_fill`;
+2. `restrictive_talent_bundle -> feeder_advance`;
+3. `coach_block_compaction -> main_stage_gap_fill`;
+4. `feeder_advance -> coach_block_compaction`.
+
+La búsqueda rechaza candidatos que aumentan violaciones hard, mueven `done`/`in_progress`/locks, aumentan huecos de Main Stage o conservan metadata `selectedCandidateMetrics` inconsistente con el horario que contienen. Las hard constraints agregadas incluyen dependencias, solapes, comida hard y disponibilidad. El segundo movimiento tampoco puede comprar una mejora rompiendo la seguridad alcanzada por el primero.
+
+Metadata añadida, toda opcional y retrocompatible:
+
+- `neighborhoodSearchDepth`;
+- `neighborhoodDepth1Candidates`;
+- `neighborhoodDepth2Candidates`;
+- `neighborhoodChainsEvaluated`;
+- `neighborhoodAcceptedChain`;
+- `neighborhoodRejectedReasons` (se conserva y agrega rechazos de ambos niveles).
+
+### Resultado en L
+
+Referencia ID 013: 1 candidato, sin aceptación, `mainStageGapMinutes=10`, `coachSwitchCount=16` y `restrictiveTalentAverageStartOffset=106`.
+
+ID 014: 2 candidatos depth 1, 1 candidato depth 2 y 1 cadena evaluada. Se mantiene `mainStageGapMinutes=10`, `coachSwitchCount=16` y `hardConstraintViolations=0`; se acepta una mejora segura que reduce `restrictiveTalentAverageStartOffset` de 106 a 105. La cadena depth 2 se evalúa, pero no supera al mejor candidato depth 1 según el orden lexicográfico del scoring. `selectedCandidateMetricsConsistent=true`.
+
+### Resultado en N
+
+El escenario N usa un seed completo y determinista para aislar el operador local: el feeder objetivo termina después del inicio del hueco, por lo que `main_stage_gap_fill` aislado viola la dependencia. `feeder_advance` intercambia los feeders sin reducir todavía los 10 minutos de hueco; después, `main_stage_gap_fill` mueve la tarea objetivo de `09:40` a `09:30`.
+
+Resultado: 1 candidato depth 1, 1 candidato depth 2, cadena aceptada `feeder_advance -> main_stage_gap_fill`, hueco de 10 a 0 minutos, `hardConstraintViolations=0` y métricas seleccionadas consistentes.
+
+### Riesgos residuales
+
+- El operador sigue limitado a movimientos locales y swaps de duraciones compatibles; no reprograma una jornada global.
+- Solo se expanden las cuatro cadenas explícitas; otros órdenes potencialmente útiles no se exploran.
+- El presupuesto por número de candidatos evita variabilidad por reloj, pero una validación hard sigue teniendo coste proporcional al tamaño del plan.
+- N aísla el componente con un seed completo; L continúa siendo la prueba end-to-end realista desde Phase A.
+
+### Recomendación para ID 015
+
+Medir qué cadenas quedan bloqueadas por movimientos de una sola tarea y añadir, si los datos lo justifican, desplazamientos compactos de 2-3 tareas con duraciones distintas. Mantener el mismo filtro hard y presupuesto determinista antes de considerar una Fase B CP-SAT global.

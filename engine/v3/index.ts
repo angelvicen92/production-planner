@@ -12,7 +12,7 @@ import {
   summarizeCandidateScore,
 } from "./solutionScoring";
 import {
-  generateOperationalNeighborhoodCandidates,
+  generateOperationalNeighborhoodSearchCandidates,
   shouldAttemptOperationalNeighborhoods,
   type OperationalNeighborhoodReason,
 } from "./operationalNeighborhoods";
@@ -60,6 +60,11 @@ type BacktrackingMeta = {
   selectedCandidateMetrics?: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"];
   neighborhoodSearchAttempted?: boolean;
   neighborhoodCandidatesGenerated?: number;
+  neighborhoodSearchDepth?: number;
+  neighborhoodDepth1Candidates?: number;
+  neighborhoodDepth2Candidates?: number;
+  neighborhoodChainsEvaluated?: number;
+  neighborhoodAcceptedChain?: string;
   neighborhoodCandidateAccepted?: boolean;
   neighborhoodAcceptedReason?: string;
   neighborhoodSearchTimeMs?: number;
@@ -346,7 +351,7 @@ const runLimitedBacktracking = (
 };
 
 
-const runOperationalNeighborhoodSelection = (
+export const runOperationalNeighborhoodSelection = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
   baseSource: "phaseA_greedy" | "phaseA_backtracking",
@@ -367,16 +372,19 @@ const runOperationalNeighborhoodSelection = (
     };
   }
 
-  const neighborhoodDiagnostics = { attemptedTypes: [] as OperationalNeighborhoodReason[], generatedTypes: [] as OperationalNeighborhoodReason[], rejectedReasons: {} as Record<string, number> };
-  const candidates = generateOperationalNeighborhoodCandidates(input, baseOutput, { diagnostics: neighborhoodDiagnostics });
+  const search = generateOperationalNeighborhoodSearchCandidates(input, baseOutput);
+  const neighborhoodDiagnostics = search.diagnostics;
+  const candidates = search.candidates;
   let bestOutput = baseOutput;
   let bestReason: OperationalNeighborhoodReason | null = null;
+  let bestChain: OperationalNeighborhoodReason[] | null = null;
   let bestScore = baseScore;
   for (const candidate of candidates) {
     const candidateScore = scoreCandidateSolution(input, candidate.output);
     if (compareCandidateSolutions(input, candidate.output, bestOutput) > 0) {
       bestOutput = candidate.output;
       bestReason = candidate.reason;
+      bestChain = candidate.chain ?? [candidate.reason];
       bestScore = candidateScore;
     }
   }
@@ -393,6 +401,11 @@ const runOperationalNeighborhoodSelection = (
     meta: {
       neighborhoodSearchAttempted: true,
       neighborhoodCandidatesGenerated: candidates.length,
+      neighborhoodSearchDepth: search.depth2Candidates > 0 || search.chainsEvaluated > 0 ? 2 : 1,
+      neighborhoodDepth1Candidates: search.depth1Candidates,
+      neighborhoodDepth2Candidates: search.depth2Candidates,
+      neighborhoodChainsEvaluated: search.chainsEvaluated,
+      neighborhoodAcceptedChain: accepted ? bestChain?.join(" -> ") : undefined,
       neighborhoodCandidateAccepted: accepted,
       neighborhoodAcceptedReason: accepted ? bestReason ?? comparison : undefined,
       neighborhoodSearchTimeMs: Math.max(0, Date.now() - started),
