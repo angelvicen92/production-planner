@@ -2,6 +2,7 @@ import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import {
   calculateMainStageGaps,
+  calculateOperationalMetrics,
   countExecutedTaskMoved,
   countHardConstraintViolations,
   countLockedTaskMoved,
@@ -9,6 +10,7 @@ import {
   toMinutes,
 } from "./metrics";
 import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
+import { compareCandidateSolutions } from "./solutionScoring";
 
 export type OperationalNeighborhoodReason =
   | "main_stage_gap_fill"
@@ -20,6 +22,8 @@ export type OperationalNeighborhoodReason =
 export interface OperationalNeighborhoodCandidate {
   output: EngineOutput;
   reason: OperationalNeighborhoodReason;
+  depth?: 1 | 2;
+  chain?: OperationalNeighborhoodReason[];
 }
 
 export interface OperationalNeighborhoodDiagnostics {
@@ -31,12 +35,31 @@ export interface OperationalNeighborhoodDiagnostics {
 export interface OperationalNeighborhoodOptions {
   maxCandidates?: number;
   maxAttemptsPerNeighborhood?: number;
+  allowedReasons?: OperationalNeighborhoodReason[];
   diagnostics?: OperationalNeighborhoodDiagnostics;
+}
+
+export interface OperationalNeighborhoodSearchResult {
+  candidates: OperationalNeighborhoodCandidate[];
+  depth1Candidates: number;
+  depth2Candidates: number;
+  chainsEvaluated: number;
+  diagnostics: OperationalNeighborhoodDiagnostics;
 }
 
 const DEFAULT_MAX_CANDIDATES = 30;
 const DEFAULT_MAX_ATTEMPTS_PER_NEIGHBORHOOD = 10;
 const MAX_SMALL_GAP_MINUTES = 30;
+const MAX_DEPTH_1_CANDIDATES = 10;
+const MAX_DEPTH_2_PER_CANDIDATE = 5;
+const MAX_TOTAL_EVALUATED = 30;
+const MAX_TOTAL_SEARCH_CANDIDATES = MAX_TOTAL_EVALUATED - 1; // reserva una evaluación para el greedy base
+
+const ALLOWED_DEPTH_2_CHAINS = new Map<OperationalNeighborhoodReason, OperationalNeighborhoodReason[]>([
+  ["feeder_advance", ["main_stage_gap_fill", "coach_block_compaction"]],
+  ["restrictive_talent_bundle", ["feeder_advance"]],
+  ["coach_block_compaction", ["main_stage_gap_fill"]],
+]);
 
 const toHHMM = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
@@ -95,6 +118,18 @@ const cloneWithSwappedTimes = (output: EngineOutput, leftTaskId: number, rightTa
 const mainGapMinutes = (input: EngineV3Input, output: EngineOutput): number => calculateMainStageGaps(input, output)?.minutes ?? 0;
 
 const candidateSafetyReason = (input: EngineV3Input, baseOutput: EngineOutput, candidate: EngineOutput): string | null => {
+  const selectedMetrics = candidate.v3Meta?.selectedCandidateMetrics;
+  if (selectedMetrics) {
+    const actual = calculateOperationalMetrics(input, candidate);
+    const consistent = selectedMetrics.coachSwitchCount === actual.coachSwitchCount
+      && selectedMetrics.coachSwitchPenalty === actual.coachSwitchPenalty
+      && selectedMetrics.restrictiveTalentAverageStartOffset === actual.restrictiveTalentAverageStartOffset
+      && selectedMetrics.mainStageGapMinutes === actual.mainStageGapMinutes
+      && selectedMetrics.mainStageGapCount === actual.mainStageGapCount
+      && selectedMetrics.makespan === actual.makespan
+      && selectedMetrics.hardConstraintViolations === actual.hardConstraintViolations;
+    if (!consistent) return "selected_candidate_metrics_inconsistent";
+  }
   if (countHardConstraintViolations(input, candidate) > countHardConstraintViolations(input, baseOutput)) return "hard_constraint_violation";
   if (countLockedTaskMoved(input, candidate) > countLockedTaskMoved(input, baseOutput)) return "locked_task_moved";
   if (countExecutedTaskMoved(input, candidate) > countExecutedTaskMoved(input, baseOutput)) return "executed_task_moved";
@@ -147,7 +182,7 @@ const appendIfSafe = (
     return false;
   }
   seen.add(signature);
-  results.push({ output: candidate, reason });
+  results.push({ output: candidate, reason, depth: 1, chain: [reason] });
   if (!diagnostics.generatedTypes.includes(reason)) diagnostics.generatedTypes.push(reason);
   return true;
 };
@@ -201,7 +236,7 @@ const generateMainStageGapFillCandidates = (
     for (let j = i; j < rows.length && attempts < maxAttempts && results.length < maxCandidates; j++) {
       const row = rows[j];
       const duration = durationOf(row.planned);
-      if (fixed.has(row.taskId) || duration === null || duration > gap) continue;
+      if (fixed.has(row.taskId) || duration === null) continue;
       attempts += 1;
       appendIfSafe(input, output, cloneWithMoves(output, new Map([[row.taskId, gapStart]])), reason, results, seen, maxCandidates, diagnostics);
     }
@@ -351,10 +386,92 @@ export const generateOperationalNeighborhoodCandidates = (
 
   const results: OperationalNeighborhoodCandidate[] = [];
   const seen = new Set<string>([candidateSignature(output)]);
-  generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
-  generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
-  generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
-  generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
-  generateRestrictiveTalentBundleCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  const allowed = new Set(options.allowedReasons ?? [
+    "main_stage_gap_fill",
+    "feeder_advance",
+    "advance_restrictive_talent",
+    "coach_block_compaction",
+    "restrictive_talent_bundle",
+  ]);
+  if (allowed.has("main_stage_gap_fill")) generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  if (allowed.has("feeder_advance")) generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  if (allowed.has("advance_restrictive_talent")) generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  if (allowed.has("coach_block_compaction")) generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  if (allowed.has("restrictive_talent_bundle")) generateRestrictiveTalentBundleCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   return results.slice(0, maxCandidates);
+};
+
+const mergeDiagnostics = (
+  target: OperationalNeighborhoodDiagnostics,
+  source: OperationalNeighborhoodDiagnostics,
+): void => {
+  for (const reason of source.attemptedTypes) if (!target.attemptedTypes.includes(reason)) target.attemptedTypes.push(reason);
+  for (const reason of source.generatedTypes) if (!target.generatedTypes.includes(reason)) target.generatedTypes.push(reason);
+  for (const [reason, count] of Object.entries(source.rejectedReasons)) {
+    target.rejectedReasons[reason] = (target.rejectedReasons[reason] ?? 0) + count;
+  }
+};
+
+export const generateOperationalNeighborhoodSearchCandidates = (
+  input: EngineV3Input,
+  output: EngineOutput,
+): OperationalNeighborhoodSearchResult => {
+  const diagnostics: OperationalNeighborhoodDiagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} };
+  const depth1Diagnostics: OperationalNeighborhoodDiagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} };
+  const depth1 = generateOperationalNeighborhoodCandidates(input, output, {
+    maxCandidates: MAX_DEPTH_1_CANDIDATES,
+    diagnostics: depth1Diagnostics,
+  }).map((candidate) => ({ ...candidate, depth: 1 as const, chain: [candidate.reason] }));
+  mergeDiagnostics(diagnostics, depth1Diagnostics);
+
+  const rankedDepth1 = [...depth1].sort((left, right) => (
+    compareCandidateSolutions(input, right.output, left.output)
+    || left.reason.localeCompare(right.reason)
+    || candidateSignature(left.output).localeCompare(candidateSignature(right.output))
+  ));
+  const depth2: OperationalNeighborhoodCandidate[] = [];
+  const seen = new Set<string>([candidateSignature(output), ...depth1.map((candidate) => candidateSignature(candidate.output))]);
+  let chainsEvaluated = 0;
+
+  for (const parent of rankedDepth1) {
+    if (depth1.length + depth2.length >= MAX_TOTAL_SEARCH_CANDIDATES) break;
+    const secondReasons = ALLOWED_DEPTH_2_CHAINS.get(parent.reason) ?? [];
+    if (!secondReasons.length) continue;
+    const childDiagnostics: OperationalNeighborhoodDiagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} };
+    const remaining = MAX_TOTAL_SEARCH_CANDIDATES - depth1.length - depth2.length;
+    const children = generateOperationalNeighborhoodCandidates(input, parent.output, {
+      maxCandidates: Math.min(MAX_DEPTH_2_PER_CANDIDATE, remaining),
+      allowedReasons: secondReasons,
+      diagnostics: childDiagnostics,
+    });
+    mergeDiagnostics(diagnostics, childDiagnostics);
+    for (const child of children) {
+      chainsEvaluated += 1;
+      const signature = candidateSignature(child.output);
+      if (seen.has(signature)) {
+        incrementRejected(diagnostics, "duplicate_depth_2_candidate");
+        continue;
+      }
+      const baseUnsafeReason = candidateSafetyReason(input, output, child.output);
+      if (baseUnsafeReason) {
+        incrementRejected(diagnostics, baseUnsafeReason);
+        continue;
+      }
+      seen.add(signature);
+      depth2.push({
+        ...child,
+        depth: 2,
+        chain: [parent.reason, child.reason],
+      });
+      if (depth1.length + depth2.length >= MAX_TOTAL_SEARCH_CANDIDATES) break;
+    }
+  }
+
+  return {
+    candidates: [...depth1, ...depth2],
+    depth1Candidates: depth1.length,
+    depth2Candidates: depth2.length,
+    chainsEvaluated,
+    diagnostics,
+  };
 };

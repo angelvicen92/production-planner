@@ -136,3 +136,11 @@ La ejecución de referencia posterior a ID 013 conserva la jornada completa y su
 El cambio relevante frente a ID 012 es que L pasa de **0 a 1 candidato válido**. El candidato procede del vecindario `feeder_advance`, pero empata con greedy en la jerarquía completa del comparador; por ello no se acepta. Esto demuestra cobertura real sobre feeders densos sin forzar una mejora inexistente ni relajar constraints.
 
 El hueco de 10 minutos y los 16 cambios de coach permanecen como objetivos residuales. Para mejorarlos hará falta combinar movimientos secuenciales o incorporar una evaluación local que permita preparar un feeder y, en un segundo paso, rellenar Main Stage.
+
+## ID 014 — Búsqueda local depth 2
+
+Sobre el escenario L completo de ID 013, la expansión depth 2 genera 2 candidatos de primer nivel, 1 de segundo nivel y evalúa 1 cadena. El resultado conserva `hardConstraintViolations=0`, `mainStageGapMinutes=10`, `coachSwitchCount=16` y `selectedCandidateMetricsConsistent=true`.
+
+El mejor candidato aceptado es depth 1 (`main_stage_gap_fill` como tipo operativo) y no elimina el hueco; mejora el timing restrictivo agregado de 106 a 105 minutos. La alternativa depth 2 fue validada, pero no superó ese candidato en el scoring lexicográfico. Por tanto, ID 014 no fuerza una aceptación de cadena en L: demuestra expansión real y conserva seguridad.
+
+Como contraste controlado, N sí necesita la cadena `feeder_advance -> main_stage_gap_fill`: el primer movimiento prepara la dependencia y el segundo reduce el hueco de 10 a 0 minutos sin violaciones hard.

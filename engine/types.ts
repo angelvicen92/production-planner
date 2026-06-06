@@ -349,6 +349,11 @@ export interface EngineOutput {
     };
     neighborhoodSearchAttempted?: boolean;
     neighborhoodCandidatesGenerated?: number;
+    neighborhoodSearchDepth?: number;
+    neighborhoodDepth1Candidates?: number;
+    neighborhoodDepth2Candidates?: number;
+    neighborhoodChainsEvaluated?: number;
+    neighborhoodAcceptedChain?: string;
     neighborhoodCandidateAccepted?: boolean;
     neighborhoodAcceptedReason?: string;
     neighborhoodSearchTimeMs?: number;

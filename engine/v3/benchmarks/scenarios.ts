@@ -299,6 +299,42 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "La búsqueda feeder-aware debe generar alternativas válidas y aceptar una que reduzca el hueco de Main Stage o adelante al talent semi-restrictivo, sin violaciones hard.",
     riskNotes: ["Caso determinista aislado", "Demuestra mejora feeder-aware aceptada", "No exige búsqueda global ni combinación exhaustiva de movimientos"],
   },
+  {
+    id: "N",
+    name: "Feeder advance + Main Stage gap fill encadenado",
+    description: "Microescenario aislado con un feeder tardío que bloquea el inicio del Main Stage hasta que se encadenan dos vecindarios.",
+    input: baseInput([
+      { id: 14001, planId: PLAN_ID, templateId: 2401, templateName: "Main Stage apertura", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 141, contestantName: "Talent apertura N", status: "pending", durationOverrideMin: 30 },
+      { id: 14002, planId: PLAN_ID, templateId: 2402, templateName: "Feeder auxiliar temprano", zoneId: 2, spaceId: 201, contestantId: 142, contestantName: "Talent auxiliar N", status: "pending", durationOverrideMin: 20 },
+      { id: 14003, planId: PLAN_ID, templateId: 2403, templateName: "Main Stage auxiliar ejecutado", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 142, contestantName: "Talent auxiliar N", status: "done", durationOverrideMin: 30, startPlanned: "11:00", endPlanned: "11:30", dependsOnTaskIds: [14002] },
+      { id: 14004, planId: PLAN_ID, templateId: 2404, templateName: "Feeder objetivo tardío", zoneId: 2, spaceId: 201, contestantId: 143, contestantName: "Talent objetivo N", status: "pending", durationOverrideMin: 20 },
+      { id: 14005, planId: PLAN_ID, templateId: 2405, templateName: "Main Stage objetivo", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 143, contestantName: "Talent objetivo N", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [14004] },
+    ], {
+      workDay: { start: "09:00", end: "12:00" },
+      meal: { start: "12:00", end: "12:30" },
+      contestantAvailabilityById: {
+        141: { start: "09:00", end: "12:00" },
+        142: { start: "09:00", end: "12:00" },
+        143: { start: "09:00", end: "11:00" },
+      },
+      enableLimitedBacktracking: false,
+    } as any),
+    neighborhoodSeedOutput: {
+      feasible: true,
+      complete: true,
+      hardFeasible: true,
+      plannedTasks: [
+        { taskId: 14001, startPlanned: "09:00", endPlanned: "09:30" },
+        { taskId: 14002, startPlanned: "09:00", endPlanned: "09:20" },
+        { taskId: 14004, startPlanned: "09:20", endPlanned: "09:40" },
+        { taskId: 14005, startPlanned: "09:40", endPlanned: "10:10" },
+      ],
+      unplanned: [],
+      warnings: [],
+    },
+    operationalExpectation: "Feeder advance aislado mantiene el hueco; la cadena feeder_advance -> main_stage_gap_fill lo elimina sin hard violations.",
+    riskNotes: ["Seed completo y determinista para aislar la búsqueda local depth 2", "No sustituye el benchmark end-to-end de L", "Sin aleatoriedad ni búsqueda global"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];
