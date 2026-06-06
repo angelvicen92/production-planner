@@ -16,7 +16,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = generatePlanV3(scenario.input, { timeLimitMs: 0 });
@@ -165,6 +165,41 @@ for (const id of ["C", "D", "J"] as const) {
   const metrics = calculateMetrics(scenario.input, output, 0);
   assert.equal(metrics.selectedCandidateMetricsConsistent, true, "scenario I selected metrics must describe the final output");
   assert.equal(output.v3Meta?.selectedCandidateMetrics?.coachSwitchCount, metrics.coachSwitchCount, "scenario I metadata and benchmark coach-switch count");
+}
+
+// Escenario L — jornada audiovisual anonimizada: invariantes hard y consistencia de métricas.
+{
+  const { scenario, output } = run("L");
+  const tasks = scenario.input.tasks ?? [];
+  const talentIds = new Set(tasks.map((task: any) => Number(task.contestantId)).filter((id: number) => Number.isFinite(id) && id > 0));
+  const spaceIds = new Set(tasks.map((task: any) => Number(task.spaceId)).filter((id: number) => Number.isFinite(id) && id > 0));
+  const resourceNames = (scenario.input.planResourceItems ?? []).map((resource: any) => String(resource.name));
+
+  assert.ok(talentIds.size >= 18 && talentIds.size <= 22, "scenario L should model 18-22 talents");
+  assert.ok(tasks.length >= 90 && tasks.length <= 140, "scenario L should include 90-140 tasks");
+  assert.ok(spaceIds.size >= 8 && spaceIds.size <= 12, "scenario L should use 8-12 spaces");
+  assert.equal(resourceNames.filter((name: string) => name.startsWith("Coach ")).length, 2, "scenario L should include two coaches");
+  assert.ok(resourceNames.filter((name: string) => name.startsWith("Camera ")).length >= 4, "scenario L should include camera resources");
+  assert.ok(resourceNames.filter((name: string) => name.startsWith("Sound ")).length >= 3, "scenario L should include sound resources");
+  assert.equal(tasks.filter((task: any) => task.status === "done").length, 2, "scenario L should include two done tasks");
+  assert.equal(tasks.filter((task: any) => task.status === "in_progress").length, 1, "scenario L should include one in-progress task");
+  assert.equal((scenario.input.locks ?? []).length, 2, "scenario L should include two manual locks");
+
+  assert.equal(countContestantOverlaps(scenario.input, output), 0, "scenario L talent overlaps");
+  assert.equal(countSpaceOverlaps(scenario.input, output), 0, "scenario L space overlaps");
+  assert.equal(countExclusiveResourceOverlaps(scenario.input, output), 0, "scenario L exclusive resource overlaps");
+  assert.equal(countExecutedTaskMoved({ ...scenario.input, tasks: tasks.filter((task: any) => task.status === "done") }, output), 0, "scenario L done tasks must not move");
+  assert.equal(countExecutedTaskMoved({ ...scenario.input, tasks: tasks.filter((task: any) => task.status === "in_progress") }, output), 0, "scenario L in-progress task must not move");
+  assert.equal(countLockedTaskMoved(scenario.input, output), 0, "scenario L manual locks must not move");
+  assert.equal(countMealCrossings(scenario.input, output), 0, "scenario L tasks must not cross hard meal");
+  assert.equal(countContestantWindowViolations(scenario.input, output), 0, "scenario L talent availability");
+  assert.equal(countDependencyViolations(scenario.input, output), 0, "scenario L dependencies");
+
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  if (output.complete) assert.equal(metrics.hardConstraintViolations, 0, "complete scenario L must have no hard violations");
+  if (metrics.selectedCandidateMetrics !== null) {
+    assert.equal(metrics.selectedCandidateMetricsConsistent, true, "scenario L selected metrics must describe final output");
+  }
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

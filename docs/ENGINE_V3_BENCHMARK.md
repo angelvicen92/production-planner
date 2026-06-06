@@ -220,3 +220,37 @@ Antes de aplicar el vecindario (off): `coachSwitchCount=14`, `coachSwitchPenalty
 Después de seleccionar `operational_neighborhood` (on): `coachSwitchCount=12`, `coachSwitchPenalty=32`, `mainStageGapMinutes=0`, `restrictiveTalentAverageStartOffset=48`, `hardConstraintViolations=0` y `selectedCandidateMetricsConsistent=true`.
 
 El valor histórico `coachSwitchCount=44` queda explicado como conteo de cambios de cualquier recurso asignado y deja de presentarse como métrica de coaches.
+
+## Actualización ID 012 — escenario L realista anonimizado
+
+ID 012 incorpora **L — Jornada audiovisual anonimizada tipo La Voz** como escenario de escala superior a I: 20 talents, 104 tareas, 10 espacios, 2 coaches, 5 cámaras, 4 sonidos, dos salas de totales, dos sets reality, feeders pre/post, cuatro condiciones instrumentales, cinco disponibilidades restrictivas, dos `done`, un `in_progress` y dos locks.
+
+Resultado de referencia:
+
+- `status: complete`
+- `totalTasks: 104`
+- `plannedTasks: 99`
+- `unplannedTasks: 0`
+- `runtimeMs: 107`
+- `makespan: 642`
+- `mainStageGapMinutes: 10`
+- `mainStageGapCount: 1`
+- `mainStageUtilizationPercent: 98`
+- `restrictiveTalentAverageStartOffset: 106`
+- `restrictiveTalentLatestFinishSlack: 28`
+- `coachSwitchCount: 16`
+- `coachSwitchPenalty: 46`
+- `hardConstraintViolations: 0`
+- `lockedTaskMovedCount: 0`
+- `executedTaskMovedCount: 0`
+- `candidateSolutionsEvaluated: 1`
+- `solutionSource: phaseA_greedy`
+- `candidateSelectionReason: no operational neighborhood candidate generated`
+- `neighborhoodSearchAttempted: true`
+- `neighborhoodCandidatesGenerated: 0`
+- `neighborhoodCandidateAccepted: false`
+- `selectedCandidateMetricsConsistent: true`
+
+El runner imprime ahora `totalTasks`, `plannedTasks` y `unplannedTasks` como campos separados y ejecuta una comparación neighborhoods off/on también para L. En la referencia, off/on conserva las mismas métricas de calidad (`planned=99`, hueco de plató 10, offset restrictivo 106, 16 cambios de coach y penalización 46); el runtime fue 79 ms off y 107 ms on.
+
+La descripción completa, lectura operativa, riesgos y recomendación para ID 013 están en `docs/ENGINE_V3_REALISTIC_VOICE_DAY.md`.

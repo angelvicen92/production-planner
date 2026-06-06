@@ -22,7 +22,9 @@ const printResult = (result: BenchmarkRunResult): void => {
 
   console.log(`\n[${scenario.id}] ${scenario.name}`);
   console.log(`  status: ${status}${hardMarker}`);
-  console.log(`  plannedTasks / totalTasks: ${metrics.plannedTasks} / ${metrics.totalTasks}`);
+  console.log(`  totalTasks: ${metrics.totalTasks}`);
+  console.log(`  plannedTasks: ${metrics.plannedTasks}`);
+  console.log(`  unplannedTasks: ${metrics.unplannedTasks}`);
   console.log(`  runtimeMs: ${metrics.runtimeMs}`);
   console.log(`  makespan: ${formatNullable(metrics.makespan)}`);
   console.log(`  mainStageGapMinutes: ${formatNullable(metrics.mainStageGapMinutes)}`);
@@ -65,25 +67,29 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);
 
 
-const stressScenario = benchmarkScenarios.find((scenario) => scenario.id === "I");
-if (stressScenario) {
+const printNeighborhoodComparison = (scenarioId: "I" | "L"): void => {
+  const scenario = benchmarkScenarios.find((candidate) => candidate.id === scenarioId);
+  if (!scenario) return;
+  const offInput = { ...scenario.input, enableOperationalNeighborhoods: false } as any;
   const offStart = performance.now();
-  const offOutput = generatePlanV3({ ...stressScenario.input, enableOperationalNeighborhoods: false } as any, { timeLimitMs: 0, requestId: "benchmark-I-neighborhood-off", enableLimitedBacktracking: false });
-  const offMetrics = calculateMetrics(stressScenario.input, offOutput, Math.round(performance.now() - offStart));
-  const onResult = results.find((result) => result.scenario.id === "I");
-  if (onResult) {
-    console.log("\nComparativa escenario I — neighborhoods off/on");
-    console.log(`  off: planned=${offMetrics.plannedTasks}, mainStageGapMinutes=${formatNullable(offMetrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(offMetrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(offMetrics.coachSwitchCount)}, coachSwitchPenalty=${offMetrics.coachSwitchPenalty}, runtimeMs=${offMetrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(offMetrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(offMetrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(offMetrics.solutionSource)}`);
-    console.log(`  on : planned=${onResult.metrics.plannedTasks}, mainStageGapMinutes=${formatNullable(onResult.metrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(onResult.metrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(onResult.metrics.coachSwitchCount)}, coachSwitchPenalty=${onResult.metrics.coachSwitchPenalty}, runtimeMs=${onResult.metrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(onResult.metrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(onResult.metrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(onResult.metrics.solutionSource)}`);
-  }
-}
+  const offOutput = generatePlanV3(offInput, { timeLimitMs: 0, requestId: `benchmark-${scenarioId}-neighborhood-off`, enableLimitedBacktracking: false });
+  const offMetrics = calculateMetrics(offInput, offOutput, Math.round(performance.now() - offStart));
+  const onResult = results.find((result) => result.scenario.id === scenarioId);
+  if (!onResult) return;
+  console.log(`\nComparativa escenario ${scenarioId} — neighborhoods off/on`);
+  console.log(`  off: planned=${offMetrics.plannedTasks}, mainStageGapMinutes=${formatNullable(offMetrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(offMetrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(offMetrics.coachSwitchCount)}, coachSwitchPenalty=${offMetrics.coachSwitchPenalty}, runtimeMs=${offMetrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(offMetrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(offMetrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(offMetrics.solutionSource)}`);
+  console.log(`  on : planned=${onResult.metrics.plannedTasks}, mainStageGapMinutes=${formatNullable(onResult.metrics.mainStageGapMinutes)}, restrictiveTalentAverageStartOffset=${formatNullable(onResult.metrics.restrictiveTalentAverageStartOffset)}, coachSwitchCount=${formatNullable(onResult.metrics.coachSwitchCount)}, coachSwitchPenalty=${onResult.metrics.coachSwitchPenalty}, runtimeMs=${onResult.metrics.runtimeMs}, neighborhoodCandidatesGenerated=${formatNullable(onResult.metrics.neighborhoodCandidatesGenerated)}, candidateSolutionsEvaluated=${formatNullable(onResult.metrics.candidateSolutionsEvaluated)}, solutionSource=${formatNullable(onResult.metrics.solutionSource)}`);
+};
+
+printNeighborhoodComparison("I");
+printNeighborhoodComparison("L");
 
 const completed = results.filter((result) => result.output.complete).length;
 const hardViolationsInCompleted = results.filter((result) => result.output.complete && result.metrics.hardConstraintViolations > 0).length;

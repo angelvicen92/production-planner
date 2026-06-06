@@ -5,7 +5,9 @@ Suite operativa reproducible para caracterizar el motor V3 antes de modificar su
 ## Archivos
 
 - `types.ts`: contrato de escenarios, resultados y métricas.
-- `scenarios.ts`: escenarios críticos A-F con inputs pequeños compatibles con `generatePlanV3`.
+- `scenarios.ts`: catálogo de escenarios críticos A-L compatible con `generatePlanV3`.
+- `realisticDayScenario.ts`: escenario I de stress sintético intermedio.
+- `realisticVoiceDayScenario.ts`: escenario L realista anonimizado de ID 012.
 - `metrics.ts`: funciones puras de métricas e invariantes hard.
 - `runBenchmark.ts`: runner usado por `npm run benchmark:engine`.
 - `scenarios.spec.ts`: tests de invariantes hard sin exigir micro-optimización.
