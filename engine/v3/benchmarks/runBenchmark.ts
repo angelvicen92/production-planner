@@ -57,6 +57,9 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  neighborhoodCandidatesGenerated: ${formatNullable(metrics.neighborhoodCandidatesGenerated)}`);
   console.log(`  neighborhoodCandidateAccepted: ${formatNullable(metrics.neighborhoodCandidateAccepted)}`);
   console.log(`  neighborhoodAcceptedReason: ${formatNullable(metrics.neighborhoodAcceptedReason)}`);
+  console.log(`  neighborhoodTypesAttempted: ${metrics.neighborhoodTypesAttempted?.join(",") ?? "n/a"}`);
+  console.log(`  neighborhoodTypesGenerated: ${metrics.neighborhoodTypesGenerated?.join(",") ?? "n/a"}`);
+  console.log(`  neighborhoodRejectedReasons: ${metrics.neighborhoodRejectedReasons ? JSON.stringify(metrics.neighborhoodRejectedReasons) : "n/a"}`);
   console.log(`  structuredBlockersCount: ${metrics.structuredBlockersCount}`);
   console.log(`  movableBlockersCount: ${metrics.movableBlockersCount}`);
   console.log(`  immovableBlockersCount: ${metrics.immovableBlockersCount}`);
@@ -67,7 +70,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);

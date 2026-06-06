@@ -6,7 +6,7 @@ ID 010 añade una búsqueda local pequeña y determinista para mejorar **planes 
 
 ## Módulo añadido
 
-El módulo `engine/v3/operationalNeighborhoods.ts` genera candidatos desde un `EngineOutput` completo:
+En la versión histórica de ID 010, el módulo `engine/v3/operationalNeighborhoods.ts` generaba candidatos desde un `EngineOutput` completo con:
 
 - máximo 20 candidatos;
 - máximo 5 intentos por vecindario;
@@ -132,3 +132,38 @@ Comparación reproducible con vecindarios off/on:
 - `selectedCandidateMetricsConsistent`: **true**.
 
 Por tanto, en I la razón `operational_neighborhood selected: fewer coach switches` sí describe una mejora real del conteo bruto de coaches. Si en otro escenario solo baja la penalización ponderada y no el conteo, la razón pasa a decir explícitamente `lower weighted coach-switch penalty` e indica la comparación del conteo bruto; ya no afirma una reducción inexistente.
+
+## ID 013 — Vecindarios feeder-aware
+
+ID 013 amplía la búsqueda local para jornadas ricas en dependencias sin convertirla en un solver global. Los candidatos siguen pasando por el comparador único de soluciones y por validación hard antes de ser expuestos.
+
+### Nuevos movimientos
+
+- **`main_stage_gap_fill`**: detecta huecos de Main Stage de hasta 30 minutos e intenta colocar una tarea posterior que quepa completa. Un movimiento que adelanta una tarea antes de sus feeders se rechaza por dependencia.
+- **`feeder_advance`**: prioriza dependencias directas de Main Stage y prueba tanto swaps de igual duración dentro del mismo espacio como adelantos a fronteras temporales ya existentes. Los swaps permiten encontrar vecinos en jornadas densas donde no existe un hueco totalmente vacío.
+- **`coach_block_compaction`**: conserva el patrón local A/B/A y prueba el swap B/C solo cuando ambas tareas son movibles; `done`, `in_progress`, manual blocks y locks quedan fuera del movimiento.
+- **`restrictive_talent_bundle`**: adelanta conjuntamente dos o tres feeders directos de un talent restrictivo, manteniendo sus offsets relativos y dejando que el validador hard compruebe orden, disponibilidad, espacios, recursos y comida.
+- **`advance_restrictive_talent`** se mantiene por compatibilidad como movimiento unitario conservador y como respaldo para tareas restrictivas que aún no forman un bundle feeder.
+
+### Límites y seguridad
+
+- Máximo global: **30 candidatos**.
+- Máximo por tipo: **10 intentos**.
+- Máximo por candidato: **3 tareas movidas**.
+- Orden y anchors deterministas; no hay aleatoriedad.
+- Deduplicación por firma completa `taskId@start-end`.
+- Rechazo si aumentan las violaciones hard, se mueve un lock o una tarea ejecutada, o aumenta `mainStageGapMinutes`.
+- La metadata añade `neighborhoodTypesAttempted`, `neighborhoodTypesGenerated` y un mapa agregado `neighborhoodRejectedReasons`, sin retirar los campos previos.
+
+### Resultado de referencia
+
+- **L**: genera 1 candidato válido (`feeder_advance`), mantiene 0 violaciones hard, 10 minutos de hueco y métricas seleccionadas consistentes. El candidato empata con greedy y no se acepta; evita una aceptación artificial.
+- **M**: genera 2 candidatos, acepta uno, reduce el hueco de Main Stage de la solución base y termina con `solutionSource=operational_neighborhood`, 0 violaciones hard y métricas consistentes.
+
+### Riesgos residuales
+
+1. Los anchors proceden de fronteras de la solución actual; no se enumeran todos los minutos del día.
+2. Los bundles solo consideran feeders directos de Main Stage y un máximo de tres tareas.
+3. La compactación de coach sigue limitada a patrones locales A/B/A y tareas de igual duración.
+4. Los candidatos se generan respecto de la misma solución base; todavía no se encadenan iterativamente feeder advance + gap fill.
+5. Un candidato hard-válido puede empatar en todas las métricas actuales, como ocurre en L, y se conserva correctamente la solución base.

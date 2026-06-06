@@ -352,5 +352,8 @@ export interface EngineOutput {
     neighborhoodCandidateAccepted?: boolean;
     neighborhoodAcceptedReason?: string;
     neighborhoodSearchTimeMs?: number;
+    neighborhoodTypesAttempted?: string[];
+    neighborhoodTypesGenerated?: string[];
+    neighborhoodRejectedReasons?: Record<string, number>;
   };
 }
