@@ -42,10 +42,16 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 022 — 2026-05-31 01:05 — Panel Admin de diagnóstico del motor por plan
 - ID 023 — 2026-05-31 01:25 — Export/copy de diagnóstico del motor para revisión externa
 - ID 024 — 2026-05-31 01:45 — Guía de validación real del motor y checklist de prueba en app
+- ID 025 — 2026-05-31 02:05 — Optimización de scripts rápidos/completos de tests y benchmarks del Motor V3
 
 ## Verificación básica
 
 ```bash
 npm run check
-npm run test:engine
+npm run test:engine:quick
+npm run benchmark:engine:quick
+npm run test:engine:full
+npm run benchmark:engine:full
 ```
+
+Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conservan la validación completa. Para iteración local rápida se usan los comandos `:quick`; antes de mergear cambios del motor deben ejecutarse las suites `:full`.
