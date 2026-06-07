@@ -36,7 +36,7 @@ La auditoría ID 003 documentó que la ruta principal ejecuta `generatePlanV3`, 
 - La disponibilidad restrictiva de concursantes es una fuente central de factibilidad.
 - Locks, tareas `done` y tareas `in_progress` son intocables para producto.
 
-Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cubrir ventanas restrictivas, riesgo greedy, continuidad de plató principal, coaches exclusivos, locks/ejecución y comida global. ID 006 añade G, ID 007 añade H e ID 008 añade I como stress sintético realista.
+Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cubrir ventanas restrictivas, riesgo greedy, continuidad de plató principal, coaches exclusivos, locks/ejecución y ventana de comida. ID 006 añade G, ID 007 añade H e ID 008 añade I como stress sintético realista.
 
 ## Escenarios incluidos
 
@@ -47,7 +47,7 @@ Los escenarios A-F se diseñan directamente alrededor de esos hallazgos para cub
 | C — Plató principal sin huecos | Feeders, dependencias y tareas de main stage con ventana restrictiva. | Continuidad de plató principal no garantizada matemáticamente. | Completo; 5/5 tareas planificadas; 0 violaciones hard; 0 huecos en la ejecución de referencia. | Los huecos se miden como soft/diagnóstico, no como hard. |
 | D — Coaches encadenados | Dos coaches exclusivos, tareas de coach y tareas relacionadas de plató principal. | Solape de recursos exclusivos y activación tardía de coach restrictivo. | Completo; 5/5 tareas planificadas; 0 violaciones hard; 2 cambios de coach en la ejecución de referencia. | `coachSwitchCount` se calcula desde recursos asignados por el motor. |
 | E — Locks y ejecución intocable | Una tarea `done`, una `in_progress`, un lock manual y varias pending. | Movimiento accidental de ejecución o locks. | Completo; el motor devuelve 2/5 tareas movibles/planificables; 0 movimientos de locked/executed según métrica. | Las tareas fijas pueden no aparecer en `plannedTasks`; la métrica solo cuenta movimiento si el motor devuelve una hora distinta. |
-| F — Comida / bloque global | Comida global 10:30-11:00 con tareas antes/después y disponibilidad restrictiva. | Tareas cruzando comida si el bloque global deja de ser hard. | Completo; 3/3 tareas planificadas; 0 cruces de comida; 60 minutos de hueco main stage en la ejecución de referencia. | La comida se modela con `input.meal` como bloque global operativo. |
+| F — Ventana de comida legacy | Ventana 10:30-11:00 con tareas y disponibilidades antes/después. | Compatibilidad del input histórico tras aclarar que `input.meal` no es un bloqueo global. | Completo; 3/3 tareas planificadas; 0 violaciones hard. | La ventana guía la colocación de comidas, pero no prohíbe por sí sola tareas normales. |
 | I — Jornada sintética realista | 16 talents, 80 tareas, 6 espacios, 2 coaches, 6 recursos, comida, locks, `done`/`in_progress` y feeders hacia plató principal. | Escala intermedia, priorización restrictiva, huecos de plató, coaches y efectos de locks/ejecución. | Completo; 77/80 filas planificadas; 0 violaciones hard; 0 huecos de plató principal en la ejecución de referencia. | Stress benchmark ID 008; detalle completo en `docs/ENGINE_V3_STRESS_BENCHMARK.md`. |
 
 ## Métricas
@@ -455,3 +455,15 @@ Invariantes exigidos por el benchmark:
 - ninguna fila inválida modifica factibilidad ni se incorpora al cálculo de coherencia.
 
 Resultado de referencia de ID 020: `complete=true`, `hardConstraintViolations=0`, `usableResourceBundleCount=2`, `invalidResourceBundleCount=1`, `partiallyUsableResourceBundleCount=2`, `resourceBundleValidationWarnings=4` y `selectedCandidateMetricsConsistent=true`.
+
+
+## ID 027 — Meal semantics
+
+El benchmark añade dos escenarios de seguridad que separan disponibilidad y bloqueo real:
+
+| Escenario | Configuración | Resultado esperado |
+|---|---|---|
+| U — Flexible meal window is not a global break | `meal: 13:00–16:30`, doce tareas normales dentro de la ventana, sin `actualMeal` ni `globalHardBreaks`. | `complete=true`, `hardConstraintViolations=0` y ausencia de `MEAL_CROSSING`. |
+| V — Actual meal block remains protected | Misma ventana flexible, `actualMeal: 14:00–14:40` scoped al concursante y una tarea 13:50–14:20. | Resultado `infeasible`, `hardConstraintViolations>0`, código `MEAL_CROSSING` y detalle `MEAL_BLOCK_CROSSING`. |
+
+La suite quick incluye U y V. U evita regresiones masivas como el caso real con más de cien tareas dentro de una ventana amplia. V demuestra que la corrección no desactiva la protección hard. Los escenarios con `globalHardBreaks` se cubren además en tests unitarios del validador.

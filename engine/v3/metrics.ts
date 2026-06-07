@@ -140,20 +140,12 @@ export const countExclusiveResourceOverlaps = (input: EngineV3Input, output: Eng
   (view: PlannedTaskView & { resourceId?: number }) => view.resourceId ?? null,
 );
 
-export const countMealCrossings = (input: EngineV3Input, output: EngineOutput): number => {
-  const mealStart = toMinutes(input.meal?.start);
-  const mealEnd = toMinutes(input.meal?.end);
-  if (mealStart === null || mealEnd === null || mealEnd <= mealStart) return 0;
-  let crossings = 0;
-  for (const view of getPlannedViews(input, output)) {
-    if (view.task.breakKind === "space_meal" || view.task.breakKind === "itinerant_meal") continue;
-    const start = toMinutes(view.startPlanned);
-    const end = toMinutes(view.endPlanned);
-    if (start === null || end === null) continue;
-    if (start < mealEnd && end > mealStart) crossings++;
-  }
-  return crossings;
-};
+export const countMealCrossings = (input: EngineV3Input, output: EngineOutput): number => (
+  validateHardConstraints(input, output, Number.MAX_SAFE_INTEGER)
+    .hardConstraintViolationDetails
+    .filter((detail) => detail.code === "MEAL_CROSSING")
+    .length
+);
 
 export const countDependencyViolations = (input: EngineV3Input, output: EngineOutput): number => {
   const plannedById = new Map((output.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));

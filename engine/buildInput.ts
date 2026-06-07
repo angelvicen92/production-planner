@@ -519,9 +519,24 @@ export async function buildEngineInput(
     },
 
     meal: {
-      start: p.meal_start ?? p.mealStart,
-      end: p.meal_end ?? p.mealEnd,
+      start: p.meal_window_start ?? p.mealWindowStart ?? p.meal_start ?? p.mealStart,
+      end: p.meal_window_end ?? p.mealWindowEnd ?? p.meal_end ?? p.mealEnd,
     },
+    mealWindow: {
+      start: p.meal_window_start ?? p.mealWindowStart ?? p.meal_start ?? p.mealStart,
+      end: p.meal_window_end ?? p.mealWindowEnd ?? p.meal_end ?? p.mealEnd,
+    },
+    actualMeal: (() => {
+      const start = p.actual_meal_start ?? p.actualMealStart ?? null;
+      const end = p.actual_meal_end ?? p.actualMealEnd ?? null;
+      return start && end ? { start, end, kind: "meal" as const } : undefined;
+    })(),
+    globalHardBreaks: Array.isArray(p.global_hard_breaks ?? p.globalHardBreaks)
+      ? (p.global_hard_breaks ?? p.globalHardBreaks)
+      : [],
+    protectedBreaks: Array.isArray(p.protected_breaks ?? p.protectedBreaks)
+      ? (p.protected_breaks ?? p.protectedBreaks)
+      : [],
     mealTaskTemplateName: String(
       p.meal_task_template_name ?? p.mealTaskTemplateName ?? "Comer",
     ),

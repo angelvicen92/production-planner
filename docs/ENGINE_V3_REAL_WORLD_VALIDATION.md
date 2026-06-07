@@ -182,3 +182,16 @@ No se recomienda ampliar el algoritmo en frío. El siguiente cambio funcional de
 Desde ID 026, la compuerta final impide que `generatePlanV3` entregue un plan hard-inválido como éxito y el servidor evita persistir sus tiempos. Si el panel muestra la alerta roja, el plan no debe usarse: exportar el JSON, revisar `hardConstraintViolationCodes` y analizar la muestra de hasta 50 `hardConstraintViolationDetails`.
 
 El caso que motivó la regla fue una ejecución real con 219 tareas planificadas, 0 sin planificar y 81 hard violations declaradas como success. La protección no decide por sí sola si eran infracciones reales o falsos positivos; hace segura esa incertidumbre y prepara el análisis de ID 027.
+
+## ID 027 — Meal semantics
+
+Al repetir una validación real, interpretar los datos de comida con estas reglas:
+
+- `meal` / `mealWindow` es el intervalo permitido para colocar comidas; una tarea normal dentro de 13:00–16:30 es válida por ese solo hecho.
+- `actualMeal` es un intervalo concreto asignado y sí es hard para su scope.
+- `globalHardBreaks` contiene paradas globales reales; no se infieren desde la ventana flexible.
+- una tarea real `space_meal` o `itinerant_meal` protege el espacio, equipo o concursante correspondiente.
+
+En el JSON exportado, `MEAL_CROSSING` debe aparecer únicamente con `details.violationType = MEAL_BLOCK_CROSSING`. Un bloqueo global explícito aparece como `GLOBAL_BREAK_CROSSING`. Si el plan solo declara una ventana flexible y no ha asignado comida, la ausencia de un bloque es información operativa pendiente, no una hard violation inventada.
+
+Para la repetición posterior a ID 027 se espera que desaparezcan las decenas de cruces falsos de 13:00–16:30. Cualquier `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, cruce de bloque real u otra categoría restante debe seguir investigándose como hard real; la compuerta no se desactiva.

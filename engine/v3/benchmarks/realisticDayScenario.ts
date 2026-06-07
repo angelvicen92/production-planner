@@ -194,7 +194,7 @@ export const realisticDayScenario: BenchmarkScenario = {
     "Feeders con coach y vocal antes del plató principal",
     "Tareas flexibles de pasillo pueden competir con tareas restrictivas",
     "Locks, done e in_progress conviven con planificación pendiente",
-    "Comida global hard 17:00-17:30",
+    "Ventana flexible de comida 17:00-17:30",
   ],
   knownRisk: "Escenario de stress: si queda partial, documenta límite operativo actual antes de CP-SAT global.",
 };
