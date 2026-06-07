@@ -34,7 +34,7 @@ La selección lexicográfica prioriza cero hard violations sobre cualquier candi
 - `IN_PROGRESS_MOVED`: una tarea en curso cambió respecto a su intervalo persistido/real.
 - `AVAILABILITY_VIOLATION`: la tarea sale de jornada, ventana fija o disponibilidad del concursante.
 - `DEPENDENCY_VIOLATION`: una tarea comienza antes de finalizar una dependencia planificada.
-- `MEAL_CROSSING`: una tarea normal cruza la ventana global protegida de comida.
+- `MEAL_CROSSING`: una tarea normal cruza un bloque real asignado o una tarea real de comida; desde ID 027 nunca significa solo presencia dentro de `input.meal`.
 - `UNKNOWN_HARD_VIOLATION`: intervalo inválido, tarea desconocida o duplicada en el output.
 
 ## Alcance de las entidades
@@ -66,3 +66,23 @@ Una incidencia puede ser una violación real o un falso positivo de modelado. La
 ## Recomendación para ID 027
 
 Analizar el JSON real con detalles, agrupar por código y corregir la categoría dominante. Si domina `MEAL_CROSSING`, confirmar primero el contrato de datos de `meal`; si dominan solapes, corregir generación/ocupación; si el origen es un falso positivo, mejorar el modelado sin rebajar la restricción. ID 026 no implementa esa corrección específica.
+
+## ID 027 — Meal semantics
+
+La auditoría de ID 027 confirmó una mezcla conceptual en la validación final:
+
+- `meal_start`/`meal_end` se cargaban en `input.meal` y Phase A ya los utilizaba como **ventana flexible** para buscar slots de las tareas de comida;
+- las tareas con `breakKind: space_meal | itinerant_meal` representaban los **bloques reales asignados**;
+- `hardValidation.ts`, sin embargo, comparaba cada tarea normal contra todo `input.meal` como si fuera un bloqueo global. Una ventana 13:00–16:30 podía producir una violación por cada tarea legítima colocada durante esas tres horas y media.
+
+### Contrato corregido
+
+1. `meal` sigue siendo compatible y ahora se documenta como ventana flexible. También se aceptan los alias `mealWindow`, `mealWindowStart` y `mealWindowEnd`.
+2. `actualMeal` o `actualMealStart`/`actualMealEnd` representan un bloque concreto. Puede limitarse por `contestantId`, `itinerantTeamId`, `spaceId` o `zoneId`; sin scope se considera global de forma explícita.
+3. `globalHardBreaks` representa paradas globales reales.
+4. `protectedBreaks` permite otros bloques hard, opcionalmente scoped.
+5. Las tareas de comida reales se reconocen por `breakKind`, `mealTaskTemplateId` o `mealTaskTemplateName` y protegen únicamente el concursante, equipo o espacio al que corresponden.
+
+`MEAL_CROSSING` mantiene compatibilidad y ahora significa exclusivamente cruce con un bloque real de comida o con una tarea real de comida. Su detalle incluye `violationType: MEAL_BLOCK_CROSSING`. Los bloqueos globales explícitos usan `GLOBAL_BREAK_CROSSING`; otros bloques protegidos usan `PROTECTED_BREAK_CROSSING`.
+
+Una ventana flexible sin bloque asignado no crea hard violations. ID 027 no relaja ningún bloqueo real y la compuerta final de ID 026 continúa rechazando todo candidato con una de estas violaciones.

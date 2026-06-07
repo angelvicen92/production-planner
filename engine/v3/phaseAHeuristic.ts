@@ -74,35 +74,6 @@ function toHHMM(mins: number) {
 const rangesOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) =>
   aStart < bEnd && bStart < aEnd;
 
-const splitGapOutsideMealWindow = (
-  gapStart: number,
-  gapEnd: number,
-  mealWindowStartMin?: number,
-  mealWindowEndMin?: number,
-) => {
-  if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd) || gapEnd <= gapStart) return [] as Array<{ start: number; end: number }>;
-  const hasMealWindow =
-    Number.isFinite(Number(mealWindowStartMin)) &&
-    Number.isFinite(Number(mealWindowEndMin)) &&
-    Number(mealWindowEndMin) > Number(mealWindowStartMin);
-  if (!hasMealWindow) return [{ start: gapStart, end: gapEnd }];
-
-  const mealStart = Number(mealWindowStartMin);
-  const mealEnd = Number(mealWindowEndMin);
-
-  if (gapEnd <= mealStart || gapStart >= mealEnd) return [{ start: gapStart, end: gapEnd }];
-  if (gapStart >= mealStart && gapEnd <= mealEnd) return [];
-  if (gapStart < mealStart && gapEnd <= mealEnd) return [{ start: gapStart, end: mealStart }];
-  if (gapStart >= mealStart && gapStart < mealEnd && gapEnd > mealEnd) return [{ start: mealEnd, end: gapEnd }];
-  if (gapStart < mealStart && gapEnd > mealEnd) {
-    return [
-      { start: gapStart, end: mealStart },
-      { start: mealEnd, end: gapEnd },
-    ];
-  }
-  return [];
-};
-
 export function computeMainZoneGaps(params: {
   zoneId: number | null;
   plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
@@ -110,10 +81,8 @@ export function computeMainZoneGaps(params: {
   getSpaceId: (task: any) => number | null;
   getZoneId: (task: any) => number | null;
   getZoneIdForSpace: (spaceId: number | null | undefined) => number | null;
-  mealWindowStartMin?: number;
-  mealWindowEndMin?: number;
 }): MainZoneGap[] {
-  const { zoneId, plannedTasks, taskById, getSpaceId, getZoneId, getZoneIdForSpace, mealWindowStartMin, mealWindowEndMin } = params;
+  const { zoneId, plannedTasks, taskById, getSpaceId, getZoneId, getZoneIdForSpace } = params;
   if (!zoneId) return [];
 
   const intervalsBySpace = new Map<number, Array<{ taskId: number; start: number; end: number }>>();
@@ -142,19 +111,16 @@ export function computeMainZoneGaps(params: {
       const prev = intervals[i - 1];
       const next = intervals[i];
       if (next.start <= prev.end) continue;
-      const segments = splitGapOutsideMealWindow(prev.end, next.start, mealWindowStartMin, mealWindowEndMin);
-      for (const segment of segments) {
-        if (segment.end - segment.start < GRID_PHASE_A) continue;
-        gaps.push({
-          zoneId: Number(zoneId),
-          spaceId,
-          start: segment.start,
-          end: segment.end,
-          durationMin: segment.end - segment.start,
-          prevTaskId: prev.taskId,
-          nextTaskId: next.taskId,
-        });
-      }
+      if (next.start - prev.end < GRID_PHASE_A) continue;
+      gaps.push({
+        zoneId: Number(zoneId),
+        spaceId,
+        start: prev.end,
+        end: next.start,
+        durationMin: next.start - prev.end,
+        prevTaskId: prev.taskId,
+        nextTaskId: next.taskId,
+      });
     }
   }
 
@@ -4453,8 +4419,6 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
           getSpaceId,
           getZoneId,
           getZoneIdForSpace,
-          mealWindowStartMin: mealStart,
-          mealWindowEndMin: mealEnd,
         })
           .sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId)
           .slice(0, configuredBeamWidth);
@@ -4525,10 +4489,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         if (globalAttempts >= configuredMaxSteps) break;
         const prevEnd = toMinutes(entries[i - 1].p.endPlanned);
         const nextStart = toMinutes(entries[i].p.startPlanned);
-        const segments = splitGapOutsideMealWindow(prevEnd, nextStart, mealStart, mealEnd);
-        for (const segment of segments) {
-          if (segment.end - segment.start < GRID_PHASE_A) continue;
-          remainingGaps.push({ spaceId, start: segment.start, end: segment.end });
+        if (nextStart - prevEnd >= GRID_PHASE_A) {
+          remainingGaps.push({ spaceId, start: prevEnd, end: nextStart });
         }
       }
     }
@@ -4541,8 +4503,6 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         getSpaceId,
         getZoneId,
         getZoneIdForSpace,
-        mealWindowStartMin: mealStart,
-        mealWindowEndMin: mealEnd,
       })
         .sort((a, b) => b.durationMin - a.durationMin || a.start - b.start || a.spaceId - b.spaceId)
         .slice(0, 5)
@@ -6622,8 +6582,6 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     getSpaceId,
     getZoneId,
     getZoneIdForSpace,
-    mealWindowStartMin: mealStart,
-    mealWindowEndMin: mealEnd,
   });
   const mainZoneGapReasons = explainMainZoneGaps({
     gaps: mainZoneGaps,
@@ -6895,8 +6853,6 @@ function computeMainZoneGapStats(params: {
   plannedTasks: Array<{ taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null }>;
   tasks: any[];
   mainZoneId: number | null | undefined;
-  mealWindowStartMin?: number;
-  mealWindowEndMin?: number;
 }) {
   const mainZoneId = Number(params.mainZoneId ?? NaN);
   if (!Number.isFinite(mainZoneId) || mainZoneId <= 0) return { gapCount: 0, gapMinutes: 0 };
@@ -6922,18 +6878,10 @@ function computeMainZoneGapStats(params: {
   let gapCount = 0;
   let gapMinutes = 0;
   for (let i = 1; i < intervals.length; i++) {
-    const segments = splitGapOutsideMealWindow(
-      intervals[i - 1].end,
-      intervals[i].start,
-      params.mealWindowStartMin,
-      params.mealWindowEndMin,
-    );
-    for (const segment of segments) {
-      const gap = segment.end - segment.start;
-      if (gap < GRID_PHASE_A) continue;
-      gapCount += 1;
-      gapMinutes += gap;
-    }
+    const gap = intervals[i].start - intervals[i - 1].end;
+    if (gap < GRID_PHASE_A) continue;
+    gapCount += 1;
+    gapMinutes += gap;
   }
   return { gapCount, gapMinutes };
 }
@@ -6986,8 +6934,6 @@ export function solve_v3_phaseA_attempt(input: EngineInput, attemptOptions?: Sol
       plannedTasks: (baseline as any)?.plannedTasks ?? [],
       tasks: input.tasks ?? [],
       mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
-      mealWindowStartMin: mealWindowStart,
-      mealWindowEndMin: mealWindowEnd,
     });
     const baseInsights = Array.isArray((baseline as any)?.insights) ? [...((baseline as any).insights)] : [];
     baseInsights.push({
@@ -7064,8 +7010,6 @@ export function solve_v3_phaseA_attempt(input: EngineInput, attemptOptions?: Sol
         plannedTasks: (plan as any)?.plannedTasks ?? [],
         tasks: input.tasks ?? [],
         mainZoneId: (input as any)?.optimizerMainZoneId ?? null,
-        mealWindowStartMin: mealWindowStart,
-        mealWindowEndMin: mealWindowEnd,
       });
       const mainSwitches = countMainSwitches(plan);
       const candidate = { gate, meal, gapCount: stats.gapCount, gapTotal: stats.gapMinutes, mainSwitches };

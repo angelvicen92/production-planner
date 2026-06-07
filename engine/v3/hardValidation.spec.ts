@@ -99,4 +99,74 @@ const task = (id: number, contestantId: number, spaceId: number, extra: Partial<
   assert.ok(diagnostics.engineMetadata.hardConstraintViolationDetails.length <= MAX_HARD_VIOLATION_DETAILS);
 }
 
+{
+  const caseInput = input([task(1, 10, 101)], {
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+  });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "13:30", endPlanned: "14:00", assignedResources: [] },
+  ]));
+  assert.equal(result.hardConstraintViolations, 0);
+  assert.ok(!result.hardConstraintViolationCodes.includes("MEAL_CROSSING"));
+  const gated = applyFinalHardValidationGate(caseInput, output([
+    { taskId: 1, startPlanned: "13:30", endPlanned: "14:00", assignedResources: [] },
+  ]));
+  assert.equal(gated.complete, true, "a flexible meal window must not prevent success");
+}
+
+{
+  const caseInput = input([task(1, 10, 101)], {
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+    actualMeal: { start: "14:00", end: "14:40", contestantId: 10 },
+  });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "13:50", endPlanned: "14:20", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("MEAL_CROSSING"));
+  assert.ok(result.hardConstraintViolationDetails.some((detail) => detail.details?.violationType === "MEAL_BLOCK_CROSSING"));
+}
+
+{
+  const caseInput = input([task(1, 10, 101)], {
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+    globalHardBreaks: [{ start: "15:00", end: "15:30" }],
+  });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "14:50", endPlanned: "15:20", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("GLOBAL_BREAK_CROSSING"));
+}
+
+{
+  const mealTask = task(2, 10, 102, { breakKind: "itinerant_meal", itinerantTeamId: 7 });
+  const workTask = task(1, 10, 101, { itinerantTeamId: 7 });
+  const caseInput = input([workTask, mealTask], {
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+  });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "14:00", endPlanned: "14:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "14:10", endPlanned: "14:40", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("MEAL_CROSSING"));
+}
+
+{
+  const tasks = Array.from({ length: 120 }, (_, index) => task(index + 1, index + 1, 1000 + index));
+  const caseInput = input(tasks, {
+    workDay: { start: "09:00", end: "18:00" },
+    meal: { start: "13:00", end: "16:30" },
+  });
+  const result = validateHardConstraints(caseInput, output(tasks.map((row, index) => ({
+    taskId: row.id,
+    startPlanned: index % 2 === 0 ? "13:30" : "15:00",
+    endPlanned: index % 2 === 0 ? "14:00" : "15:30",
+    assignedResources: [],
+  }))));
+  assert.equal(result.hardConstraintViolations, 0, "meal availability windows must not create bulk hard violations");
+}
+
 console.log("engine/v3/hardValidation.spec.ts: OK");

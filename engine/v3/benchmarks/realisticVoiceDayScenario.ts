@@ -298,7 +298,7 @@ export const realisticVoiceDayScenario: BenchmarkScenario = {
     "Cuatro talents requieren preparación instrumental antes de Main Stage",
     "Totals y Reality alternan feeders pre y tareas post según talent",
     "Dos done, un in_progress y dos locks manuales conviven con la planificación",
-    "Comida global hard 19:00-19:45",
+    "Ventana flexible de comida 19:00-19:45",
   ],
   knownRisk: "El modelo de cámara/sonido usa pools anyOf exclusivos; todavía no representa setups, cambios de configuración ni equipos técnicos compuestos de una producción real.",
 };

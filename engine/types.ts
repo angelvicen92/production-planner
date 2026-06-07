@@ -8,6 +8,16 @@ export interface TimeWindow {
   end: string;   // HH:mm
 }
 
+export interface ProtectedBreakInput extends TimeWindow {
+  id?: string | number;
+  label?: string;
+  kind?: "meal" | "global" | "protected";
+  contestantId?: number | null;
+  itinerantTeamId?: number | null;
+  spaceId?: number | null;
+  zoneId?: number | null;
+}
+
 export interface ResourceRequirementsInput {
   // Normalizado: resourceTypeId -> quantity
   byType?: Record<number, number>;
@@ -131,7 +141,19 @@ export interface ResourceBundleSpaceAffinityInput {
 export interface EngineInput {
   planId: number;
   workDay: TimeWindow;
+  /** Flexible window where meals may be assigned. It is not a hard global block. */
   meal: TimeWindow;
+  /** Explicit aliases for integrations that distinguish the flexible window. */
+  mealWindow?: TimeWindow;
+  mealWindowStart?: string;
+  mealWindowEnd?: string;
+  /** Concrete assigned meal block. Unscoped blocks apply globally. */
+  actualMeal?: ProtectedBreakInput;
+  actualMealStart?: string;
+  actualMealEnd?: string;
+  /** Explicit global/protected hard breaks; unlike `meal`, these forbid overlap. */
+  globalHardBreaks?: TimeWindow[];
+  protectedBreaks?: ProtectedBreakInput[];
   // Nombre de la plantilla que representa "comida" (ej. "Sodexo")
   mealTaskTemplateName?: string;
   mealTaskTemplateId?: number | null;

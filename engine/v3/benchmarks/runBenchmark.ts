@@ -7,7 +7,7 @@ import { benchmarkScenarios } from "./scenarios";
 import { applyFinalHardValidationGate } from "../hardValidation";
 import type { BenchmarkRunResult } from "./types";
 
-const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T"] as const;
+const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T", "U", "V"] as const;
 
 type BenchmarkSelection = {
   label: string;

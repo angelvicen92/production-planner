@@ -34,7 +34,7 @@ const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolutio
   hardConstraintViolations: score.hardConstraintViolations,
 });
 
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = scenario.hardValidationSeedOutput
@@ -116,11 +116,11 @@ for (const id of ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"] as const) {
   }
 }
 
-// Comida global modelada como bloque hard mediante input.meal en escenario F.
+// Compatibilidad legacy: input.meal es una ventana flexible, no un bloqueo global.
 {
   const { scenario, output } = run("F");
   if (output.complete) {
-    assert.equal(countMealCrossings(scenario.input, output), 0, "tasks must not cross global meal block");
+    assert.equal(countMealCrossings(scenario.input, output), 0, "the legacy meal window must not create meal crossings");
   }
 }
 
@@ -351,8 +351,6 @@ for (const id of ["C", "D", "J"] as const) {
   assert.equal(metrics.selectedCandidateMetricsConsistent, true);
 }
 
-console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");
-
 // Escenario T — gate final hard invalida un candidato solapado y conserva detalle por código.
 {
   const { output } = run("T");
@@ -362,3 +360,21 @@ console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");
   assert.equal(output.hardFeasible, false);
   assert.ok(output.v3Meta?.hardConstraintViolationCodes?.includes("CONTESTANT_OVERLAP"));
 }
+
+
+// Escenarios U/V — ventana flexible permitida y bloque real protegido.
+{
+  const flexible = run("U");
+  const flexibleMetrics = calculateMetrics(flexible.scenario.input, flexible.output, 0);
+  assert.equal(flexible.output.complete, true);
+  assert.equal(flexibleMetrics.hardConstraintViolations, 0);
+  assert.equal(countMealCrossings(flexible.scenario.input, flexible.output), 0);
+
+  const protectedMeal = run("V");
+  assert.equal(protectedMeal.output.complete, false);
+  assert.ok((protectedMeal.output.v3Meta?.hardConstraintViolations ?? 0) > 0);
+  assert.ok(protectedMeal.output.v3Meta?.hardConstraintViolationCodes?.includes("MEAL_CROSSING"));
+  assert.ok(protectedMeal.output.v3Meta?.hardConstraintViolationDetails?.some((detail) => detail.details?.violationType === "MEAL_BLOCK_CROSSING"));
+}
+
+console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

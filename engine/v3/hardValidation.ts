@@ -1,6 +1,7 @@
-import type { EngineOutput, TaskInput, TimeWindow } from "../types";
+import type { EngineOutput, ProtectedBreakInput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Input } from "./types";
 import { toMinutes } from "./metrics";
+import { getProtectedBreaks, isMealTask } from "./mealSemantics";
 
 export const MAX_HARD_VIOLATION_DETAILS = 50;
 
@@ -14,6 +15,8 @@ export type HardConstraintViolationCode =
   | "AVAILABILITY_VIOLATION"
   | "DEPENDENCY_VIOLATION"
   | "MEAL_CROSSING"
+  | "GLOBAL_BREAK_CROSSING"
+  | "PROTECTED_BREAK_CROSSING"
   | "UNKNOWN_HARD_VIOLATION";
 
 export interface HardConstraintViolationDetail {
@@ -58,7 +61,6 @@ const dependencyIds = (task: TaskInput): number[] => taskIds([
   task.dependsOnTaskId,
 ]);
 const isCancelled = (task: TaskInput): boolean => String(task.status ?? "pending").toLowerCase() === "cancelled";
-const isMealTask = (task: TaskInput): boolean => task.breakKind === "space_meal" || task.breakKind === "itinerant_meal";
 const isItinerantWrapper = (task: TaskInput): boolean => {
   const requirement = String(task.itinerantTeamRequirement ?? "none").toLowerCase();
   return requirement !== "" && requirement !== "none";
@@ -156,19 +158,50 @@ export const validateHardConstraints = (
       checkWindow(interval, input.contestantAvailabilityById[contestantId], "contestant");
     }
 
-    const mealStart = toMinutes(input.meal?.start);
-    const mealEnd = toMinutes(input.meal?.end);
-    if (!isMealTask(interval.task) && mealStart !== null && mealEnd !== null && interval.startMinutes < mealEnd && mealStart < interval.endMinutes) {
+  }
+
+  const protectedBreakAppliesToTask = (hardBreak: ProtectedBreakInput, task: TaskInput): boolean => {
+    const scopes: Array<[unknown, unknown]> = [
+      [hardBreak.contestantId, task.contestantId],
+      [hardBreak.itinerantTeamId, task.itinerantTeamId],
+      [hardBreak.spaceId, task.spaceId],
+      [hardBreak.zoneId, task.zoneId],
+    ];
+    const configuredScopes = scopes.filter(([expected]) => positiveId(expected) !== null);
+    return configuredScopes.length === 0 || configuredScopes.every(([expected, actual]) => positiveId(expected) === positiveId(actual));
+  };
+
+  for (const hardBreak of getProtectedBreaks(input)) {
+    const breakStart = toMinutes(hardBreak.start);
+    const breakEnd = toMinutes(hardBreak.end);
+    if (breakStart === null || breakEnd === null) continue;
+    for (const interval of intervals) {
+      if (isMealTask(input, interval.task) || !protectedBreakAppliesToTask(hardBreak, interval.task)) continue;
+      if (interval.startMinutes >= breakEnd || breakStart >= interval.endMinutes) continue;
+      const code = hardBreak.kind === "meal"
+        ? "MEAL_CROSSING"
+        : hardBreak.kind === "global"
+          ? "GLOBAL_BREAK_CROSSING"
+          : "PROTECTED_BREAK_CROSSING";
       add({
-        code: "MEAL_CROSSING",
+        code,
         severity: "hard",
-        message: `Task ${interval.taskId} overlaps the protected meal window.`,
+        message: hardBreak.kind === "meal"
+          ? `Task ${interval.taskId} overlaps an assigned meal block.`
+          : `Task ${interval.taskId} overlaps a protected hard break.`,
         taskIds: [interval.taskId],
-        contestantId: contestantId ?? undefined,
+        contestantId: positiveId(interval.task.contestantId) ?? undefined,
         spaceId: positiveId(interval.task.spaceId) ?? undefined,
         start: interval.start,
         end: interval.end,
-        details: { mealStart: input.meal.start, mealEnd: input.meal.end },
+        details: {
+          violationType: hardBreak.kind === "meal" ? "MEAL_BLOCK_CROSSING" : hardBreak.kind === "global" ? "GLOBAL_BREAK_CROSSING" : "PROTECTED_BREAK_CROSSING",
+          breakStart: hardBreak.start,
+          breakEnd: hardBreak.end,
+          breakSource: hardBreak.source,
+          breakId: hardBreak.id ?? null,
+          breakLabel: hardBreak.label ?? null,
+        },
       });
     }
   }
@@ -178,6 +211,33 @@ export const validateHardConstraints = (
       const a = intervals[i];
       const b = intervals[j];
       if (!overlaps(a, b)) continue;
+      const aIsMeal = isMealTask(input, a.task);
+      const bIsMeal = isMealTask(input, b.task);
+      if (aIsMeal !== bIsMeal) {
+        const meal = aIsMeal ? a : b;
+        const work = aIsMeal ? b : a;
+        const sameContestant = positiveId(meal.task.contestantId) !== null && positiveId(meal.task.contestantId) === positiveId(work.task.contestantId);
+        const sameTeam = positiveId(meal.task.itinerantTeamId) !== null && positiveId(meal.task.itinerantTeamId) === positiveId(work.task.itinerantTeamId);
+        const sameSpace = positiveId(meal.task.spaceId) !== null && positiveId(meal.task.spaceId) === positiveId(work.task.spaceId);
+        const applies = meal.task.breakKind === "space_meal"
+          ? sameSpace
+          : meal.task.breakKind === "itinerant_meal"
+            ? sameTeam || sameContestant
+            : sameContestant || sameTeam || sameSpace;
+        if (applies) {
+          add({
+            code: "MEAL_CROSSING",
+            severity: "hard",
+            message: `Task ${work.taskId} overlaps assigned meal task ${meal.taskId}.`,
+            taskIds: [work.taskId, meal.taskId],
+            contestantId: positiveId(work.task.contestantId) ?? undefined,
+            spaceId: positiveId(work.task.spaceId) ?? undefined,
+            start: work.start,
+            end: work.end,
+            details: { violationType: "MEAL_BLOCK_CROSSING", mealTaskId: meal.taskId, mealStart: meal.start, mealEnd: meal.end },
+          });
+        }
+      }
       const nonOccupyingWrapperPair = isItinerantWrapper(a.task) || isItinerantWrapper(b.task) || isIntentionalWrapperPair(a, b);
       const contestantId = positiveId(a.task.contestantId);
       if (!nonOccupyingWrapperPair && contestantId !== null && contestantId === positiveId(b.task.contestantId)) {
