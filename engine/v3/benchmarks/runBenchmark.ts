@@ -6,6 +6,65 @@ import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSo
 import { benchmarkScenarios } from "./scenarios";
 import type { BenchmarkRunResult } from "./types";
 
+const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S"] as const;
+
+type BenchmarkSelection = {
+  label: string;
+  scenarioIds: string[] | null;
+};
+
+const parseScenarioIds = (value: string, source: string): string[] => {
+  const scenarioIds = [...new Set(value.split(",").map((id) => id.trim().toUpperCase()).filter(Boolean))];
+  if (scenarioIds.length === 0) {
+    throw new Error(`${source} requires at least one scenario ID`);
+  }
+  return scenarioIds;
+};
+
+const parseBenchmarkSelection = (args: string[], envValue: string | undefined): BenchmarkSelection => {
+  let requestedMode: "quick" | "full" | "scenario" | null = null;
+  let scenarioIds: string[] | null = null;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--quick" || arg === "--full") {
+      if (requestedMode) throw new Error(`Cannot combine ${arg} with another benchmark filter`);
+      requestedMode = arg === "--quick" ? "quick" : "full";
+      continue;
+    }
+
+    if (arg === "--scenario" || arg.startsWith("--scenario=")) {
+      if (requestedMode) throw new Error(`${arg} cannot be combined with another benchmark filter`);
+      const value = arg === "--scenario" ? args[++index] : arg.slice("--scenario=".length);
+      if (value === undefined) throw new Error("--scenario requires a comma-separated list of scenario IDs");
+      requestedMode = "scenario";
+      scenarioIds = parseScenarioIds(value, "--scenario");
+      continue;
+    }
+
+    throw new Error(`Unknown benchmark argument: ${arg}`);
+  }
+
+  if (requestedMode === "quick") return { label: "quick", scenarioIds: [...QUICK_SCENARIO_IDS] };
+  if (requestedMode === "full") return { label: "full", scenarioIds: null };
+  if (requestedMode === "scenario") return { label: `scenario ${scenarioIds!.join(",")}`, scenarioIds };
+  if (envValue?.trim()) {
+    const envScenarioIds = parseScenarioIds(envValue, "BENCHMARK_SCENARIOS");
+    return { label: `BENCHMARK_SCENARIOS=${envScenarioIds.join(",")}`, scenarioIds: envScenarioIds };
+  }
+  return { label: "full", scenarioIds: null };
+};
+
+const benchmarkSelection = parseBenchmarkSelection(process.argv.slice(2), process.env.BENCHMARK_SCENARIOS);
+const knownScenarioIds = new Set(benchmarkScenarios.map((scenario) => scenario.id));
+const unknownScenarioIds = benchmarkSelection.scenarioIds?.filter((id) => !knownScenarioIds.has(id)) ?? [];
+if (unknownScenarioIds.length > 0) {
+  throw new Error(`Unknown benchmark scenario ID(s): ${unknownScenarioIds.join(", ")}`);
+}
+const selectedBenchmarkScenarios = benchmarkSelection.scenarioIds
+  ? benchmarkSelection.scenarioIds.map((id) => benchmarkScenarios.find((scenario) => scenario.id === id)!)
+  : benchmarkScenarios;
+
 const formatNullable = (value: number | boolean | string | null | undefined): string => value === null || value === undefined ? "n/a" : String(value);
 const formatCompact = (value: string | null | undefined): string => value === null || value === undefined ? "n/a" : value.length > 140 ? `${value.slice(0, 137)}...` : value;
 
@@ -144,7 +203,9 @@ const printResult = (result: BenchmarkRunResult): void => {
 console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
-const results = benchmarkScenarios.map(runScenario);
+console.log(`Selection: ${benchmarkSelection.label} (${selectedBenchmarkScenarios.map((scenario) => scenario.id).join(",")})`);
+
+const results = selectedBenchmarkScenarios.map(runScenario);
 for (const result of results) printResult(result);
 
 

@@ -9,9 +9,13 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test": "tsx --test \"engine/**/*.spec.ts\"",
-    "test:engine": "tsx --test \"engine/**/*.spec.ts\"",
+    "test:engine": "npm run test:engine:full",
+    "test:engine:quick": "tsx --test engine/v3/phaseA.spec.ts engine/v3/limitedBacktracking.spec.ts engine/v3/operationalNeighborhoods.spec.ts engine/v3/mainStageCpSatPilot.spec.ts engine/v3/solutionScoring.spec.ts engine/v3/validateCandidate.spec.ts engine/v3/resourceBundleValidation.spec.ts",
+    "test:engine:full": "tsx --test \"engine/**/*.spec.ts\"",
     "db:push": "drizzle-kit push",
-    "benchmark:engine": "tsx engine/v3/benchmarks/runBenchmark.ts"
+    "benchmark:engine": "tsx engine/v3/benchmarks/runBenchmark.ts",
+    "benchmark:engine:quick": "tsx engine/v3/benchmarks/runBenchmark.ts --quick",
+    "benchmark:engine:full": "tsx engine/v3/benchmarks/runBenchmark.ts --full"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -6,6 +6,25 @@ Este lote crea una suite objetiva de benchmark operativo para el motor V3 antes 
 
 El alcance es deliberadamente no funcional: no cambia reglas hard, reglas soft, función objetivo, locks, migraciones, RLS, UI ni código de persistencia. La suite llama a `generatePlanV3` como caja negra y calcula métricas puras sobre su salida.
 
+## ID 025 — Validación rápida y completa
+
+La suite conserva todos los escenarios y añade dos niveles de ejecución para reducir la fricción en entornos con timeout:
+
+- `npm run benchmark:engine:quick` ejecuta el subconjunto **A, G, H, I, L, R y S**. Cubre disponibilidad restrictiva, recuperación por backtracking, selección entre candidatos válidos, los dos datasets realistas y el scoring/validación de resource bundles. Es apropiado para revisión rápida e iteración local.
+- `npm run benchmark:engine:full` ejecuta los **19 escenarios A–S** y es obligatorio antes de mergear cambios en el motor.
+- `npm run benchmark:engine` mantiene compatibilidad y, sin filtros, equivale a la ejecución completa. También permite seleccionar casos concretos con `npm run benchmark:engine -- --scenario L` o una lista con `npm run benchmark:engine -- --scenario I,L,S`.
+- `BENCHMARK_SCENARIOS=I,L,S npm run benchmark:engine` ofrece el mismo filtrado mediante variable de entorno. Los IDs no reconocidos y las combinaciones incompatibles fallan explícitamente; no se silencian escenarios ni errores.
+
+El flag `--full` usado por el script completo ignora `BENCHMARK_SCENARIOS`, de modo que una variable de entorno residual no puede reducir accidentalmente la validación previa al merge. `--quick`, `--full` y `--scenario` son modos mutuamente excluyentes.
+
+Para cambios documentales o una revisión inicial puede usarse quick. Antes de mergear cualquier cambio de lógica, scoring, restricciones, búsqueda o datasets del Motor V3 se debe ejecutar, como mínimo:
+
+```bash
+npm run check
+npm run test:engine:full
+npm run benchmark:engine:full
+```
+
 ## Relación con auditoría ID 003
 
 La auditoría ID 003 documentó que la ruta principal ejecuta `generatePlanV3`, que Phase A es la fuente primaria de factibilidad y que CP-SAT existe como Fase B parcial, no como solver global completo. También dejó explícitos estos riesgos operativos:

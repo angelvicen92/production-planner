@@ -11,6 +11,28 @@ La validación combina dos evidencias:
 
 No es una guía para modificar el motor ni sus reglas. Si aparece un problema, primero se registra la evidencia y después se clasifica como problema de datos, configuración, diagnóstico o algoritmo.
 
+## Validación técnica previa
+
+Antes de una revisión rápida de datos o documentación del motor se puede ejecutar:
+
+```bash
+npm run check
+npm run test:engine:quick
+npm run benchmark:engine:quick
+```
+
+La suite rápida de tests cubre las unidades críticas de Phase A, backtracking limitado, vecindarios operativos, piloto CP-SAT, scoring, validación de candidatos y resource bundles. El benchmark rápido cubre A, G, H, I, L, R y S. Esta ruta sirve para feedback temprano, pero no sustituye la regresión completa.
+
+Antes de mergear cambios del Motor V3 deben ejecutarse siempre:
+
+```bash
+npm run check
+npm run test:engine:full
+npm run benchmark:engine:full
+```
+
+Los comandos históricos `npm run test:engine` y `npm run benchmark:engine` siguen disponibles y ejecutan la validación completa. Ninguna de estas suites sustituye la prueba real descrita en esta guía: quick reduce tiempo de feedback, full protege la regresión sintética y la revisión en app valida utilidad operativa con datos reales.
+
 ## Preparación del plan
 
 Antes de generar, comprobar:
@@ -145,7 +167,7 @@ Los campos de `humanReviewTemplate` se exportan como `null` para que el usuario 
 
 ## Recomendación para siguiente fase
 
-Después de la primera prueba real, clasificar las evidencias antes de definir ID 025. La siguiente fase debe elegirse según el problema observado:
+Después de la primera prueba real, clasificar las evidencias antes de definir el siguiente cambio funcional del motor. La siguiente fase debe elegirse según el problema observado:
 
 - **corregir datos/configuración**, si faltan disponibilidades, recursos, dependencias, duraciones o locks correctos;
 - **mejorar motor**, si los datos son correctos pero la selección produce un resultado repetidamente poco útil;
@@ -153,4 +175,4 @@ Después de la primera prueba real, clasificar las evidencias antes de definir I
 - **ajustar resource bundles**, si los warnings o la señal soft no representan el uso real de recursos;
 - **ampliar CP-SAT**, si las pruebas muestran que los límites del piloto o de los segmentos dejan fuera un subproblema relevante.
 
-No se recomienda ampliar el algoritmo en frío. ID 025 debe partir del JSON, la captura opcional y la observación humana de una ejecución real reproducible.
+No se recomienda ampliar el algoritmo en frío. El siguiente cambio funcional debe partir del JSON, la captura opcional y la observación humana de una ejecución real reproducible.
