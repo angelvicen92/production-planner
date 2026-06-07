@@ -128,6 +128,32 @@ Estados defensivos:
 
 Limitaciones: solo se enseña la ejecución V3 más reciente; no hay histórico, export, drill-down de tareas, payload completo de solver ni refresco realtime específico de `planning_runs`. Los warnings se limitan visualmente para mantener el panel operativo y compacto. No se modifican motor, reglas, migraciones, RLS ni persistencia.
 
-## Recomendación para ID 023
+## Recomendación previa tras ID 022
 
-Añadir un histórico acotado de ejecuciones por plan con comparación de métricas clave y duración, manteniendo el detalle bajo demanda y sin persistir payloads completos. Antes de ello conviene validar con Producción qué diferencias entre runs aportan decisiones operativas reales.
+Tras ID 022 se propuso un histórico acotado como siguiente paso. ID 023 prioriza en su lugar el export seguro para revisión externa; la comparación entre ejecuciones queda como recomendación para ID 024.
+
+## Export/copy diagnostics — ID 023
+
+El encabezado del panel **Diagnóstico del motor** incorpora dos acciones visibles únicamente cuando existe un diagnóstico: **Copiar JSON** y **Descargar JSON**. Ambas construyen en el navegador el mismo snapshot efímero; no realizan escrituras ni crean nueva persistencia.
+
+El snapshot exporta:
+
+- versión del formato y fecha de generación del export;
+- IDs del plan y del planning run, versión del motor, estado, fuente de solución y fecha del run;
+- resumen de tareas planificadas/no planificadas, hard violations, gaps de Main Stage, cambios de coach y offset de talento restrictivo;
+- señales compactas de selección de candidatos, backtracking, neighborhood search y CP-SAT pilot/segments;
+- `selectedCandidateMetrics`, acotado defensivamente en profundidad, claves, arrays y longitud de textos;
+- contadores declared/usable/invalid/partially usable de resource bundles;
+- warnings de recursos y validación de bundles, limitados a 20 por grupo, 25 task IDs por warning y 500 caracteres por mensaje.
+
+El export **no incluye** el input completo del motor, el output completo del planning, listas de tareas o asignaciones, disponibilidades, inventarios, payloads internos del solver ni cualquier propiedad adicional que pudiera llegar en la respuesta. El helper usa una allowlist explícita de campos y normaliza ausencias a `null` o arrays vacíos.
+
+Para revisión externa, el usuario puede copiar el JSON y pegarlo en un ticket o conversación con el asesor técnico, o descargar `engine-diagnostics-plan-{planId}-{runId}.json`. El JSON descargado y el copiado son equivalentes salvo por el instante `generatedAt`, que se calcula al ejecutar cada acción.
+
+La copia usa Clipboard API. Si el navegador, el contexto o sus permisos no la permiten, se muestra un error controlado y la descarga continúa disponible como alternativa. La descarga usa APIs nativas `Blob`/object URL y no añade dependencias.
+
+Limitaciones: el snapshot representa solo el último diagnóstico disponible, no aporta histórico ni detalle por tarea y conserva únicamente la información diagnóstica que ya devolvió el endpoint. Sus límites de tamaño pueden truncar warnings o metadata seleccionada excepcionalmente grandes para mantener el archivo seguro y manejable.
+
+## Recomendación para ID 024
+
+Añadir un histórico acotado de ejecuciones por plan con comparación de métricas clave y duración, manteniendo el detalle bajo demanda y reutilizando este formato compacto para exportar una ejecución concreta sin persistir payloads completos.
