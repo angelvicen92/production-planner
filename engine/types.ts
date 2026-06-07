@@ -187,6 +187,13 @@ export interface EngineInput {
   // Key: spaceId -> spaceName
   spaceNameById?: Record<number, string>;
 
+  // Capacidad simultánea explícita; ausente o inválida mantiene exclusividad (1).
+  spaceCapacityById?: Record<number, number>;
+  // Alias compatible para integraciones que expresan el contrato como concurrencia.
+  spaceConcurrencyById?: Record<number, number>;
+  // Metadato explicativo; no aumenta capacidad por sí solo.
+  spaceIsExclusiveById?: Record<number, boolean>;
+
   // ✅ Requisitos genéricos por tipo (override por plan)
   // Key: zoneId -> (resourceTypeId -> quantity)
   zoneResourceTypeRequirements: Record<number, Record<number, number>>;

@@ -86,3 +86,11 @@ La auditoría de ID 027 confirmó una mezcla conceptual en la validación final:
 `MEAL_CROSSING` mantiene compatibilidad y ahora significa exclusivamente cruce con un bloque real de comida o con una tarea real de comida. Su detalle incluye `violationType: MEAL_BLOCK_CROSSING`. Los bloqueos globales explícitos usan `GLOBAL_BREAK_CROSSING`; otros bloques protegidos usan `PROTECTED_BREAK_CROSSING`.
 
 Una ventana flexible sin bloque asignado no crea hard violations. ID 027 no relaja ningún bloqueo real y la compuerta final de ID 026 continúa rechazando todo candidato con una de estas violaciones.
+
+## ID 028 — Capacidad y concurrencia de espacios
+
+`SPACE_OVERLAP` ya no significa simplemente que exista un par solapado. El validador agrupa las tareas ocupantes por `spaceId`, ordena eventos de inicio/fin y calcula la concurrencia de cada tramo. Solo registra una violación cuando `observedConcurrency > spaceCapacity`; los finales se procesan antes que los inicios en el mismo minuto, por lo que dos tareas contiguas no cuentan como simultáneas.
+
+El contrato opcional del input es `spaceCapacityById` (con alias compatible `spaceConcurrencyById`). Un valor ausente, no numérico o menor que uno conserva el comportamiento seguro histórico: capacidad 1. El esquema DB actual no contiene un campo de capacidad, así que ID 028 no añade migración y `buildInput` solo reconoce defensivamente nombres de campo que alguna integración pudiera aportar.
+
+Cada detalle agregado de `SPACE_OVERLAP` expone `spaceId`, `spaceName`, `spaceCapacity`, `observedConcurrency`, intervalo y listas compactas de `taskIds`, `taskNames` y `templateNames`. Se evita la explosión combinatoria: tres tareas sobre capacidad 2 producen un tramo agregado, no tres pares.

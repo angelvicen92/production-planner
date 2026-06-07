@@ -58,3 +58,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 026 — 2026-06-07 11:50 — Hard validation gate y detalle de hard violations en Motor V3
 - ID 027 — 2026-06-07 12:08 — Corrección de semántica de comida flexible vs bloqueo hard global
+- ID 028 — 2026-06-07 13:39 — Concurrencia/capacidad de espacios y diagnóstico humano de SPACE_OVERLAP

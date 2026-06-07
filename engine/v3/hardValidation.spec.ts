@@ -54,6 +54,40 @@ const task = (id: number, contestantId: number, spaceId: number, extra: Partial<
 }
 
 {
+  const caseInput = input([task(1, 10, 101, { templateName: "Micro A" }), task(2, 11, 101, { templateName: "Micro B" })], { spaceCapacityById: { 101: 2 }, spaceNameById: { 101: "Auxiliary microtasks" } });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:05", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:00", endPlanned: "09:05", assignedResources: [] },
+  ]));
+  assert.equal(result.hardConstraintViolationCodes.includes("SPACE_OVERLAP"), false);
+}
+
+{
+  const caseInput = input([task(1, 10, 101, { templateName: "Micro A" }), task(2, 11, 101, { templateName: "Micro B" }), task(3, 12, 101, { templateName: "Micro C" })], { spaceCapacityById: { 101: 2 }, spaceNameById: { 101: "Auxiliary microtasks" } });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "09:35", endPlanned: "09:40", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:35", endPlanned: "09:40", assignedResources: [] },
+    { taskId: 3, startPlanned: "09:35", endPlanned: "09:40", assignedResources: [] },
+  ]));
+  const detail = result.hardConstraintViolationDetails.find((item) => item.code === "SPACE_OVERLAP");
+  assert.ok(detail);
+  assert.equal(detail.spaceCapacity, 2);
+  assert.equal(detail.observedConcurrency, 3);
+  assert.equal(detail.spaceName, "Auxiliary microtasks");
+  assert.equal(detail.details?.spaceCapacity, 2);
+  assert.equal(detail.details?.observedConcurrency, 3);
+  assert.deepEqual(detail.taskIds, [1, 2, 3]);
+  assert.ok(Array.isArray(detail.taskNames));
+}
+
+{
+  const tasks = Array.from({ length: 6 }, (_, index) => task(index + 1, 20 + index, 149, { templateName: `Micro ${index + 1}` }));
+  const caseInput = input(tasks, { spaceCapacityById: { 149: 6 }, spaceNameById: { 149: "Concurrent booth" } });
+  const result = validateHardConstraints(caseInput, output(tasks.map((row) => ({ taskId: row.id, startPlanned: "10:10", endPlanned: "10:15", assignedResources: [] }))));
+  assert.equal(result.hardConstraintViolations, 0, "microtasks within capacity must not create pairwise violations");
+}
+
+{
   const caseInput = input([task(1, 10, 101)], { contestantAvailabilityById: { 10: { start: "10:00", end: "11:00" } } });
   const result = validateHardConstraints(caseInput, output([{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] }]));
   assert.ok(result.hardConstraintViolationCodes.includes("AVAILABILITY_VIOLATION"));

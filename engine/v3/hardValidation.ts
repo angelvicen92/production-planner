@@ -2,6 +2,7 @@ import type { EngineOutput, ProtectedBreakInput, TaskInput, TimeWindow } from ".
 import type { EngineV3Input } from "./types";
 import { toMinutes } from "./metrics";
 import { getProtectedBreaks, isMealTask } from "./mealSemantics";
+import { getSpaceCapacity } from "./spaceCapacity";
 
 export const MAX_HARD_VIOLATION_DETAILS = 50;
 
@@ -26,6 +27,11 @@ export interface HardConstraintViolationDetail {
   taskIds: number[];
   resourceId?: number;
   spaceId?: number;
+  spaceName?: string;
+  spaceCapacity?: number;
+  observedConcurrency?: number;
+  taskNames?: string[];
+  templateNames?: string[];
   contestantId?: number;
   start?: string;
   end?: string;
@@ -51,6 +57,7 @@ type Interval = {
 };
 
 const overlaps = (a: Interval, b: Interval): boolean => a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
+const minutesToHHMM = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 const positiveId = (value: unknown): number | null => {
   const id = Number(value);
   return Number.isFinite(id) && id > 0 ? id : null;
@@ -206,6 +213,54 @@ export const validateHardConstraints = (
     }
   }
 
+  const intervalsBySpace = new Map<number, Interval[]>();
+  for (const interval of intervals) {
+    const spaceId = positiveId(interval.task.spaceId);
+    if (spaceId === null || isItinerantWrapper(interval.task)) continue;
+    const rows = intervalsBySpace.get(spaceId) ?? [];
+    rows.push(interval);
+    intervalsBySpace.set(spaceId, rows);
+  }
+
+  for (const [spaceId, spaceIntervals] of intervalsBySpace.entries()) {
+    const capacity = getSpaceCapacity(input, spaceId);
+    const events = new Map<number, { starts: Interval[]; ends: Interval[] }>();
+    for (const interval of spaceIntervals) {
+      const startEvent = events.get(interval.startMinutes) ?? { starts: [], ends: [] };
+      startEvent.starts.push(interval);
+      events.set(interval.startMinutes, startEvent);
+      const endEvent = events.get(interval.endMinutes) ?? { starts: [], ends: [] };
+      endEvent.ends.push(interval);
+      events.set(interval.endMinutes, endEvent);
+    }
+
+    const times = [...events.keys()].sort((a, b) => a - b);
+    const active = new Map<number, Interval>();
+    for (let index = 0; index < times.length - 1; index += 1) {
+      const time = times[index];
+      const event = events.get(time)!;
+      for (const interval of event.ends) active.delete(interval.taskId);
+      for (const interval of event.starts) active.set(interval.taskId, interval);
+      const nextTime = times[index + 1];
+      if (nextTime <= time || active.size <= capacity) continue;
+
+      const activeIntervals = [...active.values()].sort((a, b) => a.taskId - b.taskId);
+      const visibleIntervals = activeIntervals.slice(0, 10);
+      const taskNames = visibleIntervals.map((interval) => String(interval.task.templateName ?? `Task ${interval.taskId}`));
+      const templateNames = Array.from(new Set(taskNames));
+      const spaceName = String(input.spaceNameById?.[spaceId] ?? "").trim() || undefined;
+      const start = activeIntervals.find((interval) => interval.startMinutes === time)?.start ?? minutesToHHMM(time);
+      const end = activeIntervals.find((interval) => interval.endMinutes === nextTime)?.end ?? minutesToHHMM(nextTime);
+      const compactTaskIds = activeIntervals.map((interval) => interval.taskId);
+      add({
+        code: "SPACE_OVERLAP", severity: "hard",
+        message: `${spaceName ? `Space ${spaceName} (${spaceId})` : `Space ${spaceId}`} exceeds capacity ${capacity}: ${active.size} simultaneous tasks.`,
+        taskIds: compactTaskIds, taskNames, templateNames, spaceId, spaceName, spaceCapacity: capacity, observedConcurrency: active.size, start, end,
+        details: { spaceId, spaceName: spaceName ?? null, spaceCapacity: capacity, observedConcurrency: active.size, taskIds: compactTaskIds.slice(0, 10), taskNames, templateNames },
+      });
+    }
+  }
+
   for (let i = 0; i < intervals.length; i++) {
     for (let j = i + 1; j < intervals.length; j++) {
       const a = intervals[i];
@@ -242,10 +297,6 @@ export const validateHardConstraints = (
       const contestantId = positiveId(a.task.contestantId);
       if (!nonOccupyingWrapperPair && contestantId !== null && contestantId === positiveId(b.task.contestantId)) {
         add({ code: "CONTESTANT_OVERLAP", severity: "hard", message: `Contestant ${contestantId} has overlapping tasks.`, taskIds: [a.taskId, b.taskId], contestantId, start: a.startMinutes >= b.startMinutes ? a.start : b.start, end: a.endMinutes <= b.endMinutes ? a.end : b.end });
-      }
-      const spaceId = positiveId(a.task.spaceId);
-      if (!nonOccupyingWrapperPair && spaceId !== null && spaceId === positiveId(b.task.spaceId)) {
-        add({ code: "SPACE_OVERLAP", severity: "hard", message: `Space ${spaceId} has overlapping tasks.`, taskIds: [a.taskId, b.taskId], spaceId, start: a.startMinutes >= b.startMinutes ? a.start : b.start, end: a.endMinutes <= b.endMinutes ? a.end : b.end });
       }
       for (const resourceId of a.resources.filter((id) => b.resources.includes(id))) {
         add({ code: "RESOURCE_OVERLAP", severity: "hard", message: `Exclusive resource ${resourceId} is assigned to overlapping tasks.`, taskIds: [a.taskId, b.taskId], resourceId, start: a.startMinutes >= b.startMinutes ? a.start : b.start, end: a.endMinutes <= b.endMinutes ? a.end : b.end });

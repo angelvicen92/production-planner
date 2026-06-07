@@ -17,6 +17,11 @@ export type EngineHardViolationDetail = {
   taskIds?: number[] | null;
   resourceId?: number | null;
   spaceId?: number | null;
+  spaceName?: string | null;
+  spaceCapacity?: number | null;
+  observedConcurrency?: number | null;
+  taskNames?: string[] | null;
+  templateNames?: string[] | null;
   contestantId?: number | null;
   start?: string | null;
   end?: string | null;
