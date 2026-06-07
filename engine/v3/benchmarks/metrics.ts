@@ -2,6 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { EngineBenchmarkMetrics } from "./types";
 import { summarizeStructuredBlockers } from "../blockers";
+import { calculateEngineOperationalCompactionMetrics } from "../operationalQuality";
 import { calculateDeclaredBundleMetrics, diagnoseCompositeResources } from "../resourceDiagnostics";
 export {
   calculateCoachSwitchCount,
@@ -51,6 +52,7 @@ import {
 
 export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, runtimeMs: number): EngineBenchmarkMetrics => {
   const operationalMetrics = calculateOperationalMetrics(input, output);
+  const compactionMetrics = calculateEngineOperationalCompactionMetrics(input, output);
   const resourceDiagnostics = diagnoseCompositeResources(input, output);
   const declaredBundleMetrics = calculateDeclaredBundleMetrics(input, output);
   const mainGaps = { count: operationalMetrics.mainStageGapCount, minutes: operationalMetrics.mainStageGapMinutes };
@@ -85,6 +87,10 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     executedTaskMovedCount: countExecutedTaskMoved(input, output),
     coachSwitchCount: operationalMetrics.coachSwitchCount,
     coachSwitchPenalty: operationalMetrics.coachSwitchPenalty,
+    coachIdlePenalty: compactionMetrics.coachIdlePenalty,
+    coachSpanPenalty: compactionMetrics.coachSpanPenalty,
+    coachSplitDayPenalty: compactionMetrics.coachSplitDayPenalty,
+    maxCoachGapMinutes: compactionMetrics.maxCoachGapMinutes,
     restrictiveTalentAverageStartOffset: operationalMetrics.restrictiveTalentAverageStartOffset,
     restrictiveTalentLatestFinishSlack: calculateRestrictiveTalentLatestFinishSlack(input, output),
     mainStageUtilizationPercent: calculateMainStageUtilizationPercent(input, output),

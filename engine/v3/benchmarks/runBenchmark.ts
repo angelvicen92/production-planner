@@ -7,7 +7,7 @@ import { benchmarkScenarios } from "./scenarios";
 import { applyFinalHardValidationGate } from "../hardValidation";
 import type { BenchmarkRunResult } from "./types";
 
-const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB"] as const;
+const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC", "AD"] as const;
 
 type BenchmarkSelection = {
   label: string;
@@ -141,6 +141,10 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  executedTaskMovedCount: ${metrics.executedTaskMovedCount}`);
   console.log(`  coachSwitchCount: ${formatNullable(metrics.coachSwitchCount)}`);
   console.log(`  coachSwitchPenalty: ${metrics.coachSwitchPenalty}`);
+  console.log(`  coachIdlePenalty: ${metrics.coachIdlePenalty}`);
+  console.log(`  coachSpanPenalty: ${metrics.coachSpanPenalty}`);
+  console.log(`  coachSplitDayPenalty: ${metrics.coachSplitDayPenalty}`);
+  console.log(`  maxCoachGapMinutes: ${metrics.maxCoachGapMinutes}`);
   console.log(`  restrictiveTalentAverageStartOffset: ${formatNullable(metrics.restrictiveTalentAverageStartOffset)}`);
   console.log(`  restrictiveTalentLatestFinishSlack: ${formatNullable(metrics.restrictiveTalentLatestFinishSlack)}`);
   console.log(`  mainStageUtilizationPercent: ${formatNullable(metrics.mainStageUtilizationPercent)}`);
@@ -209,7 +213,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020 + ID 026 + ID 027 + ID 028 + ID 029 + ID 031");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020 + ID 026 + ID 027 + ID 028 + ID 029 + ID 031 + ID 032");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 console.log(`Selection: ${benchmarkSelection.label} (${selectedBenchmarkScenarios.map((scenario) => scenario.id).join(",")})`);

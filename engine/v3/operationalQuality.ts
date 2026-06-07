@@ -1,7 +1,7 @@
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { getPlannedViews, toMinutes } from "./metrics";
-import { getCoachResourceIds } from "./operationalPriority";
+import { detectCoachAssignments } from "./coachDetection";
 
 export const OPERATIONAL_COMPACTION_THRESHOLDS = {
   splitGapMinutes: 45,
@@ -107,7 +107,12 @@ export const calculateEngineOperationalCompactionMetrics = (
   input: EngineV3Input,
   output: EngineOutput,
 ): EngineOperationalCompactionMetrics => {
-  const coachIds = getCoachResourceIds(input);
+  const coachAssignments = detectCoachAssignments(input, output);
+  const coachIdsByTask = new Map<number, number[]>();
+  for (const group of coachAssignments) {
+    if (group.coachId === null) continue;
+    for (const taskId of group.taskIds) coachIdsByTask.set(taskId, [...(coachIdsByTask.get(taskId) ?? []), group.coachId]);
+  }
   const rows = getPlannedViews(input, output).flatMap((view) => {
     const start = toMinutes(view.startPlanned);
     const end = toMinutes(view.endPlanned);
@@ -117,7 +122,7 @@ export const calculateEngineOperationalCompactionMetrics = (
       taskId: view.taskId,
       start,
       end,
-      coachIds: view.assignedResources.filter((id) => coachIds.has(Number(id))).map(Number),
+      coachIds: coachIdsByTask.get(view.taskId) ?? [],
       talentIds: Number.isFinite(contestantId) && contestantId > 0 ? [contestantId] : [],
     }];
   });

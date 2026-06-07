@@ -88,3 +88,14 @@ Tras repetir la prueba real:
 - si empeora plató, restringir aún más la admisión aunque el scoring ya lo proteja;
 - si falta información feeder-main, mejorar su detección antes de ampliar búsqueda;
 - si el candidato existe pero pierde por un criterio superior, revisar la razón comparativa antes de cambiar prioridades.
+
+
+## ID 032 — Coach detection alignment
+
+El export operativo ya reconocía coaches mediante `contestants[].vocalCoachPlanResourceItemId` y, como fallback, nombres de recursos con `coach` o `vocal`. El engine, en cambio, dependía de un `typeId` numérico histórico o del literal `coach` en el nombre; por eso recursos personales configurados como vocal coach podían aparecer en `topCoachIdle` y permanecer invisibles para scoring.
+
+ID 032 incorpora al input `coachResourceIds` derivados de la configuración de concursantes y metadatos opcionales `typeCode`/`typeName` del tipo de recurso. El helper puro prioriza identificadores y categoría/tipo estructurados, después metadatos `coach`/`vocal`, y solo finalmente el nombre o una plantilla inequívocamente vocal. No contiene nombres personales.
+
+Las penalizaciones se interpretan así: `coachIdlePenalty` suma minutos inactivos dentro del span de cada coach; `coachSpanPenalty` suma sus spans; `maxCoachGapMinutes` conserva el mayor hueco; y `coachSplitDayPenalty` suma bloques adicionales separados por al menos 45 minutos. La compactación publica además intento, candidatos y razones de rechazo específicas.
+
+En la próxima prueba real se espera que una jornada partida deje de producir ceros, que las métricas before/after sean visibles en el export y que, si existe un movimiento hard-safe que no empeora main stage, gane el candidato con menor idle/span de coach. El riesgo residual son recursos legacy sin configuración vocal, sin metadatos de tipo y con nombres no descriptivos; esos casos requieren completar datos estructurados, no ampliar una heurística personal.

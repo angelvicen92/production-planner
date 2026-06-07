@@ -96,6 +96,9 @@ export interface PlanResourceItemInput {
   id: number; // plan_resource_items.id
   resourceItemId: number; // resource_items.id
   typeId: number; // resource_types.id
+  typeCode?: string | null;
+  typeName?: string | null;
+  category?: string | null;
   name: string;
   isAvailable: boolean;
 }
@@ -204,6 +207,9 @@ export interface EngineInput {
 
   // ✅ Inventario del plan (snapshot de resource_items -> plan_resource_items)
   planResourceItems: PlanResourceItemInput[];
+
+  // Identificadores estructurados derivados de la configuración vocal de concursantes.
+  coachResourceIds?: number[];
 
   // ✅ Componentes de recursos compuestos (por resource_item_id)
   // Key: parent resourceItemId -> components
@@ -450,6 +456,9 @@ export interface EngineOutput {
     operationalCompactionReason?: string;
     operationalCompactionMetricsBefore?: Record<string, number>;
     operationalCompactionMetricsAfter?: Record<string, number>;
+    coachCompactionAttempted?: boolean;
+    coachCompactionCandidatesGenerated?: number;
+    coachCompactionRejectedReasons?: Record<string, number>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

@@ -357,3 +357,55 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   assert.equal(selected.meta.operationalCompactionAccepted, false);
   assert.match(String(selected.meta.operationalCompactionReason), /no candidate improved operational span/);
 }
+
+// ID 032: un coach con hueco reducible genera candidato dirigido y conserva hard/main stage.
+{
+  const coachId = 777;
+  const input = baseInput([
+    { id: 7001, planId: PLAN_ID, templateId: 70, zoneId: 2, spaceId: 201, contestantId: 701, status: "pending", durationOverrideMin: 30 },
+    { id: 7002, planId: PLAN_ID, templateId: 70, zoneId: 2, spaceId: 201, contestantId: 702, status: "pending", durationOverrideMin: 30 },
+  ], {
+    workDay: { start: "09:00", end: "13:00" },
+    optimizerMainZoneId: 1,
+    coachResourceIds: [coachId],
+    planResourceItems: [{ id: coachId, resourceItemId: 9701, typeId: 71, typeName: "Vocal coach", name: "Persona sintética", isAvailable: true }],
+  });
+  const output = completeOutput([
+    { taskId: 7001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [coachId] },
+    { taskId: 7002, startPlanned: "11:30", endPlanned: "12:00", assignedResources: [coachId] },
+  ]);
+  const diagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  const candidates = generateOperationalNeighborhoodCandidates(input, output, {
+    allowedReasons: ["coach_gap_compaction"],
+    diagnostics,
+  });
+  assert.ok(candidates.some((candidate) => candidate.reason === "coach_gap_compaction"));
+  for (const candidate of candidates) {
+    assert.equal(countHardConstraintViolations(input, candidate.output), 0);
+    assert.ok((calculateMainStageGaps(input, candidate.output)?.minutes ?? 0) <= (calculateMainStageGaps(input, output)?.minutes ?? 0));
+  }
+}
+
+// ID 032: si las tareas del coach son fijas, el diagnóstico explica que no son movibles.
+{
+  const coachId = 778;
+  const input = baseInput([
+    { id: 7011, planId: PLAN_ID, templateId: 71, zoneId: 2, spaceId: 201, contestantId: 711, status: "done", durationOverrideMin: 30, startPlanned: "09:00", endPlanned: "09:30" },
+    { id: 7012, planId: PLAN_ID, templateId: 71, zoneId: 2, spaceId: 201, contestantId: 712, status: "done", durationOverrideMin: 30, startPlanned: "11:30", endPlanned: "12:00" },
+  ], {
+    workDay: { start: "09:00", end: "13:00" },
+    coachResourceIds: [coachId],
+    planResourceItems: [{ id: coachId, resourceItemId: 9702, typeId: 72, category: "coach", name: "Persona fija", isAvailable: true }],
+  });
+  const output = completeOutput([
+    { taskId: 7011, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [coachId] },
+    { taskId: 7012, startPlanned: "11:30", endPlanned: "12:00", assignedResources: [coachId] },
+  ]);
+  const diagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  const candidates = generateOperationalNeighborhoodCandidates(input, output, {
+    allowedReasons: ["coach_gap_compaction"],
+    diagnostics,
+  });
+  assert.equal(candidates.length, 0);
+  assert.ok((diagnostics.rejectedReasons.no_movable_coach_tasks ?? 0) > 0, JSON.stringify(diagnostics));
+}

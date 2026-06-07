@@ -1,6 +1,7 @@
 import type { EngineOutput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Input } from "./types";
 import { validateHardConstraints } from "./hardValidation";
+import { getCoachResourceIds } from "./coachDetection";
 
 export interface PlannedTaskView {
   taskId: number;
@@ -190,25 +191,7 @@ export const calculateMainStageGaps = (input: EngineV3Input, output: EngineOutpu
   return { count, minutes };
 };
 
-const resourcesForTask = (task: TaskInput): number[] => {
-  const byItem = Object.keys(task.resourceRequirements?.byItem ?? {}).map(Number);
-  const assigned = Array.isArray(task.assignedResourceIds) ? task.assignedResourceIds.map(Number) : [];
-  return [...byItem, ...assigned].filter((id) => Number.isFinite(id) && id > 0);
-};
-
-export const getCoachResourceIds = (input: EngineV3Input): Set<number> => {
-  const coachIds = new Set<number>();
-  const inventoryById = new Map((input.planResourceItems ?? []).map((resource) => [Number(resource.id), resource]));
-  const addIfCoach = (id: number): void => {
-    const resource = inventoryById.get(id);
-    const typeId = Number(resource?.typeId ?? NaN);
-    const name = String(resource?.name ?? "").toLowerCase();
-    if (Number.isFinite(id) && id > 0 && (typeId === 10 || name.includes("coach"))) coachIds.add(id);
-  };
-  for (const id of inventoryById.keys()) addIfCoach(id);
-  for (const task of input.tasks ?? []) for (const id of resourcesForTask(task)) addIfCoach(id);
-  return coachIds;
-};
+export { getCoachResourceIds };
 
 export interface CoachSwitchMetrics {
   count: number | null;

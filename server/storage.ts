@@ -193,6 +193,8 @@ export interface IStorage {
       id: number;
       resourceItemId: number;
       typeId: number;
+      typeCode?: string | null;
+      typeName?: string | null;
       name: string;
       isAvailable: boolean;
     }>
@@ -2800,13 +2802,15 @@ export class SupabaseStorage implements IStorage {
       id: number;
       resourceItemId: number;
       typeId: number;
+      typeCode?: string | null;
+      typeName?: string | null;
       name: string;
       isAvailable: boolean;
     }>
   > {
     const { data, error } = await supabaseAdmin
       .from("plan_resource_items")
-      .select("id, resource_item_id, type_id, name, is_available")
+      .select("id, resource_item_id, type_id, name, is_available, resource_types ( code, name )")
       .eq("plan_id", planId)
       .order("id", { ascending: true });
 
@@ -2816,6 +2820,8 @@ export class SupabaseStorage implements IStorage {
       id: Number(r.id),
       resourceItemId: Number(r.resource_item_id),
       typeId: Number(r.type_id),
+      typeCode: r.resource_types?.code == null ? null : String(r.resource_types.code),
+      typeName: r.resource_types?.name == null ? null : String(r.resource_types.name),
       name: String(r.name ?? ""),
       isAvailable: r.is_available !== false,
     }));

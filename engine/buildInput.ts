@@ -27,9 +27,13 @@ export async function buildEngineInput(
   const contestants = await storage.getContestantsByPlan(planId);
   const contestantNameById = new Map<number, string>();
   const contestantAvailabilityById: Record<number, { start: string; end: string }> = {};
+  const coachResourceIds = new Set<number>();
 
   for (const c of contestants as any[]) {
     contestantNameById.set(Number(c.id), String(c.name ?? ""));
+
+    const coachResourceId = Number(c.vocalCoachPlanResourceItemId ?? c.vocal_coach_plan_resource_item_id ?? NaN);
+    if (Number.isFinite(coachResourceId) && coachResourceId > 0) coachResourceIds.add(coachResourceId);
 
     const cid = Number(c.id);
     if (!Number.isFinite(cid) || cid <= 0) continue;
@@ -627,6 +631,7 @@ export async function buildEngineInput(
     zoneResourceTypeRequirements,
     spaceResourceTypeRequirements,
         planResourceItems,
+        coachResourceIds: [...coachResourceIds].sort((a, b) => a - b),
         resourceItemComponents,
         resourceBundles,
         resourceBundleComponents,

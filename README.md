@@ -63,3 +63,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 030 — 2026-06-07 15:24 — Export de calidad operativa del planning para evaluación real del motor
 - ID 031 — 2026-06-07 16:21 — Compactación de jornadas e idle time para calidad operativa real
+
+- ID 032 — 2026-06-07 16:47 — Alineación de detección de coaches en scoring y compactación operativa
