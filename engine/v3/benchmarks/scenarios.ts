@@ -716,6 +716,47 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "La compactación reduce span e idle del talent sin alterar el orden IN -> prep -> ensayo -> OUT ni generar hard violations.",
     riskNotes: ["Transporte modelado con templates configurados", "Dependencias verificadas por hard validation"],
   },
+  {
+    id: "AC",
+    name: "Coach detection and scoring",
+    description: "Dos coaches se detectan por metadatos estructurados; uno presenta jornada partida y otro permanece compacto.",
+    input: baseInput([
+      { id: 29001, planId: PLAN_ID, templateId: 3901, templateName: "Sesión A1", zoneId: 2, spaceId: 201, contestantId: 1501, status: "pending", durationOverrideMin: 60 },
+      { id: 29002, planId: PLAN_ID, templateId: 3901, templateName: "Sesión A2", zoneId: 2, spaceId: 201, contestantId: 1502, status: "pending", durationOverrideMin: 60 },
+      { id: 29003, planId: PLAN_ID, templateId: 3902, templateName: "Sesión B1", zoneId: 2, spaceId: 202, contestantId: 1503, status: "pending", durationOverrideMin: 60 },
+      { id: 29004, planId: PLAN_ID, templateId: 3902, templateName: "Sesión B2", zoneId: 2, spaceId: 202, contestantId: 1504, status: "pending", durationOverrideMin: 60 },
+    ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null, coachResourceIds: [501, 502], planResourceItems: [
+      { id: 501, resourceItemId: 9901, typeId: 41, typeCode: "vocal_coach", name: "Persona A", isAvailable: true },
+      { id: 502, resourceItemId: 9902, typeId: 41, typeName: "Coach vocal", name: "Persona B", isAvailable: true },
+    ] }),
+    hardValidationSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 29001, startPlanned: "09:00", endPlanned: "10:00", assignedResources: [501] },
+      { taskId: 29002, startPlanned: "13:00", endPlanned: "14:00", assignedResources: [501] },
+      { taskId: 29003, startPlanned: "10:00", endPlanned: "11:00", assignedResources: [502] },
+      { taskId: 29004, startPlanned: "11:00", endPlanned: "12:00", assignedResources: [502] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "coachIdlePenalty, coachSpanPenalty, maxCoachGapMinutes y coachSplitDayPenalty son mayores que cero.",
+    riskNotes: ["No depende de nombres personales", "Cubre identificadores y tipos estructurados"],
+  },
+  {
+    id: "AD",
+    name: "Coach gap compaction candidate",
+    description: "Una tarea tardía del coach puede adelantarse para cerrar un hueco sin alterar main stage ni hard constraints.",
+    input: baseInput([
+      { id: 30001, planId: PLAN_ID, templateId: 4001, templateName: "Bloque temprano", zoneId: 2, spaceId: 201, contestantId: 1601, status: "pending", durationOverrideMin: 30 },
+      { id: 30002, planId: PLAN_ID, templateId: 4002, templateName: "Bloque tardío", zoneId: 2, spaceId: 201, contestantId: 1602, status: "pending", durationOverrideMin: 30 },
+      { id: 30003, planId: PLAN_ID, templateId: 4003, templateName: "Main A", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 1603, status: "pending", durationOverrideMin: 30 },
+      { id: 30004, planId: PLAN_ID, templateId: 4004, templateName: "Main B", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 1604, status: "pending", durationOverrideMin: 30 },
+    ], { coachResourceIds: [503], planResourceItems: [{ id: 503, resourceItemId: 9903, typeId: 42, category: "coach", name: "Persona C", isAvailable: true }] }),
+    neighborhoodSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 30001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [503] },
+      { taskId: 30002, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [503] },
+      { taskId: 30003, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [] },
+      { taskId: 30004, startPlanned: "10:30", endPlanned: "11:00", assignedResources: [] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "Se acepta un candidato de compactación; hard violations queda en cero y mainStageGapMinutes no empeora.",
+    riskNotes: ["Caso determinista", "El recurso se identifica por categoría estructurada"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

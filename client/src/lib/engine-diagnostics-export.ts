@@ -126,6 +126,9 @@ export type EngineDiagnosticsSnapshot = {
     operationalCompactionReason: string | null;
     operationalCompactionMetricsBefore: CompactJsonValue | null;
     operationalCompactionMetricsAfter: CompactJsonValue | null;
+    coachCompactionAttempted: boolean | null;
+    coachCompactionCandidatesGenerated: number | null;
+    coachCompactionRejectedReasons: CompactJsonValue | null;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -202,6 +205,9 @@ export function buildEngineDiagnosticsSnapshot(
       operationalCompactionReason: optionalString(metadata.operationalCompactionReason),
       operationalCompactionMetricsBefore: compactJsonValue(metadata.operationalCompactionMetricsBefore) ?? null,
       operationalCompactionMetricsAfter: compactJsonValue(metadata.operationalCompactionMetricsAfter) ?? null,
+      coachCompactionAttempted: optionalBoolean(metadata.coachCompactionAttempted),
+      coachCompactionCandidatesGenerated: optionalNumber(metadata.coachCompactionCandidatesGenerated),
+      coachCompactionRejectedReasons: compactJsonValue(metadata.coachCompactionRejectedReasons) ?? null,
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

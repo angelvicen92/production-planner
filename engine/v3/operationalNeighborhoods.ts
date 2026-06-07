@@ -12,6 +12,7 @@ import {
 import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 import { compareCandidateSolutions } from "./solutionScoring";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
+import { detectCoachAssignments } from "./coachDetection";
 
 export type OperationalNeighborhoodReason =
   | "main_stage_gap_fill"
@@ -385,14 +386,20 @@ const improvesOperationalCompaction = (input: EngineV3Input, base: EngineOutput,
 type CompactionRow = { taskId: number; start: number; end: number };
 
 const compactionGroups = (input: EngineV3Input, output: EngineOutput, kind: "coach" | "talent"): CompactionRow[][] => {
-  const coachIds = getCoachResourceIds(input);
+  const coachIdsByTask = new Map<number, number[]>();
+  if (kind === "coach") {
+    for (const group of detectCoachAssignments(input, output)) {
+      if (group.coachId === null) continue;
+      for (const taskId of group.taskIds) coachIdsByTask.set(taskId, [...(coachIdsByTask.get(taskId) ?? []), group.coachId]);
+    }
+  }
   const grouped = new Map<number, CompactionRow[]>();
   for (const view of getPlannedViews(input, output)) {
     const start = toMinutes(view.startPlanned);
     const end = toMinutes(view.endPlanned);
     if (start === null || end === null || end <= start) continue;
     const ids = kind === "coach"
-      ? view.assignedResources.filter((id) => coachIds.has(Number(id))).map(Number)
+      ? coachIdsByTask.get(view.taskId) ?? []
       : [Number(view.task.contestantId ?? NaN)].filter((id) => Number.isFinite(id) && id > 0);
     for (const id of ids) {
       const bucket = grouped.get(id) ?? [];
@@ -413,7 +420,10 @@ const generatePersonCompactionCandidates = (
   if (!diagnostics.attemptedTypes.includes(reason)) diagnostics.attemptedTypes.push(reason);
   const fixed = fixedTaskIds(input);
   let attempts = 0;
-  for (const rows of compactionGroups(input, output, kind)) {
+  const groups = compactionGroups(input, output, kind);
+  const generatedBefore = results.length;
+  if (kind === "coach" && !groups.length) incrementRejected(diagnostics, "no_movable_coach_tasks");
+  for (const rows of groups) {
     for (let index = 1; index < rows.length && attempts < maxAttempts && results.length < maxCandidates; index++) {
       const previous = rows[index - 1];
       const next = rows[index];
@@ -441,6 +451,14 @@ const generatePersonCompactionCandidates = (
       }
       appendIfSafe(input, output, candidate, reason, results, seen, maxCandidates, diagnostics);
     }
+  }
+  if (kind === "coach" && groups.length && results.length === generatedBefore) {
+    const movable = groups.flat().filter((row) => !fixed.has(row.taskId));
+    if (!movable.length) incrementRejected(diagnostics, "no_movable_coach_tasks");
+    else if (movable.some((row) => mainTaskIds(input).has(row.taskId))) incrementRejected(diagnostics, "blocked_by_main_stage");
+    else if (movable.some((row) => getDependencyIds((input.tasks ?? []).find((task) => Number(task.id) === row.taskId)).length > 0)) incrementRejected(diagnostics, "blocked_by_dependencies");
+    else if ((diagnostics.rejectedReasons.hard_constraint_violation ?? 0) > 0) incrementRejected(diagnostics, "blocked_by_availability");
+    else incrementRejected(diagnostics, "no_compatible_slot");
   }
 };
 

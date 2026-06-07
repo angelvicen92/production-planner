@@ -106,3 +106,14 @@ ID 030 no implementa ninguna de esas modificaciones del motor.
 Desde ID 031 el export (versión 5) incluye en `intelligence` el intento, número de candidatos, aceptación, razón y métricas compactas antes/después de la búsqueda operacional. Las métricas descriptivas `operationalQuality` siguen calculándose sobre el planning final para conservar el ranking y warnings orientados a revisión humana; la metadata del motor permite explicar además por qué se exploró o se conservó el greedy.
 
 Véase `docs/ENGINE_V3_OPERATIONAL_COMPACTION.md` para umbrales, orden de scoring y límites de seguridad.
+
+
+## ID 032 — Coach detection alignment
+
+El export operativo ya reconocía coaches mediante `contestants[].vocalCoachPlanResourceItemId` y, como fallback, nombres de recursos con `coach` o `vocal`. El engine, en cambio, dependía de un `typeId` numérico histórico o del literal `coach` en el nombre; por eso recursos personales configurados como vocal coach podían aparecer en `topCoachIdle` y permanecer invisibles para scoring.
+
+ID 032 incorpora al input `coachResourceIds` derivados de la configuración de concursantes y metadatos opcionales `typeCode`/`typeName` del tipo de recurso. El helper puro prioriza identificadores y categoría/tipo estructurados, después metadatos `coach`/`vocal`, y solo finalmente el nombre o una plantilla inequívocamente vocal. No contiene nombres personales.
+
+Las penalizaciones se interpretan así: `coachIdlePenalty` suma minutos inactivos dentro del span de cada coach; `coachSpanPenalty` suma sus spans; `maxCoachGapMinutes` conserva el mayor hueco; y `coachSplitDayPenalty` suma bloques adicionales separados por al menos 45 minutos. La compactación publica además intento, candidatos y razones de rechazo específicas.
+
+En la próxima prueba real se espera que una jornada partida deje de producir ceros, que las métricas before/after sean visibles en el export y que, si existe un movimiento hard-safe que no empeora main stage, gane el candidato con menor idle/span de coach. El riesgo residual son recursos legacy sin configuración vocal, sin metadatos de tipo y con nombres no descriptivos; esos casos requieren completar datos estructurados, no ampliar una heurística personal.

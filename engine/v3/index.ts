@@ -80,6 +80,9 @@ type BacktrackingMeta = {
   operationalCompactionReason?: string;
   operationalCompactionMetricsBefore?: Record<string, number>;
   operationalCompactionMetricsAfter?: Record<string, number>;
+  coachCompactionAttempted?: boolean;
+  coachCompactionCandidatesGenerated?: number;
+  coachCompactionRejectedReasons?: Record<string, number>;
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -474,6 +477,10 @@ export const runOperationalNeighborhoodSelection = (
         : compactionAttempted ? "kept greedy: no candidate improved operational span" : "plan already compact",
       operationalCompactionMetricsBefore: compactOperationalMetrics(compactionBefore),
       operationalCompactionMetricsAfter: compactOperationalMetrics(compactionAfter),
+      coachCompactionAttempted: neighborhoodDiagnostics.attemptedTypes.includes("coach_gap_compaction"),
+      coachCompactionCandidatesGenerated: candidates.filter((candidate) => candidate.reason === "coach_gap_compaction").length,
+      coachCompactionRejectedReasons: Object.fromEntries(Object.entries(neighborhoodDiagnostics.rejectedReasons)
+        .filter(([reason]) => ["no_movable_coach_tasks", "blocked_by_main_stage", "blocked_by_dependencies", "blocked_by_availability", "no_compatible_slot"].includes(reason))),
       solutionSource: accepted ? "operational_neighborhood" : baseSource,
       candidateSolutionsEvaluated: 1 + candidates.length,
       bestCandidateSource: accepted ? "operational_neighborhood" : baseSource,

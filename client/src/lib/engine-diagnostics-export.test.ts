@@ -47,7 +47,10 @@ test("includes key metrics without copying full engine or planning payloads", ()
       operationalCompactionAccepted: true,
       operationalCompactionReason: "operational_neighborhood selected: lower coach idle",
       operationalCompactionMetricsBefore: { coachIdlePenalty: 260 },
-      operationalCompactionMetricsAfter: { coachIdlePenalty: 20 },
+      operationalCompactionMetricsAfter: { coachIdlePenalty: 20, maxCoachGapMinutes: 20 },
+      coachCompactionAttempted: true,
+      coachCompactionCandidatesGenerated: 2,
+      coachCompactionRejectedReasons: { blocked_by_availability: 1 },
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -65,7 +68,10 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(snapshot.intelligence.operationalCompactionCandidatesGenerated, 4);
   assert.equal(snapshot.intelligence.operationalCompactionAccepted, true);
   assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsBefore, { coachIdlePenalty: 260 });
-  assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsAfter, { coachIdlePenalty: 20 });
+  assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsAfter, { coachIdlePenalty: 20, maxCoachGapMinutes: 20 });
+  assert.equal(snapshot.intelligence.coachCompactionAttempted, true);
+  assert.equal(snapshot.intelligence.coachCompactionCandidatesGenerated, 2);
+  assert.deepEqual(snapshot.intelligence.coachCompactionRejectedReasons, { blocked_by_availability: 1 });
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {
