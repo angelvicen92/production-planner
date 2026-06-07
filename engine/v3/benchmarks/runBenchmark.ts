@@ -4,9 +4,10 @@ import { calculateMetrics } from "./metrics";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
 import { benchmarkScenarios } from "./scenarios";
+import { applyFinalHardValidationGate } from "../hardValidation";
 import type { BenchmarkRunResult } from "./types";
 
-const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S"] as const;
+const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T"] as const;
 
 type BenchmarkSelection = {
   label: string;
@@ -85,7 +86,9 @@ const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolutio
 
 const runScenario = (scenario: (typeof benchmarkScenarios)[number]): BenchmarkRunResult => {
   const start = performance.now();
-  const output = scenario.benchmarkCandidateOutputs
+  const output = scenario.hardValidationSeedOutput
+    ? applyFinalHardValidationGate(scenario.input, scenario.hardValidationSeedOutput)
+    : scenario.benchmarkCandidateOutputs
     ? (() => {
       const [first, second] = scenario.benchmarkCandidateOutputs;
       const selected = compareCandidateSolutions(scenario.input, first, second) >= 0 ? first : second;

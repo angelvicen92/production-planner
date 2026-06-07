@@ -3,7 +3,8 @@ import type {
   EngineDiagnostics,
 } from "@/hooks/use-engine-diagnostics";
 
-export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 2;
+export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 3;
+export const MAX_EXPORTED_HARD_VIOLATIONS = 50;
 export const MAX_EXPORTED_WARNINGS_PER_GROUP = 20;
 
 const MAX_WARNING_TASK_IDS = 25;
@@ -98,6 +99,9 @@ export type EngineDiagnosticsSnapshot = {
     plannedTasks: number | null;
     unplannedTasks: number | null;
     hardConstraintViolations: number | null;
+    hardValidationPassed: boolean | null;
+    hardConstraintViolationCodes: string[];
+    hardConstraintViolationDetails: CompactJsonValue[];
     mainStageGapMinutes: number | null;
     mainStageGapCount: number | null;
     coachSwitchCount: number | null;
@@ -156,6 +160,17 @@ export function buildEngineDiagnosticsSnapshot(
       plannedTasks: optionalNumber(diagnostics?.plannedTasks),
       unplannedTasks: optionalNumber(diagnostics?.unplannedTasks),
       hardConstraintViolations: optionalNumber(diagnostics?.hardConstraintViolations),
+      hardValidationPassed: optionalBoolean(diagnostics?.hardValidationPassed ?? metadata.hardValidationPassed),
+      hardConstraintViolationCodes: (Array.isArray(diagnostics?.hardConstraintViolationCodes)
+        ? diagnostics.hardConstraintViolationCodes
+        : Array.isArray(metadata.hardConstraintViolationCodes) ? metadata.hardConstraintViolationCodes : [])
+        .map(optionalString).filter((code): code is string => code !== null).slice(0, 20),
+      hardConstraintViolationDetails: (Array.isArray(diagnostics?.hardConstraintViolationDetails)
+        ? diagnostics.hardConstraintViolationDetails
+        : Array.isArray(metadata.hardConstraintViolationDetails) ? metadata.hardConstraintViolationDetails : [])
+        .slice(0, MAX_EXPORTED_HARD_VIOLATIONS)
+        .map((detail) => compactJsonValue(detail))
+        .filter((detail): detail is CompactJsonValue => detail !== undefined),
       mainStageGapMinutes: optionalNumber(diagnostics?.mainStageGapMinutes),
       mainStageGapCount: optionalNumber(diagnostics?.mainStageGapCount),
       coachSwitchCount: optionalNumber(diagnostics?.coachSwitchCount),

@@ -5,6 +5,7 @@ import {
   buildEngineDiagnosticsSnapshot,
   ENGINE_DIAGNOSTICS_EXPORT_VERSION,
   MAX_EXPORTED_WARNINGS_PER_GROUP,
+  MAX_EXPORTED_HARD_VIOLATIONS,
 } from "./engine-diagnostics-export";
 
 const generatedAt = new Date("2026-05-31T01:25:00.000Z");
@@ -85,4 +86,25 @@ test("limits exported warnings and warning details", () => {
   assert.equal(snapshot.warnings.resourceBundleValidationWarnings.length, MAX_EXPORTED_WARNINGS_PER_GROUP);
   assert.equal(snapshot.warnings.resourceDiagnosticWarnings[0]?.message?.length, 500);
   assert.equal(snapshot.warnings.resourceDiagnosticWarnings[0]?.taskIds?.length, 25);
+});
+
+
+test("exports compact hard-validation failure details", () => {
+  const details = Array.from({ length: MAX_EXPORTED_HARD_VIOLATIONS + 5 }, (_, index) => ({
+    code: index % 2 ? "SPACE_OVERLAP" : "CONTESTANT_OVERLAP",
+    severity: "hard",
+    message: `violation ${index}`,
+    taskIds: [index + 1, index + 2],
+  }));
+  const snapshot = buildEngineDiagnosticsSnapshot({
+    status: "infeasible",
+    hardConstraintViolations: details.length,
+    hardValidationPassed: false,
+    hardConstraintViolationCodes: ["CONTESTANT_OVERLAP", "SPACE_OVERLAP"],
+    hardConstraintViolationDetails: details,
+  }, { generatedAt });
+
+  assert.equal(snapshot.summary.hardValidationPassed, false);
+  assert.deepEqual(snapshot.summary.hardConstraintViolationCodes, ["CONTESTANT_OVERLAP", "SPACE_OVERLAP"]);
+  assert.equal(snapshot.summary.hardConstraintViolationDetails.length, MAX_EXPORTED_HARD_VIOLATIONS);
 });

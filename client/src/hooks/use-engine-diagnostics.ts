@@ -10,6 +10,19 @@ export type EngineDiagnosticWarning = {
   bundleId?: string | null;
 };
 
+export type EngineHardViolationDetail = {
+  code?: string | null;
+  severity?: "hard" | string | null;
+  message?: string | null;
+  taskIds?: number[] | null;
+  resourceId?: number | null;
+  spaceId?: number | null;
+  contestantId?: number | null;
+  start?: string | null;
+  end?: string | null;
+  details?: Record<string, unknown> | null;
+};
+
 export type EngineDiagnosticsMetadata = {
   candidateSelectionReason?: string | null;
   candidateSolutionsEvaluated?: number | null;
@@ -28,6 +41,10 @@ export type EngineDiagnosticsMetadata = {
   usableResourceBundleCount?: number | null;
   invalidResourceBundleCount?: number | null;
   partiallyUsableResourceBundleCount?: number | null;
+  hardConstraintViolationDetails?: EngineHardViolationDetail[] | null;
+  hardConstraintViolationCodes?: string[] | null;
+  hardValidationPassed?: boolean | null;
+  hardConstraintViolationDetailsTruncated?: boolean | null;
 };
 
 export type EngineDiagnostics = {
@@ -40,6 +57,9 @@ export type EngineDiagnostics = {
   plannedTasks?: number | null;
   unplannedTasks?: number | null;
   hardConstraintViolations?: number | null;
+  hardConstraintViolationDetails?: EngineHardViolationDetail[] | null;
+  hardConstraintViolationCodes?: string[] | null;
+  hardValidationPassed?: boolean | null;
   mainStageGapMinutes?: number | null;
   mainStageGapCount?: number | null;
   coachSwitchCount?: number | null;

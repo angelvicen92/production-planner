@@ -1,5 +1,6 @@
 import type { EngineOutput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Input } from "./types";
+import { validateHardConstraints } from "./hardValidation";
 
 export interface PlannedTaskView {
   taskId: number;
@@ -362,14 +363,7 @@ export const calculateResourceUtilizationSummary = (input: EngineV3Input, output
 };
 
 export const countHardConstraintViolations = (input: EngineV3Input, output: EngineOutput): number => (
-  countContestantWindowViolations(input, output) +
-  countLockedTaskMoved(input, output) +
-  countExecutedTaskMoved(input, output) +
-  countContestantOverlaps(input, output) +
-  countSpaceOverlaps(input, output) +
-  countExclusiveResourceOverlaps(input, output) +
-  countMealCrossings(input, output) +
-  countDependencyViolations(input, output)
+  validateHardConstraints(input, output).hardConstraintViolations
 );
 
 

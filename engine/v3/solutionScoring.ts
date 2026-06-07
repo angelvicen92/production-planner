@@ -7,6 +7,7 @@ import {
 } from "./metrics";
 import { calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
 import { calculateDeclaredBundleMetrics } from "./resourceDiagnostics";
+import { validateHardConstraints } from "./hardValidation";
 
 export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
 
@@ -68,7 +69,7 @@ const calculateDependencyFeederPenalty = (input: EngineV3Input, output: EngineOu
 
 export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutput): CandidateSolutionScore => {
   const operationalMetrics = calculateOperationalMetrics(input, output);
-  const hardConstraintViolations = operationalMetrics.hardConstraintViolations;
+  const hardConstraintViolations = validateHardConstraints(input, output).hardConstraintViolations;
   const plannedTasks = output.plannedTasks?.length ?? 0;
   const unplannedTasks = output.unplanned?.length ?? Math.max(0, (input.tasks?.length ?? 0) - plannedTasks);
   const contestantWindowViolations = countContestantWindowViolations(input, output);

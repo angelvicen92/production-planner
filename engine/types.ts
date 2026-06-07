@@ -254,6 +254,7 @@ export interface InfeasibleReason {
   message: string; // mensaje operativo
   taskId?: number;
   blockingLockIds?: number[];
+  details?: any;
   diagnostic?: {
     [key: string]: any;
     windowStart: string;
@@ -416,5 +417,21 @@ export interface EngineOutput {
     cpSatSegmentTaskCounts?: number[];
     cpSatBestSegmentKind?: "gap" | "restrictive_talent" | "coach_block";
     cpSatSegmentImprovementSummary?: string;
+    hardConstraintViolations?: number;
+    hardConstraintViolationDetails?: Array<{
+      code: string;
+      severity: "hard";
+      message: string;
+      taskIds: number[];
+      resourceId?: number;
+      spaceId?: number;
+      contestantId?: number;
+      start?: string;
+      end?: string;
+      details?: Record<string, unknown>;
+    }>;
+    hardConstraintViolationCodes?: string[];
+    hardValidationPassed?: boolean;
+    hardConstraintViolationDetailsTruncated?: boolean;
   };
 }

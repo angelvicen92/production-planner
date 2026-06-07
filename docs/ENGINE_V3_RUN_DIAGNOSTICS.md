@@ -157,3 +157,9 @@ Limitaciones: el snapshot representa solo el último diagnóstico disponible, no
 ## Recomendación para ID 024
 
 Añadir un histórico acotado de ejecuciones por plan con comparación de métricas clave y duración, manteniendo el detalle bajo demanda y reutilizando este formato compacto para exportar una ejecución concreta sin persistir payloads completos.
+
+## ID 026 — Validación hard estructurada
+
+El diagnóstico incorpora `hardValidationPassed`, `hardConstraintViolationCodes` y `hardConstraintViolationDetails`. Los detalles contienen código, severidad hard, mensaje, ids de tareas y, cuando aplica, recurso, espacio, concursante, intervalo y contexto compacto. Se exportan como máximo 50 detalles; el total de `hardConstraintViolations` no se trunca.
+
+Estos campos se guardan dentro de `engine_metadata` JSON para evitar una migración. El endpoint latest los reconstruye también en el nivel superior del diagnóstico. Un resultado con contador mayor que cero se clasifica como `infeasible`, nunca como `success`.
