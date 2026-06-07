@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "benchmark:engine": "tsx engine/v3/benchmarks/runBenchmark.ts",
     "benchmark:engine:quick": "tsx engine/v3/benchmarks/runBenchmark.ts --quick",
-    "benchmark:engine:full": "tsx engine/v3/benchmarks/runBenchmark.ts --full"
+    "benchmark:engine:full": "tsx engine/v3/benchmarks/runBenchmark.ts --full",
+    "test:planning-run": "tsx --test shared/planning-run-state.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

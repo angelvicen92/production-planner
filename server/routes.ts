@@ -10,6 +10,7 @@ import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
 import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { getUserRole, withPermissionDenied } from "./authz";
+import { getPlanningRunCancellationDecision, isPlanningRunStale } from "@shared/planning-run-state";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -4392,15 +4393,22 @@ function normalizeHexColor(value: unknown): string | null {
       if (error) throw error;
       if (!data) return res.json(null);
 
+      const stale = isPlanningRunStale({
+        status: String(data.status),
+        updatedAt: data.updated_at ? String(data.updated_at) : null,
+        startedAt: data.started_at ? String(data.started_at) : null,
+      });
+
       return res.json({
         id: Number(data.id),
         planId: Number(data.plan_id),
-        status: String(data.status),
+        status: stale ? "stale" : String(data.status),
+        stale,
         startedAt: String(data.started_at),
         updatedAt: String(data.updated_at),
         totalPending: Number(data.total_pending ?? 0),
         plannedCount: Number(data.planned_count ?? 0),
-        message: data.message ? String(data.message) : null,
+        message: stale ? "La generación parece haberse quedado bloqueada." : (data.message ? String(data.message) : null),
         phase: data.phase ? String(data.phase) : null,
         progressPct: Number(data.phase_progress_pct ?? 0),
         engine: data.engine ? String(data.engine) : "v3",
@@ -4416,6 +4424,51 @@ function normalizeHexColor(value: unknown): string | null {
       return res.status(500).json({ message: err?.message || "Failed to fetch planning run" });
     }
   });
+
+  app.post(api.planningRuns.cancel.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) return res.status(400).json({ message: "Invalid plan id" });
+
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      if (!(await ensureUserCanAccessPlan(userId, planId))) return res.status(404).json({ message: "Plan not found" });
+
+      const { data: run, error: runError } = await supabaseAdmin
+        .from("planning_runs")
+        .select("id, status, phase")
+        .eq("plan_id", planId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (runError) throw runError;
+      const cancellationDecision = getPlanningRunCancellationDecision(run?.status, run?.phase);
+      if (cancellationDecision !== "cancel") {
+        return res.json({ cancelled: false, reason: cancellationDecision, ...(run?.id ? { runId: Number(run.id) } : {}) });
+      }
+
+      const finishedAt = new Date().toISOString();
+      const { data: cancelledRun, error: cancelError } = await supabaseAdmin
+        .from("planning_runs")
+        .update({ status: "cancelled", phase: "cancelled", message: "Cancelado por el usuario", finished_at: finishedAt, updated_at: finishedAt })
+        .eq("id", run!.id)
+        .eq("status", run!.status)
+        .select("id")
+        .maybeSingle();
+      if (cancelError) throw cancelError;
+      if (!cancelledRun) return res.json({ cancelled: false, reason: "no_active_run" });
+      return res.json({ cancelled: true, status: "cancelled", runId: Number(cancelledRun.id) });
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to cancel planning run" });
+    }
+  });
+
+  const isPlanningRunCancelled = async (planningRunId: number | null): Promise<boolean> => {
+    if (!planningRunId) return false;
+    const { data, error } = await supabaseAdmin.from("planning_runs").select("status").eq("id", planningRunId).maybeSingle();
+    if (error) throw error;
+    return ["cancelled", "canceled", "stale"].includes(String(data?.status ?? "").toLowerCase());
+  };
 
   const buildReasonEnricher = async (planId: number) => {
     const details = await storage.getPlanFullDetails(planId);
@@ -4828,6 +4881,15 @@ function normalizeHexColor(value: unknown): string | null {
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
 
+      if (totalPending === 0) {
+        await updatePlanningRunProgress(
+          planningRunId,
+          { status: "success", phase: "done", message: "No hay tareas pendientes que planificar", finished_at: new Date().toISOString() },
+          { phase: "done", plannedCount: 0, totalPending: 0 },
+        );
+        return res.json({ success: true, hardFeasible: true, complete: true, feasible: true, planId, tasksUpdated: 0, warnings: [], planningStats: {}, reasons: [], unplanned: [], insights: [], runId: planningRunId, message: "No hay tareas pendientes que planificar" });
+      }
+
       if ((mode === "full" || mode === "replan_pending_respecting_locks") && taskIdsToSolve.length > 0) {
         const { error: clearPendingErr } = await supabaseAdmin
           .from("daily_tasks")
@@ -4889,6 +4951,10 @@ function normalizeHexColor(value: unknown): string | null {
         { phase: "solving_feasible", plannedCount: 0, totalPending },
       );
 
+      if (await isPlanningRunCancelled(planningRunId)) {
+        return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
+      }
+
       const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0
         ? requestedTimeLimitMs
         : defaultV3Ms;
@@ -4903,6 +4969,9 @@ function normalizeHexColor(value: unknown): string | null {
           );
         },
       });
+      if (await isPlanningRunCancelled(planningRunId)) {
+        return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
+      }
       if (planningRunId) {
         try {
           await storage.createPlanningRunDiagnostics(
@@ -5052,10 +5121,18 @@ function normalizeHexColor(value: unknown): string | null {
       });
 
     } catch (e: any) {
+      try {
+        if (await isPlanningRunCancelled(planningRunId)) {
+          return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
+        }
+      } catch {
+        // Preserve the original generation error if the status lookup also fails.
+      }
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
+      const publicMessage = msg.slice(0, 500);
       await updatePlanningRunProgress(
         planningRunId,
-        { status: "error", message: msg, phase: "error", finished_at: new Date().toISOString() },
+        { status: "failed", message: publicMessage, phase: "error", finished_at: new Date().toISOString() },
         { phase: "error", plannedCount: 0, totalPending: 0 },
       );
 
