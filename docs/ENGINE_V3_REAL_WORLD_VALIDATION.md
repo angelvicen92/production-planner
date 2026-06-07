@@ -245,3 +245,19 @@ En la siguiente ejecución real, conservar el JSON anterior y el nuevo y compara
 6. Confirmar visualmente que transporte, locks, `done` e `in_progress` permanecen correctos.
 
 Si no hay mejora, clasificar si faltaron candidatos, si fueron hard-invalid o si perdieron por un criterio superior. Esa evidencia determina el trabajo de ID 032.
+
+## ID 033 — Cancel/stale generation recovery
+
+Un run activo sin actualización durante 10 minutos se presenta como `stale`; el frontend aplica además el límite defensivo de dos veces el tiempo solicitado más 30 segundos, con un máximo de cinco minutos sin progreso. Esto es recuperación operativa de la ejecución, no un cambio del Motor V3 ni de su planning.
+
+La X y **Cancelar generación** desbloquean el modal inmediatamente, paran el polling activo, abortan la petición cliente e intentan marcar el run como `cancelled`. Si el run ya terminó, el endpoint es idempotente y conserva la planificación válida. Si ya está persistiendo, no se interrumpe a mitad de escritura: se cierra la UI y se refresca el estado final. **Reintentar** inicia un run nuevo y **Cerrar** descarta solo el estado visual.
+
+Para validación manual:
+
+1. generar un plan normal y confirmar cierre/refresco al terminar;
+2. pulsar la X durante la generación y confirmar el aviso de cancelación;
+3. simular un `updated_at` antiguo o esperar el guard defensivo y comprobar el mensaje stale;
+4. recargar la pestaña y confirmar que un run descartado no reabre un modal infinito;
+5. reintentar y verificar que el planning válido previo nunca se borra por cancelar.
+
+Una persona operadora no debe abrir DevTools ni editar Local Storage, Session Storage o Supabase para recuperarse.

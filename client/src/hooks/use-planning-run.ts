@@ -1,11 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api, buildUrl } from "@shared/routes";
+import { getPlanningRunUiState } from "@shared/planning-run-state";
 
 export type PlanningRun = {
   id: number;
   planId: number;
-  status: "running" | "success" | "infeasible" | "error";
+  status:
+    | "running"
+    | "pending"
+    | "optimizing"
+    | "success"
+    | "infeasible"
+    | "invalid"
+    | "error"
+    | "failed"
+    | "cancelled"
+    | "canceled"
+    | "stale";
+  stale?: boolean;
   startedAt: string;
   updatedAt: string;
   totalPending: number;
@@ -26,10 +39,14 @@ export function usePlanningRun(planId: number | null) {
   return useQuery<PlanningRun | null>({
     queryKey: ["planning-run", planId],
     enabled: Number.isFinite(planId) && Number(planId) > 0,
-    queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestByPlan.path, { id: Number(planId) })),
+    queryFn: () =>
+      apiRequest(
+        "GET",
+        buildUrl(api.planningRuns.latestByPlan.path, { id: Number(planId) }),
+      ),
     refetchInterval: (query) => {
       const run = query.state.data as PlanningRun | null | undefined;
-      return run?.status === "running" ? 700 : false;
+      return getPlanningRunUiState(run) === "active" ? 700 : false;
     },
     refetchOnWindowFocus: true,
   });

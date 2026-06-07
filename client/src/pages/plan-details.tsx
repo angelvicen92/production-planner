@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -119,6 +119,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { getPlanningRunUiState } from "@shared/planning-run-state";
 
 function getRunProgress(args: {
   plannedCount: number;
@@ -936,6 +937,14 @@ export default function PlanDetailsPage() {
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
   const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(null);
+  const [dismissedPlanningRunId, setDismissedPlanningRunId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const value = Number(window.sessionStorage.getItem(`dismissed-planning-run:${id}`));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  });
+  const [planningIssue, setPlanningIssue] = useState<{ kind: "stale" | "failed"; message: string } | null>(null);
+  const generationAbortControllerRef = useRef<AbortController | null>(null);
+  const cancelledByUserRef = useRef(false);
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0 });
   const [planningTimeLimitSec, setPlanningTimeLimitSec] = useState<number>(30);
   const [showLockedOnly, setShowLockedOnly] = useState(false);
@@ -1479,54 +1488,71 @@ ${reasonMessage}` : message,
     const run = planningRunQ.data;
     if (!run) return;
 
-    if (run.status === "running") {
-      setPlanningInProgress(true);
-      if (expectedPlanningRunId == null) {
-        setExpectedPlanningRunId(Number(run.id));
+    const runId = Number(run.id);
+    const uiState = getPlanningRunUiState(run);
+    if (dismissedPlanningRunId === runId) {
+      if (uiState !== "active" && uiState !== "stale") {
+        window.sessionStorage.removeItem(`dismissed-planning-run:${id}`);
+        setDismissedPlanningRunId(null);
       }
+      return;
     }
 
-    if (expectedPlanningRunId == null) return;
-    if (Number(run.id) !== Number(expectedPlanningRunId)) return;
+    if (uiState === "active") {
+      setPlanningIssue(null);
+      setPlanningInProgress(true);
+      if (expectedPlanningRunId == null) setExpectedPlanningRunId(runId);
+    }
+
+    if (expectedPlanningRunId == null && uiState !== "active" && uiState !== "stale") return;
+    const isExpectedRun = runId === Number(expectedPlanningRunId);
+    if (!isExpectedRun) return;
 
     if (Number.isFinite(run.plannedCount) && Number.isFinite(run.totalPending)) {
-      setPlanningProgress(
-        getRunProgress({
-          plannedCount: Number(run.plannedCount),
-          totalPending: Number(run.totalPending),
-          status: run.status,
-        }),
-      );
+      setPlanningProgress(getRunProgress({ plannedCount: Number(run.plannedCount), totalPending: Number(run.totalPending), status: run.status }));
     }
 
-    if (run.status !== "running") {
-      const finalProgress = getRunProgress({
-        plannedCount: Number(run.plannedCount ?? 0),
-        totalPending: Number(run.totalPending ?? 0),
-        status: run.status,
-      });
-      setPlanningProgress(finalProgress);
-      setPlanningInProgress(false);
-      void queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id) });
-      setExpectedPlanningRunId(null);
+    if (uiState === "stale") {
+      setPlanningIssue({ kind: "stale", message: run.message || "La generación parece haberse quedado bloqueada." });
+      setPlanningInProgress(true);
+      if (expectedPlanningRunId == null) setExpectedPlanningRunId(runId);
+      return;
+    }
+    if (uiState === "active") return;
 
-      const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
-      toast({
-        title:
-          finalProgress.percentage === 100
-            ? "Planificación completa (100%)"
-            : `Planificación parcial (${finalProgress.percentage}%)`,
-        description:
-          finalProgress.percentage === 100
-            ? `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas.`
-            : `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas · ${unplannedCount} sin planificar.`,
-      });
+    setPlanningInProgress(false);
+    setExpectedPlanningRunId(null);
+    setPlanningIssue(null);
+    void queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+    void queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id) });
+    void queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
 
+    if (uiState === "no_work") {
+      toast({ title: "No hay tareas pendientes que planificar" });
+      return;
+    }
+    if (uiState === "cancelled") {
+      toast({ title: "Generación cancelada. Puedes reintentar." });
+      return;
+    }
+    if (uiState === "failed") {
+      setPlanningIssue({ kind: "failed", message: run.message || "La generación no pudo completarse." });
+      setPlanningInProgress(true);
       if (run.status === "infeasible") {
         setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [], diagnostic: null });
       }
+      return;
     }
-  }, [planningRunQ.data, expectedPlanningRunId, id, queryClient, toast]);
+
+    const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status });
+    const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
+    toast({
+      title: finalProgress.percentage === 100 ? "Planificación completa (100%)" : `Planificación parcial (${finalProgress.percentage}%)`,
+      description: finalProgress.percentage === 100
+        ? `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas.`
+        : `${finalProgress.plannedCount}/${finalProgress.totalCount} tareas planificadas · ${unplannedCount} sin planificar.`,
+    });
+  }, [planningRunQ.data, expectedPlanningRunId, dismissedPlanningRunId, id, queryClient, toast]);
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
@@ -1772,7 +1798,60 @@ ${reasonMessage}` : message,
     return true;
   };
 
+  const refreshPlanningState = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: planQueryKey(id) }),
+      queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id) }),
+      queryClient.invalidateQueries({ queryKey: ["planning-run", id] }),
+    ]);
+  };
+
+  const unlockPlanningModal = (runId?: number | null) => {
+    const safeRunId = Number(runId);
+    if (Number.isFinite(safeRunId) && safeRunId > 0) {
+      window.sessionStorage.setItem(`dismissed-planning-run:${id}`, String(safeRunId));
+      setDismissedPlanningRunId(safeRunId);
+    }
+    setPlanningInProgress(false);
+    setExpectedPlanningRunId(null);
+    setPlanningIssue(null);
+    setPlanningProgress({ plannedCount: 0, totalCount: 0, percentage: 0 });
+  };
+
+  const cancelPlanningGeneration = async () => {
+    const run = planningRunQ.data;
+    const runId = run?.id ?? expectedPlanningRunId;
+    const uiState = getPlanningRunUiState(run);
+    const hasActiveGeneration = uiState === "active" || uiState === "stale" || planningInProgress || generatePlan.isPending;
+    cancelledByUserRef.current = true;
+    generationAbortControllerRef.current?.abort("cancelled_by_user");
+    unlockPlanningModal(runId);
+
+    let backendCancelFailed = false;
+    if (hasActiveGeneration) {
+      queryClient.setQueryData(["planning-run", id], (current: any) => current ? { ...current, status: "cancelled", phase: "cancelled" } : current);
+      try {
+        await apiRequest("POST", buildUrl(api.planningRuns.cancel.path, { id }));
+      } catch {
+        backendCancelFailed = true;
+        // The frontend dismissal is intentionally authoritative: a blocked backend must not trap the user.
+      }
+      toast({ title: "Generación cancelada. Puedes reintentar." });
+    }
+    await refreshPlanningState();
+    if (backendCancelFailed) {
+      queryClient.setQueryData(["planning-run", id], (current: any) => current && Number(current.id) === Number(runId)
+        ? { ...current, status: "cancelled", phase: "cancelled", message: "Cancelado localmente" }
+        : current);
+    }
+  };
+
   const handleGenerate = async () => {
+    cancelledByUserRef.current = false;
+    generationAbortControllerRef.current = new AbortController();
+    setDismissedPlanningRunId(null);
+    window.sessionStorage.removeItem(`dismissed-planning-run:${id}`);
+    setPlanningIssue(null);
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
     const totalToPlan = ((plan?.dailyTasks ?? []) as any[]).filter((task: any) => {
@@ -1797,6 +1876,7 @@ ${reasonMessage}` : message,
           id,
           mode: "generate_planning",
           timeLimitMs: planningTimeLimitSec * 1000,
+          signal: generationAbortControllerRef.current.signal,
         });
       setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
@@ -1813,6 +1893,7 @@ ${reasonMessage}` : message,
         setConfigDialog({ open: true, reasons: warnings });
       }
     } catch (err: any) {
+      if (cancelledByUserRef.current) return;
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (isAbortLikeError(err)) {
@@ -1838,8 +1919,11 @@ ${reasonMessage}` : message,
         }
       }
     } finally {
-      setPlanningInProgress(false);
-      setExpectedPlanningRunId(null);
+      generationAbortControllerRef.current = null;
+      if (!cancelledByUserRef.current) {
+        setPlanningInProgress(false);
+        setExpectedPlanningRunId(null);
+      }
     }
   };
 
@@ -4305,39 +4389,53 @@ ${reasonMessage}` : message,
           </DialogContent>
         </Dialog>
 
-        <Dialog open={planningInProgress} onOpenChange={() => {}}>
+        <Dialog open={planningInProgress} onOpenChange={(open) => { if (!open) void cancelPlanningGeneration(); }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Planificando… {planningProgress.percentage}%
+                {planningIssue ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+                {planningIssue
+                  ? planningIssue.kind === "stale" ? "Generación bloqueada" : "No se pudo completar la generación"
+                  : `Planificando… ${planningProgress.percentage}%`}
               </DialogTitle>
               <DialogDescription>
-                {Math.min(planningProgress.plannedCount, planningProgress.totalCount)} / {planningProgress.totalCount} pendientes en este run
-                <br />
-                Total tareas del plan: {plan?.dailyTasks?.length ?? 0}
+                {planningIssue ? planningIssue.message : <>
+                  {Math.min(planningProgress.plannedCount, planningProgress.totalCount)} / {planningProgress.totalCount} pendientes en este run
+                  <br />
+                  Total tareas del plan: {plan?.dailyTasks?.length ?? 0}
+                </>}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <Progress value={planningProgress.percentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {planningRunQ.data?.phase === "prevalidation" || planningRunQ.data?.phase === "clearing_pending"
-                  ? "Prevalidando"
-                  : planningRunQ.data?.phase === "build_input" || planningRunQ.data?.phase === "building_input"
-                    ? "Construyendo entrada"
-                    : planningRunQ.data?.phase === "solving_feasible" || planningRunQ.data?.phase === "solving"
-                      ? "Validando factibilidad"
-                      : planningRunQ.data?.phase === "optimizing"
-                        ? "Optimizando"
-                        : planningRunQ.data?.phase === "persisting"
-                          ? "Persistiendo..."
-                        : planningRunQ.data && planningProgress.plannedCount > planningProgress.totalCount
-                          ? "Persistiendo..."
+              {!planningIssue && <>
+                <Progress value={planningProgress.percentage} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  {planningRunQ.data?.phase === "prevalidation" || planningRunQ.data?.phase === "clearing_pending"
+                    ? "Prevalidando"
+                    : planningRunQ.data?.phase === "build_input" || planningRunQ.data?.phase === "building_input"
+                      ? "Construyendo entrada"
+                      : planningRunQ.data?.phase === "solving_feasible" || planningRunQ.data?.phase === "solving"
+                        ? "Validando factibilidad"
+                        : planningRunQ.data?.phase === "optimizing"
+                          ? "Optimizando"
+                          : planningRunQ.data?.phase === "persisting"
+                            ? "Persistiendo..."
                           : "Procesando"}
-                {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}
-              </p>
-              <p className="text-xs text-muted-foreground">El proceso se cerrará automáticamente al terminar.</p>
+                  {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">Puedes cancelar sin borrar una planificación válida ya completada.</p>
+              </>}
+              {planningIssue?.kind === "stale" && <p className="text-sm">Puedes cancelar y reintentar.</p>}
             </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              {planningIssue && <Button variant="outline" onClick={() => unlockPlanningModal(planningRunQ.data?.id)}>Cerrar</Button>}
+              <Button variant={planningIssue ? "outline" : "destructive"} onClick={() => void cancelPlanningGeneration()}>
+                Cancelar generación
+              </Button>
+              {planningIssue && <Button onClick={() => { unlockPlanningModal(planningRunQ.data?.id); void handleGenerate(); }} disabled={generatePlan.isPending}>
+                Reintentar
+              </Button>}
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
