@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanningTimeline } from "@/components/planning-timeline";
 import { FullscreenPlanningPanel } from "@/components/planning/fullscreen-planning-panel";
 import { PlanningWarningsPanel } from "@/components/planning-warnings-panel";
+import { PlanEngineDiagnostics } from "@/components/plan-engine-diagnostics";
 import {
   ArrowLeft,
   Calendar,
@@ -37,6 +38,7 @@ import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
+import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
 
 import {
   Table,
@@ -1505,6 +1507,7 @@ ${reasonMessage}` : message,
       });
       setPlanningProgress(finalProgress);
       setPlanningInProgress(false);
+      void queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id) });
       setExpectedPlanningRunId(null);
 
       const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
@@ -1523,7 +1526,7 @@ ${reasonMessage}` : message,
         setErrorDialog({ open: true, reasons: Array.isArray(run.lastReasons) ? run.lastReasons : [], diagnostic: null });
       }
     }
-  }, [planningRunQ.data, expectedPlanningRunId, toast]);
+  }, [planningRunQ.data, expectedPlanningRunId, id, queryClient, toast]);
 
   const unplannedTasks = useMemo(() => {
     return (plan?.dailyTasks ?? []).filter(
@@ -3469,6 +3472,7 @@ ${reasonMessage}` : message,
 
           <TabsContent value="planning" className="mt-0">
             <div className="space-y-4">
+              <PlanEngineDiagnostics planId={id} />
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-semibold">Visual Timeline</h2>

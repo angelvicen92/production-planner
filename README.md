@@ -39,6 +39,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 019 — 2026-05-30 23:59 — Resource bundles como señal soft no vinculante en Motor V3
 - ID 020 — 2026-05-31 00:20 — Validador de resource bundles y contrato de fiabilidad para scoring soft
 - ID 021 — 2026-05-31 00:40 — Motor Run Diagnostics API y persistencia ligera de metadata
+- ID 022 — 2026-05-31 01:05 — Panel Admin de diagnóstico del motor por plan
 
 ## Verificación básica
 

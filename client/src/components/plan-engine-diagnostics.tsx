@@ -1,0 +1,285 @@
+import { AlertCircle, CheckCircle2, Cpu, Info, TriangleAlert } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useEngineDiagnostics, type EngineDiagnosticWarning } from "@/hooks/use-engine-diagnostics";
+import { useUserRole } from "@/hooks/use-user-role";
+import { cn } from "@/lib/utils";
+
+const MAX_WARNINGS_SHOWN = 8;
+const MAX_WARNING_MESSAGE_LENGTH = 180;
+
+function safeNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function metric(value: unknown, suffix = ""): string {
+  const number = safeNumber(value);
+  return number === null ? "—" : `${number}${suffix}`;
+}
+
+function label(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "Desconocido";
+  return value.trim().replaceAll("_", " ");
+}
+
+function compactMessage(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "Warning sin detalle.";
+  const message = value.trim();
+  return message.length > MAX_WARNING_MESSAGE_LENGTH
+    ? `${message.slice(0, MAX_WARNING_MESSAGE_LENGTH - 1)}…`
+    : message;
+}
+
+function MetricCell({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-muted/20 px-3 py-2">
+      <div className="text-xs text-muted-foreground">{title}</div>
+      <div className="mt-0.5 text-base font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function UsageBadge({
+  label: badgeLabel,
+  attempted,
+  accepted,
+  detail,
+}: {
+  label: string;
+  attempted: boolean;
+  accepted: boolean;
+  detail?: string;
+}) {
+  const state = accepted ? "Aceptado" : attempted ? "Intentado" : "No usado";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+      <span className="font-medium">{badgeLabel}</span>
+      <div className="flex items-center gap-2">
+        {detail ? <span className="text-xs tabular-nums text-muted-foreground">{detail}</span> : null}
+        <Badge variant={accepted ? "default" : attempted ? "secondary" : "outline"}>{state}</Badge>
+      </div>
+    </div>
+  );
+}
+
+function WarningRow({ warning }: { warning: EngineDiagnosticWarning }) {
+  const taskCount = Array.isArray(warning?.taskIds) ? warning.taskIds.length : 0;
+  const severity = warning?.severity === "info" ? "info" : "warning";
+  const code = typeof warning?.code === "string" && warning.code.trim()
+    ? warning.code.trim()
+    : "UNKNOWN_WARNING";
+
+  return (
+    <li className="rounded-md border px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={severity === "warning" ? "destructive" : "secondary"}>
+          {severity === "warning" ? "warning" : "info"}
+        </Badge>
+        <code className="text-xs font-semibold">{code}</code>
+        {taskCount > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            {taskCount} {taskCount === 1 ? "tarea" : "tareas"}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">{compactMessage(warning?.message)}</p>
+    </li>
+  );
+}
+
+export function PlanEngineDiagnostics({ planId }: { planId: number }) {
+  const { role } = useUserRole();
+  const diagnosticsQuery = useEngineDiagnostics(planId);
+
+  // Do not hide the panel while role resolution is pending or unavailable.
+  if (role && role !== "admin" && role !== "production") return null;
+
+  if (diagnosticsQuery.isLoading) {
+    return (
+      <Card aria-label="Cargando diagnóstico del motor">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Cpu className="h-4 w-4" /> Diagnóstico del motor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-8 w-full" />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (diagnosticsQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>No se pudo cargar el diagnóstico del motor.</AlertTitle>
+        <AlertDescription>La planificación sigue disponible; vuelve a abrir la vista para reintentar.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const diagnostics = diagnosticsQuery.data;
+  if (!diagnostics) {
+    return (
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Aún no hay diagnóstico del motor para este plan.</AlertTitle>
+        <AlertDescription>Se mostrará aquí después de una ejecución V3 que persista su resumen.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const metadata = diagnostics.engineMetadata ?? {};
+  const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
+    ? diagnostics.diagnosticWarnings.resourceDiagnosticWarnings
+    : [];
+  const bundleWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceBundleValidationWarnings)
+    ? diagnostics.diagnosticWarnings.resourceBundleValidationWarnings
+    : [];
+  const warnings = [...resourceWarnings, ...bundleWarnings];
+  const hardViolations = safeNumber(diagnostics.hardConstraintViolations);
+  const status = label(diagnostics.status);
+  const isHealthy = diagnostics.status === "success" && hardViolations === 0;
+  const createdAt = diagnostics.createdAt && !Number.isNaN(Date.parse(diagnostics.createdAt))
+    ? new Intl.DateTimeFormat("es-ES", { dateStyle: "short", timeStyle: "short" }).format(new Date(diagnostics.createdAt))
+    : null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Cpu className="h-4 w-4" /> Diagnóstico del motor
+            </CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Última ejecución V3{createdAt ? ` · ${createdAt}` : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="capitalize">{label(diagnostics.solutionSource)}</Badge>
+            <Badge
+              variant={isHealthy ? "default" : diagnostics.status === "infeasible" || diagnostics.status === "error" ? "destructive" : "secondary"}
+              className="capitalize"
+            >
+              {status}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        <section aria-labelledby="diagnostics-main-state">
+          <h3 id="diagnostics-main-state" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Estado principal
+          </h3>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <MetricCell title="Tareas planificadas" value={metric(diagnostics.plannedTasks)} />
+            <MetricCell title="Tareas sin planificar" value={metric(diagnostics.unplannedTasks)} />
+            <MetricCell title="Hard violations" value={metric(diagnostics.hardConstraintViolations)} />
+            <MetricCell title="Candidatos evaluados" value={metric(metadata.candidateSolutionsEvaluated)} />
+          </div>
+        </section>
+
+        <section aria-labelledby="diagnostics-quality">
+          <h3 id="diagnostics-quality" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Calidad operativa
+          </h3>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <MetricCell title="Gap Main Stage" value={metric(diagnostics.mainStageGapMinutes, " min")} />
+            <MetricCell title="N.º gaps Main Stage" value={metric(diagnostics.mainStageGapCount)} />
+            <MetricCell title="Cambios de coach" value={metric(diagnostics.coachSwitchCount)} />
+            <MetricCell title="Offset talento restrictivo" value={metric(diagnostics.restrictiveTalentAverageStartOffset, " min")} />
+          </div>
+        </section>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <section aria-labelledby="diagnostics-intelligence">
+            <h3 id="diagnostics-intelligence" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Inteligencia usada
+            </h3>
+            <div className="space-y-2">
+              <UsageBadge
+                label="Backtracking"
+                attempted={metadata.backtrackingAttempted === true}
+                accepted={metadata.backtrackingAccepted === true}
+              />
+              <UsageBadge
+                label="Neighborhood search"
+                attempted={metadata.neighborhoodSearchAttempted === true}
+                accepted={metadata.neighborhoodCandidateAccepted === true}
+                detail={`${metric(metadata.neighborhoodCandidatesGenerated)} candidatos`}
+              />
+              <UsageBadge
+                label="CP-SAT pilot"
+                attempted={metadata.cpSatPilotAttempted === true}
+                accepted={metadata.cpSatPilotAccepted === true}
+              />
+              <UsageBadge
+                label="CP-SAT segments"
+                attempted={(safeNumber(metadata.cpSatSegmentsAttempted) ?? 0) > 0}
+                accepted={(safeNumber(metadata.cpSatSegmentsAccepted) ?? 0) > 0}
+                detail={`${metric(metadata.cpSatSegmentsAccepted)}/${metric(metadata.cpSatSegmentsAttempted)} aceptados`}
+              />
+              <UsageBadge
+                label="CP-SAT global"
+                attempted={metadata.cpSatAttempted === true}
+                accepted={metadata.cpSatAccepted === true}
+              />
+            </div>
+          </section>
+
+          <section aria-labelledby="diagnostics-bundles">
+            <h3 id="diagnostics-bundles" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Bundles y recursos
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCell title="Declarados" value={metric(metadata.declaredResourceBundleCount)} />
+              <MetricCell title="Utilizables" value={metric(metadata.usableResourceBundleCount)} />
+              <MetricCell title="Inválidos" value={metric(metadata.invalidResourceBundleCount)} />
+              <MetricCell title="Parcialmente utilizables" value={metric(metadata.partiallyUsableResourceBundleCount)} />
+            </div>
+          </section>
+        </div>
+
+        <section aria-labelledby="diagnostics-warnings">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 id="diagnostics-warnings" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Warnings de recursos y bundles
+            </h3>
+            <span className={cn("flex items-center gap-1 text-xs", warnings.length ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+              {warnings.length ? <TriangleAlert className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              {warnings.length ? `${warnings.length} detectados` : "Sin warnings"}
+            </span>
+          </div>
+          {warnings.length ? (
+            <>
+              <ul className="space-y-2">
+                {warnings.slice(0, MAX_WARNINGS_SHOWN).map((warning, index) => (
+                  <WarningRow key={`${warning?.code ?? "warning"}-${index}`} warning={warning ?? {}} />
+                ))}
+              </ul>
+              {warnings.length > MAX_WARNINGS_SHOWN ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Se muestran {MAX_WARNINGS_SHOWN} de {warnings.length} warnings para mantener el panel compacto.
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+              La última ejecución no registró warnings de recursos ni de validación de bundles.
+            </p>
+          )}
+        </section>
+      </CardContent>
+    </Card>
+  );
+}

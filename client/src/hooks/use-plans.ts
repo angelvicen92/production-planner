@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/api";
 import { Plan, PlanSummary, InsertPlan, DailyTask } from "@shared/schema";
 import { api, buildUrl } from "@shared/routes";
 import { planQueryKey } from "@/lib/plan-query-keys";
+import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
@@ -151,6 +152,7 @@ export function useGeneratePlan() {
       apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { ...(mode ? { mode } : {}), ...(timeLimitMs ? { timeLimitMs } : {}) }),
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) });
+      await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(variables.id) });
     },
   });
