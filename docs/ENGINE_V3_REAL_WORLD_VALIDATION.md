@@ -232,3 +232,16 @@ Una ejecución con `status: success`, cero tareas sin planificar y cero hard vio
 6. `analysisAvailability` debe revisarse antes de interpretar arrays vacíos: vacío puede significar “sin problema” o “no inferible”, y el flag distingue ambos casos.
 
 El estado `good` no certifica excelencia y `review` no implica una violación hard. Comparar siempre los casos principales con la timeline y con el criterio de producción. El JSON no cambia el motor; sirve para elegir con evidencia el objetivo de ID 031.
+
+## ID 031 — Validación real de compactación
+
+En la siguiente ejecución real, conservar el JSON anterior y el nuevo y comparar:
+
+1. `hardConstraintViolations` debe permanecer en 0.
+2. `mainStageGapMinutes` y `mainStageGapCount` no deben aumentar.
+3. Revisar `operationalCompactionAttempted`, candidatos generados, aceptación y razón.
+4. Comparar `operationalCompactionMetricsBefore/After` con `topCoachIdle` y `topTalentIdle` del planning final.
+5. Para el caso observado, comparar explícitamente idle/maxGap de Lucía y el ranking de talents con mayor idle, sin convertir esos nombres en lógica del motor.
+6. Confirmar visualmente que transporte, locks, `done` e `in_progress` permanecen correctos.
+
+Si no hay mejora, clasificar si faltaron candidatos, si fueron hard-invalid o si perdieron por un criterio superior. Esa evidencia determina el trabajo de ID 032.

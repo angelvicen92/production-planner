@@ -8,7 +8,7 @@ import {
   type OperationalQualityInput,
 } from "@/lib/planning-operational-quality";
 
-export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 4;
+export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 5;
 export const MAX_EXPORTED_HARD_VIOLATIONS = 50;
 export const MAX_EXPORTED_WARNINGS_PER_GROUP = 20;
 
@@ -120,6 +120,12 @@ export type EngineDiagnosticsSnapshot = {
     neighborhoodSearchAttempted: boolean | null;
     neighborhoodCandidatesGenerated: number | null;
     neighborhoodCandidateAccepted: boolean | null;
+    operationalCompactionAttempted: boolean | null;
+    operationalCompactionCandidatesGenerated: number | null;
+    operationalCompactionAccepted: boolean | null;
+    operationalCompactionReason: string | null;
+    operationalCompactionMetricsBefore: CompactJsonValue | null;
+    operationalCompactionMetricsAfter: CompactJsonValue | null;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -190,6 +196,12 @@ export function buildEngineDiagnosticsSnapshot(
       neighborhoodSearchAttempted: optionalBoolean(metadata.neighborhoodSearchAttempted),
       neighborhoodCandidatesGenerated: optionalNumber(metadata.neighborhoodCandidatesGenerated),
       neighborhoodCandidateAccepted: optionalBoolean(metadata.neighborhoodCandidateAccepted),
+      operationalCompactionAttempted: optionalBoolean(metadata.operationalCompactionAttempted),
+      operationalCompactionCandidatesGenerated: optionalNumber(metadata.operationalCompactionCandidatesGenerated),
+      operationalCompactionAccepted: optionalBoolean(metadata.operationalCompactionAccepted),
+      operationalCompactionReason: optionalString(metadata.operationalCompactionReason),
+      operationalCompactionMetricsBefore: compactJsonValue(metadata.operationalCompactionMetricsBefore) ?? null,
+      operationalCompactionMetricsAfter: compactJsonValue(metadata.operationalCompactionMetricsAfter) ?? null,
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

@@ -62,3 +62,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 029 — 2026-06-07 14:45 — Uso de capacidad de furgoneta existente para concurrencia del espacio Transporte
 
 - ID 030 — 2026-06-07 15:24 — Export de calidad operativa del planning para evaluación real del motor
+- ID 031 — 2026-06-07 16:21 — Compactación de jornadas e idle time para calidad operativa real

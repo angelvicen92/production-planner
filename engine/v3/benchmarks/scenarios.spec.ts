@@ -17,12 +17,19 @@ import { benchmarkScenarios, scenarioById } from "./scenarios";
 import type { BenchmarkScenarioId } from "./types";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
-import { applyFinalHardValidationGate } from "../hardValidation";
+import { applyFinalHardValidationGate, validateHardConstraints } from "../hardValidation";
+import { calculateEngineOperationalCompactionMetrics } from "../operationalQuality";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
 const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
   coachSwitchCount: score.coachSwitchCount,
   coachSwitchPenalty: score.coachSwitchPenalty,
+  coachIdlePenalty: score.coachIdlePenalty,
+  coachSpanPenalty: score.coachSpanPenalty,
+  coachSplitDayPenalty: score.coachSplitDayPenalty,
+  talentIdlePenalty: score.talentIdlePenalty,
+  talentSpanPenalty: score.talentSpanPenalty,
+  maxGapPenalty: score.maxGapPenalty,
   bundleCoherencePenalty: score.bundleCoherencePenalty,
   bundleSwitchPenalty: score.bundleSwitchPenalty,
   partialBundleUsageWarnings: score.partialBundleUsageWarnings,
@@ -411,3 +418,21 @@ for (const id of ["C", "D", "J"] as const) {
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");
+
+// ID 031 — escenarios AA/AB prueban aceptación real de compactación.
+for (const id of ["AA", "AB"] as const) {
+  const scenario = scenarioById.get(id)!;
+  assert.ok(scenario.neighborhoodSeedOutput);
+  const before = calculateEngineOperationalCompactionMetrics(scenario.input, scenario.neighborhoodSeedOutput!);
+  const selected = runOperationalNeighborhoodSelection(scenario.input, scenario.neighborhoodSeedOutput!, "phaseA_greedy");
+  const after = calculateEngineOperationalCompactionMetrics(scenario.input, selected.output);
+  assert.equal(selected.meta.operationalCompactionAttempted, true);
+  assert.ok((selected.meta.operationalCompactionCandidatesGenerated ?? 0) > 0);
+  assert.equal(selected.meta.operationalCompactionAccepted, true);
+  assert.equal(validateHardConstraints(scenario.input, selected.output).hardConstraintViolations, 0);
+  if (id === "AA") assert.ok(after.maxCoachGapMinutes < before.maxCoachGapMinutes);
+  if (id === "AB") {
+    assert.ok(after.talentIdlePenalty < before.talentIdlePenalty);
+    assert.equal(countDependencyViolations(scenario.input, selected.output), 0);
+  }
+}

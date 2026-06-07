@@ -414,6 +414,12 @@ export interface EngineOutput {
     selectedCandidateMetrics?: {
       coachSwitchCount: number | null;
       coachSwitchPenalty: number;
+      coachIdlePenalty: number;
+      coachSpanPenalty: number;
+      coachSplitDayPenalty: number;
+      talentIdlePenalty: number;
+      talentSpanPenalty: number;
+      maxGapPenalty: number;
       bundleCoherencePenalty: number;
       bundleSwitchPenalty: number;
       partialBundleUsageWarnings: number;
@@ -438,6 +444,12 @@ export interface EngineOutput {
     neighborhoodTypesAttempted?: string[];
     neighborhoodTypesGenerated?: string[];
     neighborhoodRejectedReasons?: Record<string, number>;
+    operationalCompactionAttempted?: boolean;
+    operationalCompactionCandidatesGenerated?: number;
+    operationalCompactionAccepted?: boolean;
+    operationalCompactionReason?: string;
+    operationalCompactionMetricsBefore?: Record<string, number>;
+    operationalCompactionMetricsAfter?: Record<string, number>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

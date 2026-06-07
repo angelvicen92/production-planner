@@ -42,6 +42,12 @@ test("includes key metrics without copying full engine or planning payloads", ()
       candidateSolutionsEvaluated: 7,
       neighborhoodCandidatesGenerated: 6,
       neighborhoodCandidateAccepted: true,
+      operationalCompactionAttempted: true,
+      operationalCompactionCandidatesGenerated: 4,
+      operationalCompactionAccepted: true,
+      operationalCompactionReason: "operational_neighborhood selected: lower coach idle",
+      operationalCompactionMetricsBefore: { coachIdlePenalty: 260 },
+      operationalCompactionMetricsAfter: { coachIdlePenalty: 20 },
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -55,6 +61,11 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(snapshot.runId, 9);
   assert.equal(snapshot.summary.plannedTasks, 80);
   assert.equal(snapshot.intelligence.candidateSolutionsEvaluated, 7);
+  assert.equal(snapshot.intelligence.operationalCompactionAttempted, true);
+  assert.equal(snapshot.intelligence.operationalCompactionCandidatesGenerated, 4);
+  assert.equal(snapshot.intelligence.operationalCompactionAccepted, true);
+  assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsBefore, { coachIdlePenalty: 260 });
+  assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsAfter, { coachIdlePenalty: 20 });
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {

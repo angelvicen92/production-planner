@@ -30,6 +30,12 @@ const input: EngineV3Input = {
 const selectedCandidateMetrics = {
   coachSwitchCount: 0,
   coachSwitchPenalty: 0,
+  coachIdlePenalty: 0,
+  coachSpanPenalty: 0,
+  coachSplitDayPenalty: 0,
+  talentIdlePenalty: 0,
+  talentSpanPenalty: 0,
+  maxGapPenalty: 0,
   bundleCoherencePenalty: 0,
   bundleSwitchPenalty: 0,
   partialBundleUsageWarnings: 0,
