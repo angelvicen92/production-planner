@@ -467,3 +467,12 @@ El benchmark añade dos escenarios de seguridad que separan disponibilidad y blo
 | V — Actual meal block remains protected | Misma ventana flexible, `actualMeal: 14:00–14:40` scoped al concursante y una tarea 13:50–14:20. | Resultado `infeasible`, `hardConstraintViolations>0`, código `MEAL_CROSSING` y detalle `MEAL_BLOCK_CROSSING`. |
 
 La suite quick incluye U y V. U evita regresiones masivas como el caso real con más de cien tareas dentro de una ventana amplia. V demuestra que la corrección no desactiva la protección hard. Los escenarios con `globalHardBreaks` se cubren además en tests unitarios del validador.
+
+## ID 028 — Escenarios W/X de capacidad de espacios
+
+| Escenario | Contrato | Carga simultánea | Resultado esperado |
+|---|---:|---:|---|
+| W — Concurrent space allows parallel microtasks | capacidad 5 | cinco microtareas de 5 minutos | completo, `hardConstraintViolations=0`, sin `SPACE_OVERLAP` |
+| X — Concurrent space exceeds capacity | capacidad 2 | tres tareas de 5 minutos | `infeasible`, `SPACE_OVERLAP`, `observedConcurrency=3`, `spaceCapacity=2` |
+
+W protege contra los falsos positivos y la explosión pairwise del caso real. X demuestra que el cambio no relaja espacios concurrentes más allá de su límite. Ambos escenarios forman parte del benchmark quick.

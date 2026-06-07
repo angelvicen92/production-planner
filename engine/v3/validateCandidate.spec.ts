@@ -55,4 +55,32 @@ const warm: EngineOutput = {
   assert.equal(errors.includes("MOVED_LOCKED_TIME_1"), false);
 }
 
+{
+  const concurrentInput: EngineV3Input = { ...input, spaceCapacityById: { 11: 2 }, tasks: [
+    { id: 1, planId: 1, templateId: 1, templateName: "T1", zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 2, planId: 1, templateId: 2, templateName: "T2", zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+  ] as any, locks: [] };
+  const concurrentWarm: EngineOutput = { ...warm, plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] },
+  ] as any };
+  const candidate: EngineOutput = { ...concurrentWarm, plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+  ] as any };
+  assert.equal(validateOptimizedCandidate(concurrentInput, concurrentWarm, candidate).some((error) => error.startsWith("SPACE_CAPACITY_EXCEEDED_")), false);
+}
+
+{
+  const exclusiveInput: EngineV3Input = { ...input, tasks: [
+    { id: 1, planId: 1, templateId: 1, zoneId: 1, spaceId: 11, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 2, planId: 1, templateId: 2, zoneId: 1, spaceId: 11, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+  ] as any, locks: [] };
+  const candidate: EngineOutput = { ...warm, plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+  ] as any };
+  assert.ok(validateOptimizedCandidate(exclusiveInput, candidate, candidate).some((error) => error.startsWith("SPACE_CAPACITY_EXCEEDED_11_")));
+}
+
 console.log("engine/v3/validateCandidate.spec.ts: OK");

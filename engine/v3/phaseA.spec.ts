@@ -47,6 +47,21 @@ const baseInput = (tasks: any[]): EngineV3Input => ({
   assert.equal((out.plannedTasks ?? []).length, 5);
 }
 
+// Capacidad 2: Phase A puede usar dos carriles simultáneos sin exceder el espacio.
+{
+  const tasks = [
+    { id: 6, planId: 1, templateId: 106, templateName: "Concurrent A", zoneId: 1, spaceId: 15, contestantId: 6, status: "pending", durationOverrideMin: 240 },
+    { id: 7, planId: 1, templateId: 107, templateName: "Concurrent B", zoneId: 1, spaceId: 15, contestantId: 7, status: "pending", durationOverrideMin: 240 },
+  ];
+  const out = generatePlanV3({ ...baseInput(tasks), spaceCapacityById: { 15: 2 } });
+  assert.equal(out.complete, true);
+  assert.equal(out.hardFeasible, true);
+  assert.equal(out.v3Meta?.hardConstraintViolations, 0);
+  const rows = out.plannedTasks.filter((planned) => planned.taskId === 6 || planned.taskId === 7);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].startPlanned, rows[1].startPlanned);
+}
+
 // Dependencia faltante: se ignora (no crashea, no bloquea por ese id inexistente).
 {
   const tasks = [

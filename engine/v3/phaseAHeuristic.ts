@@ -1,6 +1,7 @@
 import type { EngineInput, EngineOutput } from "../types";
 import { makeStructuredBlocker } from "./blockers";
 import { calculateRestrictiveTalentUrgency, getCoachResourceIds, taskFeedsMainStage } from "./operationalPriority";
+import { findEarliestSpaceCapacityGap, getSpaceCapacity } from "./spaceCapacity";
 
 export type MainZoneGapReasonType =
   | "CONTESTANT_BUSY"
@@ -1316,6 +1317,23 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
     return t;
   };
 
+  const findEarliestSpaceGap = (spaceId: number, arr: Interval[], earliest: number, duration: number) =>
+    findEarliestSpaceCapacityGap(arr, earliest, duration, getSpaceCapacity(input, spaceId));
+
+  const findEarliestSpaceGapAvoidingWindows = (spaceId: number, arr: Interval[], earliest: number, duration: number, windows: Array<{ from: number; to: number }>) => {
+    const sortedWindows = (windows ?? []).map((w) => ({ from: Number(w.from), to: Number(w.to) }))
+      .filter((w) => Number.isFinite(w.from) && Number.isFinite(w.to) && w.to > w.from)
+      .sort((a, b) => a.from - b.from || a.to - b.to);
+    let candidate = earliest;
+    for (let guard = 0; guard < 2000; guard += 1) {
+      candidate = findEarliestSpaceGap(spaceId, arr, candidate, duration);
+      const blocked = sortedWindows.find((window) => rangesOverlap(candidate, candidate + duration, window.from, window.to));
+      if (!blocked) return candidate;
+      candidate = snapUp(Math.max(candidate + GRID, blocked.to));
+    }
+    return findEarliestSpaceGap(spaceId, arr, candidate, duration);
+  };
+
   const findEarliestGapAvoidingWindows = (
     arr: Interval[],
     earliest: number,
@@ -1791,7 +1809,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       const spaceId = Number(task?.spaceId ?? 0);
       if (!spaceId) continue;
       const occ = occupiedBySpace.get(spaceId) ?? [];
-      start = findEarliestGap(occ, start, duration);
+      start = findEarliestSpaceGap(spaceId, occ, start, duration);
       if (start + duration > winEnd) {
         return hardInfeasible([{ code: "SPACE_BREAK_NO_FIT", message: `No cabe parada de comida en espacio ${spaceId}.` }]);
       }
@@ -2165,8 +2183,8 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         : [];
       let candidate = effectiveSpaceId && !isMatchedWrapTask
         ? (spaceWindowsForTask.length > 0
-            ? findEarliestGapAvoidingWindows(spaceOcc, start, duration, spaceWindowsForTask)
-            : findEarliestGap(spaceOcc, start, duration))
+            ? findEarliestSpaceGapAvoidingWindows(effectiveSpaceId, spaceOcc, start, duration, spaceWindowsForTask)
+            : findEarliestSpaceGap(effectiveSpaceId, spaceOcc, start, duration))
         : start;
       if (candidate !== start) {
         const overlappedProtectedWindow = spaceWindowsForTask.find((w) => rangesOverlap(start, start + duration, w.from, w.to));
@@ -3131,7 +3149,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
       let guard = 0;
       while (guard++ < MAX_GAP_SCAN_ITERS && t + GRID <= endDay) {
         // Primero: hueco de espacio
-        const s1 = findEarliestGap(spaceOcc, t, GRID);
+        const s1 = findEarliestSpaceGap(spaceId, spaceOcc, t, GRID);
         // Segundo: hueco de zona (comida plató)
         const s2 = findEarliestGap(zOcc, s1, GRID);
         if (s2 !== s1) {
@@ -3194,7 +3212,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
     // espacio libre
     const spaceOcc = occupiedBySpace.get(spaceId) ?? [];
-    if (findEarliestGap(spaceOcc, start, duration) !== start) return false;
+    if (findEarliestSpaceGap(spaceId, spaceOcc, start, duration) !== start) return false;
 
     // zona libre (comida plató)
     const zOcc = occupiedByZoneMeal.get(zoneId) ?? [];
@@ -3924,7 +3942,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
     if (!isWrapTask(task)) {
       const spaceOcc = occupiedBySpace.get(spaceId) ?? [];
-      if (findEarliestGap(spaceOcc, start, duration) !== start) return null;
+      if (findEarliestSpaceGap(spaceId, spaceOcc, start, duration) !== start) return null;
     }
     const zoneOcc = occupiedByZoneMeal.get(zoneId) ?? [];
     if (findEarliestGap(zoneOcc, start, duration) !== start) return null;
@@ -4265,7 +4283,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
 
         let placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, snapUp(Math.min(leftCursor, oldStart)));
         if (!placed) {
-          const earliest = findEarliestGap(occupiedBySpace.get(spaceId) ?? [], snapUp(Math.min(leftCursor, oldStart)), Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30))));
+          const earliest = findEarliestSpaceGap(spaceId, occupiedBySpace.get(spaceId) ?? [], snapUp(Math.min(leftCursor, oldStart)), Math.max(5, Math.floor(Number(task?.durationOverrideMin ?? 30))));
           if (earliest <= oldStart) placed = canPlaceTaskAtWithCurrentOccupancy(task, planned, earliest);
         }
 
@@ -5086,7 +5104,7 @@ function generatePlanV3PhaseASingle(input: EngineInput, options?: SolveV3PhaseAO
         let shifted = false;
 
         if (Number.isFinite(spaceId) && spaceId > 0) {
-          const spaceStart = findEarliestGap(occupiedBySpace.get(spaceId) ?? [], candidate, duration);
+          const spaceStart = findEarliestSpaceGap(spaceId, occupiedBySpace.get(spaceId) ?? [], candidate, duration);
           if (spaceStart > candidate) {
             candidate = snapUp(spaceStart);
             shifted = true;

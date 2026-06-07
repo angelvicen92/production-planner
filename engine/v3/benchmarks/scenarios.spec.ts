@@ -14,6 +14,7 @@ import {
   calculateMetrics,
 } from "./metrics";
 import { benchmarkScenarios, scenarioById } from "./scenarios";
+import type { BenchmarkScenarioId } from "./types";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
 import { applyFinalHardValidationGate } from "../hardValidation";
@@ -34,7 +35,7 @@ const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolutio
   hardConstraintViolations: score.hardConstraintViolations,
 });
 
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V") => {
+const run = (id: BenchmarkScenarioId) => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = scenario.hardValidationSeedOutput
@@ -375,6 +376,21 @@ for (const id of ["C", "D", "J"] as const) {
   assert.ok((protectedMeal.output.v3Meta?.hardConstraintViolations ?? 0) > 0);
   assert.ok(protectedMeal.output.v3Meta?.hardConstraintViolationCodes?.includes("MEAL_CROSSING"));
   assert.ok(protectedMeal.output.v3Meta?.hardConstraintViolationDetails?.some((detail) => detail.details?.violationType === "MEAL_BLOCK_CROSSING"));
+}
+
+// Escenarios W/X — capacidad concurrente permitida y exceso agregado.
+{
+  const allowed = run("W");
+  assert.equal(allowed.output.complete, true);
+  assert.equal(allowed.output.v3Meta?.hardConstraintViolations, 0);
+  assert.equal(allowed.output.v3Meta?.hardConstraintViolationCodes?.includes("SPACE_OVERLAP"), false);
+
+  const exceeded = run("X");
+  assert.equal(exceeded.output.complete, false);
+  assert.ok(exceeded.output.v3Meta?.hardConstraintViolationCodes?.includes("SPACE_OVERLAP"));
+  const detail = exceeded.output.v3Meta?.hardConstraintViolationDetails?.find((item) => item.code === "SPACE_OVERLAP");
+  assert.equal(detail?.spaceCapacity, 2);
+  assert.equal(detail?.observedConcurrency, 3);
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

@@ -195,3 +195,13 @@ Al repetir una validación real, interpretar los datos de comida con estas regla
 En el JSON exportado, `MEAL_CROSSING` debe aparecer únicamente con `details.violationType = MEAL_BLOCK_CROSSING`. Un bloqueo global explícito aparece como `GLOBAL_BREAK_CROSSING`. Si el plan solo declara una ventana flexible y no ha asignado comida, la ausencia de un bloque es información operativa pendiente, no una hard violation inventada.
 
 Para la repetición posterior a ID 027 se espera que desaparezcan las decenas de cruces falsos de 13:00–16:30. Cualquier `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, cruce de bloque real u otra categoría restante debe seguir investigándose como hard real; la compuerta no se desactiva.
+
+## ID 028 — Protocolo para `SPACE_OVERLAP`
+
+La repetición posterior a ID 027 dejó 63 hard violations, todas o casi todas `SPACE_OVERLAP`, concentradas en `spaceId: 49` y a menudo en microintervalos de cinco minutos. ID 028 permite distinguir tres causas sin ocultar ninguna infracción:
+
+1. si el espacio declara capacidad N, hasta N tareas ocupantes simultáneas son válidas;
+2. si no declara capacidad, continúa siendo exclusivo con capacidad 1;
+3. si la concurrencia observada supera la capacidad, el gate mantiene el resultado `infeasible`.
+
+Al repetir la prueba real, exportar el JSON y revisar en cada detalle `spaceName`, `spaceCapacity`, `observedConcurrency`, `start`, `end` y las tareas compactas. Si el espacio 49 sigue mostrando capacidad 1, confirmar en operación si realmente es exclusivo o si falta modelar capacidad en DB. Si la capacidad es correcta y aun así se excede, revisar la asignación de espacios del motor; no relajar el gate.

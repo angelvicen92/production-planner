@@ -1,5 +1,6 @@
 import type { EngineOutput, TaskInput } from "../types";
 import type { EngineV3Input } from "./types";
+import { getSpaceCapacity, wouldExceedSpaceCapacity } from "./spaceCapacity";
 
 const toMinutes = (hhmm: string) => {
   const [h, m] = String(hhmm ?? "").split(":").map(Number);
@@ -88,12 +89,29 @@ export function validateOptimizedCandidate(input: EngineV3Input, warm: EngineOut
     });
   }
 
+  const intervalsBySpace = new Map<number, typeof intervals>();
+  for (const interval of intervals) {
+    if (interval.spaceId <= 0) continue;
+    const rows = intervalsBySpace.get(interval.spaceId) ?? [];
+    rows.push(interval);
+    intervalsBySpace.set(interval.spaceId, rows);
+  }
+  for (const [spaceId, spaceIntervals] of intervalsBySpace.entries()) {
+    const capacity = getSpaceCapacity(input, spaceId);
+    const accepted: typeof intervals = [];
+    for (const interval of spaceIntervals.sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId)) {
+      if (wouldExceedSpaceCapacity(accepted, interval.start, interval.end, capacity)) {
+        errors.push(`SPACE_CAPACITY_EXCEEDED_${spaceId}_${interval.taskId}`);
+      }
+      accepted.push(interval);
+    }
+  }
+
   for (let i = 0; i < intervals.length; i++) {
     for (let j = i + 1; j < intervals.length; j++) {
       const a = intervals[i];
       const b = intervals[j];
       if (!overlap(a.start, a.end, b.start, b.end)) continue;
-      if (a.spaceId > 0 && a.spaceId === b.spaceId) errors.push(`SPACE_OVERLAP_${a.taskId}_${b.taskId}`);
       if (a.contestantId > 0 && a.contestantId === b.contestantId) errors.push(`CONTESTANT_OVERLAP_${a.taskId}_${b.taskId}`);
       const hasSharedResource = a.resources.some((r) => b.resources.includes(r));
       if (hasSharedResource) errors.push(`RESOURCE_OVERLAP_${a.taskId}_${b.taskId}`);
