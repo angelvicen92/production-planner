@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Copy, Cpu, Download, Info, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +13,9 @@ import {
   buildEngineDiagnosticsSnapshot,
   engineDiagnosticsFilename,
 } from "@/lib/engine-diagnostics-export";
+import { calculatePlanningOperationalQuality } from "@/lib/planning-operational-quality";
+import { apiRequest } from "@/lib/api";
+import { api } from "@shared/routes";
 import { cn } from "@/lib/utils";
 
 const MAX_WARNINGS_SHOWN = 8;
@@ -97,10 +102,45 @@ function WarningRow({ warning }: { warning: EngineDiagnosticWarning }) {
   );
 }
 
-export function PlanEngineDiagnostics({ planId }: { planId: number }) {
+type TransportOperationalSettings = {
+  vanCapacity?: number | null;
+  arrivalTaskTemplateName?: string | null;
+  departureTaskTemplateName?: string | null;
+};
+
+type PlanEngineDiagnosticsProps = {
+  planId: number;
+  tasks?: unknown[] | null;
+  contestants?: unknown[] | null;
+  resourceNamesById?: Record<number, string> | null;
+};
+
+export function PlanEngineDiagnostics({
+  planId,
+  tasks,
+  contestants,
+  resourceNamesById,
+}: PlanEngineDiagnosticsProps) {
   const { role } = useUserRole();
   const { toast } = useToast();
   const diagnosticsQuery = useEngineDiagnostics(planId);
+  const optimizerSettingsQuery = useQuery<TransportOperationalSettings>({
+    queryKey: [api.optimizerSettings.get.path],
+    queryFn: () => apiRequest<TransportOperationalSettings>("GET", api.optimizerSettings.get.path),
+    retry: false,
+  });
+  const operationalQualityInput = useMemo(() => ({
+    tasks,
+    contestants,
+    resourceNamesById,
+    vanCapacity: optimizerSettingsQuery.data?.vanCapacity,
+    arrivalTaskTemplateName: optimizerSettingsQuery.data?.arrivalTaskTemplateName,
+    departureTaskTemplateName: optimizerSettingsQuery.data?.departureTaskTemplateName,
+  }), [contestants, optimizerSettingsQuery.data, resourceNamesById, tasks]);
+  const operationalQuality = useMemo(
+    () => calculatePlanningOperationalQuality(operationalQualityInput),
+    [operationalQualityInput],
+  );
 
   // Do not hide the panel while role resolution is pending or unavailable.
   if (role && role !== "admin" && role !== "production") return null;
@@ -163,7 +203,7 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
     : null;
 
   const serializeSnapshot = () => {
-    const snapshot = buildEngineDiagnosticsSnapshot(diagnostics, { planId });
+    const snapshot = buildEngineDiagnosticsSnapshot(diagnostics, { planId, operationalQualityInput });
     return { snapshot, json: JSON.stringify(snapshot, null, 2) };
   };
 
@@ -246,6 +286,18 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {operationalQuality.summary.status !== "unknown" ? (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>El JSON exportado incluye análisis operativo del planning.</AlertTitle>
+            {operationalQuality.summary.mainConcerns.length > 0 ? (
+              <AlertDescription>
+                Principales revisiones: {operationalQuality.summary.mainConcerns.slice(0, 3).join(" · ")}
+              </AlertDescription>
+            ) : null}
+          </Alert>
+        ) : null}
+
         {(hardViolations ?? 0) > 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />

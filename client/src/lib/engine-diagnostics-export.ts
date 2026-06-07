@@ -2,8 +2,13 @@ import type {
   EngineDiagnosticWarning,
   EngineDiagnostics,
 } from "@/hooks/use-engine-diagnostics";
+import {
+  calculatePlanningOperationalQuality,
+  type OperationalQuality,
+  type OperationalQualityInput,
+} from "@/lib/planning-operational-quality";
 
-export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 3;
+export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 4;
 export const MAX_EXPORTED_HARD_VIOLATIONS = 50;
 export const MAX_EXPORTED_WARNINGS_PER_GROUP = 20;
 
@@ -137,11 +142,12 @@ export type EngineDiagnosticsSnapshot = {
     resourceDiagnosticWarnings: EngineDiagnosticWarning[];
     resourceBundleValidationWarnings: EngineDiagnosticWarning[];
   };
+  operationalQuality: OperationalQuality;
 };
 
 export function buildEngineDiagnosticsSnapshot(
   diagnostics: EngineDiagnostics,
-  options: { generatedAt?: Date; planId?: number } = {},
+  options: { generatedAt?: Date; planId?: number; operationalQualityInput?: OperationalQualityInput } = {},
 ): EngineDiagnosticsSnapshot {
   const metadata = diagnostics?.engineMetadata ?? {};
   const warnings = diagnostics?.diagnosticWarnings ?? {};
@@ -206,6 +212,7 @@ export function buildEngineDiagnosticsSnapshot(
       resourceDiagnosticWarnings: compactWarnings(warnings.resourceDiagnosticWarnings),
       resourceBundleValidationWarnings: compactWarnings(warnings.resourceBundleValidationWarnings),
     },
+    operationalQuality: calculatePlanningOperationalQuality(options.operationalQualityInput),
   };
 }
 

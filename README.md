@@ -60,3 +60,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 027 — 2026-06-07 12:08 — Corrección de semántica de comida flexible vs bloqueo hard global
 - ID 028 — 2026-06-07 13:39 — Concurrencia/capacidad de espacios y diagnóstico humano de SPACE_OVERLAP
 - ID 029 — 2026-06-07 14:45 — Uso de capacidad de furgoneta existente para concurrencia del espacio Transporte
+
+- ID 030 — 2026-06-07 15:24 — Export de calidad operativa del planning para evaluación real del motor

@@ -163,3 +163,11 @@ Añadir un histórico acotado de ejecuciones por plan con comparación de métri
 El diagnóstico incorpora `hardValidationPassed`, `hardConstraintViolationCodes` y `hardConstraintViolationDetails`. Los detalles contienen código, severidad hard, mensaje, ids de tareas y, cuando aplica, recurso, espacio, concursante, intervalo y contexto compacto. Se exportan como máximo 50 detalles; el total de `hardConstraintViolations` no se trunca.
 
 Estos campos se guardan dentro de `engine_metadata` JSON para evitar una migración. El endpoint latest los reconstruye también en el nivel superior del diagnóstico. Un resultado con contador mayor que cero se clasifica como `infeasible`, nunca como `success`.
+
+## ID 030 — Calidad operativa en el export
+
+El snapshot de diagnóstico versión 4 añade `operationalQuality`, calculado en frontend sobre las tareas finales que la vista de planning ya tiene cargadas. No se crea un endpoint de planning adicional ni se persiste información nueva. El bloque contiene `summary`, los peores casos de idle de talents y coaches, gaps feeder-to-Main-Stage, resumen de transporte y flags explícitos de disponibilidad del análisis.
+
+Para mantener el JSON manejable se exportan como máximo 15 talents, 10 coaches, 10 casos feeder y 12 grupos de transporte. No se incluyen tareas completas, notas, canciones, disponibilidades ni payloads internos del motor. Si faltan tiempos, nombres o asignaciones, el helper omite el dato y devuelve `unknown` o una explicación de indisponibilidad en lugar de fallar.
+
+El panel indica que el JSON incluye el análisis y puede anticipar hasta tres concerns. Estas métricas son heurísticas de revisión humana: describen el resultado final, pero no intervienen en scoring, factibilidad ni selección de candidato.

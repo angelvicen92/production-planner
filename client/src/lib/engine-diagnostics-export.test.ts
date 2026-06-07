@@ -108,3 +108,41 @@ test("exports compact hard-validation failure details", () => {
   assert.deepEqual(snapshot.summary.hardConstraintViolationCodes, ["CONTESTANT_OVERLAP", "SPACE_OVERLAP"]);
   assert.equal(snapshot.summary.hardConstraintViolationDetails.length, MAX_EXPORTED_HARD_VIOLATIONS);
 });
+
+test("includes operational quality when planning tasks are supplied", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({}, {
+    generatedAt,
+    operationalQualityInput: {
+      contestants: [{ id: 1, name: "Talent A" }],
+      tasks: [
+        { contestantId: 1, startPlanned: "09:00", endPlanned: "09:30", template: { name: "Ensayo" } },
+        { contestantId: 1, startPlanned: "11:00", endPlanned: "11:30", template: { name: "Main Stage" } },
+      ],
+    },
+  });
+
+  assert.equal(snapshot.operationalQuality.summary.status, "review");
+  assert.equal(snapshot.operationalQuality.topTalentIdle[0]?.idleMinutes, 90);
+  assert.equal(snapshot.operationalQuality.feederToMainGaps.maxFeederToMainGap, 90);
+});
+
+test("keeps operational quality export compact with a large task input", () => {
+  const tasks = Array.from({ length: 2_000 }, (_, index) => ({
+    contestantId: (index % 200) + 1,
+    startPlanned: index % 2 ? "12:00" : "08:00",
+    endPlanned: index % 2 ? "12:30" : "08:30",
+    template: { name: `Ensayo ${"x".repeat(500)}` },
+    assignedResources: [(index % 50) + 1],
+  }));
+  const resourceNamesById = Object.fromEntries(Array.from({ length: 50 }, (_, index) => [index + 1, `Coach ${index + 1}`]));
+  const snapshot = buildEngineDiagnosticsSnapshot({}, {
+    generatedAt,
+    operationalQualityInput: { tasks, resourceNamesById },
+  });
+  const serialized = JSON.stringify(snapshot);
+
+  assert.equal(snapshot.operationalQuality.topTalentIdle.length, 15);
+  assert.equal(snapshot.operationalQuality.topCoachIdle.length, 10);
+  assert.ok(serialized.length < 30_000, `snapshot was ${serialized.length} bytes`);
+  assert.equal(serialized.includes("xxxx".repeat(100)), false);
+});

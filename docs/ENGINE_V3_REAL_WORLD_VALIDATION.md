@@ -219,3 +219,16 @@ Para repetir la prueba real posterior a `runId: 170`:
 5. esperar `spaceCapacity: 6` y `capacitySource: transport_van_capacity`; una concurrencia superior a 6 debe continuar marcada como hard.
 
 Los demás espacios siguen siendo exclusivos por defecto o usan únicamente su capacidad explícita general. No cambia ninguna regla de comida, RLS ni el gate hard final.
+
+## ID 030 — Revisión de calidad operativa del plan hard-valid
+
+Una ejecución con `status: success`, cero tareas sin planificar y cero hard violations ya puede ser válida sin ser cómoda de operar. Tras generar el plan, descargar el JSON del panel y revisar `operationalQuality`:
+
+1. `summary.mainConcerns` prioriza los casos que merecen inspección humana.
+2. `topTalentIdle` permite detectar spans largos, idle alto y huecos máximos de cada talent.
+3. `topCoachIdle` identifica coaches detectables por nombre con jornadas partidas o poco compactas.
+4. `feederToMainGaps` muestra feeders conservadoramente reconocidos antes de Main Stage/Plató 7.
+5. `transportSummary` resume grupos IN/OUT, spacing, concurrencia y comparación con `vanCapacity` cuando está disponible.
+6. `analysisAvailability` debe revisarse antes de interpretar arrays vacíos: vacío puede significar “sin problema” o “no inferible”, y el flag distingue ambos casos.
+
+El estado `good` no certifica excelencia y `review` no implica una violación hard. Comparar siempre los casos principales con la timeline y con el criterio de producción. El JSON no cambia el motor; sirve para elegir con evidencia el objetivo de ID 031.
