@@ -1,0 +1,156 @@
+# ENGINE V3 REAL WORLD VALIDATION — ID 024
+
+## Objetivo
+
+Esta guía describe cómo validar el Motor V3 con un plan real de forma guiada, repetible y auditable. La prueba debe permitir confirmar si el motor encontró una solución, qué fuente utilizó, qué mecanismos inteligentes intervienen, si quedan problemas de factibilidad o datos y si el resultado es útil para la operación.
+
+La validación combina dos evidencias:
+
+1. el diagnóstico compacto exportado por la aplicación, que contiene métricas, decisiones y warnings acotados;
+2. la revisión humana del planning, necesaria para detectar decisiones técnicamente válidas pero poco prácticas.
+
+No es una guía para modificar el motor ni sus reglas. Si aparece un problema, primero se registra la evidencia y después se clasifica como problema de datos, configuración, diagnóstico o algoritmo.
+
+## Preparación del plan
+
+Antes de generar, comprobar:
+
+- [ ] Zonas y espacios cargados.
+- [ ] Recursos disponibles cargados.
+- [ ] Talents cargados.
+- [ ] Tareas del día asignadas.
+- [ ] Duraciones revisadas.
+- [ ] Dependencias revisadas.
+- [ ] Comida y bloques globales configurados.
+- [ ] Disponibilidades restrictivas cargadas.
+- [ ] Locks manuales revisados.
+- [ ] Estados `done`/`in_progress` presentes solo si se está probando un replan real.
+
+Conviene anotar antes de ejecutar cualquier expectativa operativa importante: quién se va pronto, qué recurso es crítico, qué tarea debería ocurrir antes que otra o qué tramo de Main Stage no debería quedar parado. Esto evita reinterpretar las expectativas después de ver el resultado.
+
+## Ejecución
+
+1. Abrir el plan real que se quiere validar.
+2. Ejecutar la generación del planning.
+3. Esperar a que la ejecución termine y la vista muestre el resultado.
+4. Abrir el panel **Diagnóstico del motor**.
+5. Revisar las métricas principales y los warnings.
+6. Usar **Copiar JSON** o **Descargar JSON** para conservar el snapshot compacto.
+7. Guardar observaciones humanas sobre la utilidad operativa del planning.
+
+No repetir inmediatamente la generación para intentar obtener un resultado más favorable: primero hay que guardar el diagnóstico y las observaciones de la ejecución que se está evaluando.
+
+## Qué revisar
+
+### Resultado y fuente de solución
+
+- **`solutionSource`**: identifica la fuente de la solución finalmente seleccionada. Permite distinguir, por ejemplo, una salida greedy, de backtracking, neighborhood o CP-SAT. Indica qué candidato ganó, no que las demás técnicas no se hayan intentado.
+- **Estado de la ejecución**: confirma si terminó con éxito, fue infactible o acabó con error.
+- **`hardConstraintViolations`**: debe ser `0`. Un valor mayor que cero significa que la salida contradice al menos una restricción dura y debe tratarse como fallo crítico.
+- **`plannedTasks` / `unplannedTasks`**: muestran la cobertura. Toda tarea sin planificar debe tener una explicación conocida y operativamente aceptable.
+
+### Calidad operativa
+
+- **`mainStageGapMinutes`**: minutos totales de hueco detectados en Main Stage. Un valor bajo no garantiza por sí solo un buen plan, pero uno alto exige revisar dónde y por qué se detiene el escenario.
+- **`coachSwitchCount`**: número de cambios de coach. Debe interpretarse según el día real; un valor alto puede ser aceptable si las restricciones lo obligan, pero puede revelar demasiada fragmentación.
+- **`restrictiveTalentAverageStartOffset`**: retraso medio de inicio de talents restrictivos respecto a su referencia. Cuanto mayor sea, más importante es comprobar disponibilidades y riesgo de salida temprana.
+- **`selectedCandidateMetricsConsistent`**: cuando aparezca dentro de las métricas seleccionadas, debe ser `true`; confirma que las métricas describen la salida final seleccionada.
+
+### Inteligencia utilizada
+
+- **`candidateSolutionsEvaluated`**: número de soluciones candidatas comparadas. Ayuda a saber si hubo selección entre alternativas, pero un número alto no garantiza calidad.
+- **Backtracking**: revisar por separado `backtrackingAttempted` y `backtrackingAccepted`. “Intentado” indica que se exploró; “aceptado”, que su candidato quedó incorporado o seleccionado según la metadata disponible.
+- **Neighborhoods**: revisar `neighborhoodSearchAttempted`, `neighborhoodCandidatesGenerated` y `neighborhoodCandidateAccepted`. Permiten saber si hubo búsqueda local y si alguna alternativa fue aceptada.
+- **`cpSatPilot` / `cpSatSegments`**: comprobar intentos y aceptaciones. Que CP-SAT no se intente puede ser normal si el caso queda fuera de sus límites; que se intente no implica que su solución sea la final.
+
+La combinación de `solutionSource` y estos flags es la forma correcta de responder qué técnica se usó: la fuente explica el resultado elegido y los flags explican la búsqueda realizada.
+
+### Recursos y bundles
+
+- **Resource warnings**: revisar códigos, mensajes y tareas afectadas. Pueden señalar datos incompletos, recursos compuestos dudosos o condiciones que requieren comprobación humana.
+- **Bundle warnings**: revisar bundles inválidos o parcialmente utilizables. Los bundles son una señal soft; un warning no implica automáticamente que el planning sea infactible, pero sí que la recomendación puede apoyarse en información incompleta.
+- Comparar los contadores de bundles declarados, utilizables, inválidos y parcialmente utilizables. Una diferencia inesperada debe investigarse antes de atribuir el resultado al algoritmo.
+
+### Revisión humana
+
+Además de las métricas, recorrer visualmente el planning y responder:
+
+- ¿Respeta la lógica real del rodaje?
+- ¿Los talents restrictivos aparecen suficientemente pronto?
+- ¿Los recursos y espacios críticos se usan de forma creíble?
+- ¿Los huecos y cambios tienen una causa comprensible?
+- ¿Los locks y las tareas `done`/`in_progress` permanecen donde corresponde?
+- ¿El equipo podría ejecutar este planning sin reorganizarlo de forma sustancial?
+
+## Semáforo de validación
+
+### Verde
+
+La ejecución puede considerarse validada inicialmente cuando:
+
+- `hardConstraintViolations = 0`;
+- `unplannedTasks = 0`, o las tareas no planificadas están justificadas;
+- `selectedCandidateMetricsConsistent = true` cuando la métrica está disponible;
+- no hay warnings críticos de recursos o bundles;
+- el planning parece operativamente razonable tras revisión humana.
+
+### Amarillo
+
+La ejecución requiere explicación o ajustes menores cuando hay uno o varios de estos casos:
+
+- tareas sin planificar con una explicación conocida;
+- CP-SAT no se intenta por límites del piloto o de los segmentos;
+- warnings no críticos de bundles o recursos;
+- gaps moderados que no bloquean la operación;
+- `coachSwitchCount` alto, pero aceptable para las restricciones del día.
+
+Un resultado amarillo debe conservarse con su JSON y observación antes de corregir datos o volver a generar.
+
+### Rojo
+
+La ejecución no debe aceptarse como válida cuando:
+
+- `hardConstraintViolations > 0`;
+- se han movido tareas `done`/`in_progress` o locks manuales que debían preservarse;
+- la planificación está incompleta sin explicación;
+- existen warnings críticos que revelan datos inválidos o insuficientes;
+- `selectedCandidateMetricsConsistent = false`;
+- el resultado es claramente inútil operativamente aunque sea técnicamente factible.
+
+## Qué pasar al asesor
+
+Compartir únicamente la evidencia necesaria:
+
+1. **JSON exportado desde el panel**. Es un snapshot compacto; no incluye el planning completo ni los payloads gigantes del motor.
+2. **Captura del planning**, solo si ayuda a mostrar el problema y no expone información sensible innecesaria.
+3. **Breve observación humana**, completando la plantilla incluida en `humanReviewTemplate` o acompañando el JSON con este formato:
+
+```text
+observedIssue: “me parece mal porque...”
+expectedBehavior: “esperaba que X fuese antes...”
+criticalTalentOrResource: “talent Y se va pronto...”
+notes: “Plató principal queda parado en...”
+```
+
+Los campos de `humanReviewTemplate` se exportan como `null` para que el usuario añada contexto al pegar o adjuntar el snapshot. No deben rellenarse con datos personales innecesarios. No se debe compartir el input completo del motor, el planning completo, disponibilidades completas, inventarios completos ni otros datos sensibles.
+
+## Limitaciones actuales
+
+- El resultado todavía requiere validación humana: las métricas no capturan toda la lógica de rodaje.
+- Los benchmarks existentes son sintéticos y no sustituyen una prueba con datos reales.
+- Los resource bundles aún funcionan como señal soft, no como restricción dura.
+- CP-SAT se aplica mediante piloto y segmentos acotados, no como optimización global de todo el día.
+- El diagnóstico resume la última ejecución y no sustituye la revisión visual del planning.
+- El export está deliberadamente acotado: puede truncar warnings o metadata extensa y no contiene detalle por tarea ni payloads completos.
+
+## Recomendación para siguiente fase
+
+Después de la primera prueba real, clasificar las evidencias antes de definir ID 025. La siguiente fase debe elegirse según el problema observado:
+
+- **corregir datos/configuración**, si faltan disponibilidades, recursos, dependencias, duraciones o locks correctos;
+- **mejorar motor**, si los datos son correctos pero la selección produce un resultado repetidamente poco útil;
+- **mejorar UI de diagnóstico**, si la ejecución es difícil de interpretar con la información compacta actual;
+- **ajustar resource bundles**, si los warnings o la señal soft no representan el uso real de recursos;
+- **ampliar CP-SAT**, si las pruebas muestran que los límites del piloto o de los segmentos dejan fuera un subproblema relevante.
+
+No se recomienda ampliar el algoritmo en frío. ID 025 debe partir del JSON, la captura opcional y la observación humana de una ejecución real reproducible.

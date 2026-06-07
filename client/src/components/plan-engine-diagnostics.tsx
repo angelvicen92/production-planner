@@ -243,6 +243,16 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        <details className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
+          <summary className="cursor-pointer font-medium">Cómo usar este diagnóstico</summary>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>Revisa primero las hard violations y las tareas sin planificar.</li>
+            <li>Comprueba <code>solutionSource</code> para saber qué solución quedó seleccionada.</li>
+            <li>Copia o descarga el JSON compacto para una revisión externa.</li>
+            <li>Añade una observación humana si el resultado no cuadra operativamente.</li>
+          </ul>
+        </details>
+
         <section aria-labelledby="diagnostics-main-state">
           <h3 id="diagnostics-main-state" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Estado principal

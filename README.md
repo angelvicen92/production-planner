@@ -41,6 +41,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 021 — 2026-05-31 00:40 — Motor Run Diagnostics API y persistencia ligera de metadata
 - ID 022 — 2026-05-31 01:05 — Panel Admin de diagnóstico del motor por plan
 - ID 023 — 2026-05-31 01:25 — Export/copy de diagnóstico del motor para revisión externa
+- ID 024 — 2026-05-31 01:45 — Guía de validación real del motor y checklist de prueba en app
 
 ## Verificación básica
 

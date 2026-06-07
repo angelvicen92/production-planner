@@ -18,6 +18,12 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.equal(snapshot.runId, null);
   assert.equal(snapshot.summary.plannedTasks, null);
   assert.equal(snapshot.intelligence.backtrackingAttempted, null);
+  assert.deepEqual(snapshot.humanReviewTemplate, {
+    observedIssue: null,
+    expectedBehavior: null,
+    criticalTalentOrResource: null,
+    notes: null,
+  });
   assert.deepEqual(snapshot.warnings.resourceDiagnosticWarnings, []);
 });
 
@@ -50,6 +56,12 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(snapshot.intelligence.candidateSolutionsEvaluated, 7);
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
+  assert.deepEqual(snapshot.humanReviewTemplate, {
+    observedIssue: null,
+    expectedBehavior: null,
+    criticalTalentOrResource: null,
+    notes: null,
+  });
   assert.equal(serialized.includes("engineInput"), false);
   assert.equal(serialized.includes("planningOutput"), false);
   assert.ok(serialized.length < 5_000);

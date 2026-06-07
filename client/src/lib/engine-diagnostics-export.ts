@@ -3,7 +3,7 @@ import type {
   EngineDiagnostics,
 } from "@/hooks/use-engine-diagnostics";
 
-export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 1;
+export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 2;
 export const MAX_EXPORTED_WARNINGS_PER_GROUP = 20;
 
 const MAX_WARNING_TASK_IDS = 25;
@@ -117,6 +117,12 @@ export type EngineDiagnosticsSnapshot = {
     cpSatSegmentsAccepted: number | null;
   };
   selectedCandidateMetrics: CompactJsonValue | null;
+  humanReviewTemplate: {
+    observedIssue: null;
+    expectedBehavior: null;
+    criticalTalentOrResource: null;
+    notes: null;
+  };
   resourceBundles: {
     declared: number | null;
     usable: number | null;
@@ -169,6 +175,12 @@ export function buildEngineDiagnosticsSnapshot(
       cpSatSegmentsAccepted: optionalNumber(metadata.cpSatSegmentsAccepted),
     },
     selectedCandidateMetrics: selectedCandidateMetrics ?? null,
+    humanReviewTemplate: {
+      observedIssue: null,
+      expectedBehavior: null,
+      criticalTalentOrResource: null,
+      notes: null,
+    },
     resourceBundles: {
       declared: optionalNumber(metadata.declaredResourceBundleCount),
       usable: optionalNumber(metadata.usableResourceBundleCount),
