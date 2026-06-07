@@ -48,6 +48,10 @@ export interface EngineBenchmarkMetrics {
   resourceSwitchCount: number | null;
   compositeResourceCandidateCount: number | null;
   declaredResourceBundleCount: number;
+  usableResourceBundleCount: number;
+  invalidResourceBundleCount: number;
+  partiallyUsableResourceBundleCount: number;
+  resourceBundleValidationWarnings: number;
   bundleComponentUsageCount: number;
   partialBundleUsageWarnings: number;
   bundleSpaceAffinityMatches: number;

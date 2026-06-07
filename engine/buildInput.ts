@@ -53,11 +53,29 @@ export async function buildEngineInput(
       ? camerasFromResources
       : (p.cameras_available ?? p.camerasAvailable ?? 0);
 
-  const [resourceBundleRows, resourceBundleComponentRows, resourceBundleAffinityRows] = await Promise.all([
-    safe(() => storage.getResourceBundles(), [] as any[]),
-    safe(() => storage.getResourceBundleComponents(), [] as any[]),
-    safe(() => storage.getResourceBundleSpaceAffinities(), [] as any[]),
+  const loadBundleRows = async (
+    source: "resource_bundles" | "resource_bundle_components" | "resource_bundle_space_affinities",
+    fn: () => Promise<any[]>,
+  ): Promise<{ rows: any[]; warning: NonNullable<EngineInput["resourceBundleLoadWarnings"]>[number] | null }> => {
+    try {
+      return { rows: await fn(), warning: null };
+    } catch (_error) {
+      return {
+        rows: [],
+        warning: { source, message: `No se pudo cargar ${source}; el scoring de bundles continúa con fallback neutral.` },
+      };
+    }
+  };
+  const [bundleLoad, componentLoad, affinityLoad] = await Promise.all([
+    loadBundleRows("resource_bundles", () => storage.getResourceBundles()),
+    loadBundleRows("resource_bundle_components", () => storage.getResourceBundleComponents()),
+    loadBundleRows("resource_bundle_space_affinities", () => storage.getResourceBundleSpaceAffinities()),
   ]);
+  const resourceBundleRows = bundleLoad.rows;
+  const resourceBundleComponentRows = componentLoad.rows;
+  const resourceBundleAffinityRows = affinityLoad.rows;
+  const resourceBundleLoadWarnings = [bundleLoad.warning, componentLoad.warning, affinityLoad.warning]
+    .filter((warning): warning is NonNullable<typeof warning> => warning !== null);
   const resourceBundles = resourceBundleRows.map((row: any) => ({
     id: String(row.id),
     name: String(row.name ?? ""),
@@ -74,7 +92,7 @@ export async function buildEngineInput(
       resourceId: row.resource_id == null && row.resourceId == null ? null : Number(row.resource_id ?? row.resourceId),
       resourceItemId: row.resource_item_id == null && row.resourceItemId == null ? null : Number(row.resource_item_id ?? row.resourceItemId),
       componentRole: String(row.component_role ?? row.componentRole ?? "component"),
-      quantity: Math.max(1, Number(row.quantity ?? 1) || 1),
+      quantity: Number(row.quantity ?? 1),
       isRequired: row.is_required ?? row.isRequired ?? true,
       metadata: row.metadata ?? {},
     }))
@@ -87,7 +105,7 @@ export async function buildEngineInput(
       affinityScore: Number(row.affinity_score ?? row.affinityScore ?? 0) || 0,
       metadata: row.metadata ?? {},
     }))
-    .filter((affinity) => activeBundleIds.has(affinity.bundleId) && Number.isFinite(affinity.spaceId) && affinity.spaceId > 0);
+    .filter((affinity) => activeBundleIds.has(affinity.bundleId));
 
   // Recursos anclados a ZONAS (snapshot/override por plan)
   const zoneResourceAssignments =
@@ -550,6 +568,7 @@ export async function buildEngineInput(
         resourceBundles,
         resourceBundleComponents,
         resourceBundleSpaceAffinities,
+        resourceBundleLoadWarnings,
 
         contestantAvailabilityById,
 

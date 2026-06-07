@@ -33,7 +33,7 @@ const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolutio
   hardConstraintViolations: score.hardConstraintViolations,
 });
 
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
   const output = scenario.benchmarkCandidateOutputs
@@ -329,6 +329,22 @@ for (const id of ["C", "D", "J"] as const) {
   assert.ok(metrics.declaredResourceBundleCount > 0);
   assert.ok(metrics.bundleSpaceAffinityMatches > 0);
   assert.match(String(metrics.candidateSelectionReason), /bundle|resource coherence/i);
+  assert.equal(metrics.selectedCandidateMetricsConsistent, true);
+}
+
+// Escenario S — el catálogo parcialmente inválido se diagnostica y solo su parte usable puntúa.
+{
+  const { scenario, output } = run("S");
+  const metrics = calculateMetrics(scenario.input, output, 0);
+  assert.equal(output.complete, true);
+  assert.equal(metrics.hardConstraintViolations, 0);
+  assert.ok(metrics.usableResourceBundleCount > 0);
+  assert.ok(metrics.invalidResourceBundleCount > 0 || metrics.partiallyUsableResourceBundleCount > 0);
+  assert.ok(metrics.resourceBundleValidationWarnings > 0);
+  assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("BUNDLE_WITHOUT_COMPONENTS")));
+  assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("DUPLICATE_BUNDLE_COMPONENT")));
+  assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("BUNDLE_COMPONENT_UNKNOWN_RESOURCE_ITEM")));
+  assert.ok(metrics.resourceDiagnosticWarnings?.some((warning) => warning.includes("BUNDLE_AFFINITY_UNKNOWN_SPACE")));
   assert.equal(metrics.selectedCandidateMetricsConsistent, true);
 }
 

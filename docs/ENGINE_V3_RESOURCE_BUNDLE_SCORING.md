@@ -53,3 +53,16 @@ Resultado de referencia: plan completo, cero hard violations, dos bundles declar
 ## Recomendación para ID 020
 
 Priorizar una UI/admin acotada para crear, validar, activar y revisar bundles, incluyendo duplicados, cantidades y afinidades. En paralelo, diseñar una migración explícita para setup/teardown times antes de profundizar el peso del scoring. CP-SAT con bundles debería llegar después, inicialmente como experimento soft sobre subproblemas y solo como hard constraint cuando producción haya validado reglas concretas.
+
+## ID 020 — Scoring sobre catálogo validado
+
+`bundleCoherencePenalty` ya no consume directamente las filas recibidas. Primero usa `validateResourceBundles` y calcula uso parcial, continuidad y afinidad únicamente con `usableBundles`, `usableComponents` y `usableAffinities`.
+
+- Un bundle activo sin componentes utilizables queda fuera del scoring.
+- Un bundle parcialmente válido conserva solo sus componentes y affinities válidos.
+- Los duplicados se deduplican de forma estable, conservando la primera fila.
+- Una `quantity` inválida se normaliza a `1` y se reporta.
+- Si todos los bundles activos son inválidos, todas las métricas de penalización quedan neutrales (`0`) y no puede atribuirse una selección a una mejor coherencia de bundles.
+- Sin bundles, el comportamiento permanece idéntico y neutral.
+
+La validación continúa siendo una protección de calidad para una señal soft: no introduce requisitos obligatorios ni nuevas restricciones hard.

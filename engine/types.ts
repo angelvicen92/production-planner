@@ -115,6 +115,11 @@ export interface ResourceBundleComponentInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface ResourceBundleLoadWarning {
+  source: "resource_bundles" | "resource_bundle_components" | "resource_bundle_space_affinities";
+  message: string;
+}
+
 export interface ResourceBundleSpaceAffinityInput {
   id?: string;
   bundleId: string;
@@ -179,6 +184,7 @@ export interface EngineInput {
   resourceBundles?: ResourceBundleInput[];
   resourceBundleComponents?: ResourceBundleComponentInput[];
   resourceBundleSpaceAffinities?: ResourceBundleSpaceAffinityInput[];
+  resourceBundleLoadWarnings?: ResourceBundleLoadWarning[];
 
   // ✅ Disponibilidad por concursante (override del plan)
   // Key: contestantId -> ventana HH:mm
