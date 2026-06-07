@@ -1,0 +1,143 @@
+import type { EngineInput, EngineOutput } from "../types";
+import { calculateOperationalMetrics } from "./metrics";
+import { diagnoseCompositeResources } from "./resourceDiagnostics";
+import { validateResourceBundles } from "./resourceBundleValidation";
+
+type SelectedCandidateMetrics = NonNullable<NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"]>;
+
+type CompactWarning = {
+  code: string;
+  message: string;
+  taskIds: number[];
+  severity?: "info" | "warning";
+  bundleId?: string;
+};
+
+export interface EngineRunDiagnostics {
+  engineVersion: "v3";
+  solutionSource: string;
+  status: "success" | "infeasible";
+  plannedTasks: number;
+  unplannedTasks: number;
+  hardConstraintViolations: number;
+  mainStageGapMinutes: number | null;
+  mainStageGapCount: number | null;
+  coachSwitchCount: number | null;
+  restrictiveTalentAverageStartOffset: number | null;
+  selectedCandidateMetrics: SelectedCandidateMetrics | null;
+  engineMetadata: {
+    candidateSelectionReason: string | null;
+    candidateSolutionsEvaluated: number | null;
+    backtrackingAttempted: boolean;
+    backtrackingAccepted: boolean;
+    neighborhoodSearchAttempted: boolean;
+    neighborhoodCandidatesGenerated: number;
+    neighborhoodCandidateAccepted: boolean;
+    cpSatAttempted: boolean;
+    cpSatAccepted: boolean;
+    cpSatPilotAttempted: boolean;
+    cpSatPilotAccepted: boolean;
+    cpSatSegmentsAttempted: number;
+    cpSatSegmentsAccepted: number;
+    fallbackReasons: string[];
+    declaredResourceBundleCount: number;
+    usableResourceBundleCount: number;
+    invalidResourceBundleCount: number;
+    partiallyUsableResourceBundleCount: number;
+  };
+  diagnosticWarnings: {
+    resourceDiagnosticWarnings: CompactWarning[];
+    resourceBundleValidationWarnings: CompactWarning[];
+  };
+}
+
+const MAX_WARNINGS_PER_GROUP = 50;
+const MAX_WARNING_TASK_IDS = 25;
+const MAX_TEXT_LENGTH = 500;
+
+const compactText = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, MAX_TEXT_LENGTH) : null;
+};
+
+const compactWarning = (warning: {
+  code?: unknown;
+  message?: unknown;
+  taskIds?: unknown;
+  severity?: unknown;
+  bundleId?: unknown;
+}): CompactWarning => ({
+  code: compactText(warning.code) ?? "UNKNOWN_WARNING",
+  message: compactText(warning.message) ?? "Diagnostic warning",
+  taskIds: Array.isArray(warning.taskIds)
+    ? warning.taskIds.map(Number).filter(Number.isFinite).slice(0, MAX_WARNING_TASK_IDS)
+    : [],
+  ...(warning.severity === "info" || warning.severity === "warning" ? { severity: warning.severity } : {}),
+  ...(compactText(warning.bundleId) ? { bundleId: compactText(warning.bundleId)! } : {}),
+});
+
+const uniqueCompactReasons = (values: unknown[]): string[] => Array.from(new Set(
+  values.map(compactText).filter((value): value is string => value !== null),
+)).slice(0, 10);
+
+/**
+ * Builds the small, persistence-safe audit projection for one V3 execution.
+ * It deliberately excludes tasks, assignments, full inputs/outputs and solver payloads.
+ */
+export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): EngineRunDiagnostics => {
+  const metrics = calculateOperationalMetrics(input, output);
+  const resourceDiagnostics = diagnoseCompositeResources(input, output);
+  const bundleValidation = validateResourceBundles(input);
+  const meta = output.v3Meta;
+  const plannedTasks = output.plannedTasks?.length ?? 0;
+  const unplannedTasks = output.unplanned?.length ?? Math.max(0, input.tasks.length - plannedTasks);
+
+  return {
+    engineVersion: "v3",
+    solutionSource: meta?.solutionSource ?? (output.hardFeasible === false ? "infeasible" : "unknown"),
+    status: output.hardFeasible === false ? "infeasible" : "success",
+    plannedTasks,
+    unplannedTasks,
+    hardConstraintViolations: metrics.hardConstraintViolations,
+    mainStageGapMinutes: metrics.mainStageGapMinutes,
+    mainStageGapCount: metrics.mainStageGapCount,
+    coachSwitchCount: metrics.coachSwitchCount,
+    restrictiveTalentAverageStartOffset: metrics.restrictiveTalentAverageStartOffset,
+    selectedCandidateMetrics: meta?.selectedCandidateMetrics ?? null,
+    engineMetadata: {
+      candidateSelectionReason: compactText(meta?.candidateSelectionReason),
+      candidateSolutionsEvaluated: meta?.candidateSolutionsEvaluated ?? null,
+      backtrackingAttempted: meta?.backtrackingAttempted ?? false,
+      backtrackingAccepted: meta?.backtrackingAccepted ?? false,
+      neighborhoodSearchAttempted: meta?.neighborhoodSearchAttempted ?? false,
+      neighborhoodCandidatesGenerated: meta?.neighborhoodCandidatesGenerated ?? 0,
+      neighborhoodCandidateAccepted: meta?.neighborhoodCandidateAccepted ?? false,
+      cpSatAttempted: meta?.cpSatAttempted ?? false,
+      cpSatAccepted: meta?.cpSatAccepted ?? false,
+      cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,
+      cpSatPilotAccepted: meta?.cpSatPilotAccepted ?? false,
+      cpSatSegmentsAttempted: meta?.cpSatSegmentsAttempted ?? 0,
+      cpSatSegmentsAccepted: meta?.cpSatSegmentsAccepted ?? 0,
+      fallbackReasons: uniqueCompactReasons([
+        meta?.fallbackReason,
+        meta?.backtrackingFallbackReason,
+        meta?.cpSatReason,
+        meta?.cpSatPilotReason,
+        ...(meta?.cpSatSegmentReasons ?? []),
+      ]),
+      declaredResourceBundleCount: resourceDiagnostics.declaredResourceBundleCount,
+      usableResourceBundleCount: resourceDiagnostics.usableResourceBundleCount,
+      invalidResourceBundleCount: resourceDiagnostics.invalidResourceBundleCount,
+      partiallyUsableResourceBundleCount: resourceDiagnostics.partiallyUsableResourceBundleCount,
+    },
+    diagnosticWarnings: {
+      resourceDiagnosticWarnings: resourceDiagnostics.resourceDiagnosticWarnings
+        .slice(0, MAX_WARNINGS_PER_GROUP)
+        .map(compactWarning),
+      resourceBundleValidationWarnings: bundleValidation.warnings
+        .slice(0, MAX_WARNINGS_PER_GROUP)
+        .map(compactWarning),
+    },
+  };
+};
