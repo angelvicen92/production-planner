@@ -6,6 +6,16 @@ export type SpaceCapacityInterval = {
   taskId?: number;
 };
 
+export type SpaceCapacitySource =
+  | "transport_van_capacity"
+  | "space_max_concurrency"
+  | "default_exclusive";
+
+export type SpaceCapacityResolution = {
+  capacity: number;
+  capacitySource: SpaceCapacitySource;
+};
+
 const positiveInteger = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0
@@ -13,19 +23,68 @@ const positiveInteger = (value: unknown): number | null => {
     : null;
 };
 
-/** Spaces remain exclusive unless an explicit positive capacity is supplied. */
-export const getSpaceCapacity = (
+const normalizedName = (value: unknown): string =>
+  String(value ?? "").trim().toLowerCase();
+
+const resolveTransportSpaceId = (input: EngineV3Input): number | null => {
+  const explicit = positiveInteger(input.transportSpaceId);
+  if (explicit !== null) return explicit;
+
+  const transportTemplateNames = new Set(
+    [input.arrivalTaskTemplateName, input.departureTaskTemplateName]
+      .map(normalizedName)
+      .filter(Boolean),
+  );
+  if (transportTemplateNames.size > 0) {
+    const taskSpaceIds = new Set<number>();
+    for (const task of input.tasks ?? []) {
+      if (!transportTemplateNames.has(normalizedName(task.templateName))) continue;
+      const taskSpaceId = positiveInteger(task.spaceId);
+      if (taskSpaceId !== null) taskSpaceIds.add(taskSpaceId);
+    }
+    if (taskSpaceIds.size === 1) return taskSpaceIds.values().next().value ?? null;
+  }
+
+  // Defensive legacy fallback: old inputs may only identify the space by label.
+  const namedMatches = Object.entries(input.spaceNameById ?? {})
+    .filter(([, name]) => normalizedName(name) === "transporte")
+    .map(([id]) => positiveInteger(id))
+    .filter((id): id is number => id !== null);
+  return namedMatches.length === 1 ? namedMatches[0] : null;
+};
+
+export const getSpaceCapacityResolution = (
   input: EngineV3Input,
   spaceId: number | null | undefined,
-): number => {
+): SpaceCapacityResolution => {
   const id = positiveInteger(spaceId);
-  if (id === null) return 1;
+  if (id === null) return { capacity: 1, capacitySource: "default_exclusive" };
+
+  const transportSpaceId = resolveTransportSpaceId(input);
+  const transportCapacity =
+    positiveInteger(input.transportVanCapacity) ?? positiveInteger(input.vanCapacity);
+  if (transportSpaceId === id && transportCapacity !== null) {
+    return {
+      capacity: transportCapacity,
+      capacitySource: "transport_van_capacity",
+    };
+  }
 
   const explicit =
     positiveInteger(input.spaceCapacityById?.[id]) ??
     positiveInteger(input.spaceConcurrencyById?.[id]);
-  return explicit ?? 1;
+  if (explicit !== null) {
+    return { capacity: explicit, capacitySource: "space_max_concurrency" };
+  }
+
+  return { capacity: 1, capacitySource: "default_exclusive" };
 };
+
+/** Spaces remain exclusive unless an explicit or transport-specific capacity is supplied. */
+export const getSpaceCapacity = (
+  input: EngineV3Input,
+  spaceId: number | null | undefined,
+): number => getSpaceCapacityResolution(input, spaceId).capacity;
 
 export const wouldExceedSpaceCapacity = (
   intervals: SpaceCapacityInterval[],

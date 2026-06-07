@@ -43,3 +43,23 @@ Repetir la prueba real y actuar según el resultado:
 - si una capacidad explícita resuelve los falsos positivos, validar la calidad operativa del plan;
 - si queda overlap real, corregir la asignación/colocación de espacios;
 - si operación confirma que el espacio 49 es concurrente pero no existe una fuente de capacidad, crear una migración y un ajuste admin específico, con default 1 y validación de valores.
+
+## ID 029 — Transporte y capacidad de furgoneta
+
+La auditoría confirmó que **Capacidad furgoneta** no era un dato nuevo: ya se persiste como `optimizer_settings.van_capacity`, se expone en los endpoints de optimizer settings y la UI de Ajustes → Recursos lo edita junto con las plantillas `IN`/`OUT`. No se añade migración ni se duplica la configuración.
+
+`buildInput` conserva `vanCapacity` por compatibilidad y añade los alias explícitos `transportVanCapacity` y `transportSpaceId`. El espacio se resuelve sin ids fijos, en este orden:
+
+1. espacio por defecto de las plantillas configuradas de llegada/salida, si ambas fuentes producen una asociación inequívoca;
+2. espacio real de las tareas de esas plantillas, si es inequívoco;
+3. nombre exacto normalizado `Transporte` como fallback defensivo para datos legacy.
+
+Phase A, `validateCandidate` y la validación hard final siguen compartiendo el helper de capacidad. Para el espacio resuelto de Transporte, el helper usa la capacidad positiva de furgoneta; para el resto conserva `spaceCapacityById`/`spaceConcurrencyById` o el default exclusivo 1. En consecuencia, seis tareas `IN` simultáneas y tres tareas `OUT` simultáneas son válidas con `vanCapacity=6`, mientras que una concurrencia de siete sigue generando `SPACE_OVERLAP`.
+
+El diagnóstico añade `capacitySource`:
+
+- `transport_van_capacity` para Transporte con capacidad de furgoneta válida;
+- `space_max_concurrency` para capacidad explícita general;
+- `default_exclusive` para el default seguro 1.
+
+Si aparece `SPACE_OVERLAP` en Transporte, se debe comparar `observedConcurrency` contra `vanCapacity` y confirmar que `spaceCapacity` refleja la configuración vigente. Este cambio no vuelve concurrentes los demás espacios ni oculta excesos reales.

@@ -476,3 +476,10 @@ La suite quick incluye U y V. U evita regresiones masivas como el caso real con 
 | X — Concurrent space exceeds capacity | capacidad 2 | tres tareas de 5 minutos | `infeasible`, `SPACE_OVERLAP`, `observedConcurrency=3`, `spaceCapacity=2` |
 
 W protege contra los falsos positivos y la explosión pairwise del caso real. X demuestra que el cambio no relaja espacios concurrentes más allá de su límite. Ambos escenarios forman parte del benchmark quick.
+
+## ID 029 — Escenarios de Transporte
+
+| Escenario | Configuración | Carga | Resultado esperado |
+|---|---:|---|---|
+| Y — Transporte usa capacidad de furgoneta | `vanCapacity=6` | seis `IN` simultáneas y tres `OUT` simultáneas | completo, `hardConstraintViolations=0`, sin `SPACE_OVERLAP` |
+| Z — Transporte excede capacidad de furgoneta | `vanCapacity=6` | siete `IN` simultáneas | `infeasible`, `SPACE_OVERLAP`, `observedConcurrency=7`, `spaceCapacity=6`, `capacitySource=transport_van_capacity` |

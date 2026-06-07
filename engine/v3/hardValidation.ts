@@ -2,7 +2,7 @@ import type { EngineOutput, ProtectedBreakInput, TaskInput, TimeWindow } from ".
 import type { EngineV3Input } from "./types";
 import { toMinutes } from "./metrics";
 import { getProtectedBreaks, isMealTask } from "./mealSemantics";
-import { getSpaceCapacity } from "./spaceCapacity";
+import { getSpaceCapacityResolution, type SpaceCapacitySource } from "./spaceCapacity";
 
 export const MAX_HARD_VIOLATION_DETAILS = 50;
 
@@ -30,6 +30,7 @@ export interface HardConstraintViolationDetail {
   spaceName?: string;
   spaceCapacity?: number;
   observedConcurrency?: number;
+  capacitySource?: SpaceCapacitySource;
   taskNames?: string[];
   templateNames?: string[];
   contestantId?: number;
@@ -223,7 +224,7 @@ export const validateHardConstraints = (
   }
 
   for (const [spaceId, spaceIntervals] of intervalsBySpace.entries()) {
-    const capacity = getSpaceCapacity(input, spaceId);
+    const { capacity, capacitySource } = getSpaceCapacityResolution(input, spaceId);
     const events = new Map<number, { starts: Interval[]; ends: Interval[] }>();
     for (const interval of spaceIntervals) {
       const startEvent = events.get(interval.startMinutes) ?? { starts: [], ends: [] };
@@ -255,8 +256,8 @@ export const validateHardConstraints = (
       add({
         code: "SPACE_OVERLAP", severity: "hard",
         message: `${spaceName ? `Space ${spaceName} (${spaceId})` : `Space ${spaceId}`} exceeds capacity ${capacity}: ${active.size} simultaneous tasks.`,
-        taskIds: compactTaskIds, taskNames, templateNames, spaceId, spaceName, spaceCapacity: capacity, observedConcurrency: active.size, start, end,
-        details: { spaceId, spaceName: spaceName ?? null, spaceCapacity: capacity, observedConcurrency: active.size, taskIds: compactTaskIds.slice(0, 10), taskNames, templateNames },
+        taskIds: compactTaskIds, taskNames, templateNames, spaceId, spaceName, spaceCapacity: capacity, observedConcurrency: active.size, capacitySource, start, end,
+        details: { spaceId, spaceName: spaceName ?? null, spaceCapacity: capacity, observedConcurrency: active.size, capacitySource, taskIds: compactTaskIds.slice(0, 10), taskNames, templateNames },
       });
     }
   }

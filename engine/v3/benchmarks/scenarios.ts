@@ -644,6 +644,34 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "The gate reports SPACE_OVERLAP with observedConcurrency 3 and spaceCapacity 2.",
     riskNotes: ["Synthetic over-capacity seed", "Must remain infeasible"],
   },
+  {
+    id: "Y",
+    name: "Transport uses configured van capacity",
+    description: "Six IN tasks and three OUT tasks share the resolved transport space within van capacity 6.",
+    input: baseInput([
+      ...Array.from({ length: 6 }, (_, index) => ({ id: 25001 + index, planId: PLAN_ID, templateId: 3501, templateName: "IN", zoneId: 2, spaceId: 1049, contestantId: 1001 + index, status: "pending", durationOverrideMin: 5 })),
+      ...Array.from({ length: 3 }, (_, index) => ({ id: 25101 + index, planId: PLAN_ID, templateId: 3502, templateName: "OUT", zoneId: 2, spaceId: 1049, contestantId: 1101 + index, status: "pending", durationOverrideMin: 5 })),
+    ], { optimizerMainZoneId: null, arrivalTaskTemplateName: "IN", departureTaskTemplateName: "OUT", transportSpaceId: 1049, transportVanCapacity: 6, vanCapacity: 6, spaceNameById: { 1049: "Transporte" } }),
+    hardValidationSeedOutput: {
+      feasible: true, complete: true, hardFeasible: true,
+      plannedTasks: [
+        ...Array.from({ length: 6 }, (_, index) => ({ taskId: 25001 + index, startPlanned: "09:00", endPlanned: "09:05", assignedResources: [] })),
+        ...Array.from({ length: 3 }, (_, index) => ({ taskId: 25101 + index, startPlanned: "10:00", endPlanned: "10:05", assignedResources: [] })),
+      ],
+      unplanned: [], warnings: [],
+    },
+    operationalExpectation: "Van capacity 6 permits six simultaneous arrivals and three simultaneous departures without SPACE_OVERLAP.",
+    riskNotes: ["Uses existing transport settings", "Transport space id is scenario data, not a production constant"],
+  },
+  {
+    id: "Z",
+    name: "Transport exceeds configured van capacity",
+    description: "Seven simultaneous IN tasks exceed van capacity 6 in the resolved transport space.",
+    input: baseInput(Array.from({ length: 7 }, (_, index) => ({ id: 26001 + index, planId: PLAN_ID, templateId: 3601, templateName: "IN", zoneId: 2, spaceId: 1050, contestantId: 1201 + index, status: "pending", durationOverrideMin: 5 })), { optimizerMainZoneId: null, arrivalTaskTemplateName: "IN", departureTaskTemplateName: "OUT", transportSpaceId: 1050, transportVanCapacity: 6, vanCapacity: 6, spaceNameById: { 1050: "Transporte" } }),
+    hardValidationSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: Array.from({ length: 7 }, (_, index) => ({ taskId: 26001 + index, startPlanned: "09:35", endPlanned: "09:40", assignedResources: [] })), unplanned: [], warnings: [] },
+    operationalExpectation: "The gate reports SPACE_OVERLAP with concurrency 7, capacity 6 and source transport_van_capacity.",
+    riskNotes: ["Synthetic over-capacity transport seed", "Must remain infeasible"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

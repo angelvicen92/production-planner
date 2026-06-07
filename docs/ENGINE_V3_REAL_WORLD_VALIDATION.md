@@ -205,3 +205,17 @@ La repetición posterior a ID 027 dejó 63 hard violations, todas o casi todas `
 3. si la concurrencia observada supera la capacidad, el gate mantiene el resultado `infeasible`.
 
 Al repetir la prueba real, exportar el JSON y revisar en cada detalle `spaceName`, `spaceCapacity`, `observedConcurrency`, `start`, `end` y las tareas compactas. Si el espacio 49 sigue mostrando capacidad 1, confirmar en operación si realmente es exclusivo o si falta modelar capacidad en DB. Si la capacidad es correcta y aun así se excede, revisar la asignación de espacios del motor; no relajar el gate.
+
+## ID 029 — Transporte y capacidad de furgoneta
+
+La capacidad operativa del espacio Transporte procede del ajuste existente **Capacidad furgoneta** (`van_capacity`), no de una relajación global de espacios. El input del motor identifica el espacio desde las plantillas configuradas `IN`/`OUT` y sus tareas; solo usa el nombre `Transporte` como fallback defensivo y nunca depende de `spaceId=49`.
+
+Para repetir la prueba real posterior a `runId: 170`:
+
+1. confirmar en Ajustes → Recursos que `vanCapacity=6` y que las plantillas de llegada/salida son `IN`/`OUT`;
+2. generar de nuevo el plan;
+3. verificar que seis `IN` simultáneas y tres `OUT` simultáneas no producen `SPACE_OVERLAP`;
+4. si queda un `SPACE_OVERLAP` de Transporte, comprobar en el detalle `spaceName`, `spaceCapacity`, `observedConcurrency` y `capacitySource`;
+5. esperar `spaceCapacity: 6` y `capacitySource: transport_van_capacity`; una concurrencia superior a 6 debe continuar marcada como hard.
+
+Los demás espacios siguen siendo exclusivos por defecto o usan únicamente su capacidad explícita general. No cambia ninguna regla de comida, RLS ni el gate hard final.

@@ -266,6 +266,10 @@ export interface EngineInput {
   arrivalMinGapMinutes?: number;
   departureMinGapMinutes?: number;
   vanCapacity?: number;
+  /** Explicit alias used by space-capacity validation for transport tasks. */
+  transportVanCapacity?: number;
+  /** Resolved without relying on a fixed database id. */
+  transportSpaceId?: number | null;
 
   // v-next: resources, spaces, zones, availability
 }
@@ -454,6 +458,12 @@ export interface EngineOutput {
       taskIds: number[];
       resourceId?: number;
       spaceId?: number;
+      spaceName?: string;
+      spaceCapacity?: number;
+      observedConcurrency?: number;
+      capacitySource?: "transport_van_capacity" | "space_max_concurrency" | "default_exclusive";
+      taskNames?: string[];
+      templateNames?: string[];
       contestantId?: number;
       start?: string;
       end?: string;
