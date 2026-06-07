@@ -3472,7 +3472,12 @@ ${reasonMessage}` : message,
 
           <TabsContent value="planning" className="mt-0">
             <div className="space-y-4">
-              <PlanEngineDiagnostics planId={id} />
+              <PlanEngineDiagnostics
+                planId={id}
+                tasks={plan?.dailyTasks as unknown[] | undefined}
+                contestants={contestants as unknown[]}
+                resourceNamesById={planResourceItemNameById}
+              />
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-semibold">Visual Timeline</h2>
