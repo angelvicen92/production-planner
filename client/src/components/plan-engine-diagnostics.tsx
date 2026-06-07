@@ -153,6 +153,9 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
     : [];
   const warnings = [...resourceWarnings, ...bundleWarnings];
   const hardViolations = safeNumber(diagnostics.hardConstraintViolations);
+  const hardViolationCodes = Array.isArray(diagnostics.hardConstraintViolationCodes)
+    ? diagnostics.hardConstraintViolationCodes
+    : Array.isArray(metadata.hardConstraintViolationCodes) ? metadata.hardConstraintViolationCodes : [];
   const status = label(diagnostics.status);
   const isHealthy = diagnostics.status === "success" && hardViolations === 0;
   const createdAt = diagnostics.createdAt && !Number.isNaN(Date.parse(diagnostics.createdAt))
@@ -243,6 +246,16 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {(hardViolations ?? 0) > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>El plan contiene violaciones hard</AlertTitle>
+            <AlertDescription>
+              No debe usarse como planificación válida.
+              {hardViolationCodes.length ? ` Códigos: ${hardViolationCodes.slice(0, 10).join(", ")}.` : ""}
+            </AlertDescription>
+          </Alert>
+        )}
         <details className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
           <summary className="cursor-pointer font-medium">Cómo usar este diagnóstico</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">

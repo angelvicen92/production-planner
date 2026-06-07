@@ -1,0 +1,102 @@
+import assert from "node:assert/strict";
+import type { EngineOutput } from "../types";
+import type { EngineV3Input } from "./types";
+import { applyFinalHardValidationGate, MAX_HARD_VIOLATION_DETAILS, validateHardConstraints } from "./hardValidation";
+import { compareCandidateSolutions } from "./solutionScoring";
+import { buildRunDiagnostics } from "./runDiagnostics";
+
+const input = (tasks: EngineV3Input["tasks"], overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
+  planId: 26,
+  workDay: { start: "09:00", end: "12:00" },
+  meal: { start: "13:00", end: "13:30" },
+  camerasAvailable: 2,
+  tasks,
+  locks: [],
+  groupingZoneIds: [],
+  zoneResourceAssignments: {},
+  spaceResourceAssignments: {},
+  zoneResourceTypeRequirements: {},
+  spaceResourceTypeRequirements: {},
+  planResourceItems: [],
+  resourceItemComponents: {},
+  ...overrides,
+});
+
+const output = (plannedTasks: EngineOutput["plannedTasks"]): EngineOutput => ({
+  feasible: true,
+  complete: true,
+  hardFeasible: true,
+  plannedTasks,
+  unplanned: [],
+  warnings: [],
+});
+
+const task = (id: number, contestantId: number, spaceId: number, extra: Partial<EngineV3Input["tasks"][number]> = {}): EngineV3Input["tasks"][number] => ({
+  id, planId: 26, templateId: id, status: "pending", contestantId, spaceId, zoneId: 1, durationOverrideMin: 30, ...extra,
+});
+
+{
+  const caseInput = input([task(1, 10, 101), task(2, 10, 102)]);
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:15", endPlanned: "09:45", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("CONTESTANT_OVERLAP"));
+}
+
+{
+  const caseInput = input([task(1, 10, 101), task(2, 11, 101)]);
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:15", endPlanned: "09:45", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("SPACE_OVERLAP"));
+}
+
+{
+  const caseInput = input([task(1, 10, 101)], { contestantAvailabilityById: { 10: { start: "10:00", end: "11:00" } } });
+  const result = validateHardConstraints(caseInput, output([{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] }]));
+  assert.ok(result.hardConstraintViolationCodes.includes("AVAILABILITY_VIOLATION"));
+}
+
+{
+  const caseInput = input([task(1, 10, 101), task(2, 11, 102, { dependsOnTaskIds: [1] })]);
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] },
+  ]));
+  assert.ok(result.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION"));
+}
+
+{
+  const caseInput = input([task(1, 10, 101), task(2, 10, 102)]);
+  const valid = output([
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] },
+  ]);
+  const invalid = output([
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:15", endPlanned: "09:45", assignedResources: [] },
+  ]);
+  assert.ok(compareCandidateSolutions(caseInput, valid, invalid) > 0);
+  const gated = applyFinalHardValidationGate(caseInput, invalid);
+  assert.equal(gated.hardFeasible, false);
+  assert.equal(gated.complete, false);
+  assert.equal(gated.v3Meta?.hardValidationPassed, false);
+}
+
+{
+  const tasks = Array.from({ length: 12 }, (_, index) => task(index + 1, 10, 101));
+  const invalid = output(tasks.map((row) => ({ taskId: row.id, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] })));
+  const caseInput = input(tasks);
+  const rawDiagnostics = buildRunDiagnostics(caseInput, invalid);
+  assert.equal(rawDiagnostics.status, "infeasible", "diagnostics must never label an invalid output as success");
+  const diagnostics = buildRunDiagnostics(caseInput, applyFinalHardValidationGate(caseInput, invalid));
+  assert.equal(diagnostics.status, "infeasible");
+  assert.equal(diagnostics.hardValidationPassed, false);
+  assert.ok(diagnostics.hardConstraintViolationCodes.includes("CONTESTANT_OVERLAP"));
+  assert.ok(diagnostics.hardConstraintViolationDetails.length <= MAX_HARD_VIOLATION_DETAILS);
+  assert.ok(diagnostics.engineMetadata.hardConstraintViolationDetails.length <= MAX_HARD_VIOLATION_DETAILS);
+}
+
+console.log("engine/v3/hardValidation.spec.ts: OK");

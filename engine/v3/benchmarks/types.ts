@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -12,6 +12,7 @@ export interface BenchmarkScenario {
   neighborhoodSeedOutput?: EngineOutput;
   cpSatPilotSeedOutput?: EngineOutput;
   benchmarkCandidateOutputs?: [EngineOutput, EngineOutput];
+  hardValidationSeedOutput?: EngineOutput;
   operationalExpectation: string;
   riskNotes: string[];
   knownRisk?: string;

@@ -16,6 +16,7 @@ import {
 import { benchmarkScenarios, scenarioById } from "./scenarios";
 import { runMainStageCpSatPilot } from "../mainStageCpSatPilot";
 import { compareCandidateSolutions, explainCandidateComparison, scoreCandidateSolution } from "../solutionScoring";
+import { applyFinalHardValidationGate } from "../hardValidation";
 
 const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((planned: any) => [Number(planned.taskId), planned]));
 const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
@@ -33,10 +34,12 @@ const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolutio
   hardConstraintViolations: score.hardConstraintViolations,
 });
 
-const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S") => {
+const run = (id: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T") => {
   const scenario = scenarioById.get(id);
   assert.ok(scenario, `scenario ${id} should exist`);
-  const output = scenario.benchmarkCandidateOutputs
+  const output = scenario.hardValidationSeedOutput
+    ? applyFinalHardValidationGate(scenario.input, scenario.hardValidationSeedOutput)
+    : scenario.benchmarkCandidateOutputs
     ? (() => {
       const [first, second] = scenario.benchmarkCandidateOutputs;
       const selected = compareCandidateSolutions(scenario.input, first, second) >= 0 ? first : second;
@@ -349,3 +352,13 @@ for (const id of ["C", "D", "J"] as const) {
 }
 
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");
+
+// Escenario T — gate final hard invalida un candidato solapado y conserva detalle por código.
+{
+  const { output } = run("T");
+  assert.ok((output.v3Meta?.hardConstraintViolations ?? 0) > 0);
+  assert.equal(output.v3Meta?.hardValidationPassed, false);
+  assert.equal(output.complete, false);
+  assert.equal(output.hardFeasible, false);
+  assert.ok(output.v3Meta?.hardConstraintViolationCodes?.includes("CONTESTANT_OVERLAP"));
+}

@@ -289,6 +289,15 @@ export class SupabaseStorage implements IStorage {
         ? null
         : Number(data.restrictive_talent_average_start_offset),
       selectedCandidateMetrics: data.selected_candidate_metrics ?? null,
+      hardConstraintViolationDetails: Array.isArray((data.engine_metadata as any)?.hardConstraintViolationDetails)
+        ? (data.engine_metadata as any).hardConstraintViolationDetails.slice(0, 50)
+        : [],
+      hardConstraintViolationCodes: Array.isArray((data.engine_metadata as any)?.hardConstraintViolationCodes)
+        ? (data.engine_metadata as any).hardConstraintViolationCodes.slice(0, 20)
+        : [],
+      hardValidationPassed: typeof (data.engine_metadata as any)?.hardValidationPassed === "boolean"
+        ? (data.engine_metadata as any).hardValidationPassed
+        : Number(data.hard_constraint_violations ?? 0) === 0,
       engineMetadata: data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
       diagnosticWarnings: data.diagnostic_warnings && typeof data.diagnostic_warnings === "object"
         ? data.diagnostic_warnings

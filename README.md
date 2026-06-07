@@ -55,3 +55,5 @@ npm run benchmark:engine:full
 ```
 
 Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conservan la validación completa. Para iteración local rápida se usan los comandos `:quick`; antes de mergear cambios del motor deben ejecutarse las suites `:full`.
+
+- ID 026 — 2026-06-07 11:50 — Hard validation gate y detalle de hard violations en Motor V3

@@ -1,6 +1,7 @@
 import type { EngineOutput, EngineOutputUnplanned } from "../types";
 import { solve_v3_phaseA_attempt } from "./phaseAHeuristic";
 import type { EngineV3Input, EngineV3Options } from "./types";
+import { applyFinalHardValidationGate, validateHardConstraints } from "./hardValidation";
 import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
 import { getStructuredBlockers, summarizeStructuredBlockers } from "./blockers";
@@ -398,6 +399,11 @@ export const runOperationalNeighborhoodSelection = (
   let bestChain: OperationalNeighborhoodReason[] | null = null;
   let bestScore = baseScore;
   for (const candidate of candidates) {
+    const candidateValidation = validateHardConstraints(input, candidate.output);
+    if (!candidateValidation.hardValidationPassed) {
+      neighborhoodDiagnostics.rejectedReasons.HARD_VALIDATION_FAILED = (neighborhoodDiagnostics.rejectedReasons.HARD_VALIDATION_FAILED ?? 0) + 1;
+      continue;
+    }
     const candidateScore = scoreCandidateSolution(input, candidate.output);
     if (compareCandidateSolutions(input, candidate.output, bestOutput) > 0) {
       bestOutput = candidate.output;
@@ -708,7 +714,7 @@ const buildRescueProposal = (base: EngineOutput, input: EngineV3Input) => {
   };
 };
 
-export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
+function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
   options?.onProgress?.({ phase: "prevalidation", progressPct: 5, message: "V3 Fase A: prevalidación de hard constraints" });
 
   const hardValidation = prevalidateHard(input);
@@ -822,7 +828,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
           options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
           const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
           const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
-          const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, output) > 0;
+          const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, output) > 0;
           const chosenOutput = accepted ? optimized.output : output;
           const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
           const qualityInsight = {
@@ -926,7 +932,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
         options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
         const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
         const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
-        const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, output) > 0;
+        const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, output) > 0;
         const chosenOutput = accepted ? optimized.output : output;
         const insights = Array.isArray((chosenOutput as any).insights) ? (chosenOutput as any).insights : [];
         const qualityInsight = {
@@ -1032,7 +1038,7 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
     const optimized = optimizeWithCpSat(input, fallback, timeLimitSeconds);
     const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, fallback, optimized.output);
-    const accepted = !optimized.noOptimized && candidateErrors.length === 0 && compareCandidateSolutions(input, optimized.output, fallback) > 0;
+    const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, fallback) > 0;
     const optimizedOutput = accepted ? optimized.output : fallback;
     const insights = Array.isArray((optimizedOutput as any).insights) ? (optimizedOutput as any).insights : [];
     const qualityInsight = {
@@ -1143,4 +1149,10 @@ export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options):
     }),
     solutionSource: rescue.canOvertime ? "fallback" : "infeasible",
   });
+}
+
+
+/** Public V3 entry point: every orchestration path passes through the same final hard gate. */
+export function generatePlanV3(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
+  return applyFinalHardValidationGate(input, generatePlanV3Unchecked(input, options));
 }

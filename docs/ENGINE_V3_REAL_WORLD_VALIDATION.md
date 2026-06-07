@@ -176,3 +176,9 @@ Después de la primera prueba real, clasificar las evidencias antes de definir e
 - **ampliar CP-SAT**, si las pruebas muestran que los límites del piloto o de los segmentos dejan fuera un subproblema relevante.
 
 No se recomienda ampliar el algoritmo en frío. El siguiente cambio funcional debe partir del JSON, la captura opcional y la observación humana de una ejecución real reproducible.
+
+## ID 026 — Protocolo ante hard violations
+
+Desde ID 026, la compuerta final impide que `generatePlanV3` entregue un plan hard-inválido como éxito y el servidor evita persistir sus tiempos. Si el panel muestra la alerta roja, el plan no debe usarse: exportar el JSON, revisar `hardConstraintViolationCodes` y analizar la muestra de hasta 50 `hardConstraintViolationDetails`.
+
+El caso que motivó la regla fue una ejecución real con 219 tareas planificadas, 0 sin planificar y 81 hard violations declaradas como success. La protección no decide por sí sola si eran infracciones reales o falsos positivos; hace segura esa incertidumbre y prepara el análisis de ID 027.

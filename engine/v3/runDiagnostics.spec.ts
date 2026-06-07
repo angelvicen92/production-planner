@@ -74,6 +74,9 @@ const output: EngineOutput = {
   assert.equal(diagnostics.plannedTasks, 1);
   assert.equal(diagnostics.unplannedTasks, 1);
   assert.equal(diagnostics.hardConstraintViolations, 0);
+  assert.equal(diagnostics.hardValidationPassed, true);
+  assert.deepEqual(diagnostics.hardConstraintViolationDetails, []);
+  assert.deepEqual(diagnostics.hardConstraintViolationCodes, []);
   assert.equal(diagnostics.mainStageGapMinutes, 0);
   assert.equal(diagnostics.coachSwitchCount, null);
   assert.equal(diagnostics.restrictiveTalentAverageStartOffset, 0);

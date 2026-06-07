@@ -2,6 +2,7 @@ import type { EngineInput, EngineOutput } from "../types";
 import { calculateOperationalMetrics } from "./metrics";
 import { diagnoseCompositeResources } from "./resourceDiagnostics";
 import { validateResourceBundles } from "./resourceBundleValidation";
+import { validateHardConstraints, type HardConstraintViolationDetail, type HardConstraintViolationCode } from "./hardValidation";
 
 type SelectedCandidateMetrics = NonNullable<NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"]>;
 
@@ -20,6 +21,9 @@ export interface EngineRunDiagnostics {
   plannedTasks: number;
   unplannedTasks: number;
   hardConstraintViolations: number;
+  hardConstraintViolationDetails: HardConstraintViolationDetail[];
+  hardConstraintViolationCodes: HardConstraintViolationCode[];
+  hardValidationPassed: boolean;
   mainStageGapMinutes: number | null;
   mainStageGapCount: number | null;
   coachSwitchCount: number | null;
@@ -44,6 +48,10 @@ export interface EngineRunDiagnostics {
     usableResourceBundleCount: number;
     invalidResourceBundleCount: number;
     partiallyUsableResourceBundleCount: number;
+    hardConstraintViolationDetails: HardConstraintViolationDetail[];
+    hardConstraintViolationCodes: HardConstraintViolationCode[];
+    hardValidationPassed: boolean;
+    hardConstraintViolationDetailsTruncated: boolean;
   };
   diagnosticWarnings: {
     resourceDiagnosticWarnings: CompactWarning[];
@@ -87,6 +95,7 @@ const uniqueCompactReasons = (values: unknown[]): string[] => Array.from(new Set
  */
 export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): EngineRunDiagnostics => {
   const metrics = calculateOperationalMetrics(input, output);
+  const hardValidation = validateHardConstraints(input, output);
   const resourceDiagnostics = diagnoseCompositeResources(input, output);
   const bundleValidation = validateResourceBundles(input);
   const meta = output.v3Meta;
@@ -96,10 +105,13 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
   return {
     engineVersion: "v3",
     solutionSource: meta?.solutionSource ?? (output.hardFeasible === false ? "infeasible" : "unknown"),
-    status: output.hardFeasible === false ? "infeasible" : "success",
+    status: output.hardFeasible === false || !hardValidation.hardValidationPassed ? "infeasible" : "success",
     plannedTasks,
     unplannedTasks,
-    hardConstraintViolations: metrics.hardConstraintViolations,
+    hardConstraintViolations: hardValidation.hardConstraintViolations,
+    hardConstraintViolationDetails: hardValidation.hardConstraintViolationDetails,
+    hardConstraintViolationCodes: hardValidation.hardConstraintViolationCodes,
+    hardValidationPassed: hardValidation.hardValidationPassed,
     mainStageGapMinutes: metrics.mainStageGapMinutes,
     mainStageGapCount: metrics.mainStageGapCount,
     coachSwitchCount: metrics.coachSwitchCount,
@@ -130,6 +142,10 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       usableResourceBundleCount: resourceDiagnostics.usableResourceBundleCount,
       invalidResourceBundleCount: resourceDiagnostics.invalidResourceBundleCount,
       partiallyUsableResourceBundleCount: resourceDiagnostics.partiallyUsableResourceBundleCount,
+      hardConstraintViolationDetails: hardValidation.hardConstraintViolationDetails,
+      hardConstraintViolationCodes: hardValidation.hardConstraintViolationCodes,
+      hardValidationPassed: hardValidation.hardValidationPassed,
+      hardConstraintViolationDetailsTruncated: hardValidation.detailsTruncated,
     },
     diagnosticWarnings: {
       resourceDiagnosticWarnings: resourceDiagnostics.resourceDiagnosticWarnings

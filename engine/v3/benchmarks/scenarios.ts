@@ -555,6 +555,25 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "El plan queda complete y hard-válido; el diagnóstico alerta del catálogo parcial y el scoring ignora todas las filas inválidas.",
     riskNotes: ["Validación solo para scoring soft", "Bundle activo vacío excluido", "Duplicados y referencias desconocidas no alteran factibilidad"],
   },
+  {
+    id: "T",
+    name: "Hard validation gate catches invalid final plan",
+    description: "Candidato final sintético con solape de concursante y espacio para verificar la compuerta hard.",
+    input: baseInput([
+      { id: 20001, planId: PLAN_ID, templateId: 3001, templateName: "Invalid overlap A", zoneId: 2, spaceId: 701, contestantId: 601, status: "pending", durationOverrideMin: 30 },
+      { id: 20002, planId: PLAN_ID, templateId: 3002, templateName: "Invalid overlap B", zoneId: 2, spaceId: 701, contestantId: 601, status: "pending", durationOverrideMin: 30 },
+    ], { workDay: { start: "09:00", end: "11:00" }, meal: { start: "12:00", end: "12:30" }, optimizerMainZoneId: null }),
+    hardValidationSeedOutput: {
+      feasible: true, complete: true, hardFeasible: true,
+      plannedTasks: [
+        { taskId: 20001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+        { taskId: 20002, startPlanned: "09:15", endPlanned: "09:45", assignedResources: [] },
+      ],
+      unplanned: [], warnings: [],
+    },
+    operationalExpectation: "La compuerta detecta hard violations, hardValidationPassed=false y el resultado no queda completo ni success.",
+    riskNotes: ["Escenario sintético de seguridad", "No prueba calidad de generación"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];
