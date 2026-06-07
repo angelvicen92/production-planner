@@ -1,5 +1,7 @@
 import type { EngineOutput, PlanResourceItemInput, TaskInput } from "../types";
 import type { EngineV3Input } from "./types";
+import { validateResourceBundles } from "./resourceBundleValidation";
+import type { ResourceBundleValidationWarningCode } from "./resourceBundleValidation";
 
 export interface ResourcePoolPressure {
   poolKey: string;
@@ -36,9 +38,11 @@ export interface ResourceSwitchDetail {
 }
 
 export interface ResourceDiagnosticWarning {
-  code: "COMPOSITE_RESOURCE_INCONSISTENCY" | "RESOURCE_BUNDLE_CONFLICT" | "ANYOF_POOL_FRAGILITY" | "PARTIAL_DECLARED_BUNDLE" | "BUNDLE_SPACE_AFFINITY_MISMATCH";
+  code: "COMPOSITE_RESOURCE_INCONSISTENCY" | "RESOURCE_BUNDLE_CONFLICT" | "ANYOF_POOL_FRAGILITY" | "PARTIAL_DECLARED_BUNDLE" | "BUNDLE_SPACE_AFFINITY_MISMATCH" | ResourceBundleValidationWarningCode;
   message: string;
   taskIds: number[];
+  severity?: "info" | "warning";
+  bundleId?: string;
 }
 
 export interface ResourceDiagnostics {
@@ -51,6 +55,10 @@ export interface ResourceDiagnostics {
   compositeResourceCandidateCount: number;
   resourceBundleConflictCount: number;
   declaredResourceBundleCount: number;
+  usableResourceBundleCount: number;
+  invalidResourceBundleCount: number;
+  partiallyUsableResourceBundleCount: number;
+  resourceBundleValidationWarnings: number;
   bundleComponentUsageCount: number;
   partialBundleUsageWarnings: number;
   bundleSpaceAffinityMatches: number;
@@ -62,6 +70,10 @@ export interface ResourceDiagnostics {
 
 export interface DeclaredBundleMetrics {
   declaredResourceBundleCount: number;
+  usableResourceBundleCount: number;
+  invalidResourceBundleCount: number;
+  partiallyUsableResourceBundleCount: number;
+  resourceBundleValidationWarnings: number;
   bundleComponentUsageCount: number;
   partialBundleUsageWarnings: number;
   bundleSpaceAffinityMatches: number;
@@ -126,30 +138,43 @@ const getScheduledTasks = (input: EngineV3Input, output: EngineOutput): Schedule
 
 
 const calculateDeclaredBundleMetricsFromScheduled = (input: EngineV3Input, scheduled: ScheduledTask[]): DeclaredBundleMetrics => {
-  const bundles = (input.resourceBundles ?? []).filter((bundle) => bundle.isActive !== false);
+  const validation = validateResourceBundles(input);
+  const bundles = validation.usableBundles;
+  const validationWarnings: ResourceDiagnosticWarning[] = validation.warnings.map((warning) => ({
+    code: warning.code,
+    severity: warning.severity,
+    message: warning.message,
+    taskIds: [],
+    bundleId: warning.bundleId,
+  }));
+  const declaredResourceBundleCount = (input.resourceBundles ?? []).filter((bundle) => bundle.isActive !== false).length;
   if (bundles.length === 0) {
     return {
-      declaredResourceBundleCount: 0,
+      declaredResourceBundleCount,
+      usableResourceBundleCount: validation.usableBundleCount,
+      invalidResourceBundleCount: validation.invalidBundleCount,
+      partiallyUsableResourceBundleCount: validation.partiallyUsableBundleCount,
+      resourceBundleValidationWarnings: validation.warnings.length,
       bundleComponentUsageCount: 0,
       partialBundleUsageWarnings: 0,
       bundleSpaceAffinityMatches: 0,
       bundleSpaceAffinityMismatches: 0,
       bundleSwitchPenalty: 0,
       bundleCoherencePenalty: 0,
-      warnings: [],
+      warnings: validationWarnings,
     };
   }
 
   const activeIds = new Set(bundles.map((bundle) => bundle.id));
   const componentsByBundle = new Map<string, NonNullable<EngineV3Input["resourceBundleComponents"]>>();
-  for (const component of input.resourceBundleComponents ?? []) {
+  for (const component of validation.usableComponents) {
     if (!activeIds.has(component.bundleId) || component.resourceItemId == null) continue;
     const rows = componentsByBundle.get(component.bundleId) ?? [];
     rows.push(component);
     componentsByBundle.set(component.bundleId, rows);
   }
   const affinitiesByBundle = new Map<string, NonNullable<EngineV3Input["resourceBundleSpaceAffinities"]>>();
-  for (const affinity of input.resourceBundleSpaceAffinities ?? []) {
+  for (const affinity of validation.usableAffinities) {
     if (!activeIds.has(affinity.bundleId)) continue;
     const rows = affinitiesByBundle.get(affinity.bundleId) ?? [];
     rows.push(affinity);
@@ -162,7 +187,7 @@ const calculateDeclaredBundleMetricsFromScheduled = (input: EngineV3Input, sched
   let bundleSpaceAffinityMismatches = 0;
   let affinityReward = 0;
   let affinityPenalty = 0;
-  const warnings: ResourceDiagnosticWarning[] = [];
+  const warnings: ResourceDiagnosticWarning[] = [...validationWarnings];
   const usageBySpace = new Map<number, Array<{ start: number; bundleIds: string[] }>>();
 
   for (const scheduledTask of scheduled) {
@@ -227,7 +252,11 @@ const calculateDeclaredBundleMetricsFromScheduled = (input: EngineV3Input, sched
   }
 
   return {
-    declaredResourceBundleCount: bundles.length,
+    declaredResourceBundleCount,
+    usableResourceBundleCount: validation.usableBundleCount,
+    invalidResourceBundleCount: validation.invalidBundleCount,
+    partiallyUsableResourceBundleCount: validation.partiallyUsableBundleCount,
+    resourceBundleValidationWarnings: validation.warnings.length,
     bundleComponentUsageCount,
     partialBundleUsageWarnings,
     bundleSpaceAffinityMatches,
@@ -503,7 +532,8 @@ export const diagnoseCompositeResources = (input: EngineV3Input, output: EngineO
   const declaredBundleMetrics = calculateDeclaredBundleMetricsFromScheduled(input, scheduled);
   const resourceDiagnosticWarnings = [...inferredWarnings, ...declaredBundleMetrics.warnings]
     .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message));
-  const declaredComponentSets = new Set((input.resourceBundles ?? []).map((bundle) => (input.resourceBundleComponents ?? [])
+  const validatedCatalog = validateResourceBundles(input);
+  const declaredComponentSets = new Set(validatedCatalog.usableBundles.map((bundle) => validatedCatalog.usableComponents
     .filter((component) => component.bundleId === bundle.id && component.resourceItemId != null)
     .map((component) => Number(component.resourceItemId))
     .sort((left, right) => left - right)
@@ -528,6 +558,10 @@ export const diagnoseCompositeResources = (input: EngineV3Input, output: EngineO
     compositeResourceCandidateCount: compositeResourceCandidates.length,
     resourceBundleConflictCount,
     declaredResourceBundleCount: declaredBundleMetrics.declaredResourceBundleCount,
+    usableResourceBundleCount: declaredBundleMetrics.usableResourceBundleCount,
+    invalidResourceBundleCount: declaredBundleMetrics.invalidResourceBundleCount,
+    partiallyUsableResourceBundleCount: declaredBundleMetrics.partiallyUsableResourceBundleCount,
+    resourceBundleValidationWarnings: declaredBundleMetrics.resourceBundleValidationWarnings,
     bundleComponentUsageCount: declaredBundleMetrics.bundleComponentUsageCount,
     partialBundleUsageWarnings: declaredBundleMetrics.partialBundleUsageWarnings,
     bundleSpaceAffinityMatches: declaredBundleMetrics.bundleSpaceAffinityMatches,

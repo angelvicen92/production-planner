@@ -123,3 +123,9 @@ El diagnóstico mantiene los candidatos inferidos de ID 017 y añade la comparac
 Las advertencias `PARTIAL_DECLARED_BUNDLE` y `BUNDLE_SPACE_AFFINITY_MISMATCH` son informativas. La primera aparece cuando se usa al menos un componente de un bundle pero faltan componentes requeridos; la segunda, cuando un bundle usado tiene afinidades declaradas pero el espacio actual no tiene afinidad positiva. Los switches se cuentan determinísticamente entre tareas consecutivas del mismo espacio que usan firmas de bundle distintas.
 
 El diagnóstico sigue sin modificar el output. Los bundles inferidos y declarados pueden coincidir (`declaredBundleCandidateMatches`) o divergir; esa diferencia sirve para revisión operativa, no para crear reglas automáticamente.
+
+## ID 020 — Calidad del catálogo declarado
+
+El diagnóstico de recursos incorpora las métricas `usableResourceBundleCount`, `invalidResourceBundleCount`, `partiallyUsableResourceBundleCount` y `resourceBundleValidationWarnings`. Los warnings estructurados del validador se integran en `resourceDiagnosticWarnings` con código estable, severidad y, cuando aplica, `bundleId`.
+
+Las métricas operativas de uso (`partialBundleUsageWarnings`, afinidades, switches y coherencia) se calculan exclusivamente sobre el catálogo validado. Por ello, un catálogo presente pero completamente inválido es visible en diagnóstico y neutral en scoring.

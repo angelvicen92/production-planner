@@ -96,3 +96,9 @@ El catálogo persistente pasa a formar parte opcional de `EngineInput` mediante 
 La identidad que conecta el snapshot del plan con un componente declarado es `resource_items.id`: cada `plan_resource_items.resource_item_id` se compara con `resource_bundle_components.resource_item_id`. Los componentes basados solo en `resources.id` se transportan en el contrato, pero todavía no intervienen en el scoring porque no existe una correspondencia inequívoca con el snapshot `plan_resource_items`.
 
 Los bundles activos aportan diagnóstico y desempate soft. No cambian disponibilidad, asignación hard, pools, locks, tareas ejecutadas ni factibilidad. Una tarea no necesita bundle y un plan sin bundles conserva score neutral (`bundleCoherencePenalty=0`). No se añade migración ni policy RLS en ID 019.
+
+## ID 020 — Contrato de fiabilidad del catálogo
+
+Antes de calcular cualquier señal soft, Engine V3 valida el catálogo declarado. Solo los bundles activos con al menos un componente utilizable forman el catálogo de scoring; componentes duplicados, referencias fuera del snapshot del plan y affinities hacia espacios desconocidos se excluyen. Una cantidad no finita o menor o igual que cero se normaliza a `1`, con warning explícito, para conservar un fallback soft determinista.
+
+El diagnóstico distingue bundles utilizables, parcialmente utilizables e inválidos. Los bundles inactivos no participan ni generan ruido por defecto. Si falla la lectura de una tabla de catálogo, `buildEngineInput` mantiene arrays vacíos para no romper la planificación y añade `resourceBundleLoadWarnings`, que después se publica como warning diagnóstico. Este contrato no modifica factibilidad, disponibilidad, locks ni hard constraints.

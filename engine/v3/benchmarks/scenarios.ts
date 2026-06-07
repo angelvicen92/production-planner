@@ -505,6 +505,56 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "La solución coherente mantiene bundle A en su espacio afín y se selecciona solo después de empatar hard constraints y métricas críticas.",
     riskNotes: ["Bundles siguen siendo soft", "Afinidad no bloqueante", "Comparación determinista de dos candidatos válidos"],
   },
+  {
+    id: "S",
+    name: "Partially invalid resource bundle catalog",
+    description: "Catálogo mixto con bundles válidos, un bundle vacío, duplicados y referencias desconocidas; solo la parte validada participa en scoring soft.",
+    input: baseInput([
+      { id: 19001, planId: PLAN_ID, templateId: 2901, templateName: "Validated bundle take 1", zoneId: 2, spaceId: 601, contestantId: 501, status: "pending", durationOverrideMin: 20 },
+      { id: 19002, planId: PLAN_ID, templateId: 2901, templateName: "Validated bundle take 2", zoneId: 2, spaceId: 601, contestantId: 502, status: "pending", durationOverrideMin: 20 },
+    ], {
+      workDay: { start: "09:00", end: "10:00" },
+      meal: { start: "12:00", end: "12:30" },
+      optimizerMainZoneId: 2, optimizerPrioritizeMainZone: false,
+      spaceNameById: { 601: "Validated Bundle Stage" },
+      planResourceItems: [
+        { id: 19511, resourceItemId: 19101, typeId: 12, name: "Camera S1", isAvailable: true },
+        { id: 19512, resourceItemId: 19102, typeId: 12, name: "Camera S2", isAvailable: true },
+        { id: 19521, resourceItemId: 19201, typeId: 13, name: "Sound S1", isAvailable: true },
+        { id: 19522, resourceItemId: 19202, typeId: 13, name: "Sound S2", isAvailable: true },
+      ],
+      resourceBundles: [
+        { id: "bundle-s1", name: "Camera S1 + Sound S1", isActive: true },
+        { id: "bundle-s2", name: "Camera S2 + Sound S2", isActive: true },
+        { id: "bundle-empty", name: "Empty active bundle", isActive: true },
+      ],
+      resourceBundleComponents: [
+        { id: "s1-camera", bundleId: "bundle-s1", resourceItemId: 19101, componentRole: "camera", quantity: 1, isRequired: true },
+        { id: "s1-camera-duplicate", bundleId: "bundle-s1", resourceItemId: 19101, componentRole: "camera", quantity: 1, isRequired: true },
+        { id: "s1-sound", bundleId: "bundle-s1", resourceItemId: 19201, componentRole: "sound", quantity: 1, isRequired: true },
+        { id: "s2-camera", bundleId: "bundle-s2", resourceItemId: 19102, componentRole: "camera", quantity: 1, isRequired: true },
+        { id: "s2-sound", bundleId: "bundle-s2", resourceItemId: 19202, componentRole: "sound", quantity: 1, isRequired: true },
+        { id: "s2-unknown", bundleId: "bundle-s2", resourceItemId: 19999, componentRole: "monitor", quantity: 1, isRequired: false },
+      ],
+      resourceBundleSpaceAffinities: [
+        { id: "s1-stage", bundleId: "bundle-s1", spaceId: 601, affinityScore: 5 },
+        { id: "s2-unknown-space", bundleId: "bundle-s2", spaceId: 699, affinityScore: 5 },
+      ],
+      enableLimitedBacktracking: false, enableOperationalNeighborhoods: false,
+    } as any),
+    benchmarkCandidateOutputs: [
+      { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+        { taskId: 19001, startPlanned: "09:00", endPlanned: "09:20", assignedSpace: 601, assignedResources: [19511, 19521] },
+        { taskId: 19002, startPlanned: "09:20", endPlanned: "09:40", assignedSpace: 601, assignedResources: [19511, 19521] },
+      ], unplanned: [], warnings: [] },
+      { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+        { taskId: 19001, startPlanned: "09:00", endPlanned: "09:20", assignedSpace: 601, assignedResources: [19511, 19521] },
+        { taskId: 19002, startPlanned: "09:20", endPlanned: "09:40", assignedSpace: 601, assignedResources: [19512, 19522] },
+      ], unplanned: [], warnings: [] },
+    ],
+    operationalExpectation: "El plan queda complete y hard-válido; el diagnóstico alerta del catálogo parcial y el scoring ignora todas las filas inválidas.",
+    riskNotes: ["Validación solo para scoring soft", "Bundle activo vacío excluido", "Duplicados y referencias desconocidas no alteran factibilidad"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

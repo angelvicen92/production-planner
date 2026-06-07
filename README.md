@@ -37,6 +37,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 017 — 2026-05-30 23:59 — Diagnóstico operativo de recursos compuestos en Motor V3 sin cambios DB
 - ID 018 — 2026-05-30 23:59 — Modelo DB aditivo de resource bundles y componentes
 - ID 019 — 2026-05-30 23:59 — Resource bundles como señal soft no vinculante en Motor V3
+- ID 020 — 2026-05-31 00:20 — Validador de resource bundles y contrato de fiabilidad para scoring soft
 
 ## Verificación básica
 

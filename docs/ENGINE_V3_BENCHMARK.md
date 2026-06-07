@@ -421,3 +421,18 @@ El comparador común selecciona el candidato coherente únicamente después de e
 - `selectedCandidateMetricsConsistent=true`.
 
 El runner imprime también uso de componentes, parciales, matches/mismatches, switch penalty y coincidencias entre bundles declarados y candidatos inferidos. R no prueba enforcement: prueba un desempate soft determinista.
+
+## ID 020 — Escenario S: catálogo de bundles parcialmente inválido
+
+El escenario **S — Partially invalid resource bundle catalog** combina dos bundles utilizables con un bundle activo vacío, un componente duplicado, una referencia a `resourceItem` inexistente y una affinity a un espacio desconocido. Compara dos outputs completos y hard-válidos para comprobar que solo el subconjunto validado participa en el desempate soft.
+
+Invariantes exigidos por el benchmark:
+
+- `complete=true` y `hardConstraintViolations=0`;
+- `usableResourceBundleCount > 0`;
+- al menos un bundle inválido o parcialmente utilizable;
+- `resourceBundleValidationWarnings > 0` y presencia de los códigos esperados;
+- `selectedCandidateMetricsConsistent=true`;
+- ninguna fila inválida modifica factibilidad ni se incorpora al cálculo de coherencia.
+
+Resultado de referencia de ID 020: `complete=true`, `hardConstraintViolations=0`, `usableResourceBundleCount=2`, `invalidResourceBundleCount=1`, `partiallyUsableResourceBundleCount=2`, `resourceBundleValidationWarnings=4` y `selectedCandidateMetricsConsistent=true`.

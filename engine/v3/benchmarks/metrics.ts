@@ -97,13 +97,19 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
       ? null
       : resourceDiagnostics.compositeResourceCandidateCount,
     declaredResourceBundleCount: resourceDiagnostics.declaredResourceBundleCount,
+    usableResourceBundleCount: resourceDiagnostics.usableResourceBundleCount,
+    invalidResourceBundleCount: resourceDiagnostics.invalidResourceBundleCount,
+    partiallyUsableResourceBundleCount: resourceDiagnostics.partiallyUsableResourceBundleCount,
+    resourceBundleValidationWarnings: resourceDiagnostics.resourceBundleValidationWarnings,
     bundleComponentUsageCount: resourceDiagnostics.bundleComponentUsageCount,
     partialBundleUsageWarnings: resourceDiagnostics.partialBundleUsageWarnings,
     bundleSpaceAffinityMatches: resourceDiagnostics.bundleSpaceAffinityMatches,
     bundleSpaceAffinityMismatches: resourceDiagnostics.bundleSpaceAffinityMismatches,
     bundleSwitchPenalty: resourceDiagnostics.bundleSwitchPenalty,
     declaredBundleCandidateMatches: resourceDiagnostics.declaredBundleCandidateMatches,
-    resourceDiagnosticWarnings: resourceDiagnostics.resourceSwitchCount === null && resourceDiagnostics.resourcePoolPressureSummary === null
+    resourceDiagnosticWarnings: resourceDiagnostics.resourceSwitchCount === null
+      && resourceDiagnostics.resourcePoolPressureSummary === null
+      && resourceDiagnostics.resourceDiagnosticWarnings.length === 0
       ? null
       : resourceDiagnostics.resourceDiagnosticWarnings.map((warning) => `${warning.code}: ${warning.message}`),
     cpSatAttempted: output.v3Meta?.cpSatAttempted ?? null,

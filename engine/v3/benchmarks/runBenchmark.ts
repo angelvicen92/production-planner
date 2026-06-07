@@ -83,6 +83,10 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  resourceSwitchCount: ${formatNullable(metrics.resourceSwitchCount)}`);
   console.log(`  compositeResourceCandidateCount: ${formatNullable(metrics.compositeResourceCandidateCount)}`);
   console.log(`  declaredResourceBundleCount: ${metrics.declaredResourceBundleCount}`);
+  console.log(`  usableResourceBundleCount: ${metrics.usableResourceBundleCount}`);
+  console.log(`  invalidResourceBundleCount: ${metrics.invalidResourceBundleCount}`);
+  console.log(`  partiallyUsableResourceBundleCount: ${metrics.partiallyUsableResourceBundleCount}`);
+  console.log(`  resourceBundleValidationWarnings: ${metrics.resourceBundleValidationWarnings}`);
   console.log(`  bundleComponentUsageCount: ${metrics.bundleComponentUsageCount}`);
   console.log(`  partialBundleUsageWarnings: ${metrics.partialBundleUsageWarnings}`);
   console.log(`  bundleSpaceAffinityMatches: ${metrics.bundleSpaceAffinityMatches}`);
@@ -137,7 +141,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 const results = benchmarkScenarios.map(runScenario);
