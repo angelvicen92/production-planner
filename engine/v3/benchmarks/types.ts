@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "AA" | "AB";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;

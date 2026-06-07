@@ -672,6 +672,50 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "The gate reports SPACE_OVERLAP with concurrency 7, capacity 6 and source transport_van_capacity.",
     riskNotes: ["Synthetic over-capacity transport seed", "Must remain infeasible"],
   },
+  {
+    id: "AA",
+    name: "Coach split day compaction",
+    description: "Un coach tiene dos sesiones separadas por un hueco grande y la segunda puede adelantarse sin tocar el plató principal.",
+    input: baseInput([
+      { id: 27001, planId: PLAN_ID, templateId: 3701, templateName: "Coach bloque temprano", zoneId: 2, spaceId: 201, contestantId: 1301, status: "pending", durationOverrideMin: 30 },
+      { id: 27002, planId: PLAN_ID, templateId: 3702, templateName: "Coach bloque tardío", zoneId: 2, spaceId: 201, contestantId: 1302, status: "pending", durationOverrideMin: 30 },
+      { id: 27003, planId: PLAN_ID, templateId: 3703, templateName: "Main continuo A", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 1303, status: "pending", durationOverrideMin: 30 },
+      { id: 27004, planId: PLAN_ID, templateId: 3704, templateName: "Main continuo B", zoneId: MAIN_ZONE_ID, spaceId: MAIN_STAGE_SPACE_ID, contestantId: 1304, status: "pending", durationOverrideMin: 30 },
+    ], {
+      workDay: { start: "09:00", end: "14:00" },
+      planResourceItems: [{ id: COACH_ALPHA_PLAN_RESOURCE_ID, resourceItemId: 9001, typeId: COACH_TYPE_ID, name: "Coach benchmark", isAvailable: true }],
+    }),
+    neighborhoodSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 27001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_ALPHA_PLAN_RESOURCE_ID] },
+      { taskId: 27002, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [COACH_ALPHA_PLAN_RESOURCE_ID] },
+      { taskId: 27003, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [] },
+      { taskId: 27004, startPlanned: "10:30", endPlanned: "11:00", assignedResources: [] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "La búsqueda genera y acepta compactación, reduce maxGap del coach, mantiene plató en cero huecos y conserva hard violations en cero.",
+    riskNotes: ["Microescenario determinista", "La mejora no depende de nombres ni IDs de producción"],
+  },
+  {
+    id: "AB",
+    name: "Talent idle compaction",
+    description: "Un talent tiene una preparación temprana y un ensayo tardío que puede acercarse respetando IN, OUT y dependencia.",
+    input: baseInput([
+      { id: 28001, planId: PLAN_ID, templateId: 3801, templateName: "IN", zoneId: 2, spaceId: 801, contestantId: 1401, status: "pending", durationOverrideMin: 10 },
+      { id: 28002, planId: PLAN_ID, templateId: 3802, templateName: "Prep temprana", zoneId: 2, spaceId: 202, contestantId: 1401, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [28001] },
+      { id: 28003, planId: PLAN_ID, templateId: 3803, templateName: "Ensayo tardío", zoneId: 2, spaceId: 203, contestantId: 1401, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [28002] },
+      { id: 28004, planId: PLAN_ID, templateId: 3804, templateName: "OUT", zoneId: 2, spaceId: 801, contestantId: 1401, status: "pending", durationOverrideMin: 10, dependsOnTaskIds: [28003] },
+    ], {
+      workDay: { start: "08:30", end: "14:00" }, optimizerMainZoneId: null,
+      arrivalTaskTemplateName: "IN", departureTaskTemplateName: "OUT", transportSpaceId: 801, transportVanCapacity: 6, vanCapacity: 6,
+    }),
+    neighborhoodSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 28001, startPlanned: "08:50", endPlanned: "09:00", assignedResources: [] },
+      { taskId: 28002, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+      { taskId: 28003, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [] },
+      { taskId: 28004, startPlanned: "12:30", endPlanned: "12:40", assignedResources: [] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "La compactación reduce span e idle del talent sin alterar el orden IN -> prep -> ensayo -> OUT ni generar hard violations.",
+    riskNotes: ["Transporte modelado con templates configurados", "Dependencias verificadas por hard validation"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

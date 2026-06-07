@@ -37,6 +37,12 @@ export interface EngineRunDiagnostics {
     neighborhoodSearchAttempted: boolean;
     neighborhoodCandidatesGenerated: number;
     neighborhoodCandidateAccepted: boolean;
+    operationalCompactionAttempted: boolean;
+    operationalCompactionCandidatesGenerated: number;
+    operationalCompactionAccepted: boolean;
+    operationalCompactionReason: string | null;
+    operationalCompactionMetricsBefore: Record<string, number> | null;
+    operationalCompactionMetricsAfter: Record<string, number> | null;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -125,6 +131,12 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       neighborhoodSearchAttempted: meta?.neighborhoodSearchAttempted ?? false,
       neighborhoodCandidatesGenerated: meta?.neighborhoodCandidatesGenerated ?? 0,
       neighborhoodCandidateAccepted: meta?.neighborhoodCandidateAccepted ?? false,
+      operationalCompactionAttempted: meta?.operationalCompactionAttempted ?? false,
+      operationalCompactionCandidatesGenerated: meta?.operationalCompactionCandidatesGenerated ?? 0,
+      operationalCompactionAccepted: meta?.operationalCompactionAccepted ?? false,
+      operationalCompactionReason: compactText(meta?.operationalCompactionReason),
+      operationalCompactionMetricsBefore: meta?.operationalCompactionMetricsBefore ?? null,
+      operationalCompactionMetricsAfter: meta?.operationalCompactionMetricsAfter ?? null,
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

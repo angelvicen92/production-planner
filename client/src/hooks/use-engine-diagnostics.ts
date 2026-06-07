@@ -37,6 +37,12 @@ export type EngineDiagnosticsMetadata = {
   neighborhoodSearchAttempted?: boolean | null;
   neighborhoodCandidatesGenerated?: number | null;
   neighborhoodCandidateAccepted?: boolean | null;
+  operationalCompactionAttempted?: boolean | null;
+  operationalCompactionCandidatesGenerated?: number | null;
+  operationalCompactionAccepted?: boolean | null;
+  operationalCompactionReason?: string | null;
+  operationalCompactionMetricsBefore?: Record<string, unknown> | null;
+  operationalCompactionMetricsAfter?: Record<string, unknown> | null;
   cpSatAttempted?: boolean | null;
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;

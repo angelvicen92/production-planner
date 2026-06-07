@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
-import { generatePlanV3 } from "./index";
+import { generatePlanV3, runOperationalNeighborhoodSelection } from "./index";
 import {
   generateOperationalNeighborhoodCandidates,
   generateOperationalNeighborhoodSearchCandidates,
@@ -312,3 +312,48 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
 }
 
 console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
+
+// ID 031 — la compactación no mueve estados ejecutados/locks y nunca aumenta huecos de plató.
+{
+  const input = baseInput([
+    { id: 101, planId: PLAN_ID, templateId: 101, zoneId: 2, spaceId: 201, contestantId: 11, status: "done", durationOverrideMin: 30, startPlanned: "09:00", endPlanned: "09:30" },
+    { id: 102, planId: PLAN_ID, templateId: 102, zoneId: 2, spaceId: 201, contestantId: 12, status: "pending", durationOverrideMin: 30 },
+    { id: 103, planId: PLAN_ID, templateId: 103, zoneId: 1, spaceId: 101, contestantId: 13, status: "pending", durationOverrideMin: 30 },
+    { id: 104, planId: PLAN_ID, templateId: 104, zoneId: 1, spaceId: 101, contestantId: 14, status: "pending", durationOverrideMin: 30 },
+  ], { workDay: { start: "09:00", end: "14:00" } });
+  const seed = completeOutput([
+    { taskId: 101, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 102, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [COACH_A] },
+    { taskId: 103, startPlanned: "10:00", endPlanned: "10:30" },
+    { taskId: 104, startPlanned: "10:30", endPlanned: "11:00" },
+  ]);
+  const candidates = generateOperationalNeighborhoodCandidates(input, seed, { allowedReasons: ["coach_gap_compaction", "late_block_pull_forward", "early_block_push_later"] });
+  assert.ok(candidates.length > 0);
+  for (const candidate of candidates) {
+    assert.deepEqual(byId(candidate.output).get(101), byId(seed).get(101));
+    assert.ok((calculateMainStageGaps(input, candidate.output)?.minutes ?? 0) <= (calculateMainStageGaps(input, seed)?.minutes ?? 0));
+    assert.equal(countHardConstraintViolations(input, candidate.output), 0);
+  }
+}
+
+// ID 031 — si el caso real-like está fragmentado pero todo está fijo, la metadata explica por qué se conserva.
+{
+  const input = baseInput([
+    { id: 201, planId: PLAN_ID, templateId: 201, zoneId: 2, spaceId: 201, contestantId: 21, status: "pending", durationOverrideMin: 30 },
+    { id: 202, planId: PLAN_ID, templateId: 202, zoneId: 2, spaceId: 201, contestantId: 22, status: "pending", durationOverrideMin: 30 },
+  ], {
+    workDay: { start: "09:00", end: "14:00" },
+    locks: [
+      { id: 201, planId: PLAN_ID, taskId: 201, lockType: "time", lockedStart: "09:00", lockedEnd: "09:30" },
+      { id: 202, planId: PLAN_ID, taskId: 202, lockType: "time", lockedStart: "12:00", lockedEnd: "12:30" },
+    ],
+  });
+  const seed = completeOutput([
+    { taskId: 201, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 202, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [COACH_A] },
+  ]);
+  const selected = runOperationalNeighborhoodSelection(input, seed, "phaseA_greedy");
+  assert.equal(selected.meta.operationalCompactionAttempted, true);
+  assert.equal(selected.meta.operationalCompactionAccepted, false);
+  assert.match(String(selected.meta.operationalCompactionReason), /no candidate improved operational span/);
+}

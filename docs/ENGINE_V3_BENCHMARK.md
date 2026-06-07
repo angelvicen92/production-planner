@@ -483,3 +483,10 @@ W protege contra los falsos positivos y la explosión pairwise del caso real. X 
 |---|---:|---|---|
 | Y — Transporte usa capacidad de furgoneta | `vanCapacity=6` | seis `IN` simultáneas y tres `OUT` simultáneas | completo, `hardConstraintViolations=0`, sin `SPACE_OVERLAP` |
 | Z — Transporte excede capacidad de furgoneta | `vanCapacity=6` | siete `IN` simultáneas | `infeasible`, `SPACE_OVERLAP`, `observedConcurrency=7`, `spaceCapacity=6`, `capacitySource=transport_van_capacity` |
+
+## ID 031 — Escenarios AA/AB de compactación
+
+- **AA — Coach split day compaction** exige búsqueda intentada, candidato generado y aceptado, reducción de `maxCoachGapMinutes`, Main Stage sin empeorar y cero hard violations.
+- **AB — Talent idle compaction** exige reducción de span/idle moviendo un bloque tardío acotado, con dependencias y transporte IN/OUT válidos y cero hard violations.
+
+Ambos escenarios forman parte del benchmark quick. Son microescenarios generalizables y deterministas; no contienen nombres ni reglas específicas del plan real.

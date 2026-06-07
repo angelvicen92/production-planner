@@ -8,6 +8,7 @@ import {
 import { calculateRestrictiveTalentLatenessPenalty, getDependencyIds } from "./operationalPriority";
 import { calculateDeclaredBundleMetrics } from "./resourceDiagnostics";
 import { validateHardConstraints } from "./hardValidation";
+import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 
 export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
 
@@ -22,6 +23,12 @@ export interface CandidateSolutionScore {
   dependencyFeederPenalty: number;
   coachSwitchCount: number | null;
   coachSwitchPenalty: number;
+  coachIdlePenalty: number;
+  coachSpanPenalty: number;
+  coachSplitDayPenalty: number;
+  talentIdlePenalty: number;
+  talentSpanPenalty: number;
+  maxGapPenalty: number;
   bundleCoherencePenalty: number;
   bundleSwitchPenalty: number;
   partialBundleUsageWarnings: number;
@@ -80,6 +87,7 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
   const coachSwitchCount = operationalMetrics.coachSwitchCount;
   const coachSwitchPenalty = finiteOrZero(operationalMetrics.coachSwitchPenalty);
   const bundleMetrics = calculateDeclaredBundleMetrics(input, output);
+  const compactionMetrics = calculateEngineOperationalCompactionMetrics(input, output);
   const restrictiveTalentAverageStartOffset = operationalMetrics.restrictiveTalentAverageStartOffset;
   const makespan = finiteOrLarge(operationalMetrics.makespan);
   const tieBreakKey = (output.plannedTasks ?? [])
@@ -96,6 +104,12 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     `feeders=${dependencyFeederPenalty}`,
     `coachSwitchCount=${coachSwitchCount ?? "n/a"}`,
     `coachSwitchPenalty=${coachSwitchPenalty}`,
+    `coachIdle=${compactionMetrics.coachIdlePenalty}`,
+    `coachSpan=${compactionMetrics.coachSpanPenalty}`,
+    `coachSplit=${compactionMetrics.coachSplitDayPenalty}`,
+    `talentIdle=${compactionMetrics.talentIdlePenalty}`,
+    `talentSpan=${compactionMetrics.talentSpanPenalty}`,
+    `maxGap=${compactionMetrics.maxGapPenalty}`,
     `bundleCoherencePenalty=${bundleMetrics.bundleCoherencePenalty}`,
     `bundleSwitchPenalty=${bundleMetrics.bundleSwitchPenalty}`,
     `bundleAffinity=${bundleMetrics.bundleSpaceAffinityMatches}/${bundleMetrics.bundleSpaceAffinityMismatches}`,
@@ -113,6 +127,12 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     dependencyFeederPenalty,
     coachSwitchCount,
     coachSwitchPenalty,
+    coachIdlePenalty: compactionMetrics.coachIdlePenalty,
+    coachSpanPenalty: compactionMetrics.coachSpanPenalty,
+    coachSplitDayPenalty: compactionMetrics.coachSplitDayPenalty,
+    talentIdlePenalty: compactionMetrics.talentIdlePenalty,
+    talentSpanPenalty: compactionMetrics.talentSpanPenalty,
+    maxGapPenalty: compactionMetrics.maxGapPenalty,
     bundleCoherencePenalty: bundleMetrics.bundleCoherencePenalty,
     bundleSwitchPenalty: bundleMetrics.bundleSwitchPenalty,
     partialBundleUsageWarnings: bundleMetrics.partialBundleUsageWarnings,
@@ -141,6 +161,12 @@ export const compareCandidateScores = (a: CandidateSolutionScore, b: CandidateSo
     [a.restrictiveTalentLatenessPenalty, b.restrictiveTalentLatenessPenalty, true],
     [a.dependencyFeederPenalty, b.dependencyFeederPenalty, true],
     [a.coachSwitchPenalty, b.coachSwitchPenalty, true],
+    [a.coachIdlePenalty, b.coachIdlePenalty, true],
+    [a.coachSpanPenalty, b.coachSpanPenalty, true],
+    [a.coachSplitDayPenalty, b.coachSplitDayPenalty, true],
+    [a.talentIdlePenalty, b.talentIdlePenalty, true],
+    [a.talentSpanPenalty, b.talentSpanPenalty, true],
+    [a.maxGapPenalty, b.maxGapPenalty, true],
     [a.bundleCoherencePenalty, b.bundleCoherencePenalty, true],
     [a.makespan, b.makespan, true],
   ];
@@ -179,6 +205,12 @@ export const explainCandidateComparison = (
       : `raw coach-switch count ${selected.coachSwitchCount ?? "n/a"} vs ${rejected.coachSwitchCount ?? "n/a"}`;
     return `${selectedSource} selected: lower weighted coach-switch penalty (${rawComparison})`;
   }
+  if (selected.coachIdlePenalty !== rejected.coachIdlePenalty) return `${selectedSource} selected: lower coach idle`;
+  if (selected.coachSpanPenalty !== rejected.coachSpanPenalty) return `${selectedSource} selected: lower coach operational span`;
+  if (selected.coachSplitDayPenalty !== rejected.coachSplitDayPenalty) return `${selectedSource} selected: fewer coach split days`;
+  if (selected.talentIdlePenalty !== rejected.talentIdlePenalty) return `${selectedSource} selected: lower talent idle`;
+  if (selected.talentSpanPenalty !== rejected.talentSpanPenalty) return `${selectedSource} selected: lower talent operational span`;
+  if (selected.maxGapPenalty !== rejected.maxGapPenalty) return `${selectedSource} selected: lower operational max gaps`;
   if (selected.bundleCoherencePenalty !== rejected.bundleCoherencePenalty) {
     return `${selectedSource} selected: better declared bundle/resource coherence`;
   }

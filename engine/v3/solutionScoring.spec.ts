@@ -177,3 +177,39 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
   assert.ok(compareCandidateSolutions(scenario.input, coherent, incoherent) > 0);
   assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", scoreCandidateSolution(scenario.input, coherent), scoreCandidateSolution(scenario.input, incoherent)), /bundle|resource coherence/i);
 }
+
+// ID 031 — compactación de coaches desempata después de criterios hard y de plató.
+{
+  const input = baseInput({
+    optimizerMainZoneId: null,
+    planResourceItems: [{ id: 501, resourceItemId: 9001, typeId: 10, name: "Coach", isAvailable: true }],
+    tasks: [
+      { id: 1, planId: 7007, templateId: 1, zoneId: 2, spaceId: 201, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+      { id: 2, planId: 7007, templateId: 2, zoneId: 2, spaceId: 202, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    ] as any,
+  });
+  const compact = { ...output([]), plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [501] },
+    { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [501] },
+  ] };
+  const split = { ...output([]), plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [501] },
+    { taskId: 2, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [501] },
+  ] };
+  assert.ok(scoreCandidateSolution(input, compact).coachIdlePenalty < scoreCandidateSolution(input, split).coachIdlePenalty);
+  assert.ok(compareCandidateSolutions(input, compact, split) > 0);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower coach idle/);
+}
+
+// ID 031 — compactación de talents desempata cuando los criterios superiores permanecen iguales.
+{
+  const input = baseInput({ optimizerMainZoneId: null, tasks: [
+    { id: 1, planId: 7007, templateId: 1, zoneId: 2, spaceId: 201, contestantId: 9, status: "pending", durationOverrideMin: 30 },
+    { id: 2, planId: 7007, templateId: 2, zoneId: 2, spaceId: 202, contestantId: 9, status: "pending", durationOverrideMin: 30 },
+  ] as any });
+  const compact = output([[1, "09:00", "09:30"], [2, "09:30", "10:00"]]);
+  const split = output([[1, "09:00", "09:30"], [2, "10:00", "10:30"]]);
+  assert.ok(scoreCandidateSolution(input, compact).talentIdlePenalty < scoreCandidateSolution(input, split).talentIdlePenalty);
+  assert.ok(compareCandidateSolutions(input, compact, split) > 0);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower talent idle/);
+}

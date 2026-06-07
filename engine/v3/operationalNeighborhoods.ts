@@ -11,13 +11,18 @@ import {
 } from "./metrics";
 import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 import { compareCandidateSolutions } from "./solutionScoring";
+import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 
 export type OperationalNeighborhoodReason =
   | "main_stage_gap_fill"
   | "feeder_advance"
   | "coach_block_compaction"
   | "restrictive_talent_bundle"
-  | "advance_restrictive_talent";
+  | "advance_restrictive_talent"
+  | "coach_gap_compaction"
+  | "talent_day_compaction"
+  | "late_block_pull_forward"
+  | "early_block_push_later";
 
 export interface OperationalNeighborhoodCandidate {
   output: EngineOutput;
@@ -59,6 +64,8 @@ const ALLOWED_DEPTH_2_CHAINS = new Map<OperationalNeighborhoodReason, Operationa
   ["feeder_advance", ["main_stage_gap_fill", "coach_block_compaction"]],
   ["restrictive_talent_bundle", ["feeder_advance"]],
   ["coach_block_compaction", ["main_stage_gap_fill"]],
+  ["coach_gap_compaction", ["late_block_pull_forward"]],
+  ["talent_day_compaction", ["late_block_pull_forward", "early_block_push_later"]],
 ]);
 
 const toHHMM = (minutes: number): string => {
@@ -363,11 +370,87 @@ const generateRestrictiveTalentBundleCandidates = (
   }
 };
 
+
+const improvesOperationalCompaction = (input: EngineV3Input, base: EngineOutput, candidate: EngineOutput): boolean => {
+  const before = calculateEngineOperationalCompactionMetrics(input, base);
+  const after = calculateEngineOperationalCompactionMetrics(input, candidate);
+  return after.coachIdlePenalty < before.coachIdlePenalty
+    || after.coachSpanPenalty < before.coachSpanPenalty
+    || after.coachSplitDayPenalty < before.coachSplitDayPenalty
+    || after.talentIdlePenalty < before.talentIdlePenalty
+    || after.talentSpanPenalty < before.talentSpanPenalty
+    || after.maxGapPenalty < before.maxGapPenalty;
+};
+
+type CompactionRow = { taskId: number; start: number; end: number };
+
+const compactionGroups = (input: EngineV3Input, output: EngineOutput, kind: "coach" | "talent"): CompactionRow[][] => {
+  const coachIds = getCoachResourceIds(input);
+  const grouped = new Map<number, CompactionRow[]>();
+  for (const view of getPlannedViews(input, output)) {
+    const start = toMinutes(view.startPlanned);
+    const end = toMinutes(view.endPlanned);
+    if (start === null || end === null || end <= start) continue;
+    const ids = kind === "coach"
+      ? view.assignedResources.filter((id) => coachIds.has(Number(id))).map(Number)
+      : [Number(view.task.contestantId ?? NaN)].filter((id) => Number.isFinite(id) && id > 0);
+    for (const id of ids) {
+      const bucket = grouped.get(id) ?? [];
+      bucket.push({ taskId: view.taskId, start, end });
+      grouped.set(id, bucket);
+    }
+  }
+  return [...grouped.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([, rows]) => rows.sort((a, b) => a.start - b.start || a.taskId - b.taskId));
+};
+
+const generatePersonCompactionCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+  kind: "coach" | "talent", move: "pull" | "push", reason: OperationalNeighborhoodReason, minimumGap: number,
+): void => {
+  if (!diagnostics.attemptedTypes.includes(reason)) diagnostics.attemptedTypes.push(reason);
+  const fixed = fixedTaskIds(input);
+  let attempts = 0;
+  for (const rows of compactionGroups(input, output, kind)) {
+    for (let index = 1; index < rows.length && attempts < maxAttempts && results.length < maxCandidates; index++) {
+      const previous = rows[index - 1];
+      const next = rows[index];
+      if (next.start - previous.end < minimumGap) continue;
+      const moving = move === "pull" ? next : previous;
+      if (fixed.has(moving.taskId)) continue;
+      const target = move === "pull" ? previous.end : next.start - (moving.end - moving.start);
+      if (target === moving.start || target < 0) continue;
+      attempts += 1;
+      const moves = new Map<number, number>([[moving.taskId, target]]);
+      if (move === "pull") {
+        const shift = target - moving.start;
+        let blockEnd = moving.end;
+        for (let followerIndex = index + 1; followerIndex < rows.length && moves.size < 3; followerIndex++) {
+          const follower = rows[followerIndex];
+          if (follower.start - blockEnd >= 45 || fixed.has(follower.taskId)) break;
+          moves.set(follower.taskId, follower.start + shift);
+          blockEnd = Math.max(blockEnd, follower.end);
+        }
+      }
+      const candidate = cloneWithMoves(output, moves);
+      if (!candidate || !improvesOperationalCompaction(input, output, candidate)) {
+        incrementRejected(diagnostics, "no_operational_compaction_improvement");
+        continue;
+      }
+      appendIfSafe(input, output, candidate, reason, results, seen, maxCandidates, diagnostics);
+    }
+  }
+};
+
 export const shouldAttemptOperationalNeighborhoods = (input: EngineV3Input, output: EngineOutput): boolean => {
   if ((input as any)?.enableOperationalNeighborhoods === false || !output.complete || countHardConstraintViolations(input, output) > 0) return false;
   const views = getPlannedViews(input, output);
   if (views.some((view) => isRestrictiveTask(input, view.task))) return true;
   if ((calculateMainStageGaps(input, output)?.count ?? 0) > 0) return true;
+  const compaction = calculateEngineOperationalCompactionMetrics(input, output);
+  if (compaction.needsCompaction) return true;
   const coachIds = getCoachResourceIds(input);
   if (views.filter((view) => view.assignedResources.some((id) => coachIds.has(Number(id)))).length >= 3) return true;
   return feederTaskIds(input).size > 0;
@@ -392,12 +475,26 @@ export const generateOperationalNeighborhoodCandidates = (
     "advance_restrictive_talent",
     "coach_block_compaction",
     "restrictive_talent_bundle",
+    "coach_gap_compaction",
+    "talent_day_compaction",
+    "late_block_pull_forward",
+    "early_block_push_later",
   ]);
   if (allowed.has("main_stage_gap_fill")) generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("feeder_advance")) generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("advance_restrictive_talent")) generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("coach_block_compaction")) generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("restrictive_talent_bundle")) generateRestrictiveTalentBundleCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
+  if (allowed.has("coach_gap_compaction")) generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "coach", "pull", "coach_gap_compaction", 90);
+  if (allowed.has("talent_day_compaction")) generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "talent", "pull", "talent_day_compaction", 120);
+  if (allowed.has("late_block_pull_forward")) {
+    generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "coach", "pull", "late_block_pull_forward", 45);
+    generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "talent", "pull", "late_block_pull_forward", 45);
+  }
+  if (allowed.has("early_block_push_later")) {
+    generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "coach", "push", "early_block_push_later", 45);
+    generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "talent", "push", "early_block_push_later", 45);
+  }
   return results.slice(0, maxCandidates);
 };
 

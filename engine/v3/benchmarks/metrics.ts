@@ -64,8 +64,8 @@ export const calculateMetrics = (input: EngineV3Input, output: EngineOutput, run
     && selectedCandidateMetrics.bundleSpaceAffinityMatches === resourceDiagnostics.bundleSpaceAffinityMatches
     && selectedCandidateMetrics.bundleSpaceAffinityMismatches === resourceDiagnostics.bundleSpaceAffinityMismatches
     && selectedCandidateMetrics.restrictiveTalentAverageStartOffset === operationalMetrics.restrictiveTalentAverageStartOffset
-    && selectedCandidateMetrics.mainStageGapMinutes === operationalMetrics.mainStageGapMinutes
-    && selectedCandidateMetrics.mainStageGapCount === operationalMetrics.mainStageGapCount
+    && selectedCandidateMetrics.mainStageGapMinutes === (operationalMetrics.mainStageGapMinutes ?? 0)
+    && selectedCandidateMetrics.mainStageGapCount === (operationalMetrics.mainStageGapCount ?? 0)
     && selectedCandidateMetrics.makespan === operationalMetrics.makespan
     && selectedCandidateMetrics.hardConstraintViolations === operationalMetrics.hardConstraintViolations
   );

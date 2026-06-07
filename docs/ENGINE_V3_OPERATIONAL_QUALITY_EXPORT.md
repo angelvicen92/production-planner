@@ -100,3 +100,9 @@ Elegir el siguiente objetivo según la evidencia real:
 - si transporte aparece disperso, revisar el objetivo de agrupación sin relajar capacidad.
 
 ID 030 no implementa ninguna de esas modificaciones del motor.
+
+## ID 031 — Metadata de compactación
+
+Desde ID 031 el export (versión 5) incluye en `intelligence` el intento, número de candidatos, aceptación, razón y métricas compactas antes/después de la búsqueda operacional. Las métricas descriptivas `operationalQuality` siguen calculándose sobre el planning final para conservar el ranking y warnings orientados a revisión humana; la metadata del motor permite explicar además por qué se exploró o se conservó el greedy.
+
+Véase `docs/ENGINE_V3_OPERATIONAL_COMPACTION.md` para umbrales, orden de scoring y límites de seguridad.
