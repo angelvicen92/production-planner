@@ -1,10 +1,16 @@
-import { AlertCircle, CheckCircle2, Cpu, Info, TriangleAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, Cpu, Download, Info, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEngineDiagnostics, type EngineDiagnosticWarning } from "@/hooks/use-engine-diagnostics";
+import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
+import {
+  buildEngineDiagnosticsSnapshot,
+  engineDiagnosticsFilename,
+} from "@/lib/engine-diagnostics-export";
 import { cn } from "@/lib/utils";
 
 const MAX_WARNINGS_SHOWN = 8;
@@ -93,6 +99,7 @@ function WarningRow({ warning }: { warning: EngineDiagnosticWarning }) {
 
 export function PlanEngineDiagnostics({ planId }: { planId: number }) {
   const { role } = useUserRole();
+  const { toast } = useToast();
   const diagnosticsQuery = useEngineDiagnostics(planId);
 
   // Do not hide the panel while role resolution is pending or unavailable.
@@ -152,6 +159,55 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
     ? new Intl.DateTimeFormat("es-ES", { dateStyle: "short", timeStyle: "short" }).format(new Date(diagnostics.createdAt))
     : null;
 
+  const serializeSnapshot = () => {
+    const snapshot = buildEngineDiagnosticsSnapshot(diagnostics, { planId });
+    return { snapshot, json: JSON.stringify(snapshot, null, 2) };
+  };
+
+  const copyDiagnostics = async () => {
+    if (!navigator.clipboard?.writeText) {
+      toast({
+        title: "No se pudo copiar el diagnóstico",
+        description: "El navegador no permite acceder al portapapeles. Puedes descargar el JSON.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { json } = serializeSnapshot();
+      await navigator.clipboard.writeText(json);
+      toast({ title: "Diagnóstico copiado", description: "El JSON compacto está en el portapapeles." });
+    } catch {
+      toast({
+        title: "No se pudo copiar el diagnóstico",
+        description: "Revisa los permisos del portapapeles o descarga el JSON.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadDiagnostics = () => {
+    try {
+      const { snapshot, json } = serializeSnapshot();
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = engineDiagnosticsFilename(snapshot);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Diagnóstico descargado", description: "Se ha generado un snapshot JSON compacto." });
+    } catch {
+      toast({
+        title: "No se pudo descargar el diagnóstico",
+        description: "Vuelve a intentarlo desde este panel.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -164,14 +220,24 @@ export function PlanEngineDiagnostics({ planId }: { planId: number }) {
               Última ejecución V3{createdAt ? ` · ${createdAt}` : ""}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="capitalize">{label(diagnostics.solutionSource)}</Badge>
-            <Badge
-              variant={isHealthy ? "default" : diagnostics.status === "infeasible" || diagnostics.status === "error" ? "destructive" : "secondary"}
-              className="capitalize"
-            >
-              {status}
-            </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="capitalize">{label(diagnostics.solutionSource)}</Badge>
+              <Badge
+                variant={isHealthy ? "default" : diagnostics.status === "infeasible" || diagnostics.status === "error" ? "destructive" : "secondary"}
+                className="capitalize"
+              >
+                {status}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={copyDiagnostics}>
+                <Copy /> Copiar JSON
+              </Button>
+              <Button type="button" size="sm" variant="secondary" onClick={downloadDiagnostics}>
+                <Download /> Descargar JSON
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
