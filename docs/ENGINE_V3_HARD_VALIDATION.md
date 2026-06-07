@@ -94,3 +94,11 @@ Una ventana flexible sin bloque asignado no crea hard violations. ID 027 no rela
 El contrato opcional del input es `spaceCapacityById` (con alias compatible `spaceConcurrencyById`). Un valor ausente, no numérico o menor que uno conserva el comportamiento seguro histórico: capacidad 1. El esquema DB actual no contiene un campo de capacidad, así que ID 028 no añade migración y `buildInput` solo reconoce defensivamente nombres de campo que alguna integración pudiera aportar.
 
 Cada detalle agregado de `SPACE_OVERLAP` expone `spaceId`, `spaceName`, `spaceCapacity`, `observedConcurrency`, intervalo y listas compactas de `taskIds`, `taskNames` y `templateNames`. Se evita la explosión combinatoria: tres tareas sobre capacidad 2 producen un tramo agregado, no tres pares.
+
+## ID 029 — Transporte y capacidad de furgoneta
+
+`SPACE_OVERLAP` resuelve ahora la capacidad mediante una única fuente compartida por Phase A, `validateCandidate` y el gate final. Si el `spaceId` corresponde al espacio de Transporte resuelto desde las plantillas/tareas `IN` y `OUT`, una `vanCapacity` positiva prevalece como capacidad operativa. No existe ningún id de espacio hardcodeado; el nombre `Transporte` es únicamente un fallback defensivo para inputs legacy.
+
+El detalle mantiene `spaceName`, `spaceCapacity` y `observedConcurrency`, y añade `capacitySource`. Los valores posibles son `transport_van_capacity`, `space_max_concurrency` y `default_exclusive`. Con capacidad de furgoneta 6, concurrencias 3 o 6 son válidas y concurrencia 7 genera una violación agregada con capacidad 6.
+
+Esta excepción está limitada al espacio de Transporte identificado. Todos los demás espacios conservan capacidad explícita general o exclusividad 1, por lo que ID 029 no relaja restricciones generales ni oculta un `SPACE_OVERLAP` real.

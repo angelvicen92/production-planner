@@ -203,4 +203,69 @@ const task = (id: number, contestantId: number, spaceId: number, extra: Partial<
   assert.equal(result.hardConstraintViolations, 0, "meal availability windows must not create bulk hard violations");
 }
 
+// ID 029 — Transporte uses the configured van capacity, without relying on a fixed space id.
+{
+  const transportSpaceId = 749;
+  const tasks = Array.from({ length: 6 }, (_, index) => task(700 + index, 700 + index, transportSpaceId, { templateName: "IN", durationOverrideMin: 5 }));
+  const caseInput = input(tasks, {
+    arrivalTaskTemplateName: "IN",
+    departureTaskTemplateName: "OUT",
+    transportSpaceId,
+    transportVanCapacity: 6,
+    spaceNameById: { [transportSpaceId]: "Transporte" },
+  });
+  const result = validateHardConstraints(caseInput, output(tasks.map((row) => ({ taskId: row.id, startPlanned: "09:00", endPlanned: "09:05", assignedResources: [] }))));
+  assert.equal(result.hardConstraintViolations, 0);
+}
+
+{
+  const transportSpaceId = 750;
+  const tasks = Array.from({ length: 3 }, (_, index) => task(800 + index, 800 + index, transportSpaceId, { templateName: "OUT", durationOverrideMin: 5 }));
+  const caseInput = input(tasks, {
+    arrivalTaskTemplateName: "IN",
+    departureTaskTemplateName: "OUT",
+    transportSpaceId,
+    vanCapacity: 6,
+    spaceNameById: { [transportSpaceId]: "Transporte" },
+  });
+  const result = validateHardConstraints(caseInput, output(tasks.map((row) => ({ taskId: row.id, startPlanned: "10:00", endPlanned: "10:05", assignedResources: [] }))));
+  assert.equal(result.hardConstraintViolations, 0);
+}
+
+{
+  const transportSpaceId = 751;
+  const tasks = Array.from({ length: 7 }, (_, index) => task(900 + index, 900 + index, transportSpaceId, { templateName: "IN", durationOverrideMin: 5 }));
+  const caseInput = input(tasks, {
+    arrivalTaskTemplateName: "IN",
+    departureTaskTemplateName: "OUT",
+    transportSpaceId,
+    transportVanCapacity: 6,
+    spaceNameById: { [transportSpaceId]: "Transporte" },
+  });
+  const result = validateHardConstraints(caseInput, output(tasks.map((row) => ({ taskId: row.id, startPlanned: "11:00", endPlanned: "11:05", assignedResources: [] }))));
+  const detail = result.hardConstraintViolationDetails.find((item) => item.code === "SPACE_OVERLAP");
+  assert.ok(detail);
+  assert.equal(detail.spaceName, "Transporte");
+  assert.equal(detail.spaceCapacity, 6);
+  assert.equal(detail.observedConcurrency, 7);
+  assert.equal(detail.capacitySource, "transport_van_capacity");
+  assert.equal(detail.details?.capacitySource, "transport_van_capacity");
+}
+
+{
+  const ordinarySpaceId = 752;
+  const caseInput = input([task(1001, 1001, ordinarySpaceId), task(1002, 1002, ordinarySpaceId)], {
+    transportSpaceId: 751,
+    transportVanCapacity: 6,
+    spaceNameById: { [ordinarySpaceId]: "Ordinary exclusive room" },
+  });
+  const result = validateHardConstraints(caseInput, output([
+    { taskId: 1001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 1002, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+  ]));
+  const detail = result.hardConstraintViolationDetails.find((item) => item.code === "SPACE_OVERLAP");
+  assert.equal(detail?.spaceCapacity, 1);
+  assert.equal(detail?.capacitySource, "default_exclusive");
+}
+
 console.log("engine/v3/hardValidation.spec.ts: OK");

@@ -20,6 +20,7 @@ export type EngineHardViolationDetail = {
   spaceName?: string | null;
   spaceCapacity?: number | null;
   observedConcurrency?: number | null;
+  capacitySource?: "transport_van_capacity" | "space_max_concurrency" | "default_exclusive" | string | null;
   taskNames?: string[] | null;
   templateNames?: string[] | null;
   contestantId?: number | null;

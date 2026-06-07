@@ -264,7 +264,8 @@ export async function buildEngineInput(
     spacesByName.set(name, sid);
   }
 
-  const fallbackTransportSpaceId = spacesByName.get("transporte") ?? null;
+  // Defensive final fallback only: prefer the configured IN/OUT templates' default space.
+  const namedTransportSpaceId = spacesByName.get("transporte") ?? null;
   const firstAvailableZoneId = (() => {
     for (const z of (zones as any[]) ?? []) {
       const zid = Number((z as any)?.id);
@@ -333,6 +334,42 @@ export async function buildEngineInput(
   const templates = await storage.getTaskTemplates();
   const templateById = new Map<number, any>();
   for (const tt of templates as any[]) templateById.set(Number(tt.id), tt);
+
+  const normalizeTransportTemplateName = (value: unknown) => String(value ?? "").trim().toLowerCase();
+  const configuredTransportTemplateNames = new Set(
+    [
+      normalizeTransportTemplateName((optimizer as any)?.arrivalTaskTemplateName),
+      normalizeTransportTemplateName((optimizer as any)?.departureTaskTemplateName),
+    ].filter(Boolean),
+  );
+  const configuredTransportTemplateIds = new Set<number>();
+  const templateTransportSpaceIds = new Set<number>();
+  for (const tt of templates as any[]) {
+    const templateName = normalizeTransportTemplateName(tt?.name);
+    if (!configuredTransportTemplateNames.has(templateName)) continue;
+    const templateId = Number(tt?.id);
+    if (Number.isFinite(templateId) && templateId > 0) configuredTransportTemplateIds.add(templateId);
+    const spaceId = Number(tt?.space_id ?? tt?.spaceId ?? NaN);
+    if (Number.isFinite(spaceId) && spaceId > 0 && existingSpaceIds.has(spaceId)) {
+      templateTransportSpaceIds.add(spaceId);
+    }
+  }
+  const taskTransportSpaceIds = new Set<number>();
+  for (const task of (details.tasks as any[]) ?? []) {
+    const templateId = Number(task?.template_id ?? task?.templateId ?? NaN);
+    const joinedTemplateName = normalizeTransportTemplateName(task?.template?.name);
+    if (!configuredTransportTemplateIds.has(templateId) && !configuredTransportTemplateNames.has(joinedTemplateName)) continue;
+    const spaceId = Number(task?.space_id ?? task?.spaceId ?? NaN);
+    if (Number.isFinite(spaceId) && spaceId > 0 && existingSpaceIds.has(spaceId)) {
+      taskTransportSpaceIds.add(spaceId);
+    }
+  }
+  const singleSpaceId = (ids: Set<number>): number | null => ids.size === 1 ? ids.values().next().value ?? null : null;
+  const transportSpaceId =
+    singleSpaceId(templateTransportSpaceIds)
+    ?? singleSpaceId(taskTransportSpaceIds)
+    ?? namedTransportSpaceId;
+  const transportVanCapacity = Math.max(0, Math.floor(Number((optimizer as any)?.vanCapacity ?? 0) || 0));
 
   // ✅ Mapa id -> nombre (para mensajes de dependencias)
   const taskTemplateNameById: Record<number, string> = {};
@@ -618,7 +655,9 @@ export async function buildEngineInput(
     departureGroupingTarget: Number((optimizer as any)?.departureGroupingTarget ?? 0),
     arrivalMinGapMinutes: Number((optimizer as any)?.arrivalMinGapMinutes ?? 0),
     departureMinGapMinutes: Number((optimizer as any)?.departureMinGapMinutes ?? 0),
-    vanCapacity: Number((optimizer as any)?.vanCapacity ?? 0),
+    vanCapacity: transportVanCapacity,
+    transportVanCapacity,
+    transportSpaceId,
 
     optimizerWeights: {
       mainZoneFinishEarly: resolveWeight(
@@ -824,7 +863,7 @@ export async function buildEngineInput(
               templateName && (templateName === arrivalTemplateName || templateName === departureTemplateName),
             );
 
-            if (isArrivalOrDeparture && fallbackTransportSpaceId) return fallbackTransportSpaceId;
+            if (isArrivalOrDeparture && transportSpaceId) return transportSpaceId;
             return null;
           })(),
           _invalidSpaceId: hasInvalidSpace ? normalizedSpaceId : null,

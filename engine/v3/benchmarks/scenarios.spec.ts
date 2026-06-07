@@ -393,4 +393,21 @@ for (const id of ["C", "D", "J"] as const) {
   assert.equal(detail?.observedConcurrency, 3);
 }
 
+
+// Escenarios Y/Z — capacidad de Transporte derivada de la furgoneta existente.
+{
+  const allowed = run("Y");
+  assert.equal(allowed.output.complete, true);
+  assert.equal(allowed.output.v3Meta?.hardConstraintViolations, 0);
+  assert.equal(allowed.output.v3Meta?.hardConstraintViolationCodes?.includes("SPACE_OVERLAP"), false);
+
+  const exceeded = run("Z");
+  assert.equal(exceeded.output.complete, false);
+  const detail = exceeded.output.v3Meta?.hardConstraintViolationDetails?.find((item) => item.code === "SPACE_OVERLAP");
+  assert.equal(detail?.spaceName, "Transporte");
+  assert.equal(detail?.spaceCapacity, 6);
+  assert.equal(detail?.observedConcurrency, 7);
+  assert.equal(detail?.capacitySource, "transport_van_capacity");
+}
+
 console.log("engine/v3/benchmarks/scenarios.spec.ts: OK");

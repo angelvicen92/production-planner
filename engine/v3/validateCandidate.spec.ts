@@ -83,4 +83,28 @@ const warm: EngineOutput = {
   assert.ok(validateOptimizedCandidate(exclusiveInput, candidate, candidate).some((error) => error.startsWith("SPACE_CAPACITY_EXCEEDED_11_")));
 }
 
+
+{
+  const transportSpaceId = 754;
+  const transportInput: EngineV3Input = {
+    ...input,
+    arrivalTaskTemplateName: "IN",
+    departureTaskTemplateName: "OUT",
+    transportSpaceId,
+    transportVanCapacity: 6,
+    tasks: Array.from({ length: 6 }, (_, index) => ({
+      id: 100 + index, planId: 1, templateId: 100 + index, templateName: "IN", zoneId: 1,
+      spaceId: transportSpaceId, contestantId: 100 + index, status: "pending", durationOverrideMin: 30,
+    })) as any,
+    locks: [],
+  };
+  const candidate: EngineOutput = {
+    ...warm,
+    plannedTasks: Array.from({ length: 6 }, (_, index) => ({
+      taskId: 100 + index, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [],
+    })) as any,
+  };
+  assert.equal(validateOptimizedCandidate(transportInput, candidate, candidate).some((error) => error.startsWith("SPACE_CAPACITY_EXCEEDED_")), false);
+}
+
 console.log("engine/v3/validateCandidate.spec.ts: OK");

@@ -62,6 +62,27 @@ const baseInput = (tasks: any[]): EngineV3Input => ({
   assert.equal(rows[0].startPlanned, rows[1].startPlanned);
 }
 
+// ID 029: Phase A can fill all van seats concurrently in the resolved transport space.
+{
+  const transportSpaceId = 753;
+  const tasks = Array.from({ length: 6 }, (_, index) => ({
+    id: 30 + index, planId: 1, templateId: 500 + index, templateName: "IN", zoneId: 1,
+    spaceId: transportSpaceId, contestantId: 30 + index, status: "pending", durationOverrideMin: 240,
+  }));
+  const out = generatePlanV3({
+    ...baseInput(tasks),
+    arrivalTaskTemplateName: "IN",
+    departureTaskTemplateName: "OUT",
+    transportSpaceId,
+    transportVanCapacity: 6,
+    spaceNameById: { [transportSpaceId]: "Transporte" },
+  });
+  assert.equal(out.complete, true);
+  assert.equal(out.v3Meta?.hardConstraintViolations, 0);
+  const rows = out.plannedTasks.filter((planned) => tasks.some((task) => task.id === planned.taskId));
+  assert.equal(new Set(rows.map((row) => row.startPlanned)).size, 1);
+}
+
 // Dependencia faltante: se ignora (no crashea, no bloquea por ese id inexistente).
 {
   const tasks = [
