@@ -31,6 +31,43 @@ export const plans = pgTable("plans", {
   planningStats: jsonb("planning_stats").$type<Record<string, any>>().notNull().default({}),
   optimizerEngine: text("optimizer_engine").notNull().default("v3"),
 });
+// 1.0.1 planning_runs (execution state + compact Engine V3 diagnostics)
+export const planningRuns = pgTable("planning_runs", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  totalPending: integer("total_pending").notNull().default(0),
+  plannedCount: integer("planned_count").notNull().default(0),
+  message: text("message"),
+  lastReasons: jsonb("last_reasons").$type<unknown[]>(),
+  requestId: uuid("request_id"),
+  engine: text("engine"),
+  engineVersion: text("engine_version"),
+  solutionSource: text("solution_source"),
+  requestedTimeLimitMs: integer("requested_time_limit_ms"),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  phase: text("phase"),
+  phaseProgressPct: integer("phase_progress_pct").notNull().default(0),
+  lastTaskId: integer("last_task_id"),
+  lastTaskName: text("last_task_name"),
+  plannedTasks: integer("planned_tasks"),
+  unplannedTasks: integer("unplanned_tasks"),
+  hardConstraintViolations: integer("hard_constraint_violations"),
+  mainStageGapMinutes: integer("main_stage_gap_minutes"),
+  mainStageGapCount: integer("main_stage_gap_count"),
+  coachSwitchCount: integer("coach_switch_count"),
+  restrictiveTalentAverageStartOffset: integer("restrictive_talent_average_start_offset"),
+  selectedCandidateMetrics: jsonb("selected_candidate_metrics").$type<Record<string, unknown> | null>(),
+  engineMetadata: jsonb("engine_metadata").$type<Record<string, unknown> | null>(),
+  diagnosticWarnings: jsonb("diagnostic_warnings").$type<Record<string, unknown> | null>(),
+}, (table) => ({
+  planIdx: index("planning_runs_plan_id_idx").on(table.planId),
+  latestDiagnosticsIdx: index("planning_runs_plan_created_at_idx").on(table.planId, table.createdAt),
+}));
+
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),

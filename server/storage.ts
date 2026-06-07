@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabase";
+import type { EngineRunDiagnostics } from "../engine/v3/runDiagnostics";
 import {
   Plan,
   PlanSummary,
@@ -51,6 +52,13 @@ function addMinutesToHHMM(base: string, durationMinutes: number): { hhmm: string
   const mm = normalized % 60;
   return { hhmm: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`, seconds: 0 };
 }
+
+export type PlanningRunDiagnosticsRecord = Omit<EngineRunDiagnostics, "status"> & {
+  id: number;
+  planId: number;
+  createdAt: string;
+  status: "running" | "success" | "infeasible" | "error";
+};
 
 export interface IStorage {
   // Plans
@@ -135,6 +143,8 @@ export interface IStorage {
   savePlannedBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
   lockBreakTimes(planId: number, breakId: number, start: string, end: string): Promise<void>;
   clearBreakLock(planId: number, breakId: number): Promise<void>;
+  createPlanningRunDiagnostics(runId: number, planId: number, diagnostics: EngineRunDiagnostics): Promise<void>;
+  getLatestPlanningRunDiagnostics(planId: number): Promise<PlanningRunDiagnosticsRecord | null>;
 
   // Optimizer Settings (global)
   getOptimizerSettings(): Promise<{
@@ -225,6 +235,66 @@ export interface IStorage {
 }
 
 export class SupabaseStorage implements IStorage {
+  async createPlanningRunDiagnostics(runId: number, planId: number, diagnostics: EngineRunDiagnostics): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from("planning_runs")
+      .update({
+        engine_version: diagnostics.engineVersion,
+        solution_source: diagnostics.solutionSource,
+        planned_tasks: diagnostics.plannedTasks,
+        unplanned_tasks: diagnostics.unplannedTasks,
+        hard_constraint_violations: diagnostics.hardConstraintViolations,
+        main_stage_gap_minutes: diagnostics.mainStageGapMinutes,
+        main_stage_gap_count: diagnostics.mainStageGapCount,
+        coach_switch_count: diagnostics.coachSwitchCount,
+        restrictive_talent_average_start_offset: diagnostics.restrictiveTalentAverageStartOffset,
+        selected_candidate_metrics: diagnostics.selectedCandidateMetrics,
+        engine_metadata: diagnostics.engineMetadata,
+        diagnostic_warnings: diagnostics.diagnosticWarnings,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", runId)
+      .eq("plan_id", planId);
+    if (error) throw error;
+  }
+
+  async getLatestPlanningRunDiagnostics(planId: number): Promise<PlanningRunDiagnosticsRecord | null> {
+    const { data, error } = await supabaseAdmin
+      .from("planning_runs")
+      .select("id, plan_id, created_at, engine_version, solution_source, status, planned_tasks, unplanned_tasks, hard_constraint_violations, main_stage_gap_minutes, main_stage_gap_count, coach_switch_count, restrictive_talent_average_start_offset, selected_candidate_metrics, engine_metadata, diagnostic_warnings")
+      .eq("plan_id", planId)
+      .eq("engine_version", "v3")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: Number(data.id),
+      planId: Number(data.plan_id),
+      createdAt: String(data.created_at),
+      engineVersion: "v3",
+      solutionSource: String(data.solution_source ?? "unknown"),
+      status: ["running", "success", "infeasible", "error"].includes(String(data.status))
+        ? data.status as PlanningRunDiagnosticsRecord["status"]
+        : "error",
+      plannedTasks: Number(data.planned_tasks ?? 0),
+      unplannedTasks: Number(data.unplanned_tasks ?? 0),
+      hardConstraintViolations: Number(data.hard_constraint_violations ?? 0),
+      mainStageGapMinutes: data.main_stage_gap_minutes == null ? null : Number(data.main_stage_gap_minutes),
+      mainStageGapCount: data.main_stage_gap_count == null ? null : Number(data.main_stage_gap_count),
+      coachSwitchCount: data.coach_switch_count == null ? null : Number(data.coach_switch_count),
+      restrictiveTalentAverageStartOffset: data.restrictive_talent_average_start_offset == null
+        ? null
+        : Number(data.restrictive_talent_average_start_offset),
+      selectedCandidateMetrics: data.selected_candidate_metrics ?? null,
+      engineMetadata: data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
+      diagnosticWarnings: data.diagnostic_warnings && typeof data.diagnostic_warnings === "object"
+        ? data.diagnostic_warnings
+        : { resourceDiagnosticWarnings: [], resourceBundleValidationWarnings: [] },
+    } as PlanningRunDiagnosticsRecord;
+  }
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
+import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { getUserRole, withPermissionDenied } from "./authz";
 
 export async function registerRoutes(
@@ -4352,6 +4353,30 @@ function normalizeHexColor(value: unknown): string | null {
   });
 
   
+  app.get(api.planningRuns.latestEngineDiagnostics.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      if (!Number.isFinite(planId) || planId <= 0) {
+        return res.status(400).json({ message: "Invalid plan id" });
+      }
+
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      if (!(await ensureUserCanAccessPlan(userId, planId))) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+
+      const diagnostics = await storage.getLatestPlanningRunDiagnostics(planId);
+      return res.json({ diagnostics });
+    } catch (err: any) {
+      console.error("[engine-diagnostics] failed to fetch latest diagnostics", {
+        planId: Number(req.params.id),
+        error: err?.message ?? err,
+      });
+      return res.status(500).json({ message: "Failed to fetch engine diagnostics" });
+    }
+  });
+
   app.get(api.planningRuns.latestByPlan.path, async (req, res) => {
     try {
       const planId = Number(req.params.id);
@@ -4878,6 +4903,21 @@ function normalizeHexColor(value: unknown): string | null {
           );
         },
       });
+      if (planningRunId) {
+        try {
+          await storage.createPlanningRunDiagnostics(
+            planningRunId,
+            planId,
+            buildRunDiagnostics(engineInput, result),
+          );
+        } catch (diagnosticError: any) {
+          console.warn("[generate] planning run diagnostics persistence failed", {
+            planId,
+            planningRunId,
+            error: diagnosticError?.message ?? diagnosticError,
+          });
+        }
+      }
       const enrich = await buildReasonEnricher(planId);
 
       const planned = Array.isArray((result as any)?.plannedTasks) ? (result as any).plannedTasks : [];

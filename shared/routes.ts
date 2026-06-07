@@ -77,6 +77,10 @@ export const api = {
       method: "GET" as const,
       path: "/api/plans/:id/planning-runs/latest",
     },
+    latestEngineDiagnostics: {
+      method: "GET" as const,
+      path: "/api/plans/:id/engine-diagnostics/latest",
+    },
   },
   // Staff catalog (Producción / Redacción)
   staffPeople: {
