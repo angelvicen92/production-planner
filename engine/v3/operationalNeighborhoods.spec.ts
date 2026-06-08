@@ -6,6 +6,7 @@ import {
   generateOperationalNeighborhoodCandidates,
   generateOperationalNeighborhoodSearchCandidates,
 } from "./operationalNeighborhoods";
+import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 import {
   calculateCoachSwitchCount,
   calculateMainStageGaps,
@@ -407,7 +408,7 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
     diagnostics,
   });
   assert.equal(candidates.length, 0);
-  assert.ok((diagnostics.rejectedReasons.would_move_locked_or_executed ?? 0) > 0, JSON.stringify(diagnostics));
+  assert.ok((diagnostics.rejectedReasons.no_movable_tasks ?? 0) > 0, JSON.stringify(diagnostics));
 }
 
 // ID 035. Coach compaction metadata is total and pull-forward reduces a 260-minute coach gap.
@@ -475,7 +476,7 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   const selected = runOperationalNeighborhoodSelection(input, seed, "phaseA_greedy");
   assert.equal(selected.meta.coachCompactionAttempted, true);
   assert.equal(selected.meta.coachCompactionCandidatesGenerated, 0);
-  assert.ok(selected.meta.coachCompactionRejectedReasons?.includes("would_move_locked_or_executed"));
+  assert.ok(selected.meta.coachCompactionRejectedReasons?.includes("no_movable_tasks"));
   assert.deepEqual(byId(selected.output).get(220), byId(seed).get(220));
   assert.deepEqual(byId(selected.output).get(221), byId(seed).get(221));
 }
@@ -486,7 +487,11 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
     { id: 230, planId: PLAN_ID, templateId: 230, zoneId: 2, spaceId: 201, contestantId: 230, status: "pending", durationOverrideMin: 30 },
     { id: 231, planId: PLAN_ID, templateId: 231, zoneId: 2, spaceId: 202, contestantId: 231, status: "pending", durationOverrideMin: 30 },
     { id: 232, planId: PLAN_ID, templateId: 232, zoneId: 2, spaceId: 201, contestantId: 232, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [231] },
-  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  ], {
+    workDay: { start: "09:00", end: "15:00" },
+    optimizerMainZoneId: null,
+    contestantAvailabilityById: { 230: { start: "09:00", end: "09:30" } },
+  });
   const seed = completeOutput([
     { taskId: 230, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
     { taskId: 231, startPlanned: "12:00", endPlanned: "12:30" },
@@ -516,4 +521,76 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   assert.equal(byId(candidate.output).get(240)?.startPlanned, "12:30");
   assert.equal(byId(candidate.output).get(241)?.startPlanned, "13:00");
   assert.equal(countHardConstraintViolations(input, candidate.output), 0);
+}
+
+// ID 036. The concrete coach generator moves the isolated early block next to the later block.
+{
+  const input = baseInput([
+    { id: 300, planId: PLAN_ID, templateId: 300, zoneId: 2, spaceId: 201, contestantId: 300, status: "pending", durationOverrideMin: 30 },
+    { id: 301, planId: PLAN_ID, templateId: 301, zoneId: 2, spaceId: 202, contestantId: 301, status: "pending", durationOverrideMin: 30 },
+    { id: 302, planId: PLAN_ID, templateId: 302, zoneId: 2, spaceId: 203, contestantId: 302, status: "pending", durationOverrideMin: 30 },
+  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  const seed = completeOutput([
+    { taskId: 300, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 301, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [COACH_A] },
+    { taskId: 302, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const before = calculateEngineOperationalCompactionMetrics(input, seed);
+  const candidates = generateOperationalNeighborhoodCandidates(input, seed, { allowedReasons: ["coach_gap_compaction"] });
+  assert.ok(candidates.length > 0);
+  assert.ok(candidates.length <= 5);
+  assert.ok(candidates.some((candidate) => {
+    const after = calculateEngineOperationalCompactionMetrics(input, candidate.output);
+    return after.maxCoachGapMinutes < before.maxCoachGapMinutes;
+  }));
+  for (const candidate of candidates) assert.equal(countHardConstraintViolations(input, candidate.output), 0);
+}
+
+// ID 036. Shifts that would create space/resource hard violations are not emitted.
+{
+  const input = baseInput([
+    { id: 310, planId: PLAN_ID, templateId: 310, zoneId: 2, spaceId: 201, contestantId: 310, status: "pending", durationOverrideMin: 30 },
+    { id: 311, planId: PLAN_ID, templateId: 311, zoneId: 2, spaceId: 202, contestantId: 311, status: "pending", durationOverrideMin: 30 },
+    { id: 312, planId: PLAN_ID, templateId: 312, zoneId: 2, spaceId: 201, contestantId: 312, status: "pending", durationOverrideMin: 30 },
+    { id: 313, planId: PLAN_ID, templateId: 313, zoneId: 2, spaceId: 202, contestantId: 313, status: "pending", durationOverrideMin: 30 },
+  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  const seed = completeOutput([
+    { taskId: 310, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 313, startPlanned: "09:30", endPlanned: "10:00" },
+    { taskId: 312, startPlanned: "12:30", endPlanned: "13:00" },
+    { taskId: 311, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const diagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  const candidates = generateOperationalNeighborhoodCandidates(input, seed, {
+    allowedReasons: ["coach_gap_compaction"],
+    diagnostics,
+  });
+  assert.equal(candidates.length, 0);
+  assert.ok((diagnostics.rejectedReasons.blocked_by_space_or_resource ?? 0) > 0, JSON.stringify(diagnostics));
+}
+
+// ID 036. When both directions fall outside availability, the trace reports no_valid_shift_found.
+{
+  const input = baseInput([
+    { id: 320, planId: PLAN_ID, templateId: 320, zoneId: 2, spaceId: 201, contestantId: 320, status: "pending", durationOverrideMin: 30 },
+    { id: 321, planId: PLAN_ID, templateId: 321, zoneId: 2, spaceId: 202, contestantId: 321, status: "pending", durationOverrideMin: 30 },
+  ], {
+    workDay: { start: "09:00", end: "15:00" },
+    optimizerMainZoneId: null,
+    contestantAvailabilityById: {
+      320: { start: "09:00", end: "09:30" },
+      321: { start: "13:00", end: "13:30" },
+    },
+  });
+  const seed = completeOutput([
+    { taskId: 320, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 321, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const diagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  const candidates = generateOperationalNeighborhoodCandidates(input, seed, {
+    allowedReasons: ["coach_gap_compaction"],
+    diagnostics,
+  });
+  assert.equal(candidates.length, 0);
+  assert.ok((diagnostics.rejectedReasons.no_valid_shift_found ?? 0) > 0, JSON.stringify(diagnostics));
 }

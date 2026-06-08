@@ -68,3 +68,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 033 — 2026-06-07 19:19 — Cancelación/desbloqueo seguro de generación atascada desde el modal
 - ID 034 — 2026-06-07 21:08 — Coach compaction real con trazabilidad de rechazos
 - ID 035 — 2026-06-08 08:25 — Fix metadata null de coach compaction
+- ID 036 — 2026-06-08 11:24 — Generador concreto para reducir gap de coach

@@ -437,8 +437,130 @@ const improvesCoachCompaction = (input: EngineV3Input, base: EngineOutput, candi
   const after = calculateEngineOperationalCompactionMetrics(input, candidate);
   return after.maxCoachGapMinutes < before.maxCoachGapMinutes
     || after.coachIdlePenalty < before.coachIdlePenalty
-    || after.coachSpanPenalty < before.coachSpanPenalty
-    || after.coachSplitDayPenalty < before.coachSplitDayPenalty;
+    || after.coachSpanPenalty < before.coachSpanPenalty;
+};
+
+const coachCompactionRejectionReason = (reason: string): string => {
+  if (reason === "blocked_by_dependencies") return reason;
+  if (reason === "blocked_by_main_stage_continuity") return "blocked_by_main_stage";
+  if (["blocked_by_space_capacity", "blocked_by_resource_conflict"].includes(reason)) return "blocked_by_space_or_resource";
+  return "no_valid_shift_found";
+};
+
+const contiguousBlockBefore = (rows: CompactionRow[], boundaryIndex: number): CompactionRow[] => {
+  let start = boundaryIndex;
+  while (start > 0 && rows[start].start <= rows[start - 1].end) start -= 1;
+  return rows.slice(start, boundaryIndex + 1);
+};
+
+const contiguousBlockAfter = (rows: CompactionRow[], boundaryIndex: number): CompactionRow[] => {
+  let end = boundaryIndex;
+  while (end + 1 < rows.length && rows[end + 1].start <= rows[end].end) end += 1;
+  return rows.slice(boundaryIndex, end + 1);
+};
+
+const boundaryMoveSets = (
+  block: CompactionRow[],
+  fixed: Set<number>,
+  direction: "later" | "earlier",
+  targetBoundary: number,
+): Map<number, number>[] => {
+  const ordered = direction === "later" ? [...block].reverse() : [...block];
+  const movable: CompactionRow[] = [];
+  for (const row of ordered) {
+    if (fixed.has(row.taskId) || movable.length >= 3) break;
+    movable.push(row);
+  }
+  const chronological = direction === "later" ? movable.reverse() : movable;
+  const moveSets: Map<number, number>[] = [];
+  for (let size = chronological.length; size >= 1; size -= 1) {
+    const selected = direction === "later"
+      ? chronological.slice(chronological.length - size)
+      : chronological.slice(0, size);
+    const shift = direction === "later"
+      ? targetBoundary - selected[selected.length - 1].end
+      : targetBoundary - selected[0].start;
+    if ((direction === "later" && shift <= 0) || (direction === "earlier" && shift >= 0)) continue;
+    moveSets.push(new Map(selected.map((row) => [row.taskId, row.start + shift])));
+  }
+  return moveSets;
+};
+
+const generateCoachGapCompactionCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+): void => {
+  const reason: OperationalNeighborhoodReason = "coach_gap_compaction";
+  if (!diagnostics.attemptedTypes.includes(reason)) diagnostics.attemptedTypes.push(reason);
+  const reject = (rejection: string): void => incrementNeighborhoodRejected(diagnostics, reason, rejection);
+  const groups = compactionGroups(input, output, "coach");
+  if (!groups.length) {
+    reject("no_coaches_detected");
+    return;
+  }
+
+  const gaps = groups.flatMap((rows) => {
+    const largest = rows.slice(1)
+      .map((next, index) => ({ rows, previousIndex: index, nextIndex: index + 1, gap: next.start - rows[index].end }))
+      .filter(({ gap }) => gap >= 90)
+      .sort((left, right) => right.gap - left.gap
+        || left.rows[left.previousIndex].taskId - right.rows[right.previousIndex].taskId)[0];
+    return largest ? [largest] : [];
+  }).sort((left, right) => right.gap - left.gap
+    || left.rows[left.previousIndex].taskId - right.rows[right.previousIndex].taskId);
+  if (!gaps.length) {
+    reject("no_large_coach_gap");
+    return;
+  }
+
+  const fixed = fixedTaskIds(input);
+  const coachCandidateLimit = Math.min(5, maxCandidates);
+  let attempts = 0;
+  for (const { rows, previousIndex, nextIndex } of gaps) {
+    if (attempts >= maxAttempts || results.length >= maxCandidates
+      || results.filter((candidate) => candidate.reason === reason).length >= coachCandidateLimit) break;
+    const previous = rows[previousIndex];
+    const next = rows[nextIndex];
+    const beforeBlock = contiguousBlockBefore(rows, previousIndex);
+    const afterBlock = contiguousBlockAfter(rows, nextIndex);
+    const laterMoves = boundaryMoveSets(beforeBlock, fixed, "later", next.start);
+    const earlierMoves = boundaryMoveSets(afterBlock, fixed, "earlier", previous.end);
+    if (!laterMoves.length && !earlierMoves.length) {
+      reject("no_movable_tasks");
+      continue;
+    }
+
+    let generatedForGap = false;
+    let concreteRejection = false;
+    const tryMoves = (moveSets: Map<number, number>[]): void => {
+      for (const moves of moveSets) {
+        if (attempts >= maxAttempts || results.length >= maxCandidates
+          || results.filter((candidate) => candidate.reason === reason).length >= coachCandidateLimit) break;
+        attempts += 1;
+        const candidate = cloneWithMoves(output, moves);
+        if (!candidate || !improvesCoachCompaction(input, output, candidate)) continue;
+        const unsafeReason = candidateSafetyReason(input, output, candidate);
+        if (unsafeReason) {
+          const rejection = coachCompactionRejectionReason(unsafeReason);
+          reject(rejection);
+          concreteRejection ||= rejection !== "no_valid_shift_found";
+          continue;
+        }
+        const signature = candidateSignature(candidate);
+        if (seen.has(signature)) continue;
+        seen.add(signature);
+        results.push({ output: candidate, reason, depth: 1, chain: [reason] });
+        if (!diagnostics.generatedTypes.includes(reason)) diagnostics.generatedTypes.push(reason);
+        generatedForGap = true;
+      }
+    };
+
+    // Prefer pushing the isolated earlier block to the end of the gap.
+    tryMoves(laterMoves);
+    // Only pull the later block into the gap when the preferred direction produced no valid candidate.
+    if (!generatedForGap) tryMoves(earlierMoves);
+    if (!generatedForGap && !concreteRejection) reject("no_valid_shift_found");
+  }
 };
 
 const generatePersonCompactionCandidates = (
@@ -575,12 +697,12 @@ export const generateOperationalNeighborhoodCandidates = (
     "late_block_pull_forward",
     "early_block_push_later",
   ]);
+  if (allowed.has("coach_gap_compaction")) generateCoachGapCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("main_stage_gap_fill")) generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("feeder_advance")) generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("advance_restrictive_talent")) generateAdvanceRestrictiveTalentCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("coach_block_compaction")) generateCoachBlockCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("restrictive_talent_bundle")) generateRestrictiveTalentBundleCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
-  if (allowed.has("coach_gap_compaction")) generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "coach", "pull", "coach_gap_compaction", 90);
   if (allowed.has("talent_day_compaction")) generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "talent", "pull", "talent_day_compaction", 120);
   if (allowed.has("late_block_pull_forward")) {
     generatePersonCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics, "coach", "pull", "late_block_pull_forward", 45);
