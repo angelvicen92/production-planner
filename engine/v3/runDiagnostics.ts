@@ -43,6 +43,18 @@ export interface EngineRunDiagnostics {
     operationalCompactionReason: string | null;
     operationalCompactionMetricsBefore: Record<string, number> | null;
     operationalCompactionMetricsAfter: Record<string, number> | null;
+    coachCompactionAttempted: boolean;
+    coachCompactionCandidatesGenerated: number;
+    coachCompactionRejectedReasons: string[];
+    coachCompactionTargetedCoaches: Array<{
+      coachId: number | null;
+      coachName: string;
+      maxGapMinutes: number;
+      spanMinutes: number;
+      idleMinutes: number;
+    }>;
+    coachCompactionBestBefore: Record<string, number>;
+    coachCompactionBestAfter: Record<string, number>;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -137,6 +149,12 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       operationalCompactionReason: compactText(meta?.operationalCompactionReason),
       operationalCompactionMetricsBefore: meta?.operationalCompactionMetricsBefore ?? null,
       operationalCompactionMetricsAfter: meta?.operationalCompactionMetricsAfter ?? null,
+      coachCompactionAttempted: meta?.coachCompactionAttempted ?? false,
+      coachCompactionCandidatesGenerated: meta?.coachCompactionCandidatesGenerated ?? 0,
+      coachCompactionRejectedReasons: uniqueCompactReasons(meta?.coachCompactionRejectedReasons ?? []),
+      coachCompactionTargetedCoaches: meta?.coachCompactionTargetedCoaches ?? [],
+      coachCompactionBestBefore: meta?.coachCompactionBestBefore ?? {},
+      coachCompactionBestAfter: meta?.coachCompactionBestAfter ?? {},
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

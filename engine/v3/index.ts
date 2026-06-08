@@ -84,7 +84,7 @@ type BacktrackingMeta = {
   coachCompactionAttempted?: boolean;
   coachCompactionCandidatesGenerated?: number;
   coachCompactionRejectedReasons?: string[];
-  coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }>;
+  coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number; spanMinutes: number; idleMinutes: number }>;
   coachCompactionBestBefore?: Record<string, number>;
   coachCompactionBestAfter?: Record<string, number>;
   cpSatPilotAttempted?: boolean;
@@ -403,7 +403,14 @@ export const runOperationalNeighborhoodSelection = (
   const coachNameById = new Map(detectedCoaches.map((coach) => [coach.coachId, coach.coachName]));
   const targetedCoaches = compactionBefore.coaches
     .filter((coach) => coach.maxGapMinutes >= 90)
-    .map((coach) => ({ coachId: coach.id, coachName: coachNameById.get(coach.id) ?? `Coach ${coach.id}`, maxGapMinutes: coach.maxGapMinutes }));
+    .sort((a, b) => b.maxGapMinutes - a.maxGapMinutes || b.idleMinutes - a.idleMinutes || a.id - b.id)
+    .map((coach) => ({
+      coachId: coach.id,
+      coachName: coachNameById.get(coach.id) ?? `Coach ${coach.id}`,
+      maxGapMinutes: coach.maxGapMinutes,
+      spanMinutes: coach.spanMinutes,
+      idleMinutes: coach.idleMinutes,
+    }));
   const coachCompactionAttempted = detectedCoaches.length > 0 && targetedCoaches.length > 0;
   const initialCoachRejectedReasons = detectedCoaches.length === 0
     ? ["no_coaches_detected"]
@@ -489,7 +496,9 @@ export const runOperationalNeighborhoodSelection = (
         "no_improving_slot_found",
       ].includes(reason)),
   ])];
-  if (coachCompactionAttempted && coachCandidates.length === 0 && coachRejectedReasons.length === 0) coachRejectedReasons.push("no_improving_slot_found");
+  if (coachCompactionAttempted && bestCoachOutput === baseOutput && coachRejectedReasons.length === 0) {
+    coachRejectedReasons.push("no_improving_slot_found");
+  }
   const compactionAfter = calculateEngineOperationalCompactionMetrics(input, bestOutput);
   const compactionAccepted = accepted && (bestScore.coachIdlePenalty < baseScore.coachIdlePenalty
     || bestScore.coachSpanPenalty < baseScore.coachSpanPenalty

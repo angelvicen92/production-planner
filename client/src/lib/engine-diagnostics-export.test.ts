@@ -51,7 +51,7 @@ test("includes key metrics without copying full engine or planning payloads", ()
       coachCompactionAttempted: true,
       coachCompactionCandidatesGenerated: 2,
       coachCompactionRejectedReasons: ["blocked_by_availability"],
-      coachCompactionTargetedCoaches: [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260 }],
+      coachCompactionTargetedCoaches: [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260, spanMinutes: 320, idleMinutes: 260 }],
       coachCompactionBestBefore: { maxCoachGapMinutes: 260 },
       coachCompactionBestAfter: { maxCoachGapMinutes: 20 },
       declaredResourceBundleCount: 5,
@@ -75,7 +75,7 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(snapshot.intelligence.coachCompactionAttempted, true);
   assert.equal(snapshot.intelligence.coachCompactionCandidatesGenerated, 2);
   assert.deepEqual(snapshot.intelligence.coachCompactionRejectedReasons, ["blocked_by_availability"]);
-  assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260 }]);
+  assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260, spanMinutes: 320, idleMinutes: 260 }]);
   assert.deepEqual(snapshot.intelligence.coachCompactionBestBefore, { maxCoachGapMinutes: 260 });
   assert.deepEqual(snapshot.intelligence.coachCompactionBestAfter, { maxCoachGapMinutes: 20 });
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
@@ -168,4 +168,15 @@ test("keeps operational quality export compact with a large task input", () => {
   assert.equal(snapshot.operationalQuality.topCoachIdle.length, 10);
   assert.ok(serialized.length < 30_000, `snapshot was ${serialized.length} bytes`);
   assert.equal(serialized.includes("xxxx".repeat(100)), false);
+});
+
+test("normalizes missing coach compaction metadata without nulls", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({}, { generatedAt });
+
+  assert.equal(snapshot.intelligence.coachCompactionAttempted, false);
+  assert.equal(snapshot.intelligence.coachCompactionCandidatesGenerated, 0);
+  assert.deepEqual(snapshot.intelligence.coachCompactionRejectedReasons, []);
+  assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, []);
+  assert.deepEqual(snapshot.intelligence.coachCompactionBestBefore, {});
+  assert.deepEqual(snapshot.intelligence.coachCompactionBestAfter, {});
 });

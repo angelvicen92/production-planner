@@ -460,7 +460,7 @@ export interface EngineOutput {
     coachCompactionAttempted?: boolean;
     coachCompactionCandidatesGenerated?: number;
     coachCompactionRejectedReasons?: string[];
-    coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }>;
+    coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number; spanMinutes: number; idleMinutes: number }>;
     coachCompactionBestBefore?: Record<string, number>;
     coachCompactionBestAfter?: Record<string, number>;
     cpSatPilotAttempted?: boolean;

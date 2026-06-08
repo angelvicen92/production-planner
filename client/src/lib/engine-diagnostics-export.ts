@@ -126,12 +126,12 @@ export type EngineDiagnosticsSnapshot = {
     operationalCompactionReason: string | null;
     operationalCompactionMetricsBefore: CompactJsonValue | null;
     operationalCompactionMetricsAfter: CompactJsonValue | null;
-    coachCompactionAttempted: boolean | null;
-    coachCompactionCandidatesGenerated: number | null;
+    coachCompactionAttempted: boolean;
+    coachCompactionCandidatesGenerated: number;
     coachCompactionRejectedReasons: CompactJsonValue;
     coachCompactionTargetedCoaches: CompactJsonValue;
-    coachCompactionBestBefore: CompactJsonValue | null;
-    coachCompactionBestAfter: CompactJsonValue | null;
+    coachCompactionBestBefore: CompactJsonValue;
+    coachCompactionBestAfter: CompactJsonValue;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -208,12 +208,12 @@ export function buildEngineDiagnosticsSnapshot(
       operationalCompactionReason: optionalString(metadata.operationalCompactionReason),
       operationalCompactionMetricsBefore: compactJsonValue(metadata.operationalCompactionMetricsBefore) ?? null,
       operationalCompactionMetricsAfter: compactJsonValue(metadata.operationalCompactionMetricsAfter) ?? null,
-      coachCompactionAttempted: optionalBoolean(metadata.coachCompactionAttempted),
-      coachCompactionCandidatesGenerated: optionalNumber(metadata.coachCompactionCandidatesGenerated),
+      coachCompactionAttempted: optionalBoolean(metadata.coachCompactionAttempted) ?? false,
+      coachCompactionCandidatesGenerated: optionalNumber(metadata.coachCompactionCandidatesGenerated) ?? 0,
       coachCompactionRejectedReasons: compactJsonValue(metadata.coachCompactionRejectedReasons) ?? [],
       coachCompactionTargetedCoaches: compactJsonValue(metadata.coachCompactionTargetedCoaches) ?? [],
-      coachCompactionBestBefore: compactJsonValue(metadata.coachCompactionBestBefore) ?? null,
-      coachCompactionBestAfter: compactJsonValue(metadata.coachCompactionBestAfter) ?? null,
+      coachCompactionBestBefore: compactJsonValue(metadata.coachCompactionBestBefore) ?? {},
+      coachCompactionBestAfter: compactJsonValue(metadata.coachCompactionBestAfter) ?? {},
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),
