@@ -55,6 +55,12 @@ export interface EngineRunDiagnostics {
     }>;
     coachCompactionBestBefore: Record<string, number>;
     coachCompactionBestAfter: Record<string, number>;
+    coachWaveOrderingAttempted: boolean;
+    coachWaveCandidatesGenerated: number;
+    coachWaveAccepted: boolean;
+    coachWaveReason: string | null;
+    coachWaveBefore: Record<string, number>;
+    coachWaveAfter: Record<string, number>;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -155,6 +161,12 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       coachCompactionTargetedCoaches: meta?.coachCompactionTargetedCoaches ?? [],
       coachCompactionBestBefore: meta?.coachCompactionBestBefore ?? {},
       coachCompactionBestAfter: meta?.coachCompactionBestAfter ?? {},
+      coachWaveOrderingAttempted: meta?.coachWaveOrderingAttempted ?? false,
+      coachWaveCandidatesGenerated: meta?.coachWaveCandidatesGenerated ?? 0,
+      coachWaveAccepted: meta?.coachWaveAccepted ?? false,
+      coachWaveReason: meta?.coachWaveReason ?? null,
+      coachWaveBefore: meta?.coachWaveBefore ?? {},
+      coachWaveAfter: meta?.coachWaveAfter ?? {},
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

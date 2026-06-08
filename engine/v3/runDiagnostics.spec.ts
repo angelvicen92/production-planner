@@ -78,6 +78,12 @@ const output: EngineOutput = {
     }],
     coachCompactionBestBefore: { maxCoachGapMinutes: 260 },
     coachCompactionBestAfter: { maxCoachGapMinutes: 260 },
+    coachWaveOrderingAttempted: true,
+    coachWaveCandidatesGenerated: 2,
+    coachWaveAccepted: true,
+    coachWaveReason: "lower coach split/gap",
+    coachWaveBefore: { maxCoachGapMinutes: 260 },
+    coachWaveAfter: { maxCoachGapMinutes: 90 },
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -114,6 +120,12 @@ const output: EngineOutput = {
   }]);
   assert.deepEqual(diagnostics.engineMetadata.coachCompactionBestBefore, { maxCoachGapMinutes: 260 });
   assert.deepEqual(diagnostics.engineMetadata.coachCompactionBestAfter, { maxCoachGapMinutes: 260 });
+  assert.equal(diagnostics.engineMetadata.coachWaveOrderingAttempted, true);
+  assert.equal(diagnostics.engineMetadata.coachWaveCandidatesGenerated, 2);
+  assert.equal(diagnostics.engineMetadata.coachWaveAccepted, true);
+  assert.equal(diagnostics.engineMetadata.coachWaveReason, "lower coach split/gap");
+  assert.deepEqual(diagnostics.engineMetadata.coachWaveBefore, { maxCoachGapMinutes: 260 });
+  assert.deepEqual(diagnostics.engineMetadata.coachWaveAfter, { maxCoachGapMinutes: 90 });
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -137,6 +149,12 @@ const output: EngineOutput = {
   assert.deepEqual(withoutMeta.engineMetadata.coachCompactionTargetedCoaches, []);
   assert.deepEqual(withoutMeta.engineMetadata.coachCompactionBestBefore, {});
   assert.deepEqual(withoutMeta.engineMetadata.coachCompactionBestAfter, {});
+  assert.equal(withoutMeta.engineMetadata.coachWaveOrderingAttempted, false);
+  assert.equal(withoutMeta.engineMetadata.coachWaveCandidatesGenerated, 0);
+  assert.equal(withoutMeta.engineMetadata.coachWaveAccepted, false);
+  assert.equal(withoutMeta.engineMetadata.coachWaveReason, null);
+  assert.deepEqual(withoutMeta.engineMetadata.coachWaveBefore, {});
+  assert.deepEqual(withoutMeta.engineMetadata.coachWaveAfter, {});
 }
 
 {

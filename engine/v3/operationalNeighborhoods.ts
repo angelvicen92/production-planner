@@ -13,6 +13,7 @@ import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 import { compareCandidateSolutions } from "./solutionScoring";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
+import { generateCoachWaveCandidates } from "./coachWaves";
 import { validateHardConstraints, type HardConstraintViolationCode } from "./hardValidation";
 
 export type OperationalNeighborhoodReason =
@@ -22,6 +23,7 @@ export type OperationalNeighborhoodReason =
   | "restrictive_talent_bundle"
   | "advance_restrictive_talent"
   | "coach_gap_compaction"
+  | "coach_wave_order"
   | "talent_day_compaction"
   | "late_block_pull_forward"
   | "early_block_push_later";
@@ -67,6 +69,7 @@ const ALLOWED_DEPTH_2_CHAINS = new Map<OperationalNeighborhoodReason, Operationa
   ["restrictive_talent_bundle", ["feeder_advance"]],
   ["coach_block_compaction", ["main_stage_gap_fill"]],
   ["coach_gap_compaction", ["late_block_pull_forward"]],
+  ["coach_wave_order", ["main_stage_gap_fill"]],
   ["talent_day_compaction", ["late_block_pull_forward", "early_block_push_later"]],
 ]);
 
@@ -182,7 +185,7 @@ const incrementNeighborhoodRejected = (
   rejection: string,
 ): void => {
   incrementRejected(diagnostics, rejection);
-  if (neighborhood === "coach_gap_compaction") incrementRejected(diagnostics, `${neighborhood}:${rejection}`);
+  if (neighborhood === "coach_gap_compaction" || neighborhood === "coach_wave_order") incrementRejected(diagnostics, `${neighborhood}:${rejection}`);
 };
 
 const appendIfSafe = (
@@ -556,6 +559,23 @@ const bundleShifts = (
   return shifts;
 };
 
+const generateCoachWaveOrderingCandidates = (
+  input: EngineV3Input, output: EngineOutput, maxCandidates: number,
+  results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
+): void => {
+  const reason: OperationalNeighborhoodReason = "coach_wave_order";
+  diagnostics.attemptedTypes.push(reason);
+  const generated = generateCoachWaveCandidates(input, output);
+  if (!generated.length) {
+    incrementNeighborhoodRejected(diagnostics, reason, "no_compatible_coach_waves");
+    return;
+  }
+  for (const candidate of generated.slice(0, 2)) {
+    if (results.length >= maxCandidates) break;
+    appendIfSafe(input, output, candidate.output, reason, results, seen, maxCandidates, diagnostics);
+  }
+};
+
 const generateCoachGapCompactionCandidates = (
   input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
   results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
@@ -770,11 +790,13 @@ export const generateOperationalNeighborhoodCandidates = (
     "advance_restrictive_talent",
     "coach_block_compaction",
     "restrictive_talent_bundle",
+    "coach_wave_order",
     "coach_gap_compaction",
     "talent_day_compaction",
     "late_block_pull_forward",
     "early_block_push_later",
   ]);
+  if (allowed.has("coach_wave_order")) generateCoachWaveOrderingCandidates(input, output, maxCandidates, results, seen, diagnostics);
   if (allowed.has("coach_gap_compaction")) generateCoachGapCompactionCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("main_stage_gap_fill")) generateMainStageGapFillCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);
   if (allowed.has("feeder_advance")) generateFeederAdvanceCandidates(input, output, maxAttempts, maxCandidates, results, seen, diagnostics);

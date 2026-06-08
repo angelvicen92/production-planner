@@ -7,6 +7,7 @@ import {
   generateOperationalNeighborhoodSearchCandidates,
 } from "./operationalNeighborhoods";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
+import { compareCandidateSolutions } from "./solutionScoring";
 import {
   calculateCoachSwitchCount,
   calculateMainStageGaps,
@@ -312,7 +313,6 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
   }
 }
 
-console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
 
 // ID 031 — la compactación no mueve estados ejecutados/locks y nunca aumenta huecos de plató.
 {
@@ -436,7 +436,7 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   assert.ok((selected.meta.coachCompactionBestAfter?.maxCoachGapMinutes ?? 999) < 260);
   assert.notEqual(selected.meta.coachCompactionBestBefore, null);
   assert.notEqual(selected.meta.coachCompactionBestAfter, null);
-  assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach max gap|lower coach idle|lower coach operational span/);
+  assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach split\/gap|lower coach max gap|lower coach idle|lower coach operational span/);
   assert.equal(countHardConstraintViolations(input, selected.output), 0);
 }
 
@@ -675,3 +675,57 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   assert.equal(candidates.length, 0);
   assert.ok((diagnostics.rejectedReasons.blocked_by_main_stage_continuity ?? 0) > 0, JSON.stringify(diagnostics));
 }
+
+// ID 038 — coach waves agrupan coaches alternados, mantienen Plató continuo y respetan tareas fijas.
+{
+  const waveTasks = [
+    { id: 600, planId: PLAN_ID, templateId: 600, zoneId: 2, spaceId: 200, contestantId: 1, status: "pending", durationOverrideMin: 30 },
+    { id: 601, planId: PLAN_ID, templateId: 601, zoneId: 1, spaceId: 100, contestantId: 1, status: "pending", durationOverrideMin: 30, dependencyIds: [600] },
+    { id: 610, planId: PLAN_ID, templateId: 600, zoneId: 2, spaceId: 200, contestantId: 2, status: "pending", durationOverrideMin: 30 },
+    { id: 611, planId: PLAN_ID, templateId: 601, zoneId: 1, spaceId: 100, contestantId: 2, status: "pending", durationOverrideMin: 30, dependencyIds: [610] },
+    { id: 620, planId: PLAN_ID, templateId: 600, zoneId: 2, spaceId: 200, contestantId: 3, status: "pending", durationOverrideMin: 30 },
+    { id: 621, planId: PLAN_ID, templateId: 601, zoneId: 1, spaceId: 100, contestantId: 3, status: "pending", durationOverrideMin: 30, dependencyIds: [620] },
+    { id: 630, planId: PLAN_ID, templateId: 600, zoneId: 2, spaceId: 200, contestantId: 4, status: "pending", durationOverrideMin: 30 },
+    { id: 631, planId: PLAN_ID, templateId: 601, zoneId: 1, spaceId: 100, contestantId: 4, status: "pending", durationOverrideMin: 30, dependencyIds: [630] },
+    { id: 699, planId: PLAN_ID, templateId: 699, zoneId: 3, spaceId: 300, status: "done", durationOverrideMin: 30, startPlanned: "09:00", endPlanned: "09:30" },
+  ];
+  const input = baseInput(waveTasks, {
+    workDay: { start: "09:00", end: "16:00" },
+    taskTemplateNameById: { 600: "Vocal coach", 601: "Plató 7", 699: "Bloque fijo" },
+  });
+  const base = completeOutput([
+    { taskId: 600, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 610, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [COACH_B] },
+    { taskId: 620, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [COACH_A] },
+    { taskId: 630, startPlanned: "12:00", endPlanned: "12:30", assignedResources: [COACH_B] },
+    { taskId: 601, startPlanned: "13:00", endPlanned: "13:30" },
+    { taskId: 611, startPlanned: "13:30", endPlanned: "14:00" },
+    { taskId: 621, startPlanned: "14:00", endPlanned: "14:30" },
+    { taskId: 631, startPlanned: "14:30", endPlanned: "15:00" },
+    { taskId: 699, startPlanned: "09:00", endPlanned: "09:30" },
+  ]);
+  const waveCandidates = generateOperationalNeighborhoodCandidates(input, base, {
+    allowedReasons: ["coach_wave_order"],
+  }).filter((candidate) => candidate.reason === "coach_wave_order");
+  assert.ok(waveCandidates.length > 0, "alternating coaches should generate coach_wave_order");
+  const wave = waveCandidates[0].output;
+  const before = calculateEngineOperationalCompactionMetrics(input, base);
+  const after = calculateEngineOperationalCompactionMetrics(input, wave);
+  assert.ok(after.maxCoachGapMinutes < before.maxCoachGapMinutes || after.coachSplitDayPenalty < before.coachSplitDayPenalty);
+  assert.equal(countHardConstraintViolations(input, wave), 0);
+  assert.ok((calculateMainStageGaps(input, wave)?.minutes ?? 0) <= (calculateMainStageGaps(input, base)?.minutes ?? 0));
+  assert.deepEqual(byId(wave).get(699), byId(base).get(699), "done task must stay fixed during wave ordering");
+
+  const minorTalentIdle = completeOutput((base.plannedTasks ?? []).map((planned) => (
+    Number(planned.taskId) === 699 ? { ...planned, startPlanned: "09:05", endPlanned: "09:35" } : { ...planned }
+  )));
+  assert.ok(compareCandidateSolutions(input, wave, minorTalentIdle) > 0, "coach wave improvement should beat a minor non-coach timing change");
+
+  const selected = runOperationalNeighborhoodSelection(input, base, "phaseA_greedy");
+  assert.equal(selected.meta.coachWaveOrderingAttempted, true);
+  assert.ok((selected.meta.coachWaveCandidatesGenerated ?? 0) > 0);
+  assert.equal(selected.meta.coachWaveAccepted, true);
+  assert.match(selected.meta.coachWaveReason ?? "", /coach wave ordering|lower coach split\/gap/);
+}
+
+console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
