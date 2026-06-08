@@ -87,6 +87,12 @@ type BacktrackingMeta = {
   coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number; spanMinutes: number; idleMinutes: number }>;
   coachCompactionBestBefore?: Record<string, number>;
   coachCompactionBestAfter?: Record<string, number>;
+  coachWaveOrderingAttempted?: boolean;
+  coachWaveCandidatesGenerated?: number;
+  coachWaveAccepted?: boolean;
+  coachWaveReason?: string;
+  coachWaveBefore?: Record<string, number>;
+  coachWaveAfter?: Record<string, number>;
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -438,6 +444,12 @@ export const runOperationalNeighborhoodSelection = (
         coachCompactionTargetedCoaches: targetedCoaches,
         coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
         coachCompactionBestAfter: compactOperationalMetrics(compactionBefore),
+        coachWaveOrderingAttempted: detectedCoaches.length >= 2,
+        coachWaveCandidatesGenerated: 0,
+        coachWaveAccepted: false,
+        coachWaveReason: detectedCoaches.length >= 2 ? "operational neighborhoods not applicable" : "fewer than two coaches detected",
+        coachWaveBefore: compactOperationalMetrics(compactionBefore),
+        coachWaveAfter: compactOperationalMetrics(compactionBefore),
       },
     };
   }
@@ -445,7 +457,7 @@ export const runOperationalNeighborhoodSelection = (
   const search = generateOperationalNeighborhoodSearchCandidates(input, baseOutput);
   const neighborhoodDiagnostics = search.diagnostics;
   const candidates = search.candidates;
-  const compactionReasons = new Set<OperationalNeighborhoodReason>(["coach_gap_compaction", "talent_day_compaction", "late_block_pull_forward", "early_block_push_later"]);
+  const compactionReasons = new Set<OperationalNeighborhoodReason>(["coach_wave_order", "coach_gap_compaction", "talent_day_compaction", "late_block_pull_forward", "early_block_push_later"]);
   const compactionCandidateCount = candidates.filter((candidate) => compactionReasons.has(candidate.reason)).length;
   let bestOutput = baseOutput;
   let bestReason: OperationalNeighborhoodReason | null = null;
@@ -475,6 +487,22 @@ export const runOperationalNeighborhoodSelection = (
         ? explainCandidateComparison(baseSource, "operational_neighborhood", baseScore, candidates.map((candidate) => scoreCandidateSolution(input, candidate.output)).sort((a, b) => compareCandidateScores(b, a))[0])
         : "no operational neighborhood candidate generated");
 
+  const coachWaveCandidates = candidates.filter((candidate) => candidate.reason === "coach_wave_order");
+  const coachWaveSelected = accepted && bestChain?.includes("coach_wave_order") === true;
+  const bestCoachWaveOutput = coachWaveCandidates.reduce<EngineOutput>((best, candidate) => (
+    compareCandidateSolutions(input, candidate.output, best) > 0 ? candidate.output : best
+  ), baseOutput);
+  const coachWaveAfter = calculateEngineOperationalCompactionMetrics(input, bestCoachWaveOutput);
+  const coachWaveAccepted = compareCandidateSolutions(input, bestCoachWaveOutput, baseOutput) > 0;
+  const coachWaveReason = coachWaveSelected
+    ? "operational_neighborhood selected: coach wave ordering"
+    : coachWaveAccepted
+      ? "lower coach split/gap"
+      : coachWaveCandidates.length > 0
+        ? "kept current: coach wave candidates did not improve priority metrics"
+        : Object.keys(neighborhoodDiagnostics.rejectedReasons).some((reason) => reason.startsWith("coach_wave_order:"))
+        ? Object.keys(neighborhoodDiagnostics.rejectedReasons).find((reason) => reason.startsWith("coach_wave_order:"))!.slice("coach_wave_order:".length)
+        : detectedCoaches.length < 2 ? "fewer than two coaches detected" : "no compatible coach waves";
   const coachCandidates = candidates.filter((candidate) => candidate.reason === "coach_gap_compaction");
   const bestCoachOutput = coachCandidates.reduce<EngineOutput>((best, candidate) => {
     const bestMetrics = calculateEngineOperationalCompactionMetrics(input, best);
@@ -547,6 +575,12 @@ export const runOperationalNeighborhoodSelection = (
       coachCompactionTargetedCoaches: targetedCoaches,
       coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
       coachCompactionBestAfter: compactOperationalMetrics(coachCompactionAfter),
+      coachWaveOrderingAttempted: detectedCoaches.length >= 2,
+      coachWaveCandidatesGenerated: coachWaveCandidates.length,
+      coachWaveAccepted,
+      coachWaveReason,
+      coachWaveBefore: compactOperationalMetrics(compactionBefore),
+      coachWaveAfter: compactOperationalMetrics(coachWaveAfter),
       solutionSource: accepted ? "operational_neighborhood" : baseSource,
       candidateSolutionsEvaluated: 1 + candidates.length,
       bestCandidateSource: accepted ? "operational_neighborhood" : baseSource,

@@ -198,7 +198,7 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
   ] };
   assert.ok(scoreCandidateSolution(input, compact).coachIdlePenalty < scoreCandidateSolution(input, split).coachIdlePenalty);
   assert.ok(compareCandidateSolutions(input, compact, split) > 0);
-  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower coach max gap|lower coach idle/);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower coach split\/gap|lower coach max gap|lower coach idle/);
 }
 
 // ID 031 — compactación de talents desempata cuando los criterios superiores permanecen iguales.
@@ -237,5 +237,5 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
     { taskId: 303, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] },
   ] };
   assert.ok(compareCandidateSolutions(input, lowerCoachGap, lowerTalentIdle) > 0);
-  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, lowerCoachGap), scoreCandidateSolution(input, lowerTalentIdle)), /lower coach max gap/);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, lowerCoachGap), scoreCandidateSolution(input, lowerTalentIdle)), /lower coach split\/gap|lower coach max gap/);
 }
