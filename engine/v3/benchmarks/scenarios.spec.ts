@@ -24,6 +24,7 @@ const plannedById = (output: any) => new Map((output.plannedTasks ?? []).map((pl
 const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
   coachSwitchCount: score.coachSwitchCount,
   coachSwitchPenalty: score.coachSwitchPenalty,
+  maxCoachGapMinutes: score.maxCoachGapMinutes,
   coachIdlePenalty: score.coachIdlePenalty,
   coachSpanPenalty: score.coachSpanPenalty,
   coachSplitDayPenalty: score.coachSplitDayPenalty,

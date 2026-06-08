@@ -7,7 +7,7 @@ import { benchmarkScenarios } from "./scenarios";
 import { applyFinalHardValidationGate } from "../hardValidation";
 import type { BenchmarkRunResult } from "./types";
 
-const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC", "AD"] as const;
+const QUICK_SCENARIO_IDS = ["A", "G", "H", "I", "L", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC", "AD", "AE", "AF"] as const;
 
 type BenchmarkSelection = {
   label: string;
@@ -72,6 +72,7 @@ const formatCompact = (value: string | null | undefined): string => value === nu
 const selectedMetricsFromScore = (score: ReturnType<typeof scoreCandidateSolution>) => ({
   coachSwitchCount: score.coachSwitchCount,
   coachSwitchPenalty: score.coachSwitchPenalty,
+  maxCoachGapMinutes: score.maxCoachGapMinutes,
   coachIdlePenalty: score.coachIdlePenalty,
   coachSpanPenalty: score.coachSpanPenalty,
   coachSplitDayPenalty: score.coachSplitDayPenalty,
@@ -203,6 +204,12 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  neighborhoodTypesAttempted: ${metrics.neighborhoodTypesAttempted?.join(",") ?? "n/a"}`);
   console.log(`  neighborhoodTypesGenerated: ${metrics.neighborhoodTypesGenerated?.join(",") ?? "n/a"}`);
   console.log(`  neighborhoodRejectedReasons: ${metrics.neighborhoodRejectedReasons ? JSON.stringify(metrics.neighborhoodRejectedReasons) : "n/a"}`);
+  console.log(`  coachCompactionAttempted: ${formatNullable(metrics.coachCompactionAttempted)}`);
+  console.log(`  coachCompactionCandidatesGenerated: ${formatNullable(metrics.coachCompactionCandidatesGenerated)}`);
+  console.log(`  coachCompactionRejectedReasons: ${metrics.coachCompactionRejectedReasons ? JSON.stringify(metrics.coachCompactionRejectedReasons) : "n/a"}`);
+  console.log(`  coachCompactionTargetedCoaches: ${metrics.coachCompactionTargetedCoaches ? JSON.stringify(metrics.coachCompactionTargetedCoaches) : "n/a"}`);
+  console.log(`  coachCompactionBestBefore: ${metrics.coachCompactionBestBefore ? JSON.stringify(metrics.coachCompactionBestBefore) : "n/a"}`);
+  console.log(`  coachCompactionBestAfter: ${metrics.coachCompactionBestAfter ? JSON.stringify(metrics.coachCompactionBestAfter) : "n/a"}`);
   console.log(`  structuredBlockersCount: ${metrics.structuredBlockersCount}`);
   console.log(`  movableBlockersCount: ${metrics.movableBlockersCount}`);
   console.log(`  immovableBlockersCount: ${metrics.immovableBlockersCount}`);
@@ -213,7 +220,7 @@ const printResult = (result: BenchmarkRunResult): void => {
   console.log(`  notas: ${scenario.riskNotes.join("; ")}${scenario.knownRisk ? `; riesgo conocido: ${scenario.knownRisk}` : ""}`);
 };
 
-console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020 + ID 026 + ID 027 + ID 028 + ID 029 + ID 031 + ID 032");
+console.log("ENGINE V3 BENCHMARK — ID 004 + ID 006 + ID 007 + ID 008 + ID 009 + ID 010 + ID 011 + ID 012 + ID 013 + ID 014 + ID 015 + ID 016 + ID 017 + ID 019 + ID 020 + ID 026 + ID 027 + ID 028 + ID 029 + ID 031 + ID 032 + ID 034");
 console.log("Benchmark operativo reproducible: reporta riesgos conocidos, selección comparativa de candidatos, stress sintético y prioridad operativa soft de talents/coaches y vecindarios operativos acotados sin fallar por optimización no perfecta.");
 
 console.log(`Selection: ${benchmarkSelection.label} (${selectedBenchmarkScenarios.map((scenario) => scenario.id).join(",")})`);

@@ -50,7 +50,10 @@ test("includes key metrics without copying full engine or planning payloads", ()
       operationalCompactionMetricsAfter: { coachIdlePenalty: 20, maxCoachGapMinutes: 20 },
       coachCompactionAttempted: true,
       coachCompactionCandidatesGenerated: 2,
-      coachCompactionRejectedReasons: { blocked_by_availability: 1 },
+      coachCompactionRejectedReasons: ["blocked_by_availability"],
+      coachCompactionTargetedCoaches: [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260 }],
+      coachCompactionBestBefore: { maxCoachGapMinutes: 260 },
+      coachCompactionBestAfter: { maxCoachGapMinutes: 20 },
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -71,7 +74,10 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.deepEqual(snapshot.intelligence.operationalCompactionMetricsAfter, { coachIdlePenalty: 20, maxCoachGapMinutes: 20 });
   assert.equal(snapshot.intelligence.coachCompactionAttempted, true);
   assert.equal(snapshot.intelligence.coachCompactionCandidatesGenerated, 2);
-  assert.deepEqual(snapshot.intelligence.coachCompactionRejectedReasons, { blocked_by_availability: 1 });
+  assert.deepEqual(snapshot.intelligence.coachCompactionRejectedReasons, ["blocked_by_availability"]);
+  assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260 }]);
+  assert.deepEqual(snapshot.intelligence.coachCompactionBestBefore, { maxCoachGapMinutes: 260 });
+  assert.deepEqual(snapshot.intelligence.coachCompactionBestAfter, { maxCoachGapMinutes: 20 });
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {

@@ -13,6 +13,7 @@ import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 import { compareCandidateSolutions } from "./solutionScoring";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
+import { validateHardConstraints, type HardConstraintViolationCode } from "./hardValidation";
 
 export type OperationalNeighborhoodReason =
   | "main_stage_gap_fill"
@@ -125,6 +126,15 @@ const cloneWithSwappedTimes = (output: EngineOutput, leftTaskId: number, rightTa
 
 const mainGapMinutes = (input: EngineV3Input, output: EngineOutput): number => calculateMainStageGaps(input, output)?.minutes ?? 0;
 
+const hardViolationRejectionReason = (codes: HardConstraintViolationCode[]): string => {
+  if (codes.some((code) => code === "LOCK_MOVED" || code === "DONE_MOVED" || code === "IN_PROGRESS_MOVED")) return "would_move_locked_or_executed";
+  if (codes.includes("DEPENDENCY_VIOLATION")) return "blocked_by_dependencies";
+  if (codes.includes("SPACE_OVERLAP")) return "blocked_by_space_capacity";
+  if (codes.includes("RESOURCE_OVERLAP")) return "blocked_by_resource_conflict";
+  if (codes.includes("AVAILABILITY_VIOLATION")) return "blocked_by_availability";
+  return "hard_constraint_violation";
+};
+
 const candidateSafetyReason = (input: EngineV3Input, baseOutput: EngineOutput, candidate: EngineOutput): string | null => {
   const selectedMetrics = candidate.v3Meta?.selectedCandidateMetrics;
   if (selectedMetrics) {
@@ -138,10 +148,11 @@ const candidateSafetyReason = (input: EngineV3Input, baseOutput: EngineOutput, c
       && selectedMetrics.hardConstraintViolations === actual.hardConstraintViolations;
     if (!consistent) return "selected_candidate_metrics_inconsistent";
   }
-  if (countHardConstraintViolations(input, candidate) > countHardConstraintViolations(input, baseOutput)) return "hard_constraint_violation";
-  if (countLockedTaskMoved(input, candidate) > countLockedTaskMoved(input, baseOutput)) return "locked_task_moved";
-  if (countExecutedTaskMoved(input, candidate) > countExecutedTaskMoved(input, baseOutput)) return "executed_task_moved";
-  if (mainGapMinutes(input, candidate) > mainGapMinutes(input, baseOutput)) return "main_stage_gap_increased";
+  const validation = validateHardConstraints(input, candidate);
+  if (!validation.hardValidationPassed) return hardViolationRejectionReason(validation.hardConstraintViolationCodes);
+  if (countLockedTaskMoved(input, candidate) > countLockedTaskMoved(input, baseOutput)) return "would_move_locked_or_executed";
+  if (countExecutedTaskMoved(input, candidate) > countExecutedTaskMoved(input, baseOutput)) return "would_move_locked_or_executed";
+  if (mainGapMinutes(input, candidate) > mainGapMinutes(input, baseOutput)) return "blocked_by_main_stage_continuity";
   return null;
 };
 
@@ -165,6 +176,15 @@ const incrementRejected = (diagnostics: OperationalNeighborhoodDiagnostics, reas
   diagnostics.rejectedReasons[reason] = (diagnostics.rejectedReasons[reason] ?? 0) + 1;
 };
 
+const incrementNeighborhoodRejected = (
+  diagnostics: OperationalNeighborhoodDiagnostics,
+  neighborhood: OperationalNeighborhoodReason,
+  rejection: string,
+): void => {
+  incrementRejected(diagnostics, rejection);
+  if (neighborhood === "coach_gap_compaction") incrementRejected(diagnostics, `${neighborhood}:${rejection}`);
+};
+
 const appendIfSafe = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -176,17 +196,17 @@ const appendIfSafe = (
   diagnostics: OperationalNeighborhoodDiagnostics,
 ): boolean => {
   if (!candidate || results.length >= maxCandidates) {
-    if (!candidate) incrementRejected(diagnostics, "invalid_move");
+    if (!candidate) incrementNeighborhoodRejected(diagnostics, reason, "invalid_move");
     return false;
   }
   const unsafeReason = candidateSafetyReason(input, baseOutput, candidate);
   if (unsafeReason) {
-    incrementRejected(diagnostics, unsafeReason);
+    incrementNeighborhoodRejected(diagnostics, reason, unsafeReason);
     return false;
   }
   const signature = candidateSignature(candidate);
   if (seen.has(signature)) {
-    incrementRejected(diagnostics, "duplicate_candidate");
+    incrementNeighborhoodRejected(diagnostics, reason, "duplicate_candidate");
     return false;
   }
   seen.add(signature);
@@ -412,6 +432,15 @@ const compactionGroups = (input: EngineV3Input, output: EngineOutput, kind: "coa
     .map(([, rows]) => rows.sort((a, b) => a.start - b.start || a.taskId - b.taskId));
 };
 
+const improvesCoachCompaction = (input: EngineV3Input, base: EngineOutput, candidate: EngineOutput): boolean => {
+  const before = calculateEngineOperationalCompactionMetrics(input, base);
+  const after = calculateEngineOperationalCompactionMetrics(input, candidate);
+  return after.maxCoachGapMinutes < before.maxCoachGapMinutes
+    || after.coachIdlePenalty < before.coachIdlePenalty
+    || after.coachSpanPenalty < before.coachSpanPenalty
+    || after.coachSplitDayPenalty < before.coachSplitDayPenalty;
+};
+
 const generatePersonCompactionCandidates = (
   input: EngineV3Input, output: EngineOutput, maxAttempts: number, maxCandidates: number,
   results: OperationalNeighborhoodCandidate[], seen: Set<string>, diagnostics: OperationalNeighborhoodDiagnostics,
@@ -419,46 +448,94 @@ const generatePersonCompactionCandidates = (
 ): void => {
   if (!diagnostics.attemptedTypes.includes(reason)) diagnostics.attemptedTypes.push(reason);
   const fixed = fixedTaskIds(input);
+  const reject = (rejection: string): void => incrementNeighborhoodRejected(diagnostics, reason, rejection);
   let attempts = 0;
   const groups = compactionGroups(input, output, kind);
   const generatedBefore = results.length;
-  if (kind === "coach" && !groups.length) incrementRejected(diagnostics, "no_movable_coach_tasks");
-  for (const rows of groups) {
-    for (let index = 1; index < rows.length && attempts < maxAttempts && results.length < maxCandidates; index++) {
-      const previous = rows[index - 1];
-      const next = rows[index];
-      if (next.start - previous.end < minimumGap) continue;
-      const moving = move === "pull" ? next : previous;
-      if (fixed.has(moving.taskId)) continue;
-      const target = move === "pull" ? previous.end : next.start - (moving.end - moving.start);
-      if (target === moving.start || target < 0) continue;
-      attempts += 1;
-      const moves = new Map<number, number>([[moving.taskId, target]]);
-      if (move === "pull") {
-        const shift = target - moving.start;
-        let blockEnd = moving.end;
-        for (let followerIndex = index + 1; followerIndex < rows.length && moves.size < 3; followerIndex++) {
-          const follower = rows[followerIndex];
-          if (follower.start - blockEnd >= 45 || fixed.has(follower.taskId)) break;
-          moves.set(follower.taskId, follower.start + shift);
-          blockEnd = Math.max(blockEnd, follower.end);
-        }
+  if (kind === "coach" && !groups.length) {
+    reject("no_coaches_detected");
+    return;
+  }
+  const largeGaps = groups.flatMap((rows) => rows.slice(1).map((next, index) => ({ rows, index: index + 1, previous: rows[index], next })))
+    .filter(({ previous, next }) => next.start - previous.end >= minimumGap);
+  if (kind === "coach" && !largeGaps.length) {
+    reject("no_large_coach_gap");
+    return;
+  }
+
+  for (const { rows, index, previous, next } of largeGaps) {
+    if (attempts >= maxAttempts || results.length >= maxCandidates) break;
+    const moving = move === "pull" ? next : previous;
+    if (fixed.has(moving.taskId)) {
+      reject("would_move_locked_or_executed");
+      continue;
+    }
+    const target = move === "pull" ? previous.end : next.start - (moving.end - moving.start);
+    if (target === moving.start || target < 0) {
+      reject("no_improving_slot_found");
+      continue;
+    }
+    attempts += 1;
+    const moveSets: Map<number, number>[] = [new Map([[moving.taskId, target]])];
+
+    // Bundle move: preserve a consecutive second block when pulling it into the gap.
+    if (move === "pull") {
+      const shift = target - moving.start;
+      const bundle = new Map<number, number>([[moving.taskId, target]]);
+      let blockEnd = moving.end;
+      for (let followerIndex = index + 1; followerIndex < rows.length && bundle.size < 3; followerIndex++) {
+        const follower = rows[followerIndex];
+        if (follower.start !== blockEnd || fixed.has(follower.taskId)) break;
+        bundle.set(follower.taskId, follower.start + shift);
+        blockEnd = follower.end;
       }
+      if (bundle.size > 1) moveSets.unshift(bundle);
+    }
+
+    // Local same-coach swap is deterministic and only applicable to equal-duration boundary tasks.
+    const swapped = cloneWithSwappedTimes(output, previous.taskId, next.taskId);
+    if (!fixed.has(previous.taskId) && !fixed.has(next.taskId) && swapped) {
+      moveSets.push(new Map([[previous.taskId, next.start], [next.taskId, previous.start]]));
+    }
+
+    let acceptedForGap = false;
+    for (const moves of moveSets) {
+      if (attempts > maxAttempts || results.length >= maxCandidates) break;
       const candidate = cloneWithMoves(output, moves);
-      if (!candidate || !improvesOperationalCompaction(input, output, candidate)) {
-        incrementRejected(diagnostics, "no_operational_compaction_improvement");
+      if (!candidate || !(kind === "coach" ? improvesCoachCompaction(input, output, candidate) : improvesOperationalCompaction(input, output, candidate))) {
+        reject("no_improving_slot_found");
         continue;
       }
-      appendIfSafe(input, output, candidate, reason, results, seen, maxCandidates, diagnostics);
+      if (appendIfSafe(input, output, candidate, reason, results, seen, maxCandidates, diagnostics)) acceptedForGap = true;
+    }
+    if (!acceptedForGap && attempts < maxAttempts && results.length < maxCandidates) {
+      // Try the opposite boundary movement before declaring the coach gap blocked.
+      const alternate = move === "pull" ? previous : next;
+      if (fixed.has(alternate.taskId)) {
+        reject("would_move_locked_or_executed");
+      } else {
+        const alternateTarget = move === "pull" ? next.start - (alternate.end - alternate.start) : previous.end;
+        attempts += 1;
+        const alternateCandidate = cloneWithMoves(output, new Map([[alternate.taskId, alternateTarget]]));
+        if (!alternateCandidate || !(kind === "coach" ? improvesCoachCompaction(input, output, alternateCandidate) : improvesOperationalCompaction(input, output, alternateCandidate))) {
+          reject("no_improving_slot_found");
+        } else {
+          appendIfSafe(input, output, alternateCandidate, reason, results, seen, maxCandidates, diagnostics);
+        }
+      }
     }
   }
-  if (kind === "coach" && groups.length && results.length === generatedBefore) {
-    const movable = groups.flat().filter((row) => !fixed.has(row.taskId));
-    if (!movable.length) incrementRejected(diagnostics, "no_movable_coach_tasks");
-    else if (movable.some((row) => mainTaskIds(input).has(row.taskId))) incrementRejected(diagnostics, "blocked_by_main_stage");
-    else if (movable.some((row) => getDependencyIds((input.tasks ?? []).find((task) => Number(task.id) === row.taskId)).length > 0)) incrementRejected(diagnostics, "blocked_by_dependencies");
-    else if ((diagnostics.rejectedReasons.hard_constraint_violation ?? 0) > 0) incrementRejected(diagnostics, "blocked_by_availability");
-    else incrementRejected(diagnostics, "no_compatible_slot");
+  if (kind === "coach" && largeGaps.length && results.length === generatedBefore) {
+    const structured = [
+      "would_move_locked_or_executed",
+      "blocked_by_main_stage_continuity",
+      "blocked_by_dependencies",
+      "blocked_by_space_capacity",
+      "blocked_by_resource_conflict",
+      "blocked_by_availability",
+      "no_improving_slot_found",
+    ];
+    if (!structured.some((key) => (diagnostics.rejectedReasons[key] ?? 0) > 0)) reject("no_movable_tasks");
   }
 };
 

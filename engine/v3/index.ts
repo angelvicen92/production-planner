@@ -19,6 +19,7 @@ import {
 } from "./operationalNeighborhoods";
 import { runMainStageCpSatPilot, type MainStageCpSatPilotMeta } from "./mainStageCpSatPilot";
 import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics } from "./operationalQuality";
+import { detectCoachAssignments } from "./coachDetection";
 
 type AttemptSummary = {
   level: number;
@@ -82,7 +83,10 @@ type BacktrackingMeta = {
   operationalCompactionMetricsAfter?: Record<string, number>;
   coachCompactionAttempted?: boolean;
   coachCompactionCandidatesGenerated?: number;
-  coachCompactionRejectedReasons?: Record<string, number>;
+  coachCompactionRejectedReasons?: string[];
+  coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }>;
+  coachCompactionBestBefore?: Record<string, number>;
+  coachCompactionBestAfter?: Record<string, number>;
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -214,6 +218,7 @@ const buildCandidateMeta = (
     selectedCandidateMetrics: {
       coachSwitchCount: selectedScore.coachSwitchCount,
       coachSwitchPenalty: selectedScore.coachSwitchPenalty,
+      maxCoachGapMinutes: selectedScore.maxCoachGapMinutes,
       coachIdlePenalty: selectedScore.coachIdlePenalty,
       coachSpanPenalty: selectedScore.coachSpanPenalty,
       coachSplitDayPenalty: selectedScore.coachSplitDayPenalty,
@@ -394,6 +399,15 @@ export const runOperationalNeighborhoodSelection = (
   const started = Date.now();
   const attempted = shouldAttemptOperationalNeighborhoods(input, baseOutput);
   const compactionBefore = calculateEngineOperationalCompactionMetrics(input, baseOutput);
+  const detectedCoaches = detectCoachAssignments(input, baseOutput);
+  const coachNameById = new Map(detectedCoaches.map((coach) => [coach.coachId, coach.coachName]));
+  const targetedCoaches = compactionBefore.coaches
+    .filter((coach) => coach.maxGapMinutes >= 90)
+    .map((coach) => ({ coachId: coach.id, coachName: coachNameById.get(coach.id) ?? `Coach ${coach.id}`, maxGapMinutes: coach.maxGapMinutes }));
+  const coachCompactionAttempted = detectedCoaches.length > 0 && targetedCoaches.length > 0;
+  const initialCoachRejectedReasons = detectedCoaches.length === 0
+    ? ["no_coaches_detected"]
+    : targetedCoaches.length === 0 ? ["no_large_coach_gap"] : [];
   const compactionAttempted = attempted && compactionBefore.needsCompaction;
   const baseScore = scoreCandidateSolution(input, baseOutput);
   if (!attempted) {
@@ -411,6 +425,12 @@ export const runOperationalNeighborhoodSelection = (
         operationalCompactionReason: "plan already compact or operational neighborhoods not applicable",
         operationalCompactionMetricsBefore: compactOperationalMetrics(compactionBefore),
         operationalCompactionMetricsAfter: compactOperationalMetrics(compactionBefore),
+        coachCompactionAttempted,
+        coachCompactionCandidatesGenerated: 0,
+        coachCompactionRejectedReasons: initialCoachRejectedReasons.length ? initialCoachRejectedReasons : ["no_improving_slot_found"],
+        coachCompactionTargetedCoaches: targetedCoaches,
+        coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
+        coachCompactionBestAfter: compactOperationalMetrics(compactionBefore),
       },
     };
   }
@@ -442,10 +462,34 @@ export const runOperationalNeighborhoodSelection = (
   const accepted = bestOutput !== baseOutput;
   const comparison = accepted
     ? explainCandidateComparison("operational_neighborhood", baseSource, bestScore, baseScore)
-    : (candidates.length
-      ? explainCandidateComparison(baseSource, "operational_neighborhood", baseScore, candidates.map((candidate) => scoreCandidateSolution(input, candidate.output)).sort((a, b) => compareCandidateScores(b, a))[0])
-      : "no operational neighborhood candidate generated");
+    : (coachCompactionAttempted && candidates.some((candidate) => candidate.reason === "coach_gap_compaction")
+      ? "kept current: coach compaction candidates did not improve"
+      : candidates.length
+        ? explainCandidateComparison(baseSource, "operational_neighborhood", baseScore, candidates.map((candidate) => scoreCandidateSolution(input, candidate.output)).sort((a, b) => compareCandidateScores(b, a))[0])
+        : "no operational neighborhood candidate generated");
 
+  const coachCandidates = candidates.filter((candidate) => candidate.reason === "coach_gap_compaction");
+  const bestCoachOutput = coachCandidates.reduce<EngineOutput>((best, candidate) => (
+    compareCandidateSolutions(input, candidate.output, best) > 0 ? candidate.output : best
+  ), baseOutput);
+  const coachCompactionAfter = calculateEngineOperationalCompactionMetrics(input, bestCoachOutput);
+  const coachRejectedReasons = [...new Set([
+    ...initialCoachRejectedReasons,
+    ...Object.keys(neighborhoodDiagnostics.rejectedReasons)
+      .filter((reason) => reason.startsWith("coach_gap_compaction:"))
+      .map((reason) => reason.slice("coach_gap_compaction:".length))
+      .filter((reason) => [
+        "no_movable_tasks",
+        "blocked_by_main_stage_continuity",
+        "blocked_by_dependencies",
+        "blocked_by_space_capacity",
+        "blocked_by_resource_conflict",
+        "blocked_by_availability",
+        "would_move_locked_or_executed",
+        "no_improving_slot_found",
+      ].includes(reason)),
+  ])];
+  if (coachCompactionAttempted && coachCandidates.length === 0 && coachRejectedReasons.length === 0) coachRejectedReasons.push("no_improving_slot_found");
   const compactionAfter = calculateEngineOperationalCompactionMetrics(input, bestOutput);
   const compactionAccepted = accepted && (bestScore.coachIdlePenalty < baseScore.coachIdlePenalty
     || bestScore.coachSpanPenalty < baseScore.coachSpanPenalty
@@ -477,10 +521,12 @@ export const runOperationalNeighborhoodSelection = (
         : compactionAttempted ? "kept greedy: no candidate improved operational span" : "plan already compact",
       operationalCompactionMetricsBefore: compactOperationalMetrics(compactionBefore),
       operationalCompactionMetricsAfter: compactOperationalMetrics(compactionAfter),
-      coachCompactionAttempted: neighborhoodDiagnostics.attemptedTypes.includes("coach_gap_compaction"),
-      coachCompactionCandidatesGenerated: candidates.filter((candidate) => candidate.reason === "coach_gap_compaction").length,
-      coachCompactionRejectedReasons: Object.fromEntries(Object.entries(neighborhoodDiagnostics.rejectedReasons)
-        .filter(([reason]) => ["no_movable_coach_tasks", "blocked_by_main_stage", "blocked_by_dependencies", "blocked_by_availability", "no_compatible_slot"].includes(reason))),
+      coachCompactionAttempted,
+      coachCompactionCandidatesGenerated: coachCandidates.length,
+      coachCompactionRejectedReasons: coachRejectedReasons,
+      coachCompactionTargetedCoaches: targetedCoaches,
+      coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
+      coachCompactionBestAfter: compactOperationalMetrics(coachCompactionAfter),
       solutionSource: accepted ? "operational_neighborhood" : baseSource,
       candidateSolutionsEvaluated: 1 + candidates.length,
       bestCandidateSource: accepted ? "operational_neighborhood" : baseSource,
@@ -492,6 +538,7 @@ export const runOperationalNeighborhoodSelection = (
       selectedCandidateMetrics: {
         coachSwitchCount: bestScore.coachSwitchCount,
         coachSwitchPenalty: bestScore.coachSwitchPenalty,
+        maxCoachGapMinutes: bestScore.maxCoachGapMinutes,
         coachIdlePenalty: bestScore.coachIdlePenalty,
         coachSpanPenalty: bestScore.coachSpanPenalty,
         coachSplitDayPenalty: bestScore.coachSplitDayPenalty,
@@ -537,6 +584,7 @@ const runCpSatPilotSelection = (
       selectedCandidateMetrics: {
         coachSwitchCount: selectedScore.coachSwitchCount,
         coachSwitchPenalty: selectedScore.coachSwitchPenalty,
+        maxCoachGapMinutes: selectedScore.maxCoachGapMinutes,
         coachIdlePenalty: selectedScore.coachIdlePenalty,
         coachSpanPenalty: selectedScore.coachSpanPenalty,
         coachSplitDayPenalty: selectedScore.coachSplitDayPenalty,

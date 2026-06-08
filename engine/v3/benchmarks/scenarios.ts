@@ -757,6 +757,40 @@ export const benchmarkScenarios: BenchmarkScenario[] = [
     operationalExpectation: "Se acepta un candidato de compactación; hard violations queda en cero y mainStageGapMinutes no empeora.",
     riskNotes: ["Caso determinista", "El recurso se identifica por categoría estructurada"],
   },
+  {
+    id: "AE",
+    name: "Coach pull-forward compaction",
+    description: "El segundo bloque de un coach se adelanta al hueco sin feeders-to-main ni cambios en plató principal.",
+    input: baseInput([
+      { id: 31001, planId: PLAN_ID, templateId: 4101, templateName: "Coach early", zoneId: 2, spaceId: 201, contestantId: 1701, status: "pending", durationOverrideMin: 30 },
+      { id: 31002, planId: PLAN_ID, templateId: 4102, templateName: "Coach late", zoneId: 2, spaceId: 202, contestantId: 1702, status: "pending", durationOverrideMin: 30 },
+    ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null, coachResourceIds: [504], planResourceItems: [{ id: 504, resourceItemId: 9904, typeId: 42, category: "coach", name: "Persona D", isAvailable: true }] }),
+    neighborhoodSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 31001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [504] },
+      { taskId: 31002, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [504] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "coach_gap_compaction se acepta, maxCoachGapMinutes baja, hard violations permanece 0 y main stage no empeora.",
+    riskNotes: ["No depende de feeders", "Pull-forward determinista"],
+  },
+  {
+    id: "AF",
+    name: "Coach compaction blocked with reasons",
+    description: "Ambos movimientos de borde chocan con un recurso compartido y deben dejar trazabilidad estructurada.",
+    input: baseInput([
+      { id: 32001, planId: PLAN_ID, templateId: 4201, templateName: "Coach early blocked", zoneId: 2, spaceId: 201, contestantId: 1801, status: "pending", durationOverrideMin: 30 },
+      { id: 32002, planId: PLAN_ID, templateId: 4202, templateName: "Coach late blocked", zoneId: 2, spaceId: 202, contestantId: 1802, status: "pending", durationOverrideMin: 30 },
+      { id: 32003, planId: PLAN_ID, templateId: 4203, templateName: "Resource blocker early", zoneId: 2, spaceId: 203, contestantId: 1803, status: "done", durationOverrideMin: 30, startPlanned: "09:30", endPlanned: "10:00" },
+      { id: 32004, planId: PLAN_ID, templateId: 4204, templateName: "Resource blocker late", zoneId: 2, spaceId: 204, contestantId: 1804, status: "done", durationOverrideMin: 30, startPlanned: "12:30", endPlanned: "13:00" },
+    ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null, coachResourceIds: [505], planResourceItems: [{ id: 505, resourceItemId: 9905, typeId: 42, category: "coach", name: "Persona E", isAvailable: true }, { id: 900, resourceItemId: 9906, typeId: 43, name: "Shared kit", isAvailable: true }] }),
+    neighborhoodSeedOutput: { feasible: true, complete: true, hardFeasible: true, plannedTasks: [
+      { taskId: 32001, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [505, 900] },
+      { taskId: 32003, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [900] },
+      { taskId: 32004, startPlanned: "12:30", endPlanned: "13:00", assignedResources: [900] },
+      { taskId: 32002, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [505, 900] },
+    ], unplanned: [], warnings: [] },
+    operationalExpectation: "No se acepta candidato y coachCompactionRejectedReasons contiene blocked_by_resource_conflict.",
+    riskNotes: ["Rechazo hard estructurado", "No mueve tareas done"],
+  },
   realisticDayScenario,
   realisticVoiceDayScenario,
  ];

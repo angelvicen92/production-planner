@@ -128,7 +128,10 @@ export type EngineDiagnosticsSnapshot = {
     operationalCompactionMetricsAfter: CompactJsonValue | null;
     coachCompactionAttempted: boolean | null;
     coachCompactionCandidatesGenerated: number | null;
-    coachCompactionRejectedReasons: CompactJsonValue | null;
+    coachCompactionRejectedReasons: CompactJsonValue;
+    coachCompactionTargetedCoaches: CompactJsonValue;
+    coachCompactionBestBefore: CompactJsonValue | null;
+    coachCompactionBestAfter: CompactJsonValue | null;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -207,7 +210,10 @@ export function buildEngineDiagnosticsSnapshot(
       operationalCompactionMetricsAfter: compactJsonValue(metadata.operationalCompactionMetricsAfter) ?? null,
       coachCompactionAttempted: optionalBoolean(metadata.coachCompactionAttempted),
       coachCompactionCandidatesGenerated: optionalNumber(metadata.coachCompactionCandidatesGenerated),
-      coachCompactionRejectedReasons: compactJsonValue(metadata.coachCompactionRejectedReasons) ?? null,
+      coachCompactionRejectedReasons: compactJsonValue(metadata.coachCompactionRejectedReasons) ?? [],
+      coachCompactionTargetedCoaches: compactJsonValue(metadata.coachCompactionTargetedCoaches) ?? [],
+      coachCompactionBestBefore: compactJsonValue(metadata.coachCompactionBestBefore) ?? null,
+      coachCompactionBestAfter: compactJsonValue(metadata.coachCompactionBestAfter) ?? null,
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

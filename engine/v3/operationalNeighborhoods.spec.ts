@@ -407,5 +407,103 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
     diagnostics,
   });
   assert.equal(candidates.length, 0);
-  assert.ok((diagnostics.rejectedReasons.no_movable_coach_tasks ?? 0) > 0, JSON.stringify(diagnostics));
+  assert.ok((diagnostics.rejectedReasons.would_move_locked_or_executed ?? 0) > 0, JSON.stringify(diagnostics));
+}
+
+// ID 034. Coach compaction metadata is total and pull-forward reduces a large coach gap.
+{
+  const input = baseInput([
+    { id: 200, planId: PLAN_ID, templateId: 200, zoneId: 2, spaceId: 201, contestantId: 200, status: "pending", durationOverrideMin: 30 },
+    { id: 201, planId: PLAN_ID, templateId: 201, zoneId: 2, spaceId: 201, contestantId: 201, status: "pending", durationOverrideMin: 30 },
+  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  const seed = completeOutput([
+    { taskId: 200, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 201, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const selected = runOperationalNeighborhoodSelection(input, seed, "phaseA_greedy");
+  assert.equal(selected.meta.coachCompactionAttempted, true);
+  assert.ok((selected.meta.coachCompactionCandidatesGenerated ?? 0) > 0);
+  assert.equal(selected.meta.coachCompactionBestBefore?.maxCoachGapMinutes, 210);
+  assert.ok((selected.meta.coachCompactionBestAfter?.maxCoachGapMinutes ?? 999) < 210);
+  assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach max gap|lower coach idle|lower coach operational span/);
+  assert.equal(countHardConstraintViolations(input, selected.output), 0);
+}
+
+// ID 034. No coaches and coaches without a >=90 minute gap return explicit reasons, never null.
+{
+  const withoutCoach = baseInput([
+    { id: 210, planId: PLAN_ID, templateId: 210, zoneId: 2, spaceId: 201, contestantId: 210, status: "pending", durationOverrideMin: 30 },
+  ], { planResourceItems: [], optimizerMainZoneId: null });
+  const noCoach = runOperationalNeighborhoodSelection(withoutCoach, completeOutput([
+    { taskId: 210, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [] },
+  ]), "phaseA_greedy");
+  assert.equal(noCoach.meta.coachCompactionAttempted, false);
+  assert.deepEqual(noCoach.meta.coachCompactionRejectedReasons, ["no_coaches_detected"]);
+
+  const compactCoach = baseInput([
+    { id: 211, planId: PLAN_ID, templateId: 211, zoneId: 2, spaceId: 201, contestantId: 211, status: "pending", durationOverrideMin: 30 },
+    { id: 212, planId: PLAN_ID, templateId: 212, zoneId: 2, spaceId: 202, contestantId: 212, status: "pending", durationOverrideMin: 30 },
+  ], { optimizerMainZoneId: null });
+  const noGap = runOperationalNeighborhoodSelection(compactCoach, completeOutput([
+    { taskId: 211, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 212, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [COACH_A] },
+  ]), "phaseA_greedy");
+  assert.equal(noGap.meta.coachCompactionAttempted, false);
+  assert.deepEqual(noGap.meta.coachCompactionRejectedReasons, ["no_large_coach_gap"]);
+}
+
+// ID 034. A locked early block is not moved and the rejection trace is structured.
+{
+  const input = baseInput([
+    { id: 220, planId: PLAN_ID, templateId: 220, zoneId: 2, spaceId: 201, contestantId: 220, status: "done", durationOverrideMin: 30, startPlanned: "09:00", endPlanned: "09:30" },
+    { id: 221, planId: PLAN_ID, templateId: 221, zoneId: 2, spaceId: 201, contestantId: 221, status: "in_progress", durationOverrideMin: 30, startPlanned: "13:00", endPlanned: "13:30" },
+  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  const seed = completeOutput([
+    { taskId: 220, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 221, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const selected = runOperationalNeighborhoodSelection(input, seed, "phaseA_greedy");
+  assert.equal(selected.meta.coachCompactionAttempted, true);
+  assert.equal(selected.meta.coachCompactionCandidatesGenerated, 0);
+  assert.ok(selected.meta.coachCompactionRejectedReasons?.includes("would_move_locked_or_executed"));
+  assert.deepEqual(byId(selected.output).get(220), byId(seed).get(220));
+  assert.deepEqual(byId(selected.output).get(221), byId(seed).get(221));
+}
+
+// ID 034. Dependency rejection is attributed instead of collapsing into a generic hard failure.
+{
+  const input = baseInput([
+    { id: 230, planId: PLAN_ID, templateId: 230, zoneId: 2, spaceId: 201, contestantId: 230, status: "pending", durationOverrideMin: 30 },
+    { id: 231, planId: PLAN_ID, templateId: 231, zoneId: 2, spaceId: 202, contestantId: 231, status: "pending", durationOverrideMin: 30 },
+    { id: 232, planId: PLAN_ID, templateId: 232, zoneId: 2, spaceId: 201, contestantId: 232, status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [231] },
+  ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
+  const seed = completeOutput([
+    { taskId: 230, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 231, startPlanned: "12:00", endPlanned: "12:30" },
+    { taskId: 232, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const diagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  generateOperationalNeighborhoodCandidates(input, seed, { allowedReasons: ["coach_gap_compaction"], diagnostics });
+  assert.ok((diagnostics.rejectedReasons.blocked_by_dependencies ?? 0) > 0, JSON.stringify(diagnostics));
+}
+
+// ID 034. If pull-forward is unavailable, push-later compacts the isolated first block.
+{
+  const input = baseInput([
+    { id: 240, planId: PLAN_ID, templateId: 240, zoneId: 2, spaceId: 201, contestantId: 240, status: "pending", durationOverrideMin: 30 },
+    { id: 241, planId: PLAN_ID, templateId: 241, zoneId: 2, spaceId: 202, contestantId: 241, status: "pending", durationOverrideMin: 30 },
+  ], {
+    workDay: { start: "09:00", end: "15:00" },
+    optimizerMainZoneId: null,
+    contestantAvailabilityById: { 240: { start: "09:00", end: "15:00" }, 241: { start: "13:00", end: "15:00" } },
+  });
+  const seed = completeOutput([
+    { taskId: 240, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
+    { taskId: 241, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+  ]);
+  const candidate = generateOperationalNeighborhoodCandidates(input, seed, { allowedReasons: ["coach_gap_compaction"] })[0];
+  assert.ok(candidate);
+  assert.equal(byId(candidate.output).get(240)?.startPlanned, "12:30");
+  assert.equal(byId(candidate.output).get(241)?.startPlanned, "13:00");
+  assert.equal(countHardConstraintViolations(input, candidate.output), 0);
 }

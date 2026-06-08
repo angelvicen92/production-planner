@@ -66,3 +66,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 032 — 2026-06-07 16:47 — Alineación de detección de coaches en scoring y compactación operativa
 - ID 033 — 2026-06-07 19:19 — Cancelación/desbloqueo seguro de generación atascada desde el modal
+- ID 034 — 2026-06-07 21:08 — Coach compaction real con trazabilidad de rechazos
