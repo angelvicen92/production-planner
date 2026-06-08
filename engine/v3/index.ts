@@ -20,6 +20,7 @@ import {
 import { runMainStageCpSatPilot, type MainStageCpSatPilotMeta } from "./mainStageCpSatPilot";
 import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
+import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics } from "./pipelineBuilder";
 
 type AttemptSummary = {
   level: number;
@@ -63,9 +64,9 @@ type BacktrackingMeta = {
   backtrackingTimeMs: number;
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
-  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   candidateSolutionsEvaluated?: number;
-  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   bestCandidateScore?: string;
   greedyCandidateScore?: string;
   backtrackingBestScore?: string;
@@ -103,6 +104,13 @@ type BacktrackingMeta = {
   coachWaveReason?: string;
   coachWaveBefore?: Record<string, number>;
   coachWaveAfter?: Record<string, number>;
+  pipelineBuilderAttempted?: boolean;
+  pipelineCandidatesGenerated?: number;
+  pipelineAccepted?: boolean;
+  pipelineReason?: string;
+  pipelineRejectedReasons?: string[];
+  pipelineBefore?: Record<string, number>;
+  pipelineAfter?: Record<string, number>;
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -640,6 +648,85 @@ export const runOperationalNeighborhoodSelection = (
   };
 };
 
+export const runPipelineBuilderSelection = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  baseSource: NonNullable<BacktrackingMeta["solutionSource"]>,
+  baseMeta: Partial<BacktrackingMeta> = {},
+): { output: EngineOutput; meta: Partial<BacktrackingMeta> } => {
+  const baseScore = scoreCandidateSolution(input, baseOutput);
+  const diagnostics: PipelineBuilderDiagnostics = {
+    attempted: false,
+    candidatesGenerated: 0,
+    reason: "missing_main_stage_sequence",
+    rejectedReasons: [],
+    before: compactCoachWaveMetrics(baseScore),
+    after: compactCoachWaveMetrics(baseScore),
+  };
+  const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
+  let bestOutput = baseOutput;
+  let bestKind: string | null = null;
+  for (const candidate of candidates) {
+    if (compareCandidateSolutions(input, candidate.output, bestOutput) > 0) {
+      bestOutput = candidate.output;
+      bestKind = candidate.kind;
+    }
+  }
+  const accepted = bestOutput !== baseOutput;
+  const bestScore = scoreCandidateSolution(input, bestOutput);
+  if (!accepted && candidates.length > 0 && !diagnostics.rejectedReasons.includes("not_better_than_baseline")) {
+    diagnostics.rejectedReasons.push("not_better_than_baseline");
+  }
+  const reason = accepted
+    ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
+      ? "pipeline_builder selected: lower coach split"
+      : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
+        ? "pipeline_builder selected: lower coach gap"
+        : "pipeline_builder selected: better operational quality"
+    : candidates.length > 0 ? "not_better_than_baseline" : diagnostics.reason;
+  const selectedMetrics: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"] = {
+    coachSwitchCount: bestScore.coachSwitchCount,
+    coachSwitchPenalty: bestScore.coachSwitchPenalty,
+    maxCoachGapMinutes: bestScore.maxCoachGapMinutes,
+    coachIdlePenalty: bestScore.coachIdlePenalty,
+    coachSpanPenalty: bestScore.coachSpanPenalty,
+    coachSplitDayPenalty: bestScore.coachSplitDayPenalty,
+    talentIdlePenalty: bestScore.talentIdlePenalty,
+    talentSpanPenalty: bestScore.talentSpanPenalty,
+    maxGapPenalty: bestScore.maxGapPenalty,
+    bundleCoherencePenalty: bestScore.bundleCoherencePenalty,
+    bundleSwitchPenalty: bestScore.bundleSwitchPenalty,
+    partialBundleUsageWarnings: bestScore.partialBundleUsageWarnings,
+    bundleSpaceAffinityMatches: bestScore.bundleSpaceAffinityMatches,
+    bundleSpaceAffinityMismatches: bestScore.bundleSpaceAffinityMismatches,
+    restrictiveTalentAverageStartOffset: bestScore.restrictiveTalentAverageStartOffset,
+    mainStageGapMinutes: bestScore.mainStageGapMinutes,
+    mainStageGapCount: bestScore.mainStageGapCount,
+    makespan: bestScore.makespan === Number.MAX_SAFE_INTEGER ? null : bestScore.makespan,
+    hardConstraintViolations: bestScore.hardConstraintViolations,
+  };
+  return {
+    output: bestOutput,
+    meta: {
+      ...baseMeta,
+      pipelineBuilderAttempted: diagnostics.attempted,
+      pipelineCandidatesGenerated: candidates.length,
+      pipelineAccepted: accepted,
+      pipelineReason: reason,
+      pipelineRejectedReasons: diagnostics.rejectedReasons,
+      pipelineBefore: diagnostics.before,
+      pipelineAfter: accepted ? compactCoachWaveMetrics(bestScore) : diagnostics.after,
+      candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
+      solutionSource: accepted ? "pipeline_builder" : baseSource,
+      bestCandidateSource: accepted ? "pipeline_builder" : baseMeta.bestCandidateSource ?? baseSource,
+      bestCandidateScore: accepted ? summarizeCandidateScore(bestScore) : baseMeta.bestCandidateScore ?? summarizeCandidateScore(baseScore),
+      candidateSelectionReason: accepted ? reason : baseMeta.candidateSelectionReason,
+      candidateComparisonSummary: accepted ? `${reason} (${bestKind})` : baseMeta.candidateComparisonSummary ?? reason,
+      selectedCandidateMetrics: accepted ? selectedMetrics : baseMeta.selectedCandidateMetrics,
+    },
+  };
+};
+
 const runCpSatPilotSelection = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -979,7 +1066,14 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         };
         const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
         output = neighborhoodSelection.output;
-        const pilotSelection = runCpSatPilotSelection(input, output, { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta });
+        const pipelineSelection = runPipelineBuilderSelection(
+          input,
+          output,
+          neighborhoodSelection.meta.solutionSource ?? "phaseA_backtracking",
+          { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta },
+        );
+        output = pipelineSelection.output;
+        const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
         output = pilotSelection.output;
         const backtrackingNeighborhoodMeta = pilotSelection.meta;
 
@@ -1082,7 +1176,14 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
       };
       const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
       output = neighborhoodSelection.output;
-      const pilotSelection = runCpSatPilotSelection(input, output, neighborhoodSelection.meta);
+      const pipelineSelection = runPipelineBuilderSelection(
+        input,
+        output,
+        neighborhoodSelection.meta.solutionSource ?? "phaseA_greedy",
+        neighborhoodSelection.meta,
+      );
+      output = pipelineSelection.output;
+      const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
       output = pilotSelection.output;
       const greedyNeighborhoodMeta = pilotSelection.meta;
 

@@ -84,6 +84,13 @@ const output: EngineOutput = {
     coachWaveReason: "lower coach split/gap",
     coachWaveBefore: { maxCoachGapMinutes: 260 },
     coachWaveAfter: { maxCoachGapMinutes: 90 },
+    pipelineBuilderAttempted: true,
+    pipelineCandidatesGenerated: 3,
+    pipelineAccepted: true,
+    pipelineReason: "pipeline_builder selected: lower coach gap",
+    pipelineRejectedReasons: ["resource_conflict"],
+    pipelineBefore: { maxCoachGapMinutes: 260 },
+    pipelineAfter: { maxCoachGapMinutes: 45 },
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -126,6 +133,13 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.coachWaveReason, "lower coach split/gap");
   assert.deepEqual(diagnostics.engineMetadata.coachWaveBefore, { maxCoachGapMinutes: 260 });
   assert.deepEqual(diagnostics.engineMetadata.coachWaveAfter, { maxCoachGapMinutes: 90 });
+  assert.equal(diagnostics.engineMetadata.pipelineBuilderAttempted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineCandidatesGenerated, 3);
+  assert.equal(diagnostics.engineMetadata.pipelineAccepted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineReason, "pipeline_builder selected: lower coach gap");
+  assert.deepEqual(diagnostics.engineMetadata.pipelineRejectedReasons, ["resource_conflict"]);
+  assert.deepEqual(diagnostics.engineMetadata.pipelineBefore, { maxCoachGapMinutes: 260 });
+  assert.deepEqual(diagnostics.engineMetadata.pipelineAfter, { maxCoachGapMinutes: 45 });
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -155,6 +169,13 @@ const output: EngineOutput = {
   assert.equal(withoutMeta.engineMetadata.coachWaveReason, "generator_not_invoked");
   assert.deepEqual(withoutMeta.engineMetadata.coachWaveBefore, {});
   assert.deepEqual(withoutMeta.engineMetadata.coachWaveAfter, {});
+  assert.equal(withoutMeta.engineMetadata.pipelineBuilderAttempted, false);
+  assert.equal(withoutMeta.engineMetadata.pipelineCandidatesGenerated, 0);
+  assert.equal(withoutMeta.engineMetadata.pipelineAccepted, false);
+  assert.equal(withoutMeta.engineMetadata.pipelineReason, null);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineRejectedReasons, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineBefore, {});
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineAfter, {});
 }
 
 {

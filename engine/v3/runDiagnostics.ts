@@ -61,6 +61,13 @@ export interface EngineRunDiagnostics {
     coachWaveReason: string | null;
     coachWaveBefore: Record<string, number>;
     coachWaveAfter: Record<string, number>;
+    pipelineBuilderAttempted: boolean;
+    pipelineCandidatesGenerated: number;
+    pipelineAccepted: boolean;
+    pipelineReason: string | null;
+    pipelineRejectedReasons: string[];
+    pipelineBefore: Record<string, number>;
+    pipelineAfter: Record<string, number>;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -167,6 +174,13 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       coachWaveReason: meta?.coachWaveReason ?? "generator_not_invoked",
       coachWaveBefore: meta?.coachWaveBefore ?? {},
       coachWaveAfter: meta?.coachWaveAfter ?? {},
+      pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
+      pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
+      pipelineAccepted: meta?.pipelineAccepted ?? false,
+      pipelineReason: compactText(meta?.pipelineReason),
+      pipelineRejectedReasons: uniqueCompactReasons(meta?.pipelineRejectedReasons ?? []),
+      pipelineBefore: meta?.pipelineBefore ?? {},
+      pipelineAfter: meta?.pipelineAfter ?? {},
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,
