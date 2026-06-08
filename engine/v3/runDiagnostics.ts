@@ -68,6 +68,11 @@ export interface EngineRunDiagnostics {
     pipelineRejectedReasons: string[];
     pipelineBefore: Record<string, number>;
     pipelineAfter: Record<string, number>;
+    pipelineMappedTalents: string[];
+    pipelineUnmappedTalents: string[];
+    pipelineMovedTasks: number[];
+    pipelineStableTasks: number[];
+    pipelineFeederOutcomes: string[];
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -177,10 +182,15 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,
-      pipelineReason: compactText(meta?.pipelineReason),
+      pipelineReason: compactText(meta?.pipelineReason) ?? "generator_not_invoked",
       pipelineRejectedReasons: uniqueCompactReasons(meta?.pipelineRejectedReasons ?? []),
       pipelineBefore: meta?.pipelineBefore ?? {},
       pipelineAfter: meta?.pipelineAfter ?? {},
+      pipelineMappedTalents: (meta?.pipelineMappedTalents ?? []).slice(0, 20),
+      pipelineUnmappedTalents: (meta?.pipelineUnmappedTalents ?? []).slice(0, 20),
+      pipelineMovedTasks: (meta?.pipelineMovedTasks ?? []).slice(0, 50),
+      pipelineStableTasks: (meta?.pipelineStableTasks ?? []).slice(0, 50),
+      pipelineFeederOutcomes: uniqueCompactReasons(meta?.pipelineFeederOutcomes ?? []),
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

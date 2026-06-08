@@ -25,6 +25,14 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.equal(snapshot.intelligence.coachWaveReason, "generator_not_invoked");
   assert.deepEqual(snapshot.intelligence.coachWaveBefore, {});
   assert.deepEqual(snapshot.intelligence.coachWaveAfter, {});
+  assert.equal(snapshot.intelligence.pipelineBuilderAttempted, false);
+  assert.equal(snapshot.intelligence.pipelineCandidatesGenerated, 0);
+  assert.equal(snapshot.intelligence.pipelineAccepted, false);
+  assert.equal(snapshot.intelligence.pipelineReason, "generator_not_invoked");
+  assert.deepEqual(snapshot.intelligence.pipelineMappedTalents, []);
+  assert.deepEqual(snapshot.intelligence.pipelineUnmappedTalents, []);
+  assert.deepEqual(snapshot.intelligence.pipelineMovedTasks, []);
+  assert.deepEqual(snapshot.intelligence.pipelineStableTasks, []);
   assert.deepEqual(snapshot.humanReviewTemplate, {
     observedIssue: null,
     expectedBehavior: null,
@@ -66,6 +74,18 @@ test("includes key metrics without copying full engine or planning payloads", ()
       coachWaveReason: "operational_neighborhood selected: coach wave ordering",
       coachWaveBefore: { maxCoachGapMinutes: 260, coachSplitDayPenalty: 1 },
       coachWaveAfter: { maxCoachGapMinutes: 20, coachSplitDayPenalty: 0 },
+      pipelineBuilderAttempted: true,
+      pipelineCandidatesGenerated: 3,
+      pipelineAccepted: true,
+      pipelineReason: "partial_mapping_used",
+      pipelineRejectedReasons: [],
+      pipelineBefore: { maxCoachGapMinutes: 260 },
+      pipelineAfter: { maxCoachGapMinutes: 20 },
+      pipelineMappedTalents: ["Lucía", "Jose Maria"],
+      pipelineUnmappedTalents: ["Talent 19"],
+      pipelineMovedTasks: [11, 12],
+      pipelineStableTasks: [13],
+      pipelineFeederOutcomes: ["feeder_relocated", "feeder_kept_stable"],
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -96,6 +116,13 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(snapshot.intelligence.coachWaveReason, "operational_neighborhood selected: coach wave ordering");
   assert.deepEqual(snapshot.intelligence.coachWaveBefore, { maxCoachGapMinutes: 260, coachSplitDayPenalty: 1 });
   assert.deepEqual(snapshot.intelligence.coachWaveAfter, { maxCoachGapMinutes: 20, coachSplitDayPenalty: 0 });
+  assert.equal(snapshot.intelligence.pipelineBuilderAttempted, true);
+  assert.equal(snapshot.intelligence.pipelineCandidatesGenerated, 3);
+  assert.equal(snapshot.intelligence.pipelineReason, "partial_mapping_used");
+  assert.deepEqual(snapshot.intelligence.pipelineMappedTalents, ["Lucía", "Jose Maria"]);
+  assert.deepEqual(snapshot.intelligence.pipelineUnmappedTalents, ["Talent 19"]);
+  assert.deepEqual(snapshot.intelligence.pipelineMovedTasks, [11, 12]);
+  assert.deepEqual(snapshot.intelligence.pipelineStableTasks, [13]);
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {

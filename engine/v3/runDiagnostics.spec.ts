@@ -172,10 +172,15 @@ const output: EngineOutput = {
   assert.equal(withoutMeta.engineMetadata.pipelineBuilderAttempted, false);
   assert.equal(withoutMeta.engineMetadata.pipelineCandidatesGenerated, 0);
   assert.equal(withoutMeta.engineMetadata.pipelineAccepted, false);
-  assert.equal(withoutMeta.engineMetadata.pipelineReason, null);
+  assert.equal(withoutMeta.engineMetadata.pipelineReason, "generator_not_invoked");
   assert.deepEqual(withoutMeta.engineMetadata.pipelineRejectedReasons, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineBefore, {});
   assert.deepEqual(withoutMeta.engineMetadata.pipelineAfter, {});
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineMappedTalents, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineUnmappedTalents, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineMovedTasks, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineStableTasks, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineFeederOutcomes, []);
 }
 
 {

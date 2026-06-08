@@ -138,6 +138,18 @@ export type EngineDiagnosticsSnapshot = {
     coachWaveReason: string;
     coachWaveBefore: CompactJsonValue;
     coachWaveAfter: CompactJsonValue;
+    pipelineBuilderAttempted: boolean;
+    pipelineCandidatesGenerated: number;
+    pipelineAccepted: boolean;
+    pipelineReason: string;
+    pipelineRejectedReasons: CompactJsonValue;
+    pipelineBefore: CompactJsonValue;
+    pipelineAfter: CompactJsonValue;
+    pipelineMappedTalents: CompactJsonValue;
+    pipelineUnmappedTalents: CompactJsonValue;
+    pipelineMovedTasks: CompactJsonValue;
+    pipelineStableTasks: CompactJsonValue;
+    pipelineFeederOutcomes: CompactJsonValue;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -226,6 +238,18 @@ export function buildEngineDiagnosticsSnapshot(
       coachWaveReason: optionalString(metadata.coachWaveReason) ?? "generator_not_invoked",
       coachWaveBefore: compactJsonValue(metadata.coachWaveBefore) ?? {},
       coachWaveAfter: compactJsonValue(metadata.coachWaveAfter) ?? {},
+      pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
+      pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
+      pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,
+      pipelineReason: optionalString(metadata.pipelineReason) ?? "generator_not_invoked",
+      pipelineRejectedReasons: compactJsonValue(Array.isArray(metadata.pipelineRejectedReasons) ? metadata.pipelineRejectedReasons.slice(0, 20) : []) ?? [],
+      pipelineBefore: compactJsonValue(metadata.pipelineBefore) ?? {},
+      pipelineAfter: compactJsonValue(metadata.pipelineAfter) ?? {},
+      pipelineMappedTalents: compactJsonValue(Array.isArray(metadata.pipelineMappedTalents) ? metadata.pipelineMappedTalents.slice(0, 20) : []) ?? [],
+      pipelineUnmappedTalents: compactJsonValue(Array.isArray(metadata.pipelineUnmappedTalents) ? metadata.pipelineUnmappedTalents.slice(0, 20) : []) ?? [],
+      pipelineMovedTasks: compactJsonValue(Array.isArray(metadata.pipelineMovedTasks) ? metadata.pipelineMovedTasks.slice(0, 50) : []) ?? [],
+      pipelineStableTasks: compactJsonValue(Array.isArray(metadata.pipelineStableTasks) ? metadata.pipelineStableTasks.slice(0, 50) : []) ?? [],
+      pipelineFeederOutcomes: compactJsonValue(Array.isArray(metadata.pipelineFeederOutcomes) ? metadata.pipelineFeederOutcomes.slice(0, 10) : []) ?? [],
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

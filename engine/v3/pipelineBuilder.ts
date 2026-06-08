@@ -8,25 +8,33 @@ import type { EngineV3Input } from "./types";
 export type PipelineCandidateKind =
   | "pipeline_coachA_first"
   | "pipeline_coachB_first"
-  | "pipeline_alternating_blocks";
+  | "pipeline_grouped_balanced";
 
 export type PipelineRejectedReason =
-  | "missing_main_stage_sequence"
-  | "missing_talent_coach_mapping"
-  | "feeder_chain_unschedulable"
+  | "not_enough_mapped_talents"
+  | "main_stage_sequence_missing"
+  | "candidate_failed_hard_validation"
+  | "candidate_would_create_main_stage_gap"
+  | "candidate_not_better_than_baseline"
+  | "feeders_unschedulable"
+  | "all_candidates_rejected"
+  | "pipeline_candidate_generated_but_lost_scoring"
   | "resource_conflict"
   | "space_conflict"
   | "availability_violation"
   | "dependency_violation"
-  | "would_create_main_stage_gap"
-  | "locked_or_executed_task"
-  | "not_better_than_baseline";
+  | "locked_or_executed_task";
+
+export type PipelineFeederOutcome = "feeder_relocated" | "feeder_kept_stable" | "feeder_blocked";
 
 export interface PipelineBuilderCandidate {
   kind: PipelineCandidateKind;
   coachOrder: number[];
   talentOrder: number[];
   output: EngineOutput;
+  movedTaskIds: number[];
+  stableTaskIds: number[];
+  feederOutcomes: PipelineFeederOutcome[];
 }
 
 export interface PipelineBuilderDiagnostics {
@@ -36,10 +44,20 @@ export interface PipelineBuilderDiagnostics {
   rejectedReasons: PipelineRejectedReason[];
   before: Record<string, number>;
   after: Record<string, number>;
+  mappedTalents: string[];
+  unmappedTalents: string[];
+  movedTaskIds: number[];
+  stableTaskIds: number[];
+  feederOutcomes: PipelineFeederOutcome[];
 }
 
 type Planned = EngineOutput["plannedTasks"][number];
-type MainGroup = { talentId: number; tasks: Array<{ task: TaskInput; planned: Planned; start: number; end: number }> };
+type MainRow = { task: TaskInput; planned: Planned; start: number; end: number; talentId: number };
+type MainGroup = { talentId: number; tasks: MainRow[] };
+
+const MAX_TALENT_DIAGNOSTICS = 20;
+const MAX_TASK_DIAGNOSTICS = 50;
+const MIN_MAPPED_TALENTS = 6;
 
 const toHHMM = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 const normalize = (value: unknown): string => String(value ?? "")
@@ -53,6 +71,14 @@ const taskLabel = (input: EngineV3Input, task: TaskInput): string => normalize([
   (task as any).name,
   task.templateId ? input.taskTemplateNameById?.[Number(task.templateId)] : null,
 ].filter(Boolean).join(" "));
+
+const talentLabel = (input: EngineV3Input, talentId: number): string => {
+  const name = input.tasks
+    .filter((task) => Number(task.contestantId) === talentId)
+    .map((task) => String(task.contestantName ?? "").trim())
+    .find(Boolean);
+  return name || `talent:${talentId}`;
+};
 
 const dependencyIds = (task: TaskInput): number[] => [...new Set([
   ...(Array.isArray((task as any).dependencyIds) ? (task as any).dependencyIds : []),
@@ -98,13 +124,21 @@ const uniqueOrders = (orders: Array<{ kind: PipelineCandidateKind; order: number
   entry.order.length > 0 && all.findIndex((other) => other.order.join(",") === entry.order.join(",")) === index
 ));
 
-const alternatingBlocks = (first: number[], second: number[], remaining: number[][]): number[] => {
-  const blockSize = Math.max(1, Math.ceil(Math.max(first.length, second.length) / 2));
+const balancedGroups = (groups: number[][]): number[] => {
+  const remaining = groups.map((group) => [...group]);
   const result: number[] = [];
-  for (let offset = 0; offset < Math.max(first.length, second.length); offset += blockSize) {
-    result.push(...first.slice(offset, offset + blockSize), ...second.slice(offset, offset + blockSize));
+  while (remaining.some((group) => group.length > 0)) {
+    for (const group of remaining) {
+      const talentId = group.shift();
+      if (talentId !== undefined) result.push(talentId);
+    }
   }
-  return [...result, ...remaining.flat()];
+  return result;
+};
+
+const mergeMappedIntoStableHoles = (originalOrder: number[], mappedOrder: number[], mappedSet: Set<number>): number[] => {
+  let mappedIndex = 0;
+  return originalOrder.map((talentId) => mappedSet.has(talentId) ? mappedOrder[mappedIndex++] : talentId);
 };
 
 const sortByDependencies = (tasks: TaskInput[]): TaskInput[] => {
@@ -125,7 +159,7 @@ const rejectionForCodes = (codes: HardConstraintViolationCode[]): PipelineReject
   if (codes.includes("AVAILABILITY_VIOLATION")) return "availability_violation";
   if (codes.includes("DEPENDENCY_VIOLATION")) return "dependency_violation";
   if (codes.some((code) => code === "LOCK_MOVED" || code === "DONE_MOVED" || code === "IN_PROGRESS_MOVED")) return "locked_or_executed_task";
-  return "feeder_chain_unschedulable";
+  return "candidate_failed_hard_validation";
 };
 
 const updatePlanned = (plannedById: Map<number, Planned>, taskId: number, start: number): void => {
@@ -141,32 +175,53 @@ const addRejected = (diagnostics: PipelineBuilderDiagnostics, reason: PipelineRe
   if (!diagnostics.rejectedReasons.includes(reason)) diagnostics.rejectedReasons.push(reason);
 };
 
+const addFeederOutcome = (outcomes: PipelineFeederOutcome[], outcome: PipelineFeederOutcome): void => {
+  if (!outcomes.includes(outcome)) outcomes.push(outcome);
+};
+
+const taskIdsByMovement = (baseline: EngineOutput, plannedById: Map<number, Planned>): { moved: number[]; stable: number[] } => {
+  const moved: number[] = [];
+  const stable: number[] = [];
+  for (const planned of baseline.plannedTasks ?? []) {
+    const candidate = plannedById.get(Number(planned.taskId));
+    const target = candidate
+      && candidate.startPlanned === planned.startPlanned
+      && candidate.endPlanned === planned.endPlanned
+      ? stable : moved;
+    target.push(Number(planned.taskId));
+  }
+  return { moved: moved.slice(0, MAX_TASK_DIAGNOSTICS), stable: stable.slice(0, MAX_TASK_DIAGNOSTICS) };
+};
+
+const emptyDiagnostics = (baselineScore: CandidateSolutionScore): PipelineBuilderDiagnostics => ({
+  attempted: false,
+  candidatesGenerated: 0,
+  reason: "generator_not_invoked",
+  rejectedReasons: [],
+  before: compactMetrics(baselineScore),
+  after: compactMetrics(baselineScore),
+  mappedTalents: [],
+  unmappedTalents: [],
+  movedTaskIds: [],
+  stableTaskIds: [],
+  feederOutcomes: [],
+});
+
 export const generatePipelineBuilderCandidates = (
   input: EngineV3Input,
   baseline: EngineOutput,
   diagnostics?: PipelineBuilderDiagnostics,
 ): PipelineBuilderCandidate[] => {
   const baselineScore = scoreCandidateSolution(input, baseline);
-  const report = diagnostics ?? {
-    attempted: false,
-    candidatesGenerated: 0,
-    reason: "missing_main_stage_sequence",
-    rejectedReasons: [],
-    before: compactMetrics(baselineScore),
-    after: compactMetrics(baselineScore),
-  };
-  report.attempted = true;
-  report.candidatesGenerated = 0;
-  report.rejectedReasons = [];
-  report.before = compactMetrics(baselineScore);
-  report.after = compactMetrics(baselineScore);
+  const report = diagnostics ?? emptyDiagnostics(baselineScore);
+  Object.assign(report, emptyDiagnostics(baselineScore), { attempted: true });
 
   const mainZoneId = Number(input.optimizerMainZoneId ?? NaN);
   const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]));
   const plannedByIdBase = new Map((baseline.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
   if (!Number.isFinite(mainZoneId)) {
-    addRejected(report, "missing_main_stage_sequence");
-    report.reason = "missing_main_stage_sequence";
+    addRejected(report, "main_stage_sequence_missing");
+    report.reason = "main_stage_sequence_missing";
     return [];
   }
 
@@ -177,10 +232,10 @@ export const generatePipelineBuilderCandidates = (
     if (!task || Number(task.zoneId) !== mainZoneId || start === null || end === null || end <= start) return null;
     const talentId = Number(task.contestantId ?? NaN);
     return Number.isFinite(talentId) && talentId > 0 ? { task, planned, start, end, talentId } : null;
-  }).filter((row): row is NonNullable<typeof row> => row !== null).sort((a, b) => a.start - b.start || Number(a.task.id) - Number(b.task.id));
+  }).filter((row): row is MainRow => row !== null).sort((a, b) => a.start - b.start || Number(a.task.id) - Number(b.task.id));
   if (mainRows.length < 2) {
-    addRejected(report, "missing_main_stage_sequence");
-    report.reason = "missing_main_stage_sequence";
+    addRejected(report, "main_stage_sequence_missing");
+    report.reason = "main_stage_sequence_missing";
     return [];
   }
 
@@ -202,33 +257,41 @@ export const generatePipelineBuilderCandidates = (
     }
     if (assigned.size === 1) coachByTalent.set(talentId, [...assigned][0]);
   }
-  if (coachByTalent.size !== originalTalentOrder.length) {
-    addRejected(report, "missing_talent_coach_mapping");
-    report.reason = "missing_talent_coach_mapping";
-    return [];
-  }
-  const coachOrder = originalTalentOrder.map((talentId) => coachByTalent.get(talentId)!)
+
+  const mappedTalents = originalTalentOrder.filter((talentId) => coachByTalent.has(talentId));
+  const unmappedTalents = originalTalentOrder.filter((talentId) => !coachByTalent.has(talentId));
+  report.mappedTalents = mappedTalents.map((talentId) => talentLabel(input, talentId)).slice(0, MAX_TALENT_DIAGNOSTICS);
+  report.unmappedTalents = unmappedTalents.map((talentId) => talentLabel(input, talentId)).slice(0, MAX_TALENT_DIAGNOSTICS);
+
+  const coachOrder = mappedTalents.map((talentId) => coachByTalent.get(talentId)!)
     .filter((coachId, index, all) => all.indexOf(coachId) === index);
-  if (coachOrder.length < 2) {
-    addRejected(report, "missing_talent_coach_mapping");
-    report.reason = "missing_talent_coach_mapping";
+  if (mappedTalents.length < MIN_MAPPED_TALENTS || coachOrder.length < 2) {
+    addRejected(report, "not_enough_mapped_talents");
+    report.reason = "not_enough_mapped_talents";
     return [];
   }
-  const talentsByCoach = coachOrder.map((coachId) => originalTalentOrder.filter((talentId) => coachByTalent.get(talentId) === coachId));
-  const orders = uniqueOrders([
+
+  const mappedSet = new Set(mappedTalents);
+  const talentsByCoach = coachOrder.map((coachId) => mappedTalents.filter((talentId) => coachByTalent.get(talentId) === coachId));
+  const mappedOrders = uniqueOrders([
     { kind: "pipeline_coachA_first", order: talentsByCoach.flat() },
     { kind: "pipeline_coachB_first", order: [talentsByCoach[1], talentsByCoach[0], ...talentsByCoach.slice(2)].flat() },
-    { kind: "pipeline_alternating_blocks", order: alternatingBlocks(talentsByCoach[0], talentsByCoach[1], talentsByCoach.slice(2)) },
+    { kind: "pipeline_grouped_balanced", order: balancedGroups(talentsByCoach) },
   ]).slice(0, 3);
+  const orders = mappedOrders.map((variant) => ({
+    ...variant,
+    order: mergeMappedIntoStableHoles(originalTalentOrder, variant.order, mappedSet),
+  }));
 
   const candidates: PipelineBuilderCandidate[] = [];
   for (const variant of orders) {
     const plannedById = new Map([...plannedByIdBase.entries()].map(([id, planned]) => [id, { ...planned }]));
-    const changedTaskIds = new Set<number>();
+    const feederOutcomes: PipelineFeederOutcome[] = [];
     let cursor = mainRows[0].start;
     let blocked = false;
     const mainStartByTalent = new Map<number, number>();
     const mainEndByTalent = new Map<number, number>();
+
     for (const talentId of variant.order) {
       const group = groupByTalent.get(talentId)!;
       mainStartByTalent.set(talentId, cursor);
@@ -240,7 +303,6 @@ export const generatePipelineBuilderCandidates = (
           break;
         }
         updatePlanned(plannedById, taskId, cursor);
-        if (cursor !== row.start) changedTaskIds.add(taskId);
         cursor += row.end - row.start;
       }
       mainEndByTalent.set(talentId, cursor);
@@ -249,6 +311,7 @@ export const generatePipelineBuilderCandidates = (
     if (blocked) continue;
 
     for (const talentId of variant.order) {
+      if (!mappedSet.has(talentId)) continue;
       const mainTaskIds = new Set(groupByTalent.get(talentId)!.tasks.map((row) => Number(row.task.id)));
       const talentTasks = input.tasks.filter((task) => Number(task.contestantId) === talentId && plannedById.has(Number(task.id)) && !mainTaskIds.has(Number(task.id)));
       const ancestorIds = new Set<number>();
@@ -273,16 +336,27 @@ export const generatePipelineBuilderCandidates = (
       for (const task of [...feeders].reverse()) {
         const taskId = Number(task.id);
         const planned = plannedById.get(taskId)!;
+        const original = plannedByIdBase.get(taskId)!;
         const start = toMinutes(planned.startPlanned)!;
         const end = toMinutes(planned.endPlanned)!;
+        const originalEnd = toMinutes(original.endPlanned)!;
         const newStart = feederCursor - (end - start);
+        const canKeepStable = originalEnd <= feederCursor;
         if (newStart < (toMinutes(input.workDay.start) ?? 0) || (isProtectedTask(input, taskId) && newStart !== start)) {
-          addRejected(report, isProtectedTask(input, taskId) ? "locked_or_executed_task" : "feeder_chain_unschedulable");
+          if (canKeepStable) {
+            plannedById.set(taskId, { ...original });
+            feederCursor = toMinutes(original.startPlanned)!;
+            addFeederOutcome(feederOutcomes, "feeder_kept_stable");
+            continue;
+          }
+          addFeederOutcome(feederOutcomes, "feeder_blocked");
+          addRejected(report, isProtectedTask(input, taskId) ? "locked_or_executed_task" : "feeders_unschedulable");
           blocked = true;
           break;
         }
         updatePlanned(plannedById, taskId, newStart);
-        if (newStart !== start) changedTaskIds.add(taskId);
+        if (newStart !== start) addFeederOutcome(feederOutcomes, "feeder_relocated");
+        else addFeederOutcome(feederOutcomes, "feeder_kept_stable");
         feederCursor = newStart;
       }
       if (blocked) break;
@@ -301,13 +375,15 @@ export const generatePipelineBuilderCandidates = (
           break;
         }
         updatePlanned(plannedById, taskId, postCursor);
-        if (postCursor !== start) changedTaskIds.add(taskId);
         postCursor += end - start;
       }
       if (blocked) break;
     }
-    if (blocked || changedTaskIds.size === 0) continue;
+    for (const outcome of feederOutcomes) addFeederOutcome(report.feederOutcomes, outcome);
+    if (blocked) continue;
 
+    const movement = taskIdsByMovement(baseline, plannedById);
+    if (movement.moved.length === 0) continue;
     const output: EngineOutput = {
       ...baseline,
       plannedTasks: (baseline.plannedTasks ?? []).map((planned) => plannedById.get(Number(planned.taskId)) ?? planned),
@@ -315,34 +391,43 @@ export const generatePipelineBuilderCandidates = (
     const validation = validateHardConstraints(input, output);
     const score = scoreCandidateSolution(input, output);
     if (!validation.hardValidationPassed) {
+      addRejected(report, "candidate_failed_hard_validation");
       addRejected(report, rejectionForCodes(validation.hardConstraintViolationCodes));
       continue;
     }
     if (score.plannedTasks !== baselineScore.plannedTasks) {
-      addRejected(report, "feeder_chain_unschedulable");
+      addRejected(report, "candidate_failed_hard_validation");
       continue;
     }
     if (score.mainStageGapMinutes !== 0 || score.mainStageGapMinutes > baselineScore.mainStageGapMinutes) {
-      addRejected(report, "would_create_main_stage_gap");
+      addRejected(report, "candidate_would_create_main_stage_gap");
       continue;
     }
     candidates.push({
       kind: variant.kind,
-      coachOrder: variant.order.map((talentId) => coachByTalent.get(talentId)!).filter((id, index, all) => all.indexOf(id) === index),
+      coachOrder: variant.order.map((talentId) => coachByTalent.get(talentId)).filter((id): id is number => id !== undefined)
+        .filter((id, index, all) => all.indexOf(id) === index),
       talentOrder: variant.order,
       output,
+      movedTaskIds: movement.moved,
+      stableTaskIds: movement.stable,
+      feederOutcomes,
     });
   }
 
   report.candidatesGenerated = candidates.length;
-  report.reason = candidates.length > 0 ? "pipeline_candidates_generated" : report.rejectedReasons[0] ?? "feeder_chain_unschedulable";
+  report.reason = candidates.length > 0
+    ? unmappedTalents.length > 0 ? "partial_mapping_used" : "pipeline_candidates_generated"
+    : report.rejectedReasons.length > 1 ? "all_candidates_rejected" : report.rejectedReasons[0] ?? "feeders_unschedulable";
   if (candidates.length > 0) {
-    const best = candidates.map((candidate) => scoreCandidateSolution(input, candidate.output))
-      .sort((a, b) => a.coachSplitDayPenalty - b.coachSplitDayPenalty
-        || a.maxCoachGapMinutes - b.maxCoachGapMinutes
-        || a.coachIdlePenalty - b.coachIdlePenalty
-        || a.coachSpanPenalty - b.coachSpanPenalty)[0];
-    report.after = compactMetrics(best);
+    const best = candidates.map((candidate) => ({ candidate, score: scoreCandidateSolution(input, candidate.output) }))
+      .sort((a, b) => a.score.coachSplitDayPenalty - b.score.coachSplitDayPenalty
+        || a.score.maxCoachGapMinutes - b.score.maxCoachGapMinutes
+        || a.score.coachIdlePenalty - b.score.coachIdlePenalty
+        || a.score.coachSpanPenalty - b.score.coachSpanPenalty)[0];
+    report.after = compactMetrics(best.score);
+    report.movedTaskIds = best.candidate.movedTaskIds.slice(0, MAX_TASK_DIAGNOSTICS);
+    report.stableTaskIds = best.candidate.stableTaskIds.slice(0, MAX_TASK_DIAGNOSTICS);
   }
   return candidates;
 };
