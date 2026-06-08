@@ -55,6 +55,18 @@ export type EngineDiagnosticsMetadata = {
   coachWaveReason?: string | null;
   coachWaveBefore?: Record<string, unknown> | null;
   coachWaveAfter?: Record<string, unknown> | null;
+  pipelineBuilderAttempted?: boolean | null;
+  pipelineCandidatesGenerated?: number | null;
+  pipelineAccepted?: boolean | null;
+  pipelineReason?: string | null;
+  pipelineRejectedReasons?: string[] | null;
+  pipelineBefore?: Record<string, unknown> | null;
+  pipelineAfter?: Record<string, unknown> | null;
+  pipelineMappedTalents?: string[] | null;
+  pipelineUnmappedTalents?: string[] | null;
+  pipelineMovedTasks?: number[] | null;
+  pipelineStableTasks?: number[] | null;
+  pipelineFeederOutcomes?: string[] | null;
   cpSatAttempted?: boolean | null;
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;

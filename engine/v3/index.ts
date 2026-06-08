@@ -111,6 +111,11 @@ type BacktrackingMeta = {
   pipelineRejectedReasons?: string[];
   pipelineBefore?: Record<string, number>;
   pipelineAfter?: Record<string, number>;
+  pipelineMappedTalents?: string[];
+  pipelineUnmappedTalents?: string[];
+  pipelineMovedTasks?: number[];
+  pipelineStableTasks?: number[];
+  pipelineFeederOutcomes?: string[];
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -658,32 +663,41 @@ export const runPipelineBuilderSelection = (
   const diagnostics: PipelineBuilderDiagnostics = {
     attempted: false,
     candidatesGenerated: 0,
-    reason: "missing_main_stage_sequence",
+    reason: "generator_not_invoked",
     rejectedReasons: [],
     before: compactCoachWaveMetrics(baseScore),
     after: compactCoachWaveMetrics(baseScore),
+    mappedTalents: [],
+    unmappedTalents: [],
+    movedTaskIds: [],
+    stableTaskIds: [],
+    feederOutcomes: [],
   };
   const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
   let bestOutput = baseOutput;
-  let bestKind: string | null = null;
+  let bestCandidate: (typeof candidates)[number] | null = null;
   for (const candidate of candidates) {
     if (compareCandidateSolutions(input, candidate.output, bestOutput) > 0) {
       bestOutput = candidate.output;
-      bestKind = candidate.kind;
+      bestCandidate = candidate;
     }
   }
   const accepted = bestOutput !== baseOutput;
   const bestScore = scoreCandidateSolution(input, bestOutput);
-  if (!accepted && candidates.length > 0 && !diagnostics.rejectedReasons.includes("not_better_than_baseline")) {
-    diagnostics.rejectedReasons.push("not_better_than_baseline");
+  if (!accepted && candidates.length > 0 && !diagnostics.rejectedReasons.includes("candidate_not_better_than_baseline")) {
+    diagnostics.rejectedReasons.push("candidate_not_better_than_baseline");
+    diagnostics.rejectedReasons.push("pipeline_candidate_generated_but_lost_scoring");
   }
-  const reason = accepted
+  const selectionReason = accepted
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
       ? "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? "pipeline_builder selected: lower coach gap"
+        ? "pipeline_builder selected: lower coach max gap"
         : "pipeline_builder selected: better operational quality"
-    : candidates.length > 0 ? "not_better_than_baseline" : diagnostics.reason;
+    : null;
+  const reason = accepted
+    ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
+    : candidates.length > 0 ? "pipeline_candidate_generated_but_lost_scoring" : diagnostics.reason;
   const selectedMetrics: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"] = {
     coachSwitchCount: bestScore.coachSwitchCount,
     coachSwitchPenalty: bestScore.coachSwitchPenalty,
@@ -716,12 +730,17 @@ export const runPipelineBuilderSelection = (
       pipelineRejectedReasons: diagnostics.rejectedReasons,
       pipelineBefore: diagnostics.before,
       pipelineAfter: accepted ? compactCoachWaveMetrics(bestScore) : diagnostics.after,
+      pipelineMappedTalents: diagnostics.mappedTalents.slice(0, 20),
+      pipelineUnmappedTalents: diagnostics.unmappedTalents.slice(0, 20),
+      pipelineMovedTasks: (bestCandidate?.movedTaskIds ?? diagnostics.movedTaskIds).slice(0, 50),
+      pipelineStableTasks: (bestCandidate?.stableTaskIds ?? diagnostics.stableTaskIds).slice(0, 50),
+      pipelineFeederOutcomes: bestCandidate?.feederOutcomes ?? diagnostics.feederOutcomes,
       candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
       solutionSource: accepted ? "pipeline_builder" : baseSource,
       bestCandidateSource: accepted ? "pipeline_builder" : baseMeta.bestCandidateSource ?? baseSource,
       bestCandidateScore: accepted ? summarizeCandidateScore(bestScore) : baseMeta.bestCandidateScore ?? summarizeCandidateScore(baseScore),
-      candidateSelectionReason: accepted ? reason : baseMeta.candidateSelectionReason,
-      candidateComparisonSummary: accepted ? `${reason} (${bestKind})` : baseMeta.candidateComparisonSummary ?? reason,
+      candidateSelectionReason: accepted ? selectionReason! : baseMeta.candidateSelectionReason,
+      candidateComparisonSummary: accepted ? `${selectionReason} (${bestCandidate?.kind})` : baseMeta.candidateComparisonSummary ?? reason,
       selectedCandidateMetrics: accepted ? selectedMetrics : baseMeta.selectedCandidateMetrics,
     },
   };
@@ -798,6 +817,18 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       neighborhoodCandidatesGenerated: 0,
       neighborhoodCandidateAccepted: false,
       neighborhoodSearchTimeMs: 0,
+      pipelineBuilderAttempted: false,
+      pipelineCandidatesGenerated: 0,
+      pipelineAccepted: false,
+      pipelineReason: "generator_not_invoked",
+      pipelineRejectedReasons: [],
+      pipelineBefore: {},
+      pipelineAfter: {},
+      pipelineMappedTalents: [],
+      pipelineUnmappedTalents: [],
+      pipelineMovedTasks: [],
+      pipelineStableTasks: [],
+      pipelineFeederOutcomes: [],
       ...meta,
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,

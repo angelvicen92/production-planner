@@ -476,6 +476,11 @@ export interface EngineOutput {
     pipelineRejectedReasons?: string[];
     pipelineBefore?: Record<string, number>;
     pipelineAfter?: Record<string, number>;
+    pipelineMappedTalents?: string[];
+    pipelineUnmappedTalents?: string[];
+    pipelineMovedTasks?: number[];
+    pipelineStableTasks?: number[];
+    pipelineFeederOutcomes?: string[];
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;
