@@ -434,7 +434,7 @@ export const runOperationalNeighborhoodSelection = (
         operationalCompactionMetricsAfter: compactOperationalMetrics(compactionBefore),
         coachCompactionAttempted,
         coachCompactionCandidatesGenerated: 0,
-        coachCompactionRejectedReasons: initialCoachRejectedReasons.length ? initialCoachRejectedReasons : ["no_improving_slot_found"],
+        coachCompactionRejectedReasons: initialCoachRejectedReasons.length ? initialCoachRejectedReasons : ["no_valid_shift_found"],
         coachCompactionTargetedCoaches: targetedCoaches,
         coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
         coachCompactionBestAfter: compactOperationalMetrics(compactionBefore),
@@ -476,9 +476,17 @@ export const runOperationalNeighborhoodSelection = (
         : "no operational neighborhood candidate generated");
 
   const coachCandidates = candidates.filter((candidate) => candidate.reason === "coach_gap_compaction");
-  const bestCoachOutput = coachCandidates.reduce<EngineOutput>((best, candidate) => (
-    compareCandidateSolutions(input, candidate.output, best) > 0 ? candidate.output : best
-  ), baseOutput);
+  const bestCoachOutput = coachCandidates.reduce<EngineOutput>((best, candidate) => {
+    const bestMetrics = calculateEngineOperationalCompactionMetrics(input, best);
+    const candidateMetrics = calculateEngineOperationalCompactionMetrics(input, candidate.output);
+    const candidateImprovesCoach = candidateMetrics.maxCoachGapMinutes < bestMetrics.maxCoachGapMinutes
+      || (candidateMetrics.maxCoachGapMinutes === bestMetrics.maxCoachGapMinutes
+        && candidateMetrics.coachIdlePenalty < bestMetrics.coachIdlePenalty)
+      || (candidateMetrics.maxCoachGapMinutes === bestMetrics.maxCoachGapMinutes
+        && candidateMetrics.coachIdlePenalty === bestMetrics.coachIdlePenalty
+        && candidateMetrics.coachSpanPenalty < bestMetrics.coachSpanPenalty);
+    return candidateImprovesCoach ? candidate.output : best;
+  }, baseOutput);
   const coachCompactionAfter = calculateEngineOperationalCompactionMetrics(input, bestCoachOutput);
   const coachRejectedReasons = [...new Set([
     ...initialCoachRejectedReasons,
@@ -486,18 +494,15 @@ export const runOperationalNeighborhoodSelection = (
       .filter((reason) => reason.startsWith("coach_gap_compaction:"))
       .map((reason) => reason.slice("coach_gap_compaction:".length))
       .filter((reason) => [
-        "no_movable_tasks",
-        "blocked_by_main_stage_continuity",
         "blocked_by_dependencies",
-        "blocked_by_space_capacity",
-        "blocked_by_resource_conflict",
-        "blocked_by_availability",
-        "would_move_locked_or_executed",
-        "no_improving_slot_found",
+        "blocked_by_space_or_resource",
+        "blocked_by_main_stage",
+        "no_movable_tasks",
+        "no_valid_shift_found",
       ].includes(reason)),
   ])];
   if (coachCompactionAttempted && bestCoachOutput === baseOutput && coachRejectedReasons.length === 0) {
-    coachRejectedReasons.push("no_improving_slot_found");
+    coachRejectedReasons.push("no_valid_shift_found");
   }
   const compactionAfter = calculateEngineOperationalCompactionMetrics(input, bestOutput);
   const compactionAccepted = accepted && (bestScore.coachIdlePenalty < baseScore.coachIdlePenalty
