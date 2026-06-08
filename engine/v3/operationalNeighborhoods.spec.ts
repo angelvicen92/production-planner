@@ -410,7 +410,7 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   assert.ok((diagnostics.rejectedReasons.would_move_locked_or_executed ?? 0) > 0, JSON.stringify(diagnostics));
 }
 
-// ID 034. Coach compaction metadata is total and pull-forward reduces a large coach gap.
+// ID 035. Coach compaction metadata is total and pull-forward reduces a 260-minute coach gap.
 {
   const input = baseInput([
     { id: 200, planId: PLAN_ID, templateId: 200, zoneId: 2, spaceId: 201, contestantId: 200, status: "pending", durationOverrideMin: 30 },
@@ -418,13 +418,23 @@ console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
   ], { workDay: { start: "09:00", end: "15:00" }, optimizerMainZoneId: null });
   const seed = completeOutput([
     { taskId: 200, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [COACH_A] },
-    { taskId: 201, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [COACH_A] },
+    { taskId: 201, startPlanned: "13:50", endPlanned: "14:20", assignedResources: [COACH_A] },
   ]);
   const selected = runOperationalNeighborhoodSelection(input, seed, "phaseA_greedy");
   assert.equal(selected.meta.coachCompactionAttempted, true);
+  assert.equal(typeof selected.meta.coachCompactionCandidatesGenerated, "number");
   assert.ok((selected.meta.coachCompactionCandidatesGenerated ?? 0) > 0);
-  assert.equal(selected.meta.coachCompactionBestBefore?.maxCoachGapMinutes, 210);
-  assert.ok((selected.meta.coachCompactionBestAfter?.maxCoachGapMinutes ?? 999) < 210);
+  assert.deepEqual(selected.meta.coachCompactionTargetedCoaches, [{
+    coachId: COACH_A,
+    coachName: "Coach A",
+    maxGapMinutes: 260,
+    spanMinutes: 320,
+    idleMinutes: 260,
+  }]);
+  assert.equal(selected.meta.coachCompactionBestBefore?.maxCoachGapMinutes, 260);
+  assert.ok((selected.meta.coachCompactionBestAfter?.maxCoachGapMinutes ?? 999) < 260);
+  assert.notEqual(selected.meta.coachCompactionBestBefore, null);
+  assert.notEqual(selected.meta.coachCompactionBestAfter, null);
   assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach max gap|lower coach idle|lower coach operational span/);
   assert.equal(countHardConstraintViolations(input, selected.output), 0);
 }

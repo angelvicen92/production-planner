@@ -66,6 +66,18 @@ const output: EngineOutput = {
     neighborhoodSearchAttempted: true,
     neighborhoodCandidatesGenerated: 3,
     neighborhoodCandidateAccepted: true,
+    coachCompactionAttempted: true,
+    coachCompactionCandidatesGenerated: 0,
+    coachCompactionRejectedReasons: ["no_improving_slot_found"],
+    coachCompactionTargetedCoaches: [{
+      coachId: 501,
+      coachName: "Lucía",
+      maxGapMinutes: 260,
+      spanMinutes: 320,
+      idleMinutes: 260,
+    }],
+    coachCompactionBestBefore: { maxCoachGapMinutes: 260 },
+    coachCompactionBestAfter: { maxCoachGapMinutes: 260 },
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -90,6 +102,18 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.backtrackingAttempted, true);
   assert.equal(diagnostics.engineMetadata.neighborhoodCandidatesGenerated, 3);
   assert.equal(diagnostics.engineMetadata.cpSatSegmentsAccepted, 1);
+  assert.equal(diagnostics.engineMetadata.coachCompactionAttempted, true);
+  assert.equal(diagnostics.engineMetadata.coachCompactionCandidatesGenerated, 0);
+  assert.deepEqual(diagnostics.engineMetadata.coachCompactionRejectedReasons, ["no_improving_slot_found"]);
+  assert.deepEqual(diagnostics.engineMetadata.coachCompactionTargetedCoaches, [{
+    coachId: 501,
+    coachName: "Lucía",
+    maxGapMinutes: 260,
+    spanMinutes: 320,
+    idleMinutes: 260,
+  }]);
+  assert.deepEqual(diagnostics.engineMetadata.coachCompactionBestBefore, { maxCoachGapMinutes: 260 });
+  assert.deepEqual(diagnostics.engineMetadata.coachCompactionBestAfter, { maxCoachGapMinutes: 260 });
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -107,6 +131,12 @@ const output: EngineOutput = {
   assert.equal(withoutMeta.engineMetadata.candidateSelectionReason, null);
   assert.equal(withoutMeta.engineMetadata.backtrackingAttempted, false);
   assert.equal(withoutMeta.engineMetadata.cpSatSegmentsAttempted, 0);
+  assert.equal(withoutMeta.engineMetadata.coachCompactionAttempted, false);
+  assert.equal(withoutMeta.engineMetadata.coachCompactionCandidatesGenerated, 0);
+  assert.deepEqual(withoutMeta.engineMetadata.coachCompactionRejectedReasons, []);
+  assert.deepEqual(withoutMeta.engineMetadata.coachCompactionTargetedCoaches, []);
+  assert.deepEqual(withoutMeta.engineMetadata.coachCompactionBestBefore, {});
+  assert.deepEqual(withoutMeta.engineMetadata.coachCompactionBestAfter, {});
 }
 
 {
