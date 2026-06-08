@@ -69,3 +69,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 034 — 2026-06-07 21:08 — Coach compaction real con trazabilidad de rechazos
 - ID 035 — 2026-06-08 08:25 — Fix metadata null de coach compaction
 - ID 036 — 2026-06-08 11:24 — Generador concreto para reducir gap de coach
+- ID 037 — 2026-06-08 12:54 — Coach bundle compaction para reducir gaps grandes de coach

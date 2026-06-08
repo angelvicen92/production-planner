@@ -434,7 +434,7 @@ export const runOperationalNeighborhoodSelection = (
         operationalCompactionMetricsAfter: compactOperationalMetrics(compactionBefore),
         coachCompactionAttempted,
         coachCompactionCandidatesGenerated: 0,
-        coachCompactionRejectedReasons: initialCoachRejectedReasons.length ? initialCoachRejectedReasons : ["no_valid_shift_found"],
+        coachCompactionRejectedReasons: initialCoachRejectedReasons.length ? initialCoachRejectedReasons : ["no_valid_bundle_slot_found"],
         coachCompactionTargetedCoaches: targetedCoaches,
         coachCompactionBestBefore: compactOperationalMetrics(compactionBefore),
         coachCompactionBestAfter: compactOperationalMetrics(compactionBefore),
@@ -494,19 +494,25 @@ export const runOperationalNeighborhoodSelection = (
       .filter((reason) => reason.startsWith("coach_gap_compaction:"))
       .map((reason) => reason.slice("coach_gap_compaction:".length))
       .filter((reason) => [
-        "blocked_by_dependencies",
-        "blocked_by_space_or_resource",
-        "blocked_by_main_stage",
+        "blocked_by_dependency_chain",
+        "blocked_by_resource_conflict",
+        "blocked_by_space_conflict",
+        "blocked_by_main_stage_continuity",
+        "blocked_by_availability",
+        "bundle_too_large",
+        "would_move_locked_or_executed",
         "no_movable_tasks",
-        "no_valid_shift_found",
+        "no_valid_bundle_slot_found",
       ].includes(reason)),
   ])];
   if (coachCompactionAttempted && bestCoachOutput === baseOutput && coachRejectedReasons.length === 0) {
-    coachRejectedReasons.push("no_valid_shift_found");
+    coachRejectedReasons.push("no_valid_bundle_slot_found");
   }
   const compactionAfter = calculateEngineOperationalCompactionMetrics(input, bestOutput);
-  const compactionAccepted = accepted && (bestScore.coachIdlePenalty < baseScore.coachIdlePenalty
+  const compactionAccepted = accepted && (bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
+    || bestScore.coachIdlePenalty < baseScore.coachIdlePenalty
     || bestScore.coachSpanPenalty < baseScore.coachSpanPenalty
+    || bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
     || bestScore.talentIdlePenalty < baseScore.talentIdlePenalty
     || bestScore.talentSpanPenalty < baseScore.talentSpanPenalty
     || bestScore.maxGapPenalty < baseScore.maxGapPenalty);
