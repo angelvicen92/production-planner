@@ -72,3 +72,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 037 — 2026-06-08 12:54 — Coach bundle compaction para reducir gaps grandes de coach
 - ID 038 — 2026-06-08 14:32 — Coach wave ordering para reducir jornadas partidas de vocal coaches
 - ID 039 — 2026-06-08 14:51 — Pipeline coach-wave candidate completo y diagnóstico obligatorio
+- ID 040 — 2026-06-08 15:20 — Phase C Pipeline Builder por Main Stage y coach waves

@@ -151,8 +151,8 @@ const output = (planned: Array<[number, string, string]>, unplanned: number[] = 
   assert.equal(compactScore.coachSwitchCount, calculateMetrics(input, compactCoaches, 0).coachSwitchCount, "scoring and benchmark must share coach-switch count");
   assert.equal(compactScore.coachSwitchPenalty, calculateMetrics(input, compactCoaches, 0).coachSwitchPenalty, "scoring and benchmark must share weighted coach-switch penalty");
   assert.ok(compareCandidateSolutions(input, compactCoaches, alternatingCoaches) > 0, "fewer coach switches wins");
-  assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, alternatingScore), /fewer coach switches/);
-  const weightedOnlyScore = { ...alternatingScore, coachSwitchCount: compactScore.coachSwitchCount, coachSwitchPenalty: compactScore.coachSwitchPenalty + 1 };
+  assert.match(explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, alternatingScore), /lower coach (?:max gap|split|idle|operational span)/);
+  const weightedOnlyScore = { ...compactScore, coachSwitchCount: compactScore.coachSwitchCount, coachSwitchPenalty: compactScore.coachSwitchPenalty + 1 };
   assert.match(
     explainCandidateComparison("phaseA_backtracking", "phaseA_greedy", compactScore, weightedOnlyScore),
     /lower weighted coach-switch penalty \(raw coach-switch count unchanged\)/,
