@@ -164,7 +164,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       coachWaveOrderingAttempted: meta?.coachWaveOrderingAttempted ?? false,
       coachWaveCandidatesGenerated: meta?.coachWaveCandidatesGenerated ?? 0,
       coachWaveAccepted: meta?.coachWaveAccepted ?? false,
-      coachWaveReason: meta?.coachWaveReason ?? null,
+      coachWaveReason: meta?.coachWaveReason ?? "generator_not_invoked",
       coachWaveBefore: meta?.coachWaveBefore ?? {},
       coachWaveAfter: meta?.coachWaveAfter ?? {},
       cpSatAttempted: meta?.cpSatAttempted ?? false,

@@ -49,6 +49,12 @@ export type EngineDiagnosticsMetadata = {
   coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number; spanMinutes: number; idleMinutes: number }> | null;
   coachCompactionBestBefore?: Record<string, unknown> | null;
   coachCompactionBestAfter?: Record<string, unknown> | null;
+  coachWaveOrderingAttempted?: boolean | null;
+  coachWaveCandidatesGenerated?: number | null;
+  coachWaveAccepted?: boolean | null;
+  coachWaveReason?: string | null;
+  coachWaveBefore?: Record<string, unknown> | null;
+  coachWaveAfter?: Record<string, unknown> | null;
   cpSatAttempted?: boolean | null;
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;

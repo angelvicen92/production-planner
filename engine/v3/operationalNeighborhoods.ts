@@ -13,7 +13,7 @@ import { getCoachResourceIds, getDependencyIds } from "./operationalPriority";
 import { compareCandidateSolutions } from "./solutionScoring";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
-import { generateCoachWaveCandidates } from "./coachWaves";
+import { generateCoachWaveCandidates, type CoachWaveGenerationDiagnostics } from "./coachWaves";
 import { validateHardConstraints, type HardConstraintViolationCode } from "./hardValidation";
 
 export type OperationalNeighborhoodReason =
@@ -39,6 +39,8 @@ export interface OperationalNeighborhoodDiagnostics {
   attemptedTypes: OperationalNeighborhoodReason[];
   generatedTypes: OperationalNeighborhoodReason[];
   rejectedReasons: Record<string, number>;
+  coachWaveOrderingAttempted?: boolean;
+  coachWaveReason?: string;
 }
 
 export interface OperationalNeighborhoodOptions {
@@ -565,12 +567,22 @@ const generateCoachWaveOrderingCandidates = (
 ): void => {
   const reason: OperationalNeighborhoodReason = "coach_wave_order";
   diagnostics.attemptedTypes.push(reason);
-  const generated = generateCoachWaveCandidates(input, output);
+  const waveDiagnostics: CoachWaveGenerationDiagnostics = {
+    orderingAttempted: false,
+    reason: "no_valid_wave_candidate",
+    rejectedReasons: {},
+  };
+  const generated = generateCoachWaveCandidates(input, output, waveDiagnostics);
+  diagnostics.coachWaveOrderingAttempted = waveDiagnostics.orderingAttempted;
+  diagnostics.coachWaveReason = waveDiagnostics.reason;
+  for (const [rejection, count] of Object.entries(waveDiagnostics.rejectedReasons)) {
+    for (let index = 0; index < count; index += 1) incrementNeighborhoodRejected(diagnostics, reason, rejection);
+  }
   if (!generated.length) {
-    incrementNeighborhoodRejected(diagnostics, reason, "no_compatible_coach_waves");
+    incrementNeighborhoodRejected(diagnostics, reason, waveDiagnostics.reason);
     return;
   }
-  for (const candidate of generated.slice(0, 2)) {
+  for (const candidate of generated.slice(0, 4)) {
     if (results.length >= maxCandidates) break;
     appendIfSafe(input, output, candidate.output, reason, results, seen, maxCandidates, diagnostics);
   }
@@ -824,6 +836,8 @@ const mergeDiagnostics = (
   for (const [reason, count] of Object.entries(source.rejectedReasons)) {
     target.rejectedReasons[reason] = (target.rejectedReasons[reason] ?? 0) + count;
   }
+  if (source.coachWaveOrderingAttempted !== undefined) target.coachWaveOrderingAttempted = source.coachWaveOrderingAttempted;
+  if (source.coachWaveReason !== undefined) target.coachWaveReason = source.coachWaveReason;
 };
 
 export const generateOperationalNeighborhoodSearchCandidates = (

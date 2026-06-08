@@ -132,6 +132,12 @@ export type EngineDiagnosticsSnapshot = {
     coachCompactionTargetedCoaches: CompactJsonValue;
     coachCompactionBestBefore: CompactJsonValue;
     coachCompactionBestAfter: CompactJsonValue;
+    coachWaveOrderingAttempted: boolean;
+    coachWaveCandidatesGenerated: number;
+    coachWaveAccepted: boolean;
+    coachWaveReason: string;
+    coachWaveBefore: CompactJsonValue;
+    coachWaveAfter: CompactJsonValue;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -214,6 +220,12 @@ export function buildEngineDiagnosticsSnapshot(
       coachCompactionTargetedCoaches: compactJsonValue(metadata.coachCompactionTargetedCoaches) ?? [],
       coachCompactionBestBefore: compactJsonValue(metadata.coachCompactionBestBefore) ?? {},
       coachCompactionBestAfter: compactJsonValue(metadata.coachCompactionBestAfter) ?? {},
+      coachWaveOrderingAttempted: optionalBoolean(metadata.coachWaveOrderingAttempted) ?? false,
+      coachWaveCandidatesGenerated: optionalNumber(metadata.coachWaveCandidatesGenerated) ?? 0,
+      coachWaveAccepted: optionalBoolean(metadata.coachWaveAccepted) ?? false,
+      coachWaveReason: optionalString(metadata.coachWaveReason) ?? "generator_not_invoked",
+      coachWaveBefore: compactJsonValue(metadata.coachWaveBefore) ?? {},
+      coachWaveAfter: compactJsonValue(metadata.coachWaveAfter) ?? {},
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

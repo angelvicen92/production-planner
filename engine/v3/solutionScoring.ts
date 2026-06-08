@@ -161,13 +161,13 @@ export const compareCandidateScores = (a: CandidateSolutionScore, b: CandidateSo
     [a.contestantWindowViolations, b.contestantWindowViolations, true],
     [a.mainStageGapCount, b.mainStageGapCount, true],
     [a.mainStageGapMinutes, b.mainStageGapMinutes, true],
-    [a.restrictiveTalentLatenessPenalty, b.restrictiveTalentLatenessPenalty, true],
-    [a.dependencyFeederPenalty, b.dependencyFeederPenalty, true],
     [a.coachSwitchPenalty, b.coachSwitchPenalty, true],
     [a.coachSplitDayPenalty, b.coachSplitDayPenalty, true],
     [a.maxCoachGapMinutes, b.maxCoachGapMinutes, true],
     [a.coachIdlePenalty, b.coachIdlePenalty, true],
     [a.coachSpanPenalty, b.coachSpanPenalty, true],
+    [a.restrictiveTalentLatenessPenalty, b.restrictiveTalentLatenessPenalty, true],
+    [a.dependencyFeederPenalty, b.dependencyFeederPenalty, true],
     [a.talentIdlePenalty, b.talentIdlePenalty, true],
     [a.talentSpanPenalty, b.talentSpanPenalty, true],
     [a.maxGapPenalty, b.maxGapPenalty, true],
@@ -198,8 +198,6 @@ export const explainCandidateComparison = (
   if (selected.contestantWindowViolations !== rejected.contestantWindowViolations) return `${selectedSource} selected: fewer availability window violations`;
   if (selected.mainStageGapCount !== rejected.mainStageGapCount) return `${selectedSource} selected: fewer main-stage gaps`;
   if (selected.mainStageGapMinutes !== rejected.mainStageGapMinutes) return `${selectedSource} selected: fewer main-stage gap minutes`;
-  if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: earlier restrictive talents`;
-  if (selected.dependencyFeederPenalty !== rejected.dependencyFeederPenalty) return `${selectedSource} selected: better feeder/dependency timing`;
   if (selected.coachSwitchPenalty !== rejected.coachSwitchPenalty) {
     if (selected.coachSwitchCount !== null && rejected.coachSwitchCount !== null && selected.coachSwitchCount < rejected.coachSwitchCount) {
       return `${selectedSource} selected: fewer coach switches`;
@@ -209,10 +207,12 @@ export const explainCandidateComparison = (
       : `raw coach-switch count ${selected.coachSwitchCount ?? "n/a"} vs ${rejected.coachSwitchCount ?? "n/a"}`;
     return `${selectedSource} selected: lower weighted coach-switch penalty (${rawComparison})`;
   }
-  if (selected.coachSplitDayPenalty !== rejected.coachSplitDayPenalty) return `${selectedSource} selected: lower coach split/gap`;
-  if (selected.maxCoachGapMinutes !== rejected.maxCoachGapMinutes) return `${selectedSource} selected: lower coach split/gap`;
+  if (selected.coachSplitDayPenalty !== rejected.coachSplitDayPenalty) return `${selectedSource} selected: lower coach split`;
+  if (selected.maxCoachGapMinutes !== rejected.maxCoachGapMinutes) return `${selectedSource} selected: lower coach max gap`;
   if (selected.coachIdlePenalty !== rejected.coachIdlePenalty) return `${selectedSource} selected: lower coach idle`;
   if (selected.coachSpanPenalty !== rejected.coachSpanPenalty) return `${selectedSource} selected: lower coach operational span`;
+  if (selected.restrictiveTalentLatenessPenalty !== rejected.restrictiveTalentLatenessPenalty) return `${selectedSource} selected: earlier restrictive talents`;
+  if (selected.dependencyFeederPenalty !== rejected.dependencyFeederPenalty) return `${selectedSource} selected: better feeder/dependency timing`;
   if (selected.talentIdlePenalty !== rejected.talentIdlePenalty) return `${selectedSource} selected: lower talent idle`;
   if (selected.talentSpanPenalty !== rejected.talentSpanPenalty) return `${selectedSource} selected: lower talent operational span`;
   if (selected.maxGapPenalty !== rejected.maxGapPenalty) return `${selectedSource} selected: lower operational max gaps`;
