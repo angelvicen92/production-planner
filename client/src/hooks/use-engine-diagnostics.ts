@@ -45,7 +45,10 @@ export type EngineDiagnosticsMetadata = {
   operationalCompactionMetricsAfter?: Record<string, unknown> | null;
   coachCompactionAttempted?: boolean | null;
   coachCompactionCandidatesGenerated?: number | null;
-  coachCompactionRejectedReasons?: Record<string, unknown> | null;
+  coachCompactionRejectedReasons?: string[] | null;
+  coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }> | null;
+  coachCompactionBestBefore?: Record<string, unknown> | null;
+  coachCompactionBestAfter?: Record<string, unknown> | null;
   cpSatAttempted?: boolean | null;
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;

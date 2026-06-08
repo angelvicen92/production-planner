@@ -99,3 +99,13 @@ ID 032 incorpora al input `coachResourceIds` derivados de la configuración de c
 Las penalizaciones se interpretan así: `coachIdlePenalty` suma minutos inactivos dentro del span de cada coach; `coachSpanPenalty` suma sus spans; `maxCoachGapMinutes` conserva el mayor hueco; y `coachSplitDayPenalty` suma bloques adicionales separados por al menos 45 minutos. La compactación publica además intento, candidatos y razones de rechazo específicas.
 
 En la próxima prueba real se espera que una jornada partida deje de producir ceros, que las métricas before/after sean visibles en el export y que, si existe un movimiento hard-safe que no empeora main stage, gane el candidato con menor idle/span de coach. El riesgo residual son recursos legacy sin configuración vocal, sin metadatos de tipo y con nombres no descriptivos; esos casos requieren completar datos estructurados, no ampliar una heurística personal.
+
+## ID 034 — Coach compaction with rejection trace
+
+La prueba real del run 176 mostró un plan hard-válido y una mejora de talent gap, pero ninguna mejora de coach: el principal coach afectado conservaba 260 minutos de hueco y la metadata específica llegaba nula. La causa era doble: el vecindario solo probaba un ancla adyacente genérica y la metadata se construía únicamente en la rama donde se ejecutaba la búsqueda; además, los rechazos hard se colapsaban en categorías genéricas y el filtro de export no coincidía con ellas.
+
+La búsqueda ahora parte directamente de los intervalos detectados para cada recurso coach, sin depender de feeders-to-main. Para gaps de al menos 90 minutos prueba de forma determinista: adelantar el segundo bloque, retrasar el primer bloque aislado, conservar bloques consecutivos mediante bundle move y un swap local de igual duración. Nunca mueve tareas `done`, `in_progress`, manuales o bloqueadas, y cada candidato pasa validación hard y la protección de continuidad de Main Stage.
+
+La traza puede devolver: `no_coaches_detected`, `no_large_coach_gap`, `no_movable_tasks`, `blocked_by_main_stage_continuity`, `blocked_by_dependencies`, `blocked_by_space_capacity`, `blocked_by_resource_conflict`, `blocked_by_availability`, `would_move_locked_or_executed` y `no_improving_slot_found`.
+
+Para la siguiente prueba real deben compararse `coachCompactionBestBefore/After`, los coaches objetivo, el número de candidatos y la razón de selección. Una mejora aceptada debe explicar `lower coach max gap`, `lower coach idle` o `lower coach operational span`; si los candidatos no superan el plan actual se informa `kept current: coach compaction candidates did not improve`.

@@ -2,7 +2,7 @@ import type { EngineOutput } from "../../types";
 import type { EngineV3Input } from "../types";
 import type { PlannedTaskView } from "../metrics";
 
-export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "AA" | "AB" | "AC" | "AD";
+export type BenchmarkScenarioId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "AA" | "AB" | "AC" | "AD" | "AE" | "AF";
 
 export interface BenchmarkScenario {
   id: BenchmarkScenarioId;
@@ -102,6 +102,12 @@ export interface EngineBenchmarkMetrics {
   neighborhoodTypesAttempted: string[] | null;
   neighborhoodTypesGenerated: string[] | null;
   neighborhoodRejectedReasons: Record<string, number> | null;
+  coachCompactionAttempted: boolean | null;
+  coachCompactionCandidatesGenerated: number | null;
+  coachCompactionRejectedReasons: string[] | null;
+  coachCompactionTargetedCoaches: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }> | null;
+  coachCompactionBestBefore: Record<string, number> | null;
+  coachCompactionBestAfter: Record<string, number> | null;
   structuredBlockersCount: number;
   movableBlockersCount: number;
   immovableBlockersCount: number;

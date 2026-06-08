@@ -23,6 +23,7 @@ export interface CandidateSolutionScore {
   dependencyFeederPenalty: number;
   coachSwitchCount: number | null;
   coachSwitchPenalty: number;
+  maxCoachGapMinutes: number;
   coachIdlePenalty: number;
   coachSpanPenalty: number;
   coachSplitDayPenalty: number;
@@ -104,6 +105,7 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     `feeders=${dependencyFeederPenalty}`,
     `coachSwitchCount=${coachSwitchCount ?? "n/a"}`,
     `coachSwitchPenalty=${coachSwitchPenalty}`,
+    `maxCoachGap=${compactionMetrics.maxCoachGapMinutes}`,
     `coachIdle=${compactionMetrics.coachIdlePenalty}`,
     `coachSpan=${compactionMetrics.coachSpanPenalty}`,
     `coachSplit=${compactionMetrics.coachSplitDayPenalty}`,
@@ -127,6 +129,7 @@ export const scoreCandidateSolution = (input: EngineV3Input, output: EngineOutpu
     dependencyFeederPenalty,
     coachSwitchCount,
     coachSwitchPenalty,
+    maxCoachGapMinutes: compactionMetrics.maxCoachGapMinutes,
     coachIdlePenalty: compactionMetrics.coachIdlePenalty,
     coachSpanPenalty: compactionMetrics.coachSpanPenalty,
     coachSplitDayPenalty: compactionMetrics.coachSplitDayPenalty,
@@ -161,6 +164,7 @@ export const compareCandidateScores = (a: CandidateSolutionScore, b: CandidateSo
     [a.restrictiveTalentLatenessPenalty, b.restrictiveTalentLatenessPenalty, true],
     [a.dependencyFeederPenalty, b.dependencyFeederPenalty, true],
     [a.coachSwitchPenalty, b.coachSwitchPenalty, true],
+    [a.maxCoachGapMinutes, b.maxCoachGapMinutes, true],
     [a.coachIdlePenalty, b.coachIdlePenalty, true],
     [a.coachSpanPenalty, b.coachSpanPenalty, true],
     [a.coachSplitDayPenalty, b.coachSplitDayPenalty, true],
@@ -205,6 +209,7 @@ export const explainCandidateComparison = (
       : `raw coach-switch count ${selected.coachSwitchCount ?? "n/a"} vs ${rejected.coachSwitchCount ?? "n/a"}`;
     return `${selectedSource} selected: lower weighted coach-switch penalty (${rawComparison})`;
   }
+  if (selected.maxCoachGapMinutes !== rejected.maxCoachGapMinutes) return `${selectedSource} selected: lower coach max gap`;
   if (selected.coachIdlePenalty !== rejected.coachIdlePenalty) return `${selectedSource} selected: lower coach idle`;
   if (selected.coachSpanPenalty !== rejected.coachSpanPenalty) return `${selectedSource} selected: lower coach operational span`;
   if (selected.coachSplitDayPenalty !== rejected.coachSplitDayPenalty) return `${selectedSource} selected: fewer coach split days`;

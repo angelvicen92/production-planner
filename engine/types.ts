@@ -420,6 +420,7 @@ export interface EngineOutput {
     selectedCandidateMetrics?: {
       coachSwitchCount: number | null;
       coachSwitchPenalty: number;
+      maxCoachGapMinutes: number;
       coachIdlePenalty: number;
       coachSpanPenalty: number;
       coachSplitDayPenalty: number;
@@ -458,7 +459,10 @@ export interface EngineOutput {
     operationalCompactionMetricsAfter?: Record<string, number>;
     coachCompactionAttempted?: boolean;
     coachCompactionCandidatesGenerated?: number;
-    coachCompactionRejectedReasons?: Record<string, number>;
+    coachCompactionRejectedReasons?: string[];
+    coachCompactionTargetedCoaches?: Array<{ coachId: number | null; coachName: string; maxGapMinutes: number }>;
+    coachCompactionBestBefore?: Record<string, number>;
+    coachCompactionBestAfter?: Record<string, number>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

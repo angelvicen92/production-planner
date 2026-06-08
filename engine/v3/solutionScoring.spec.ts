@@ -198,7 +198,7 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
   ] };
   assert.ok(scoreCandidateSolution(input, compact).coachIdlePenalty < scoreCandidateSolution(input, split).coachIdlePenalty);
   assert.ok(compareCandidateSolutions(input, compact, split) > 0);
-  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower coach idle/);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower coach max gap|lower coach idle/);
 }
 
 // ID 031 — compactación de talents desempata cuando los criterios superiores permanecen iguales.
@@ -212,4 +212,30 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
   assert.ok(scoreCandidateSolution(input, compact).talentIdlePenalty < scoreCandidateSolution(input, split).talentIdlePenalty);
   assert.ok(compareCandidateSolutions(input, compact, split) > 0);
   assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower talent idle/);
+}
+
+// ID 034. Coach max gap outranks a smaller talent-idle improvement after higher criteria tie.
+{
+  const input = baseInput({
+    optimizerMainZoneId: null,
+    coachResourceIds: [501],
+    planResourceItems: [{ id: 501, resourceItemId: 9501, typeId: 10, category: "coach", name: "Coach", isAvailable: true }],
+    tasks: [
+      { id: 301, planId: 1, templateId: 1, zoneId: 2, spaceId: 201, contestantId: 11, status: "pending", durationOverrideMin: 30 },
+      { id: 302, planId: 1, templateId: 2, zoneId: 2, spaceId: 202, contestantId: 12, status: "pending", durationOverrideMin: 30 },
+      { id: 303, planId: 1, templateId: 3, zoneId: 2, spaceId: 203, contestantId: 11, status: "pending", durationOverrideMin: 30 },
+    ] as any,
+  } as any);
+  const lowerCoachGap = { ...output([]), plannedTasks: [
+    { taskId: 301, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [501] },
+    { taskId: 302, startPlanned: "10:00", endPlanned: "10:30", assignedResources: [501] },
+    { taskId: 303, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [] },
+  ] };
+  const lowerTalentIdle = { ...output([]), plannedTasks: [
+    { taskId: 301, startPlanned: "09:00", endPlanned: "09:30", assignedResources: [501] },
+    { taskId: 302, startPlanned: "13:00", endPlanned: "13:30", assignedResources: [501] },
+    { taskId: 303, startPlanned: "09:30", endPlanned: "10:00", assignedResources: [] },
+  ] };
+  assert.ok(compareCandidateSolutions(input, lowerCoachGap, lowerTalentIdle) > 0);
+  assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, lowerCoachGap), scoreCandidateSolution(input, lowerTalentIdle)), /lower coach max gap/);
 }

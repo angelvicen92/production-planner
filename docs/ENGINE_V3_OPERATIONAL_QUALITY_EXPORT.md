@@ -117,3 +117,9 @@ ID 032 incorpora al input `coachResourceIds` derivados de la configuración de c
 Las penalizaciones se interpretan así: `coachIdlePenalty` suma minutos inactivos dentro del span de cada coach; `coachSpanPenalty` suma sus spans; `maxCoachGapMinutes` conserva el mayor hueco; y `coachSplitDayPenalty` suma bloques adicionales separados por al menos 45 minutos. La compactación publica además intento, candidatos y razones de rechazo específicas.
 
 En la próxima prueba real se espera que una jornada partida deje de producir ceros, que las métricas before/after sean visibles en el export y que, si existe un movimiento hard-safe que no empeora main stage, gane el candidato con menor idle/span de coach. El riesgo residual son recursos legacy sin configuración vocal, sin metadatos de tipo y con nombres no descriptivos; esos casos requieren completar datos estructurados, no ampliar una heurística personal.
+
+## ID 034 — Coach compaction with rejection trace
+
+El bloque `intelligence` exporta siempre valores compactos para `coachCompactionAttempted`, `coachCompactionCandidatesGenerated`, `coachCompactionRejectedReasons`, `coachCompactionTargetedCoaches`, `coachCompactionBestBefore` y `coachCompactionBestAfter`. No se exportan candidatos completos ni calendarios duplicados.
+
+En una validación real, primero confirme que el coach con gap aparece en `coachCompactionTargetedCoaches`; después compare `maxCoachGapMinutes`, `coachIdlePenalty`, `coachSpanPenalty` y `coachSplitDayPenalty` entre before/after. Si no hay mejora, use las razones estructuradas para distinguir falta de tareas movibles de bloqueos por dependencias, disponibilidad, capacidad de espacio, recurso o continuidad de Main Stage.
