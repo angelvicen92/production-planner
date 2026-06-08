@@ -19,6 +19,12 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.equal(snapshot.runId, null);
   assert.equal(snapshot.summary.plannedTasks, null);
   assert.equal(snapshot.intelligence.backtrackingAttempted, null);
+  assert.equal(snapshot.intelligence.coachWaveOrderingAttempted, false);
+  assert.equal(snapshot.intelligence.coachWaveCandidatesGenerated, 0);
+  assert.equal(snapshot.intelligence.coachWaveAccepted, false);
+  assert.equal(snapshot.intelligence.coachWaveReason, "generator_not_invoked");
+  assert.deepEqual(snapshot.intelligence.coachWaveBefore, {});
+  assert.deepEqual(snapshot.intelligence.coachWaveAfter, {});
   assert.deepEqual(snapshot.humanReviewTemplate, {
     observedIssue: null,
     expectedBehavior: null,
@@ -54,6 +60,12 @@ test("includes key metrics without copying full engine or planning payloads", ()
       coachCompactionTargetedCoaches: [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260, spanMinutes: 320, idleMinutes: 260 }],
       coachCompactionBestBefore: { maxCoachGapMinutes: 260 },
       coachCompactionBestAfter: { maxCoachGapMinutes: 20 },
+      coachWaveOrderingAttempted: true,
+      coachWaveCandidatesGenerated: 3,
+      coachWaveAccepted: true,
+      coachWaveReason: "operational_neighborhood selected: coach wave ordering",
+      coachWaveBefore: { maxCoachGapMinutes: 260, coachSplitDayPenalty: 1 },
+      coachWaveAfter: { maxCoachGapMinutes: 20, coachSplitDayPenalty: 0 },
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -78,6 +90,12 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, [{ coachId: 501, coachName: "Coach A", maxGapMinutes: 260, spanMinutes: 320, idleMinutes: 260 }]);
   assert.deepEqual(snapshot.intelligence.coachCompactionBestBefore, { maxCoachGapMinutes: 260 });
   assert.deepEqual(snapshot.intelligence.coachCompactionBestAfter, { maxCoachGapMinutes: 20 });
+  assert.equal(snapshot.intelligence.coachWaveOrderingAttempted, true);
+  assert.equal(snapshot.intelligence.coachWaveCandidatesGenerated, 3);
+  assert.equal(snapshot.intelligence.coachWaveAccepted, true);
+  assert.equal(snapshot.intelligence.coachWaveReason, "operational_neighborhood selected: coach wave ordering");
+  assert.deepEqual(snapshot.intelligence.coachWaveBefore, { maxCoachGapMinutes: 260, coachSplitDayPenalty: 1 });
+  assert.deepEqual(snapshot.intelligence.coachWaveAfter, { maxCoachGapMinutes: 20, coachSplitDayPenalty: 0 });
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {

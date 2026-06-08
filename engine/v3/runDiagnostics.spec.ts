@@ -152,7 +152,7 @@ const output: EngineOutput = {
   assert.equal(withoutMeta.engineMetadata.coachWaveOrderingAttempted, false);
   assert.equal(withoutMeta.engineMetadata.coachWaveCandidatesGenerated, 0);
   assert.equal(withoutMeta.engineMetadata.coachWaveAccepted, false);
-  assert.equal(withoutMeta.engineMetadata.coachWaveReason, null);
+  assert.equal(withoutMeta.engineMetadata.coachWaveReason, "generator_not_invoked");
   assert.deepEqual(withoutMeta.engineMetadata.coachWaveBefore, {});
   assert.deepEqual(withoutMeta.engineMetadata.coachWaveAfter, {});
 }

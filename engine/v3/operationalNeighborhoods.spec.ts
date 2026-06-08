@@ -436,7 +436,7 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
   assert.ok((selected.meta.coachCompactionBestAfter?.maxCoachGapMinutes ?? 999) < 260);
   assert.notEqual(selected.meta.coachCompactionBestBefore, null);
   assert.notEqual(selected.meta.coachCompactionBestAfter, null);
-  assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach split\/gap|lower coach max gap|lower coach idle|lower coach operational span/);
+  assert.match(selected.meta.candidateSelectionReason ?? "", /lower coach split(?:\/gap)?|lower coach max gap|lower coach idle|lower coach operational span/);
   assert.equal(countHardConstraintViolations(input, selected.output), 0);
 }
 
@@ -708,7 +708,19 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
     allowedReasons: ["coach_wave_order"],
   }).filter((candidate) => candidate.reason === "coach_wave_order");
   assert.ok(waveCandidates.length > 0, "alternating coaches should generate coach_wave_order");
+  assert.ok(waveCandidates.length <= 4, "coach-wave generation must stay bounded");
   const wave = waveCandidates[0].output;
+  const groupedMainTalentOrder = (wave.plannedTasks ?? [])
+    .filter((planned) => [601, 611, 621, 631].includes(Number(planned.taskId)))
+    .sort((left, right) => String(left.startPlanned).localeCompare(String(right.startPlanned)))
+    .map((planned) => Number(planned.taskId) === 601 ? COACH_A
+      : Number(planned.taskId) === 611 ? COACH_B
+        : Number(planned.taskId) === 621 ? COACH_A : COACH_B);
+  assert.ok(
+    groupedMainTalentOrder.join(",") === [COACH_A, COACH_A, COACH_B, COACH_B].join(",")
+      || groupedMainTalentOrder.join(",") === [COACH_B, COACH_B, COACH_A, COACH_A].join(","),
+    `Plató 7 should be grouped by coach wave: ${groupedMainTalentOrder.join(",")}`,
+  );
   const before = calculateEngineOperationalCompactionMetrics(input, base);
   const after = calculateEngineOperationalCompactionMetrics(input, wave);
   assert.ok(after.maxCoachGapMinutes < before.maxCoachGapMinutes || after.coachSplitDayPenalty < before.coachSplitDayPenalty);
@@ -725,7 +737,34 @@ const byId = (output: EngineOutput) => new Map((output.plannedTasks ?? []).map((
   assert.equal(selected.meta.coachWaveOrderingAttempted, true);
   assert.ok((selected.meta.coachWaveCandidatesGenerated ?? 0) > 0);
   assert.equal(selected.meta.coachWaveAccepted, true);
-  assert.match(selected.meta.coachWaveReason ?? "", /coach wave ordering|lower coach split\/gap/);
+  assert.match(selected.meta.coachWaveReason ?? "", /coach wave ordering|lower coach split/);
+  assert.deepEqual(Object.keys(selected.meta.coachWaveBefore ?? {}).sort(), [
+    "coachIdlePenalty",
+    "coachSpanPenalty",
+    "coachSplitDayPenalty",
+    "coachSwitchPenalty",
+    "mainStageGapMinutes",
+    "maxCoachGapMinutes",
+    "talentIdlePenalty",
+  ].sort());
+
+  const lockedInput = { ...input, locks: [601, 611, 621, 631].map((taskId, index) => ({
+    id: 1000 + index,
+    planId: PLAN_ID,
+    taskId,
+    lockType: "time",
+    lockedStart: byId(base).get(taskId)?.startPlanned,
+    lockedEnd: byId(base).get(taskId)?.endPlanned,
+  })) } as EngineV3Input;
+  const lockedDiagnostics = { attemptedTypes: [], generatedTypes: [], rejectedReasons: {} } as any;
+  const lockedCandidates = generateOperationalNeighborhoodCandidates(lockedInput, base, {
+    allowedReasons: ["coach_wave_order"],
+    diagnostics: lockedDiagnostics,
+  });
+  assert.equal(lockedCandidates.length, 0);
+  assert.equal(lockedDiagnostics.coachWaveOrderingAttempted, true);
+  assert.equal(lockedDiagnostics.coachWaveReason, "skipped_due_to_locks_or_executed");
+  assert.ok((lockedDiagnostics.rejectedReasons["coach_wave_order:skipped_due_to_locks_or_executed"] ?? 0) > 0);
 }
 
 console.log("engine/v3/operationalNeighborhoods.spec.ts: OK");
