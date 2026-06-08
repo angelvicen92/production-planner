@@ -214,7 +214,7 @@ console.log("engine/v3/solutionScoring.spec.ts: OK");
   assert.match(explainCandidateComparison("operational_neighborhood", "phaseA_greedy", scoreCandidateSolution(input, compact), scoreCandidateSolution(input, split)), /lower talent idle/);
 }
 
-// ID 034. Coach max gap outranks a smaller talent-idle improvement after higher criteria tie.
+// ID 037. Coach max gap outranks a smaller talent-idle improvement after higher criteria tie.
 {
   const input = baseInput({
     optimizerMainZoneId: null,

@@ -99,7 +99,7 @@ const fixedTaskIds = (input: EngineV3Input): Set<number> => {
 };
 
 const cloneWithMoves = (output: EngineOutput, moves: Map<number, number>): EngineOutput | null => {
-  if (!moves.size || moves.size > 3) return null;
+  if (!moves.size || moves.size > 4) return null;
   let moved = 0;
   const plannedTasks = (output.plannedTasks ?? []).map((planned) => {
     const start = moves.get(Number(planned.taskId));
@@ -437,14 +437,18 @@ const improvesCoachCompaction = (input: EngineV3Input, base: EngineOutput, candi
   const after = calculateEngineOperationalCompactionMetrics(input, candidate);
   return after.maxCoachGapMinutes < before.maxCoachGapMinutes
     || after.coachIdlePenalty < before.coachIdlePenalty
-    || after.coachSpanPenalty < before.coachSpanPenalty;
+    || after.coachSpanPenalty < before.coachSpanPenalty
+    || after.coachSplitDayPenalty < before.coachSplitDayPenalty;
 };
 
 const coachCompactionRejectionReason = (reason: string): string => {
-  if (reason === "blocked_by_dependencies") return reason;
-  if (reason === "blocked_by_main_stage_continuity") return "blocked_by_main_stage";
-  if (["blocked_by_space_capacity", "blocked_by_resource_conflict"].includes(reason)) return "blocked_by_space_or_resource";
-  return "no_valid_shift_found";
+  if (reason === "blocked_by_dependencies") return "blocked_by_dependency_chain";
+  if (reason === "blocked_by_main_stage_continuity") return reason;
+  if (reason === "blocked_by_space_capacity") return "blocked_by_space_conflict";
+  if (reason === "blocked_by_resource_conflict") return reason;
+  if (reason === "blocked_by_availability") return reason;
+  if (reason === "would_move_locked_or_executed") return reason;
+  return "no_valid_bundle_slot_found";
 };
 
 const contiguousBlockBefore = (rows: CompactionRow[], boundaryIndex: number): CompactionRow[] => {
@@ -459,31 +463,97 @@ const contiguousBlockAfter = (rows: CompactionRow[], boundaryIndex: number): Com
   return rows.slice(boundaryIndex, end + 1);
 };
 
-const boundaryMoveSets = (
+type CoachBundleBuildResult = { moves?: Map<number, number>; rejection?: string };
+
+const directDependencyNeighbors = (input: EngineV3Input): Map<number, Set<number>> => {
+  const neighbors = new Map<number, Set<number>>();
+  const connect = (left: number, right: number): void => {
+    neighbors.set(left, new Set([...(neighbors.get(left) ?? []), right]));
+  };
+  for (const task of input.tasks ?? []) {
+    const taskId = Number((task as any).id ?? NaN);
+    if (!Number.isFinite(taskId)) continue;
+    for (const dependencyId of getDependencyIds(task)) {
+      connect(taskId, dependencyId);
+      connect(dependencyId, taskId);
+    }
+  }
+  return neighbors;
+};
+
+const dependencyAwareBundleMove = (
+  input: EngineV3Input,
+  output: EngineOutput,
+  selected: CompactionRow[],
+  shift: number,
+  fixed: Set<number>,
+  dependencyNeighbors: Map<number, Set<number>>,
+): CoachBundleBuildResult => {
+  const views = new Map(getPlannedViews(input, output).map((view) => [view.taskId, view]));
+  const moves = new Map(selected.map((row) => [row.taskId, row.start + shift]));
+  const selectedIds = new Set(moves.keys());
+
+  for (const row of selected) {
+    const source = views.get(row.taskId);
+    const contestantId = Number(source?.task.contestantId ?? NaN);
+    for (const relatedId of [...(dependencyNeighbors.get(row.taskId) ?? [])].sort((a, b) => a - b)) {
+      if (selectedIds.has(relatedId)) continue;
+      const related = views.get(relatedId);
+      if (!related || Number(related.task.contestantId ?? NaN) !== contestantId) continue;
+      const relatedStart = toMinutes(related.startPlanned);
+      const relatedEnd = toMinutes(related.endPlanned);
+      if (relatedStart === null || relatedEnd === null) continue;
+      const movedStart = row.start + shift;
+      const movedEnd = row.end + shift;
+      const movedDependsOnRelated = getDependencyIds(source?.task).includes(relatedId);
+      const relatedDependsOnMoved = getDependencyIds(related.task).includes(row.taskId);
+      const wouldBreak = (movedDependsOnRelated && movedStart < relatedEnd)
+        || (relatedDependsOnMoved && relatedStart < movedEnd);
+      if (!wouldBreak) continue;
+      if (fixed.has(relatedId)) return { rejection: "blocked_by_dependency_chain" };
+      if (moves.size >= 4) return { rejection: "bundle_too_large" };
+      moves.set(relatedId, relatedStart + shift);
+      selectedIds.add(relatedId);
+    }
+  }
+  return { moves };
+};
+
+const boundaryBundles = (
   block: CompactionRow[],
   fixed: Set<number>,
   direction: "later" | "earlier",
-  targetBoundary: number,
-): Map<number, number>[] => {
-  const ordered = direction === "later" ? [...block].reverse() : [...block];
+): CompactionRow[][] => {
+  const boundaryFirst = direction === "later" ? [...block].reverse() : [...block];
   const movable: CompactionRow[] = [];
-  for (const row of ordered) {
-    if (fixed.has(row.taskId) || movable.length >= 3) break;
+  for (const row of boundaryFirst) {
+    if (fixed.has(row.taskId) || movable.length >= 4) break;
     movable.push(row);
   }
   const chronological = direction === "later" ? movable.reverse() : movable;
-  const moveSets: Map<number, number>[] = [];
+  const bundles: CompactionRow[][] = [];
   for (let size = chronological.length; size >= 1; size -= 1) {
-    const selected = direction === "later"
+    bundles.push(direction === "later"
       ? chronological.slice(chronological.length - size)
-      : chronological.slice(0, size);
-    const shift = direction === "later"
-      ? targetBoundary - selected[selected.length - 1].end
-      : targetBoundary - selected[0].start;
-    if ((direction === "later" && shift <= 0) || (direction === "earlier" && shift >= 0)) continue;
-    moveSets.push(new Map(selected.map((row) => [row.taskId, row.start + shift])));
+      : chronological.slice(0, size));
   }
-  return moveSets;
+  return bundles;
+};
+
+const bundleShifts = (
+  bundle: CompactionRow[],
+  direction: "later" | "earlier",
+  targetBoundary: number,
+): number[] => {
+  const exactShift = direction === "later"
+    ? targetBoundary - bundle[bundle.length - 1].end
+    : targetBoundary - bundle[0].start;
+  const shifts: number[] = [];
+  for (let offset = 0; offset < 10; offset += 1) {
+    const shift = exactShift + (direction === "later" ? -offset * 15 : offset * 15);
+    if ((direction === "later" && shift > 0) || (direction === "earlier" && shift < 0)) shifts.push(shift);
+  }
+  return shifts;
 };
 
 const generateCoachGapCompactionCandidates = (
@@ -514,6 +584,7 @@ const generateCoachGapCompactionCandidates = (
   }
 
   const fixed = fixedTaskIds(input);
+  const dependencyNeighbors = directDependencyNeighbors(input);
   const coachCandidateLimit = Math.min(5, maxCandidates);
   let attempts = 0;
   for (const { rows, previousIndex, nextIndex } of gaps) {
@@ -521,45 +592,52 @@ const generateCoachGapCompactionCandidates = (
       || results.filter((candidate) => candidate.reason === reason).length >= coachCandidateLimit) break;
     const previous = rows[previousIndex];
     const next = rows[nextIndex];
-    const beforeBlock = contiguousBlockBefore(rows, previousIndex);
-    const afterBlock = contiguousBlockAfter(rows, nextIndex);
-    const laterMoves = boundaryMoveSets(beforeBlock, fixed, "later", next.start);
-    const earlierMoves = boundaryMoveSets(afterBlock, fixed, "earlier", previous.end);
-    if (!laterMoves.length && !earlierMoves.length) {
+    const directions = [
+      { block: contiguousBlockBefore(rows, previousIndex), direction: "later" as const, boundary: next.start },
+      { block: contiguousBlockAfter(rows, nextIndex), direction: "earlier" as const, boundary: previous.end },
+    ];
+    if (directions.every(({ block, direction }) => boundaryBundles(block, fixed, direction).length === 0)) {
       reject("no_movable_tasks");
       continue;
     }
 
     let generatedForGap = false;
-    let concreteRejection = false;
-    const tryMoves = (moveSets: Map<number, number>[]): void => {
-      for (const moves of moveSets) {
-        if (attempts >= maxAttempts || results.length >= maxCandidates
-          || results.filter((candidate) => candidate.reason === reason).length >= coachCandidateLimit) break;
-        attempts += 1;
-        const candidate = cloneWithMoves(output, moves);
-        if (!candidate || !improvesCoachCompaction(input, output, candidate)) continue;
-        const unsafeReason = candidateSafetyReason(input, output, candidate);
-        if (unsafeReason) {
-          const rejection = coachCompactionRejectionReason(unsafeReason);
-          reject(rejection);
-          concreteRejection ||= rejection !== "no_valid_shift_found";
-          continue;
-        }
-        const signature = candidateSignature(candidate);
-        if (seen.has(signature)) continue;
-        seen.add(signature);
-        results.push({ output: candidate, reason, depth: 1, chain: [reason] });
-        if (!diagnostics.generatedTypes.includes(reason)) diagnostics.generatedTypes.push(reason);
-        generatedForGap = true;
+    let recordedConcreteRejection = false;
+    const proposals = directions.flatMap(({ block, direction, boundary }, directionIndex) => (
+      boundaryBundles(block, fixed, direction).flatMap((bundle, bundleIndex) => (
+        bundleShifts(bundle, direction, boundary).map((shift, positionIndex) => ({
+          bundle, shift, directionIndex, bundleIndex, positionIndex,
+        }))
+      ))
+    )).sort((left, right) => left.positionIndex - right.positionIndex
+      || left.directionIndex - right.directionIndex
+      || left.bundleIndex - right.bundleIndex);
+    for (const { bundle, shift } of proposals) {
+      if (attempts >= maxAttempts || results.length >= maxCandidates
+        || results.filter((candidate) => candidate.reason === reason).length >= coachCandidateLimit) break;
+      attempts += 1;
+      const built = dependencyAwareBundleMove(input, output, bundle, shift, fixed, dependencyNeighbors);
+      if (built.rejection) {
+        reject(built.rejection);
+        recordedConcreteRejection = true;
+        continue;
       }
-    };
-
-    // Prefer pushing the isolated earlier block to the end of the gap.
-    tryMoves(laterMoves);
-    // Only pull the later block into the gap when the preferred direction produced no valid candidate.
-    if (!generatedForGap) tryMoves(earlierMoves);
-    if (!generatedForGap && !concreteRejection) reject("no_valid_shift_found");
+      const candidate = cloneWithMoves(output, built.moves ?? new Map());
+      if (!candidate || !improvesCoachCompaction(input, output, candidate)) continue;
+      const unsafeReason = candidateSafetyReason(input, output, candidate);
+      if (unsafeReason) {
+        reject(coachCompactionRejectionReason(unsafeReason));
+        recordedConcreteRejection = true;
+        continue;
+      }
+      const signature = candidateSignature(candidate);
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      results.push({ output: candidate, reason, depth: 1, chain: [reason] });
+      if (!diagnostics.generatedTypes.includes(reason)) diagnostics.generatedTypes.push(reason);
+      generatedForGap = true;
+    }
+    if (!generatedForGap && !recordedConcreteRejection) reject("no_valid_bundle_slot_found");
   }
 };
 
