@@ -5,6 +5,7 @@ import { validateResourceBundles } from "./resourceBundleValidation";
 import { validateHardConstraints, type HardConstraintViolationDetail, type HardConstraintViolationCode } from "./hardValidation";
 
 type SelectedCandidateMetrics = NonNullable<NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"]>;
+type PipelineConflictDiagnostic = NonNullable<NonNullable<EngineOutput["v3Meta"]>["pipelineConflictDetails"]>[number];
 
 type CompactWarning = {
   code: string;
@@ -73,6 +74,10 @@ export interface EngineRunDiagnostics {
     pipelineMovedTasks: number[];
     pipelineStableTasks: number[];
     pipelineFeederOutcomes: string[];
+    pipelineRepairAttempted: boolean;
+    pipelineRepairCandidatesGenerated: number;
+    pipelineRepairAccepted: boolean;
+    pipelineConflictDetails: PipelineConflictDiagnostic[];
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -191,6 +196,17 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineMovedTasks: (meta?.pipelineMovedTasks ?? []).slice(0, 50),
       pipelineStableTasks: (meta?.pipelineStableTasks ?? []).slice(0, 50),
       pipelineFeederOutcomes: uniqueCompactReasons(meta?.pipelineFeederOutcomes ?? []),
+      pipelineRepairAttempted: meta?.pipelineRepairAttempted ?? false,
+      pipelineRepairCandidatesGenerated: meta?.pipelineRepairCandidatesGenerated ?? 0,
+      pipelineRepairAccepted: meta?.pipelineRepairAccepted ?? false,
+      pipelineConflictDetails: (meta?.pipelineConflictDetails ?? []).slice(0, 10).map((detail) => ({
+        ...detail,
+        taskIds: (detail.taskIds ?? []).slice(0, 6),
+        taskNames: (detail.taskNames ?? []).slice(0, 6),
+        movableTaskIds: (detail.movableTaskIds ?? []).slice(0, 6),
+        lockedOrExecutedTaskIds: (detail.lockedOrExecutedTaskIds ?? []).slice(0, 6),
+        message: String(detail.message ?? "").slice(0, 240),
+      })),
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

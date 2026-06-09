@@ -481,6 +481,26 @@ export interface EngineOutput {
     pipelineMovedTasks?: number[];
     pipelineStableTasks?: number[];
     pipelineFeederOutcomes?: string[];
+    pipelineRepairAttempted?: boolean;
+    pipelineRepairCandidatesGenerated?: number;
+    pipelineRepairAccepted?: boolean;
+    pipelineConflictDetails?: Array<{
+      candidateName: string;
+      violationCode: string;
+      resourceId?: number;
+      resourceName?: string;
+      spaceId?: number;
+      spaceName?: string;
+      start?: string;
+      end?: string;
+      taskIds: number[];
+      taskNames: string[];
+      movableTaskIds: number[];
+      lockedOrExecutedTaskIds: number[];
+      repairAttempted: boolean;
+      repairResult: string;
+      message: string;
+    }>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;
