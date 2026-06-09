@@ -20,6 +20,13 @@ export type PipelineDiagnosticsMetadata = Required<Pick<NonNullable<EngineOutput
   | "pipelineLaneRepairAccepted"
   | "pipelineLaneRepairReason"
   | "pipelineLaneRepairRejectedReasons"
+  | "pipelineLaneOnlyRepairAttempted"
+  | "pipelineLaneOnlyRepairCandidatesGenerated"
+  | "pipelineLaneOnlyRepairAccepted"
+  | "pipelineLaneOnlyRepairReason"
+  | "pipelineLaneOnlyRepairRejectedReasons"
+  | "pipelineLaneOnlyRepairMovedTaskIds"
+  | "pipelineLaneOnlyRepairMovedTalentNames"
   | "pipelineAlternativeLaneAttempted"
   | "pipelineAlternativeLaneCandidatesGenerated"
   | "pipelineAlternativeLaneAccepted"
@@ -30,9 +37,11 @@ const compactStrings = (value: unknown, limit: number): string[] => Array.isArra
   ? [...new Set(value.map((item) => String(item ?? "").trim()).filter(Boolean))].slice(0, limit)
   : [];
 
-const compactNumbers = (value: unknown): number[] => Array.isArray(value)
-  ? [...new Set(value.map(Number).filter(Number.isFinite))].slice(0, MAX_PIPELINE_CONFLICT_TASK_VALUES)
+const compactNumbersWithLimit = (value: unknown, limit: number): number[] => Array.isArray(value)
+  ? [...new Set(value.map(Number).filter(Number.isFinite))].slice(0, limit)
   : [];
+
+const compactNumbers = (value: unknown): number[] => compactNumbersWithLimit(value, MAX_PIPELINE_CONFLICT_TASK_VALUES);
 
 const finiteNumber = (value: unknown): number | undefined => {
   const number = Number(value);
@@ -106,6 +115,17 @@ const compactConflictDetail = (
     ...(compactText(detail.fixedReason) ? { fixedReason: compactText(detail.fixedReason) } : {}),
     alternativeLaneSpaceIds: compactNumbers(detail.alternativeLaneSpaceIds),
     ...(finiteNumber(detail.selectedAlternativeLaneSpaceId) !== undefined ? { selectedAlternativeLaneSpaceId: finiteNumber(detail.selectedAlternativeLaneSpaceId) } : {}),
+    ...(compactText(detail.laneRepairStrategy) ? { laneRepairStrategy: compactText(detail.laneRepairStrategy) } : {}),
+    laneRepairMovedTaskIds: compactNumbers(detail.laneRepairMovedTaskIds),
+    laneRepairMovedTalentNames: compactStrings(detail.laneRepairMovedTalentNames, 10),
+    laneRepairBefore: Array.isArray(detail.laneRepairBefore) ? detail.laneRepairBefore.slice(0, 20).map((row) => {
+      const item = row as Record<string, unknown>;
+      return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
+    }).filter((row) => row.taskId > 0) : [],
+    laneRepairAfter: Array.isArray(detail.laneRepairAfter) ? detail.laneRepairAfter.slice(0, 20).map((row) => {
+      const item = row as Record<string, unknown>;
+      return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
+    }).filter((row) => row.taskId > 0) : [],
     laneRepairResult: compactText(detail.laneRepairResult, compactText(detail.repairResult, "not_attempted")),
     repairAttempted: typeof detail.repairAttempted === "boolean" ? detail.repairAttempted : segmentRepairAttempted,
     repairStrategy: compactText(detail.repairStrategy, strategiesTried.join(",") || "none"),
@@ -137,6 +157,15 @@ export const normalizePipelineDiagnosticsMetadata = (
       .map((detail: unknown) => compactConflictDetail(detail as Record<string, unknown>, segmentRepairAttempted, strategiesTried))
     : [];
 
+  let movedIdBudget = 20;
+  let movedTalentBudget = 10;
+  for (const detail of details) {
+    detail.laneRepairMovedTaskIds = detail.laneRepairMovedTaskIds.slice(0, movedIdBudget);
+    movedIdBudget -= detail.laneRepairMovedTaskIds.length;
+    detail.laneRepairMovedTalentNames = detail.laneRepairMovedTalentNames.slice(0, movedTalentBudget);
+    movedTalentBudget -= detail.laneRepairMovedTalentNames.length;
+  }
+
   if (details.length === 0 && repairableRejection) {
     details.push(compactConflictDetail({
       candidateName: "pipeline_builder",
@@ -165,6 +194,13 @@ export const normalizePipelineDiagnosticsMetadata = (
     pipelineLaneRepairAccepted: source.pipelineLaneRepairAccepted === true,
     pipelineLaneRepairReason: compactText(source.pipelineLaneRepairReason, "not_attempted"),
     pipelineLaneRepairRejectedReasons: compactStrings(source.pipelineLaneRepairRejectedReasons, 10),
+    pipelineLaneOnlyRepairAttempted: source.pipelineLaneOnlyRepairAttempted === true,
+    pipelineLaneOnlyRepairCandidatesGenerated: finiteNumber(source.pipelineLaneOnlyRepairCandidatesGenerated) ?? 0,
+    pipelineLaneOnlyRepairAccepted: source.pipelineLaneOnlyRepairAccepted === true,
+    pipelineLaneOnlyRepairReason: compactText(source.pipelineLaneOnlyRepairReason, "not_attempted"),
+    pipelineLaneOnlyRepairRejectedReasons: compactStrings(source.pipelineLaneOnlyRepairRejectedReasons, 10),
+    pipelineLaneOnlyRepairMovedTaskIds: compactNumbersWithLimit(source.pipelineLaneOnlyRepairMovedTaskIds, 20),
+    pipelineLaneOnlyRepairMovedTalentNames: compactStrings(source.pipelineLaneOnlyRepairMovedTalentNames, 10),
     pipelineAlternativeLaneAttempted: source.pipelineAlternativeLaneAttempted === true,
     pipelineAlternativeLaneCandidatesGenerated: finiteNumber(source.pipelineAlternativeLaneCandidatesGenerated) ?? 0,
     pipelineAlternativeLaneAccepted: source.pipelineAlternativeLaneAccepted === true,

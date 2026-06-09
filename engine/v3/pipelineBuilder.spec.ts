@@ -9,6 +9,7 @@ import {
   generatePipelineBuilderCandidates,
   findAlternativeSpaceLane,
   fixedReasonForTask,
+  repairExclusiveLaneSequentially,
   repairExclusiveSpaceLane,
   reanchorTalentPipelineSegment,
   swapTalentPipelineSegments,
@@ -133,6 +134,13 @@ const diagnosticsFor = (input: EngineInput, baseline: EngineOutput): PipelineBui
     laneRepairAccepted: false,
     laneRepairReason: "not_attempted",
     laneRepairRejectedReasons: [],
+    laneOnlyRepairAttempted: false,
+    laneOnlyRepairCandidatesGenerated: 0,
+    laneOnlyRepairAccepted: false,
+    laneOnlyRepairReason: "not_attempted",
+    laneOnlyRepairRejectedReasons: [],
+    laneOnlyRepairMovedTaskIds: [],
+    laneOnlyRepairMovedTalentNames: [],
     alternativeLaneAttempted: false,
     alternativeLaneCandidatesGenerated: 0,
     alternativeLaneAccepted: false,
@@ -361,7 +369,7 @@ test("a repaired lower-gap pipeline wins selection over the current baseline", (
   const selected = runPipelineBuilderSelection(scenario.input, scenario.baseline, "operational_neighborhood");
   assert.equal(selected.meta.pipelineAccepted, true);
   assert.equal(selected.meta.pipelineRepairAccepted, true);
-  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: segment repair (lower coach gap|lower coach split|better operational quality)/);
+  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: (?:lane-only|segment) repair (?:lower coach gap|lower coach split|better operational quality)/);
 });
 
 test("pipeline conflict diagnostics payload is capped", () => {
@@ -457,4 +465,79 @@ test("alternative lanes require explicit equivalent-space configuration", () => 
   (task as any).allowedSpaceIds = [21];
   input.spaceCapacityById = { ...input.spaceCapacityById, 21: 1 };
   assert.deepEqual(findAlternativeSpaceLane(task, { spaceId: 20 }, input), { spaceIds: [21], reason: "alternative_lane_available" });
+});
+
+
+type LaneScenarioOptions = { withBreak?: boolean; dependentFixed?: boolean };
+
+const buildLaneScenario = ({ withBreak = false, dependentFixed = false }: LaneScenarioOptions = {}) => {
+  const tasks: any[] = [
+    { id: 1, planId: 50, templateName: "Vocal A", zoneId: 2, spaceId: 20, contestantId: 101, contestantName: "Ana", status: "pending", durationOverrideMin: 20 },
+    { id: 2, planId: 50, templateName: "Vocal B", zoneId: 2, spaceId: 20, contestantId: 102, contestantName: "Bea", status: "pending", durationOverrideMin: 20 },
+    { id: 3, planId: 50, templateName: "Pasillo", zoneId: 3, spaceId: 30, contestantId: 102, contestantName: "Bea", status: dependentFixed ? "done" : "pending", durationOverrideMin: 10, dependsOnTaskIds: [2] },
+    { id: 4, planId: 50, templateName: "Main Stage", zoneId: 1, spaceId: 10, contestantId: 102, contestantName: "Bea", status: "pending", durationOverrideMin: 20, dependsOnTaskIds: [3] },
+    { id: 5, planId: 50, templateName: "TRANSPORTE IN", zoneId: 4, spaceId: 40, contestantId: 102, contestantName: "Bea", status: "pending", durationOverrideMin: 10 },
+  ];
+  const plannedTasks: EngineOutput["plannedTasks"] = [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:10", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 3, startPlanned: "09:25", endPlanned: "09:35", assignedResources: [] },
+    { taskId: 4, startPlanned: "10:30", endPlanned: "10:50", assignedResources: [] },
+    { taskId: 5, startPlanned: "08:30", endPlanned: "08:40", assignedResources: [] },
+  ];
+  const input = {
+    planId: 50,
+    workDay: { start: "08:00", end: "18:00" },
+    meal: { start: "13:00", end: "14:00" },
+    actualMeal: withBreak ? { start: "09:15", end: "09:45", spaceId: 20 } : undefined,
+    camerasAvailable: 2,
+    optimizerMainZoneId: 1,
+    locks: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    resourceItemComponents: {},
+    planResourceItems: [],
+    spaceCapacityById: { 10: 1, 20: 1, 30: 1, 40: 1 },
+    tasks,
+  } as EngineInput;
+  const output: EngineOutput = { feasible: false, complete: true, hardFeasible: false, plannedTasks, unplanned: [] };
+  return { input, output };
+};
+
+test("lane-only repair sequentializes capacity-one tasks without moving the talent segment", () => {
+  const { input, output } = buildLaneScenario();
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
+  }, { input, baseline: output });
+  assert.ok(result.output);
+  assert.equal(result.reason, "lane_sequentialized");
+  assert.deepEqual(result.movedTaskIds, [2, 3]);
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 2)?.startPlanned, "09:20");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 3)?.startPlanned, "09:40");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 4)?.startPlanned, "10:30");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 5)?.startPlanned, "08:30");
+  assert.equal(validateHardConstraints(input, result.output).hardConstraintViolations, 0);
+});
+
+test("lane-only repair splits its queue around a protected meal window", () => {
+  const { input, output } = buildLaneScenario({ withBreak: true });
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "break_window_blocker",
+  }, { input, baseline: output });
+  assert.ok(result.output);
+  assert.equal(result.reason, "break_aware_lane_repair_success");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 1)?.startPlanned, "09:45");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 2)?.startPlanned, "10:05");
+});
+
+test("lane-only repair reports a direct fixed dependency instead of a generic segment blocker", () => {
+  const { input, output } = buildLaneScenario({ dependentFixed: true });
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
+  }, { input, baseline: output });
+  assert.equal(result.output, null);
+  assert.equal(result.reason, "lane_repair_dependency_blocked");
+  assert.notEqual(result.reason, "segment_has_fixed_blocker");
 });

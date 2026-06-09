@@ -128,6 +128,13 @@ type BacktrackingMeta = {
   pipelineSegmentRepairStrategiesTried?: string[];
   pipelineSegmentRepairMovedTalentNames?: string[];
   pipelineSegmentRepairRejectedReasons?: string[];
+  pipelineLaneOnlyRepairAttempted?: boolean;
+  pipelineLaneOnlyRepairCandidatesGenerated?: number;
+  pipelineLaneOnlyRepairAccepted?: boolean;
+  pipelineLaneOnlyRepairReason?: string;
+  pipelineLaneOnlyRepairRejectedReasons?: string[];
+  pipelineLaneOnlyRepairMovedTaskIds?: number[];
+  pipelineLaneOnlyRepairMovedTalentNames?: string[];
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -700,6 +707,13 @@ export const runPipelineBuilderSelection = (
     laneRepairAccepted: false,
     laneRepairReason: "not_attempted",
     laneRepairRejectedReasons: [],
+    laneOnlyRepairAttempted: false,
+    laneOnlyRepairCandidatesGenerated: 0,
+    laneOnlyRepairAccepted: false,
+    laneOnlyRepairReason: "not_attempted",
+    laneOnlyRepairRejectedReasons: [],
+    laneOnlyRepairMovedTaskIds: [],
+    laneOnlyRepairMovedTalentNames: [],
     alternativeLaneAttempted: false,
     alternativeLaneCandidatesGenerated: 0,
     alternativeLaneAccepted: false,
@@ -723,10 +737,10 @@ export const runPipelineBuilderSelection = (
   }
   const selectionReason = accepted
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
-      ? bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
+      ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? bestCandidate?.segmentRepairStrategies?.includes("sequentialize_exclusive_lane") ? "pipeline_builder selected: lane-aware lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
-        : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
+        ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
+        : bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
     ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
@@ -802,6 +816,13 @@ export const runPipelineBuilderSelection = (
         pipelineLaneRepairAccepted: accepted && diagnostics.laneRepairAccepted,
         pipelineLaneRepairReason: diagnostics.laneRepairReason,
         pipelineLaneRepairRejectedReasons: diagnostics.laneRepairRejectedReasons,
+        pipelineLaneOnlyRepairAttempted: diagnostics.laneOnlyRepairAttempted,
+        pipelineLaneOnlyRepairCandidatesGenerated: diagnostics.laneOnlyRepairCandidatesGenerated,
+        pipelineLaneOnlyRepairAccepted: accepted && Boolean(bestCandidate?.laneOnlyRepaired),
+        pipelineLaneOnlyRepairReason: diagnostics.laneOnlyRepairReason,
+        pipelineLaneOnlyRepairRejectedReasons: diagnostics.laneOnlyRepairRejectedReasons,
+        pipelineLaneOnlyRepairMovedTaskIds: (bestCandidate?.laneRepairMovedTaskIds ?? diagnostics.laneOnlyRepairMovedTaskIds).slice(0, 20),
+        pipelineLaneOnlyRepairMovedTalentNames: (bestCandidate?.laneRepairMovedTalentNames ?? diagnostics.laneOnlyRepairMovedTalentNames).slice(0, 10),
         pipelineAlternativeLaneAttempted: diagnostics.alternativeLaneAttempted,
         pipelineAlternativeLaneCandidatesGenerated: diagnostics.alternativeLaneCandidatesGenerated,
         pipelineAlternativeLaneAccepted: accepted && diagnostics.alternativeLaneAccepted,

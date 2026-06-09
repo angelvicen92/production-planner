@@ -91,6 +91,13 @@ export interface EngineRunDiagnostics {
     pipelineLaneRepairAccepted: boolean;
     pipelineLaneRepairReason: string;
     pipelineLaneRepairRejectedReasons: string[];
+    pipelineLaneOnlyRepairAttempted: boolean;
+    pipelineLaneOnlyRepairCandidatesGenerated: number;
+    pipelineLaneOnlyRepairAccepted: boolean;
+    pipelineLaneOnlyRepairReason: string;
+    pipelineLaneOnlyRepairRejectedReasons: string[];
+    pipelineLaneOnlyRepairMovedTaskIds: number[];
+    pipelineLaneOnlyRepairMovedTalentNames: string[];
     pipelineAlternativeLaneAttempted: boolean;
     pipelineAlternativeLaneCandidatesGenerated: number;
     pipelineAlternativeLaneAccepted: boolean;

@@ -509,6 +509,11 @@ export interface EngineOutput {
       fixedReason?: string;
       alternativeLaneSpaceIds?: number[];
       selectedAlternativeLaneSpaceId?: number;
+      laneRepairStrategy?: string;
+      laneRepairMovedTaskIds?: number[];
+      laneRepairMovedTalentNames?: string[];
+      laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
+      laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairResult?: string;
       repairAttempted: boolean;
       repairStrategy: string;
@@ -527,6 +532,13 @@ export interface EngineOutput {
     pipelineLaneRepairAccepted?: boolean;
     pipelineLaneRepairReason?: string;
     pipelineLaneRepairRejectedReasons?: string[];
+    pipelineLaneOnlyRepairAttempted?: boolean;
+    pipelineLaneOnlyRepairCandidatesGenerated?: number;
+    pipelineLaneOnlyRepairAccepted?: boolean;
+    pipelineLaneOnlyRepairReason?: string;
+    pipelineLaneOnlyRepairRejectedReasons?: string[];
+    pipelineLaneOnlyRepairMovedTaskIds?: number[];
+    pipelineLaneOnlyRepairMovedTalentNames?: string[];
     pipelineAlternativeLaneAttempted?: boolean;
     pipelineAlternativeLaneCandidatesGenerated?: number;
     pipelineAlternativeLaneAccepted?: boolean;
