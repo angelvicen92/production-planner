@@ -7,6 +7,9 @@ import { calculateOperationalMetrics, toMinutes } from "./metrics";
 import {
   buildTalentPipelineSegment,
   generatePipelineBuilderCandidates,
+  findAlternativeSpaceLane,
+  fixedReasonForTask,
+  repairExclusiveSpaceLane,
   reanchorTalentPipelineSegment,
   swapTalentPipelineSegments,
   type PipelineBuilderDiagnostics,
@@ -125,6 +128,15 @@ const diagnosticsFor = (input: EngineInput, baseline: EngineOutput): PipelineBui
     segmentRepairStrategiesTried: [],
     segmentRepairMovedTalentNames: [],
     segmentRepairRejectedReasons: [],
+    laneRepairAttempted: false,
+    laneRepairCandidatesGenerated: 0,
+    laneRepairAccepted: false,
+    laneRepairReason: "not_attempted",
+    laneRepairRejectedReasons: [],
+    alternativeLaneAttempted: false,
+    alternativeLaneCandidatesGenerated: 0,
+    alternativeLaneAccepted: false,
+    alternativeLaneRejectedReasons: [],
   };
 };
 
@@ -408,4 +420,41 @@ test("segment repair metadata reports bounded strategies and moved talent names"
   assert.ok(diagnostics.segmentRepairCandidatesGenerated > 0);
   assert.ok(diagnostics.segmentRepairStrategiesTried.includes("move_whole_segment_by_offset"));
   assert.ok(diagnostics.segmentRepairMovedTalentNames.length > 0);
+});
+
+
+test("capacity-one space lane is sequentialized around a protected meal break", () => {
+  const scenario = buildScenario({ talentCount: 8 });
+  scenario.input.protectedBreaks = [{ start: "09:00", end: "09:30", kind: "meal", spaceId: 20, label: "COMIDA" }];
+  const candidate: EngineOutput = {
+    ...scenario.baseline,
+    plannedTasks: scenario.baseline.plannedTasks.map((row) => row.taskId === 1_102
+      ? { ...row, startPlanned: "08:10", endPlanned: "08:30" }
+      : row),
+  };
+  const repaired = repairExclusiveSpaceLane(scenario.input, scenario.baseline, candidate, 20);
+  assert.ok(repaired.output);
+  assert.equal(validateHardConstraints(scenario.input, repaired.output).hardConstraintViolations, 0);
+  const rows = repaired.output.plannedTasks.filter((row) => row.taskId >= 1_101 && row.taskId <= 1_108)
+    .sort((a, b) => (toMinutes(a.startPlanned) ?? 0) - (toMinutes(b.startPlanned) ?? 0));
+  assert.ok(rows.every((row, index) => index === 0 || (toMinutes(row.startPlanned) ?? 0) >= (toMinutes(rows[index - 1].endPlanned) ?? 0)));
+  assert.ok(rows.every((row) => (toMinutes(row.endPlanned) ?? 0) <= 9 * 60 || (toMinutes(row.startPlanned) ?? 0) >= 9 * 60 + 30));
+});
+
+test("COMIDA is a break blocker while Estilismo Salida is not fixed by its name", () => {
+  const { input } = buildScenario();
+  const meal: any = { id: 8_001, planId: 40, templateId: 81, templateName: "COMIDA", breakKind: "space_meal", spaceId: 20, status: "pending" };
+  const styling: any = { id: 8_002, planId: 40, templateId: 82, templateName: "Estilismo Salida", spaceId: 20, status: "pending" };
+  input.tasks.push(meal, styling);
+  assert.equal(fixedReasonForTask(input, meal.id), "protected_break_window");
+  assert.equal(fixedReasonForTask(input, styling.id), undefined);
+});
+
+test("alternative lanes require explicit equivalent-space configuration", () => {
+  const { input } = buildScenario();
+  const task = input.tasks.find((row) => row.id === 1_101)!;
+  assert.equal(findAlternativeSpaceLane(task, { spaceId: 20 }, input).reason, "alternative_lane_unavailable_missing_config");
+  (task as any).allowedSpaceIds = [21];
+  input.spaceCapacityById = { ...input.spaceCapacityById, 21: 1 };
+  assert.deepEqual(findAlternativeSpaceLane(task, { spaceId: 20 }, input), { spaceIds: [21], reason: "alternative_lane_available" });
 });

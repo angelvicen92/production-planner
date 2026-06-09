@@ -86,6 +86,15 @@ export interface EngineRunDiagnostics {
     pipelineSegmentRepairStrategiesTried: string[];
     pipelineSegmentRepairMovedTalentNames: string[];
     pipelineSegmentRepairRejectedReasons: string[];
+    pipelineLaneRepairAttempted: boolean;
+    pipelineLaneRepairCandidatesGenerated: number;
+    pipelineLaneRepairAccepted: boolean;
+    pipelineLaneRepairReason: string;
+    pipelineLaneRepairRejectedReasons: string[];
+    pipelineAlternativeLaneAttempted: boolean;
+    pipelineAlternativeLaneCandidatesGenerated: number;
+    pipelineAlternativeLaneAccepted: boolean;
+    pipelineAlternativeLaneRejectedReasons: string[];
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;

@@ -15,6 +15,15 @@ export type PipelineDiagnosticsMetadata = Required<Pick<NonNullable<EngineOutput
   | "pipelineSegmentRepairStrategiesTried"
   | "pipelineSegmentRepairMovedTalentNames"
   | "pipelineSegmentRepairRejectedReasons"
+  | "pipelineLaneRepairAttempted"
+  | "pipelineLaneRepairCandidatesGenerated"
+  | "pipelineLaneRepairAccepted"
+  | "pipelineLaneRepairReason"
+  | "pipelineLaneRepairRejectedReasons"
+  | "pipelineAlternativeLaneAttempted"
+  | "pipelineAlternativeLaneCandidatesGenerated"
+  | "pipelineAlternativeLaneAccepted"
+  | "pipelineAlternativeLaneRejectedReasons"
 >>;
 
 const compactStrings = (value: unknown, limit: number): string[] => Array.isArray(value)
@@ -87,6 +96,17 @@ const compactConflictDetail = (
     blockingTaskNames: compactStrings(detail.blockingTaskNames, MAX_PIPELINE_CONFLICT_TASK_VALUES),
     movableTaskIds: compactNumbers(detail.movableTaskIds),
     lockedOrExecutedTaskIds: compactNumbers(detail.lockedOrExecutedTaskIds),
+    conflictKind: (["exclusive_lane_capacity", "break_window_blocker", "fixed_task_blocker", "movable_task_conflict", "dependency_chain_conflict", "unknown"].includes(compactText(detail.conflictKind))
+      ? compactText(detail.conflictKind) : "unknown") as "exclusive_lane_capacity" | "break_window_blocker" | "fixed_task_blocker" | "movable_task_conflict" | "dependency_chain_conflict" | "unknown",
+    isBreakBlocker: detail.isBreakBlocker === true,
+    isExplicitLock: detail.isExplicitLock === true,
+    isDoneOrInProgress: detail.isDoneOrInProgress === true,
+    isImplicitFixed: detail.isImplicitFixed === true,
+    canUseAlternativeLane: detail.canUseAlternativeLane === true,
+    ...(compactText(detail.fixedReason) ? { fixedReason: compactText(detail.fixedReason) } : {}),
+    alternativeLaneSpaceIds: compactNumbers(detail.alternativeLaneSpaceIds),
+    ...(finiteNumber(detail.selectedAlternativeLaneSpaceId) !== undefined ? { selectedAlternativeLaneSpaceId: finiteNumber(detail.selectedAlternativeLaneSpaceId) } : {}),
+    laneRepairResult: compactText(detail.laneRepairResult, compactText(detail.repairResult, "not_attempted")),
     repairAttempted: typeof detail.repairAttempted === "boolean" ? detail.repairAttempted : segmentRepairAttempted,
     repairStrategy: compactText(detail.repairStrategy, strategiesTried.join(",") || "none"),
     repairResult: compactText(detail.repairResult, "conflict_detail_unavailable_from_validator"),
@@ -140,5 +160,14 @@ export const normalizePipelineDiagnosticsMetadata = (
     pipelineSegmentRepairStrategiesTried: strategiesTried,
     pipelineSegmentRepairMovedTalentNames: compactStrings(source.pipelineSegmentRepairMovedTalentNames, 20),
     pipelineSegmentRepairRejectedReasons: compactStrings(source.pipelineSegmentRepairRejectedReasons, 10),
+    pipelineLaneRepairAttempted: source.pipelineLaneRepairAttempted === true,
+    pipelineLaneRepairCandidatesGenerated: finiteNumber(source.pipelineLaneRepairCandidatesGenerated) ?? 0,
+    pipelineLaneRepairAccepted: source.pipelineLaneRepairAccepted === true,
+    pipelineLaneRepairReason: compactText(source.pipelineLaneRepairReason, "not_attempted"),
+    pipelineLaneRepairRejectedReasons: compactStrings(source.pipelineLaneRepairRejectedReasons, 10),
+    pipelineAlternativeLaneAttempted: source.pipelineAlternativeLaneAttempted === true,
+    pipelineAlternativeLaneCandidatesGenerated: finiteNumber(source.pipelineAlternativeLaneCandidatesGenerated) ?? 0,
+    pipelineAlternativeLaneAccepted: source.pipelineAlternativeLaneAccepted === true,
+    pipelineAlternativeLaneRejectedReasons: compactStrings(source.pipelineAlternativeLaneRejectedReasons, 10),
   };
 };

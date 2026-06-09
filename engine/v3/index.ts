@@ -695,6 +695,15 @@ export const runPipelineBuilderSelection = (
     segmentRepairStrategiesTried: [],
     segmentRepairMovedTalentNames: [],
     segmentRepairRejectedReasons: [],
+    laneRepairAttempted: false,
+    laneRepairCandidatesGenerated: 0,
+    laneRepairAccepted: false,
+    laneRepairReason: "not_attempted",
+    laneRepairRejectedReasons: [],
+    alternativeLaneAttempted: false,
+    alternativeLaneCandidatesGenerated: 0,
+    alternativeLaneAccepted: false,
+    alternativeLaneRejectedReasons: [],
   };
   const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
   let bestOutput = baseOutput;
@@ -716,7 +725,7 @@ export const runPipelineBuilderSelection = (
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
       ? bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
+        ? bestCandidate?.segmentRepairStrategies?.includes("sequentialize_exclusive_lane") ? "pipeline_builder selected: lane-aware lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
         : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
@@ -788,6 +797,15 @@ export const runPipelineBuilderSelection = (
         pipelineSegmentRepairStrategiesTried: diagnostics.segmentRepairStrategiesTried,
         pipelineSegmentRepairMovedTalentNames: bestCandidate?.movedTalentNames ?? diagnostics.segmentRepairMovedTalentNames,
         pipelineSegmentRepairRejectedReasons: segmentRepairRejectedReasons,
+        pipelineLaneRepairAttempted: diagnostics.laneRepairAttempted,
+        pipelineLaneRepairCandidatesGenerated: diagnostics.laneRepairCandidatesGenerated,
+        pipelineLaneRepairAccepted: accepted && diagnostics.laneRepairAccepted,
+        pipelineLaneRepairReason: diagnostics.laneRepairReason,
+        pipelineLaneRepairRejectedReasons: diagnostics.laneRepairRejectedReasons,
+        pipelineAlternativeLaneAttempted: diagnostics.alternativeLaneAttempted,
+        pipelineAlternativeLaneCandidatesGenerated: diagnostics.alternativeLaneCandidatesGenerated,
+        pipelineAlternativeLaneAccepted: accepted && diagnostics.alternativeLaneAccepted,
+        pipelineAlternativeLaneRejectedReasons: diagnostics.alternativeLaneRejectedReasons,
       }),
       candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
       solutionSource: accepted ? "pipeline_builder" : baseSource,

@@ -33,9 +33,15 @@ export type PipelineRejectedReason =
   | "repair_attempted_but_no_valid_candidate"
   | "repair_valid_but_not_better_than_baseline"
   | "repair_blocked_by_locked_or_executed"
-  | "segment_has_fixed_blocker";
+  | "segment_has_fixed_blocker"
+  | "break_window_blocks_lane"
+  | "alternative_lane_unavailable_missing_config"
+  | "explicit_lock_blocks_lane"
+  | "lane_capacity_unschedulable";
 
 export type PipelineFeederOutcome = "feeder_relocated" | "feeder_kept_stable" | "feeder_blocked";
+
+export type PipelineConflictKind = "exclusive_lane_capacity" | "break_window_blocker" | "fixed_task_blocker" | "movable_task_conflict" | "dependency_chain_conflict" | "unknown";
 
 export interface PipelineConflictDetail {
   candidateName: string;
@@ -53,6 +59,16 @@ export interface PipelineConflictDetail {
   blockingTaskNames: string[];
   movableTaskIds: number[];
   lockedOrExecutedTaskIds: number[];
+  conflictKind?: PipelineConflictKind;
+  isBreakBlocker?: boolean;
+  isExplicitLock?: boolean;
+  isDoneOrInProgress?: boolean;
+  isImplicitFixed?: boolean;
+  canUseAlternativeLane?: boolean;
+  fixedReason?: string;
+  alternativeLaneSpaceIds?: number[];
+  selectedAlternativeLaneSpaceId?: number;
+  laneRepairResult?: string;
   repairAttempted: boolean;
   repairStrategy: string;
   repairResult: string;
@@ -96,6 +112,15 @@ export interface PipelineBuilderDiagnostics {
   segmentRepairStrategiesTried: string[];
   segmentRepairMovedTalentNames: string[];
   segmentRepairRejectedReasons: string[];
+  laneRepairAttempted: boolean;
+  laneRepairCandidatesGenerated: number;
+  laneRepairAccepted: boolean;
+  laneRepairReason: string;
+  laneRepairRejectedReasons: string[];
+  alternativeLaneAttempted: boolean;
+  alternativeLaneCandidatesGenerated: number;
+  alternativeLaneAccepted: boolean;
+  alternativeLaneRejectedReasons: string[];
 }
 
 type Planned = EngineOutput["plannedTasks"][number];
@@ -138,18 +163,32 @@ const dependencyIds = (task: TaskInput): number[] => [...new Set([
   task.dependsOnTaskId,
 ].map(Number).filter(Number.isFinite))];
 
+const explicitLockForTask = (input: EngineV3Input, taskId: number) => (input.locks ?? []).find((lock) => (
+  Number(lock.taskId) === taskId && ["time", "full"].includes(String(lock.lockType ?? "").toLowerCase())
+));
+
+const isBreakTask = (input: EngineV3Input, task: TaskInput): boolean => {
+  if (Boolean(task.breakId || task.breakKind)) return true;
+  if (input.mealTaskTemplateId != null && Number(task.templateId) === Number(input.mealTaskTemplateId)) return true;
+  const configuredMealName = normalize(input.mealTaskTemplateName);
+  const label = taskLabel(input, task);
+  return (Boolean(configuredMealName) && label.includes(configuredMealName))
+    || /(^|\s)(comida|almuerzo|meal|lunch)(\s|$)/.test(label);
+};
+
 const isProtectedTask = (input: EngineV3Input, taskId: number): boolean => {
   const task = input.tasks.find((candidate) => Number(candidate.id) === taskId);
   const status = String(task?.status ?? "pending").toLowerCase();
   if (status === "done" || status === "in_progress" || Boolean((task as any)?.isManualBlock)
-    || Boolean(task?.fixedWindowStart || task?.fixedWindowEnd || task?.breakId || task?.breakKind)) return true;
-  return (input.locks ?? []).some((lock) => Number(lock.taskId) === taskId
-    && ["time", "full"].includes(String(lock.lockType ?? "").toLowerCase()));
+    || Boolean(task?.fixedWindowStart || task?.fixedWindowEnd) || Boolean(task && isBreakTask(input, task))) return true;
+  return Boolean(explicitLockForTask(input, taskId));
 };
 
-const isTransportOrMeal = (input: EngineV3Input, task: TaskInput): boolean => (
-  /(transport|traslado|llegada|salida|recogida|pickup|dropoff|comida|almuerzo|meal|lunch)/.test(taskLabel(input, task))
+const isTransportTask = (input: EngineV3Input, task: TaskInput): boolean => (
+  /(transport|traslado|llegada|recogida|pickup|dropoff)/.test(taskLabel(input, task))
 );
+
+const isTransportOrMeal = (input: EngineV3Input, task: TaskInput): boolean => isTransportTask(input, task) || isBreakTask(input, task);
 
 const isFeeder = (input: EngineV3Input, task: TaskInput): boolean => (
   /(vocal|coach|pasillo|prep|pre[- ]?main|preparacion|prueba|ensayo)/.test(taskLabel(input, task))
@@ -305,6 +344,104 @@ const isRepairMovableTask = (input: EngineV3Input, taskId: number): boolean => {
 
 const protectedConflictTaskIds = (input: EngineV3Input, taskIds: number[]): number[] => taskIds.filter((taskId) => !isRepairMovableTask(input, taskId));
 
+
+export type AlternativeLaneSearchResult = {
+  spaceIds: number[];
+  reason: "alternative_lane_available" | "alternative_lane_unavailable_missing_config" | "task_hard_bound_to_space";
+};
+
+/** Conservative lane lookup: only explicit task/input relations are considered equivalent. */
+export const findAlternativeSpaceLane = (
+  task: TaskInput,
+  conflict: { spaceId?: number },
+  input: EngineV3Input,
+): AlternativeLaneSearchResult => {
+  const configured = [
+    ...((task as any).allowedSpaceIds ?? []),
+    ...((task as any).alternativeSpaceIds ?? []),
+    ...((input as any).equivalentSpaceIdsBySpaceId?.[Number(conflict.spaceId)] ?? []),
+  ].map(Number).filter((spaceId) => Number.isFinite(spaceId) && spaceId > 0 && spaceId !== Number(conflict.spaceId));
+  const unique = [...new Set(configured)].filter((spaceId) => (
+    input.spaceCapacityById?.[spaceId] !== 0 && input.spaceConcurrencyById?.[spaceId] !== 0
+  ));
+  if (unique.length > 0) return { spaceIds: unique, reason: "alternative_lane_available" };
+  if ((task as any).spaceHardBound === true || (task as any).hardBoundSpaceId != null) {
+    return { spaceIds: [], reason: "task_hard_bound_to_space" };
+  }
+  return { spaceIds: [], reason: "alternative_lane_unavailable_missing_config" };
+};
+
+export const fixedReasonForTask = (input: EngineV3Input, taskId: number): string | undefined => {
+  const task = input.tasks.find((candidate) => Number(candidate.id) === taskId);
+  const status = String(task?.status ?? "pending").toLowerCase();
+  if (status === "done") return "status_done";
+  if (status === "in_progress") return "status_in_progress";
+  const lock = explicitLockForTask(input, taskId);
+  if (lock) return `explicit_${String(lock.lockType).toLowerCase()}_lock`;
+  if (task && isBreakTask(input, task)) return "protected_break_window";
+  if (task?.fixedWindowStart || task?.fixedWindowEnd) return "fixed_window";
+  if (Boolean((task as any)?.isManualBlock)) return "manual_block";
+  return undefined;
+};
+
+const protectedBreakWindows = (input: EngineV3Input, spaceId: number): Array<{ start: number; end: number }> => {
+  const rows = [
+    ...(input.globalHardBreaks ?? []).map((item) => ({ ...item })),
+    ...(input.protectedBreaks ?? []).filter((item) => item.spaceId == null || Number(item.spaceId) === spaceId),
+    ...(input.actualMeal && (input.actualMeal.spaceId == null || Number(input.actualMeal.spaceId) === spaceId) ? [input.actualMeal] : []),
+  ];
+  return rows.map((item) => ({ start: toMinutes(item.start), end: toMinutes(item.end) }))
+    .filter((item): item is { start: number; end: number } => item.start !== null && item.end !== null && item.end > item.start)
+    .sort((a, b) => a.start - b.start);
+};
+
+const skipBreakWindows = (start: number, duration: number, breaks: Array<{ start: number; end: number }>): number => {
+  let cursor = start;
+  for (const window of breaks) {
+    if (cursor < window.end && cursor + duration > window.start) cursor = window.end;
+  }
+  return cursor;
+};
+
+/** Compacts a capacity-1 space into a sequential queue and jumps protected break windows. */
+export const repairExclusiveSpaceLane = (
+  input: EngineV3Input,
+  baseline: EngineOutput,
+  candidate: EngineOutput,
+  spaceId: number,
+): { output: EngineOutput | null; reason: string; movedTaskIds: number[] } => {
+  const capacity = Number(input.spaceCapacityById?.[spaceId] ?? input.spaceConcurrencyById?.[spaceId] ?? 1);
+  if (capacity !== 1) return { output: null, reason: "lane_not_exclusive", movedTaskIds: [] };
+  const plannedById = clonePlannedMap(candidate);
+  const laneTasks = input.tasks.filter((task) => Number(task.spaceId) === spaceId)
+    .map((task) => ({ task, planned: plannedById.get(Number(task.id)) }))
+    .filter((row): row is { task: TaskInput; planned: Planned } => Boolean(row.planned))
+    .sort((a, b) => (toMinutes(a.planned.startPlanned) ?? 0) - (toMinutes(b.planned.startPlanned) ?? 0));
+  const fixed = laneTasks.filter((row) => !isRepairMovableTask(input, Number(row.task.id))).map((row) => ({
+    start: toMinutes(row.planned.startPlanned) ?? 0,
+    end: toMinutes(row.planned.endPlanned) ?? 0,
+  })).filter((row) => row.end > row.start);
+  const breaks = [...protectedBreakWindows(input, spaceId), ...fixed].sort((a, b) => a.start - b.start);
+  let cursor = Math.max(toMinutes(input.workDay.start) ?? 0, Math.min(...laneTasks.map((row) => toMinutes(row.planned.startPlanned) ?? Number.MAX_SAFE_INTEGER)));
+  const workEnd = toMinutes(input.workDay.end) ?? 24 * 60;
+  const movedTaskIds: number[] = [];
+  for (const row of laneTasks) {
+    if (!isRepairMovableTask(input, Number(row.task.id))) continue;
+    const oldStart = toMinutes(row.planned.startPlanned);
+    const oldEnd = toMinutes(row.planned.endPlanned);
+    if (oldStart === null || oldEnd === null) return { output: null, reason: "lane_capacity_unschedulable", movedTaskIds: [] };
+    const duration = oldEnd - oldStart;
+    cursor = skipBreakWindows(cursor, duration, breaks);
+    if (cursor + duration > workEnd) return { output: null, reason: "lane_capacity_unschedulable", movedTaskIds: [] };
+    updatePlanned(plannedById, Number(row.task.id), cursor);
+    if (cursor !== oldStart) movedTaskIds.push(Number(row.task.id));
+    cursor += duration;
+  }
+  const output = outputWithPlannedMap(candidate, plannedById);
+  if (!protectedTasksUnchanged(input, baseline, output)) return { output: null, reason: "explicit_lock_blocks_lane", movedTaskIds: [] };
+  return { output, reason: breaks.length > 0 ? "break_aware_lane_repair" : "lane_sequentialized", movedTaskIds };
+};
+
 const compactConflictDetail = (
   input: EngineV3Input,
   candidateName: string,
@@ -343,6 +480,20 @@ const compactConflictDetail = (
     const task = input.tasks.find((candidateTask) => Number(candidateTask.id) === taskId);
     return task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null;
   }).filter((name): name is string => Boolean(name)))].slice(0, 6);
+  const tasks = taskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === taskId)).filter((task): task is TaskInput => Boolean(task));
+  const isBreakBlocker = tasks.some((task) => isBreakTask(input, task));
+  const isExplicitLock = taskIds.some((taskId) => Boolean(explicitLockForTask(input, taskId)));
+  const isDoneOrInProgress = tasks.some((task) => ["done", "in_progress"].includes(String(task.status).toLowerCase()));
+  const fixedReasons = lockedOrExecutedTaskIds.map((taskId) => fixedReasonForTask(input, taskId)).filter((value): value is string => Boolean(value));
+  const isImplicitFixed = lockedOrExecutedTaskIds.length > 0 && fixedReasons.length === 0;
+  const alternativeLaneSpaceIds = violation.spaceId == null ? [] : [...new Set(tasks.flatMap((task) => findAlternativeSpaceLane(task, violation, input).spaceIds))];
+  const conflictKind: PipelineConflictKind = violation.code === "DEPENDENCY_VIOLATION"
+    ? "dependency_chain_conflict"
+    : isBreakBlocker ? "break_window_blocker"
+      : violation.code === "SPACE_OVERLAP" && Number(input.spaceCapacityById?.[Number(violation.spaceId)] ?? input.spaceConcurrencyById?.[Number(violation.spaceId)] ?? 1) === 1
+        ? "exclusive_lane_capacity"
+        : lockedOrExecutedTaskIds.length > 0 ? "fixed_task_blocker"
+          : movableTaskIds.length > 0 ? "movable_task_conflict" : "unknown";
   return {
     candidateName,
     violationCode: violation.code,
@@ -359,6 +510,15 @@ const compactConflictDetail = (
     blockingTaskNames: blockingTaskIds.map((taskId) => taskName(input, taskId)).slice(0, MAX_CONFLICT_TASK_IDS),
     movableTaskIds,
     lockedOrExecutedTaskIds,
+    conflictKind,
+    isBreakBlocker,
+    isExplicitLock,
+    isDoneOrInProgress,
+    isImplicitFixed,
+    canUseAlternativeLane: alternativeLaneSpaceIds.length > 0,
+    fixedReason: fixedReasons.join(",") || undefined,
+    alternativeLaneSpaceIds,
+    laneRepairResult: repairResult,
     repairAttempted,
     repairStrategy,
     repairResult,
@@ -410,7 +570,7 @@ const isCandidateStructurallySafe = (
     && score.mainStageGapMinutes <= baselineScore.mainStageGapMinutes;
 };
 
-type SegmentRepairStrategy = "move_whole_segment_by_offset" | "reanchor_around_main_stage" | "pairwise_talent_swap" | "segment_micro_cascade";
+type SegmentRepairStrategy = "move_whole_segment_by_offset" | "reanchor_around_main_stage" | "pairwise_talent_swap" | "segment_micro_cascade" | "sequentialize_exclusive_lane" | "skip_break_window";
 type RepairResult = {
   output: EngineOutput | null;
   attempts: number;
@@ -538,6 +698,19 @@ const attemptPipelineRepair = (
   const strategiesTried: SegmentRepairStrategy[] = [];
   const movedTalentNames = new Set<string>();
   const rejectedReasons = new Set<string>();
+  const initialValidation = validateHardConstraints(input, candidate, MAX_CONFLICT_DIAGNOSTICS);
+  for (const conflict of initialValidation.hardConstraintViolationDetails.filter((detail) => detail.code === "SPACE_OVERLAP" && detail.spaceId != null)) {
+    const lane = repairExclusiveSpaceLane(input, baseline, candidate, Number(conflict.spaceId));
+    strategiesTried.push("sequentialize_exclusive_lane" as SegmentRepairStrategy);
+    attempts += 1;
+    if (lane.output) {
+      const laneValidation = validateHardConstraints(input, lane.output, MAX_CONFLICT_DIAGNOSTICS);
+      if (laneValidation.hardValidationPassed && isCandidateStructurallySafe(input, baselineScore, lane.output)) {
+        return { output: lane.output, attempts, result: lane.reason, strategiesTried, movedTalentNames: [], rejectedReasons: [] };
+      }
+    }
+    rejectedReasons.add(lane.reason);
+  }
   const queue: Array<{ output: EngineOutput; depth: number; movedTalents: number[] }> = [{ output: candidate, depth: 0, movedTalents: [] }];
   const addStrategy = (strategy: SegmentRepairStrategy): void => {
     if (!strategiesTried.includes(strategy)) strategiesTried.push(strategy);
@@ -649,6 +822,15 @@ const emptyDiagnostics = (baselineScore: CandidateSolutionScore): PipelineBuilde
   segmentRepairStrategiesTried: [],
   segmentRepairMovedTalentNames: [],
   segmentRepairRejectedReasons: [],
+  laneRepairAttempted: false,
+  laneRepairCandidatesGenerated: 0,
+  laneRepairAccepted: false,
+  laneRepairReason: "not_attempted",
+  laneRepairRejectedReasons: [],
+  alternativeLaneAttempted: false,
+  alternativeLaneCandidatesGenerated: 0,
+  alternativeLaneAccepted: false,
+  alternativeLaneRejectedReasons: [],
 });
 
 export const generatePipelineBuilderCandidates = (
@@ -831,14 +1013,28 @@ export const generatePipelineBuilderCandidates = (
     let output: EngineOutput = outputWithPlannedMap(baseline, plannedById);
     let validation = validateHardConstraints(input, output, MAX_CONFLICT_DIAGNOSTICS);
     let repaired = false;
+    let repairStrategiesUsed: SegmentRepairStrategy[] = [];
     if (!validation.hardValidationPassed) {
       const repairableConflicts = validation.hardConstraintViolationDetails
         .filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP" || detail.code === "DEPENDENCY_VIOLATION");
       if (repairableConflicts.length > 0) {
         report.repairAttempted = true;
         report.segmentRepairAttempted = true;
+        const laneConflicts = repairableConflicts.filter((detail) => detail.code === "SPACE_OVERLAP" && detail.spaceId != null);
+        if (laneConflicts.length > 0) {
+          report.laneRepairAttempted = true;
+          report.alternativeLaneAttempted = true;
+          const alternatives = laneConflicts.flatMap((detail) => detail.taskIds.flatMap((taskId) => {
+            const task = input.tasks.find((item) => Number(item.id) === Number(taskId));
+            return task ? findAlternativeSpaceLane(task, detail, input).spaceIds : [];
+          }));
+          if (alternatives.length === 0 && !report.alternativeLaneRejectedReasons.includes("alternative_lane_unavailable_missing_config")) {
+            report.alternativeLaneRejectedReasons.push("alternative_lane_unavailable_missing_config");
+          }
+        }
         const hasMovableBlocker = repairableConflicts.some((detail) => detail.taskIds.some((taskId) => isRepairMovableTask(input, Number(taskId))));
         const repair = attemptPipelineRepair(input, baseline, output, baselineScore);
+        repairStrategiesUsed = repair.strategiesTried;
         report.segmentRepairStrategiesTried = [...new Set([...report.segmentRepairStrategiesTried, ...repair.strategiesTried])];
         report.segmentRepairMovedTalentNames = [...new Set([...report.segmentRepairMovedTalentNames, ...repair.movedTalentNames])].slice(0, MAX_TALENT_DIAGNOSTICS);
         report.segmentRepairRejectedReasons = [...new Set([
@@ -858,6 +1054,10 @@ export const generatePipelineBuilderCandidates = (
           if (repaired) {
             report.repairCandidatesGenerated += 1;
             report.segmentRepairCandidatesGenerated += 1;
+            if (repair.strategiesTried.includes("sequentialize_exclusive_lane")) {
+              report.laneRepairCandidatesGenerated += 1;
+              report.laneRepairReason = repair.result;
+            }
             report.segmentRepairReason = "repair_success_candidate_generated";
             addRejected(report, "repair_success_candidate_generated");
           }
@@ -868,6 +1068,10 @@ export const generatePipelineBuilderCandidates = (
             ? "resource_conflict_unrepaired" : repairableConflicts[0].code === "SPACE_OVERLAP"
               ? "space_conflict_unrepaired" : "dependency_conflict_unrepaired") : "locked_blocker");
           report.segmentRepairReason = repair.result;
+          if (report.laneRepairAttempted) {
+            report.laneRepairReason = repair.result;
+            report.laneRepairRejectedReasons = [...new Set([...report.laneRepairRejectedReasons, ...repair.rejectedReasons, repair.result])].slice(0, 10);
+          }
         }
       } else {
         for (const detail of validation.hardConstraintViolationDetails.slice(0, MAX_CONFLICT_DIAGNOSTICS)) {
@@ -916,7 +1120,7 @@ export const generatePipelineBuilderCandidates = (
       feederOutcomes,
       repaired,
       segmentRepaired: repaired,
-      segmentRepairStrategies: repaired ? [...report.segmentRepairStrategiesTried] : [],
+      segmentRepairStrategies: repaired ? [...repairStrategiesUsed] : [],
       movedTalentNames: repaired ? [...report.segmentRepairMovedTalentNames] : [],
     });
   }
@@ -924,6 +1128,9 @@ export const generatePipelineBuilderCandidates = (
   report.candidatesGenerated = candidates.length;
   report.repairAccepted = candidates.some((candidate) => candidate.repaired);
   report.segmentRepairAccepted = candidates.some((candidate) => candidate.segmentRepaired);
+  report.laneRepairAccepted = candidates.some((candidate) => candidate.segmentRepairStrategies?.includes("sequentialize_exclusive_lane"));
+  if (report.laneRepairAccepted) report.laneRepairReason = "lane_repair_candidate_generated";
+  else if (!report.laneRepairAttempted) report.laneRepairReason = "not_needed";
   if (report.segmentRepairAccepted) report.segmentRepairReason = "repair_success_candidate_generated";
   else if (!report.segmentRepairAttempted) report.segmentRepairReason = "not_needed";
   report.reason = candidates.length > 0
