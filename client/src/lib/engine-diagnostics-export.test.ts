@@ -26,6 +26,8 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.deepEqual(snapshot.intelligence.coachWaveBefore, {});
   assert.deepEqual(snapshot.intelligence.coachWaveAfter, {});
   assert.equal(snapshot.intelligence.pipelineBuilderAttempted, false);
+  assert.deepEqual(snapshot.intelligence.pipelineConflictDetails, []);
+  assert.equal(snapshot.intelligence.pipelineSegmentRepairAttempted, false);
   assert.equal(snapshot.intelligence.pipelineCandidatesGenerated, 0);
   assert.equal(snapshot.intelligence.pipelineAccepted, false);
   assert.equal(snapshot.intelligence.pipelineReason, "generator_not_invoked");
@@ -86,6 +88,33 @@ test("includes key metrics without copying full engine or planning payloads", ()
       pipelineMovedTasks: [11, 12],
       pipelineStableTasks: [13],
       pipelineFeederOutcomes: ["feeder_relocated", "feeder_kept_stable"],
+      pipelineRepairAttempted: true,
+      pipelineRepairCandidatesGenerated: 1,
+      pipelineRepairAccepted: true,
+      pipelineConflictDetails: [{
+        candidateName: "pipeline_coachA_first",
+        violationCode: "RESOURCE_OVERLAP",
+        resourceId: 501,
+        resourceName: "Coach A",
+        taskIds: [11, 12],
+        taskNames: ["Vocal 1", "Vocal 2"],
+        talentNames: ["Lucía", "Jose Maria"],
+        blockingTaskIds: [12],
+        blockingTaskNames: ["Vocal 2"],
+        movableTaskIds: [11],
+        lockedOrExecutedTaskIds: [12],
+        repairAttempted: true,
+        repairStrategy: "move_whole_segment_by_offset",
+        repairResult: "repair_success_candidate_generated",
+        message: "Coach overlap",
+      }],
+      pipelineSegmentRepairAttempted: true,
+      pipelineSegmentRepairCandidatesGenerated: 1,
+      pipelineSegmentRepairAccepted: true,
+      pipelineSegmentRepairReason: "pipeline_builder selected: segment repair lower coach gap",
+      pipelineSegmentRepairStrategiesTried: ["move_whole_segment_by_offset"],
+      pipelineSegmentRepairMovedTalentNames: ["Lucía"],
+      pipelineSegmentRepairRejectedReasons: [],
       declaredResourceBundleCount: 5,
       usableResourceBundleCount: 4,
     },
@@ -123,6 +152,10 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.deepEqual(snapshot.intelligence.pipelineUnmappedTalents, ["Talent 19"]);
   assert.deepEqual(snapshot.intelligence.pipelineMovedTasks, [11, 12]);
   assert.deepEqual(snapshot.intelligence.pipelineStableTasks, [13]);
+  assert.equal(snapshot.intelligence.pipelineRepairAccepted, true);
+  assert.deepEqual((snapshot.intelligence.pipelineConflictDetails as any[])[0].blockingTaskNames, ["Vocal 2"]);
+  assert.equal(snapshot.intelligence.pipelineSegmentRepairAccepted, true);
+  assert.deepEqual(snapshot.intelligence.pipelineSegmentRepairMovedTalentNames, ["Lucía"]);
   assert.deepEqual(snapshot.selectedCandidateMetrics, { score: 123, nested: { gapMinutes: 4 } });
   assert.equal(snapshot.resourceBundles.usable, 4);
   assert.deepEqual(snapshot.humanReviewTemplate, {

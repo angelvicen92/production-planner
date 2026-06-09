@@ -78,6 +78,13 @@ export interface EngineRunDiagnostics {
     pipelineRepairCandidatesGenerated: number;
     pipelineRepairAccepted: boolean;
     pipelineConflictDetails: PipelineConflictDiagnostic[];
+    pipelineSegmentRepairAttempted: boolean;
+    pipelineSegmentRepairCandidatesGenerated: number;
+    pipelineSegmentRepairAccepted: boolean;
+    pipelineSegmentRepairReason: string | null;
+    pipelineSegmentRepairStrategiesTried: string[];
+    pipelineSegmentRepairMovedTalentNames: string[];
+    pipelineSegmentRepairRejectedReasons: string[];
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -199,10 +206,20 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineRepairAttempted: meta?.pipelineRepairAttempted ?? false,
       pipelineRepairCandidatesGenerated: meta?.pipelineRepairCandidatesGenerated ?? 0,
       pipelineRepairAccepted: meta?.pipelineRepairAccepted ?? false,
+      pipelineSegmentRepairAttempted: meta?.pipelineSegmentRepairAttempted ?? false,
+      pipelineSegmentRepairCandidatesGenerated: meta?.pipelineSegmentRepairCandidatesGenerated ?? 0,
+      pipelineSegmentRepairAccepted: meta?.pipelineSegmentRepairAccepted ?? false,
+      pipelineSegmentRepairReason: compactText(meta?.pipelineSegmentRepairReason) ?? "generator_not_invoked",
+      pipelineSegmentRepairStrategiesTried: uniqueCompactReasons(meta?.pipelineSegmentRepairStrategiesTried ?? []),
+      pipelineSegmentRepairMovedTalentNames: (meta?.pipelineSegmentRepairMovedTalentNames ?? []).slice(0, 20),
+      pipelineSegmentRepairRejectedReasons: uniqueCompactReasons(meta?.pipelineSegmentRepairRejectedReasons ?? []),
       pipelineConflictDetails: (meta?.pipelineConflictDetails ?? []).slice(0, 10).map((detail) => ({
         ...detail,
         taskIds: (detail.taskIds ?? []).slice(0, 6),
         taskNames: (detail.taskNames ?? []).slice(0, 6),
+        talentNames: (detail.talentNames ?? []).slice(0, 6),
+        blockingTaskIds: (detail.blockingTaskIds ?? []).slice(0, 6),
+        blockingTaskNames: (detail.blockingTaskNames ?? []).slice(0, 6),
         movableTaskIds: (detail.movableTaskIds ?? []).slice(0, 6),
         lockedOrExecutedTaskIds: (detail.lockedOrExecutedTaskIds ?? []).slice(0, 6),
         message: String(detail.message ?? "").slice(0, 240),

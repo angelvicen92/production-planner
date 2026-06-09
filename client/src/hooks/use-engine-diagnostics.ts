@@ -67,6 +67,17 @@ export type EngineDiagnosticsMetadata = {
   pipelineMovedTasks?: number[] | null;
   pipelineStableTasks?: number[] | null;
   pipelineFeederOutcomes?: string[] | null;
+  pipelineRepairAttempted?: boolean | null;
+  pipelineRepairCandidatesGenerated?: number | null;
+  pipelineRepairAccepted?: boolean | null;
+  pipelineConflictDetails?: Array<Record<string, unknown>> | null;
+  pipelineSegmentRepairAttempted?: boolean | null;
+  pipelineSegmentRepairCandidatesGenerated?: number | null;
+  pipelineSegmentRepairAccepted?: boolean | null;
+  pipelineSegmentRepairReason?: string | null;
+  pipelineSegmentRepairStrategiesTried?: string[] | null;
+  pipelineSegmentRepairMovedTalentNames?: string[] | null;
+  pipelineSegmentRepairRejectedReasons?: string[] | null;
   cpSatAttempted?: boolean | null;
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;

@@ -8,7 +8,7 @@ import {
   type OperationalQualityInput,
 } from "@/lib/planning-operational-quality";
 
-export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 5;
+export const ENGINE_DIAGNOSTICS_EXPORT_VERSION = 6;
 export const MAX_EXPORTED_HARD_VIOLATIONS = 50;
 export const MAX_EXPORTED_WARNINGS_PER_GROUP = 20;
 
@@ -16,7 +16,7 @@ const MAX_WARNING_TASK_IDS = 25;
 const MAX_WARNING_MESSAGE_LENGTH = 500;
 const MAX_METRIC_KEYS = 25;
 const MAX_METRIC_ARRAY_ITEMS = 25;
-const MAX_METRIC_DEPTH = 2;
+const MAX_METRIC_DEPTH = 3;
 const MAX_METRIC_STRING_LENGTH = 500;
 
 type JsonPrimitive = string | number | boolean | null;
@@ -150,6 +150,17 @@ export type EngineDiagnosticsSnapshot = {
     pipelineMovedTasks: CompactJsonValue;
     pipelineStableTasks: CompactJsonValue;
     pipelineFeederOutcomes: CompactJsonValue;
+    pipelineRepairAttempted: boolean;
+    pipelineRepairCandidatesGenerated: number;
+    pipelineRepairAccepted: boolean;
+    pipelineConflictDetails: CompactJsonValue;
+    pipelineSegmentRepairAttempted: boolean;
+    pipelineSegmentRepairCandidatesGenerated: number;
+    pipelineSegmentRepairAccepted: boolean;
+    pipelineSegmentRepairReason: string;
+    pipelineSegmentRepairStrategiesTried: CompactJsonValue;
+    pipelineSegmentRepairMovedTalentNames: CompactJsonValue;
+    pipelineSegmentRepairRejectedReasons: CompactJsonValue;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -250,6 +261,30 @@ export function buildEngineDiagnosticsSnapshot(
       pipelineMovedTasks: compactJsonValue(Array.isArray(metadata.pipelineMovedTasks) ? metadata.pipelineMovedTasks.slice(0, 50) : []) ?? [],
       pipelineStableTasks: compactJsonValue(Array.isArray(metadata.pipelineStableTasks) ? metadata.pipelineStableTasks.slice(0, 50) : []) ?? [],
       pipelineFeederOutcomes: compactJsonValue(Array.isArray(metadata.pipelineFeederOutcomes) ? metadata.pipelineFeederOutcomes.slice(0, 10) : []) ?? [],
+      pipelineRepairAttempted: optionalBoolean(metadata.pipelineRepairAttempted) ?? false,
+      pipelineRepairCandidatesGenerated: optionalNumber(metadata.pipelineRepairCandidatesGenerated) ?? 0,
+      pipelineRepairAccepted: optionalBoolean(metadata.pipelineRepairAccepted) ?? false,
+      pipelineConflictDetails: compactJsonValue(Array.isArray(metadata.pipelineConflictDetails)
+        ? metadata.pipelineConflictDetails.slice(0, 10).map((detail: any) => ({
+          ...detail,
+          taskIds: Array.isArray(detail?.taskIds) ? detail.taskIds.slice(0, 6) : [],
+          taskNames: Array.isArray(detail?.taskNames) ? detail.taskNames.slice(0, 6) : [],
+          blockingTaskIds: Array.isArray(detail?.blockingTaskIds) ? detail.blockingTaskIds.slice(0, 6) : [],
+          blockingTaskNames: Array.isArray(detail?.blockingTaskNames) ? detail.blockingTaskNames.slice(0, 6) : [],
+          movableTaskIds: Array.isArray(detail?.movableTaskIds) ? detail.movableTaskIds.slice(0, 6) : [],
+          lockedOrExecutedTaskIds: Array.isArray(detail?.lockedOrExecutedTaskIds) ? detail.lockedOrExecutedTaskIds.slice(0, 6) : [],
+          talentNames: Array.isArray(detail?.talentNames) ? detail.talentNames.slice(0, 6) : [],
+        })) : []) ?? [],
+      pipelineSegmentRepairAttempted: optionalBoolean(metadata.pipelineSegmentRepairAttempted) ?? false,
+      pipelineSegmentRepairCandidatesGenerated: optionalNumber(metadata.pipelineSegmentRepairCandidatesGenerated) ?? 0,
+      pipelineSegmentRepairAccepted: optionalBoolean(metadata.pipelineSegmentRepairAccepted) ?? false,
+      pipelineSegmentRepairReason: optionalString(metadata.pipelineSegmentRepairReason) ?? "generator_not_invoked",
+      pipelineSegmentRepairStrategiesTried: compactJsonValue(Array.isArray(metadata.pipelineSegmentRepairStrategiesTried)
+        ? metadata.pipelineSegmentRepairStrategiesTried.slice(0, 10) : []) ?? [],
+      pipelineSegmentRepairMovedTalentNames: compactJsonValue(Array.isArray(metadata.pipelineSegmentRepairMovedTalentNames)
+        ? metadata.pipelineSegmentRepairMovedTalentNames.slice(0, 20) : []) ?? [],
+      pipelineSegmentRepairRejectedReasons: compactJsonValue(Array.isArray(metadata.pipelineSegmentRepairRejectedReasons)
+        ? metadata.pipelineSegmentRepairRejectedReasons.slice(0, 10) : []) ?? [],
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

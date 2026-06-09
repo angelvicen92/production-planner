@@ -120,6 +120,13 @@ type BacktrackingMeta = {
   pipelineRepairCandidatesGenerated?: number;
   pipelineRepairAccepted?: boolean;
   pipelineConflictDetails?: PipelineConflictDetail[];
+  pipelineSegmentRepairAttempted?: boolean;
+  pipelineSegmentRepairCandidatesGenerated?: number;
+  pipelineSegmentRepairAccepted?: boolean;
+  pipelineSegmentRepairReason?: string;
+  pipelineSegmentRepairStrategiesTried?: string[];
+  pipelineSegmentRepairMovedTalentNames?: string[];
+  pipelineSegmentRepairRejectedReasons?: string[];
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -680,6 +687,13 @@ export const runPipelineBuilderSelection = (
     repairCandidatesGenerated: 0,
     repairAccepted: false,
     conflictDetails: [],
+    segmentRepairAttempted: false,
+    segmentRepairCandidatesGenerated: 0,
+    segmentRepairAccepted: false,
+    segmentRepairReason: "generator_not_invoked",
+    segmentRepairStrategiesTried: [],
+    segmentRepairMovedTalentNames: [],
+    segmentRepairRejectedReasons: [],
   };
   const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
   let bestOutput = baseOutput;
@@ -699,10 +713,10 @@ export const runPipelineBuilderSelection = (
   }
   const selectionReason = accepted
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
-      ? bestCandidate?.repaired ? "pipeline_builder selected: repaired lower coach split" : "pipeline_builder selected: lower coach split"
+      ? bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? bestCandidate?.repaired ? "pipeline_builder selected: repaired lower coach gap" : "pipeline_builder selected: lower coach max gap"
-        : bestCandidate?.repaired ? "pipeline_builder selected: repaired better operational quality" : "pipeline_builder selected: better operational quality"
+        ? bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
+        : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
     ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
@@ -754,6 +768,13 @@ export const runPipelineBuilderSelection = (
       pipelineRepairCandidatesGenerated: diagnostics.repairCandidatesGenerated,
       pipelineRepairAccepted: accepted && Boolean(bestCandidate?.repaired),
       pipelineConflictDetails: diagnostics.conflictDetails.slice(0, 10),
+      pipelineSegmentRepairAttempted: diagnostics.segmentRepairAttempted,
+      pipelineSegmentRepairCandidatesGenerated: diagnostics.segmentRepairCandidatesGenerated,
+      pipelineSegmentRepairAccepted: accepted && Boolean(bestCandidate?.segmentRepaired),
+      pipelineSegmentRepairReason: accepted && bestCandidate?.segmentRepaired ? selectionReason! : diagnostics.segmentRepairReason,
+      pipelineSegmentRepairStrategiesTried: diagnostics.segmentRepairStrategiesTried,
+      pipelineSegmentRepairMovedTalentNames: bestCandidate?.movedTalentNames ?? diagnostics.segmentRepairMovedTalentNames,
+      pipelineSegmentRepairRejectedReasons: diagnostics.segmentRepairRejectedReasons,
       candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
       solutionSource: accepted ? "pipeline_builder" : baseSource,
       bestCandidateSource: accepted ? "pipeline_builder" : baseMeta.bestCandidateSource ?? baseSource,
@@ -852,6 +873,13 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       pipelineRepairCandidatesGenerated: 0,
       pipelineRepairAccepted: false,
       pipelineConflictDetails: [],
+      pipelineSegmentRepairAttempted: false,
+      pipelineSegmentRepairCandidatesGenerated: 0,
+      pipelineSegmentRepairAccepted: false,
+      pipelineSegmentRepairReason: "generator_not_invoked",
+      pipelineSegmentRepairStrategiesTried: [],
+      pipelineSegmentRepairMovedTalentNames: [],
+      pipelineSegmentRepairRejectedReasons: [],
       ...meta,
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,

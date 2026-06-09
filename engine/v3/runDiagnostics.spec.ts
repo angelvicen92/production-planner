@@ -91,6 +91,13 @@ const output: EngineOutput = {
     pipelineRejectedReasons: ["resource_conflict"],
     pipelineBefore: { maxCoachGapMinutes: 260 },
     pipelineAfter: { maxCoachGapMinutes: 45 },
+    pipelineSegmentRepairAttempted: true,
+    pipelineSegmentRepairCandidatesGenerated: 1,
+    pipelineSegmentRepairAccepted: true,
+    pipelineSegmentRepairReason: "pipeline_builder selected: segment repair lower coach gap",
+    pipelineSegmentRepairStrategiesTried: ["move_whole_segment_by_offset"],
+    pipelineSegmentRepairMovedTalentNames: ["Lucía"],
+    pipelineSegmentRepairRejectedReasons: [],
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -140,6 +147,10 @@ const output: EngineOutput = {
   assert.deepEqual(diagnostics.engineMetadata.pipelineRejectedReasons, ["resource_conflict"]);
   assert.deepEqual(diagnostics.engineMetadata.pipelineBefore, { maxCoachGapMinutes: 260 });
   assert.deepEqual(diagnostics.engineMetadata.pipelineAfter, { maxCoachGapMinutes: 45 });
+  assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairAttempted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairCandidatesGenerated, 1);
+  assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairAccepted, true);
+  assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairMovedTalentNames, ["Lucía"]);
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -181,6 +192,9 @@ const output: EngineOutput = {
   assert.deepEqual(withoutMeta.engineMetadata.pipelineMovedTasks, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineStableTasks, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineFeederOutcomes, []);
+  assert.deepEqual(withoutMeta.engineMetadata.pipelineConflictDetails, []);
+  assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairAttempted, false);
+  assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairReason, "generator_not_invoked");
 }
 
 {
