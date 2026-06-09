@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabase";
 import type { EngineRunDiagnostics } from "../engine/v3/runDiagnostics";
+import { normalizePipelineDiagnosticsMetadata } from "../engine/v3/pipelineDiagnostics";
 import {
   Plan,
   PlanSummary,
@@ -251,7 +252,10 @@ export class SupabaseStorage implements IStorage {
         coach_switch_count: diagnostics.coachSwitchCount,
         restrictive_talent_average_start_offset: diagnostics.restrictiveTalentAverageStartOffset,
         selected_candidate_metrics: diagnostics.selectedCandidateMetrics,
-        engine_metadata: diagnostics.engineMetadata,
+        engine_metadata: {
+          ...diagnostics.engineMetadata,
+          ...normalizePipelineDiagnosticsMetadata(diagnostics.engineMetadata),
+        },
         diagnostic_warnings: diagnostics.diagnosticWarnings,
         updated_at: new Date().toISOString(),
       })
@@ -300,7 +304,12 @@ export class SupabaseStorage implements IStorage {
       hardValidationPassed: typeof (data.engine_metadata as any)?.hardValidationPassed === "boolean"
         ? (data.engine_metadata as any).hardValidationPassed
         : Number(data.hard_constraint_violations ?? 0) === 0,
-      engineMetadata: data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
+      engineMetadata: {
+        ...(data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {}),
+        ...normalizePipelineDiagnosticsMetadata(
+          data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
+        ),
+      },
       diagnosticWarnings: data.diagnostic_warnings && typeof data.diagnostic_warnings === "object"
         ? data.diagnostic_warnings
         : { resourceDiagnosticWarnings: [], resourceBundleValidationWarnings: [] },

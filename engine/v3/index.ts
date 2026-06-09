@@ -21,6 +21,7 @@ import { runMainStageCpSatPilot, type MainStageCpSatPilotMeta } from "./mainStag
 import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
 import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, type PipelineConflictDetail } from "./pipelineBuilder";
+import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 
 type AttemptSummary = {
   level: number;
@@ -727,6 +728,15 @@ export const runPipelineBuilderSelection = (
           ? "repair_blocked_by_locked_or_executed"
           : "repair_attempted_but_no_valid_candidate"
         : diagnostics.reason;
+  const segmentRepairReason = accepted && bestCandidate?.segmentRepaired
+    ? selectionReason!
+    : diagnostics.segmentRepairAttempted && diagnostics.segmentRepairCandidatesGenerated > 0
+      ? "repair_valid_but_not_better_than_baseline"
+      : diagnostics.segmentRepairReason;
+  const segmentRepairRejectedReasons = [...new Set([
+    ...diagnostics.segmentRepairRejectedReasons,
+    ...(!accepted && diagnostics.segmentRepairCandidatesGenerated > 0 ? ["repair_valid_but_not_better_than_baseline"] : []),
+  ])].slice(0, 10);
   const selectedMetrics: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"] = {
     coachSwitchCount: bestScore.coachSwitchCount,
     coachSwitchPenalty: bestScore.coachSwitchPenalty,
@@ -764,17 +774,21 @@ export const runPipelineBuilderSelection = (
       pipelineMovedTasks: (bestCandidate?.movedTaskIds ?? diagnostics.movedTaskIds).slice(0, 50),
       pipelineStableTasks: (bestCandidate?.stableTaskIds ?? diagnostics.stableTaskIds).slice(0, 50),
       pipelineFeederOutcomes: bestCandidate?.feederOutcomes ?? diagnostics.feederOutcomes,
-      pipelineRepairAttempted: diagnostics.repairAttempted,
-      pipelineRepairCandidatesGenerated: diagnostics.repairCandidatesGenerated,
-      pipelineRepairAccepted: accepted && Boolean(bestCandidate?.repaired),
-      pipelineConflictDetails: diagnostics.conflictDetails.slice(0, 10),
-      pipelineSegmentRepairAttempted: diagnostics.segmentRepairAttempted,
-      pipelineSegmentRepairCandidatesGenerated: diagnostics.segmentRepairCandidatesGenerated,
-      pipelineSegmentRepairAccepted: accepted && Boolean(bestCandidate?.segmentRepaired),
-      pipelineSegmentRepairReason: accepted && bestCandidate?.segmentRepaired ? selectionReason! : diagnostics.segmentRepairReason,
-      pipelineSegmentRepairStrategiesTried: diagnostics.segmentRepairStrategiesTried,
-      pipelineSegmentRepairMovedTalentNames: bestCandidate?.movedTalentNames ?? diagnostics.segmentRepairMovedTalentNames,
-      pipelineSegmentRepairRejectedReasons: diagnostics.segmentRepairRejectedReasons,
+      ...normalizePipelineDiagnosticsMetadata({
+        ...baseMeta,
+        pipelineRejectedReasons: diagnostics.rejectedReasons,
+        pipelineRepairAttempted: diagnostics.repairAttempted,
+        pipelineRepairCandidatesGenerated: diagnostics.repairCandidatesGenerated,
+        pipelineRepairAccepted: accepted && Boolean(bestCandidate?.repaired),
+        pipelineConflictDetails: diagnostics.conflictDetails,
+        pipelineSegmentRepairAttempted: diagnostics.segmentRepairAttempted,
+        pipelineSegmentRepairCandidatesGenerated: diagnostics.segmentRepairCandidatesGenerated,
+        pipelineSegmentRepairAccepted: accepted && Boolean(bestCandidate?.segmentRepaired),
+        pipelineSegmentRepairReason: segmentRepairReason,
+        pipelineSegmentRepairStrategiesTried: diagnostics.segmentRepairStrategiesTried,
+        pipelineSegmentRepairMovedTalentNames: bestCandidate?.movedTalentNames ?? diagnostics.segmentRepairMovedTalentNames,
+        pipelineSegmentRepairRejectedReasons: segmentRepairRejectedReasons,
+      }),
       candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
       solutionSource: accepted ? "pipeline_builder" : baseSource,
       bestCandidateSource: accepted ? "pipeline_builder" : baseMeta.bestCandidateSource ?? baseSource,
@@ -869,18 +883,8 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       pipelineMovedTasks: [],
       pipelineStableTasks: [],
       pipelineFeederOutcomes: [],
-      pipelineRepairAttempted: false,
-      pipelineRepairCandidatesGenerated: 0,
-      pipelineRepairAccepted: false,
-      pipelineConflictDetails: [],
-      pipelineSegmentRepairAttempted: false,
-      pipelineSegmentRepairCandidatesGenerated: 0,
-      pipelineSegmentRepairAccepted: false,
-      pipelineSegmentRepairReason: "generator_not_invoked",
-      pipelineSegmentRepairStrategiesTried: [],
-      pipelineSegmentRepairMovedTalentNames: [],
-      pipelineSegmentRepairRejectedReasons: [],
       ...meta,
+      ...normalizePipelineDiagnosticsMetadata(meta),
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
       makespanMinutes: computeMakespanMinutes(output),

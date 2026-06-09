@@ -194,7 +194,7 @@ const output: EngineOutput = {
   assert.deepEqual(withoutMeta.engineMetadata.pipelineFeederOutcomes, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineConflictDetails, []);
   assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairAttempted, false);
-  assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairReason, "generator_not_invoked");
+  assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairReason, "not_attempted");
 }
 
 {
@@ -206,6 +206,79 @@ const output: EngineOutput = {
   assert.equal(Object.hasOwn(diagnostics, "output"), false);
   assert.equal(serialized.includes("contestantAvailabilityById"), false);
   assert.equal(serialized.includes("plannedTasks\":["), false);
+}
+
+
+{
+  const requiredPipelineKeys = [
+    "pipelineConflictDetails",
+    "pipelineRepairAttempted",
+    "pipelineRepairCandidatesGenerated",
+    "pipelineRepairAccepted",
+    "pipelineSegmentRepairAttempted",
+    "pipelineSegmentRepairCandidatesGenerated",
+    "pipelineSegmentRepairAccepted",
+    "pipelineSegmentRepairReason",
+    "pipelineSegmentRepairStrategiesTried",
+    "pipelineSegmentRepairMovedTalentNames",
+    "pipelineSegmentRepairRejectedReasons",
+  ];
+  const diagnostics = buildRunDiagnostics(input, { ...output, v3Meta: undefined });
+  const serializedMetadata = JSON.parse(JSON.stringify(diagnostics.engineMetadata));
+  for (const key of requiredPipelineKeys) assert.equal(Object.hasOwn(serializedMetadata, key), true, `missing ${key}`);
+  assert.equal(serializedMetadata.pipelineRepairAttempted, false);
+  assert.equal(serializedMetadata.pipelineRepairCandidatesGenerated, 0);
+  assert.equal(serializedMetadata.pipelineRepairAccepted, false);
+  assert.deepEqual(serializedMetadata.pipelineConflictDetails, []);
+}
+
+{
+  const diagnostics = buildRunDiagnostics(input, {
+    ...output,
+    v3Meta: {
+      pipelineBuilderAttempted: true,
+      pipelineRejectedReasons: ["resource_conflict", "candidate_failed_hard_validation"],
+      pipelineSegmentRepairAttempted: false,
+    },
+  });
+  assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairReason, "segment_repair_not_invoked");
+  assert.equal(diagnostics.engineMetadata.pipelineConflictDetails.length, 1);
+  assert.equal(diagnostics.engineMetadata.pipelineConflictDetails[0]?.violationCode, "RESOURCE_OVERLAP");
+  assert.equal(diagnostics.engineMetadata.pipelineConflictDetails[0]?.message, "conflict_detail_unavailable_from_validator");
+}
+
+{
+  const oversizedDetails = Array.from({ length: 12 }, (_, index) => ({
+    candidateName: `candidate_${index}`,
+    violationCode: "RESOURCE_OVERLAP",
+    taskIds: Array.from({ length: 9 }, (_, item) => item + 1),
+    taskNames: Array.from({ length: 9 }, (_, item) => `Task ${item + 1}`),
+    talentNames: [],
+    blockingTaskIds: Array.from({ length: 9 }, (_, item) => item + 11),
+    blockingTaskNames: Array.from({ length: 9 }, (_, item) => `Blocking ${item + 1}`),
+    movableTaskIds: [],
+    lockedOrExecutedTaskIds: [],
+    repairAttempted: true,
+    repairStrategy: "move_whole_segment_by_offset",
+    repairResult: "repair_attempted_but_no_valid_candidate",
+    message: "resource conflict",
+  }));
+  const diagnostics = buildRunDiagnostics(input, {
+    ...output,
+    v3Meta: {
+      pipelineRejectedReasons: ["resource_conflict_unrepaired"],
+      pipelineConflictDetails: oversizedDetails,
+      pipelineSegmentRepairAttempted: true,
+      pipelineSegmentRepairStrategiesTried: ["move_whole_segment_by_offset"],
+      pipelineSegmentRepairRejectedReasons: ["repair_attempted_but_no_valid_candidate"],
+    },
+  });
+  assert.equal(diagnostics.engineMetadata.pipelineConflictDetails.length, 10);
+  assert.ok(diagnostics.engineMetadata.pipelineConflictDetails.every((detail) => detail.taskIds.length <= 6
+    && detail.taskNames.length <= 6 && detail.blockingTaskIds.length <= 6 && detail.blockingTaskNames.length <= 6));
+  assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairAttempted, true);
+  assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairStrategiesTried, ["move_whole_segment_by_offset"]);
+  assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairRejectedReasons, ["repair_attempted_but_no_valid_candidate"]);
 }
 
 console.log("engine/v3/runDiagnostics.spec.ts: OK");

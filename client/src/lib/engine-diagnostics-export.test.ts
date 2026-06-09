@@ -27,7 +27,16 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.deepEqual(snapshot.intelligence.coachWaveAfter, {});
   assert.equal(snapshot.intelligence.pipelineBuilderAttempted, false);
   assert.deepEqual(snapshot.intelligence.pipelineConflictDetails, []);
+  assert.equal(snapshot.intelligence.pipelineRepairAttempted, false);
+  assert.equal(snapshot.intelligence.pipelineRepairCandidatesGenerated, 0);
+  assert.equal(snapshot.intelligence.pipelineRepairAccepted, false);
   assert.equal(snapshot.intelligence.pipelineSegmentRepairAttempted, false);
+  assert.equal(snapshot.intelligence.pipelineSegmentRepairCandidatesGenerated, 0);
+  assert.equal(snapshot.intelligence.pipelineSegmentRepairAccepted, false);
+  assert.equal(snapshot.intelligence.pipelineSegmentRepairReason, "not_attempted");
+  assert.deepEqual(snapshot.intelligence.pipelineSegmentRepairStrategiesTried, []);
+  assert.deepEqual(snapshot.intelligence.pipelineSegmentRepairMovedTalentNames, []);
+  assert.deepEqual(snapshot.intelligence.pipelineSegmentRepairRejectedReasons, []);
   assert.equal(snapshot.intelligence.pipelineCandidatesGenerated, 0);
   assert.equal(snapshot.intelligence.pipelineAccepted, false);
   assert.equal(snapshot.intelligence.pipelineReason, "generator_not_invoked");
@@ -167,6 +176,34 @@ test("includes key metrics without copying full engine or planning payloads", ()
   assert.equal(serialized.includes("engineInput"), false);
   assert.equal(serialized.includes("planningOutput"), false);
   assert.ok(serialized.length < 5_000);
+});
+
+
+test("keeps the complete pipeline repair JSON shape and synthesizes unavailable validator details", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({
+    engineMetadata: {
+      pipelineRejectedReasons: ["resource_conflict", "candidate_failed_hard_validation"],
+      pipelineSegmentRepairAttempted: false,
+    },
+  }, { generatedAt });
+  const parsed = JSON.parse(JSON.stringify(snapshot));
+  const requiredKeys = [
+    "pipelineConflictDetails",
+    "pipelineRepairAttempted",
+    "pipelineRepairCandidatesGenerated",
+    "pipelineRepairAccepted",
+    "pipelineSegmentRepairAttempted",
+    "pipelineSegmentRepairCandidatesGenerated",
+    "pipelineSegmentRepairAccepted",
+    "pipelineSegmentRepairReason",
+    "pipelineSegmentRepairStrategiesTried",
+    "pipelineSegmentRepairMovedTalentNames",
+    "pipelineSegmentRepairRejectedReasons",
+  ];
+  for (const key of requiredKeys) assert.equal(Object.hasOwn(parsed.intelligence, key), true, `missing ${key}`);
+  assert.equal(parsed.intelligence.pipelineSegmentRepairReason, "segment_repair_not_invoked");
+  assert.equal(parsed.intelligence.pipelineConflictDetails.length, 1);
+  assert.equal(parsed.intelligence.pipelineConflictDetails[0].message, "conflict_detail_unavailable_from_validator");
 });
 
 test("limits exported warnings and warning details", () => {

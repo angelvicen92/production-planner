@@ -3,6 +3,7 @@ import { calculateOperationalMetrics } from "./metrics";
 import { diagnoseCompositeResources } from "./resourceDiagnostics";
 import { validateResourceBundles } from "./resourceBundleValidation";
 import { validateHardConstraints, type HardConstraintViolationDetail, type HardConstraintViolationCode } from "./hardValidation";
+import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 
 type SelectedCandidateMetrics = NonNullable<NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"]>;
 type PipelineConflictDiagnostic = NonNullable<NonNullable<EngineOutput["v3Meta"]>["pipelineConflictDetails"]>[number];
@@ -147,6 +148,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
   const resourceDiagnostics = diagnoseCompositeResources(input, output);
   const bundleValidation = validateResourceBundles(input);
   const meta = output.v3Meta;
+  const pipelineMetadata = normalizePipelineDiagnosticsMetadata(meta);
   const plannedTasks = output.plannedTasks?.length ?? 0;
   const unplannedTasks = output.unplanned?.length ?? Math.max(0, input.tasks.length - plannedTasks);
 
@@ -203,27 +205,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineMovedTasks: (meta?.pipelineMovedTasks ?? []).slice(0, 50),
       pipelineStableTasks: (meta?.pipelineStableTasks ?? []).slice(0, 50),
       pipelineFeederOutcomes: uniqueCompactReasons(meta?.pipelineFeederOutcomes ?? []),
-      pipelineRepairAttempted: meta?.pipelineRepairAttempted ?? false,
-      pipelineRepairCandidatesGenerated: meta?.pipelineRepairCandidatesGenerated ?? 0,
-      pipelineRepairAccepted: meta?.pipelineRepairAccepted ?? false,
-      pipelineSegmentRepairAttempted: meta?.pipelineSegmentRepairAttempted ?? false,
-      pipelineSegmentRepairCandidatesGenerated: meta?.pipelineSegmentRepairCandidatesGenerated ?? 0,
-      pipelineSegmentRepairAccepted: meta?.pipelineSegmentRepairAccepted ?? false,
-      pipelineSegmentRepairReason: compactText(meta?.pipelineSegmentRepairReason) ?? "generator_not_invoked",
-      pipelineSegmentRepairStrategiesTried: uniqueCompactReasons(meta?.pipelineSegmentRepairStrategiesTried ?? []),
-      pipelineSegmentRepairMovedTalentNames: (meta?.pipelineSegmentRepairMovedTalentNames ?? []).slice(0, 20),
-      pipelineSegmentRepairRejectedReasons: uniqueCompactReasons(meta?.pipelineSegmentRepairRejectedReasons ?? []),
-      pipelineConflictDetails: (meta?.pipelineConflictDetails ?? []).slice(0, 10).map((detail) => ({
-        ...detail,
-        taskIds: (detail.taskIds ?? []).slice(0, 6),
-        taskNames: (detail.taskNames ?? []).slice(0, 6),
-        talentNames: (detail.talentNames ?? []).slice(0, 6),
-        blockingTaskIds: (detail.blockingTaskIds ?? []).slice(0, 6),
-        blockingTaskNames: (detail.blockingTaskNames ?? []).slice(0, 6),
-        movableTaskIds: (detail.movableTaskIds ?? []).slice(0, 6),
-        lockedOrExecutedTaskIds: (detail.lockedOrExecutedTaskIds ?? []).slice(0, 6),
-        message: String(detail.message ?? "").slice(0, 240),
-      })),
+      ...pipelineMetadata,
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

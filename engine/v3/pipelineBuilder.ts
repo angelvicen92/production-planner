@@ -39,7 +39,7 @@ export type PipelineFeederOutcome = "feeder_relocated" | "feeder_kept_stable" | 
 
 export interface PipelineConflictDetail {
   candidateName: string;
-  violationCode: HardConstraintViolationCode;
+  violationCode: string;
   resourceId?: number;
   resourceName?: string;
   spaceId?: number;
@@ -841,7 +841,11 @@ export const generatePipelineBuilderCandidates = (
         const repair = attemptPipelineRepair(input, baseline, output, baselineScore);
         report.segmentRepairStrategiesTried = [...new Set([...report.segmentRepairStrategiesTried, ...repair.strategiesTried])];
         report.segmentRepairMovedTalentNames = [...new Set([...report.segmentRepairMovedTalentNames, ...repair.movedTalentNames])].slice(0, MAX_TALENT_DIAGNOSTICS);
-        report.segmentRepairRejectedReasons = [...new Set([...report.segmentRepairRejectedReasons, ...repair.rejectedReasons])];
+        report.segmentRepairRejectedReasons = [...new Set([
+          ...report.segmentRepairRejectedReasons,
+          ...repair.rejectedReasons,
+          ...(repair.output ? [] : [repair.result]),
+        ])].slice(0, 10);
         for (const conflict of repairableConflicts) {
           addConflictDetail(report, compactConflictDetail(input, variant.kind, conflict, true, repair.strategiesTried.join(","), repair.output
             ? "repair_success_candidate_generated"
@@ -873,6 +877,20 @@ export const generatePipelineBuilderCandidates = (
     }
     const score = scoreCandidateSolution(input, output);
     if (!validation.hardValidationPassed) {
+      if (report.conflictDetails.length === 0) {
+        for (const detail of validation.hardConstraintViolationDetails.slice(0, MAX_CONFLICT_DIAGNOSTICS)) {
+          addConflictDetail(report, compactConflictDetail(
+            input,
+            variant.kind,
+            detail,
+            report.segmentRepairAttempted,
+            report.segmentRepairStrategiesTried.join(",") || "none",
+            report.segmentRepairReason,
+            output,
+            baseline,
+          ));
+        }
+      }
       addRejected(report, "candidate_failed_hard_validation");
       addRejected(report, rejectionForCodes(validation.hardConstraintViolationCodes));
       if (validation.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION")) addRejected(report, "dependency_conflict_unrepaired");
