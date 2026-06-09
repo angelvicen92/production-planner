@@ -75,3 +75,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 040 — 2026-06-08 15:20 — Phase C Pipeline Builder por Main Stage y coach waves
 - ID 041 — 2026-06-08 17:33 — Pipeline Builder observable y parcial para coach waves reales
 - ID 042 — 2026-06-08 20:15 — Pipeline Builder repair pass para conflictos de recursos/espacios
+- ID 043 — 2026-06-09 05:18 — Pipeline segment repair por cadena de talent y conflict details obligatorio

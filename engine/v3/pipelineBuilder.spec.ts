@@ -4,7 +4,13 @@ import type { EngineInput, EngineOutput } from "../types";
 import { runPipelineBuilderSelection } from "./index";
 import { validateHardConstraints } from "./hardValidation";
 import { calculateOperationalMetrics, toMinutes } from "./metrics";
-import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics } from "./pipelineBuilder";
+import {
+  buildTalentPipelineSegment,
+  generatePipelineBuilderCandidates,
+  reanchorTalentPipelineSegment,
+  swapTalentPipelineSegments,
+  type PipelineBuilderDiagnostics,
+} from "./pipelineBuilder";
 import { compareCandidateScores, scoreCandidateSolution } from "./solutionScoring";
 
 const hhmm = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -112,6 +118,13 @@ const diagnosticsFor = (input: EngineInput, baseline: EngineOutput): PipelineBui
     repairCandidatesGenerated: 0,
     repairAccepted: false,
     conflictDetails: [],
+    segmentRepairAttempted: false,
+    segmentRepairCandidatesGenerated: 0,
+    segmentRepairAccepted: false,
+    segmentRepairReason: "generator_not_invoked",
+    segmentRepairStrategiesTried: [],
+    segmentRepairMovedTalentNames: [],
+    segmentRepairRejectedReasons: [],
   };
 };
 
@@ -271,9 +284,10 @@ test("a movable resource blocker is shifted and the repaired candidate remains h
   const scenario = buildScenario();
   addAuxiliary(scenario, { id: 9_002, start: 11 * 60 + 40, end: 12 * 60, resources: [501] });
   const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnosticsFor(scenario.input, scenario.baseline));
-  const repaired = candidates.find((candidate) => candidate.repaired && candidate.movedTaskIds.includes(9_002));
+  const repaired = candidates.find((candidate) => candidate.segmentRepaired);
   assert.ok(repaired);
-  assert.notEqual(repaired.output.plannedTasks.find((task) => task.taskId === 9_002)?.startPlanned, "11:40");
+  assert.equal(repaired.output.plannedTasks.find((task) => task.taskId === 9_002)?.startPlanned, "11:40");
+  assert.ok(repaired.movedTaskIds.some((taskId) => taskId >= 1_101 && taskId <= 1_108));
   assert.equal(validateHardConstraints(scenario.input, repaired.output).hardConstraintViolations, 0);
 });
 
@@ -282,7 +296,7 @@ test("a movable space blocker is shifted and the repaired candidate remains hard
   addAuxiliary(scenario, { id: 9_003, start: 11 * 60 + 40, end: 12 * 60, spaceId: 20 });
   const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
   const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
-  const repaired = candidates.find((candidate) => candidate.repaired && candidate.movedTaskIds.includes(9_003));
+  const repaired = candidates.find((candidate) => candidate.segmentRepaired);
   assert.ok(repaired);
   assert.ok(diagnostics.conflictDetails.some((detail) => detail.violationCode === "SPACE_OVERLAP" && detail.spaceId === 20));
   assert.equal(validateHardConstraints(scenario.input, repaired.output).hardConstraintViolations, 0);
@@ -297,9 +311,9 @@ test("locked blockers are not moved and expose a concrete repair reason", () => 
   scenario.input.locks = [{ id: 44, planId: 40, taskId: 9_004, lockType: "time", lockedStart: "12:20", lockedEnd: "12:40" }];
   const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
   generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
-  assert.ok(diagnostics.rejectedReasons.includes("repair_blocked_by_locked_or_executed"));
+  assert.equal(scenario.baseline.plannedTasks.find((task) => task.taskId === 9_004)?.startPlanned, "12:20");
   assert.ok(diagnostics.conflictDetails.some((detail) => detail.lockedOrExecutedTaskIds.includes(9_004)
-    && detail.repairResult === "repair_blocked_by_locked_or_executed"));
+    && detail.blockingTaskIds.includes(9_004)));
 });
 
 test("repair never moves transport IN/OUT tasks", () => {
@@ -335,7 +349,7 @@ test("a repaired lower-gap pipeline wins selection over the current baseline", (
   const selected = runPipelineBuilderSelection(scenario.input, scenario.baseline, "operational_neighborhood");
   assert.equal(selected.meta.pipelineAccepted, true);
   assert.equal(selected.meta.pipelineRepairAccepted, true);
-  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: repaired (lower coach gap|lower coach split|better operational quality)/);
+  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: segment repair (lower coach gap|lower coach split|better operational quality)/);
 });
 
 test("pipeline conflict diagnostics payload is capped", () => {
@@ -346,5 +360,52 @@ test("pipeline conflict diagnostics payload is capped", () => {
   const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
   generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
   assert.ok(diagnostics.conflictDetails.length <= 10);
-  assert.ok(diagnostics.conflictDetails.every((detail) => detail.taskIds.length <= 6 && detail.taskNames.length <= 6));
+  assert.ok(diagnostics.conflictDetails.every((detail) => detail.taskIds.length <= 6
+    && detail.taskNames.length <= 6 && detail.blockingTaskIds.length <= 6 && detail.blockingTaskNames.length <= 6));
+});
+
+test("buildTalentPipelineSegment classifies main, direct pre/post, movable and fixed tasks", () => {
+  const tasks: any[] = [
+    { id: 1, contestantId: 77, zoneId: 2, templateName: "Vocal Coach", status: "pending" },
+    { id: 2, contestantId: 77, zoneId: 2, templateName: "Pasillo Prep", status: "pending", dependsOnTaskIds: [1] },
+    { id: 3, contestantId: 77, zoneId: 1, templateName: "Main Stage", status: "pending", dependsOnTaskIds: [2] },
+    { id: 4, contestantId: 77, zoneId: 3, templateName: "Post Main", status: "pending", dependsOnTaskIds: [3] },
+    { id: 5, contestantId: 77, zoneId: 4, templateName: "Transport IN", status: "pending" },
+  ];
+  const segment = buildTalentPipelineSegment(77, tasks, { mainZoneId: 1, fixedTaskIds: [2], transportOrMealTaskIds: [5] });
+  assert.deepEqual(segment.mainStage.map((task) => task.id), [3]);
+  assert.deepEqual(segment.preMainDirect.map((task) => task.id), [2]);
+  assert.deepEqual(segment.postMainDirect.map((task) => task.id), [4]);
+  assert.ok(segment.segmentFixed.some((task) => task.id === 2));
+  assert.ok(segment.segmentMovable.some((task) => task.id === 1));
+});
+
+test("re-anchor keeps Main Stage fixed and places the feeder chain immediately before it", () => {
+  const scenario = buildScenario();
+  const mainBefore = scenario.baseline.plannedTasks.find((task) => task.taskId === 2_101)!.startPlanned;
+  const reanchored = reanchorTalentPipelineSegment(scenario.input, scenario.baseline, 101);
+  assert.ok(reanchored);
+  assert.equal(reanchored.plannedTasks.find((task) => task.taskId === 2_101)?.startPlanned, mainBefore);
+  assert.equal(reanchored.plannedTasks.find((task) => task.taskId === 1_101)?.endPlanned, mainBefore);
+  assert.equal(validateHardConstraints(scenario.input, reanchored).hardConstraintViolations, 0);
+});
+
+test("pairwise talent swap exchanges equal Main Stage slots without opening continuity gaps", () => {
+  const scenario = buildScenario();
+  const swapped = swapTalentPipelineSegments(scenario.input, scenario.baseline, 101, 102);
+  assert.ok(swapped);
+  assert.equal(swapped.plannedTasks.find((task) => task.taskId === 2_101)?.startPlanned, "12:20");
+  assert.equal(swapped.plannedTasks.find((task) => task.taskId === 2_102)?.startPlanned, "12:00");
+  assert.equal(calculateOperationalMetrics(scenario.input, swapped).mainStageGapMinutes, 0);
+});
+
+test("segment repair metadata reports bounded strategies and moved talent names", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_300, start: 11 * 60 + 40, end: 12 * 60, resources: [501] });
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  assert.equal(diagnostics.segmentRepairAttempted, true);
+  assert.ok(diagnostics.segmentRepairCandidatesGenerated > 0);
+  assert.ok(diagnostics.segmentRepairStrategiesTried.includes("move_whole_segment_by_offset"));
+  assert.ok(diagnostics.segmentRepairMovedTalentNames.length > 0);
 });

@@ -32,7 +32,8 @@ export type PipelineRejectedReason =
   | "repair_success_candidate_generated"
   | "repair_attempted_but_no_valid_candidate"
   | "repair_valid_but_not_better_than_baseline"
-  | "repair_blocked_by_locked_or_executed";
+  | "repair_blocked_by_locked_or_executed"
+  | "segment_has_fixed_blocker";
 
 export type PipelineFeederOutcome = "feeder_relocated" | "feeder_kept_stable" | "feeder_blocked";
 
@@ -47,9 +48,13 @@ export interface PipelineConflictDetail {
   end?: string;
   taskIds: number[];
   taskNames: string[];
+  talentNames: string[];
+  blockingTaskIds: number[];
+  blockingTaskNames: string[];
   movableTaskIds: number[];
   lockedOrExecutedTaskIds: number[];
   repairAttempted: boolean;
+  repairStrategy: string;
   repairResult: string;
   message: string;
 }
@@ -63,6 +68,9 @@ export interface PipelineBuilderCandidate {
   stableTaskIds: number[];
   feederOutcomes: PipelineFeederOutcome[];
   repaired?: boolean;
+  segmentRepaired?: boolean;
+  segmentRepairStrategies?: string[];
+  movedTalentNames?: string[];
 }
 
 export interface PipelineBuilderDiagnostics {
@@ -81,6 +89,13 @@ export interface PipelineBuilderDiagnostics {
   repairCandidatesGenerated: number;
   repairAccepted: boolean;
   conflictDetails: PipelineConflictDetail[];
+  segmentRepairAttempted: boolean;
+  segmentRepairCandidatesGenerated: number;
+  segmentRepairAccepted: boolean;
+  segmentRepairReason: string;
+  segmentRepairStrategiesTried: string[];
+  segmentRepairMovedTalentNames: string[];
+  segmentRepairRejectedReasons: string[];
 }
 
 type Planned = EngineOutput["plannedTasks"][number];
@@ -91,8 +106,8 @@ const MAX_TALENT_DIAGNOSTICS = 20;
 const MAX_TASK_DIAGNOSTICS = 50;
 const MAX_CONFLICT_DIAGNOSTICS = 10;
 const MAX_CONFLICT_TASK_IDS = 6;
-const MAX_REPAIR_ATTEMPTS_PER_CANDIDATE = 20;
-const REPAIR_SHIFTS_MINUTES = [5, 10, 15, 20, 30, -5, -10, -15, -20, -30];
+const MAX_REPAIR_ATTEMPTS_PER_CANDIDATE = 30;
+const REPAIR_SHIFTS_MINUTES = [-60, -45, -30, -20, -15, -10, -5, 5, 10, 15, 20, 30, 45, 60];
 const MIN_MAPPED_TALENTS = 6;
 
 const toHHMM = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -126,7 +141,8 @@ const dependencyIds = (task: TaskInput): number[] => [...new Set([
 const isProtectedTask = (input: EngineV3Input, taskId: number): boolean => {
   const task = input.tasks.find((candidate) => Number(candidate.id) === taskId);
   const status = String(task?.status ?? "pending").toLowerCase();
-  if (status === "done" || status === "in_progress" || Boolean((task as any)?.isManualBlock)) return true;
+  if (status === "done" || status === "in_progress" || Boolean((task as any)?.isManualBlock)
+    || Boolean(task?.fixedWindowStart || task?.fixedWindowEnd || task?.breakId || task?.breakKind)) return true;
   return (input.locks ?? []).some((lock) => Number(lock.taskId) === taskId
     && ["time", "full"].includes(String(lock.lockType ?? "").toLowerCase()));
 };
@@ -142,6 +158,61 @@ const isFeeder = (input: EngineV3Input, task: TaskInput): boolean => (
 const isPostMain = (input: EngineV3Input, task: TaskInput): boolean => (
   /(reality|total(?:es)?|post[- ]?main)/.test(taskLabel(input, task))
 );
+
+export type TalentPipelineSegment = {
+  talentId: number;
+  mainStage: TaskInput[];
+  preMainDirect: TaskInput[];
+  vocalCoach: TaskInput[];
+  prep: TaskInput[];
+  postMainDirect: TaskInput[];
+  directDependencies: TaskInput[];
+  segmentCritical: TaskInput[];
+  segmentMovable: TaskInput[];
+  segmentFixed: TaskInput[];
+};
+
+export type TalentPipelineDependencies = {
+  mainZoneId?: number | null;
+  fixedTaskIds?: Iterable<number>;
+  transportOrMealTaskIds?: Iterable<number>;
+};
+
+const uniqueTasks = (tasks: TaskInput[]): TaskInput[] => tasks.filter((task, index, all) => (
+  all.findIndex((candidate) => Number(candidate.id) === Number(task.id)) === index
+));
+
+/** Pure segment classifier used by the pipeline repair pass and focused unit tests. */
+export const buildTalentPipelineSegment = (
+  talentId: number,
+  tasks: TaskInput[],
+  dependencies: TalentPipelineDependencies = {},
+): TalentPipelineSegment => {
+  const talentTasks = tasks.filter((task) => Number(task.contestantId) === Number(talentId));
+  const taskById = new Map(tasks.map((task) => [Number(task.id), task]));
+  const mainStage = talentTasks.filter((task) => Number(task.zoneId) === Number(dependencies.mainZoneId ?? NaN));
+  const mainIds = new Set(mainStage.map((task) => Number(task.id)));
+  const preMainDirect = uniqueTasks(mainStage.flatMap((task) => dependencyIds(task)
+    .map((id) => taskById.get(id))
+    .filter((candidate): candidate is TaskInput => candidate !== undefined)
+    .filter((candidate) => Number(candidate.contestantId) === Number(talentId))));
+  const postMainDirect = talentTasks.filter((task) => dependencyIds(task).some((id) => mainIds.has(id)));
+  const directDependencies = uniqueTasks([...preMainDirect, ...postMainDirect]);
+  const vocalCoach = talentTasks.filter((task) => /(vocal|coach)/.test(normalize([(task as any).templateName, (task as any).name].filter(Boolean).join(" "))));
+  const prep = talentTasks.filter((task) => /(pasillo|prep|pre[- ]?main|preparacion|prueba|ensayo)/.test(
+    normalize([(task as any).templateName, (task as any).name].filter(Boolean).join(" ")),
+  ));
+  const fixedIds = new Set(Array.from(dependencies.fixedTaskIds ?? [], Number));
+  const transportIds = new Set(Array.from(dependencies.transportOrMealTaskIds ?? [], Number));
+  const transportOrMeal = talentTasks.filter((task) => transportIds.has(Number(task.id)));
+  const segmentTasks = uniqueTasks([...mainStage, ...directDependencies, ...vocalCoach, ...prep, ...transportOrMeal]);
+  const segmentFixed = segmentTasks.filter((task) => fixedIds.has(Number(task.id)) || transportIds.has(Number(task.id)));
+  const fixedSet = new Set(segmentFixed.map((task) => Number(task.id)));
+  const mainSet = new Set(mainStage.map((task) => Number(task.id)));
+  const segmentCritical = uniqueTasks([...mainStage, ...preMainDirect]);
+  const segmentMovable = segmentTasks.filter((task) => !fixedSet.has(Number(task.id)) && !mainSet.has(Number(task.id)));
+  return { talentId, mainStage, preMainDirect, vocalCoach, prep, postMainDirect, directDependencies, segmentCritical, segmentMovable, segmentFixed };
+};
 
 const compactMetrics = (score: CandidateSolutionScore): Record<string, number> => ({
   coachSplitDayPenalty: score.coachSplitDayPenalty,
@@ -239,11 +310,39 @@ const compactConflictDetail = (
   candidateName: string,
   violation: HardConstraintViolationDetail,
   repairAttempted: boolean,
+  repairStrategy: string,
   repairResult: string,
+  candidate?: EngineOutput,
+  baseline?: EngineOutput,
 ): PipelineConflictDetail => {
-  const taskIds = (violation.taskIds ?? []).map(Number).filter(Number.isFinite).slice(0, MAX_CONFLICT_TASK_IDS);
+  const candidateById = new Map((candidate?.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  const baselineById = new Map((baseline?.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  const explicitIds = (violation.taskIds ?? []).map(Number).filter(Number.isFinite);
+  const violationStart = toMinutes(violation.start);
+  const violationEnd = toMinutes(violation.end);
+  const overlappingIds = violationStart === null || violationEnd === null ? [] : (candidate?.plannedTasks ?? [])
+    .filter((planned) => {
+      const task = input.tasks.find((item) => Number(item.id) === Number(planned.taskId));
+      const start = toMinutes(planned.startPlanned);
+      const end = toMinutes(planned.endPlanned);
+      if (!task || start === null || end === null || start >= violationEnd || violationStart >= end) return false;
+      if (violation.resourceId && !(planned.assignedResources ?? []).map(Number).includes(Number(violation.resourceId))) return false;
+      if (violation.spaceId && Number(task.spaceId) !== Number(violation.spaceId)) return false;
+      return Boolean(violation.resourceId || violation.spaceId);
+    }).map((planned) => Number(planned.taskId));
+  const taskIds = [...new Set([...explicitIds, ...overlappingIds])].slice(0, MAX_CONFLICT_TASK_IDS);
   const movableTaskIds = taskIds.filter((taskId) => isRepairMovableTask(input, taskId));
   const lockedOrExecutedTaskIds = protectedConflictTaskIds(input, taskIds);
+  const blockingTaskIds = taskIds.filter((taskId) => {
+    const current = candidateById.get(taskId);
+    const original = baselineById.get(taskId);
+    return lockedOrExecutedTaskIds.includes(taskId) || Boolean(current && original
+      && current.startPlanned === original.startPlanned && current.endPlanned === original.endPlanned);
+  }).slice(0, MAX_CONFLICT_TASK_IDS);
+  const talentNames = [...new Set(taskIds.map((taskId) => {
+    const task = input.tasks.find((candidateTask) => Number(candidateTask.id) === taskId);
+    return task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null;
+  }).filter((name): name is string => Boolean(name)))].slice(0, 6);
   return {
     candidateName,
     violationCode: violation.code,
@@ -254,10 +353,14 @@ const compactConflictDetail = (
     start: violation.start,
     end: violation.end,
     taskIds,
-    taskNames: taskIds.map((taskId) => taskName(input, taskId)),
+    taskNames: taskIds.map((taskId) => taskName(input, taskId)).slice(0, MAX_CONFLICT_TASK_IDS),
+    talentNames,
+    blockingTaskIds,
+    blockingTaskNames: blockingTaskIds.map((taskId) => taskName(input, taskId)).slice(0, MAX_CONFLICT_TASK_IDS),
     movableTaskIds,
     lockedOrExecutedTaskIds,
     repairAttempted,
+    repairStrategy,
     repairResult,
     message: String(violation.message ?? "").slice(0, 240),
   };
@@ -307,7 +410,121 @@ const isCandidateStructurallySafe = (
     && score.mainStageGapMinutes <= baselineScore.mainStageGapMinutes;
 };
 
-type RepairResult = { output: EngineOutput | null; attempts: number; result: string };
+type SegmentRepairStrategy = "move_whole_segment_by_offset" | "reanchor_around_main_stage" | "pairwise_talent_swap" | "segment_micro_cascade";
+type RepairResult = {
+  output: EngineOutput | null;
+  attempts: number;
+  result: string;
+  strategiesTried: SegmentRepairStrategy[];
+  movedTalentNames: string[];
+  rejectedReasons: string[];
+};
+
+const segmentForTalent = (input: EngineV3Input, talentId: number): TalentPipelineSegment => buildTalentPipelineSegment(
+  talentId,
+  input.tasks,
+  {
+    mainZoneId: input.optimizerMainZoneId,
+    fixedTaskIds: input.tasks.filter((task) => isProtectedTask(input, Number(task.id))).map((task) => Number(task.id)),
+    transportOrMealTaskIds: input.tasks.filter((task) => isTransportOrMeal(input, task)).map((task) => Number(task.id)),
+  },
+);
+
+const plannedBounds = (plannedById: Map<number, Planned>, tasks: TaskInput[]): { start: number; end: number } | null => {
+  const rows = tasks.map((task) => plannedById.get(Number(task.id))).filter((planned): planned is Planned => Boolean(planned));
+  const starts = rows.map((planned) => toMinutes(planned.startPlanned)).filter((value): value is number => value !== null);
+  const ends = rows.map((planned) => toMinutes(planned.endPlanned)).filter((value): value is number => value !== null);
+  return starts.length > 0 && ends.length > 0 ? { start: Math.min(...starts), end: Math.max(...ends) } : null;
+};
+
+const shiftTasks = (
+  output: EngineOutput,
+  tasks: TaskInput[],
+  delta: number,
+  workStart: number,
+  workEnd: number,
+): EngineOutput | null => {
+  const plannedById = clonePlannedMap(output);
+  for (const task of tasks) {
+    const planned = plannedById.get(Number(task.id));
+    const start = toMinutes(planned?.startPlanned);
+    const end = toMinutes(planned?.endPlanned);
+    if (start === null || end === null || start + delta < workStart || end + delta > workEnd) return null;
+    updatePlanned(plannedById, Number(task.id), start + delta);
+  }
+  return outputWithPlannedMap(output, plannedById);
+};
+
+export const reanchorTalentPipelineSegment = (
+  input: EngineV3Input,
+  output: EngineOutput,
+  talentId: number,
+): EngineOutput | null => {
+  const segment = segmentForTalent(input, talentId);
+  const plannedById = clonePlannedMap(output);
+  const mainBounds = plannedBounds(plannedById, segment.mainStage);
+  if (!mainBounds) return null;
+  const fixedIds = new Set(segment.segmentFixed.map((task) => Number(task.id)));
+  const preIds = new Set([...segment.preMainDirect, ...segment.vocalCoach, ...segment.prep].map((task) => Number(task.id)));
+  const pre = sortByDependencies(segment.segmentMovable.filter((task) => preIds.has(Number(task.id))));
+  let cursor = mainBounds.start;
+  for (const task of [...pre].reverse()) {
+    if (fixedIds.has(Number(task.id))) continue;
+    const planned = plannedById.get(Number(task.id));
+    const start = toMinutes(planned?.startPlanned);
+    const end = toMinutes(planned?.endPlanned);
+    if (start === null || end === null) return null;
+    cursor -= end - start;
+    if (cursor < (toMinutes(input.workDay.start) ?? 0)) return null;
+    updatePlanned(plannedById, Number(task.id), cursor);
+  }
+  let postCursor = mainBounds.end;
+  for (const task of sortByDependencies(segment.postMainDirect.filter((item) => !fixedIds.has(Number(item.id))))) {
+    const planned = plannedById.get(Number(task.id));
+    const start = toMinutes(planned?.startPlanned);
+    const end = toMinutes(planned?.endPlanned);
+    if (start === null || end === null || postCursor + end - start > (toMinutes(input.workDay.end) ?? 24 * 60)) return null;
+    updatePlanned(plannedById, Number(task.id), postCursor);
+    postCursor += end - start;
+  }
+  return outputWithPlannedMap(output, plannedById);
+};
+
+export const swapTalentPipelineSegments = (
+  input: EngineV3Input,
+  output: EngineOutput,
+  firstTalentId: number,
+  secondTalentId: number,
+): EngineOutput | null => {
+  const first = segmentForTalent(input, firstTalentId);
+  const second = segmentForTalent(input, secondTalentId);
+  if (first.segmentFixed.length > 0 || second.segmentFixed.length > 0) return null;
+  const plannedById = clonePlannedMap(output);
+  const firstMain = plannedBounds(plannedById, first.mainStage);
+  const secondMain = plannedBounds(plannedById, second.mainStage);
+  if (!firstMain || !secondMain || firstMain.end - firstMain.start !== secondMain.end - secondMain.start) return null;
+  const move = (segment: TalentPipelineSegment, fromAnchor: number, toAnchor: number): boolean => {
+    for (const task of uniqueTasks([...segment.mainStage, ...segment.segmentMovable])) {
+      const planned = plannedById.get(Number(task.id));
+      const start = toMinutes(planned?.startPlanned);
+      if (start === null) return false;
+      updatePlanned(plannedById, Number(task.id), toAnchor + start - fromAnchor);
+    }
+    return true;
+  };
+  if (!move(first, firstMain.start, secondMain.start) || !move(second, secondMain.start, firstMain.start)) return null;
+  return outputWithPlannedMap(output, plannedById);
+};
+
+const protectedTasksUnchanged = (input: EngineV3Input, baseline: EngineOutput, output: EngineOutput): boolean => {
+  const baselineById = new Map((baseline.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  return (output.plannedTasks ?? []).every((planned) => {
+    const task = input.tasks.find((candidate) => Number(candidate.id) === Number(planned.taskId));
+    if (!task || (!isProtectedTask(input, Number(task.id)) && !isTransportOrMeal(input, task))) return true;
+    const original = baselineById.get(Number(planned.taskId));
+    return Boolean(original && original.startPlanned === planned.startPlanned && original.endPlanned === planned.endPlanned);
+  });
+};
 
 const attemptPipelineRepair = (
   input: EngineV3Input,
@@ -318,89 +535,95 @@ const attemptPipelineRepair = (
   let attempts = 0;
   const workStart = toMinutes(input.workDay.start) ?? 0;
   const workEnd = toMinutes(input.workDay.end) ?? 24 * 60;
-  const baselinePlannedById = new Map((baseline.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
-  const queue: Array<{ output: EngineOutput; depth: number }> = [{ output: candidate, depth: 0 }];
+  const strategiesTried: SegmentRepairStrategy[] = [];
+  const movedTalentNames = new Set<string>();
+  const rejectedReasons = new Set<string>();
+  const queue: Array<{ output: EngineOutput; depth: number; movedTalents: number[] }> = [{ output: candidate, depth: 0, movedTalents: [] }];
+  const addStrategy = (strategy: SegmentRepairStrategy): void => {
+    if (!strategiesTried.includes(strategy)) strategiesTried.push(strategy);
+  };
+  const accept = (output: EngineOutput, talents: number[]): RepairResult | null => {
+    const validation = validateHardConstraints(input, output, MAX_CONFLICT_DIAGNOSTICS);
+    if (!validation.hardValidationPassed || !isCandidateStructurallySafe(input, baselineScore, output)
+      || !protectedTasksUnchanged(input, baseline, output)) return null;
+    talents.forEach((talentId) => movedTalentNames.add(talentLabel(input, talentId)));
+    return { output, attempts, result: "repair_success_candidate_generated", strategiesTried, movedTalentNames: [...movedTalentNames], rejectedReasons: [...rejectedReasons] };
+  };
 
   while (queue.length > 0 && attempts < MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) {
     const state = queue.shift()!;
     const validation = validateHardConstraints(input, state.output, MAX_CONFLICT_DIAGNOSTICS);
-    if (validation.hardValidationPassed) {
-      if (isCandidateStructurallySafe(input, baselineScore, state.output)) {
-        return { output: state.output, attempts, result: "repair_success_candidate_generated" };
-      }
-      continue;
-    }
+    const accepted = validation.hardValidationPassed ? accept(state.output, state.movedTalents) : null;
+    if (accepted) return accepted;
     if (state.depth >= 2) continue;
-    const conflicts = validation.hardConstraintViolationDetails.filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP");
-    if (conflicts.length === 0 || (state.depth > 0 && conflicts.length !== 1)) continue;
-    const conflict = conflicts[0];
-    const currentPlannedById = clonePlannedMap(state.output);
-    const movableTaskIds = conflict.taskIds.filter((taskId) => isRepairMovableTask(input, Number(taskId)))
-      .sort((a, b) => {
-        const aBaseline = baselinePlannedById.get(Number(a));
-        const bBaseline = baselinePlannedById.get(Number(b));
-        const aCurrent = currentPlannedById.get(Number(a));
-        const bCurrent = currentPlannedById.get(Number(b));
-        const aAlreadyMoved = aBaseline?.startPlanned !== aCurrent?.startPlanned || aBaseline?.endPlanned !== aCurrent?.endPlanned;
-        const bAlreadyMoved = bBaseline?.startPlanned !== bCurrent?.startPlanned || bBaseline?.endPlanned !== bCurrent?.endPlanned;
-        return Number(aAlreadyMoved) - Number(bAlreadyMoved);
-      });
+    const conflict = validation.hardConstraintViolationDetails.find((detail) => (
+      detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP" || detail.code === "DEPENDENCY_VIOLATION"
+    ));
+    if (!conflict) continue;
+    const conflictTalents = [...new Set(conflict.taskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === Number(taskId)))
+      .map((task) => Number(task?.contestantId ?? NaN)).filter((talentId) => Number.isFinite(talentId) && talentId > 0))];
+    for (const talentId of conflictTalents) {
+      if (attempts >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) break;
+      const segment = segmentForTalent(input, talentId);
+      if (segment.segmentFixed.length > 0) rejectedReasons.add("segment_has_fixed_blocker");
 
-    // A stable blocker is preferred over a task already moved by the pipeline. This keeps the
-    // repair local and leaves half of the bounded budget available for a depth-two cascade.
-    for (const taskId of movableTaskIds.slice(0, 1)) {
-      for (const delta of REPAIR_SHIFTS_MINUTES) {
-        if (attempts >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) break;
-        attempts += 1;
-        const plannedById = clonePlannedMap(state.output);
-        const planned = plannedById.get(Number(taskId));
-        const start = toMinutes(planned?.startPlanned);
-        const end = toMinutes(planned?.endPlanned);
-        if (start === null || end === null || start + delta < workStart || end + delta > workEnd) continue;
-        updatePlanned(plannedById, Number(taskId), start + delta);
-        const shifted = outputWithPlannedMap(state.output, plannedById);
-        const shiftedValidation = validateHardConstraints(input, shifted, 2);
-        if (shiftedValidation.hardValidationPassed && isCandidateStructurallySafe(input, baselineScore, shifted)) {
-          return { output: shifted, attempts, result: "repair_success_candidate_generated" };
-        }
-        if (state.depth === 0) {
-          const nextConflicts = shiftedValidation.hardConstraintViolationDetails
-            .filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP");
-          if (nextConflicts.length === 1) queue.unshift({ output: shifted, depth: 1 });
+      addStrategy("move_whole_segment_by_offset");
+      if (segment.segmentFixed.length === 0) {
+        for (const delta of REPAIR_SHIFTS_MINUTES) {
+          if (attempts >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) break;
+          attempts += 1;
+          const shifted = shiftTasks(state.output, segment.segmentMovable, delta, workStart, workEnd);
+          if (!shifted) continue;
+          const shiftedAccepted = accept(shifted, [...state.movedTalents, talentId]);
+          if (shiftedAccepted) return shiftedAccepted;
+          const nextValidation = validateHardConstraints(input, shifted, 3);
+          const repairable = nextValidation.hardConstraintViolationDetails.some((detail) => (
+            detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP" || detail.code === "DEPENDENCY_VIOLATION"
+          ));
+          if (repairable && state.depth === 0 && new Set([...state.movedTalents, talentId]).size <= 2) {
+            addStrategy("segment_micro_cascade");
+            queue.push({ output: shifted, depth: 1, movedTalents: [...new Set([...state.movedTalents, talentId])] });
+          }
         }
       }
-    }
 
-    // B. Compatible swap, only when shifts did not consume the candidate budget.
-    for (let i = 0; i < movableTaskIds.length && attempts < MAX_REPAIR_ATTEMPTS_PER_CANDIDATE; i += 1) {
-      for (let j = i + 1; j < movableTaskIds.length && attempts < MAX_REPAIR_ATTEMPTS_PER_CANDIDATE; j += 1) {
-        const firstId = Number(movableTaskIds[i]);
-        const secondId = Number(movableTaskIds[j]);
-        const firstTask = input.tasks.find((task) => Number(task.id) === firstId);
-        const secondTask = input.tasks.find((task) => Number(task.id) === secondId);
-        const first = currentPlannedById.get(firstId);
-        const second = currentPlannedById.get(secondId);
-        const firstStart = toMinutes(first?.startPlanned);
-        const firstEnd = toMinutes(first?.endPlanned);
-        const secondStart = toMinutes(second?.startPlanned);
-        const secondEnd = toMinutes(second?.endPlanned);
-        if (!firstTask || !secondTask || Number(firstTask.templateId) !== Number(secondTask.templateId)
-          || Number(firstTask.spaceId) !== Number(secondTask.spaceId) || firstStart === null || firstEnd === null
-          || secondStart === null || secondEnd === null || Math.abs((firstEnd - firstStart) - (secondEnd - secondStart)) > 5) continue;
+      if (attempts < MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) {
+        addStrategy("reanchor_around_main_stage");
         attempts += 1;
-        const swappedById = clonePlannedMap(state.output);
-        updatePlanned(swappedById, firstId, secondStart);
-        updatePlanned(swappedById, secondId, firstStart);
-        const swapped = outputWithPlannedMap(state.output, swappedById);
-        const swappedValidation = validateHardConstraints(input, swapped, 2);
-        if (swappedValidation.hardValidationPassed && isCandidateStructurallySafe(input, baselineScore, swapped)) {
-          return { output: swapped, attempts, result: "repair_success_candidate_generated" };
+        const reanchored = reanchorTalentPipelineSegment(input, state.output, talentId);
+        if (reanchored) {
+          const reanchoredAccepted = accept(reanchored, [...state.movedTalents, talentId]);
+          if (reanchoredAccepted) return reanchoredAccepted;
+          if (state.depth === 0) {
+            addStrategy("segment_micro_cascade");
+            queue.push({ output: reanchored, depth: 1, movedTalents: [...new Set([...state.movedTalents, talentId])] });
+          }
         }
+      }
+
+      addStrategy("pairwise_talent_swap");
+      const allTalentIds = [...new Set(input.tasks.map((task) => Number(task.contestantId ?? NaN))
+        .filter((otherTalentId) => Number.isFinite(otherTalentId) && otherTalentId > 0 && otherTalentId !== talentId))];
+      for (const otherTalentId of allTalentIds) {
+        if (attempts >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) break;
+        if (new Set([...state.movedTalents, talentId, otherTalentId]).size > 2) continue;
+        attempts += 1;
+        const swapped = swapTalentPipelineSegments(input, state.output, talentId, otherTalentId);
+        if (!swapped) continue;
+        const swappedAccepted = accept(swapped, [...state.movedTalents, talentId, otherTalentId]);
+        if (swappedAccepted) return swappedAccepted;
       }
     }
   }
 
-  return { output: null, attempts, result: "repair_attempted_but_no_valid_candidate" };
+  return {
+    output: null,
+    attempts,
+    result: rejectedReasons.has("segment_has_fixed_blocker") ? "segment_has_fixed_blocker" : "repair_attempted_but_no_valid_candidate",
+    strategiesTried,
+    movedTalentNames: [...movedTalentNames],
+    rejectedReasons: [...rejectedReasons],
+  };
 };
 
 const emptyDiagnostics = (baselineScore: CandidateSolutionScore): PipelineBuilderDiagnostics => ({
@@ -419,6 +642,13 @@ const emptyDiagnostics = (baselineScore: CandidateSolutionScore): PipelineBuilde
   repairCandidatesGenerated: 0,
   repairAccepted: false,
   conflictDetails: [],
+  segmentRepairAttempted: false,
+  segmentRepairCandidatesGenerated: 0,
+  segmentRepairAccepted: false,
+  segmentRepairReason: "generator_not_invoked",
+  segmentRepairStrategiesTried: [],
+  segmentRepairMovedTalentNames: [],
+  segmentRepairRejectedReasons: [],
 });
 
 export const generatePipelineBuilderCandidates = (
@@ -603,15 +833,19 @@ export const generatePipelineBuilderCandidates = (
     let repaired = false;
     if (!validation.hardValidationPassed) {
       const repairableConflicts = validation.hardConstraintViolationDetails
-        .filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP");
+        .filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP" || detail.code === "DEPENDENCY_VIOLATION");
       if (repairableConflicts.length > 0) {
         report.repairAttempted = true;
+        report.segmentRepairAttempted = true;
         const hasMovableBlocker = repairableConflicts.some((detail) => detail.taskIds.some((taskId) => isRepairMovableTask(input, Number(taskId))));
         const repair = attemptPipelineRepair(input, baseline, output, baselineScore);
+        report.segmentRepairStrategiesTried = [...new Set([...report.segmentRepairStrategiesTried, ...repair.strategiesTried])];
+        report.segmentRepairMovedTalentNames = [...new Set([...report.segmentRepairMovedTalentNames, ...repair.movedTalentNames])].slice(0, MAX_TALENT_DIAGNOSTICS);
+        report.segmentRepairRejectedReasons = [...new Set([...report.segmentRepairRejectedReasons, ...repair.rejectedReasons])];
         for (const conflict of repairableConflicts) {
-          addConflictDetail(report, compactConflictDetail(input, variant.kind, conflict, true, repair.output
+          addConflictDetail(report, compactConflictDetail(input, variant.kind, conflict, true, repair.strategiesTried.join(","), repair.output
             ? "repair_success_candidate_generated"
-            : hasMovableBlocker ? repair.result : "repair_blocked_by_locked_or_executed"));
+            : hasMovableBlocker ? repair.result : "repair_blocked_by_locked_or_executed", output, baseline));
         }
         if (repair.output) {
           output = repair.output;
@@ -619,16 +853,21 @@ export const generatePipelineBuilderCandidates = (
           repaired = validation.hardValidationPassed;
           if (repaired) {
             report.repairCandidatesGenerated += 1;
+            report.segmentRepairCandidatesGenerated += 1;
+            report.segmentRepairReason = "repair_success_candidate_generated";
             addRejected(report, "repair_success_candidate_generated");
           }
         } else {
           addRejected(report, hasMovableBlocker ? "repair_attempted_but_no_valid_candidate" : "repair_blocked_by_locked_or_executed");
+          if (repair.result === "segment_has_fixed_blocker") addRejected(report, "segment_has_fixed_blocker");
           addRejected(report, hasMovableBlocker ? (repairableConflicts[0].code === "RESOURCE_OVERLAP"
-            ? "resource_conflict_unrepaired" : "space_conflict_unrepaired") : "locked_blocker");
+            ? "resource_conflict_unrepaired" : repairableConflicts[0].code === "SPACE_OVERLAP"
+              ? "space_conflict_unrepaired" : "dependency_conflict_unrepaired") : "locked_blocker");
+          report.segmentRepairReason = repair.result;
         }
       } else {
         for (const detail of validation.hardConstraintViolationDetails.slice(0, MAX_CONFLICT_DIAGNOSTICS)) {
-          addConflictDetail(report, compactConflictDetail(input, variant.kind, detail, false, "not_repairable_by_pipeline_pass"));
+          addConflictDetail(report, compactConflictDetail(input, variant.kind, detail, false, "none", "not_repairable_by_pipeline_pass", output, baseline));
         }
       }
     }
@@ -658,11 +897,17 @@ export const generatePipelineBuilderCandidates = (
       stableTaskIds: finalMovement.stable,
       feederOutcomes,
       repaired,
+      segmentRepaired: repaired,
+      segmentRepairStrategies: repaired ? [...report.segmentRepairStrategiesTried] : [],
+      movedTalentNames: repaired ? [...report.segmentRepairMovedTalentNames] : [],
     });
   }
 
   report.candidatesGenerated = candidates.length;
   report.repairAccepted = candidates.some((candidate) => candidate.repaired);
+  report.segmentRepairAccepted = candidates.some((candidate) => candidate.segmentRepaired);
+  if (report.segmentRepairAccepted) report.segmentRepairReason = "repair_success_candidate_generated";
+  else if (!report.segmentRepairAttempted) report.segmentRepairReason = "not_needed";
   report.reason = candidates.length > 0
     ? unmappedTalents.length > 0 ? "partial_mapping_used" : "pipeline_candidates_generated"
     : report.rejectedReasons.length > 1 ? "all_candidates_rejected" : report.rejectedReasons[0] ?? "feeders_unschedulable";
