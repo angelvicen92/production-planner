@@ -27,6 +27,7 @@ export type PlanningRunStateInput = {
   totalPending?: number | null;
   plannedCount?: number | null;
   requestedTimeLimitMs?: number | null;
+  phase?: string | null;
   stale?: boolean | null;
 };
 
@@ -84,7 +85,9 @@ export function getPlanningRunUiState(
   const totalPending = Math.max(0, Number(run.totalPending ?? 0));
   const plannedCount = Math.max(0, Number(run.plannedCount ?? 0));
 
-  if (status === "success") return totalPending === 0 ? "no_work" : "success";
+  if (status === "success" || String(run.phase ?? "").toLowerCase() === "success") {
+    return totalPending === 0 ? "no_work" : "success";
+  }
   if (status === "cancelled" || status === "canceled") return "cancelled";
   if (["infeasible", "invalid", "error", "failed"].includes(status))
     return "failed";

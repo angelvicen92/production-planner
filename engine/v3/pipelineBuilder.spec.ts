@@ -6,6 +6,7 @@ import { validateHardConstraints } from "./hardValidation";
 import { calculateOperationalMetrics, toMinutes } from "./metrics";
 import {
   buildTalentPipelineSegment,
+  computeTaskSlack,
   generatePipelineBuilderCandidates,
   findAlternativeSpaceLane,
   fixedReasonForTask,
@@ -369,7 +370,7 @@ test("a repaired lower-gap pipeline wins selection over the current baseline", (
   const selected = runPipelineBuilderSelection(scenario.input, scenario.baseline, "operational_neighborhood");
   assert.equal(selected.meta.pipelineAccepted, true);
   assert.equal(selected.meta.pipelineRepairAccepted, true);
-  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: (?:lane-only|segment) repair (?:lower coach gap|lower coach split|better operational quality)/);
+  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: (?:slack-aware lane|segment) repair (?:lower coach gap|lower coach split|better operational quality)/);
 });
 
 test("pipeline conflict diagnostics payload is capped", () => {
@@ -502,6 +503,11 @@ const buildLaneScenario = ({ withBreak = false, dependentFixed = false }: LaneSc
     spaceCapacityById: { 10: 1, 20: 1, 30: 1, 40: 1 },
     tasks,
   } as EngineInput;
+  if (withBreak) {
+    const main = plannedTasks.find((task) => task.taskId === 4)!;
+    main.startPlanned = "11:30";
+    main.endPlanned = "11:50";
+  }
   const output: EngineOutput = { feasible: false, complete: true, hardFeasible: false, plannedTasks, unplanned: [] };
   return { input, output };
 };
@@ -512,7 +518,7 @@ test("lane-only repair sequentializes capacity-one tasks without moving the tale
     code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
   }, { input, baseline: output });
   assert.ok(result.output);
-  assert.equal(result.reason, "lane_sequentialized");
+  assert.equal(result.reason, "dependency_shift_success");
   assert.deepEqual(result.movedTaskIds, [2, 3]);
   assert.equal(result.output.plannedTasks.find((task) => task.taskId === 2)?.startPlanned, "09:20");
   assert.equal(result.output.plannedTasks.find((task) => task.taskId === 3)?.startPlanned, "09:40");
@@ -538,6 +544,73 @@ test("lane-only repair reports a direct fixed dependency instead of a generic se
     code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
   }, { input, baseline: output });
   assert.equal(result.output, null);
-  assert.equal(result.reason, "lane_repair_dependency_blocked");
+  assert.equal(result.reason, "dependency_fixed");
   assert.notEqual(result.reason, "segment_has_fixed_blocker");
+  assert.ok(result.slackAnalysis.length > 0);
+  assert.deepEqual(result.after, result.before);
+});
+
+
+test("slack calculation detects a usable gap after a movable lane task", () => {
+  const { input, output } = buildLaneScenario();
+  const slack = computeTaskSlack(input.tasks.find((task) => task.id === 1)!, output, input.tasks, input);
+  assert.equal(slack.canShiftLater, true);
+  assert.ok(slack.slackAfterMinutes > 0);
+  assert.equal(slack.earliestStart, "08:00");
+});
+
+test("slack calculation blocks done and explicitly locked tasks", () => {
+  const { input, output } = buildLaneScenario({ dependentFixed: true });
+  input.locks.push({ id: 99, planId: 50, taskId: 1, lockType: "time", lockedStart: "09:00", lockedEnd: "09:20" });
+  const locked = computeTaskSlack(input.tasks.find((task) => task.id === 1)!, output, input.tasks, input);
+  const done = computeTaskSlack(input.tasks.find((task) => task.id === 3)!, output, input.tasks, input);
+  assert.equal(locked.canShiftEarlier || locked.canShiftLater, false);
+  assert.match(String(locked.blockingReason), /lock/);
+  assert.equal(done.canShiftEarlier || done.canShiftLater, false);
+  assert.equal(done.blockingReason, "status_done");
+});
+
+test("dependency cascade reports no slack and retains attempted before/after diagnostics", () => {
+  const { input, output } = buildLaneScenario();
+  const main = output.plannedTasks.find((task) => task.taskId === 4)!;
+  main.startPlanned = "09:40";
+  main.endPlanned = "10:00";
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
+  }, { input, baseline: output });
+  assert.equal(result.output, null);
+  assert.equal(result.reason, "dependency_shift_no_slack");
+  assert.ok(result.movedTaskIds.includes(2));
+  assert.ok(result.before.length > 0);
+  assert.ok(result.after.length > 0);
+  assert.ok(result.slackAnalysis.length > 0);
+});
+
+test("lane micro-reorder resolves a queue that cannot keep its original order", () => {
+  const { input, output } = buildLaneScenario();
+  const formerDependant = input.tasks.find((task) => task.id === 3)!;
+  formerDependant.dependsOnTaskIds = [];
+  formerDependant.contestantId = 999;
+  formerDependant.contestantName = "Other";
+  input.tasks.push({
+    id: 6,
+    planId: 50,
+    templateName: "Fixed follow-up",
+    zoneId: 3,
+    spaceId: 31,
+    contestantId: 102,
+    contestantName: "Bea",
+    status: "done",
+    durationOverrideMin: 10,
+    dependsOnTaskIds: [2],
+  } as any);
+  output.plannedTasks.push({ taskId: 6, startPlanned: "09:30", endPlanned: "09:40", assignedResources: [] });
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:10", end: "09:20", taskIds: [1, 2], conflictKind: "exclusive_lane_capacity",
+  }, { input, baseline: output });
+  assert.ok(result.output);
+  assert.equal(result.reason, "lane_micro_reorder_success");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 2)?.startPlanned, "09:10");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 1)?.startPlanned, "09:30");
+  assert.equal(validateHardConstraints(input, result.output).hardConstraintViolations, 0);
 });
