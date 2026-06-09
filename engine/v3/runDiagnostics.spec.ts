@@ -103,6 +103,13 @@ const output: EngineOutput = {
     pipelineLaneRepairAccepted: true,
     pipelineLaneRepairReason: "lane_repair_candidate_generated",
     pipelineLaneRepairRejectedReasons: [],
+    pipelineLaneOnlyRepairAttempted: true,
+    pipelineLaneOnlyRepairCandidatesGenerated: 1,
+    pipelineLaneOnlyRepairAccepted: true,
+    pipelineLaneOnlyRepairReason: "break_aware_lane_repair_success",
+    pipelineLaneOnlyRepairRejectedReasons: [],
+    pipelineLaneOnlyRepairMovedTaskIds: Array.from({ length: 25 }, (_, index) => index + 1),
+    pipelineLaneOnlyRepairMovedTalentNames: Array.from({ length: 12 }, (_, index) => `Talent ${index + 1}`),
     pipelineAlternativeLaneAttempted: true,
     pipelineAlternativeLaneCandidatesGenerated: 0,
     pipelineAlternativeLaneAccepted: false,
@@ -163,6 +170,11 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.pipelineLaneRepairAttempted, true);
   assert.equal(diagnostics.engineMetadata.pipelineLaneRepairCandidatesGenerated, 1);
   assert.equal(diagnostics.engineMetadata.pipelineLaneRepairAccepted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairAttempted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairCandidatesGenerated, 1);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairAccepted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairMovedTaskIds.length, 20);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairMovedTalentNames.length, 10);
   assert.equal(diagnostics.engineMetadata.pipelineAlternativeLaneAttempted, true);
   assert.deepEqual(diagnostics.engineMetadata.pipelineAlternativeLaneRejectedReasons, ["alternative_lane_unavailable_missing_config"]);
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
@@ -241,6 +253,13 @@ const output: EngineOutput = {
     "pipelineLaneRepairAccepted",
     "pipelineLaneRepairReason",
     "pipelineLaneRepairRejectedReasons",
+    "pipelineLaneOnlyRepairAttempted",
+    "pipelineLaneOnlyRepairCandidatesGenerated",
+    "pipelineLaneOnlyRepairAccepted",
+    "pipelineLaneOnlyRepairReason",
+    "pipelineLaneOnlyRepairRejectedReasons",
+    "pipelineLaneOnlyRepairMovedTaskIds",
+    "pipelineLaneOnlyRepairMovedTalentNames",
     "pipelineAlternativeLaneAttempted",
     "pipelineAlternativeLaneCandidatesGenerated",
     "pipelineAlternativeLaneAccepted",
@@ -281,6 +300,8 @@ const output: EngineOutput = {
     blockingTaskNames: Array.from({ length: 9 }, (_, item) => `Blocking ${item + 1}`),
     movableTaskIds: [],
     lockedOrExecutedTaskIds: [],
+    laneRepairMovedTaskIds: Array.from({ length: 9 }, (_, item) => index * 10 + item + 1),
+    laneRepairMovedTalentNames: Array.from({ length: 6 }, (_, item) => `Talent ${index}-${item}`),
     repairAttempted: true,
     repairStrategy: "move_whole_segment_by_offset",
     repairResult: "repair_attempted_but_no_valid_candidate",
@@ -299,6 +320,8 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.pipelineConflictDetails.length, 10);
   assert.ok(diagnostics.engineMetadata.pipelineConflictDetails.every((detail) => detail.taskIds.length <= 6
     && detail.taskNames.length <= 6 && detail.blockingTaskIds.length <= 6 && detail.blockingTaskNames.length <= 6));
+  assert.ok(diagnostics.engineMetadata.pipelineConflictDetails.reduce((total, detail) => total + detail.laneRepairMovedTaskIds.length, 0) <= 20);
+  assert.ok(diagnostics.engineMetadata.pipelineConflictDetails.reduce((total, detail) => total + detail.laneRepairMovedTalentNames.length, 0) <= 10);
   assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairAttempted, true);
   assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairStrategiesTried, ["move_whole_segment_by_offset"]);
   assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairRejectedReasons, ["repair_attempted_but_no_valid_candidate"]);

@@ -35,6 +35,11 @@ export type PipelineRejectedReason =
   | "repair_blocked_by_locked_or_executed"
   | "segment_has_fixed_blocker"
   | "break_window_blocks_lane"
+  | "break_window_blocks_lane_queue"
+  | "lane_repair_dependency_blocked"
+  | "lane_queue_split_around_break"
+  | "break_aware_lane_repair_success"
+  | "no_slack_for_lane_queue"
   | "alternative_lane_unavailable_missing_config"
   | "explicit_lock_blocks_lane"
   | "lane_capacity_unschedulable";
@@ -68,6 +73,11 @@ export interface PipelineConflictDetail {
   fixedReason?: string;
   alternativeLaneSpaceIds?: number[];
   selectedAlternativeLaneSpaceId?: number;
+  laneRepairStrategy?: string;
+  laneRepairMovedTaskIds?: number[];
+  laneRepairMovedTalentNames?: string[];
+  laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
+  laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairResult?: string;
   repairAttempted: boolean;
   repairStrategy: string;
@@ -87,6 +97,9 @@ export interface PipelineBuilderCandidate {
   segmentRepaired?: boolean;
   segmentRepairStrategies?: string[];
   movedTalentNames?: string[];
+  laneOnlyRepaired?: boolean;
+  laneRepairMovedTaskIds?: number[];
+  laneRepairMovedTalentNames?: string[];
 }
 
 export interface PipelineBuilderDiagnostics {
@@ -117,6 +130,13 @@ export interface PipelineBuilderDiagnostics {
   laneRepairAccepted: boolean;
   laneRepairReason: string;
   laneRepairRejectedReasons: string[];
+  laneOnlyRepairAttempted: boolean;
+  laneOnlyRepairCandidatesGenerated: number;
+  laneOnlyRepairAccepted: boolean;
+  laneOnlyRepairReason: string;
+  laneOnlyRepairRejectedReasons: string[];
+  laneOnlyRepairMovedTaskIds: number[];
+  laneOnlyRepairMovedTalentNames: string[];
   alternativeLaneAttempted: boolean;
   alternativeLaneCandidatesGenerated: number;
   alternativeLaneAccepted: boolean;
@@ -403,43 +423,210 @@ const skipBreakWindows = (start: number, duration: number, breaks: Array<{ start
   return cursor;
 };
 
-/** Compacts a capacity-1 space into a sequential queue and jumps protected break windows. */
+export type LaneRepairConflict = Pick<HardConstraintViolationDetail,
+  "code" | "resourceId" | "spaceId" | "start" | "end" | "taskIds"> & { conflictKind?: PipelineConflictKind };
+
+export type LaneRepairContext = {
+  input: EngineV3Input;
+  baseline: EngineOutput;
+  extendedWindowMinutes?: number;
+};
+
+export type LaneRepairResult = {
+  output: EngineOutput | null;
+  reason: string;
+  strategy: string;
+  movedTaskIds: number[];
+  movedTalentNames: string[];
+  before: Array<{ taskId: number; start: string; end: string }>;
+  after: Array<{ taskId: number; start: string; end: string }>;
+};
+
+type LaneRow = { task: TaskInput; planned: Planned; start: number; end: number; duration: number };
+
+const laneSnapshot = (rows: LaneRow[]): Array<{ taskId: number; start: string; end: string }> => rows
+  .map((row) => ({ taskId: Number(row.task.id), start: row.planned.startPlanned, end: row.planned.endPlanned }))
+  .slice(0, 20);
+
+const overlapsWindow = (row: LaneRow, start: number, end: number): boolean => row.start < end && start < row.end;
+
+const rowsForLane = (input: EngineV3Input, candidate: EngineOutput, conflict: LaneRepairConflict): LaneRow[] => {
+  const taskById = new Map(input.tasks.map((task) => [Number(task.id), task]));
+  return candidate.plannedTasks.map((planned) => {
+    const task = taskById.get(Number(planned.taskId));
+    const start = toMinutes(planned.startPlanned);
+    const end = toMinutes(planned.endPlanned);
+    if (!task || start === null || end === null || end <= start) return null;
+    const sameSpace = conflict.spaceId != null && Number(task.spaceId) === Number(conflict.spaceId);
+    const sameResource = conflict.resourceId != null && (planned.assignedResources ?? []).map(Number).includes(Number(conflict.resourceId));
+    return sameSpace || sameResource ? { task, planned, start, end, duration: end - start } : null;
+  }).filter((row): row is LaneRow => row !== null);
+};
+
+const mainStageDistance = (input: EngineV3Input, candidate: EngineOutput, task: TaskInput, start: number): number => {
+  const talentId = Number(task.contestantId ?? NaN);
+  if (!Number.isFinite(talentId)) return Number.MAX_SAFE_INTEGER;
+  const taskById = new Map(input.tasks.map((item) => [Number(item.id), item]));
+  const starts = candidate.plannedTasks.filter((planned) => {
+    const item = taskById.get(Number(planned.taskId));
+    return item && Number(item.contestantId) === talentId && isMainStageTask(input, item);
+  }).map((planned) => toMinutes(planned.startPlanned)).filter((value): value is number => value !== null);
+  return starts.length > 0 ? Math.min(...starts.map((mainStart) => Math.abs(mainStart - start))) : Number.MAX_SAFE_INTEGER;
+};
+
+const stableDependencyOrder = (input: EngineV3Input, candidate: EngineOutput, rows: LaneRow[]): LaneRow[] => {
+  const byId = new Map(rows.map((row) => [Number(row.task.id), row]));
+  const remaining = new Set(byId.keys());
+  const ordered: LaneRow[] = [];
+  while (remaining.size > 0) {
+    const ready = [...remaining].filter((id) => dependencyIds(byId.get(id)!.task).every((dependencyId) => !remaining.has(dependencyId)));
+    const pool = ready.length > 0 ? ready : [...remaining];
+    pool.sort((leftId, rightId) => {
+      const left = byId.get(leftId)!;
+      const right = byId.get(rightId)!;
+      return left.start - right.start
+        || mainStageDistance(input, candidate, left.task, left.start) - mainStageDistance(input, candidate, right.task, right.start)
+        || leftId - rightId;
+    });
+    const selected = pool[0];
+    ordered.push(byId.get(selected)!);
+    remaining.delete(selected);
+  }
+  return ordered;
+};
+
+const firstAvailableStart = (
+  preferredStart: number,
+  duration: number,
+  blockers: Array<{ start: number; end: number }>,
+  workEnd: number,
+): number | null => {
+  let cursor = preferredStart;
+  for (let guard = 0; guard <= blockers.length; guard += 1) {
+    const blocker = blockers.find((window) => cursor < window.end && cursor + duration > window.start);
+    if (!blocker) return cursor + duration <= workEnd ? cursor : null;
+    cursor = blocker.end;
+  }
+  return null;
+};
+
+/** Repairs only the conflicting capacity lane and at most its direct movable dependants. */
+export const repairExclusiveLaneSequentially = (
+  candidate: EngineOutput,
+  conflict: LaneRepairConflict,
+  context: LaneRepairContext,
+): LaneRepairResult => {
+  const { input, baseline } = context;
+  const strategy = "lane_only_sequential_queue";
+  const capacity = conflict.spaceId != null
+    ? Number(input.spaceCapacityById?.[Number(conflict.spaceId)] ?? input.spaceConcurrencyById?.[Number(conflict.spaceId)] ?? 1)
+    : conflict.resourceId != null ? 1 : Number.NaN;
+  if (!Number.isFinite(capacity) || capacity !== 1) {
+    return { output: null, reason: "lane_not_exclusive", strategy, movedTaskIds: [], movedTalentNames: [], before: [], after: [] };
+  }
+  const allRows = rowsForLane(input, candidate, conflict);
+  const conflictStart = toMinutes(conflict.start) ?? Math.min(...allRows.map((row) => row.start));
+  const conflictEnd = toMinutes(conflict.end) ?? Math.max(...allRows.map((row) => row.end));
+  if (!allRows.length || !Number.isFinite(conflictStart) || !Number.isFinite(conflictEnd)) {
+    return { output: null, reason: "lane_capacity_unschedulable", strategy, movedTaskIds: [], movedTalentNames: [], before: [], after: [] };
+  }
+  const extension = context.extendedWindowMinutes ?? 60;
+  const explicitConflictIds = new Set((conflict.taskIds ?? []).map(Number));
+  const localRows = allRows.filter((row) => explicitConflictIds.has(Number(row.task.id))
+    || overlapsWindow(row, conflictStart - extension, conflictEnd + extension));
+  const movableRows = localRows.filter((row) => isRepairMovableTask(input, Number(row.task.id)));
+  const before = laneSnapshot(localRows);
+  if (movableRows.length === 0) {
+    const reason = localRows.some((row) => Boolean(explicitLockForTask(input, Number(row.task.id))))
+      ? "explicit_lock_blocks_lane" : "segment_has_fixed_blocker";
+    return { output: null, reason, strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+  }
+
+  const protectedRows = allRows.filter((row) => !isRepairMovableTask(input, Number(row.task.id)));
+  const breakWindows = conflict.spaceId == null ? [] : protectedBreakWindows(input, Number(conflict.spaceId));
+  const blockers = [...breakWindows, ...protectedRows.map((row) => ({ start: row.start, end: row.end }))]
+    .sort((left, right) => left.start - right.start || left.end - right.end);
+  const plannedById = clonePlannedMap(candidate);
+  const workStart = toMinutes(input.workDay.start) ?? 0;
+  const workEnd = toMinutes(input.workDay.end) ?? 24 * 60;
+  let cursor = Math.max(workStart, Math.min(...movableRows.map((row) => row.start)));
+  const movedIds = new Set<number>();
+  let splitAroundBreak = false;
+
+  for (const row of stableDependencyOrder(input, candidate, movableRows)) {
+    const predecessorEnds = dependencyIds(row.task).map((dependencyId) => plannedById.get(dependencyId))
+      .map((planned) => toMinutes(planned?.endPlanned)).filter((value): value is number => value !== null);
+    const preferredStart = Math.max(cursor, predecessorEnds.length > 0 ? Math.max(...predecessorEnds) : workStart);
+    const nextStart = firstAvailableStart(preferredStart, row.duration, blockers, workEnd);
+    if (nextStart === null) {
+      const reason = breakWindows.length > 0 ? "break_window_blocks_lane_queue" : "no_slack_for_lane_queue";
+      return { output: null, reason, strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+    }
+    if (breakWindows.some((window) => preferredStart < window.end && preferredStart + row.duration > window.start && nextStart >= window.end)) {
+      splitAroundBreak = true;
+    }
+    updatePlanned(plannedById, Number(row.task.id), nextStart);
+    if (nextStart !== row.start) movedIds.add(Number(row.task.id));
+    cursor = nextStart + row.duration;
+  }
+
+  // Split the talent segment: reanchor direct dependants only (depth 1), never Main Stage or transport/meal.
+  const movedLaneIds = [...movedIds];
+  for (const movedId of movedLaneIds) {
+    const movedEnd = toMinutes(plannedById.get(movedId)?.endPlanned);
+    if (movedEnd === null) continue;
+    const directDependants = input.tasks.filter((task) => dependencyIds(task).includes(movedId));
+    for (const dependant of directDependants) {
+      const dependantId = Number(dependant.id);
+      const planned = plannedById.get(dependantId);
+      const dependantStart = toMinutes(planned?.startPlanned);
+      const dependantEnd = toMinutes(planned?.endPlanned);
+      if (!planned || dependantStart === null || dependantEnd === null || dependantStart >= movedEnd) continue;
+      if (!isRepairMovableTask(input, dependantId)) {
+        return { output: null, reason: "lane_repair_dependency_blocked", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+      }
+      const nextStart = firstAvailableStart(movedEnd, dependantEnd - dependantStart, [], workEnd);
+      if (nextStart === null) {
+        return { output: null, reason: "lane_repair_dependency_blocked", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+      }
+      updatePlanned(plannedById, dependantId, nextStart);
+      if (nextStart !== dependantStart) movedIds.add(dependantId);
+    }
+  }
+
+  const output = outputWithPlannedMap(candidate, plannedById);
+  if (!protectedTasksUnchanged(input, baseline, output)) {
+    return { output: null, reason: "explicit_lock_blocks_lane", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+  }
+  const movedTaskIds = [...movedIds].slice(0, 20);
+  const movedTalentNames = [...new Set(movedTaskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === taskId))
+    .map((task) => task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null)
+    .filter((name): name is string => Boolean(name)))].slice(0, 10);
+  const afterRows = localRows.map((row) => {
+    const planned = plannedById.get(Number(row.task.id)) ?? row.planned;
+    return { ...row, planned, start: toMinutes(planned.startPlanned) ?? row.start, end: toMinutes(planned.endPlanned) ?? row.end };
+  });
+  const reason = splitAroundBreak ? "break_aware_lane_repair_success" : "lane_sequentialized";
+  return { output, reason, strategy, movedTaskIds, movedTalentNames, before, after: laneSnapshot(afterRows) };
+};
+
+/** Backwards-compatible space-only wrapper. */
 export const repairExclusiveSpaceLane = (
   input: EngineV3Input,
   baseline: EngineOutput,
   candidate: EngineOutput,
   spaceId: number,
 ): { output: EngineOutput | null; reason: string; movedTaskIds: number[] } => {
-  const capacity = Number(input.spaceCapacityById?.[spaceId] ?? input.spaceConcurrencyById?.[spaceId] ?? 1);
-  if (capacity !== 1) return { output: null, reason: "lane_not_exclusive", movedTaskIds: [] };
-  const plannedById = clonePlannedMap(candidate);
-  const laneTasks = input.tasks.filter((task) => Number(task.spaceId) === spaceId)
-    .map((task) => ({ task, planned: plannedById.get(Number(task.id)) }))
-    .filter((row): row is { task: TaskInput; planned: Planned } => Boolean(row.planned))
-    .sort((a, b) => (toMinutes(a.planned.startPlanned) ?? 0) - (toMinutes(b.planned.startPlanned) ?? 0));
-  const fixed = laneTasks.filter((row) => !isRepairMovableTask(input, Number(row.task.id))).map((row) => ({
-    start: toMinutes(row.planned.startPlanned) ?? 0,
-    end: toMinutes(row.planned.endPlanned) ?? 0,
-  })).filter((row) => row.end > row.start);
-  const breaks = [...protectedBreakWindows(input, spaceId), ...fixed].sort((a, b) => a.start - b.start);
-  let cursor = Math.max(toMinutes(input.workDay.start) ?? 0, Math.min(...laneTasks.map((row) => toMinutes(row.planned.startPlanned) ?? Number.MAX_SAFE_INTEGER)));
-  const workEnd = toMinutes(input.workDay.end) ?? 24 * 60;
-  const movedTaskIds: number[] = [];
-  for (const row of laneTasks) {
-    if (!isRepairMovableTask(input, Number(row.task.id))) continue;
-    const oldStart = toMinutes(row.planned.startPlanned);
-    const oldEnd = toMinutes(row.planned.endPlanned);
-    if (oldStart === null || oldEnd === null) return { output: null, reason: "lane_capacity_unschedulable", movedTaskIds: [] };
-    const duration = oldEnd - oldStart;
-    cursor = skipBreakWindows(cursor, duration, breaks);
-    if (cursor + duration > workEnd) return { output: null, reason: "lane_capacity_unschedulable", movedTaskIds: [] };
-    updatePlanned(plannedById, Number(row.task.id), cursor);
-    if (cursor !== oldStart) movedTaskIds.push(Number(row.task.id));
-    cursor += duration;
-  }
-  const output = outputWithPlannedMap(candidate, plannedById);
-  if (!protectedTasksUnchanged(input, baseline, output)) return { output: null, reason: "explicit_lock_blocks_lane", movedTaskIds: [] };
-  return { output, reason: breaks.length > 0 ? "break_aware_lane_repair" : "lane_sequentialized", movedTaskIds };
+  const rows = rowsForLane(input, candidate, { code: "SPACE_OVERLAP", spaceId, taskIds: [] });
+  const result = repairExclusiveLaneSequentially(candidate, {
+    code: "SPACE_OVERLAP",
+    spaceId,
+    taskIds: rows.map((row) => Number(row.task.id)),
+    start: rows.length > 0 ? toHHMM(Math.min(...rows.map((row) => row.start))) : undefined,
+    end: rows.length > 0 ? toHHMM(Math.max(...rows.map((row) => row.end))) : undefined,
+    conflictKind: "exclusive_lane_capacity",
+  }, { input, baseline, extendedWindowMinutes: 0 });
+  return { output: result.output, reason: result.reason, movedTaskIds: result.movedTaskIds };
 };
 
 const compactConflictDetail = (
@@ -451,6 +638,7 @@ const compactConflictDetail = (
   repairResult: string,
   candidate?: EngineOutput,
   baseline?: EngineOutput,
+  laneRepair?: LaneRepairResult,
 ): PipelineConflictDetail => {
   const candidateById = new Map((candidate?.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
   const baselineById = new Map((baseline?.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
@@ -518,7 +706,12 @@ const compactConflictDetail = (
     canUseAlternativeLane: alternativeLaneSpaceIds.length > 0,
     fixedReason: fixedReasons.join(",") || undefined,
     alternativeLaneSpaceIds,
-    laneRepairResult: repairResult,
+    laneRepairStrategy: laneRepair?.strategy ?? (repairStrategy.includes("sequentialize_exclusive_lane") ? "lane_only_sequential_queue" : undefined),
+    laneRepairMovedTaskIds: laneRepair?.movedTaskIds.slice(0, 20) ?? [],
+    laneRepairMovedTalentNames: laneRepair?.movedTalentNames.slice(0, 10) ?? [],
+    laneRepairBefore: laneRepair?.before.slice(0, 20) ?? [],
+    laneRepairAfter: laneRepair?.after.slice(0, 20) ?? [],
+    laneRepairResult: laneRepair?.reason ?? repairResult,
     repairAttempted,
     repairStrategy,
     repairResult,
@@ -578,6 +771,7 @@ type RepairResult = {
   strategiesTried: SegmentRepairStrategy[];
   movedTalentNames: string[];
   rejectedReasons: string[];
+  laneRepair?: LaneRepairResult;
 };
 
 const segmentForTalent = (input: EngineV3Input, talentId: number): TalentPipelineSegment => buildTalentPipelineSegment(
@@ -699,17 +893,30 @@ const attemptPipelineRepair = (
   const movedTalentNames = new Set<string>();
   const rejectedReasons = new Set<string>();
   const initialValidation = validateHardConstraints(input, candidate, MAX_CONFLICT_DIAGNOSTICS);
-  for (const conflict of initialValidation.hardConstraintViolationDetails.filter((detail) => detail.code === "SPACE_OVERLAP" && detail.spaceId != null)) {
-    const lane = repairExclusiveSpaceLane(input, baseline, candidate, Number(conflict.spaceId));
+  const laneConflicts = initialValidation.hardConstraintViolationDetails.filter((detail) => (
+    (detail.code === "SPACE_OVERLAP" && detail.spaceId != null) || (detail.code === "RESOURCE_OVERLAP" && detail.resourceId != null)
+  ));
+  for (const conflict of laneConflicts) {
+    const lane = repairExclusiveLaneSequentially(candidate, {
+      ...conflict,
+      conflictKind: conflict.code === "SPACE_OVERLAP" ? "exclusive_lane_capacity" : "movable_task_conflict",
+    }, { input, baseline });
     strategiesTried.push("sequentialize_exclusive_lane" as SegmentRepairStrategy);
     attempts += 1;
     if (lane.output) {
       const laneValidation = validateHardConstraints(input, lane.output, MAX_CONFLICT_DIAGNOSTICS);
-      if (laneValidation.hardValidationPassed && isCandidateStructurallySafe(input, baselineScore, lane.output)) {
-        return { output: lane.output, attempts, result: lane.reason, strategiesTried, movedTalentNames: [], rejectedReasons: [] };
+      if (laneValidation.hardValidationPassed && isCandidateStructurallySafe(input, baselineScore, lane.output)
+        && protectedTasksUnchanged(input, baseline, lane.output)) {
+        return {
+          output: lane.output, attempts, result: lane.reason, strategiesTried,
+          movedTalentNames: lane.movedTalentNames, rejectedReasons: [], laneRepair: lane,
+        };
       }
+      rejectedReasons.add(laneValidation.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION")
+        ? "lane_repair_dependency_blocked" : "lane_candidate_failed_hard_validation");
+    } else {
+      rejectedReasons.add(lane.reason);
     }
-    rejectedReasons.add(lane.reason);
   }
   const queue: Array<{ output: EngineOutput; depth: number; movedTalents: number[] }> = [{ output: candidate, depth: 0, movedTalents: [] }];
   const addStrategy = (strategy: SegmentRepairStrategy): void => {
@@ -738,7 +945,10 @@ const attemptPipelineRepair = (
     for (const talentId of conflictTalents) {
       if (attempts >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) break;
       const segment = segmentForTalent(input, talentId);
-      if (segment.segmentFixed.length > 0) rejectedReasons.add("segment_has_fixed_blocker");
+      const conflictTasks = conflict.taskIds.map(Number);
+      if (conflictTasks.length > 0 && conflictTasks.every((taskId) => !isRepairMovableTask(input, taskId))) {
+        rejectedReasons.add("segment_has_fixed_blocker");
+      }
 
       addStrategy("move_whole_segment_by_offset");
       if (segment.segmentFixed.length === 0) {
@@ -792,7 +1002,11 @@ const attemptPipelineRepair = (
   return {
     output: null,
     attempts,
-    result: rejectedReasons.has("segment_has_fixed_blocker") ? "segment_has_fixed_blocker" : "repair_attempted_but_no_valid_candidate",
+    result: rejectedReasons.has("explicit_lock_blocks_lane") ? "explicit_lock_blocks_lane"
+      : rejectedReasons.has("lane_repair_dependency_blocked") ? "lane_repair_dependency_blocked"
+        : rejectedReasons.has("break_window_blocks_lane_queue") ? "break_window_blocks_lane_queue"
+          : rejectedReasons.has("no_slack_for_lane_queue") ? "no_slack_for_lane_queue"
+            : rejectedReasons.has("segment_has_fixed_blocker") ? "segment_has_fixed_blocker" : "repair_attempted_but_no_valid_candidate",
     strategiesTried,
     movedTalentNames: [...movedTalentNames],
     rejectedReasons: [...rejectedReasons],
@@ -827,6 +1041,13 @@ const emptyDiagnostics = (baselineScore: CandidateSolutionScore): PipelineBuilde
   laneRepairAccepted: false,
   laneRepairReason: "not_attempted",
   laneRepairRejectedReasons: [],
+  laneOnlyRepairAttempted: false,
+  laneOnlyRepairCandidatesGenerated: 0,
+  laneOnlyRepairAccepted: false,
+  laneOnlyRepairReason: "not_attempted",
+  laneOnlyRepairRejectedReasons: [],
+  laneOnlyRepairMovedTaskIds: [],
+  laneOnlyRepairMovedTalentNames: [],
   alternativeLaneAttempted: false,
   alternativeLaneCandidatesGenerated: 0,
   alternativeLaneAccepted: false,
@@ -1014,6 +1235,7 @@ export const generatePipelineBuilderCandidates = (
     let validation = validateHardConstraints(input, output, MAX_CONFLICT_DIAGNOSTICS);
     let repaired = false;
     let repairStrategiesUsed: SegmentRepairStrategy[] = [];
+    let laneRepairUsed: LaneRepairResult | undefined;
     if (!validation.hardValidationPassed) {
       const repairableConflicts = validation.hardConstraintViolationDetails
         .filter((detail) => detail.code === "RESOURCE_OVERLAP" || detail.code === "SPACE_OVERLAP" || detail.code === "DEPENDENCY_VIOLATION");
@@ -1023,6 +1245,7 @@ export const generatePipelineBuilderCandidates = (
         const laneConflicts = repairableConflicts.filter((detail) => detail.code === "SPACE_OVERLAP" && detail.spaceId != null);
         if (laneConflicts.length > 0) {
           report.laneRepairAttempted = true;
+          report.laneOnlyRepairAttempted = true;
           report.alternativeLaneAttempted = true;
           const alternatives = laneConflicts.flatMap((detail) => detail.taskIds.flatMap((taskId) => {
             const task = input.tasks.find((item) => Number(item.id) === Number(taskId));
@@ -1035,6 +1258,7 @@ export const generatePipelineBuilderCandidates = (
         const hasMovableBlocker = repairableConflicts.some((detail) => detail.taskIds.some((taskId) => isRepairMovableTask(input, Number(taskId))));
         const repair = attemptPipelineRepair(input, baseline, output, baselineScore);
         repairStrategiesUsed = repair.strategiesTried;
+        laneRepairUsed = repair.laneRepair;
         report.segmentRepairStrategiesTried = [...new Set([...report.segmentRepairStrategiesTried, ...repair.strategiesTried])];
         report.segmentRepairMovedTalentNames = [...new Set([...report.segmentRepairMovedTalentNames, ...repair.movedTalentNames])].slice(0, MAX_TALENT_DIAGNOSTICS);
         report.segmentRepairRejectedReasons = [...new Set([
@@ -1044,8 +1268,8 @@ export const generatePipelineBuilderCandidates = (
         ])].slice(0, 10);
         for (const conflict of repairableConflicts) {
           addConflictDetail(report, compactConflictDetail(input, variant.kind, conflict, true, repair.strategiesTried.join(","), repair.output
-            ? "repair_success_candidate_generated"
-            : hasMovableBlocker ? repair.result : "repair_blocked_by_locked_or_executed", output, baseline));
+            ? repair.result
+            : hasMovableBlocker ? repair.result : "repair_blocked_by_locked_or_executed", output, baseline, repair.laneRepair));
         }
         if (repair.output) {
           output = repair.output;
@@ -1054,9 +1278,17 @@ export const generatePipelineBuilderCandidates = (
           if (repaired) {
             report.repairCandidatesGenerated += 1;
             report.segmentRepairCandidatesGenerated += 1;
-            if (repair.strategiesTried.includes("sequentialize_exclusive_lane")) {
+            if (repair.strategiesTried.includes("sequentialize_exclusive_lane") && repair.laneRepair) {
               report.laneRepairCandidatesGenerated += 1;
               report.laneRepairReason = repair.result;
+              report.laneOnlyRepairCandidatesGenerated += 1;
+              report.laneOnlyRepairReason = repair.result;
+              report.laneOnlyRepairMovedTaskIds = [...new Set([
+                ...report.laneOnlyRepairMovedTaskIds, ...repair.laneRepair.movedTaskIds,
+              ])].slice(0, 20);
+              report.laneOnlyRepairMovedTalentNames = [...new Set([
+                ...report.laneOnlyRepairMovedTalentNames, ...repair.laneRepair.movedTalentNames,
+              ])].slice(0, 10);
             }
             report.segmentRepairReason = "repair_success_candidate_generated";
             addRejected(report, "repair_success_candidate_generated");
@@ -1071,6 +1303,10 @@ export const generatePipelineBuilderCandidates = (
           if (report.laneRepairAttempted) {
             report.laneRepairReason = repair.result;
             report.laneRepairRejectedReasons = [...new Set([...report.laneRepairRejectedReasons, ...repair.rejectedReasons, repair.result])].slice(0, 10);
+            report.laneOnlyRepairReason = repair.result;
+            report.laneOnlyRepairRejectedReasons = [...new Set([
+              ...report.laneOnlyRepairRejectedReasons, ...repair.rejectedReasons, repair.result,
+            ])].slice(0, 10);
           }
         }
       } else {
@@ -1122,15 +1358,24 @@ export const generatePipelineBuilderCandidates = (
       segmentRepaired: repaired,
       segmentRepairStrategies: repaired ? [...repairStrategiesUsed] : [],
       movedTalentNames: repaired ? [...report.segmentRepairMovedTalentNames] : [],
+      laneOnlyRepaired: repaired && Boolean(laneRepairUsed),
+      laneRepairMovedTaskIds: repaired ? laneRepairUsed?.movedTaskIds.slice(0, 20) ?? [] : [],
+      laneRepairMovedTalentNames: repaired ? laneRepairUsed?.movedTalentNames.slice(0, 10) ?? [] : [],
     });
   }
 
   report.candidatesGenerated = candidates.length;
   report.repairAccepted = candidates.some((candidate) => candidate.repaired);
   report.segmentRepairAccepted = candidates.some((candidate) => candidate.segmentRepaired);
-  report.laneRepairAccepted = candidates.some((candidate) => candidate.segmentRepairStrategies?.includes("sequentialize_exclusive_lane"));
-  if (report.laneRepairAccepted) report.laneRepairReason = "lane_repair_candidate_generated";
-  else if (!report.laneRepairAttempted) report.laneRepairReason = "not_needed";
+  report.laneRepairAccepted = candidates.some((candidate) => candidate.laneOnlyRepaired);
+  report.laneOnlyRepairAccepted = report.laneRepairAccepted;
+  if (report.laneRepairAccepted) {
+    report.laneRepairReason = "lane_repair_candidate_generated";
+    report.laneOnlyRepairReason = "lane_repair_candidate_generated";
+  } else if (!report.laneRepairAttempted) {
+    report.laneRepairReason = "not_needed";
+    report.laneOnlyRepairReason = "not_needed";
+  }
   if (report.segmentRepairAccepted) report.segmentRepairReason = "repair_success_candidate_generated";
   else if (!report.segmentRepairAttempted) report.segmentRepairReason = "not_needed";
   report.reason = candidates.length > 0
