@@ -515,6 +515,18 @@ export interface EngineOutput {
       laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairResult?: string;
+      slackAnalysis?: Array<{
+        taskId: number;
+        taskName: string;
+        talentName: string;
+        earliestStart: string;
+        latestEnd: string;
+        slackBeforeMinutes: number;
+        slackAfterMinutes: number;
+        canShiftEarlier: boolean;
+        canShiftLater: boolean;
+        blockingReason?: string;
+      }>;
       repairAttempted: boolean;
       repairStrategy: string;
       repairResult: string;

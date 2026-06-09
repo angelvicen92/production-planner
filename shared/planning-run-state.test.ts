@@ -34,6 +34,10 @@ test("success and processed totals finish the modal", () => {
   assert.equal(getPlanningRunUiState(run({ plannedCount: 193 }), now), "success");
 });
 
+test("a persisted success phase closes Running on the next poll", () => {
+  assert.equal(getPlanningRunUiState(run({ status: "running", phase: "success", plannedCount: 193 }), now), "success");
+});
+
 test("infeasible, failed, stale and cancelled runs unblock the active state", () => {
   assert.equal(getPlanningRunUiState(run({ status: "infeasible" }), now), "failed");
   assert.equal(getPlanningRunUiState(run({ status: "failed" }), now), "failed");

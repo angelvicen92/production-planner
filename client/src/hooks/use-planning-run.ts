@@ -28,6 +28,11 @@ export type PlanningRun = {
   message: string | null;
   phase: string | null;
   progressPct: number;
+  progressMessage: string | null;
+  phaseStartedAt: string | null;
+  candidatesEvaluated: number;
+  candidatesGenerated: number;
+  currentBestReason: string | null;
   engine: "v3";
   requestedTimeLimitMs: number | null;
   finishedAt: string | null;

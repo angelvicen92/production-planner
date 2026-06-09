@@ -156,9 +156,18 @@ export function useGeneratePlan() {
     mutationFn: ({ id, mode, timeLimitMs, signal }: { id: number; mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending"; timeLimitMs?: number; signal?: AbortSignal }) =>
       apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { ...(mode ? { mode } : {}), ...(timeLimitMs ? { timeLimitMs } : {}) }, { signal }),
     onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) });
-      await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) });
-      await queryClient.refetchQueries({ queryKey: planQueryKey(variables.id) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) }),
+        queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) }),
+        queryClient.invalidateQueries({ queryKey: ["planning-run", variables.id] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/plans/${variables.id}/tasks`] }),
+        queryClient.invalidateQueries({ queryKey: ["contestants", variables.id] }),
+      ]);
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: planQueryKey(variables.id) }),
+        queryClient.refetchQueries({ queryKey: ["planning-run", variables.id] }),
+        queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) }),
+      ]);
     },
   });
 }

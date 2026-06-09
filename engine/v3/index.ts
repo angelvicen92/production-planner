@@ -1,6 +1,6 @@
 import type { EngineOutput, EngineOutputUnplanned } from "../types";
 import { solve_v3_phaseA_attempt } from "./phaseAHeuristic";
-import type { EngineV3Input, EngineV3Options } from "./types";
+import type { EngineV3Input, EngineV3Options, EngineV3ProgressPhase } from "./types";
 import { applyFinalHardValidationGate, validateHardConstraints } from "./hardValidation";
 import { optimizeWithCpSat } from "./cpSatOptimizer";
 import { validateOptimizedCandidate } from "./validateCandidate";
@@ -22,6 +22,45 @@ import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics 
 import { detectCoachAssignments } from "./coachDetection";
 import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, type PipelineConflictDetail } from "./pipelineBuilder";
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
+
+
+const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
+  queued: "En cola",
+  loading_input: "Cargando datos",
+  phase_a_base_solution: "Construyendo solución base",
+  hard_validation: "Validando restricciones",
+  backtracking: "Explorando alternativas",
+  operational_neighborhoods: "Mejorando calidad operativa",
+  coach_compaction: "Compactando jornadas de coaches",
+  coach_wave_ordering: "Ordenando olas de coaches",
+  pipeline_builder: "Construyendo pipelines",
+  pipeline_repair: "Reparando pipelines",
+  lane_only_repair: "Reparando carriles exclusivos",
+  scoring_candidates: "Comparando candidatos",
+  persisting_result: "Guardando resultado",
+  success: "Completado",
+  failed: "Fallido",
+  cancelled: "Cancelado",
+};
+
+const emitProgress = (
+  options: EngineV3Options | undefined,
+  phase: EngineV3ProgressPhase,
+  progressPercent: number,
+  message: string,
+  details: { candidatesEvaluated?: number; candidatesGenerated?: number; currentBestReason?: string } = {},
+): void => {
+  const now = new Date().toISOString();
+  options?.onProgress?.({
+    phase,
+    label: PROGRESS_LABELS[phase],
+    progressPercent: Math.max(0, Math.min(100, Math.round(progressPercent))),
+    startedAt: now,
+    updatedAt: now,
+    message,
+    ...details,
+  });
+};
 
 type AttemptSummary = {
   level: number;
@@ -737,10 +776,10 @@ export const runPipelineBuilderSelection = (
   }
   const selectionReason = accepted
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
-      ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
+      ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
-        : bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: lane-only repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
+        ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
+        : bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
     ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
@@ -1112,7 +1151,7 @@ const buildRescueProposal = (base: EngineOutput, input: EngineV3Input) => {
 };
 
 function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
-  options?.onProgress?.({ phase: "prevalidation", progressPct: 5, message: "V3 Fase A: prevalidación de hard constraints" });
+  emitProgress(options, "hard_validation", 12, "Validando restricciones hard de entrada");
 
   const hardValidation = prevalidateHard(input);
   if (hardValidation) {
@@ -1136,11 +1175,13 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
   let lastBacktrackingMeta: BacktrackingMeta | null = null;
 
   for (let level = 9; level >= 0; level--) {
-    options?.onProgress?.({
-      phase: "solving_feasible",
-      progressPct: 10 + Math.round(((9 - level) / 9) * 70),
-      message: `V3 Fase A: intento factible (soft level=${level}`,
-    });
+    emitProgress(
+      options,
+      level === 9 ? "phase_a_base_solution" : "backtracking",
+      18 + Math.round(((9 - level) / 9) * 24),
+      `Buscando solución factible (nivel soft ${level})`,
+      { candidatesEvaluated: 10 - level },
+    );
 
     const t0 = Date.now();
     const greedyProbeForcedTaskStarts = (input as any)?.v3GreedyProbeForcedTaskStarts;
@@ -1189,8 +1230,12 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
             attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
           },
         };
+        emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
         const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
         output = neighborhoodSelection.output;
+        emitProgress(options, "coach_compaction", 58, "Compactando jornadas y huecos de coaches");
+        emitProgress(options, "coach_wave_ordering", 66, "Ordenando olas locales de coaches");
+        emitProgress(options, "pipeline_builder", 72, "Generando candidatos de pipeline");
         const pipelineSelection = runPipelineBuilderSelection(
           input,
           output,
@@ -1198,6 +1243,11 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
           { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta },
         );
         output = pipelineSelection.output;
+        emitProgress(options, "pipeline_repair", 78, "Reparando conflictos de pipeline");
+        emitProgress(options, "lane_only_repair", 84, "Buscando slack en carriles exclusivos", {
+          candidatesGenerated: Number(pipelineSelection.meta.pipelineCandidatesGenerated ?? 0),
+          currentBestReason: pipelineSelection.meta.pipelineReason,
+        });
         const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
         output = pilotSelection.output;
         const backtrackingNeighborhoodMeta = pilotSelection.meta;
@@ -1229,7 +1279,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
           });
         }
         if (timeLimitSeconds > 0) {
-          options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
+          emitProgress(options, "scoring_candidates", 88, `Comparando optimización final (hasta ${timeLimitSeconds}s)`);
           const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
           const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
           const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, output) > 0;
@@ -1275,7 +1325,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
           });
         }
 
-        options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3: plan completo encontrado (Fase A/backtracking/B)" });
+        emitProgress(options, "scoring_candidates", 94, "Plan completo encontrado; validando el candidato final");
         return withV3Meta(output, output.v3Meta ?? {
           prevalidationRun: true,
           prevalidationOk: true,
@@ -1299,8 +1349,12 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
           attemptsSummary: attemptsSummary.map((a) => ({ level: a.level, ok: a.ok, ms: a.ms, topReasons: a.topReasons, reason: a.reason })),
         },
       };
+      emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
       const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
       output = neighborhoodSelection.output;
+      emitProgress(options, "coach_compaction", 58, "Compactando jornadas y huecos de coaches");
+      emitProgress(options, "coach_wave_ordering", 66, "Ordenando olas locales de coaches");
+      emitProgress(options, "pipeline_builder", 72, "Generando candidatos de pipeline");
       const pipelineSelection = runPipelineBuilderSelection(
         input,
         output,
@@ -1308,6 +1362,11 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         neighborhoodSelection.meta,
       );
       output = pipelineSelection.output;
+      emitProgress(options, "pipeline_repair", 78, "Reparando conflictos de pipeline");
+      emitProgress(options, "lane_only_repair", 84, "Buscando slack en carriles exclusivos", {
+        candidatesGenerated: Number(pipelineSelection.meta.pipelineCandidatesGenerated ?? 0),
+        currentBestReason: pipelineSelection.meta.pipelineReason,
+      });
       const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
       output = pilotSelection.output;
       const greedyNeighborhoodMeta = pilotSelection.meta;
@@ -1340,7 +1399,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         });
       }
       if (timeLimitSeconds > 0) {
-        options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): optimizando hasta ${timeLimitSeconds}s` });
+        emitProgress(options, "scoring_candidates", 88, `Comparando optimización final (hasta ${timeLimitSeconds}s)`);
         const optimized = optimizeWithCpSat(input, output, timeLimitSeconds);
         const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, output, optimized.output);
         const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, output) > 0;
@@ -1387,7 +1446,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         });
       }
 
-      options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3: plan completo encontrado (Fase A/B)" });
+      emitProgress(options, "scoring_candidates", 94, "Plan completo encontrado; validando el candidato final");
       return withV3Meta(output, output.v3Meta ?? {
         prevalidationRun: true,
         prevalidationOk: true,
@@ -1446,7 +1505,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
     };
   }
   if (timeLimitSeconds > 0) {
-    options?.onProgress?.({ phase: "optimizing", progressPct: 90, message: `V3 Fase B (CP-SAT): intentando completar plan parcial hasta ${timeLimitSeconds}s` });
+    emitProgress(options, "scoring_candidates", 88, `Intentando completar y comparar el plan (hasta ${timeLimitSeconds}s)`);
     const optimized = optimizeWithCpSat(input, fallback, timeLimitSeconds);
     const candidateErrors = optimized.noOptimized ? [] : validateOptimizedCandidate(input, fallback, optimized.output);
     const accepted = !optimized.noOptimized && candidateErrors.length === 0 && validateHardConstraints(input, optimized.output).hardValidationPassed && compareCandidateSolutions(input, optimized.output, fallback) > 0;
@@ -1530,7 +1589,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         details: fallback.unplanned,
       }];
 
-  options?.onProgress?.({ phase: "optimizing", progressPct: 92, message: "V3 Fase A: sin plan completo, devolviendo diagnóstico" });
+  emitProgress(options, "scoring_candidates", 94, "No se encontró un plan completo; preparando diagnóstico");
 
   return withV3Meta({
     ...fallback,

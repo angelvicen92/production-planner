@@ -127,6 +127,21 @@ const compactConflictDetail = (
       return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
     }).filter((row) => row.taskId > 0) : [],
     laneRepairResult: compactText(detail.laneRepairResult, compactText(detail.repairResult, "not_attempted")),
+    slackAnalysis: Array.isArray(detail.slackAnalysis) ? detail.slackAnalysis.slice(0, 6).map((row) => {
+      const item = row as Record<string, unknown>;
+      return {
+        taskId: finiteNumber(item.taskId) ?? 0,
+        taskName: compactText(item.taskName),
+        talentName: compactText(item.talentName),
+        earliestStart: compactText(item.earliestStart),
+        latestEnd: compactText(item.latestEnd),
+        slackBeforeMinutes: finiteNumber(item.slackBeforeMinutes) ?? 0,
+        slackAfterMinutes: finiteNumber(item.slackAfterMinutes) ?? 0,
+        canShiftEarlier: item.canShiftEarlier === true,
+        canShiftLater: item.canShiftLater === true,
+        ...(compactText(item.blockingReason) ? { blockingReason: compactText(item.blockingReason) } : {}),
+      };
+    }).filter((row) => row.taskId > 0) : [],
     repairAttempted: typeof detail.repairAttempted === "boolean" ? detail.repairAttempted : segmentRepairAttempted,
     repairStrategy: compactText(detail.repairStrategy, strategiesTried.join(",") || "none"),
     repairResult: compactText(detail.repairResult, "conflict_detail_unavailable_from_validator"),

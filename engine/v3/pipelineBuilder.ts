@@ -42,7 +42,13 @@ export type PipelineRejectedReason =
   | "no_slack_for_lane_queue"
   | "alternative_lane_unavailable_missing_config"
   | "explicit_lock_blocks_lane"
-  | "lane_capacity_unschedulable";
+  | "lane_capacity_unschedulable"
+  | "dependency_shift_success"
+  | "dependency_shift_no_slack"
+  | "dependency_fixed"
+  | "dependency_would_break_main_stage"
+  | "lane_micro_reorder_success"
+  | "lane_micro_reorder_no_valid_order";
 
 export type PipelineFeederOutcome = "feeder_relocated" | "feeder_kept_stable" | "feeder_blocked";
 
@@ -79,6 +85,7 @@ export interface PipelineConflictDetail {
   laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairResult?: string;
+  slackAnalysis?: TaskSlackAnalysis[];
   repairAttempted: boolean;
   repairStrategy: string;
   repairResult: string;
@@ -432,6 +439,19 @@ export type LaneRepairContext = {
   extendedWindowMinutes?: number;
 };
 
+export type TaskSlackAnalysis = {
+  taskId: number;
+  taskName: string;
+  talentName: string;
+  earliestStart: string;
+  latestEnd: string;
+  slackBeforeMinutes: number;
+  slackAfterMinutes: number;
+  canShiftEarlier: boolean;
+  canShiftLater: boolean;
+  blockingReason?: string;
+};
+
 export type LaneRepairResult = {
   output: EngineOutput | null;
   reason: string;
@@ -440,9 +460,81 @@ export type LaneRepairResult = {
   movedTalentNames: string[];
   before: Array<{ taskId: number; start: string; end: string }>;
   after: Array<{ taskId: number; start: string; end: string }>;
+  slackAnalysis: TaskSlackAnalysis[];
 };
 
 type LaneRow = { task: TaskInput; planned: Planned; start: number; end: number; duration: number };
+
+
+type TaskSlackSchedule = EngineOutput | { plannedTasks: EngineOutput["plannedTasks"] };
+
+/** Conservative movable window derived from hard bounds, direct dependencies and occupied local lanes. */
+export const computeTaskSlack = (
+  task: TaskInput,
+  schedule: TaskSlackSchedule,
+  dependencies: TaskInput[],
+  constraints: EngineV3Input,
+): TaskSlackAnalysis => {
+  const plannedById = new Map((schedule.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  const current = plannedById.get(Number(task.id));
+  const currentStart = toMinutes(current?.startPlanned) ?? toMinutes(task.startPlanned) ?? 0;
+  const currentEnd = toMinutes(current?.endPlanned) ?? toMinutes(task.endPlanned) ?? currentStart;
+  const duration = Math.max(0, currentEnd - currentStart);
+  const availability = task.contestantId == null ? undefined : constraints.contestantAvailabilityById?.[Number(task.contestantId)];
+  let earliestStart = Math.max(toMinutes(constraints.workDay.start) ?? 0, toMinutes(availability?.start) ?? 0);
+  let latestEnd = Math.min(toMinutes(constraints.workDay.end) ?? 24 * 60, toMinutes(availability?.end) ?? 24 * 60);
+  const predecessorEnds = dependencyIds(task).map((id) => toMinutes(plannedById.get(id)?.endPlanned)).filter((value): value is number => value !== null);
+  if (predecessorEnds.length > 0) earliestStart = Math.max(earliestStart, ...predecessorEnds);
+  const successors = dependencies.filter((candidate) => dependencyIds(candidate).includes(Number(task.id)));
+  const successorStarts = successors.map((candidate) => toMinutes(plannedById.get(Number(candidate.id))?.startPlanned)).filter((value): value is number => value !== null);
+  if (successorStarts.length > 0) latestEnd = Math.min(latestEnd, ...successorStarts);
+  if (task.fixedWindowStart) earliestStart = Math.max(earliestStart, toMinutes(task.fixedWindowStart) ?? earliestStart);
+  if (task.fixedWindowEnd) latestEnd = Math.min(latestEnd, toMinutes(task.fixedWindowEnd) ?? latestEnd);
+
+  const assignedResources = new Set((current?.assignedResources ?? task.assignedResourceIds ?? []).map(Number));
+  for (const other of constraints.tasks) {
+    if (Number(other.id) === Number(task.id)) continue;
+    const otherPlanned = plannedById.get(Number(other.id));
+    const otherStart = toMinutes(otherPlanned?.startPlanned);
+    const otherEnd = toMinutes(otherPlanned?.endPlanned);
+    if (otherStart === null || otherEnd === null) continue;
+    const sameTalent = task.contestantId != null && Number(other.contestantId) === Number(task.contestantId);
+    const sameExclusiveSpace = task.spaceId != null && Number(other.spaceId) === Number(task.spaceId)
+      && Number(constraints.spaceCapacityById?.[Number(task.spaceId)] ?? constraints.spaceConcurrencyById?.[Number(task.spaceId)] ?? 1) === 1;
+    const otherResources = new Set((otherPlanned?.assignedResources ?? other.assignedResourceIds ?? []).map(Number));
+    const sameResource = [...assignedResources].some((resourceId) => otherResources.has(resourceId));
+    if (!sameTalent && !sameExclusiveSpace && !sameResource) continue;
+    if (otherEnd <= currentStart) earliestStart = Math.max(earliestStart, otherEnd);
+    if (otherStart >= currentEnd) latestEnd = Math.min(latestEnd, otherStart);
+  }
+
+  const fixedReason = fixedReasonForTask(constraints, Number(task.id));
+  const protectedReason = fixedReason
+    ?? (isTransportTask(constraints, task) ? "transport_fixed" : undefined)
+    ?? (isMainStageTask(constraints, task) ? "main_stage_continuity" : undefined);
+  if (protectedReason) {
+    earliestStart = currentStart;
+    latestEnd = currentEnd;
+  }
+  const slackBeforeMinutes = Math.max(0, currentStart - earliestStart);
+  const slackAfterMinutes = Math.max(0, latestEnd - currentEnd);
+  const inferredBlocker = protectedReason
+    ?? (slackAfterMinutes === 0 && successorStarts.length > 0 ? "successor_dependency" : undefined)
+    ?? (slackBeforeMinutes === 0 && predecessorEnds.length > 0 ? "predecessor_dependency" : undefined)
+    ?? (slackBeforeMinutes === 0 && slackAfterMinutes === 0 ? "no_operational_slack" : undefined);
+  return {
+    taskId: Number(task.id),
+    taskName: taskName(constraints, Number(task.id)),
+    talentName: task.contestantId ? talentLabel(constraints, Number(task.contestantId)) : "",
+    earliestStart: toHHMM(earliestStart),
+    latestEnd: toHHMM(latestEnd),
+    slackBeforeMinutes,
+    slackAfterMinutes,
+    canShiftEarlier: slackBeforeMinutes > 0 && !protectedReason,
+    canShiftLater: slackAfterMinutes > 0 && !protectedReason,
+    ...(inferredBlocker ? { blockingReason: inferredBlocker } : {}),
+  };
+};
 
 const laneSnapshot = (rows: LaneRow[]): Array<{ taskId: number; start: string; end: string }> => rows
   .map((row) => ({ taskId: Number(row.task.id), start: row.planned.startPlanned, end: row.planned.endPlanned }))
@@ -517,97 +609,167 @@ export const repairExclusiveLaneSequentially = (
   context: LaneRepairContext,
 ): LaneRepairResult => {
   const { input, baseline } = context;
-  const strategy = "lane_only_sequential_queue";
+  const strategy = "slack_aware_lane_queue";
+  const empty = (reason: string): LaneRepairResult => ({ output: null, reason, strategy, movedTaskIds: [], movedTalentNames: [], before: [], after: [], slackAnalysis: [] });
   const capacity = conflict.spaceId != null
     ? Number(input.spaceCapacityById?.[Number(conflict.spaceId)] ?? input.spaceConcurrencyById?.[Number(conflict.spaceId)] ?? 1)
     : conflict.resourceId != null ? 1 : Number.NaN;
-  if (!Number.isFinite(capacity) || capacity !== 1) {
-    return { output: null, reason: "lane_not_exclusive", strategy, movedTaskIds: [], movedTalentNames: [], before: [], after: [] };
-  }
+  if (!Number.isFinite(capacity) || capacity !== 1) return empty("lane_not_exclusive");
+
   const allRows = rowsForLane(input, candidate, conflict);
   const conflictStart = toMinutes(conflict.start) ?? Math.min(...allRows.map((row) => row.start));
   const conflictEnd = toMinutes(conflict.end) ?? Math.max(...allRows.map((row) => row.end));
-  if (!allRows.length || !Number.isFinite(conflictStart) || !Number.isFinite(conflictEnd)) {
-    return { output: null, reason: "lane_capacity_unschedulable", strategy, movedTaskIds: [], movedTalentNames: [], before: [], after: [] };
-  }
+  if (!allRows.length || !Number.isFinite(conflictStart) || !Number.isFinite(conflictEnd)) return empty("lane_capacity_unschedulable");
+
   const extension = context.extendedWindowMinutes ?? 60;
   const explicitConflictIds = new Set((conflict.taskIds ?? []).map(Number));
   const localRows = allRows.filter((row) => explicitConflictIds.has(Number(row.task.id))
     || overlapsWindow(row, conflictStart - extension, conflictEnd + extension));
   const movableRows = localRows.filter((row) => isRepairMovableTask(input, Number(row.task.id)));
   const before = laneSnapshot(localRows);
+  const slackAnalysis = localRows.map((row) => computeTaskSlack(row.task, candidate, input.tasks, input)).slice(0, 6);
+  const failure = (reason: string, movedTaskIds: number[] = [], after = before): LaneRepairResult => ({
+    output: null,
+    reason,
+    strategy,
+    movedTaskIds: movedTaskIds.slice(0, 20),
+    movedTalentNames: [...new Set(movedTaskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === taskId))
+      .map((task) => task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null)
+      .filter((name): name is string => Boolean(name)))].slice(0, 10),
+    before,
+    after,
+    slackAnalysis,
+  });
   if (movableRows.length === 0) {
-    const reason = localRows.some((row) => Boolean(explicitLockForTask(input, Number(row.task.id))))
-      ? "explicit_lock_blocks_lane" : "segment_has_fixed_blocker";
-    return { output: null, reason, strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+    return failure(localRows.some((row) => Boolean(explicitLockForTask(input, Number(row.task.id))))
+      ? "explicit_lock_blocks_lane" : "segment_has_fixed_blocker");
   }
 
   const protectedRows = allRows.filter((row) => !isRepairMovableTask(input, Number(row.task.id)));
   const breakWindows = conflict.spaceId == null ? [] : protectedBreakWindows(input, Number(conflict.spaceId));
   const blockers = [...breakWindows, ...protectedRows.map((row) => ({ start: row.start, end: row.end }))]
     .sort((left, right) => left.start - right.start || left.end - right.end);
-  const plannedById = clonePlannedMap(candidate);
   const workStart = toMinutes(input.workDay.start) ?? 0;
   const workEnd = toMinutes(input.workDay.end) ?? 24 * 60;
-  let cursor = Math.max(workStart, Math.min(...movableRows.map((row) => row.start)));
-  const movedIds = new Set<number>();
-  let splitAroundBreak = false;
-
-  for (const row of stableDependencyOrder(input, candidate, movableRows)) {
-    const predecessorEnds = dependencyIds(row.task).map((dependencyId) => plannedById.get(dependencyId))
-      .map((planned) => toMinutes(planned?.endPlanned)).filter((value): value is number => value !== null);
-    const preferredStart = Math.max(cursor, predecessorEnds.length > 0 ? Math.max(...predecessorEnds) : workStart);
-    const nextStart = firstAvailableStart(preferredStart, row.duration, blockers, workEnd);
-    if (nextStart === null) {
-      const reason = breakWindows.length > 0 ? "break_window_blocks_lane_queue" : "no_slack_for_lane_queue";
-      return { output: null, reason, strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+  const ordered = stableDependencyOrder(input, candidate, movableRows);
+  const reorderRows = ordered.slice(0, Math.min(4, ordered.length));
+  const permutations: LaneRow[][] = [ordered];
+  const permute = (prefix: LaneRow[], rest: LaneRow[]) => {
+    if (permutations.length >= 13) return;
+    if (rest.length === 0) {
+      if (prefix.some((row, index) => row !== reorderRows[index])) permutations.push([...prefix, ...ordered.slice(reorderRows.length)]);
+      return;
     }
-    if (breakWindows.some((window) => preferredStart < window.end && preferredStart + row.duration > window.start && nextStart >= window.end)) {
-      splitAroundBreak = true;
+    for (let index = 0; index < rest.length && permutations.length < 13; index += 1) {
+      permute([...prefix, rest[index]], [...rest.slice(0, index), ...rest.slice(index + 1)]);
     }
-    updatePlanned(plannedById, Number(row.task.id), nextStart);
-    if (nextStart !== row.start) movedIds.add(Number(row.task.id));
-    cursor = nextStart + row.duration;
-  }
+  };
+  if (reorderRows.length >= 2) permute([], reorderRows);
 
-  // Split the talent segment: reanchor direct dependants only (depth 1), never Main Stage or transport/meal.
-  const movedLaneIds = [...movedIds];
-  for (const movedId of movedLaneIds) {
-    const movedEnd = toMinutes(plannedById.get(movedId)?.endPlanned);
-    if (movedEnd === null) continue;
-    const directDependants = input.tasks.filter((task) => dependencyIds(task).includes(movedId));
-    for (const dependant of directDependants) {
-      const dependantId = Number(dependant.id);
-      const planned = plannedById.get(dependantId);
-      const dependantStart = toMinutes(planned?.startPlanned);
-      const dependantEnd = toMinutes(planned?.endPlanned);
-      if (!planned || dependantStart === null || dependantEnd === null || dependantStart >= movedEnd) continue;
-      if (!isRepairMovableTask(input, dependantId)) {
-        return { output: null, reason: "lane_repair_dependency_blocked", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+  let bestFailedMoved: number[] = [];
+  let bestFailedAfter = before;
+  let dependencyFailure = "";
+  for (let orderIndex = 0; orderIndex < permutations.length && orderIndex < 13; orderIndex += 1) {
+    const plannedById = clonePlannedMap(candidate);
+    const movedIds = new Set<number>();
+    let cursor = Math.max(workStart, Math.min(...movableRows.map((row) => row.start)));
+    let splitAroundBreak = false;
+    let failed = false;
+    let attempts = 0;
+    for (const [rowIndex, row] of permutations[orderIndex].entries()) {
+      if (attempts++ >= MAX_REPAIR_ATTEMPTS_PER_CANDIDATE) { failed = true; break; }
+      const slack = computeTaskSlack(row.task, { plannedTasks: [...plannedById.values()] }, input.tasks, input);
+      const earliest = toMinutes(slack.earliestStart) ?? workStart;
+      const directSuccessors = input.tasks.filter((task) => dependencyIds(task).includes(Number(row.task.id)));
+      const fixedSuccessorStarts = directSuccessors.filter((task) => !isRepairMovableTask(input, Number(task.id)))
+        .map((task) => toMinutes(plannedById.get(Number(task.id))?.startPlanned))
+        .filter((value): value is number => value !== null);
+      const availabilityEnd = row.task.contestantId == null
+        ? workEnd
+        : toMinutes(input.contestantAvailabilityById?.[Number(row.task.contestantId)]?.end) ?? workEnd;
+      const latestEnd = fixedSuccessorStarts.length > 0 ? Math.min(workEnd, availabilityEnd, ...fixedSuccessorStarts) : Math.min(workEnd, availabilityEnd);
+      const latestStart = latestEnd - row.duration;
+      const predecessorEnds = dependencyIds(row.task).map((dependencyId) => toMinutes(plannedById.get(dependencyId)?.endPlanned))
+        .filter((value): value is number => value !== null);
+      const preferred = rowIndex === 0 ? row.start : Math.max(row.start, cursor);
+      const desired = Math.max(earliest, cursor, predecessorEnds.length > 0 ? Math.max(...predecessorEnds) : workStart, preferred);
+      const nextStart = firstAvailableStart(desired, row.duration, blockers, Math.min(workEnd, latestStart + row.duration));
+      if (nextStart === null || nextStart > latestStart) {
+        if (directSuccessors.some((task) => !isRepairMovableTask(input, Number(task.id)))) {
+          dependencyFailure = directSuccessors.some((task) => isMainStageTask(input, task))
+            ? "dependency_would_break_main_stage" : "dependency_fixed";
+        }
+        failed = true;
+        break;
       }
-      const nextStart = firstAvailableStart(movedEnd, dependantEnd - dependantStart, [], workEnd);
-      if (nextStart === null) {
-        return { output: null, reason: "lane_repair_dependency_blocked", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
-      }
-      updatePlanned(plannedById, dependantId, nextStart);
-      if (nextStart !== dependantStart) movedIds.add(dependantId);
+      if (breakWindows.some((window) => desired < window.end && desired + row.duration > window.start && nextStart >= window.end)) splitAroundBreak = true;
+      updatePlanned(plannedById, Number(row.task.id), nextStart);
+      if (nextStart !== row.start) movedIds.add(Number(row.task.id));
+      cursor = nextStart + row.duration;
     }
-  }
 
-  const output = outputWithPlannedMap(candidate, plannedById);
-  if (!protectedTasksUnchanged(input, baseline, output)) {
-    return { output: null, reason: "explicit_lock_blocks_lane", strategy, movedTaskIds: [], movedTalentNames: [], before, after: before };
+    let dependencyShiftCount = 0;
+    const shiftDependants = (sourceId: number, depth: number): boolean => {
+      if (depth > 2) return false;
+      const sourceEnd = toMinutes(plannedById.get(sourceId)?.endPlanned);
+      if (sourceEnd === null) return true;
+      for (const dependant of input.tasks.filter((task) => dependencyIds(task).includes(sourceId))) {
+        const dependantId = Number(dependant.id);
+        const planned = plannedById.get(dependantId);
+        const start = toMinutes(planned?.startPlanned);
+        const end = toMinutes(planned?.endPlanned);
+        if (!planned || start === null || end === null || start >= sourceEnd) continue;
+        if (isMainStageTask(input, dependant)) { dependencyFailure = "dependency_would_break_main_stage"; return false; }
+        if (!isRepairMovableTask(input, dependantId)) { dependencyFailure = "dependency_fixed"; return false; }
+        const dependantSuccessorStarts = input.tasks.filter((task) => dependencyIds(task).includes(dependantId) && !isRepairMovableTask(input, Number(task.id)))
+          .map((task) => toMinutes(plannedById.get(Number(task.id))?.startPlanned))
+          .filter((value): value is number => value !== null);
+        const availabilityEnd = dependant.contestantId == null
+          ? workEnd
+          : toMinutes(input.contestantAvailabilityById?.[Number(dependant.contestantId)]?.end) ?? workEnd;
+        const latestEnd = dependantSuccessorStarts.length > 0 ? Math.min(workEnd, availabilityEnd, ...dependantSuccessorStarts) : Math.min(workEnd, availabilityEnd);
+        const latestStart = latestEnd - (end - start);
+        const shifted = firstAvailableStart(sourceEnd, end - start, [], Math.min(workEnd, latestStart + end - start));
+        if (shifted === null || shifted > latestStart) { dependencyFailure = "dependency_shift_no_slack"; return false; }
+        if (dependencyShiftCount >= 3) { dependencyFailure = "dependency_shift_no_slack"; return false; }
+        updatePlanned(plannedById, dependantId, shifted);
+        movedIds.add(dependantId);
+        dependencyShiftCount += 1;
+        if (!shiftDependants(dependantId, depth + 1)) return false;
+      }
+      return true;
+    };
+    if (!failed) {
+      for (const movedId of [...movedIds]) {
+        if (!shiftDependants(movedId, 1)) { failed = true; break; }
+      }
+    }
+    const afterRows = localRows.map((row) => {
+      const planned = plannedById.get(Number(row.task.id)) ?? row.planned;
+      return { ...row, planned, start: toMinutes(planned.startPlanned) ?? row.start, end: toMinutes(planned.endPlanned) ?? row.end };
+    });
+    const after = laneSnapshot(afterRows);
+    if (movedIds.size > bestFailedMoved.length) { bestFailedMoved = [...movedIds]; bestFailedAfter = after; }
+    if (failed || movedIds.size === 0) continue;
+    const output = outputWithPlannedMap(candidate, plannedById);
+    if (!protectedTasksUnchanged(input, baseline, output)) return failure("explicit_lock_blocks_lane", [...movedIds], after);
+    const candidateValidation = validateHardConstraints(input, output, MAX_CONFLICT_DIAGNOSTICS);
+    if (!candidateValidation.hardValidationPassed) {
+      if (candidateValidation.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION")) {
+        dependencyFailure = dependencyFailure || "dependency_shift_no_slack";
+      }
+      continue;
+    }
+    const movedTaskIds = [...movedIds].slice(0, 20);
+    const movedTalentNames = [...new Set(movedTaskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === taskId))
+      .map((task) => task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null)
+      .filter((name): name is string => Boolean(name)))].slice(0, 10);
+    const reason = orderIndex > 0 ? "lane_micro_reorder_success"
+      : splitAroundBreak ? "break_aware_lane_repair_success"
+        : dependencyShiftCount > 0 ? "dependency_shift_success" : "lane_sequentialized";
+    return { output, reason, strategy, movedTaskIds, movedTalentNames, before, after, slackAnalysis };
   }
-  const movedTaskIds = [...movedIds].slice(0, 20);
-  const movedTalentNames = [...new Set(movedTaskIds.map((taskId) => input.tasks.find((task) => Number(task.id) === taskId))
-    .map((task) => task?.contestantId ? talentLabel(input, Number(task.contestantId)) : null)
-    .filter((name): name is string => Boolean(name)))].slice(0, 10);
-  const afterRows = localRows.map((row) => {
-    const planned = plannedById.get(Number(row.task.id)) ?? row.planned;
-    return { ...row, planned, start: toMinutes(planned.startPlanned) ?? row.start, end: toMinutes(planned.endPlanned) ?? row.end };
-  });
-  const reason = splitAroundBreak ? "break_aware_lane_repair_success" : "lane_sequentialized";
-  return { output, reason, strategy, movedTaskIds, movedTalentNames, before, after: laneSnapshot(afterRows) };
+  return failure(dependencyFailure || (permutations.length > 1 ? "lane_micro_reorder_no_valid_order" : breakWindows.length > 0 ? "no_slack_for_lane_queue" : "no_slack_for_lane_queue"), bestFailedMoved, bestFailedAfter);
 };
 
 /** Backwards-compatible space-only wrapper. */
@@ -712,6 +874,7 @@ const compactConflictDetail = (
     laneRepairBefore: laneRepair?.before.slice(0, 20) ?? [],
     laneRepairAfter: laneRepair?.after.slice(0, 20) ?? [],
     laneRepairResult: laneRepair?.reason ?? repairResult,
+    slackAnalysis: laneRepair?.slackAnalysis.slice(0, 6) ?? [],
     repairAttempted,
     repairStrategy,
     repairResult,

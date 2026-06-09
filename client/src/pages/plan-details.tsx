@@ -133,10 +133,13 @@ function getRunProgress(args: {
   plannedCount: number;
   totalPending: number;
   status?: string | null;
+  phaseProgressPct?: number | null;
 }) {
-  const pct = args.totalPending > 0
+  const countPct = args.totalPending > 0
     ? Math.floor((args.plannedCount / args.totalPending) * 100)
     : 0;
+  const phasePct = Number(args.phaseProgressPct);
+  const pct = Number.isFinite(phasePct) ? Math.max(countPct, phasePct) : countPct;
 
   return {
     plannedCount: args.plannedCount,
@@ -144,6 +147,23 @@ function getRunProgress(args: {
     percentage: args.status === "running" ? Math.min(99, pct) : Math.min(100, pct),
   };
 }
+
+const PLANNING_PHASE_LABELS: Record<string, string> = {
+  queued: "En cola",
+  loading_input: "Cargando datos",
+  phase_a_base_solution: "Construyendo solución base",
+  hard_validation: "Validando restricciones",
+  backtracking: "Explorando alternativas",
+  operational_neighborhoods: "Mejorando calidad operativa",
+  coach_compaction: "Compactando jornadas de coaches",
+  coach_wave_ordering: "Ordenando olas de coaches",
+  pipeline_builder: "Construyendo pipelines",
+  pipeline_repair: "Reparando pipelines",
+  lane_only_repair: "Reparando carriles exclusivos",
+  scoring_candidates: "Comparando candidatos",
+  persisting_result: "Guardando resultado",
+  success: "Completado",
+};
 
 function ExecutionElapsedTimer({
   status,
@@ -1524,7 +1544,7 @@ ${reasonMessage}` : message,
     if (!isExpectedRun) return;
 
     if (Number.isFinite(run.plannedCount) && Number.isFinite(run.totalPending)) {
-      setPlanningProgress(getRunProgress({ plannedCount: Number(run.plannedCount), totalPending: Number(run.totalPending), status: run.status }));
+      setPlanningProgress(getRunProgress({ plannedCount: Number(run.plannedCount), totalPending: Number(run.totalPending), status: run.status, phaseProgressPct: run.progressPct }));
     }
 
     if (uiState === "stale") {
@@ -1560,7 +1580,7 @@ ${reasonMessage}` : message,
       return;
     }
 
-    const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status });
+    const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status, phaseProgressPct: run.progressPct });
     const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
     toast({
       title: finalProgress.percentage === 100 ? "Planificación completa (100%)" : `Planificación parcial (${finalProgress.percentage}%)`,
@@ -4437,19 +4457,25 @@ ${reasonMessage}` : message,
               {!planningIssue && <>
                 <Progress value={planningProgress.percentage} className="h-2" />
                 <p className="text-xs text-muted-foreground">
-                  {planningRunQ.data?.phase === "prevalidation" || planningRunQ.data?.phase === "clearing_pending"
-                    ? "Prevalidando"
-                    : planningRunQ.data?.phase === "build_input" || planningRunQ.data?.phase === "building_input"
-                      ? "Construyendo entrada"
-                      : planningRunQ.data?.phase === "solving_feasible" || planningRunQ.data?.phase === "solving"
-                        ? "Validando factibilidad"
-                        : planningRunQ.data?.phase === "optimizing"
-                          ? "Optimizando"
-                          : planningRunQ.data?.phase === "persisting"
-                            ? "Persistiendo..."
-                          : "Procesando"}
+                  {PLANNING_PHASE_LABELS[String(planningRunQ.data?.phase ?? "")] ?? planningRunQ.data?.phase ?? "Procesando"}
                   {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}
                 </p>
+                {planningRunQ.data?.progressMessage && (
+                  <p className="text-sm">{planningRunQ.data.progressMessage}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Última actualización hace {Math.max(0, Math.floor((Date.now() - Date.parse(planningRunQ.data?.updatedAt ?? new Date().toISOString())) / 1000))} s
+                </p>
+                {planningRunQ.data && Date.now() - Date.parse(planningRunQ.data.updatedAt) > 60_000 ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-300">La planificación está tardando más de lo normal, sigo reconectando...</p>
+                ) : planningRunQ.data && Date.now() - Date.parse(planningRunQ.data.updatedAt) > 15_000 ? (
+                  <p className="text-sm text-muted-foreground">Sigue calculando…</p>
+                ) : null}
+                {(Number(planningRunQ.data?.candidatesEvaluated ?? 0) > 0 || Number(planningRunQ.data?.candidatesGenerated ?? 0) > 0) && (
+                  <p className="text-xs text-muted-foreground">
+                    Candidatos evaluados: {Number(planningRunQ.data?.candidatesEvaluated ?? 0)} · generados: {Number(planningRunQ.data?.candidatesGenerated ?? 0)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">Puedes cancelar sin borrar una planificación válida ya completada.</p>
               </>}
               {planningIssue?.kind === "stale" && <p className="text-sm">Puedes cancelar y reintentar.</p>}

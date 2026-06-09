@@ -4379,6 +4379,7 @@ function normalizeHexColor(value: unknown): string | null {
   });
 
   app.get(api.planningRuns.latestByPlan.path, async (req, res) => {
+    res.set("Cache-Control", "no-store, max-age=0");
     try {
       const planId = Number(req.params.id);
       if (!Number.isFinite(planId) || planId <= 0) return res.status(400).json({ message: "Invalid plan id" });
@@ -4411,6 +4412,11 @@ function normalizeHexColor(value: unknown): string | null {
         message: stale ? "La generación parece haberse quedado bloqueada." : (data.message ? String(data.message) : null),
         phase: data.phase ? String(data.phase) : null,
         progressPct: Number(data.phase_progress_pct ?? 0),
+        progressMessage: data.message ? String(data.message) : null,
+        phaseStartedAt: String(data.updated_at ?? data.started_at),
+        candidatesEvaluated: Number((data.engine_metadata as any)?.candidateSolutionsEvaluated ?? 0),
+        candidatesGenerated: Number((data.engine_metadata as any)?.pipelineCandidatesGenerated ?? (data.engine_metadata as any)?.neighborhoodCandidatesGenerated ?? 0),
+        currentBestReason: String((data.engine_metadata as any)?.candidateSelectionReason ?? "") || null,
         engine: data.engine ? String(data.engine) : "v3",
         requestedTimeLimitMs: data.requested_time_limit_ms == null ? null : Number(data.requested_time_limit_ms),
         finishedAt: data.finished_at ? String(data.finished_at) : null,
@@ -4733,33 +4739,54 @@ function normalizeHexColor(value: unknown): string | null {
   const estimateProgressPct = (phase: string | null | undefined, plannedCount: number, totalPending: number): number => {
     const safePlanned = Number.isFinite(plannedCount) ? Math.max(0, plannedCount) : 0;
     const safeTotal = Number.isFinite(totalPending) ? Math.max(0, totalPending) : 0;
-    if (phase === "done") return 100;
-    if (phase === "error") return Math.min(100, Math.max(0, safeTotal > 0 ? Math.round((safePlanned / safeTotal) * 100) : 0));
-    if (phase === "persisting") {
-      const persistBase = 80;
-      const persistSpan = 19;
-      const persistProgress = safeTotal > 0 ? Math.round((Math.min(safePlanned, safeTotal) / safeTotal) * persistSpan) : 0;
-      return Math.min(99, Math.max(persistBase, persistBase + persistProgress));
+    const phaseProgress: Record<string, number> = {
+      queued: 2,
+      loading_input: 7,
+      hard_validation: 12,
+      phase_a_base_solution: 18,
+      backtracking: 34,
+      operational_neighborhoods: 48,
+      coach_compaction: 58,
+      coach_wave_ordering: 66,
+      pipeline_builder: 72,
+      pipeline_repair: 78,
+      lane_only_repair: 84,
+      scoring_candidates: 92,
+      persisting_result: 96,
+      success: 100,
+      failed: 100,
+      cancelled: 100,
+      // Backwards-compatible phases used by older runs.
+      prevalidation: 5,
+      build_input: 8,
+      solving_feasible: 30,
+      optimizing: 88,
+      persisting: 96,
+      done: 100,
+      error: 100,
+    };
+    if (phase === "persisting_result" || phase === "persisting") {
+      const persisted = safeTotal > 0 ? Math.round((Math.min(safePlanned, safeTotal) / safeTotal) * 3) : 0;
+      return Math.min(99, 96 + persisted);
     }
-    if (phase === "optimizing") return 70;
-    if (phase === "solving_feasible") return 45;
-    if (phase === "build_input") return 20;
-    if (phase === "prevalidation") return 5;
-    return 0;
+    return phaseProgress[String(phase ?? "")] ?? 0;
   };
 
   const updatePlanningRunProgress = async (
     planningRunId: number | null,
     patch: Record<string, any>,
-    progressCtx?: { phase?: string | null; plannedCount?: number; totalPending?: number },
+    progressCtx?: { phase?: string | null; plannedCount?: number; totalPending?: number; progressPercent?: number; onlyWhileRunning?: boolean },
   ) => {
     if (!planningRunId) return;
     const phase = progressCtx?.phase ?? (typeof patch.phase === "string" ? patch.phase : null);
     const plannedCount = Number(progressCtx?.plannedCount ?? patch.planned_count ?? 0);
     const totalPending = Number(progressCtx?.totalPending ?? patch.total_pending ?? 0);
-    const phaseProgressPct = estimateProgressPct(phase, plannedCount, totalPending);
+    const suppliedProgress = Number(progressCtx?.progressPercent);
+    const phaseProgressPct = Number.isFinite(suppliedProgress)
+      ? Math.max(0, Math.min(100, Math.round(suppliedProgress)))
+      : estimateProgressPct(phase, plannedCount, totalPending);
 
-    await supabaseAdmin
+    let updateQuery = supabaseAdmin
       .from("planning_runs")
       .update({
         ...patch,
@@ -4767,6 +4794,8 @@ function normalizeHexColor(value: unknown): string | null {
         updated_at: new Date().toISOString(),
       })
       .eq("id", planningRunId);
+    if (progressCtx?.onlyWhileRunning) updateQuery = updateQuery.eq("status", "running");
+    await updateQuery;
   };
 
   app.post(api.plans.generate.path, async (req, res) => {
@@ -4868,8 +4897,9 @@ function normalizeHexColor(value: unknown): string | null {
           status: "running",
           total_pending: totalPending,
           planned_count: 0,
-          phase: "prevalidation",
-          phase_progress_pct: estimateProgressPct("prevalidation", 0, totalPending),
+          phase: "queued",
+          phase_progress_pct: estimateProgressPct("queued", 0, totalPending),
+          message: "Planificación en cola",
           engine: "v3",
           requested_time_limit_ms: requestedTimeLimitMs,
           request_id: requestId,
@@ -4884,8 +4914,8 @@ function normalizeHexColor(value: unknown): string | null {
       if (totalPending === 0) {
         await updatePlanningRunProgress(
           planningRunId,
-          { status: "success", phase: "done", message: "No hay tareas pendientes que planificar", finished_at: new Date().toISOString() },
-          { phase: "done", plannedCount: 0, totalPending: 0 },
+          { status: "success", phase: "success", message: "No hay tareas pendientes que planificar", finished_at: new Date().toISOString() },
+          { phase: "success", plannedCount: 0, totalPending: 0, progressPercent: 100 },
         );
         return res.json({ success: true, hardFeasible: true, complete: true, feasible: true, planId, tasksUpdated: 0, warnings: [], planningStats: {}, reasons: [], unplanned: [], insights: [], runId: planningRunId, message: "No hay tareas pendientes que planificar" });
       }
@@ -4902,8 +4932,8 @@ function normalizeHexColor(value: unknown): string | null {
 
       await updatePlanningRunProgress(
         planningRunId,
-        { phase: "build_input" },
-        { phase: "build_input", plannedCount: 0, totalPending },
+        { phase: "loading_input", message: "Cargando tareas, dependencias y recursos" },
+        { phase: "loading_input", plannedCount: 0, totalPending, progressPercent: 7 },
       );
 
       const engineInput = await buildEngineInput(planId, storage);
@@ -4947,8 +4977,8 @@ function normalizeHexColor(value: unknown): string | null {
       }
       await updatePlanningRunProgress(
         planningRunId,
-        { phase: "solving_feasible" },
-        { phase: "solving_feasible", plannedCount: 0, totalPending },
+        { phase: "phase_a_base_solution", message: "Construyendo solución base" },
+        { phase: "phase_a_base_solution", plannedCount: 0, totalPending, progressPercent: 18 },
       );
 
       if (await isPlanningRunCancelled(planningRunId)) {
@@ -4958,17 +4988,27 @@ function normalizeHexColor(value: unknown): string | null {
       const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0
         ? requestedTimeLimitMs
         : defaultV3Ms;
+      let progressUpdateChain = Promise.resolve();
       const result = generatePlanV3(engineInput, {
         requestId: requestId ?? undefined,
         timeLimitMs: effectiveTimeLimitMs,
-        onProgress: (progress) => {
-          void updatePlanningRunProgress(
-            planningRunId,
-            { phase: progress.phase },
-            { phase: progress.phase, plannedCount: 0, totalPending },
-          );
-        },
+        onProgress: (() => {
+          let lastPhase = "";
+          let lastUpdateAt = 0;
+          return (progress) => {
+            const now = Date.now();
+            if (progress.phase === lastPhase && now - lastUpdateAt < 750) return;
+            lastPhase = progress.phase;
+            lastUpdateAt = now;
+            progressUpdateChain = progressUpdateChain.then(() => updatePlanningRunProgress(
+              planningRunId,
+              { phase: progress.phase, message: progress.message },
+              { phase: progress.phase, plannedCount: 0, totalPending, progressPercent: progress.progressPercent, onlyWhileRunning: true },
+            ));
+          };
+        })(),
       });
+      await progressUpdateChain;
       if (await isPlanningRunCancelled(planningRunId)) {
         return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
       }
@@ -5020,8 +5060,8 @@ function normalizeHexColor(value: unknown): string | null {
 
       await updatePlanningRunProgress(
         planningRunId,
-        { phase: "persisting", planned_count: 0 },
-        { phase: "persisting", plannedCount: 0, totalPending },
+        { phase: "persisting_result", planned_count: 0, message: "Guardando tareas planificadas" },
+        { phase: "persisting_result", plannedCount: 0, totalPending, progressPercent: 96 },
       );
 
       for (const p of planned) {
@@ -5052,26 +5092,15 @@ function normalizeHexColor(value: unknown): string | null {
             planningRunId,
             {
               planned_count: updated,
-              phase: "persisting",
+              phase: "persisting_result",
+              message: "Guardando tareas planificadas",
               last_task_id: Number.isFinite(currentTaskId) ? currentTaskId : null,
               last_task_name: taskName,
             },
-            { phase: "persisting", plannedCount: updated, totalPending },
+            { phase: "persisting_result", plannedCount: updated, totalPending },
           );
         }
       }
-
-      await updatePlanningRunProgress(
-        planningRunId,
-        {
-          status: "success",
-          planned_count: updated,
-          phase: "done",
-          finished_at: new Date().toISOString(),
-          message: null,
-        },
-        { phase: "done", plannedCount: updated, totalPending },
-      );
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
@@ -5096,7 +5125,7 @@ function normalizeHexColor(value: unknown): string | null {
           .update({
             status: "success",
             planned_count: updated,
-            phase: "done",
+            phase: "success",
             phase_progress_pct: 100,
             finished_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
