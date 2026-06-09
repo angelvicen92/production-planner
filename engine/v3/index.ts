@@ -20,7 +20,7 @@ import {
 import { runMainStageCpSatPilot, type MainStageCpSatPilotMeta } from "./mainStageCpSatPilot";
 import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics } from "./operationalQuality";
 import { detectCoachAssignments } from "./coachDetection";
-import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics } from "./pipelineBuilder";
+import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, type PipelineConflictDetail } from "./pipelineBuilder";
 
 type AttemptSummary = {
   level: number;
@@ -116,6 +116,10 @@ type BacktrackingMeta = {
   pipelineMovedTasks?: number[];
   pipelineStableTasks?: number[];
   pipelineFeederOutcomes?: string[];
+  pipelineRepairAttempted?: boolean;
+  pipelineRepairCandidatesGenerated?: number;
+  pipelineRepairAccepted?: boolean;
+  pipelineConflictDetails?: PipelineConflictDetail[];
   cpSatPilotAttempted?: boolean;
   cpSatPilotAccepted?: boolean;
   cpSatPilotTaskCount?: number;
@@ -672,6 +676,10 @@ export const runPipelineBuilderSelection = (
     movedTaskIds: [],
     stableTaskIds: [],
     feederOutcomes: [],
+    repairAttempted: false,
+    repairCandidatesGenerated: 0,
+    repairAccepted: false,
+    conflictDetails: [],
   };
   const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
   let bestOutput = baseOutput;
@@ -687,17 +695,24 @@ export const runPipelineBuilderSelection = (
   if (!accepted && candidates.length > 0 && !diagnostics.rejectedReasons.includes("candidate_not_better_than_baseline")) {
     diagnostics.rejectedReasons.push("candidate_not_better_than_baseline");
     diagnostics.rejectedReasons.push("pipeline_candidate_generated_but_lost_scoring");
+    if (diagnostics.repairCandidatesGenerated > 0) diagnostics.rejectedReasons.push("repair_valid_but_not_better_than_baseline");
   }
   const selectionReason = accepted
     ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
-      ? "pipeline_builder selected: lower coach split"
+      ? bestCandidate?.repaired ? "pipeline_builder selected: repaired lower coach split" : "pipeline_builder selected: lower coach split"
       : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? "pipeline_builder selected: lower coach max gap"
-        : "pipeline_builder selected: better operational quality"
+        ? bestCandidate?.repaired ? "pipeline_builder selected: repaired lower coach gap" : "pipeline_builder selected: lower coach max gap"
+        : bestCandidate?.repaired ? "pipeline_builder selected: repaired better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
     ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
-    : candidates.length > 0 ? "pipeline_candidate_generated_but_lost_scoring" : diagnostics.reason;
+    : candidates.length > 0
+      ? diagnostics.repairCandidatesGenerated > 0 ? "repair_valid_but_not_better_than_baseline" : "pipeline_candidate_generated_but_lost_scoring"
+      : diagnostics.repairAttempted
+        ? diagnostics.rejectedReasons.includes("repair_blocked_by_locked_or_executed")
+          ? "repair_blocked_by_locked_or_executed"
+          : "repair_attempted_but_no_valid_candidate"
+        : diagnostics.reason;
   const selectedMetrics: NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"] = {
     coachSwitchCount: bestScore.coachSwitchCount,
     coachSwitchPenalty: bestScore.coachSwitchPenalty,
@@ -735,6 +750,10 @@ export const runPipelineBuilderSelection = (
       pipelineMovedTasks: (bestCandidate?.movedTaskIds ?? diagnostics.movedTaskIds).slice(0, 50),
       pipelineStableTasks: (bestCandidate?.stableTaskIds ?? diagnostics.stableTaskIds).slice(0, 50),
       pipelineFeederOutcomes: bestCandidate?.feederOutcomes ?? diagnostics.feederOutcomes,
+      pipelineRepairAttempted: diagnostics.repairAttempted,
+      pipelineRepairCandidatesGenerated: diagnostics.repairCandidatesGenerated,
+      pipelineRepairAccepted: accepted && Boolean(bestCandidate?.repaired),
+      pipelineConflictDetails: diagnostics.conflictDetails.slice(0, 10),
       candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + candidates.length,
       solutionSource: accepted ? "pipeline_builder" : baseSource,
       bestCandidateSource: accepted ? "pipeline_builder" : baseMeta.bestCandidateSource ?? baseSource,
@@ -829,6 +848,10 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       pipelineMovedTasks: [],
       pipelineStableTasks: [],
       pipelineFeederOutcomes: [],
+      pipelineRepairAttempted: false,
+      pipelineRepairCandidatesGenerated: 0,
+      pipelineRepairAccepted: false,
+      pipelineConflictDetails: [],
       ...meta,
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,

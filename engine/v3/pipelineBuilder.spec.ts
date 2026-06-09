@@ -108,6 +108,10 @@ const diagnosticsFor = (input: EngineInput, baseline: EngineOutput): PipelineBui
     movedTaskIds: [],
     stableTaskIds: [],
     feederOutcomes: [],
+    repairAttempted: false,
+    repairCandidatesGenerated: 0,
+    repairAccepted: false,
+    conflictDetails: [],
   };
 };
 
@@ -225,4 +229,122 @@ test("real-like 19-talent partial mapping is observable and produces a concrete 
     assert.ok(candidates.every((candidate) => validateHardConstraints(input, candidate.output).hardConstraintViolations === 0));
     assert.ok(candidates.every((candidate) => calculateOperationalMetrics(input, candidate.output).mainStageGapMinutes === 0));
   }
+});
+
+const addAuxiliary = (
+  scenario: ReturnType<typeof buildScenario>,
+  options: { id: number; start: number; end: number; spaceId?: number; resources?: number[]; status?: string; name?: string },
+): void => {
+  scenario.input.tasks.push({
+    id: options.id,
+    planId: 40,
+    templateId: 90,
+    templateName: options.name ?? "Auxiliary blocker",
+    zoneId: 9,
+    spaceId: options.spaceId ?? 30,
+    status: options.status ?? "pending",
+    durationOverrideMin: options.end - options.start,
+    startPlanned: hhmm(options.start),
+    endPlanned: hhmm(options.end),
+  } as any);
+  scenario.baseline.plannedTasks.push({
+    taskId: options.id,
+    startPlanned: hhmm(options.start),
+    endPlanned: hhmm(options.end),
+    assignedResources: options.resources ?? [],
+  });
+};
+
+test("resource conflicts expose compact pipelineConflictDetails and can be repaired", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_001, start: 11 * 60 + 40, end: 12 * 60, resources: [501] });
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  assert.equal(diagnostics.repairAttempted, true);
+  assert.ok(diagnostics.conflictDetails.some((detail) => detail.violationCode === "RESOURCE_OVERLAP"
+    && detail.resourceName === "Coach A" && detail.taskNames.length > 0));
+  assert.ok(candidates.some((candidate) => validateHardConstraints(scenario.input, candidate.output).hardValidationPassed));
+  assert.ok(diagnostics.repairCandidatesGenerated > 0);
+});
+
+test("a movable resource blocker is shifted and the repaired candidate remains hard-valid", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_002, start: 11 * 60 + 40, end: 12 * 60, resources: [501] });
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnosticsFor(scenario.input, scenario.baseline));
+  const repaired = candidates.find((candidate) => candidate.repaired && candidate.movedTaskIds.includes(9_002));
+  assert.ok(repaired);
+  assert.notEqual(repaired.output.plannedTasks.find((task) => task.taskId === 9_002)?.startPlanned, "11:40");
+  assert.equal(validateHardConstraints(scenario.input, repaired.output).hardConstraintViolations, 0);
+});
+
+test("a movable space blocker is shifted and the repaired candidate remains hard-valid", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_003, start: 11 * 60 + 40, end: 12 * 60, spaceId: 20 });
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  const repaired = candidates.find((candidate) => candidate.repaired && candidate.movedTaskIds.includes(9_003));
+  assert.ok(repaired);
+  assert.ok(diagnostics.conflictDetails.some((detail) => detail.violationCode === "SPACE_OVERLAP" && detail.spaceId === 20));
+  assert.equal(validateHardConstraints(scenario.input, repaired.output).hardConstraintViolations, 0);
+});
+
+test("locked blockers are not moved and expose a concrete repair reason", () => {
+  const scenario = buildScenario();
+  const target = scenario.baseline.plannedTasks.find((task) => task.taskId === 2_103)!;
+  target.assignedResources = [700];
+  scenario.input.planResourceItems?.push({ id: 700, resourceItemId: 9700, typeId: 99, typeCode: "EXCLUSIVE", name: "Locked rig", isAvailable: true } as any);
+  addAuxiliary(scenario, { id: 9_004, start: 12 * 60 + 20, end: 12 * 60 + 40, resources: [700] });
+  scenario.input.locks = [{ id: 44, planId: 40, taskId: 9_004, lockType: "time", lockedStart: "12:20", lockedEnd: "12:40" }];
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  assert.ok(diagnostics.rejectedReasons.includes("repair_blocked_by_locked_or_executed"));
+  assert.ok(diagnostics.conflictDetails.some((detail) => detail.lockedOrExecutedTaskIds.includes(9_004)
+    && detail.repairResult === "repair_blocked_by_locked_or_executed"));
+});
+
+test("repair never moves transport IN/OUT tasks", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_005, start: 11 * 60 + 40, end: 12 * 60, resources: [501], name: "Transport IN" });
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnosticsFor(scenario.input, scenario.baseline));
+  for (const candidate of candidates) {
+    assert.equal(candidate.output.plannedTasks.find((task) => task.taskId === 9_005)?.startPlanned, "11:40");
+  }
+});
+
+test("repair does not open a Main Stage gap", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_006, start: 11 * 60 + 40, end: 12 * 60, spaceId: 20 });
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnosticsFor(scenario.input, scenario.baseline));
+  assert.ok(candidates.length > 0);
+  assert.ok(candidates.every((candidate) => calculateOperationalMetrics(scenario.input, candidate.output).mainStageGapMinutes === 0));
+});
+
+test("bounded depth-two micro cascade resolves a simple chained conflict", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_007, start: 11 * 60 + 20, end: 11 * 60 + 40, spaceId: 20 });
+  addAuxiliary(scenario, { id: 9_008, start: 11 * 60 + 40, end: 12 * 60, spaceId: 20 });
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  const candidates = generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  assert.ok(candidates.some((candidate) => candidate.repaired && validateHardConstraints(scenario.input, candidate.output).hardValidationPassed));
+  assert.ok(diagnostics.repairCandidatesGenerated > 0);
+});
+
+test("a repaired lower-gap pipeline wins selection over the current baseline", () => {
+  const scenario = buildScenario();
+  addAuxiliary(scenario, { id: 9_009, start: 11 * 60 + 40, end: 12 * 60, resources: [501] });
+  const selected = runPipelineBuilderSelection(scenario.input, scenario.baseline, "operational_neighborhood");
+  assert.equal(selected.meta.pipelineAccepted, true);
+  assert.equal(selected.meta.pipelineRepairAccepted, true);
+  assert.match(String(selected.meta.candidateSelectionReason), /pipeline_builder selected: repaired (lower coach gap|lower coach split|better operational quality)/);
+});
+
+test("pipeline conflict diagnostics payload is capped", () => {
+  const scenario = buildScenario({ talentCount: 19 });
+  for (let index = 0; index < 12; index += 1) {
+    addAuxiliary(scenario, { id: 9_100 + index, start: 11 * 60 + 40 + index * 20, end: 12 * 60 + index * 20, spaceId: 20 });
+  }
+  const diagnostics = diagnosticsFor(scenario.input, scenario.baseline);
+  generatePipelineBuilderCandidates(scenario.input, scenario.baseline, diagnostics);
+  assert.ok(diagnostics.conflictDetails.length <= 10);
+  assert.ok(diagnostics.conflictDetails.every((detail) => detail.taskIds.length <= 6 && detail.taskNames.length <= 6));
 });
