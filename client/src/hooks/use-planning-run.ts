@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api, buildUrl } from "@shared/routes";
 import { getPlanningRunUiState } from "@shared/planning-run-state";
+import { hasActivePlanningContext, isAbortLikeError } from "@/lib/planning-recovery";
 
 export type PlanningRun = {
   id: number;
@@ -9,6 +10,7 @@ export type PlanningRun = {
   status:
     | "running"
     | "pending"
+    | "queued"
     | "optimizing"
     | "success"
     | "infeasible"
@@ -44,10 +46,16 @@ export function usePlanningRun(planId: number | null) {
         "GET",
         buildUrl(api.planningRuns.latestByPlan.path, { id: Number(planId) }),
       ),
+    retry: (failureCount, error) => isAbortLikeError(error) && failureCount < 5,
+    retryDelay: (attempt) => Math.min(750 * (2 ** attempt), 8_000),
     refetchInterval: (query) => {
       const run = query.state.data as PlanningRun | null | undefined;
-      return getPlanningRunUiState(run) === "active" ? 700 : false;
+      const hasPersistedContext = typeof window !== "undefined" && hasActivePlanningContext(Number(planId), window.localStorage);
+      return getPlanningRunUiState(run) === "active" || hasPersistedContext ? 700 : false;
     },
-    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: "always",
   });
 }

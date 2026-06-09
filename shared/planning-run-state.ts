@@ -5,6 +5,7 @@ export const PLANNING_RUN_TIMEOUT_MARGIN_MS = 30 * 1000;
 export const ACTIVE_PLANNING_RUN_STATUSES = new Set([
   "running",
   "pending",
+  "queued",
   "optimizing",
 ]);
 

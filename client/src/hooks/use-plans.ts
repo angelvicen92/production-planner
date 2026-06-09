@@ -7,6 +7,7 @@ import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+import { isAbortLikeError } from "@/lib/planning-recovery";
 
 export function usePlans() {
   return useQuery<PlanSummary[]>({
@@ -117,6 +118,10 @@ export function usePlan(id: number) {
       return { ...plan, dailyTasks };
     },
     enabled: !!id,
+    retry: (failureCount, error) => isAbortLikeError(error) && failureCount < 5,
+    retryDelay: (attempt) => Math.min(750 * (2 ** attempt), 8_000),
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: "always",
   });
 }
 

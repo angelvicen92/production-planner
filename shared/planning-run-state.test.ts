@@ -21,6 +21,10 @@ function run(overrides: Record<string, unknown> = {}) {
   };
 }
 
+test("queued runs remain recoverable and continue polling", () => {
+  assert.equal(getPlanningRunUiState(run({ status: "queued" }), now), "active");
+});
+
 test("a running run with zero pending work does not keep the UI active", () => {
   assert.equal(getPlanningRunUiState(run({ totalPending: 0 }), now), "no_work");
 });

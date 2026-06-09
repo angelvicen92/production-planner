@@ -77,3 +77,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 042 — 2026-06-08 20:15 — Pipeline Builder repair pass para conflictos de recursos/espacios
 - ID 043 — 2026-06-09 05:18 — Pipeline segment repair por cadena de talent y conflict details obligatorio
 - ID 044 — 2026-06-09 07:25 — Trazabilidad end-to-end de Pipeline Segment Repair
+
+- ID 045 — 2026-06-09 15:27 — Robustez de planificación y resource-lane intelligence para Pipeline Builder

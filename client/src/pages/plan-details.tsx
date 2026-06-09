@@ -39,6 +39,14 @@ import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
 import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
+import {
+  hasActivePlanningContext,
+  isAbortLikeError,
+  markPlanningReconnectContext,
+  persistActivePlanningRunId,
+  readActivePlanningRunId,
+  shouldShowFinalPlanLoadError,
+} from "@/lib/planning-recovery";
 
 import {
   Table,
@@ -697,7 +705,11 @@ export default function PlanDetailsPage() {
     refetch: refetchPlan,
   } = usePlan(id);
 
-  const planError = planQueryError ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.") : null;
+  const hasRecoverablePlanningContext = typeof window !== "undefined" && hasActivePlanningContext(id, window.localStorage);
+  const planError = planQueryError && shouldShowFinalPlanLoadError(planQueryError, hasRecoverablePlanningContext)
+    ? ((planQueryError as any)?.message ?? "No se pudo cargar el plan.")
+    : null;
+  const planReconnecting = Boolean(planQueryError) && !planError;
 
   const generatePlan = useGeneratePlan();
   const planningRunQ = usePlanningRun(id);
@@ -936,13 +948,15 @@ export default function PlanDetailsPage() {
   const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
-  const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(null);
+  const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(() => (
+    typeof window === "undefined" ? null : readActivePlanningRunId(id, window.localStorage)
+  ));
   const [dismissedPlanningRunId, setDismissedPlanningRunId] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     const value = Number(window.sessionStorage.getItem(`dismissed-planning-run:${id}`));
     return Number.isFinite(value) && value > 0 ? value : null;
   });
-  const [planningIssue, setPlanningIssue] = useState<{ kind: "stale" | "failed"; message: string } | null>(null);
+  const [planningIssue, setPlanningIssue] = useState<{ kind: "stale" | "failed" | "reconnecting"; message: string } | null>(null);
   const generationAbortControllerRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
   const [planningProgress, setPlanningProgress] = useState({ plannedCount: 0, totalCount: 0, percentage: 0 });
@@ -1499,6 +1513,7 @@ ${reasonMessage}` : message,
     }
 
     if (uiState === "active") {
+      persistActivePlanningRunId(id, runId, window.localStorage);
       setPlanningIssue(null);
       setPlanningInProgress(true);
       if (expectedPlanningRunId == null) setExpectedPlanningRunId(runId);
@@ -1520,6 +1535,7 @@ ${reasonMessage}` : message,
     }
     if (uiState === "active") return;
 
+    persistActivePlanningRunId(id, null, window.localStorage);
     setPlanningInProgress(false);
     setExpectedPlanningRunId(null);
     setPlanningIssue(null);
@@ -1726,16 +1742,16 @@ ${reasonMessage}` : message,
     setTimeLockDialog({ open: true, task, start, end });
   };
 
-  if (planLoading || planError) {
+  if (planLoading || planError || planReconnecting) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh] px-4">
           <div className="w-full max-w-xl space-y-3">
             <QueryGuard
-              isLoading={planLoading}
+              isLoading={planLoading || planReconnecting}
               isError={Boolean(planError)}
               error={planQueryError}
-              loadingText="Cargando plan..."
+              loadingText={planReconnecting ? "Planificación en curso. Reconectando..." : "Cargando plan..."}
               errorTitle="No se pudo cargar el plan."
               onRetry={() => {
                 queryClient.cancelQueries({ queryKey: planQueryKey(id) });
@@ -1775,7 +1791,6 @@ ${reasonMessage}` : message,
     setEditOpen(true);
   };
 
-  const isAbortLikeError = (err: any) => err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("aborted");
 
   const openDiagnosticDialog = (source: any) => {
     const payload = source?.payload ?? source ?? {};
@@ -1854,6 +1869,7 @@ ${reasonMessage}` : message,
     setPlanningIssue(null);
     setPlanningInProgress(true);
     setExpectedPlanningRunId(null);
+    markPlanningReconnectContext(id, window.localStorage);
     const totalToPlan = ((plan?.dailyTasks ?? []) as any[]).filter((task: any) => {
       const taskId = Number(task?.id);
       if (String(task?.status ?? "pending") !== "pending") return false;
@@ -1862,6 +1878,7 @@ ${reasonMessage}` : message,
       return !timeLockedTaskIds.has(taskId) && !fullLockedTaskIds.has(taskId);
     }).length;
     setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 0 });
+    let reconnectAfterAbort = false;
 
       try {
         // ✅ El botón verde siempre fuerza motor v3 para este plan
@@ -1878,7 +1895,9 @@ ${reasonMessage}` : message,
           timeLimitMs: planningTimeLimitSec * 1000,
           signal: generationAbortControllerRef.current.signal,
         });
-      setExpectedPlanningRunId(Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null);
+      const completedRunId = Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null;
+      setExpectedPlanningRunId(completedRunId);
+      persistActivePlanningRunId(id, completedRunId, window.localStorage);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
       await refetchPlan();
@@ -1897,13 +1916,18 @@ ${reasonMessage}` : message,
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (isAbortLikeError(err)) {
-        toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
+        reconnectAfterAbort = true;
+        const recoveredRun: any = queryClient.getQueryData(["planning-run", id]);
+        const recoveredRunId = Number.isFinite(Number(recoveredRun?.id)) ? Number(recoveredRun.id) : expectedPlanningRunId;
+        persistActivePlanningRunId(id, recoveredRunId, window.localStorage);
+        setExpectedPlanningRunId(recoveredRunId);
+        setPlanningIssue({
+          kind: "reconnecting",
+          message: "La planificación sigue ejecutándose. Puedes esperar o volver a intentar cargar.",
+        });
+        setPlanningInProgress(true);
+        toast({ title: "Reconectando con la planificación..." });
         await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-        const refreshed: any = queryClient.getQueryData(planQueryKey(id));
-        const hasPlanned = Array.isArray(refreshed?.dailyTasks) && refreshed.dailyTasks.some((t: any) => t?.startPlanned && t?.endPlanned);
-        if (hasPlanned) {
-          toast({ title: "Planificación completada", description: "Se recuperó el estado tras refrescar." });
-        }
       } else if (err?.reasons) {
         setErrorDialog({ open: true, reasons: err.reasons, diagnostic: null });
       } else {
@@ -1920,9 +1944,12 @@ ${reasonMessage}` : message,
       }
     } finally {
       generationAbortControllerRef.current = null;
-      if (!cancelledByUserRef.current) {
-        setPlanningInProgress(false);
-        setExpectedPlanningRunId(null);
+      if (!cancelledByUserRef.current && !reconnectAfterAbort) {
+        const activeRun = queryClient.getQueryData<any>(["planning-run", id]);
+        if (!activeRun || !["running", "pending", "queued", "optimizing"].includes(String(activeRun.status))) {
+          setPlanningInProgress(false);
+          setExpectedPlanningRunId(null);
+        }
       }
     }
   };
@@ -4395,7 +4422,7 @@ ${reasonMessage}` : message,
               <DialogTitle className="flex items-center gap-2">
                 {planningIssue ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Loader2 className="h-4 w-4 animate-spin" />}
                 {planningIssue
-                  ? planningIssue.kind === "stale" ? "Generación bloqueada" : "No se pudo completar la generación"
+                  ? planningIssue.kind === "stale" ? "Generación bloqueada" : planningIssue.kind === "reconnecting" ? "Reconectando con la planificación..." : "No se pudo completar la generación"
                   : `Planificando… ${planningProgress.percentage}%`}
               </DialogTitle>
               <DialogDescription>
@@ -4426,14 +4453,15 @@ ${reasonMessage}` : message,
                 <p className="text-xs text-muted-foreground">Puedes cancelar sin borrar una planificación válida ya completada.</p>
               </>}
               {planningIssue?.kind === "stale" && <p className="text-sm">Puedes cancelar y reintentar.</p>}
+              {planningIssue?.kind === "reconnecting" && <p className="text-sm">Planificación en curso. Reconectando...</p>}
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
               {planningIssue && <Button variant="outline" onClick={() => unlockPlanningModal(planningRunQ.data?.id)}>Cerrar</Button>}
               <Button variant={planningIssue ? "outline" : "destructive"} onClick={() => void cancelPlanningGeneration()}>
                 Cancelar generación
               </Button>
-              {planningIssue && <Button onClick={() => { unlockPlanningModal(planningRunQ.data?.id); void handleGenerate(); }} disabled={generatePlan.isPending}>
-                Reintentar
+              {planningIssue && <Button onClick={() => { void planningRunQ.refetch(); void refetchPlan(); }} disabled={planningRunQ.isFetching}>
+                Reintentar cargar
               </Button>}
             </DialogFooter>
           </DialogContent>

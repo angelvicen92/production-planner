@@ -98,6 +98,15 @@ const output: EngineOutput = {
     pipelineSegmentRepairStrategiesTried: ["move_whole_segment_by_offset"],
     pipelineSegmentRepairMovedTalentNames: ["Lucía"],
     pipelineSegmentRepairRejectedReasons: [],
+    pipelineLaneRepairAttempted: true,
+    pipelineLaneRepairCandidatesGenerated: 1,
+    pipelineLaneRepairAccepted: true,
+    pipelineLaneRepairReason: "lane_repair_candidate_generated",
+    pipelineLaneRepairRejectedReasons: [],
+    pipelineAlternativeLaneAttempted: true,
+    pipelineAlternativeLaneCandidatesGenerated: 0,
+    pipelineAlternativeLaneAccepted: false,
+    pipelineAlternativeLaneRejectedReasons: ["alternative_lane_unavailable_missing_config"],
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -151,6 +160,11 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairCandidatesGenerated, 1);
   assert.equal(diagnostics.engineMetadata.pipelineSegmentRepairAccepted, true);
   assert.deepEqual(diagnostics.engineMetadata.pipelineSegmentRepairMovedTalentNames, ["Lucía"]);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneRepairAttempted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneRepairCandidatesGenerated, 1);
+  assert.equal(diagnostics.engineMetadata.pipelineLaneRepairAccepted, true);
+  assert.equal(diagnostics.engineMetadata.pipelineAlternativeLaneAttempted, true);
+  assert.deepEqual(diagnostics.engineMetadata.pipelineAlternativeLaneRejectedReasons, ["alternative_lane_unavailable_missing_config"]);
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -222,6 +236,15 @@ const output: EngineOutput = {
     "pipelineSegmentRepairStrategiesTried",
     "pipelineSegmentRepairMovedTalentNames",
     "pipelineSegmentRepairRejectedReasons",
+    "pipelineLaneRepairAttempted",
+    "pipelineLaneRepairCandidatesGenerated",
+    "pipelineLaneRepairAccepted",
+    "pipelineLaneRepairReason",
+    "pipelineLaneRepairRejectedReasons",
+    "pipelineAlternativeLaneAttempted",
+    "pipelineAlternativeLaneCandidatesGenerated",
+    "pipelineAlternativeLaneAccepted",
+    "pipelineAlternativeLaneRejectedReasons",
   ];
   const diagnostics = buildRunDiagnostics(input, { ...output, v3Meta: undefined });
   const serializedMetadata = JSON.parse(JSON.stringify(diagnostics.engineMetadata));
