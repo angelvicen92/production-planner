@@ -8,7 +8,7 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "test": "tsx --test \"engine/**/*.spec.ts\"",
+    "test": "tsx --test \"engine/**/*.spec.ts\" \"server/**/*.spec.ts\"",
     "test:engine": "npm run test:engine:full",
     "test:engine:quick": "tsx --test engine/v3/phaseA.spec.ts engine/v3/limitedBacktracking.spec.ts engine/v3/operationalNeighborhoods.spec.ts engine/v3/coachDetection.spec.ts engine/v3/mainStageCpSatPilot.spec.ts engine/v3/solutionScoring.spec.ts engine/v3/pipelineBuilder.spec.ts engine/v3/validateCandidate.spec.ts engine/v3/hardValidation.spec.ts engine/v3/runDiagnostics.spec.ts engine/v3/resourceBundleValidation.spec.ts engine/v3/mealScheduler.spec.ts",
     "test:engine:full": "tsx --test \"engine/**/*.spec.ts\"",
