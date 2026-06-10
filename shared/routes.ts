@@ -32,6 +32,7 @@ export const updatePlanSchema = z
     .string()
     .regex(/^\d{2}:\d{2}$/)
     .optional(),
+  mealMode: z.enum(["global_hard_break", "flexible_meal_window"]).optional(),
 
   contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
   contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
@@ -850,6 +851,7 @@ export const api = {
           id: z.number(),
           mealStart: z.string(),
           mealEnd: z.string(),
+          mealMode: z.enum(["global_hard_break", "flexible_meal_window"]),
           contestantMealDurationMinutes: z.number(),
           contestantMealMaxSimultaneous: z.number(),
           spaceMealBreakMinutes: z.number(),
@@ -879,6 +881,7 @@ export const api = {
             .string()
             .regex(/^\d{2}:\d{2}$/)
             .optional(),
+          mealMode: z.enum(["global_hard_break", "flexible_meal_window"]).optional(),
           contestantMealDurationMinutes: z
             .number()
             .int()

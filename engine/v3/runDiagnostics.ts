@@ -102,6 +102,18 @@ export interface EngineRunDiagnostics {
     pipelineAlternativeLaneCandidatesGenerated: number;
     pipelineAlternativeLaneAccepted: boolean;
     pipelineAlternativeLaneRejectedReasons: string[];
+    mealMode: "global_hard_break" | "flexible_meal_window";
+    mealModeReason: string;
+    mealWindowStart: string | null;
+    mealWindowEnd: string | null;
+    mealDurationMinutes: number | null;
+    mealSchedulerAttempted: boolean;
+    mealAssignmentsGenerated: number;
+    mealSchedulerAccepted: boolean;
+    mealSchedulerReason: string;
+    mealSchedulerRejectedReasons: string[];
+    mealBlockingConflicts: number;
+    mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -222,6 +234,18 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineStableTasks: (meta?.pipelineStableTasks ?? []).slice(0, 50),
       pipelineFeederOutcomes: uniqueCompactReasons(meta?.pipelineFeederOutcomes ?? []),
       ...pipelineMetadata,
+      mealMode: meta?.mealMode ?? "global_hard_break",
+      mealModeReason: meta?.mealModeReason ?? "meal_mode_inferred_legacy_global_break",
+      mealWindowStart: meta?.mealWindowStart ?? null,
+      mealWindowEnd: meta?.mealWindowEnd ?? null,
+      mealDurationMinutes: meta?.mealDurationMinutes ?? null,
+      mealSchedulerAttempted: meta?.mealSchedulerAttempted ?? false,
+      mealAssignmentsGenerated: meta?.mealAssignmentsGenerated ?? 0,
+      mealSchedulerAccepted: meta?.mealSchedulerAccepted ?? false,
+      mealSchedulerReason: meta?.mealSchedulerReason ?? "generator_not_invoked",
+      mealSchedulerRejectedReasons: uniqueCompactReasons(meta?.mealSchedulerRejectedReasons ?? []),
+      mealBlockingConflicts: meta?.mealBlockingConflicts ?? 0,
+      mealMovedAssignments: (meta?.mealMovedAssignments ?? []).slice(0, 50),
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

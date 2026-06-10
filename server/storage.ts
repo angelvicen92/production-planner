@@ -318,14 +318,14 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end, space_meal_break_minutes")
+      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
 
     const { data: settings, error: settingsErr } = await supabaseAdmin
       .from("program_settings")
-      .select("space_meal_break_minutes")
+      .select("meal_mode, space_meal_break_minutes")
       .eq("id", 1)
       .maybeSingle();
     if (settingsErr) throw settingsErr;
@@ -342,6 +342,7 @@ export class SupabaseStorage implements IStorage {
 
     const mealStart = String((plan as any)?.meal_start ?? "12:00");
     const mealEnd = String((plan as any)?.meal_end ?? "16:00");
+    const mealMode = String((plan as any)?.meal_mode ?? (settings as any)?.meal_mode ?? "global_hard_break");
 
     const { data: spaces } = await supabaseAdmin
       .from("spaces")
@@ -367,7 +368,7 @@ export class SupabaseStorage implements IStorage {
     }
 
     const toInsert: any[] = [];
-    for (const s of spaces ?? []) {
+    for (const s of mealMode === "global_hard_break" ? (spaces ?? []) : []) {
       const sid = Number((s as any)?.id);
       if (!Number.isFinite(sid) || existingSpace.has(sid)) continue;
       toInsert.push({
@@ -1112,6 +1113,7 @@ export class SupabaseStorage implements IStorage {
         work_end: plan.workEnd,
         meal_start: plan.mealStart,
         meal_end: plan.mealEnd,
+        meal_mode: plan.mealMode ?? "flexible_meal_window",
 
         contestant_meal_duration_minutes:
           plan.contestantMealDurationMinutes ?? 75,
@@ -2285,6 +2287,7 @@ export class SupabaseStorage implements IStorage {
     if (patch.workEnd) safe.work_end = patch.workEnd;
     if (patch.mealStart) safe.meal_start = patch.mealStart;
     if (patch.mealEnd) safe.meal_end = patch.mealEnd;
+    if (patch.mealMode === "global_hard_break" || patch.mealMode === "flexible_meal_window") safe.meal_mode = patch.mealMode;
     if (typeof patch.camerasAvailable === "number")
       safe.cameras_available = patch.camerasAvailable;
     if (typeof patch.contestantMealDurationMinutes === "number")

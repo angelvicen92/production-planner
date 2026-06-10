@@ -16,6 +16,7 @@ type ProgramSettings = {
   id: number;
   mealStart: string;
   mealEnd: string;
+  mealMode: "global_hard_break" | "flexible_meal_window";
   contestantMealDurationMinutes: number;
   contestantMealMaxSimultaneous: number;
   spaceMealBreakMinutes: number;
@@ -128,6 +129,17 @@ export function GeneralProgramSettings() {
                 setDraft((p) => (p ? { ...p, mealEnd: e.target.value } : p))
               }
             />
+          </div>
+
+          <div className="col-span-2">
+            <Label>Modo de comida</Label>
+            <Select value={draft?.mealMode ?? "flexible_meal_window"} onValueChange={(value: "global_hard_break" | "flexible_meal_window") => setDraft((p) => p ? { ...p, mealMode: value } : p)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="flexible_meal_window">Ventana flexible y comidas escalonadas</SelectItem>
+                <SelectItem value="global_hard_break">Pausa global dura simultánea</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -279,6 +291,7 @@ export function GeneralProgramSettings() {
               update.mutate({
                 mealStart: draft.mealStart,
                 mealEnd: draft.mealEnd,
+                mealMode: draft.mealMode,
                 contestantMealDurationMinutes:
                   draft.contestantMealDurationMinutes,
                 contestantMealMaxSimultaneous:

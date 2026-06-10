@@ -125,6 +125,7 @@ import { useElapsedSince } from "@/hooks/use-elapsed-since";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { estimatedPlanningProgress, planningPhaseSteps } from "@shared/planning-progress";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { getPlanningRunUiState } from "@shared/planning-run-state";
@@ -134,12 +135,19 @@ function getRunProgress(args: {
   totalPending: number;
   status?: string | null;
   phaseProgressPct?: number | null;
+  phase?: string | null;
+  phaseStartedAt?: string | null;
 }) {
   const countPct = args.totalPending > 0
     ? Math.floor((args.plannedCount / args.totalPending) * 100)
     : 0;
-  const phasePct = Number(args.phaseProgressPct);
-  const pct = Number.isFinite(phasePct) ? Math.max(countPct, phasePct) : countPct;
+  const phasePct = estimatedPlanningProgress({
+    phase: args.phase,
+    persistedPercent: args.phaseProgressPct,
+    status: args.status,
+    phaseStartedAt: args.phaseStartedAt,
+  });
+  const pct = Math.max(countPct, phasePct);
 
   return {
     plannedCount: args.plannedCount,
@@ -160,6 +168,7 @@ const PLANNING_PHASE_LABELS: Record<string, string> = {
   pipeline_builder: "Construyendo pipelines",
   pipeline_repair: "Reparando pipelines",
   lane_only_repair: "Reparando carriles exclusivos",
+  meal_scheduling: "Programando comidas",
   scoring_candidates: "Comparando candidatos",
   persisting_result: "Guardando resultado",
   success: "Completado",
@@ -1544,7 +1553,7 @@ ${reasonMessage}` : message,
     if (!isExpectedRun) return;
 
     if (Number.isFinite(run.plannedCount) && Number.isFinite(run.totalPending)) {
-      setPlanningProgress(getRunProgress({ plannedCount: Number(run.plannedCount), totalPending: Number(run.totalPending), status: run.status, phaseProgressPct: run.progressPct }));
+      setPlanningProgress(getRunProgress({ plannedCount: Number(run.plannedCount), totalPending: Number(run.totalPending), status: run.status, phaseProgressPct: run.progressPct, phase: run.phase, phaseStartedAt: run.phaseStartedAt }));
     }
 
     if (uiState === "stale") {
@@ -1580,7 +1589,7 @@ ${reasonMessage}` : message,
       return;
     }
 
-    const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status, phaseProgressPct: run.progressPct });
+    const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status, phaseProgressPct: run.progressPct, phase: run.phase, phaseStartedAt: run.phaseStartedAt });
     const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
     toast({
       title: finalProgress.percentage === 100 ? "Planificación completa (100%)" : `Planificación parcial (${finalProgress.percentage}%)`,
@@ -1897,7 +1906,7 @@ ${reasonMessage}` : message,
       if (!Number.isFinite(taskId) || taskId <= 0) return false;
       return !timeLockedTaskIds.has(taskId) && !fullLockedTaskIds.has(taskId);
     }).length;
-    setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 0 });
+    setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 1 });
     let reconnectAfterAbort = false;
 
       try {
@@ -4456,6 +4465,19 @@ ${reasonMessage}` : message,
             <div className="space-y-3">
               {!planningIssue && <>
                 <Progress value={planningProgress.percentage} className="h-2" />
+                <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border p-2" data-testid="planning-phase-stepper">
+                  {planningPhaseSteps(planningRunQ.data?.phase, planningRunQ.data?.status).map((step) => (
+                    <div key={step.id} className="flex items-center gap-2 text-xs">
+                      <span className={step.status === "completed" ? "text-emerald-600" : step.status === "active" ? "text-primary" : step.status === "failed" ? "text-destructive" : "text-muted-foreground"}>
+                        {step.status === "completed" ? "✓" : step.status === "active" ? "●" : step.status === "failed" ? "×" : "○"}
+                      </span>
+                      <span className={step.status === "active" ? "font-medium" : ""}>{step.label}</span>
+                      {step.status === "active" && (Number(planningRunQ.data?.candidatesEvaluated ?? 0) > 0 || Number(planningRunQ.data?.candidatesGenerated ?? 0) > 0) && (
+                        <span className="ml-auto text-muted-foreground">{Number(planningRunQ.data?.candidatesEvaluated ?? 0)}/{Number(planningRunQ.data?.candidatesGenerated ?? 0)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {PLANNING_PHASE_LABELS[String(planningRunQ.data?.phase ?? "")] ?? planningRunQ.data?.phase ?? "Procesando"}
                   {planningRunQ.data?.lastTaskName ? ` · Última: ${planningRunQ.data.lastTaskName}` : ""}

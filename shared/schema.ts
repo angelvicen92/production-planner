@@ -18,6 +18,7 @@ export const plans = pgTable("plans", {
   // Ventana global aceptable de comida (por plan)
   mealStart: text("meal_start").notNull(), // HH:mm
   mealEnd: text("meal_end").notNull(), // HH:mm
+  mealMode: text("meal_mode").notNull().default("flexible_meal_window"),
 
   // ✅ Comida concursantes (por plan)
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
@@ -51,6 +52,11 @@ export const planningRuns = pgTable("planning_runs", {
   finishedAt: timestamp("finished_at", { withTimezone: true }),
   phase: text("phase"),
   phaseProgressPct: integer("phase_progress_pct").notNull().default(0),
+  progressHistory: jsonb("progress_history").$type<Array<Record<string, unknown>>>().notNull().default([]),
+  lastProgressAt: timestamp("last_progress_at", { withTimezone: true }),
+  candidatesEvaluated: integer("candidates_evaluated").notNull().default(0),
+  candidatesGenerated: integer("candidates_generated").notNull().default(0),
+  currentBestReason: text("current_best_reason"),
   lastTaskId: integer("last_task_id"),
   lastTaskName: text("last_task_name"),
   plannedTasks: integer("planned_tasks"),
@@ -73,6 +79,7 @@ export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),
   mealStart: text("meal_start").notNull(),
   mealEnd: text("meal_end").notNull(),
+  mealMode: text("meal_mode").notNull().default("flexible_meal_window"),
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
   spaceMealBreakMinutes: integer("space_meal_break_minutes").notNull().default(45),
