@@ -77,6 +77,20 @@ export interface EngineRunDiagnostics {
     segmentSolverTaskCount: number | null;
     segmentSolverTalentNames: string[];
     segmentSolverResourceNames: string[];
+    segmentSolverCriticalGapStart: string | null;
+    segmentSolverCriticalGapEnd: string | null;
+    segmentSolverCriticalGapMinutes: number | null;
+    segmentSolverLeftBlockTalentNames: string[];
+    segmentSolverRightBlockTalentNames: string[];
+    segmentSolverMicroSegmentsBuilt: number;
+    segmentSolverMicroSegmentStrategiesTried: string[];
+    segmentSolverMicroSegmentTaskCounts: number[];
+    segmentSolverMicroSegmentRejectedReasons: string[];
+    segmentSolverAssignmentsExplored: number;
+    segmentSolverValidCandidates: number;
+    segmentSolverBestCandidateMovedTaskIds: number[];
+    segmentSolverBestCandidateMovedTalentNames: string[];
+    segmentSolverBestCandidateReason: string | null;
     segmentSolverBestBefore: Record<string, number>;
     segmentSolverBestAfter: Record<string, number>;
     segmentSolverImprovement: string | null;
@@ -270,6 +284,20 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverTaskCount: meta?.segmentSolverTaskCount ?? null,
       segmentSolverTalentNames: (meta?.segmentSolverTalentNames ?? []).slice(0, 25),
       segmentSolverResourceNames: (meta?.segmentSolverResourceNames ?? []).slice(0, 25),
+      segmentSolverCriticalGapStart: compactText(meta?.segmentSolverCriticalGapStart),
+      segmentSolverCriticalGapEnd: compactText(meta?.segmentSolverCriticalGapEnd),
+      segmentSolverCriticalGapMinutes: meta?.segmentSolverCriticalGapMinutes ?? null,
+      segmentSolverLeftBlockTalentNames: (meta?.segmentSolverLeftBlockTalentNames ?? []).slice(0, 4),
+      segmentSolverRightBlockTalentNames: (meta?.segmentSolverRightBlockTalentNames ?? []).slice(0, 4),
+      segmentSolverMicroSegmentsBuilt: meta?.segmentSolverMicroSegmentsBuilt ?? 0,
+      segmentSolverMicroSegmentStrategiesTried: (meta?.segmentSolverMicroSegmentStrategiesTried ?? []).slice(0, 4),
+      segmentSolverMicroSegmentTaskCounts: (meta?.segmentSolverMicroSegmentTaskCounts ?? []).slice(0, 4),
+      segmentSolverMicroSegmentRejectedReasons: uniqueCompactReasons(meta?.segmentSolverMicroSegmentRejectedReasons ?? []),
+      segmentSolverAssignmentsExplored: meta?.segmentSolverAssignmentsExplored ?? 0,
+      segmentSolverValidCandidates: meta?.segmentSolverValidCandidates ?? 0,
+      segmentSolverBestCandidateMovedTaskIds: (meta?.segmentSolverBestCandidateMovedTaskIds ?? []).slice(0, 18),
+      segmentSolverBestCandidateMovedTalentNames: (meta?.segmentSolverBestCandidateMovedTalentNames ?? []).slice(0, 4),
+      segmentSolverBestCandidateReason: compactText(meta?.segmentSolverBestCandidateReason),
       segmentSolverBestBefore: meta?.segmentSolverBestBefore ?? {},
       segmentSolverBestAfter: meta?.segmentSolverBestAfter ?? {},
       segmentSolverImprovement: compactText(meta?.segmentSolverImprovement),

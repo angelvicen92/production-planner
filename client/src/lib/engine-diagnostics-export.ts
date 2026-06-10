@@ -220,6 +220,20 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverTaskCount: number | null;
     segmentSolverTalentNames: CompactJsonValue;
     segmentSolverResourceNames: CompactJsonValue;
+    segmentSolverCriticalGapStart: string | null;
+    segmentSolverCriticalGapEnd: string | null;
+    segmentSolverCriticalGapMinutes: number | null;
+    segmentSolverLeftBlockTalentNames: CompactJsonValue;
+    segmentSolverRightBlockTalentNames: CompactJsonValue;
+    segmentSolverMicroSegmentsBuilt: number;
+    segmentSolverMicroSegmentStrategiesTried: CompactJsonValue;
+    segmentSolverMicroSegmentTaskCounts: CompactJsonValue;
+    segmentSolverMicroSegmentRejectedReasons: CompactJsonValue;
+    segmentSolverAssignmentsExplored: number;
+    segmentSolverValidCandidates: number;
+    segmentSolverBestCandidateMovedTaskIds: CompactJsonValue;
+    segmentSolverBestCandidateMovedTalentNames: CompactJsonValue;
+    segmentSolverBestCandidateReason: string | null;
     segmentSolverBestBefore: CompactJsonValue;
     segmentSolverBestAfter: CompactJsonValue;
     segmentSolverImprovement: string | null;
@@ -370,6 +384,20 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverTaskCount: optionalNumber(metadata.segmentSolverTaskCount),
       segmentSolverTalentNames: compactJsonValue(metadata.segmentSolverTalentNames) ?? [],
       segmentSolverResourceNames: compactJsonValue(metadata.segmentSolverResourceNames) ?? [],
+      segmentSolverCriticalGapStart: optionalString(metadata.segmentSolverCriticalGapStart),
+      segmentSolverCriticalGapEnd: optionalString(metadata.segmentSolverCriticalGapEnd),
+      segmentSolverCriticalGapMinutes: optionalNumber(metadata.segmentSolverCriticalGapMinutes),
+      segmentSolverLeftBlockTalentNames: compactJsonValue(metadata.segmentSolverLeftBlockTalentNames) ?? [],
+      segmentSolverRightBlockTalentNames: compactJsonValue(metadata.segmentSolverRightBlockTalentNames) ?? [],
+      segmentSolverMicroSegmentsBuilt: optionalNumber(metadata.segmentSolverMicroSegmentsBuilt) ?? 0,
+      segmentSolverMicroSegmentStrategiesTried: compactJsonValue(metadata.segmentSolverMicroSegmentStrategiesTried) ?? [],
+      segmentSolverMicroSegmentTaskCounts: compactJsonValue(metadata.segmentSolverMicroSegmentTaskCounts) ?? [],
+      segmentSolverMicroSegmentRejectedReasons: compactJsonValue(metadata.segmentSolverMicroSegmentRejectedReasons) ?? [],
+      segmentSolverAssignmentsExplored: optionalNumber(metadata.segmentSolverAssignmentsExplored) ?? 0,
+      segmentSolverValidCandidates: optionalNumber(metadata.segmentSolverValidCandidates) ?? 0,
+      segmentSolverBestCandidateMovedTaskIds: compactJsonValue(metadata.segmentSolverBestCandidateMovedTaskIds) ?? [],
+      segmentSolverBestCandidateMovedTalentNames: compactJsonValue(metadata.segmentSolverBestCandidateMovedTalentNames) ?? [],
+      segmentSolverBestCandidateReason: optionalString(metadata.segmentSolverBestCandidateReason),
       segmentSolverBestBefore: compactJsonValue(metadata.segmentSolverBestBefore) ?? {},
       segmentSolverBestAfter: compactJsonValue(metadata.segmentSolverBestAfter) ?? {},
       segmentSolverImprovement: optionalString(metadata.segmentSolverImprovement),

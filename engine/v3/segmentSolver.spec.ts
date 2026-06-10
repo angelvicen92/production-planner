@@ -3,7 +3,7 @@ import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { validateHardConstraints } from "./hardValidation";
-import { buildCriticalCoachSegments, runSegmentSolver } from "./segmentSolver";
+import { buildCoachMicroSegments, buildCriticalCoachSegments, findCriticalCoachGap, runSegmentSolver } from "./segmentSolver";
 import { runSegmentSolverSelection } from "./index";
 
 const baseInput = (overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
@@ -128,4 +128,64 @@ test("segment solver timeout is diagnostic and returns a valid best-so-far plan"
   assert.equal(result.meta.segmentSolverReason, "segment_solver_timeout");
   assert.ok(result.meta.segmentSolverRejectedReasons.includes("segment_candidate_timeout"));
   assert.equal(validateHardConstraints(input, result.output).hardValidationPassed, true);
+});
+
+
+test("findCriticalCoachGap reports the actual largest coach gap and adjacent blocks", () => {
+  const gap = findCriticalCoachGap(baseInput(), baseOutput(), 9001);
+  assert.ok(gap);
+  assert.equal(gap.gapStart, 9 * 60 + 30);
+  assert.equal(gap.gapEnd, 13 * 60);
+  assert.equal(gap.gapMinutes, 210);
+  assert.deepEqual(gap.leftBlockTaskIds, [1]);
+  assert.deepEqual(gap.rightBlockTaskIds, [2]);
+  assert.deepEqual(gap.leftBlockTalentNames, ["Talent A"]);
+  assert.deepEqual(gap.rightBlockTalentNames, ["Talent B"]);
+});
+
+test("bridge microsegment stays surgical and under the 18 task ceiling", () => {
+  const input = baseInput();
+  const output = baseOutput();
+  const gap = findCriticalCoachGap(input, output, 9001);
+  assert.ok(gap);
+  const built = buildCoachMicroSegments(input, output, gap);
+  const bridge = built.segments.find((segment) => segment.strategy === "bridge");
+  assert.ok(bridge);
+  assert.ok(bridge.taskIds.length <= 18);
+  assert.ok(bridge.movableTaskIds.length <= 14);
+  assert.ok(bridge.talentIds.length <= 4);
+});
+
+test("wide segment overflow falls back to real microsegments instead of aborting", () => {
+  const extraTasks = Array.from({ length: 26 }, (_, index) => ({
+    id: 100 + index, planId: 52, templateId: 100 + index, templateName: `Prep ${index}`,
+    zoneId: 2, spaceId: 40, contestantId: 1, contestantName: "Talent A", status: "pending", durationOverrideMin: 5,
+  }));
+  const extraPlanned = extraTasks.map((task, index) => {
+    const start = 9 * 60 + 30 + index * 5;
+    const format = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+    return { taskId: task.id, startPlanned: format(start), endPlanned: format(start + 5), assignedResources: [] };
+  });
+  const input = baseInput({ tasks: [...baseInput().tasks, ...extraTasks] });
+  const output = baseOutput();
+  output.plannedTasks = [...(output.plannedTasks ?? []), ...extraPlanned];
+  const result = runSegmentSolver(input, output, { timeoutMs: 100 });
+  assert.ok((result.meta.segmentSolverTaskCount ?? 0) > 25);
+  assert.ok(result.meta.segmentSolverMicroSegmentsBuilt > 0);
+  assert.ok(result.meta.segmentSolverMicroSegmentTaskCounts.every((count) => count <= 18));
+  assert.notEqual(result.meta.segmentSolverReason, "segment_too_large");
+  assert.ok(result.meta.segmentSolverRejectedReasons.includes("wide_segment_too_large"));
+});
+
+test("left and right surgical strategies explore candidates and emit complete diagnostics", () => {
+  const result = runSegmentSolver(baseInput(), baseOutput(), { timeoutMs: 500 });
+  assert.ok(result.meta.segmentSolverMicroSegmentStrategiesTried.includes("left_shift_right_block"));
+  assert.ok(result.meta.segmentSolverMicroSegmentStrategiesTried.includes("right_shift_left_block"));
+  assert.ok(result.meta.segmentSolverAssignmentsExplored > 0);
+  assert.ok(result.meta.segmentSolverValidCandidates > 0);
+  assert.equal(result.meta.segmentSolverCriticalGapStart, "09:30");
+  assert.equal(result.meta.segmentSolverCriticalGapEnd, "13:00");
+  assert.equal(result.meta.segmentSolverCriticalGapMinutes, 210);
+  assert.ok(result.meta.segmentSolverBestCandidateMovedTaskIds.length > 0);
+  assert.ok(result.meta.segmentSolverBestCandidateReason);
 });
