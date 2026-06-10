@@ -90,3 +90,31 @@ test("candidate validation exceptions reject the slot without crashing the sched
   assert.equal(scheduled.diagnostics.mealSchedulerAccepted, false);
   assert.ok(scheduled.diagnostics.mealSchedulerRejectedReasons.includes("meal_candidate_validation_exception"));
 });
+
+test("rejected meal scheduling is transactional and separates attempted from accepted moves", () => {
+  const meals = [
+    task(10, { templateName: "COMIDA", breakKind: "space_meal", spaceId: 10, durationOverrideMin: 30 }),
+    task(11, { templateName: "COMIDA", breakKind: "space_meal", spaceId: 11, durationOverrideMin: 30 }),
+  ];
+  const original = output([
+    { taskId: 10, startPlanned: "13:00", endPlanned: "13:30" },
+    { taskId: 11, startPlanned: "13:00", endPlanned: "13:30" },
+  ]);
+  let validations = 0;
+  const scheduled = scheduleFlexibleMeals(
+    input({ mealMode: "flexible_meal_window", mealTaskTemplateName: "COMIDA", tasks: meals }),
+    original,
+    { validateHardConstraints: (engineInput, candidate) => {
+      validations += 1;
+      if (validations > 1) throw new Error("reject second meal");
+      return validateHardConstraints(engineInput, candidate);
+    } },
+  );
+
+  assert.equal(scheduled.diagnostics.mealSchedulerAccepted, false);
+  assert.deepEqual(scheduled.output.plannedTasks, original.plannedTasks);
+  assert.deepEqual(scheduled.diagnostics.mealMovedAssignments, []);
+  assert.deepEqual(scheduled.diagnostics.mealAcceptedMoves, []);
+  assert.ok(scheduled.diagnostics.mealAttemptedMoves.length > 0);
+  assert.ok(scheduled.diagnostics.mealRejectedMoves.length <= 25);
+});

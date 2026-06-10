@@ -405,7 +405,7 @@ console.log("engine/v3/runDiagnostics.spec.ts: OK");
         mealCanMove: true,
         mealMoveAttempted: true,
         mealMoveResult: "alternative_slot_checked",
-        mealAlternativeSlotsChecked: 9,
+        mealAlternativeSlotsChecked: Array.from({ length: 12 }, (_, index) => ({ taskId: 1, start: `13:${String(index * 5).padStart(2, "0")}`, end: `13:${String(index * 5 + 5).padStart(2, "0")}`, result: "checked" })),
         repairAttempted: true,
         repairStrategy: "meal_aware_lane_repair",
         repairResult: "alternative_slot_checked",
@@ -417,5 +417,5 @@ console.log("engine/v3/runDiagnostics.spec.ts: OK");
   assert.equal(detail.mealMode, "flexible_meal_window");
   assert.equal(detail.mealCanMove, true);
   assert.equal(detail.mealMoveAttempted, true);
-  assert.equal(detail.mealAlternativeSlotsChecked, 9);
+  assert.equal(detail.mealAlternativeSlotsChecked.length, 10);
 }

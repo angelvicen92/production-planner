@@ -159,6 +159,12 @@ type BacktrackingMeta = {
   pipelineMovedTasks?: number[];
   pipelineStableTasks?: number[];
   pipelineFeederOutcomes?: string[];
+  mealPrePipelineAttempted?: boolean;
+  mealPrePipelineCandidatesGenerated?: number;
+  mealPrePipelineAccepted?: boolean;
+  mealPrePipelineReason?: string;
+  mealPrePipelineRejectedReasons?: string[];
+  mealSchedulerPhase?: "pre_pipeline" | "during_pipeline_repair" | "post_pipeline";
   pipelineRepairAttempted?: boolean;
   pipelineRepairCandidatesGenerated?: number;
   pipelineRepairAccepted?: boolean;
@@ -761,7 +767,26 @@ export const runPipelineBuilderSelection = (
     alternativeLaneAccepted: false,
     alternativeLaneRejectedReasons: [],
   };
+  const prePipelineMeal = runMealSchedulerSafely(input, baseOutput);
+  const prePipelineMealDiagnostics = {
+    ...prePipelineMeal.diagnostics,
+    mealSchedulerPhase: "pre_pipeline" as const,
+    mealPrePipelineAttempted: prePipelineMeal.diagnostics.mealSchedulerAttempted,
+    mealPrePipelineCandidatesGenerated: prePipelineMeal.diagnostics.mealAssignmentsGenerated,
+    mealPrePipelineAccepted: prePipelineMeal.diagnostics.mealSchedulerAccepted,
+    mealPrePipelineReason: prePipelineMeal.diagnostics.mealSchedulerReason,
+    mealPrePipelineRejectedReasons: prePipelineMeal.diagnostics.mealSchedulerRejectedReasons,
+    mealSchedulerPipelineIntegrationReason: prePipelineMeal.diagnostics.mealSchedulerAttempted
+      ? "flexible_meals_normalized_before_pipeline_candidates"
+      : prePipelineMeal.diagnostics.mealSchedulerPipelineIntegrationReason,
+  };
   const candidates = generatePipelineBuilderCandidates(input, baseOutput, diagnostics);
+  if (prePipelineMealDiagnostics.mealPrePipelineAccepted && prePipelineMeal.output !== baseOutput) {
+    const normalizedCandidates = generatePipelineBuilderCandidates(input, prePipelineMeal.output, diagnostics)
+      .map((candidate) => ({ ...candidate, mealAware: true as const, prePipelineMealNormalized: true as const }));
+    candidates.push(...normalizedCandidates);
+    diagnostics.candidatesGenerated = candidates.length;
+  }
   let bestOutput = baseOutput;
   let bestCandidate: (typeof candidates)[number] | null = null;
   for (const candidate of candidates) {
@@ -778,11 +803,17 @@ export const runPipelineBuilderSelection = (
     if (diagnostics.repairCandidatesGenerated > 0) diagnostics.rejectedReasons.push("repair_valid_but_not_better_than_baseline");
   }
   const selectionReason = accepted
-    ? bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
-      ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
-      : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
-        ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
-        : bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
+    ? bestCandidate?.mealAware && bestCandidate.laneOnlyRepaired
+      ? "pipeline_builder selected: meal-aware lane repair"
+      : bestCandidate?.mealAware
+        ? bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
+          ? "pipeline_builder selected: meal-aware repair lower coach gap"
+          : "pipeline_builder selected: pre-pipeline meal normalization"
+        : bestScore.coachSplitDayPenalty < baseScore.coachSplitDayPenalty
+          ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach split" : "pipeline_builder selected: lower coach split"
+          : bestScore.maxCoachGapMinutes < baseScore.maxCoachGapMinutes
+            ? bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair lower coach gap" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair lower coach gap" : "pipeline_builder selected: lower coach max gap"
+            : bestCandidate?.laneOnlyRepaired ? "pipeline_builder selected: slack-aware lane repair better operational quality" : bestCandidate?.segmentRepaired ? "pipeline_builder selected: segment repair better operational quality" : "pipeline_builder selected: better operational quality"
     : null;
   const reason = accepted
     ? diagnostics.reason === "partial_mapping_used" ? "partial_mapping_used" : selectionReason!
@@ -827,6 +858,7 @@ export const runPipelineBuilderSelection = (
     output: bestOutput,
     meta: {
       ...baseMeta,
+      ...prePipelineMealDiagnostics,
       pipelineBuilderAttempted: diagnostics.attempted,
       pipelineCandidatesGenerated: candidates.length,
       pipelineAccepted: accepted,
@@ -1260,7 +1292,18 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         emitProgress(options, "meal_scheduling", 87, "Programando comidas escalonadas dentro de su ventana");
         const mealSelection = runMealSchedulerSafely(input, output);
         output = mealSelection.output;
-        const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealSelection.diagnostics });
+        const mealDiagnostics = {
+          ...mealSelection.diagnostics,
+          mealSchedulerPhase: pipelineSelection.meta.mealPrePipelineAttempted
+            ? (pipelineSelection.meta.pipelineRepairAttempted ? "during_pipeline_repair" as const : "pre_pipeline" as const)
+            : "post_pipeline" as const,
+          mealPrePipelineAttempted: pipelineSelection.meta.mealPrePipelineAttempted ?? false,
+          mealPrePipelineCandidatesGenerated: pipelineSelection.meta.mealPrePipelineCandidatesGenerated ?? 0,
+          mealPrePipelineAccepted: pipelineSelection.meta.mealPrePipelineAccepted ?? false,
+          mealPrePipelineReason: pipelineSelection.meta.mealPrePipelineReason ?? "not_attempted",
+          mealPrePipelineRejectedReasons: pipelineSelection.meta.mealPrePipelineRejectedReasons ?? [],
+        };
+        const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealDiagnostics });
         output = pilotSelection.output;
         const backtrackingNeighborhoodMeta = pilotSelection.meta;
 
@@ -1382,7 +1425,18 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
       emitProgress(options, "meal_scheduling", 87, "Programando comidas escalonadas dentro de su ventana");
       const mealSelection = runMealSchedulerSafely(input, output);
       output = mealSelection.output;
-      const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealSelection.diagnostics });
+      const mealDiagnostics = {
+        ...mealSelection.diagnostics,
+        mealSchedulerPhase: pipelineSelection.meta.mealPrePipelineAttempted
+          ? (pipelineSelection.meta.pipelineRepairAttempted ? "during_pipeline_repair" as const : "pre_pipeline" as const)
+          : "post_pipeline" as const,
+        mealPrePipelineAttempted: pipelineSelection.meta.mealPrePipelineAttempted ?? false,
+        mealPrePipelineCandidatesGenerated: pipelineSelection.meta.mealPrePipelineCandidatesGenerated ?? 0,
+        mealPrePipelineAccepted: pipelineSelection.meta.mealPrePipelineAccepted ?? false,
+        mealPrePipelineReason: pipelineSelection.meta.mealPrePipelineReason ?? "not_attempted",
+        mealPrePipelineRejectedReasons: pipelineSelection.meta.mealPrePipelineRejectedReasons ?? [],
+      };
+      const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealDiagnostics });
       output = pilotSelection.output;
       const greedyNeighborhoodMeta = pilotSelection.meta;
 

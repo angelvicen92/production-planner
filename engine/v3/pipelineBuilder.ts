@@ -85,12 +85,17 @@ export interface PipelineConflictDetail {
   laneRepairMovedTalentNames?: string[];
   laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
+  laneRepairAttempted?: boolean;
+  laneRepairCandidateGenerated?: boolean;
   laneRepairResult?: string;
+  laneRepairRejectedReason?: string;
   mealMode?: "global_hard_break" | "flexible_meal_window";
   mealCanMove?: boolean;
   mealMoveAttempted?: boolean;
   mealMoveResult?: string;
-  mealAlternativeSlotsChecked?: number;
+  mealMoveRejectedReason?: string;
+  mealMovedTaskIds?: number[];
+  mealAlternativeSlotsChecked?: Array<{ taskId: number; start: string; end: string; result: string }>;
   slackAnalysis?: TaskSlackAnalysis[];
   repairAttempted: boolean;
   repairStrategy: string;
@@ -113,6 +118,8 @@ export interface PipelineBuilderCandidate {
   laneOnlyRepaired?: boolean;
   laneRepairMovedTaskIds?: number[];
   laneRepairMovedTalentNames?: string[];
+  mealAware?: boolean;
+  prePipelineMealNormalized?: boolean;
 }
 
 export interface PipelineBuilderDiagnostics {
@@ -471,6 +478,11 @@ export type LaneRepairResult = {
   before: Array<{ taskId: number; start: string; end: string }>;
   after: Array<{ taskId: number; start: string; end: string }>;
   slackAnalysis: TaskSlackAnalysis[];
+  mealMoveAttempted?: boolean;
+  mealMoveResult?: string;
+  mealMoveRejectedReason?: string;
+  mealMovedTaskIds?: number[];
+  mealAlternativeSlotsChecked?: Array<{ taskId: number; start: string; end: string; result: string }>;
 };
 
 type LaneRow = { task: TaskInput; planned: Planned; start: number; end: number; duration: number };
@@ -553,7 +565,7 @@ export const computeTaskSlack = (
 
 const laneSnapshot = (rows: LaneRow[]): Array<{ taskId: number; start: string; end: string }> => rows
   .map((row) => ({ taskId: Number(row.task.id), start: row.planned.startPlanned, end: row.planned.endPlanned }))
-  .slice(0, 20);
+  .slice(0, 6);
 
 const overlapsWindow = (row: LaneRow, start: number, end: number): boolean => row.start < end && start < row.end;
 
@@ -657,8 +669,85 @@ export const repairExclusiveLaneSequentially = (
   });
   if (movableRows.length === 0) {
     return failure(localRows.some((row) => Boolean(explicitLockForTask(input, Number(row.task.id))))
-      ? "explicit_lock_blocks_lane" : "segment_has_fixed_blocker");
+      ? "lane_repair_no_movable_tasks" : "lane_repair_no_movable_tasks");
   }
+
+  const mealRows = movableRows.filter((row) => isFlexibleMealTask(input, row.task));
+  const mealSlots: NonNullable<LaneRepairResult["mealAlternativeSlotsChecked"]> = [];
+  let mealMoveRejectedReason: string | undefined;
+  if (mealRows.length > 0) {
+    const mealWindow = getMealWindow(input);
+    const mealWindowStart = toMinutes(mealWindow?.start);
+    const mealWindowEnd = toMinutes(mealWindow?.end);
+    if (mealWindowStart === null || mealWindowEnd === null) {
+      mealMoveRejectedReason = "meal_shift_no_slot_available";
+    } else {
+      for (const mealRow of mealRows) {
+        const otherRows = allRows.filter((row) => Number(row.task.id) !== Number(mealRow.task.id));
+        const starts: number[] = [];
+        for (let start = mealWindowStart; start + mealRow.duration <= mealWindowEnd; start += 5) starts.push(start);
+        starts.sort((left, right) => {
+          const collisions = (start: number) => otherRows.filter((row) => overlapsWindow(row, start, start + mealRow.duration)).length;
+          return collisions(left) - collisions(right) || Math.abs(left - mealRow.start) - Math.abs(right - mealRow.start) || left - right;
+        });
+        const allSlotsOccupied = starts.length > 0 && starts.every((start) => otherRows.some((row) => overlapsWindow(row, start, start + mealRow.duration)));
+        for (const start of starts.slice(0, 10 - mealSlots.length)) {
+          const end = start + mealRow.duration;
+          if (start === mealRow.start) continue;
+          const occupied = otherRows.some((row) => overlapsWindow(row, start, end));
+          if (occupied) {
+            mealSlots.push({ taskId: Number(mealRow.task.id), start: toHHMM(start), end: toHHMM(end), result: "meal_shift_resource_conflict" });
+            mealMoveRejectedReason = "meal_shift_resource_conflict";
+            continue;
+          }
+          const mealPlanned = clonePlannedMap(candidate);
+          updatePlanned(mealPlanned, Number(mealRow.task.id), start);
+          const mealOutput = outputWithPlannedMap(candidate, mealPlanned);
+          const mealValidation = validateHardConstraints(input, mealOutput, MAX_CONFLICT_DIAGNOSTICS);
+          const originalGap = scoreCandidateSolution(input, baseline).mainStageGapMinutes;
+          const mealGap = scoreCandidateSolution(input, mealOutput).mainStageGapMinutes;
+          if (!mealValidation.hardValidationPassed || mealGap !== originalGap || !protectedTasksUnchanged(input, baseline, mealOutput)) {
+            const reason = mealGap !== originalGap ? "meal_shift_would_break_main_stage"
+              : mealValidation.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION") ? "meal_shift_dependency_blocked"
+                : mealValidation.hardConstraintViolationCodes.includes("RESOURCE_OVERLAP") || mealValidation.hardConstraintViolationCodes.includes("SPACE_OVERLAP")
+                  ? "meal_shift_resource_conflict" : "meal_shift_no_slot_available";
+            mealSlots.push({ taskId: Number(mealRow.task.id), start: toHHMM(start), end: toHHMM(end), result: reason });
+            mealMoveRejectedReason = reason;
+            continue;
+          }
+          mealSlots.push({ taskId: Number(mealRow.task.id), start: toHHMM(start), end: toHHMM(end), result: "meal_shift_success" });
+          return {
+            output: mealOutput,
+            reason: "meal_shift_success",
+            strategy: "move_flexible_meal_within_window",
+            movedTaskIds: [Number(mealRow.task.id)],
+            movedTalentNames: mealRow.task.contestantId ? [talentLabel(input, Number(mealRow.task.contestantId))] : [],
+            before,
+            after: laneSnapshot(localRows.map((row) => Number(row.task.id) === Number(mealRow.task.id)
+              ? { ...row, planned: mealPlanned.get(Number(row.task.id))!, start, end }
+              : row)),
+            slackAnalysis,
+            mealMoveAttempted: true,
+            mealMoveResult: "meal_shift_success",
+            mealMovedTaskIds: [Number(mealRow.task.id)],
+            mealAlternativeSlotsChecked: mealSlots.slice(0, 10),
+          };
+        }
+        if (allSlotsOccupied) mealMoveRejectedReason = "meal_shift_no_slot_available";
+      }
+      if (!mealMoveRejectedReason) mealMoveRejectedReason = "meal_shift_no_slot_available";
+    }
+  }
+
+  const withMealDiagnostics = (result: LaneRepairResult): LaneRepairResult => mealRows.length === 0 ? result : ({
+    ...result,
+    strategy: result.output ? "meal_shift_then_lane_sequentialize" : "meal_aware_lane_repair",
+    mealMoveAttempted: true,
+    mealMoveResult: result.output ? "meal_shift_then_lane_sequentialize" : mealMoveRejectedReason ?? "meal_shift_no_slot_available",
+    mealMoveRejectedReason: result.output ? undefined : mealMoveRejectedReason ?? "meal_shift_no_slot_available",
+    mealMovedTaskIds: result.movedTaskIds.filter((taskId) => mealRows.some((row) => Number(row.task.id) === taskId)),
+    mealAlternativeSlotsChecked: mealSlots.slice(0, 10),
+  });
 
   const protectedRows = allRows.filter((row) => !isRepairMovableTask(input, Number(row.task.id)));
   const breakWindows = conflict.spaceId == null ? [] : protectedBreakWindows(input, Number(conflict.spaceId));
@@ -702,7 +791,10 @@ export const repairExclusiveLaneSequentially = (
       const availabilityEnd = row.task.contestantId == null
         ? workEnd
         : toMinutes(input.contestantAvailabilityById?.[Number(row.task.contestantId)]?.end) ?? workEnd;
-      const latestEnd = fixedSuccessorStarts.length > 0 ? Math.min(workEnd, availabilityEnd, ...fixedSuccessorStarts) : Math.min(workEnd, availabilityEnd);
+      const flexibleMealWindowEnd = isFlexibleMealTask(input, row.task) ? toMinutes(getMealWindow(input)?.end) ?? workEnd : workEnd;
+      const latestEnd = fixedSuccessorStarts.length > 0
+        ? Math.min(workEnd, availabilityEnd, flexibleMealWindowEnd, ...fixedSuccessorStarts)
+        : Math.min(workEnd, availabilityEnd, flexibleMealWindowEnd);
       const latestStart = latestEnd - row.duration;
       const predecessorEnds = dependencyIds(row.task).map((dependencyId) => toMinutes(plannedById.get(dependencyId)?.endPlanned))
         .filter((value): value is number => value !== null);
@@ -767,7 +859,7 @@ export const repairExclusiveLaneSequentially = (
     if (movedIds.size > bestFailedMoved.length) { bestFailedMoved = [...movedIds]; bestFailedAfter = after; }
     if (failed || movedIds.size === 0) continue;
     const output = outputWithPlannedMap(candidate, plannedById);
-    if (!protectedTasksUnchanged(input, baseline, output)) return failure("explicit_lock_blocks_lane", [...movedIds], after);
+    if (!protectedTasksUnchanged(input, baseline, output)) return withMealDiagnostics(failure("explicit_lock_blocks_lane", [...movedIds], after));
     const candidateValidation = validateHardConstraints(input, output, MAX_CONFLICT_DIAGNOSTICS);
     if (!candidateValidation.hardValidationPassed) {
       if (candidateValidation.hardConstraintViolationCodes.includes("DEPENDENCY_VIOLATION")) {
@@ -782,9 +874,9 @@ export const repairExclusiveLaneSequentially = (
     const reason = orderIndex > 0 ? "lane_micro_reorder_success"
       : splitAroundBreak ? "break_aware_lane_repair_success"
         : dependencyShiftCount > 0 ? "dependency_shift_success" : "lane_sequentialized";
-    return { output, reason, strategy, movedTaskIds, movedTalentNames, before, after, slackAnalysis };
+    return withMealDiagnostics({ output, reason, strategy, movedTaskIds, movedTalentNames, before, after, slackAnalysis });
   }
-  return failure(dependencyFailure || (permutations.length > 1 ? "lane_micro_reorder_no_valid_order" : breakWindows.length > 0 ? "no_slack_for_lane_queue" : "no_slack_for_lane_queue"), bestFailedMoved, bestFailedAfter);
+  return withMealDiagnostics(failure(dependencyFailure || (permutations.length > 1 ? "lane_micro_reorder_no_valid_order" : breakWindows.length > 0 ? "no_slack_for_lane_queue" : "lane_repair_no_valid_slot"), bestFailedMoved, bestFailedAfter));
 };
 
 /** Backwards-compatible space-only wrapper. */
@@ -884,16 +976,21 @@ const compactConflictDetail = (
     fixedReason: fixedReasons.join(",") || undefined,
     alternativeLaneSpaceIds,
     laneRepairStrategy: laneRepair?.strategy ?? (repairStrategy.includes("sequentialize_exclusive_lane") ? "lane_only_sequential_queue" : undefined),
+    laneRepairAttempted: Boolean(laneRepair) || repairAttempted,
+    laneRepairCandidateGenerated: Boolean(laneRepair?.output),
     laneRepairMovedTaskIds: laneRepair?.movedTaskIds.slice(0, 20) ?? [],
     laneRepairMovedTalentNames: laneRepair?.movedTalentNames.slice(0, 10) ?? [],
-    laneRepairBefore: laneRepair?.before.slice(0, 20) ?? [],
-    laneRepairAfter: laneRepair?.after.slice(0, 20) ?? [],
+    laneRepairBefore: laneRepair?.before.slice(0, 6) ?? [],
+    laneRepairAfter: laneRepair?.after.slice(0, 6) ?? [],
     laneRepairResult: laneRepair?.reason ?? repairResult,
+    laneRepairRejectedReason: laneRepair && !laneRepair.output ? laneRepair.reason : undefined,
     mealMode: getMealMode(input).mode,
     mealCanMove: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" && !isDoneOrInProgress && !isExplicitLock,
     mealMoveAttempted: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" && repairAttempted,
-    mealMoveResult: isBreakBlocker ? repairResult : undefined,
-    mealAlternativeSlotsChecked: isBreakBlocker && repairAttempted ? REPAIR_SHIFTS_MINUTES.length : 0,
+    mealMoveResult: laneRepair?.mealMoveResult ?? (isBreakBlocker ? repairResult : undefined),
+    mealMoveRejectedReason: laneRepair?.mealMoveRejectedReason,
+    mealMovedTaskIds: laneRepair?.mealMovedTaskIds?.slice(0, 10) ?? [],
+    mealAlternativeSlotsChecked: laneRepair?.mealAlternativeSlotsChecked?.slice(0, 10) ?? [],
     slackAnalysis: laneRepair?.slackAnalysis.slice(0, 6) ?? [],
     repairAttempted,
     repairStrategy: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" ? "meal_aware_lane_repair" : repairStrategy,

@@ -118,20 +118,28 @@ const compactConflictDetail = (
     ...(compactText(detail.laneRepairStrategy) ? { laneRepairStrategy: compactText(detail.laneRepairStrategy) } : {}),
     laneRepairMovedTaskIds: compactNumbers(detail.laneRepairMovedTaskIds),
     laneRepairMovedTalentNames: compactStrings(detail.laneRepairMovedTalentNames, 10),
-    laneRepairBefore: Array.isArray(detail.laneRepairBefore) ? detail.laneRepairBefore.slice(0, 20).map((row) => {
+    laneRepairBefore: Array.isArray(detail.laneRepairBefore) ? detail.laneRepairBefore.slice(0, 6).map((row) => {
       const item = row as Record<string, unknown>;
       return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
     }).filter((row) => row.taskId > 0) : [],
-    laneRepairAfter: Array.isArray(detail.laneRepairAfter) ? detail.laneRepairAfter.slice(0, 20).map((row) => {
+    laneRepairAfter: Array.isArray(detail.laneRepairAfter) ? detail.laneRepairAfter.slice(0, 6).map((row) => {
       const item = row as Record<string, unknown>;
       return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
     }).filter((row) => row.taskId > 0) : [],
+    laneRepairAttempted: detail.laneRepairAttempted === true,
+    laneRepairCandidateGenerated: detail.laneRepairCandidateGenerated === true,
     laneRepairResult: compactText(detail.laneRepairResult, compactText(detail.repairResult, "not_attempted")),
+    ...(compactText(detail.laneRepairRejectedReason) ? { laneRepairRejectedReason: compactText(detail.laneRepairRejectedReason) } : {}),
     mealMode: (detail.mealMode === "flexible_meal_window" ? "flexible_meal_window" : "global_hard_break") as "flexible_meal_window" | "global_hard_break",
     mealCanMove: detail.mealCanMove === true,
     mealMoveAttempted: detail.mealMoveAttempted === true,
     mealMoveResult: compactText(detail.mealMoveResult, "not_attempted"),
-    mealAlternativeSlotsChecked: Math.max(0, finiteNumber(detail.mealAlternativeSlotsChecked) ?? 0),
+    ...(compactText(detail.mealMoveRejectedReason) ? { mealMoveRejectedReason: compactText(detail.mealMoveRejectedReason) } : {}),
+    mealMovedTaskIds: compactNumbers(detail.mealMovedTaskIds),
+    mealAlternativeSlotsChecked: Array.isArray(detail.mealAlternativeSlotsChecked) ? detail.mealAlternativeSlotsChecked.slice(0, 10).map((slot) => {
+      const item = slot as Record<string, unknown>;
+      return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end), result: compactText(item.result) };
+    }).filter((slot) => slot.taskId !== 0) : [],
     slackAnalysis: Array.isArray(detail.slackAnalysis) ? detail.slackAnalysis.slice(0, 6).map((row) => {
       const item = row as Record<string, unknown>;
       return {

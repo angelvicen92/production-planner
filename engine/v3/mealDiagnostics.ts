@@ -15,7 +15,15 @@ export type MealDiagnosticsMetadata = Required<Pick<NonNullable<EngineOutput["v3
   | "mealSchedulerRejectedReasons"
   | "mealBlockingConflicts"
   | "mealMovedAssignments"
+  | "mealAttemptedMoves"
+  | "mealAcceptedMoves"
+  | "mealRejectedMoves"
   | "mealSchedulerPhase"
+  | "mealPrePipelineAttempted"
+  | "mealPrePipelineCandidatesGenerated"
+  | "mealPrePipelineAccepted"
+  | "mealPrePipelineReason"
+  | "mealPrePipelineRejectedReasons"
   | "mealSchedulerCouldAffectPipeline"
   | "mealSchedulerPipelineIntegrationReason"
 >>;
@@ -43,11 +51,16 @@ export function normalizeMealDiagnosticsMetadata(
   const mode = source.mealMode === "flexible_meal_window" || source.mealMode === "global_hard_break"
     ? source.mealMode
     : inferredMode.mode;
-  const moved = Array.isArray(source.mealMovedAssignments) ? source.mealMovedAssignments.slice(0, 50) : [];
+  const moved = Array.isArray(source.mealMovedAssignments) ? source.mealMovedAssignments.slice(0, 25) : [];
+  const attemptedMoves = Array.isArray(source.mealAttemptedMoves) ? source.mealAttemptedMoves.slice(0, 25) : [];
+  const acceptedMoves = Array.isArray(source.mealAcceptedMoves) ? source.mealAcceptedMoves.slice(0, 25) : [];
+  const rejectedMoves = Array.isArray(source.mealRejectedMoves) ? source.mealRejectedMoves.slice(0, 25) : [];
   const rejected = Array.isArray(source.mealSchedulerRejectedReasons)
     ? [...new Set(source.mealSchedulerRejectedReasons.map(String).filter(Boolean))].slice(0, 20)
     : [];
-  const phase = "post_pipeline" as const;
+  const phase = source.mealSchedulerPhase === "pre_pipeline" || source.mealSchedulerPhase === "during_pipeline_repair"
+    ? source.mealSchedulerPhase
+    : "post_pipeline";
   return {
     mealMode: mode,
     mealModeReason: typeof source.mealModeReason === "string" && source.mealModeReason.trim()
@@ -67,7 +80,17 @@ export function normalizeMealDiagnosticsMetadata(
     mealSchedulerRejectedReasons: rejected,
     mealBlockingConflicts: Math.max(0, Number(source.mealBlockingConflicts) || 0),
     mealMovedAssignments: moved as MealDiagnosticsMetadata["mealMovedAssignments"],
+    mealAttemptedMoves: attemptedMoves as MealDiagnosticsMetadata["mealAttemptedMoves"],
+    mealAcceptedMoves: acceptedMoves as MealDiagnosticsMetadata["mealAcceptedMoves"],
+    mealRejectedMoves: rejectedMoves as MealDiagnosticsMetadata["mealRejectedMoves"],
     mealSchedulerPhase: phase,
+    mealPrePipelineAttempted: source.mealPrePipelineAttempted === true,
+    mealPrePipelineCandidatesGenerated: Math.max(0, Number(source.mealPrePipelineCandidatesGenerated) || 0),
+    mealPrePipelineAccepted: source.mealPrePipelineAccepted === true,
+    mealPrePipelineReason: typeof source.mealPrePipelineReason === "string" && source.mealPrePipelineReason.trim()
+      ? source.mealPrePipelineReason.trim() : "not_attempted",
+    mealPrePipelineRejectedReasons: Array.isArray(source.mealPrePipelineRejectedReasons)
+      ? [...new Set(source.mealPrePipelineRejectedReasons.map(String).filter(Boolean))].slice(0, 20) : [],
     mealSchedulerCouldAffectPipeline: source.mealSchedulerCouldAffectPipeline === true,
     mealSchedulerPipelineIntegrationReason: typeof source.mealSchedulerPipelineIntegrationReason === "string" && source.mealSchedulerPipelineIntegrationReason.trim()
       ? source.mealSchedulerPipelineIntegrationReason.trim()
