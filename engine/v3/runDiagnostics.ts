@@ -114,8 +114,16 @@ export interface EngineRunDiagnostics {
     mealSchedulerReason: string;
     mealSchedulerRejectedReasons: string[];
     mealBlockingConflicts: number;
-    mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
-    mealSchedulerPhase: "post_pipeline";
+    mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean }>;
+    mealAttemptedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean; rejectedReason?: string }>;
+    mealAcceptedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: true }>;
+    mealRejectedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: false; rejectedReason: string }>;
+    mealSchedulerPhase: "pre_pipeline" | "during_pipeline_repair" | "post_pipeline";
+    mealPrePipelineAttempted: boolean;
+    mealPrePipelineCandidatesGenerated: number;
+    mealPrePipelineAccepted: boolean;
+    mealPrePipelineReason: string;
+    mealPrePipelineRejectedReasons: string[];
     mealSchedulerCouldAffectPipeline: boolean;
     mealSchedulerPipelineIntegrationReason: string;
     cpSatAttempted: boolean;

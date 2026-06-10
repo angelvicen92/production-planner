@@ -518,12 +518,17 @@ export interface EngineOutput {
       laneRepairMovedTalentNames?: string[];
       laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
+      laneRepairAttempted?: boolean;
+      laneRepairCandidateGenerated?: boolean;
       laneRepairResult?: string;
+      laneRepairRejectedReason?: string;
       mealMode?: "global_hard_break" | "flexible_meal_window";
       mealCanMove?: boolean;
       mealMoveAttempted?: boolean;
       mealMoveResult?: string;
-      mealAlternativeSlotsChecked?: number;
+      mealMoveRejectedReason?: string;
+      mealMovedTaskIds?: number[];
+      mealAlternativeSlotsChecked?: Array<{ taskId: number; start: string; end: string; result: string }>;
       slackAnalysis?: Array<{
         taskId: number;
         taskName: string;
@@ -575,8 +580,16 @@ export interface EngineOutput {
     mealSchedulerReason?: string;
     mealSchedulerRejectedReasons?: string[];
     mealBlockingConflicts?: number;
-    mealMovedAssignments?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
-    mealSchedulerPhase?: "post_pipeline";
+    mealMovedAssignments?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean }>;
+    mealAttemptedMoves?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean; rejectedReason?: string }>;
+    mealAcceptedMoves?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: true }>;
+    mealRejectedMoves?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: false; rejectedReason: string }>;
+    mealSchedulerPhase?: "pre_pipeline" | "during_pipeline_repair" | "post_pipeline";
+    mealPrePipelineAttempted?: boolean;
+    mealPrePipelineCandidatesGenerated?: number;
+    mealPrePipelineAccepted?: boolean;
+    mealPrePipelineReason?: string;
+    mealPrePipelineRejectedReasons?: string[];
     mealSchedulerCouldAffectPipeline?: boolean;
     mealSchedulerPipelineIntegrationReason?: string;
     cpSatPilotAttempted?: boolean;

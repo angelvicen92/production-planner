@@ -2,6 +2,7 @@ import type { EngineOutput, TaskInput } from "../types";
 import { validateHardConstraints } from "./hardValidation";
 import { getMealMode, getMealWindow, isMealTask, mealOccupiesSpace } from "./mealSemantics";
 import { calculateOperationalMetrics } from "./metrics";
+import { scoreCandidateSolution } from "./solutionScoring";
 import type { EngineV3Input } from "./types";
 
 export type MealSchedulerDiagnostics = {
@@ -16,8 +17,16 @@ export type MealSchedulerDiagnostics = {
   mealSchedulerReason: string;
   mealSchedulerRejectedReasons: string[];
   mealBlockingConflicts: number;
-  mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
-  mealSchedulerPhase: "post_pipeline";
+  mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean }>;
+  mealAttemptedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: boolean; rejectedReason?: string }>;
+  mealAcceptedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: true }>;
+  mealRejectedMoves: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string; accepted: false; rejectedReason: string }>;
+  mealSchedulerPhase: "pre_pipeline" | "during_pipeline_repair" | "post_pipeline";
+  mealPrePipelineAttempted: boolean;
+  mealPrePipelineCandidatesGenerated: number;
+  mealPrePipelineAccepted: boolean;
+  mealPrePipelineReason: string;
+  mealPrePipelineRejectedReasons: string[];
   mealSchedulerCouldAffectPipeline: boolean;
   mealSchedulerPipelineIntegrationReason: string;
 };
@@ -78,7 +87,15 @@ const schedulerExceptionDiagnostics = (input: EngineV3Input): MealSchedulerDiagn
     mealSchedulerRejectedReasons: ["meal_scheduler_exception"],
     mealBlockingConflicts: 0,
     mealMovedAssignments: [],
+    mealAttemptedMoves: [],
+    mealAcceptedMoves: [],
+    mealRejectedMoves: [],
     mealSchedulerPhase: "post_pipeline",
+    mealPrePipelineAttempted: false,
+    mealPrePipelineCandidatesGenerated: 0,
+    mealPrePipelineAccepted: false,
+    mealPrePipelineReason: "not_attempted",
+    mealPrePipelineRejectedReasons: [],
     mealSchedulerCouldAffectPipeline: false,
     mealSchedulerPipelineIntegrationReason: "meal_scheduler_exception_after_pipeline",
   };
@@ -113,7 +130,15 @@ export function scheduleFlexibleMeals(
     mealSchedulerRejectedReasons: [],
     mealBlockingConflicts: 0,
     mealMovedAssignments: [],
+    mealAttemptedMoves: [],
+    mealAcceptedMoves: [],
+    mealRejectedMoves: [],
     mealSchedulerPhase: "post_pipeline",
+    mealPrePipelineAttempted: false,
+    mealPrePipelineCandidatesGenerated: 0,
+    mealPrePipelineAccepted: false,
+    mealPrePipelineReason: "not_attempted",
+    mealPrePipelineRejectedReasons: [],
     mealSchedulerCouldAffectPipeline: mode.mode === "flexible_meal_window" && mealTasks.length > 0,
     mealSchedulerPipelineIntegrationReason: mode.mode === "flexible_meal_window"
       ? "post_pipeline_meal_moves_can_change_pipeline_blockers"
@@ -136,8 +161,10 @@ export function scheduleFlexibleMeals(
   } catch (error) {
     console.warn("[meal-scheduler] baseline diagnostics failed", { error: error instanceof Error ? error.message : String(error) });
   }
-  let acceptedOutput = output;
-  const moved: MealSchedulerDiagnostics["mealMovedAssignments"] = [];
+  let workingOutput = output;
+  const attemptedMoves: MealSchedulerDiagnostics["mealAttemptedMoves"] = [];
+  const acceptedMoves: MealSchedulerDiagnostics["mealAcceptedMoves"] = [];
+  const rejectedMoves: MealSchedulerDiagnostics["mealRejectedMoves"] = [];
   const rejected = new Set<string>();
   let generated = 0;
   let blockingConflicts = 0;
@@ -188,7 +215,7 @@ export function scheduleFlexibleMeals(
       const nextPlanned = [...plannedById.values()].map((planned) => Number(planned.taskId) === Number(meal.id)
         ? { ...planned, startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedResources: [] }
         : planned);
-      const candidate = { ...acceptedOutput, plannedTasks: nextPlanned };
+      const candidate = { ...workingOutput, plannedTasks: nextPlanned };
       let hard: ReturnType<typeof validateHardConstraints>;
       let candidateGap: number;
       try {
@@ -196,6 +223,8 @@ export function scheduleFlexibleMeals(
         candidateGap = Number(calculateMetrics(input, candidate).mainStageGapMinutes ?? Number.POSITIVE_INFINITY);
       } catch (error) {
         rejected.add("meal_candidate_validation_exception");
+        attemptedMoves.push({ taskId: Number(meal.id), fromStart: current.startPlanned ?? null, toStart: toHHMM(start), toEnd: toHHMM(end), accepted: false, rejectedReason: "meal_candidate_validation_exception" });
+        rejectedMoves.push({ taskId: Number(meal.id), fromStart: current.startPlanned ?? null, toStart: toHHMM(start), toEnd: toHHMM(end), accepted: false, rejectedReason: "meal_candidate_validation_exception" });
         console.warn("[meal-scheduler] candidate validation failed", {
           taskId: Number(meal.id),
           start: toHHMM(start),
@@ -204,30 +233,51 @@ export function scheduleFlexibleMeals(
         continue;
       }
       if (!hard.hardValidationPassed || candidateGap !== baselineGap) {
+        const reason = candidateGap !== baselineGap ? "meal_shift_would_break_main_stage" : hard.hardConstraintViolationCodes[0] ?? "meal_candidate_failed_hard_validation";
         for (const code of hard.hardConstraintViolationCodes) rejected.add(code);
+        attemptedMoves.push({ taskId: Number(meal.id), fromStart: current.startPlanned ?? null, toStart: toHHMM(start), toEnd: toHHMM(end), accepted: false, rejectedReason: reason });
+        rejectedMoves.push({ taskId: Number(meal.id), fromStart: current.startPlanned ?? null, toStart: toHHMM(start), toEnd: toHHMM(end), accepted: false, rejectedReason: reason });
         continue;
       }
       const fromStart = current.startPlanned ?? null;
       plannedById.set(Number(meal.id), nextPlanned.find((planned) => Number(planned.taskId) === Number(meal.id))!);
-      acceptedOutput = candidate;
-      if (fromStart !== toHHMM(start)) moved.push({ taskId: Number(meal.id), fromStart, toStart: toHHMM(start), toEnd: toHHMM(end) });
+      workingOutput = candidate;
+      if (fromStart !== toHHMM(start)) {
+        const move = { taskId: Number(meal.id), fromStart, toStart: toHHMM(start), toEnd: toHHMM(end), accepted: true as const };
+        attemptedMoves.push(move);
+        acceptedMoves.push(move);
+      }
       assigned = true;
       break;
     }
     if (!assigned) rejected.add("no_meal_slot_available_for_resource");
   }
 
+  if (rejected.size === 0) {
+    const beforeScore = scoreCandidateSolution(input, output);
+    const afterScore = scoreCandidateSolution(input, workingOutput);
+    const worsened = afterScore.hardConstraintViolations > beforeScore.hardConstraintViolations
+      || afterScore.mainStageGapMinutes > beforeScore.mainStageGapMinutes
+      || afterScore.coachSplitDayPenalty > beforeScore.coachSplitDayPenalty
+      || afterScore.maxCoachGapMinutes > beforeScore.maxCoachGapMinutes
+      || afterScore.coachIdlePenalty > beforeScore.coachIdlePenalty
+      || afterScore.talentIdlePenalty > beforeScore.talentIdlePenalty;
+    if (worsened) rejected.add("meal_candidate_not_better_than_baseline");
+  }
   const accepted = rejected.size === 0;
   return {
-    output: acceptedOutput,
+    output: accepted ? workingOutput : output,
     diagnostics: {
       ...base,
       mealAssignmentsGenerated: generated,
       mealSchedulerAccepted: accepted,
-      mealSchedulerReason: accepted ? (moved.length ? "flexible_meals_scheduled" : "existing_meal_assignments_valid") : "no_meal_slot_available_for_resource",
+      mealSchedulerReason: accepted ? (acceptedMoves.length ? "flexible_meals_scheduled" : "existing_meal_assignments_valid") : "no_meal_slot_available_for_resource",
       mealSchedulerRejectedReasons: [...rejected],
       mealBlockingConflicts: blockingConflicts,
-      mealMovedAssignments: moved.slice(0, 50),
+      mealMovedAssignments: accepted ? acceptedMoves.slice(0, 25) : [],
+      mealAttemptedMoves: attemptedMoves.slice(0, 25),
+      mealAcceptedMoves: accepted ? acceptedMoves.slice(0, 25) : [],
+      mealRejectedMoves: rejectedMoves.slice(0, 25),
     },
   };
   } catch (error) {

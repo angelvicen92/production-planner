@@ -614,3 +614,107 @@ test("lane micro-reorder resolves a queue that cannot keep its original order", 
   assert.equal(result.output.plannedTasks.find((task) => task.taskId === 1)?.startPlanned, "09:30");
   assert.equal(validateHardConstraints(input, result.output).hardConstraintViolations, 0);
 });
+
+test("meal-aware lane repair moves flexible COMIDA to resolve a SPACE_OVERLAP", () => {
+  const { input, output } = buildLaneScenario();
+  input.mealMode = "flexible_meal_window";
+  input.mealWindow = { start: "13:00", end: "16:30" };
+  input.mealTaskTemplateName = "COMIDA";
+  input.tasks.push({ id: 99, planId: 50, templateName: "COMIDA", breakKind: "space_meal", mealOccupiesSpace: true, spaceId: 20, status: "pending", durationOverrideMin: 40 } as any);
+  output.plannedTasks.push({ taskId: 99, startPlanned: "09:00", endPlanned: "09:40", assignedResources: [] });
+
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:00", end: "09:20", taskIds: [1, 99], conflictKind: "break_window_blocker",
+  }, { input, baseline: output });
+
+  assert.ok(result.output);
+  assert.ok(["move_flexible_meal_within_window", "meal_shift_then_lane_sequentialize"].includes(result.strategy));
+  assert.ok(["meal_shift_success", "meal_shift_then_lane_sequentialize"].includes(result.mealMoveResult!));
+  assert.deepEqual(result.mealMovedTaskIds, [99]);
+  assert.ok((result.mealAlternativeSlotsChecked?.length ?? 0) <= 10);
+  assert.equal(validateHardConstraints(input, result.output).hardValidationPassed, true);
+});
+
+test("meal-aware lane repair shifts COMIDA before sequentializing the remaining lane", () => {
+  const { input, output } = buildLaneScenario();
+  input.mealMode = "flexible_meal_window";
+  input.mealWindow = { start: "13:00", end: "16:30" };
+  input.mealTaskTemplateName = "COMIDA";
+  input.tasks.push({ id: 99, planId: 50, templateName: "COMIDA", breakKind: "space_meal", mealOccupiesSpace: true, spaceId: 20, status: "pending", durationOverrideMin: 40 } as any);
+  output.plannedTasks.push({ taskId: 99, startPlanned: "09:00", endPlanned: "09:40", assignedResources: [] });
+  output.plannedTasks.find((row) => row.taskId === 2)!.startPlanned = "09:00";
+  output.plannedTasks.find((row) => row.taskId === 2)!.endPlanned = "09:20";
+
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:00", end: "09:20", taskIds: [1, 2, 99], conflictKind: "break_window_blocker",
+  }, { input, baseline: output });
+
+  assert.ok(result.output);
+  assert.ok(["move_flexible_meal_within_window", "meal_shift_then_lane_sequentialize"].includes(result.strategy));
+  assert.ok(result.before.length > 0);
+  assert.ok(result.after.length > 0);
+  assert.ok(result.movedTaskIds.includes(99));
+});
+
+test("meal-aware repair reports dependency blocking and retains attempted diagnostics", () => {
+  const { input, output } = buildLaneScenario();
+  input.mealMode = "flexible_meal_window";
+  input.mealWindow = { start: "13:00", end: "13:40" };
+  input.mealTaskTemplateName = "COMIDA";
+  input.tasks.push(
+    { id: 98, planId: 50, templateName: "Meal predecessor", spaceId: 30, status: "done", durationOverrideMin: 20 } as any,
+    { id: 99, planId: 50, templateName: "COMIDA", breakKind: "space_meal", mealOccupiesSpace: true, spaceId: 20, status: "pending", durationOverrideMin: 40, dependsOnTaskIds: [98] } as any,
+  );
+  output.plannedTasks.push(
+    { taskId: 98, startPlanned: "13:20", endPlanned: "13:40", assignedResources: [] },
+    { taskId: 99, startPlanned: "09:00", endPlanned: "09:40", assignedResources: [] },
+  );
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:00", end: "09:20", taskIds: [1, 99], conflictKind: "break_window_blocker",
+  }, { input, baseline: output });
+
+  assert.equal(result.output, null);
+  assert.equal(result.mealMoveAttempted, true);
+  assert.equal(result.mealMoveRejectedReason, "meal_shift_dependency_blocked");
+  assert.ok(result.before.length > 0);
+  assert.ok((result.mealAlternativeSlotsChecked?.length ?? 0) <= 10);
+});
+
+test("pre-pipeline flexible meal diagnostics are exported by pipeline selection", () => {
+  const scenario = buildScenario();
+  scenario.input.mealMode = "flexible_meal_window";
+  scenario.input.mealWindow = { start: "13:00", end: "16:30" };
+  scenario.input.mealTaskTemplateName = "COMIDA";
+  scenario.input.tasks.push({ id: 99, planId: 40, templateName: "COMIDA", breakKind: "space_meal", spaceId: 30, status: "pending", durationOverrideMin: 40 } as any);
+  scenario.baseline.plannedTasks.push({ taskId: 99, startPlanned: "13:00", endPlanned: "13:40", assignedResources: [] });
+
+  const selected = runPipelineBuilderSelection(scenario.input, scenario.baseline, "operational_neighborhood");
+  assert.equal(selected.meta.mealPrePipelineAttempted, true);
+  assert.ok((selected.meta.mealPrePipelineCandidatesGenerated ?? 0) > 0);
+  assert.ok(selected.meta.mealPrePipelineReason);
+  assert.ok(["pre_pipeline", "during_pipeline_repair"].includes(selected.meta.mealSchedulerPhase!));
+  assert.equal(scoreCandidateSolution(scenario.input, selected.output).mainStageGapMinutes, 0);
+});
+
+test("meal-aware repair reports meal_shift_no_slot_available when the window is fully occupied", () => {
+  const { input, output } = buildLaneScenario();
+  input.mealMode = "flexible_meal_window";
+  input.mealWindow = { start: "13:00", end: "14:00" };
+  input.mealTaskTemplateName = "COMIDA";
+  input.tasks.push(
+    { id: 98, planId: 50, templateName: "Protected lane task", spaceId: 20, status: "done", durationOverrideMin: 60 } as any,
+    { id: 99, planId: 50, templateName: "COMIDA", breakKind: "space_meal", mealOccupiesSpace: true, spaceId: 20, status: "pending", durationOverrideMin: 40 } as any,
+  );
+  output.plannedTasks.push(
+    { taskId: 98, startPlanned: "13:00", endPlanned: "14:00", assignedResources: [] },
+    { taskId: 99, startPlanned: "09:00", endPlanned: "09:40", assignedResources: [] },
+  );
+  const result = repairExclusiveLaneSequentially(output, {
+    code: "SPACE_OVERLAP", spaceId: 20, start: "09:00", end: "09:20", taskIds: [1, 99], conflictKind: "break_window_blocker",
+  }, { input, baseline: output });
+
+  assert.equal(result.output, null);
+  assert.equal(result.mealMoveRejectedReason, "meal_shift_no_slot_available");
+  assert.ok(result.before.length > 0);
+  assert.ok((result.mealAlternativeSlotsChecked?.length ?? 0) <= 10);
+});
