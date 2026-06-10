@@ -177,7 +177,7 @@ test("includes key metrics without copying full engine or planning payloads", ()
   });
   assert.equal(serialized.includes("engineInput"), false);
   assert.equal(serialized.includes("planningOutput"), false);
-  assert.ok(serialized.length < 6_000);
+  assert.ok(serialized.length < 7_000);
 });
 
 
@@ -364,4 +364,34 @@ test("copy/download snapshot and filename retain the latest success run id", () 
   assert.equal(snapshot.runId, 200);
   assert.equal(JSON.parse(JSON.stringify(snapshot)).runId, 200);
   assert.equal(engineDiagnosticsFilename(snapshot), "engine-diagnostics-plan-52-200.json");
+});
+
+test("exports surgical segment solver diagnostics without losing latest run identity", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({
+    id: 200,
+    planId: 52,
+    status: "success",
+    engineMetadata: {
+      segmentSolverCriticalGapStart: "09:30",
+      segmentSolverCriticalGapEnd: "13:35",
+      segmentSolverCriticalGapMinutes: 245,
+      segmentSolverLeftBlockTalentNames: ["Talent A"],
+      segmentSolverRightBlockTalentNames: ["Talent B"],
+      segmentSolverMicroSegmentsBuilt: 4,
+      segmentSolverMicroSegmentStrategiesTried: ["bridge", "left_shift_right_block", "right_shift_left_block", "coach_block_reorder"],
+      segmentSolverMicroSegmentTaskCounts: [12, 8, 7, 10],
+      segmentSolverMicroSegmentRejectedReasons: ["microsegment_candidate_hard_invalid"],
+      segmentSolverAssignmentsExplored: 321,
+      segmentSolverValidCandidates: 4,
+      segmentSolverBestCandidateMovedTaskIds: [1, 2],
+      segmentSolverBestCandidateMovedTalentNames: ["Talent B"],
+      segmentSolverBestCandidateReason: "segment_solver selected: lower coach gap",
+    },
+  }, { generatedAt, planId: 52 });
+  assert.equal(snapshot.runId, 200);
+  assert.equal(snapshot.intelligence.segmentSolverCriticalGapMinutes, 245);
+  assert.equal(snapshot.intelligence.segmentSolverMicroSegmentsBuilt, 4);
+  assert.equal(snapshot.intelligence.segmentSolverAssignmentsExplored, 321);
+  assert.equal(snapshot.intelligence.segmentSolverValidCandidates, 4);
+  assert.deepEqual(snapshot.intelligence.segmentSolverBestCandidateMovedTaskIds, [1, 2]);
 });
