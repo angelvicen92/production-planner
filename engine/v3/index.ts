@@ -24,6 +24,7 @@ import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, typ
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 import { runMealSchedulerSafely } from "./mealScheduler";
 import { normalizeMealDiagnosticsMetadata } from "./mealDiagnostics";
+import { runSegmentSolver, segmentSolverSelectionReason, type SegmentSolverMeta } from "./segmentSolver";
 
 
 const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
@@ -33,6 +34,7 @@ const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
   hard_validation: "Validando restricciones",
   backtracking: "Explorando alternativas",
   operational_neighborhoods: "Mejorando calidad operativa",
+  segment_solver: "Optimizando segmento crítico",
   coach_compaction: "Compactando jornadas de coaches",
   coach_wave_ordering: "Ordenando olas de coaches",
   pipeline_builder: "Construyendo pipelines",
@@ -107,9 +109,9 @@ type BacktrackingMeta = {
   backtrackingTimeMs: number;
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
-  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   candidateSolutionsEvaluated?: number;
-  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   bestCandidateScore?: string;
   greedyCandidateScore?: string;
   backtrackingBestScore?: string;
@@ -720,6 +722,61 @@ export const runOperationalNeighborhoodSelection = (
   };
 };
 
+export const runSegmentSolverSelection = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  baseSource: NonNullable<BacktrackingMeta["solutionSource"]>,
+  baseMeta: Partial<BacktrackingMeta> = {},
+  options?: EngineV3Options,
+): { output: EngineOutput; meta: Partial<BacktrackingMeta> & SegmentSolverMeta } => {
+  const result = runSegmentSolver(input, baseOutput, {
+    timeoutMs: options?.segmentSolverTimeoutMs,
+    disabled: options?.enableSegmentSolver === false || (input as any)?.enableSegmentSolver === false,
+    shouldCancel: options?.shouldCancel,
+  });
+  const accepted = result.meta.segmentSolverAccepted;
+  const output = result.output;
+  const score = scoreCandidateSolution(input, output);
+  const source = accepted ? "segment_solver" : baseSource;
+  const selectionReason = accepted
+    ? segmentSolverSelectionReason(scoreCandidateSolution(input, baseOutput), score)
+    : baseMeta.candidateSelectionReason ?? result.meta.segmentSolverImprovement ?? "segment_solver kept base candidate";
+  return {
+    output,
+    meta: {
+      ...baseMeta,
+      ...result.meta,
+      solutionSource: source,
+      bestCandidateSource: source,
+      candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + result.meta.segmentSolverCandidatesGenerated,
+      bestCandidateScore: summarizeCandidateScore(score),
+      candidateSelectionReason: selectionReason,
+      candidateComparisonSummary: selectionReason,
+      selectedCandidateMetrics: {
+        coachSwitchCount: score.coachSwitchCount,
+        coachSwitchPenalty: score.coachSwitchPenalty,
+        maxCoachGapMinutes: score.maxCoachGapMinutes,
+        coachIdlePenalty: score.coachIdlePenalty,
+        coachSpanPenalty: score.coachSpanPenalty,
+        coachSplitDayPenalty: score.coachSplitDayPenalty,
+        talentIdlePenalty: score.talentIdlePenalty,
+        talentSpanPenalty: score.talentSpanPenalty,
+        maxGapPenalty: score.maxGapPenalty,
+        bundleCoherencePenalty: score.bundleCoherencePenalty,
+        bundleSwitchPenalty: score.bundleSwitchPenalty,
+        partialBundleUsageWarnings: score.partialBundleUsageWarnings,
+        bundleSpaceAffinityMatches: score.bundleSpaceAffinityMatches,
+        bundleSpaceAffinityMismatches: score.bundleSpaceAffinityMismatches,
+        restrictiveTalentAverageStartOffset: score.restrictiveTalentAverageStartOffset,
+        mainStageGapMinutes: score.mainStageGapMinutes,
+        mainStageGapCount: score.mainStageGapCount,
+        makespan: score.makespan === Number.MAX_SAFE_INTEGER ? null : score.makespan,
+        hardConstraintViolations: score.hardConstraintViolations,
+      },
+    },
+  };
+};
+
 export const runPipelineBuilderSelection = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -918,7 +975,10 @@ const runCpSatPilotSelection = (
   baseOutput: EngineOutput,
   baseMeta: Partial<BacktrackingMeta>,
 ): { output: EngineOutput; meta: Partial<BacktrackingMeta> & MainStageCpSatPilotMeta } => {
-  const pilot = runMainStageCpSatPilot(input, baseOutput);
+  const rawPilot = runMainStageCpSatPilot(input, baseOutput);
+  const pilot = rawPilot.meta.cpSatPilotReason === "solver_unavailable"
+    ? { ...rawPilot, meta: { ...rawPilot.meta, cpSatPilotAttempted: false, cpSatPilotReason: "missing_solver_runtime", cpSatSegmentsAttempted: 0 } }
+    : rawPilot;
   const selectedScore = scoreCandidateSolution(input, pilot.output);
   const evaluated = Number(baseMeta.candidateSolutionsEvaluated ?? 1) + Number(pilot.meta.cpSatSegmentsAttempted ?? (pilot.meta.cpSatPilotAttempted ? 1 : 0));
   return {
@@ -1274,14 +1334,30 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
         const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
         output = neighborhoodSelection.output;
+        emitProgress(options, "segment_solver", 54, "Optimizando el segmento del coach con peor hueco");
+        const segmentSelection = runSegmentSolverSelection(
+          input,
+          output,
+          neighborhoodSelection.meta.solutionSource ?? "phaseA_backtracking",
+          {
+            ...backtrackingAcceptedMeta,
+            ...neighborhoodSelection.meta,
+            candidateSolutionsEvaluated: Math.max(
+              Number(backtrackingAcceptedMeta.candidateSolutionsEvaluated ?? 1),
+              Number(neighborhoodSelection.meta.candidateSolutionsEvaluated ?? 1),
+            ),
+          },
+          options,
+        );
+        output = segmentSelection.output;
         emitProgress(options, "coach_compaction", 58, "Compactando jornadas y huecos de coaches");
         emitProgress(options, "coach_wave_ordering", 66, "Ordenando olas locales de coaches");
         emitProgress(options, "pipeline_builder", 72, "Generando candidatos de pipeline");
         const pipelineSelection = runPipelineBuilderSelection(
           input,
           output,
-          neighborhoodSelection.meta.solutionSource ?? "phaseA_backtracking",
-          { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta },
+          segmentSelection.meta.solutionSource ?? "phaseA_backtracking",
+          { ...backtrackingAcceptedMeta, ...segmentSelection.meta },
         );
         output = pipelineSelection.output;
         emitProgress(options, "pipeline_repair", 78, "Reparando conflictos de pipeline");
@@ -1407,14 +1483,17 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
       emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
       const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
       output = neighborhoodSelection.output;
+      emitProgress(options, "segment_solver", 54, "Optimizando el segmento del coach con peor hueco");
+      const segmentSelection = runSegmentSolverSelection(input, output, neighborhoodSelection.meta.solutionSource ?? "phaseA_greedy", neighborhoodSelection.meta, options);
+      output = segmentSelection.output;
       emitProgress(options, "coach_compaction", 58, "Compactando jornadas y huecos de coaches");
       emitProgress(options, "coach_wave_ordering", 66, "Ordenando olas locales de coaches");
       emitProgress(options, "pipeline_builder", 72, "Generando candidatos de pipeline");
       const pipelineSelection = runPipelineBuilderSelection(
         input,
         output,
-        neighborhoodSelection.meta.solutionSource ?? "phaseA_greedy",
-        neighborhoodSelection.meta,
+        segmentSelection.meta.solutionSource ?? "phaseA_greedy",
+        segmentSelection.meta,
       );
       output = pipelineSelection.output;
       emitProgress(options, "pipeline_repair", 78, "Reparando conflictos de pipeline");

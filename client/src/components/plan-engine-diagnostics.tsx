@@ -12,6 +12,7 @@ import { useUserRole } from "@/hooks/use-user-role";
 import {
   buildEngineDiagnosticsSnapshot,
   engineDiagnosticsFilename,
+  getDiagnosticsExportAvailability,
 } from "@/lib/engine-diagnostics-export";
 import { calculatePlanningOperationalQuality } from "@/lib/planning-operational-quality";
 import { apiRequest } from "@/lib/api";
@@ -113,6 +114,8 @@ type PlanEngineDiagnosticsProps = {
   tasks?: unknown[] | null;
   contestants?: unknown[] | null;
   resourceNamesById?: Record<number, string> | null;
+  planningActive?: boolean;
+  latestSuccessRunId?: number | null;
 };
 
 export function PlanEngineDiagnostics({
@@ -120,10 +123,12 @@ export function PlanEngineDiagnostics({
   tasks,
   contestants,
   resourceNamesById,
+  planningActive = false,
+  latestSuccessRunId = null,
 }: PlanEngineDiagnosticsProps) {
   const { role } = useUserRole();
   const { toast } = useToast();
-  const diagnosticsQuery = useEngineDiagnostics(planId);
+  const diagnosticsQuery = useEngineDiagnostics(planId, latestSuccessRunId);
   const optimizerSettingsQuery = useQuery<TransportOperationalSettings>({
     queryKey: [api.optimizerSettings.get.path],
     queryFn: () => apiRequest<TransportOperationalSettings>("GET", api.optimizerSettings.get.path),
@@ -167,8 +172,8 @@ export function PlanEngineDiagnostics({
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>No se pudo cargar el diagnóstico del motor.</AlertTitle>
-        <AlertDescription>La planificación sigue disponible; vuelve a abrir la vista para reintentar.</AlertDescription>
+        <AlertTitle>No se pudo cargar el diagnóstico actualizado</AlertTitle>
+        <AlertDescription>La planificación sigue disponible; vuelve a intentarlo desde esta vista.</AlertDescription>
       </Alert>
     );
   }
@@ -201,6 +206,13 @@ export function PlanEngineDiagnostics({
   const createdAt = diagnostics.createdAt && !Number.isNaN(Date.parse(diagnostics.createdAt))
     ? new Intl.DateTimeFormat("es-ES", { dateStyle: "short", timeStyle: "short" }).format(new Date(diagnostics.createdAt))
     : null;
+  const exportAvailability = getDiagnosticsExportAvailability({
+    planningActive,
+    latestSuccessRunId,
+    diagnosticsRunId: Number.isFinite(Number(diagnostics.id)) ? Number(diagnostics.id) : null,
+    isFetching: diagnosticsQuery.isFetching,
+    isError: diagnosticsQuery.isError,
+  });
 
   const serializeSnapshot = () => {
     const snapshot = buildEngineDiagnosticsSnapshot(diagnostics, { planId, operationalQualityInput });
@@ -208,6 +220,10 @@ export function PlanEngineDiagnostics({
   };
 
   const copyDiagnostics = async () => {
+    if (!exportAvailability.ready) {
+      toast({ title: "JSON no disponible", description: exportAvailability.message, variant: exportAvailability.reason === "load_failed" ? "destructive" : "default" });
+      return;
+    }
     if (!navigator.clipboard?.writeText) {
       toast({
         title: "No se pudo copiar el diagnóstico",
@@ -231,6 +247,10 @@ export function PlanEngineDiagnostics({
   };
 
   const downloadDiagnostics = () => {
+    if (!exportAvailability.ready) {
+      toast({ title: "JSON no disponible", description: exportAvailability.message, variant: exportAvailability.reason === "load_failed" ? "destructive" : "default" });
+      return;
+    }
     try {
       const { snapshot, json } = serializeSnapshot();
       const url = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
@@ -260,7 +280,7 @@ export function PlanEngineDiagnostics({
               <Cpu className="h-4 w-4" /> Diagnóstico del motor
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              Última ejecución V3{createdAt ? ` · ${createdAt}` : ""}
+              JSON run #{diagnostics.id ?? "—"}{createdAt ? ` · generatedAt ${createdAt}` : ""}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -274,13 +294,14 @@ export function PlanEngineDiagnostics({
               </Badge>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={copyDiagnostics}>
+              <Button type="button" size="sm" variant="outline" onClick={copyDiagnostics} disabled={!exportAvailability.ready} title={exportAvailability.message}>
                 <Copy /> Copiar JSON
               </Button>
-              <Button type="button" size="sm" variant="secondary" onClick={downloadDiagnostics}>
+              <Button type="button" size="sm" variant="secondary" onClick={downloadDiagnostics} disabled={!exportAvailability.ready} title={exportAvailability.message}>
                 <Download /> Descargar JSON
               </Button>
             </div>
+            {!exportAvailability.ready ? <p className="max-w-sm text-right text-xs text-muted-foreground">{exportAvailability.message}</p> : null}
           </div>
         </div>
       </CardHeader>
@@ -358,6 +379,12 @@ export function PlanEngineDiagnostics({
                 attempted={metadata.neighborhoodSearchAttempted === true}
                 accepted={metadata.neighborhoodCandidateAccepted === true}
                 detail={`${metric(metadata.neighborhoodCandidatesGenerated)} candidatos`}
+              />
+              <UsageBadge
+                label="Segment solver"
+                attempted={metadata.segmentSolverAttempted === true}
+                accepted={metadata.segmentSolverAccepted === true}
+                detail={`${metric(metadata.segmentSolverCandidatesGenerated)} candidatos · ${label(metadata.segmentSolverReason)}`}
               />
               <UsageBadge
                 label="CP-SAT pilot"

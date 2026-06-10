@@ -4,7 +4,7 @@ import { estimatedPlanningProgress, planningPhaseSteps, PLANNING_PHASES } from "
 
 test("planning phases are exposed in operational order", () => {
   assert.deepEqual(PLANNING_PHASES.map((phase) => phase.id), [
-    "loading_input", "phase_a_base_solution", "hard_validation", "operational_neighborhoods", "coach_compaction",
+    "loading_input", "phase_a_base_solution", "hard_validation", "operational_neighborhoods", "segment_solver", "coach_compaction",
     "coach_wave_ordering", "pipeline_builder", "pipeline_repair", "lane_only_repair", "meal_scheduling",
     "scoring_candidates", "persisting_result",
   ]);

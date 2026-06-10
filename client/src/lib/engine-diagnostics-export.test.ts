@@ -6,6 +6,8 @@ import {
   ENGINE_DIAGNOSTICS_EXPORT_VERSION,
   MAX_EXPORTED_WARNINGS_PER_GROUP,
   MAX_EXPORTED_HARD_VIOLATIONS,
+  getDiagnosticsExportAvailability,
+  engineDiagnosticsFilename,
 } from "./engine-diagnostics-export";
 
 const generatedAt = new Date("2026-05-31T01:25:00.000Z");
@@ -330,4 +332,36 @@ test("meal diagnostics are always exported and preserve real scheduler metadata"
     "mealSchedulerRejectedReasons", "mealBlockingConflicts", "mealMovedAssignments", "mealSchedulerPhase",
     "mealSchedulerCouldAffectPipeline", "mealSchedulerPipelineIntegrationReason",
   ]) assert.equal(Object.hasOwn(defaults, key), true, `missing ${key}`);
+});
+
+test("disables diagnostics export while planning is active", () => {
+  const state = getDiagnosticsExportAvailability({ planningActive: true, latestSuccessRunId: 200, diagnosticsRunId: 199 });
+  assert.equal(state.ready, false);
+  assert.equal(state.reason, "planning_active");
+});
+
+test("disables stale diagnostics until latest success run is loaded", () => {
+  const state = getDiagnosticsExportAvailability({ planningActive: false, latestSuccessRunId: 200, diagnosticsRunId: 199 });
+  assert.equal(state.ready, false);
+  assert.equal(state.reason, "stale_run");
+});
+
+test("enables copy and download only for the latest success run", () => {
+  const state = getDiagnosticsExportAvailability({ planningActive: false, latestSuccessRunId: 200, diagnosticsRunId: 200 });
+  assert.equal(state.ready, true);
+  assert.equal(state.reason, "ready");
+});
+
+test("reports updated diagnostics load failures", () => {
+  const state = getDiagnosticsExportAvailability({ planningActive: false, latestSuccessRunId: 200, diagnosticsRunId: 199, isError: true });
+  assert.equal(state.ready, false);
+  assert.equal(state.message, "No se pudo cargar el diagnóstico actualizado");
+});
+
+
+test("copy/download snapshot and filename retain the latest success run id", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({ id: 200, planId: 52, status: "success" }, { generatedAt, planId: 52 });
+  assert.equal(snapshot.runId, 200);
+  assert.equal(JSON.parse(JSON.stringify(snapshot)).runId, 200);
+  assert.equal(engineDiagnosticsFilename(snapshot), "engine-diagnostics-plan-52-200.json");
 });

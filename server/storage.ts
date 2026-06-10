@@ -273,6 +273,7 @@ export class SupabaseStorage implements IStorage {
       .select("id, plan_id, created_at, engine_version, solution_source, status, planned_tasks, unplanned_tasks, hard_constraint_violations, main_stage_gap_minutes, main_stage_gap_count, coach_switch_count, restrictive_talent_average_start_offset, selected_candidate_metrics, engine_metadata, diagnostic_warnings")
       .eq("plan_id", planId)
       .eq("engine_version", "v3")
+      .eq("status", "success")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

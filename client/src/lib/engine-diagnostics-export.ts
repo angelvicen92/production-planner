@@ -207,6 +207,28 @@ export type EngineDiagnosticsSnapshot = {
     coachWaveReason: string;
     coachWaveBefore: CompactJsonValue;
     coachWaveAfter: CompactJsonValue;
+    segmentSolverAttempted: boolean;
+    segmentSolverBackend: string;
+    segmentSolverSegmentsBuilt: number;
+    segmentSolverCandidatesGenerated: number;
+    segmentSolverAccepted: boolean;
+    segmentSolverReason: string;
+    segmentSolverRejectedReasons: CompactJsonValue;
+    segmentSolverTargetCoachName: string | null;
+    segmentSolverWindowStart: string | null;
+    segmentSolverWindowEnd: string | null;
+    segmentSolverTaskCount: number | null;
+    segmentSolverTalentNames: CompactJsonValue;
+    segmentSolverResourceNames: CompactJsonValue;
+    segmentSolverBestBefore: CompactJsonValue;
+    segmentSolverBestAfter: CompactJsonValue;
+    segmentSolverImprovement: string | null;
+    segmentSolverTimeoutMs: number;
+    segmentSolverElapsedMs: number;
+    segmentSolverMealMovesAttempted: boolean;
+    segmentSolverMealMovesAccepted: boolean;
+    segmentSolverMealMoveCount: number;
+    segmentSolverMealRejectedReasons: CompactJsonValue;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -247,6 +269,7 @@ export type EngineDiagnosticsSnapshot = {
     mealSchedulerPipelineIntegrationReason: string;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
+    cpSatPilotReason: string | null;
     cpSatSegmentsAttempted: number | null;
     cpSatSegmentsAccepted: number | null;
   };
@@ -334,6 +357,28 @@ export function buildEngineDiagnosticsSnapshot(
       coachWaveReason: optionalString(metadata.coachWaveReason) ?? "generator_not_invoked",
       coachWaveBefore: compactJsonValue(metadata.coachWaveBefore) ?? {},
       coachWaveAfter: compactJsonValue(metadata.coachWaveAfter) ?? {},
+      segmentSolverAttempted: optionalBoolean(metadata.segmentSolverAttempted) ?? false,
+      segmentSolverBackend: optionalString(metadata.segmentSolverBackend) ?? "bounded_exact_search",
+      segmentSolverSegmentsBuilt: optionalNumber(metadata.segmentSolverSegmentsBuilt) ?? 0,
+      segmentSolverCandidatesGenerated: optionalNumber(metadata.segmentSolverCandidatesGenerated) ?? 0,
+      segmentSolverAccepted: optionalBoolean(metadata.segmentSolverAccepted) ?? false,
+      segmentSolverReason: optionalString(metadata.segmentSolverReason) ?? "no_problematic_coach_segment",
+      segmentSolverRejectedReasons: compactJsonValue(metadata.segmentSolverRejectedReasons) ?? [],
+      segmentSolverTargetCoachName: optionalString(metadata.segmentSolverTargetCoachName),
+      segmentSolverWindowStart: optionalString(metadata.segmentSolverWindowStart),
+      segmentSolverWindowEnd: optionalString(metadata.segmentSolverWindowEnd),
+      segmentSolverTaskCount: optionalNumber(metadata.segmentSolverTaskCount),
+      segmentSolverTalentNames: compactJsonValue(metadata.segmentSolverTalentNames) ?? [],
+      segmentSolverResourceNames: compactJsonValue(metadata.segmentSolverResourceNames) ?? [],
+      segmentSolverBestBefore: compactJsonValue(metadata.segmentSolverBestBefore) ?? {},
+      segmentSolverBestAfter: compactJsonValue(metadata.segmentSolverBestAfter) ?? {},
+      segmentSolverImprovement: optionalString(metadata.segmentSolverImprovement),
+      segmentSolverTimeoutMs: optionalNumber(metadata.segmentSolverTimeoutMs) ?? 0,
+      segmentSolverElapsedMs: optionalNumber(metadata.segmentSolverElapsedMs) ?? 0,
+      segmentSolverMealMovesAttempted: optionalBoolean(metadata.segmentSolverMealMovesAttempted) ?? false,
+      segmentSolverMealMovesAccepted: optionalBoolean(metadata.segmentSolverMealMovesAccepted) ?? false,
+      segmentSolverMealMoveCount: optionalNumber(metadata.segmentSolverMealMoveCount) ?? 0,
+      segmentSolverMealRejectedReasons: compactJsonValue(metadata.segmentSolverMealRejectedReasons) ?? [],
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
       pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
       pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,
@@ -379,6 +424,7 @@ export function buildEngineDiagnosticsSnapshot(
         ?? "meal_scheduler_runs_after_pipeline_selection",
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
+      cpSatPilotReason: optionalString(metadata.cpSatPilotReason) ?? "missing_solver_runtime",
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),
       cpSatSegmentsAccepted: optionalNumber(metadata.cpSatSegmentsAccepted),
     },
@@ -407,4 +453,27 @@ export function engineDiagnosticsFilename(snapshot: EngineDiagnosticsSnapshot): 
   const planId = snapshot.planId ?? "unknown";
   const runId = snapshot.runId ?? "unknown";
   return `engine-diagnostics-plan-${planId}-${runId}.json`;
+}
+
+export type DiagnosticsExportAvailability = {
+  ready: boolean;
+  reason: "ready" | "planning_active" | "refreshing" | "stale_run" | "load_failed" | "missing_diagnostics";
+  message: string;
+};
+
+export function getDiagnosticsExportAvailability(input: {
+  planningActive: boolean;
+  latestSuccessRunId: number | null;
+  diagnosticsRunId: number | null;
+  isFetching?: boolean;
+  isError?: boolean;
+}): DiagnosticsExportAvailability {
+  if (input.planningActive) return { ready: false, reason: "planning_active", message: "El JSON estará disponible al finalizar esta planificación." };
+  if (input.isError) return { ready: false, reason: "load_failed", message: "No se pudo cargar el diagnóstico actualizado" };
+  if (input.isFetching) return { ready: false, reason: "refreshing", message: "Cargando el diagnóstico actualizado…" };
+  if (input.diagnosticsRunId === null) return { ready: false, reason: "missing_diagnostics", message: "Aún no hay un diagnóstico disponible." };
+  if (input.latestSuccessRunId !== null && input.diagnosticsRunId !== input.latestSuccessRunId) {
+    return { ready: false, reason: "stale_run", message: "Cargando el diagnóstico del último run correcto…" };
+  }
+  return { ready: true, reason: "ready", message: "JSON actualizado disponible." };
 }

@@ -55,6 +55,28 @@ export type EngineDiagnosticsMetadata = {
   coachWaveReason?: string | null;
   coachWaveBefore?: Record<string, unknown> | null;
   coachWaveAfter?: Record<string, unknown> | null;
+  segmentSolverAttempted?: boolean | null;
+  segmentSolverBackend?: string | null;
+  segmentSolverSegmentsBuilt?: number | null;
+  segmentSolverCandidatesGenerated?: number | null;
+  segmentSolverAccepted?: boolean | null;
+  segmentSolverReason?: string | null;
+  segmentSolverRejectedReasons?: string[] | null;
+  segmentSolverTargetCoachName?: string | null;
+  segmentSolverWindowStart?: string | null;
+  segmentSolverWindowEnd?: string | null;
+  segmentSolverTaskCount?: number | null;
+  segmentSolverTalentNames?: string[] | null;
+  segmentSolverResourceNames?: string[] | null;
+  segmentSolverBestBefore?: Record<string, unknown> | null;
+  segmentSolverBestAfter?: Record<string, unknown> | null;
+  segmentSolverImprovement?: string | null;
+  segmentSolverTimeoutMs?: number | null;
+  segmentSolverElapsedMs?: number | null;
+  segmentSolverMealMovesAttempted?: boolean | null;
+  segmentSolverMealMovesAccepted?: boolean | null;
+  segmentSolverMealMoveCount?: number | null;
+  segmentSolverMealRejectedReasons?: string[] | null;
   pipelineBuilderAttempted?: boolean | null;
   pipelineCandidatesGenerated?: number | null;
   pipelineAccepted?: boolean | null;
@@ -97,6 +119,7 @@ export type EngineDiagnosticsMetadata = {
   cpSatAccepted?: boolean | null;
   cpSatPilotAttempted?: boolean | null;
   cpSatPilotAccepted?: boolean | null;
+  cpSatPilotReason?: string | null;
   cpSatSegmentsAttempted?: number | null;
   cpSatSegmentsAccepted?: number | null;
   declaredResourceBundleCount?: number | null;
@@ -138,14 +161,13 @@ type LatestEngineDiagnosticsResponse = {
   diagnostics?: EngineDiagnostics | null;
 };
 
-export const engineDiagnosticsQueryKey = (planId: number | null) => [
-  "engine-diagnostics",
-  planId,
-] as const;
+export const engineDiagnosticsQueryKey = (planId: number | null, latestSuccessRunId?: number | null) => latestSuccessRunId === undefined
+  ? ["engine-diagnostics", planId] as const
+  : ["engine-diagnostics", planId, latestSuccessRunId] as const;
 
-export function useEngineDiagnostics(planId: number | null) {
+export function useEngineDiagnostics(planId: number | null, latestSuccessRunId: number | null = null) {
   return useQuery<EngineDiagnostics | null>({
-    queryKey: engineDiagnosticsQueryKey(planId),
+    queryKey: engineDiagnosticsQueryKey(planId, latestSuccessRunId),
     enabled: Number.isFinite(planId) && Number(planId) > 0,
     retry: false,
     refetchOnWindowFocus: true,
