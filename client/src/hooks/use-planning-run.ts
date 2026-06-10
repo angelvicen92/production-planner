@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api, buildUrl } from "@shared/routes";
 import { getPlanningRunUiState } from "@shared/planning-run-state";
-import { hasActivePlanningContext, isAbortLikeError } from "@/lib/planning-recovery";
+import { hasActivePlanningContext, isAbortLikeError, readCancelledPlanningRunId, shouldRecoverPlanningRun } from "@/lib/planning-recovery";
 
 export type PlanningRun = {
   id: number;
@@ -12,6 +12,7 @@ export type PlanningRun = {
     | "pending"
     | "queued"
     | "optimizing"
+    | "cancelling"
     | "success"
     | "infeasible"
     | "invalid"
@@ -21,6 +22,9 @@ export type PlanningRun = {
     | "canceled"
     | "stale";
   stale?: boolean;
+  cancelRequestedAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
   startedAt: string;
   updatedAt: string;
   totalPending: number;
@@ -58,8 +62,10 @@ export function usePlanningRun(planId: number | null) {
     refetchInterval: (query) => {
       const run = query.state.data as PlanningRun | null | undefined;
       const hasPersistedContext = typeof window !== "undefined" && hasActivePlanningContext(Number(planId), window.localStorage);
+      const cancelledRunId = typeof window !== "undefined" ? readCancelledPlanningRunId(Number(planId), window.sessionStorage) : null;
+      if (run && !shouldRecoverPlanningRun(run, cancelledRunId)) return false;
       if (String(run?.phase ?? "") === "persisting_result") return 300;
-      return getPlanningRunUiState(run) === "active" || hasPersistedContext ? 700 : false;
+      return getPlanningRunUiState(run) === "active" || (hasPersistedContext && !run) ? 700 : false;
     },
     refetchIntervalInBackground: true,
     refetchOnMount: "always",

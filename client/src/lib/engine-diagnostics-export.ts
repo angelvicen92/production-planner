@@ -230,6 +230,21 @@ export type EngineDiagnosticsSnapshot = {
     pipelineSegmentRepairStrategiesTried: CompactJsonValue;
     pipelineSegmentRepairMovedTalentNames: CompactJsonValue;
     pipelineSegmentRepairRejectedReasons: CompactJsonValue;
+    mealMode: "global_hard_break" | "flexible_meal_window";
+    mealModeReason: string;
+    mealWindowStart: string | null;
+    mealWindowEnd: string | null;
+    mealDurationMinutes: number | null;
+    mealSchedulerAttempted: boolean;
+    mealAssignmentsGenerated: number;
+    mealSchedulerAccepted: boolean;
+    mealSchedulerReason: string;
+    mealSchedulerRejectedReasons: CompactJsonValue;
+    mealBlockingConflicts: number;
+    mealMovedAssignments: CompactJsonValue;
+    mealSchedulerPhase: "post_pipeline";
+    mealSchedulerCouldAffectPipeline: boolean;
+    mealSchedulerPipelineIntegrationReason: string;
     cpSatPilotAttempted: boolean | null;
     cpSatPilotAccepted: boolean | null;
     cpSatSegmentsAttempted: number | null;
@@ -344,6 +359,24 @@ export function buildEngineDiagnosticsSnapshot(
         ? metadata.pipelineSegmentRepairMovedTalentNames.slice(0, 20) : []) ?? [],
       pipelineSegmentRepairRejectedReasons: compactJsonValue(Array.isArray(metadata.pipelineSegmentRepairRejectedReasons)
         ? metadata.pipelineSegmentRepairRejectedReasons.slice(0, 10) : []) ?? [],
+      mealMode: metadata.mealMode === "flexible_meal_window" ? "flexible_meal_window" : "global_hard_break",
+      mealModeReason: optionalString(metadata.mealModeReason) ?? "meal_mode_inferred_legacy_global_break",
+      mealWindowStart: optionalString(metadata.mealWindowStart),
+      mealWindowEnd: optionalString(metadata.mealWindowEnd),
+      mealDurationMinutes: optionalNumber(metadata.mealDurationMinutes),
+      mealSchedulerAttempted: optionalBoolean(metadata.mealSchedulerAttempted) ?? false,
+      mealAssignmentsGenerated: optionalNumber(metadata.mealAssignmentsGenerated) ?? 0,
+      mealSchedulerAccepted: optionalBoolean(metadata.mealSchedulerAccepted) ?? false,
+      mealSchedulerReason: optionalString(metadata.mealSchedulerReason) ?? "generator_not_invoked",
+      mealSchedulerRejectedReasons: compactJsonValue(Array.isArray(metadata.mealSchedulerRejectedReasons)
+        ? metadata.mealSchedulerRejectedReasons.slice(0, 20) : []) ?? [],
+      mealBlockingConflicts: optionalNumber(metadata.mealBlockingConflicts) ?? 0,
+      mealMovedAssignments: compactJsonValue(Array.isArray(metadata.mealMovedAssignments)
+        ? metadata.mealMovedAssignments.slice(0, 50) : []) ?? [],
+      mealSchedulerPhase: "post_pipeline",
+      mealSchedulerCouldAffectPipeline: optionalBoolean(metadata.mealSchedulerCouldAffectPipeline) ?? false,
+      mealSchedulerPipelineIntegrationReason: optionalString(metadata.mealSchedulerPipelineIntegrationReason)
+        ?? "meal_scheduler_runs_after_pipeline_selection",
       cpSatPilotAttempted: optionalBoolean(metadata.cpSatPilotAttempted),
       cpSatPilotAccepted: optionalBoolean(metadata.cpSatPilotAccepted),
       cpSatSegmentsAttempted: optionalNumber(metadata.cpSatSegmentsAttempted),

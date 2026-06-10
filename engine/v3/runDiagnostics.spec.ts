@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { buildRunDiagnostics } from "./runDiagnostics";
+import { withV3Meta } from "./index";
 
 const input: EngineV3Input = {
   planId: 21,
@@ -114,6 +115,21 @@ const output: EngineOutput = {
     pipelineAlternativeLaneCandidatesGenerated: 0,
     pipelineAlternativeLaneAccepted: false,
     pipelineAlternativeLaneRejectedReasons: ["alternative_lane_unavailable_missing_config"],
+    mealMode: "flexible_meal_window",
+    mealModeReason: "configured_flexible_meal_window",
+    mealWindowStart: "12:00",
+    mealWindowEnd: "14:00",
+    mealDurationMinutes: 30,
+    mealSchedulerAttempted: true,
+    mealAssignmentsGenerated: 2,
+    mealSchedulerAccepted: true,
+    mealSchedulerReason: "flexible_meals_scheduled",
+    mealSchedulerRejectedReasons: [],
+    mealBlockingConflicts: 1,
+    mealMovedAssignments: [{ taskId: 9, fromStart: "12:00", toStart: "12:30", toEnd: "13:00" }],
+    mealSchedulerPhase: "post_pipeline",
+    mealSchedulerCouldAffectPipeline: true,
+    mealSchedulerPipelineIntegrationReason: "post_pipeline_meal_moves_can_change_pipeline_blockers",
     cpSatPilotAttempted: true,
     cpSatPilotAccepted: false,
     cpSatPilotReason: "no strict improvement",
@@ -177,6 +193,11 @@ const output: EngineOutput = {
   assert.equal(diagnostics.engineMetadata.pipelineLaneOnlyRepairMovedTalentNames.length, 10);
   assert.equal(diagnostics.engineMetadata.pipelineAlternativeLaneAttempted, true);
   assert.deepEqual(diagnostics.engineMetadata.pipelineAlternativeLaneRejectedReasons, ["alternative_lane_unavailable_missing_config"]);
+  assert.equal(diagnostics.engineMetadata.mealMode, "flexible_meal_window");
+  assert.equal(diagnostics.engineMetadata.mealSchedulerAttempted, true);
+  assert.equal(diagnostics.engineMetadata.mealSchedulerAccepted, true);
+  assert.equal(diagnostics.engineMetadata.mealSchedulerPhase, "post_pipeline");
+  assert.deepEqual(diagnostics.engineMetadata.mealMovedAssignments, [{ taskId: 9, fromStart: "12:00", toStart: "12:30", toEnd: "13:00" }]);
   assert.deepEqual(diagnostics.selectedCandidateMetrics, selectedCandidateMetrics);
 }
 
@@ -221,6 +242,12 @@ const output: EngineOutput = {
   assert.deepEqual(withoutMeta.engineMetadata.pipelineConflictDetails, []);
   assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairAttempted, false);
   assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairReason, "not_attempted");
+  assert.equal(withoutMeta.engineMetadata.mealMode, "global_hard_break");
+  assert.equal(withoutMeta.engineMetadata.mealSchedulerAttempted, false);
+  assert.equal(withoutMeta.engineMetadata.mealAssignmentsGenerated, 0);
+  assert.deepEqual(withoutMeta.engineMetadata.mealSchedulerRejectedReasons, []);
+  assert.deepEqual(withoutMeta.engineMetadata.mealMovedAssignments, []);
+  assert.equal(withoutMeta.engineMetadata.mealSchedulerPhase, "post_pipeline");
 }
 
 {
@@ -328,3 +355,67 @@ const output: EngineOutput = {
 }
 
 console.log("engine/v3/runDiagnostics.spec.ts: OK");
+
+{
+  const baseOutput: EngineOutput = {
+    feasible: true,
+    complete: true,
+    hardFeasible: true,
+    plannedTasks: [],
+    unplanned: [],
+    warnings: [],
+  };
+  const withRealMealMeta = withV3Meta(baseOutput, {
+    solutionSource: "phaseA_greedy",
+    mealMode: "flexible_meal_window",
+    mealModeReason: "configured_flexible_meal_window",
+    mealSchedulerAttempted: true,
+    mealAssignmentsGenerated: 3,
+    mealSchedulerAccepted: true,
+    mealSchedulerReason: "flexible_meals_scheduled",
+    mealMovedAssignments: [],
+  });
+  assert.equal(withRealMealMeta.v3Meta?.mealMode, "flexible_meal_window");
+  assert.equal(withRealMealMeta.v3Meta?.mealAssignmentsGenerated, 3);
+
+  const withDefaults = withV3Meta(baseOutput, { solutionSource: "phaseA_greedy" });
+  assert.equal(withDefaults.v3Meta?.mealSchedulerAttempted, false);
+  assert.deepEqual(withDefaults.v3Meta?.mealSchedulerRejectedReasons, []);
+  assert.equal(withDefaults.v3Meta?.mealSchedulerPhase, "post_pipeline");
+}
+
+{
+  const mealConflictOutput: EngineOutput = {
+    ...output,
+    v3Meta: {
+      ...output.v3Meta!,
+      pipelineConflictDetails: [{
+        candidateName: "pipeline_builder",
+        violationCode: "SPACE_OVERLAP",
+        taskIds: [1, 2],
+        taskNames: ["COMIDA", "Vocal"],
+        talentNames: ["Lucía"],
+        blockingTaskIds: [1],
+        blockingTaskNames: ["COMIDA"],
+        movableTaskIds: [1],
+        lockedOrExecutedTaskIds: [],
+        conflictKind: "break_window_blocker",
+        isBreakBlocker: true,
+        mealMode: "flexible_meal_window",
+        mealCanMove: true,
+        mealMoveAttempted: true,
+        mealMoveResult: "alternative_slot_checked",
+        mealAlternativeSlotsChecked: 9,
+        repairAttempted: true,
+        repairStrategy: "meal_aware_lane_repair",
+        repairResult: "alternative_slot_checked",
+        message: "COMIDA blocks the selected pipeline slot",
+      }],
+    },
+  };
+  const detail = buildRunDiagnostics(input, mealConflictOutput).engineMetadata.pipelineConflictDetails[0];
+  assert.equal(detail.mealMode, "flexible_meal_window");
+  assert.equal(detail.mealCanMove, true);
+  assert.equal(detail.mealMoveAttempted, true);
+  assert.equal(detail.mealAlternativeSlotsChecked, 9);
+}

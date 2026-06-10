@@ -1,6 +1,7 @@
 export type RecoverablePlanningStatus =
   | "queued"
   | "running"
+  | "cancelling"
   | "success"
   | "failed"
   | "cancelled"
@@ -56,11 +57,46 @@ export function normalizeRecoverablePlanningStatus(status?: string | null): Reco
   if (["running", "optimizing"].includes(normalized)) return "running";
   if (normalized === "success") return "success";
   if (["failed", "error", "invalid", "infeasible"].includes(normalized)) return "failed";
-  if (["cancelled", "canceled"].includes(normalized)) return "cancelled";
+  if (["cancelling", "cancelled", "canceled"].includes(normalized)) return "cancelled";
   if (normalized === "stale") return "stale";
   return "unknown";
 }
 
 export function shouldShowFinalPlanLoadError(error: unknown, hasRecoverableContext?: boolean): boolean {
   return !isAbortLikeError(error) && !hasRecoverableContext;
+}
+
+const CANCELLED_RUN_KEY_PREFIX = "cancelled-planning-run:";
+
+export function cancelledPlanningRunStorageKey(planId: number): string {
+  return `${CANCELLED_RUN_KEY_PREFIX}${planId}`;
+}
+
+export function readCancelledPlanningRunId(planId: number, storage?: Pick<Storage, "getItem"> | null): number | null {
+  if (!storage || !Number.isFinite(planId) || planId <= 0) return null;
+  const value = Number(storage.getItem(cancelledPlanningRunStorageKey(planId)));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export function persistCancelledPlanningRunId(
+  planId: number,
+  runId: number | null,
+  storage?: Pick<Storage, "setItem" | "removeItem"> | null,
+): void {
+  if (!storage || !Number.isFinite(planId) || planId <= 0) return;
+  const key = cancelledPlanningRunStorageKey(planId);
+  if (Number.isFinite(Number(runId)) && Number(runId) > 0) storage.setItem(key, String(runId));
+  else storage.removeItem(key);
+}
+
+export function shouldRecoverPlanningRun(
+  run: { id?: number | null; status?: string | null; cancelRequestedAt?: string | null } | null | undefined,
+  lastCancelledRunId?: number | null,
+): boolean {
+  if (!run) return false;
+  const status = String(run.status ?? "").toLowerCase();
+  if (["cancelling", "cancelled", "canceled"].includes(status)) return false;
+  if (run.cancelRequestedAt) return false;
+  if (Number.isFinite(Number(lastCancelledRunId)) && Number(run.id) === Number(lastCancelledRunId)) return false;
+  return ["pending", "queued", "running", "optimizing", "stale"].includes(status);
 }

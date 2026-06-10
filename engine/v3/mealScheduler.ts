@@ -17,6 +17,9 @@ export type MealSchedulerDiagnostics = {
   mealSchedulerRejectedReasons: string[];
   mealBlockingConflicts: number;
   mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
+  mealSchedulerPhase: "post_pipeline";
+  mealSchedulerCouldAffectPipeline: boolean;
+  mealSchedulerPipelineIntegrationReason: string;
 };
 
 const GRID_MINUTES = 5;
@@ -75,6 +78,9 @@ const schedulerExceptionDiagnostics = (input: EngineV3Input): MealSchedulerDiagn
     mealSchedulerRejectedReasons: ["meal_scheduler_exception"],
     mealBlockingConflicts: 0,
     mealMovedAssignments: [],
+    mealSchedulerPhase: "post_pipeline",
+    mealSchedulerCouldAffectPipeline: false,
+    mealSchedulerPipelineIntegrationReason: "meal_scheduler_exception_after_pipeline",
   };
 };
 
@@ -107,6 +113,11 @@ export function scheduleFlexibleMeals(
     mealSchedulerRejectedReasons: [],
     mealBlockingConflicts: 0,
     mealMovedAssignments: [],
+    mealSchedulerPhase: "post_pipeline",
+    mealSchedulerCouldAffectPipeline: mode.mode === "flexible_meal_window" && mealTasks.length > 0,
+    mealSchedulerPipelineIntegrationReason: mode.mode === "flexible_meal_window"
+      ? "post_pipeline_meal_moves_can_change_pipeline_blockers"
+      : "global_hard_break_has_no_post_pipeline_moves",
   };
   if (mode.mode !== "flexible_meal_window") return { output, diagnostics: base };
   base.mealSchedulerAttempted = true;

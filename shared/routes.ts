@@ -81,6 +81,7 @@ export const api = {
     cancel: {
       method: "POST" as const,
       path: "/api/plans/:id/generation/cancel",
+      input: z.object({ runId: z.number().int().positive().optional() }).optional(),
     },
     latestEngineDiagnostics: {
       method: "GET" as const,

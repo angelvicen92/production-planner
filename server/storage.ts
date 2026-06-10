@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabase";
 import type { EngineRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { normalizePipelineDiagnosticsMetadata } from "../engine/v3/pipelineDiagnostics";
+import { normalizeMealDiagnosticsMetadata } from "../engine/v3/mealDiagnostics";
 import {
   Plan,
   PlanSummary,
@@ -254,13 +255,15 @@ export class SupabaseStorage implements IStorage {
         selected_candidate_metrics: diagnostics.selectedCandidateMetrics,
         engine_metadata: {
           ...diagnostics.engineMetadata,
+          ...normalizeMealDiagnosticsMetadata(diagnostics.engineMetadata),
           ...normalizePipelineDiagnosticsMetadata(diagnostics.engineMetadata),
         },
         diagnostic_warnings: diagnostics.diagnosticWarnings,
         updated_at: new Date().toISOString(),
       })
       .eq("id", runId)
-      .eq("plan_id", planId);
+      .eq("plan_id", planId)
+      .eq("status", "success");
     if (error) throw error;
   }
 
@@ -306,6 +309,9 @@ export class SupabaseStorage implements IStorage {
         : Number(data.hard_constraint_violations ?? 0) === 0,
       engineMetadata: {
         ...(data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {}),
+        ...normalizeMealDiagnosticsMetadata(
+          data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
+        ),
         ...normalizePipelineDiagnosticsMetadata(
           data.engine_metadata && typeof data.engine_metadata === "object" ? data.engine_metadata : {},
         ),

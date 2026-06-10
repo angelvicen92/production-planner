@@ -88,7 +88,7 @@ export function getPlanningRunUiState(
   if (status === "success" || String(run.phase ?? "").toLowerCase() === "success") {
     return totalPending === 0 ? "no_work" : "success";
   }
-  if (status === "cancelled" || status === "canceled") return "cancelled";
+  if (["cancelling", "cancelled", "canceled"].includes(status)) return "cancelled";
   if (["infeasible", "invalid", "error", "failed"].includes(status))
     return "failed";
   if (
@@ -107,11 +107,15 @@ export function getPlanningRunUiState(
   return isFinalPlanningRunStatus(status) ? "failed" : "idle";
 }
 
-export type PlanningRunCancellationDecision = "cancel" | "no_active_run" | "already_finalizing";
+export type PlanningRunCancellationDecision = "cancel" | "already_cancelled" | "already_terminal" | "no_active_run";
 
-export function getPlanningRunCancellationDecision(status?: string | null, phase?: string | null): PlanningRunCancellationDecision {
-  if (!isActivePlanningRunStatus(status)) return "no_active_run";
-  return String(phase ?? "").toLowerCase() === "persisting" ? "already_finalizing" : "cancel";
+export function getPlanningRunCancellationDecision(status?: string | null, _phase?: string | null): PlanningRunCancellationDecision {
+  const normalized = String(status ?? "").toLowerCase();
+  if (["cancelled", "canceled"].includes(normalized)) return "already_cancelled";
+  if (normalized === "cancelling") return "cancel";
+  if (["success", "failed", "error", "invalid", "infeasible"].includes(normalized)) return "already_terminal";
+  if (["queued", "running", "pending", "optimizing", "stale"].includes(normalized)) return "cancel";
+  return "no_active_run";
 }
 
 export function shouldCancelPlanningRunOnDismiss(run: PlanningRunStateInput | null | undefined, nowMs = Date.now()): boolean {
