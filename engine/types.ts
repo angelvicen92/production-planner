@@ -576,6 +576,9 @@ export interface EngineOutput {
     mealSchedulerRejectedReasons?: string[];
     mealBlockingConflicts?: number;
     mealMovedAssignments?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
+    mealSchedulerPhase?: "post_pipeline";
+    mealSchedulerCouldAffectPipeline?: boolean;
+    mealSchedulerPipelineIntegrationReason?: string;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

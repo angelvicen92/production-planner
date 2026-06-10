@@ -67,6 +67,8 @@ test("safe meal scheduler preserves the original output when the scheduler throw
   assert.equal(scheduled.output, original);
   assert.equal(scheduled.diagnostics.mealSchedulerReason, "meal_scheduler_exception");
   assert.ok(scheduled.diagnostics.mealSchedulerRejectedReasons.includes("meal_scheduler_exception"));
+  assert.equal(scheduled.diagnostics.mealSchedulerPhase, "post_pipeline");
+  assert.equal(scheduled.diagnostics.mealSchedulerCouldAffectPipeline, false);
 });
 
 test("meal scheduler tolerates undefined task arrays", () => {

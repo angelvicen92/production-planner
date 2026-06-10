@@ -44,7 +44,9 @@ import {
   isAbortLikeError,
   markPlanningReconnectContext,
   persistActivePlanningRunId,
+  persistCancelledPlanningRunId,
   readActivePlanningRunId,
+  readCancelledPlanningRunId,
   shouldShowFinalPlanLoadError,
 } from "@/lib/planning-recovery";
 
@@ -1577,7 +1579,7 @@ ${reasonMessage}` : message,
       return;
     }
     if (uiState === "cancelled") {
-      toast({ title: "Generación cancelada. Puedes reintentar." });
+      toast({ title: "Planificación cancelada. No se han aplicado cambios." });
       return;
     }
     if (uiState === "failed") {
@@ -1869,18 +1871,27 @@ ${reasonMessage}` : message,
     const hasActiveGeneration = uiState === "active" || uiState === "stale" || planningInProgress || generatePlan.isPending;
     cancelledByUserRef.current = true;
     generationAbortControllerRef.current?.abort("cancelled_by_user");
+    persistActivePlanningRunId(id, null, window.localStorage);
+    persistCancelledPlanningRunId(id, runId ?? null, window.sessionStorage);
+    setExpectedPlanningRunId(null);
+    await queryClient.cancelQueries({ queryKey: ["planning-run", id] });
     unlockPlanningModal(runId);
 
     let backendCancelFailed = false;
     if (hasActiveGeneration) {
       queryClient.setQueryData(["planning-run", id], (current: any) => current ? { ...current, status: "cancelled", phase: "cancelled" } : current);
       try {
-        await apiRequest("POST", buildUrl(api.planningRuns.cancel.path, { id }));
+        const cancellation: any = await apiRequest("POST", buildUrl(api.planningRuns.cancel.path, { id }), runId ? { runId: Number(runId) } : {});
+        if (cancellation?.rollbackGuaranteed === false) {
+          backendCancelFailed = true;
+        }
       } catch {
         backendCancelFailed = true;
-        // The frontend dismissal is intentionally authoritative: a blocked backend must not trap the user.
+        // The modal still closes, but the UI must not claim transactional safety without backend confirmation.
       }
-      toast({ title: "Generación cancelada. Puedes reintentar." });
+      toast(backendCancelFailed
+        ? { title: "No se pudo garantizar la restauración", description: "Recarga el plan y revisa sus tareas antes de reintentar.", variant: "destructive" }
+        : { title: "Planificación cancelada. No se han aplicado cambios." });
     }
     await refreshPlanningState();
     if (backendCancelFailed) {
@@ -1892,6 +1903,7 @@ ${reasonMessage}` : message,
 
   const handleGenerate = async () => {
     cancelledByUserRef.current = false;
+    persistCancelledPlanningRunId(id, null, window.sessionStorage);
     generationAbortControllerRef.current = new AbortController();
     setDismissedPlanningRunId(null);
     window.sessionStorage.removeItem(`dismissed-planning-run:${id}`);
@@ -1925,6 +1937,8 @@ ${reasonMessage}` : message,
           signal: generationAbortControllerRef.current.signal,
         });
       const completedRunId = Number.isFinite(Number(data?.runId)) ? Number(data.runId) : null;
+      const lastCancelledRunId = readCancelledPlanningRunId(id, window.sessionStorage);
+      if (cancelledByUserRef.current || (completedRunId && completedRunId === lastCancelledRunId)) return;
       setExpectedPlanningRunId(completedRunId);
       persistActivePlanningRunId(id, completedRunId, window.localStorage);
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });

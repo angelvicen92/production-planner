@@ -12,6 +12,14 @@ import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { persistPlanningRunUpdateBestEffort, queuePlanningRunUpdateBestEffort } from "./planning-run-progress";
 import { getUserRole, withPermissionDenied } from "./authz";
 import { getPlanningRunCancellationDecision, isPlanningRunStale } from "@shared/planning-run-state";
+import {
+  PlanningCancelledError,
+  assertPlanningRunStateActive,
+  buildPlanningCancellationPatch,
+  commitPlanningResultSafely,
+  consumePlanningRollbackFailure,
+  waitForPlanningCommitIdle,
+} from "./planning-run-commit";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -4429,6 +4437,9 @@ function normalizeHexColor(value: unknown): string | null {
         lastTaskName: data.last_task_name ? String(data.last_task_name) : null,
         lastReasons: Array.isArray(data.last_reasons) ? data.last_reasons : null,
         requestId: data.request_id ? String(data.request_id) : null,
+        cancelRequestedAt: data.cancel_requested_at ? String(data.cancel_requested_at) : null,
+        cancelledAt: data.cancelled_at ? String(data.cancelled_at) : null,
+        cancelReason: data.cancel_reason ? String(data.cancel_reason) : null,
       });
 
     } catch (err: any) {
@@ -4445,40 +4456,101 @@ function normalizeHexColor(value: unknown): string | null {
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
       if (!(await ensureUserCanAccessPlan(userId, planId))) return res.status(404).json({ message: "Plan not found" });
 
-      const { data: run, error: runError } = await supabaseAdmin
-        .from("planning_runs")
-        .select("id, status, phase")
-        .eq("plan_id", planId)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const parsed = z.object({ runId: z.number().int().positive().optional() }).parse(req.body ?? {});
+      const readRun = async (activeOnly: boolean) => {
+        let runQuery = supabaseAdmin
+          .from("planning_runs")
+          .select("id, status, phase, cancel_requested_at")
+          .eq("plan_id", planId);
+        if (parsed.runId) runQuery = runQuery.eq("id", parsed.runId);
+        else if (activeOnly) runQuery = runQuery.in("status", ["queued", "running", "pending", "optimizing", "cancelling", "stale"]);
+        return runQuery.order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      };
+      let { data: run, error: runError } = await readRun(!parsed.runId);
       if (runError) throw runError;
-      const cancellationDecision = getPlanningRunCancellationDecision(run?.status, run?.phase);
+      if (!run && !parsed.runId) {
+        const fallback = await readRun(false);
+        run = fallback.data;
+        runError = fallback.error;
+      }
+      if (runError) throw runError;
+      if (!run) return res.json({ cancelled: false, reason: "no_active_run", status: null });
+
+      const cancellationDecision = getPlanningRunCancellationDecision(run.status, run.phase);
+      if (cancellationDecision === "already_cancelled") {
+        return res.json({ cancelled: true, status: "cancelled", runId: Number(run.id) });
+      }
       if (cancellationDecision !== "cancel") {
-        return res.json({ cancelled: false, reason: cancellationDecision, ...(run?.id ? { runId: Number(run.id) } : {}) });
+        return res.json({ cancelled: false, reason: cancellationDecision, status: String(run.status), runId: Number(run.id) });
       }
 
-      const finishedAt = new Date().toISOString();
+      const cancelledAt = new Date().toISOString();
       const { data: cancelledRun, error: cancelError } = await supabaseAdmin
         .from("planning_runs")
-        .update({ status: "cancelled", phase: "cancelled", message: "Cancelado por el usuario", finished_at: finishedAt, updated_at: finishedAt })
-        .eq("id", run!.id)
-        .eq("status", run!.status)
-        .select("id")
+.update(buildPlanningCancellationPatch(cancelledAt, run.cancel_requested_at))
+        .eq("id", run.id)
+        .eq("plan_id", planId)
+        .in("status", ["queued", "running", "pending", "optimizing", "cancelling", "stale"])
+        .select("id, status")
         .maybeSingle();
       if (cancelError) throw cancelError;
-      if (!cancelledRun) return res.json({ cancelled: false, reason: "no_active_run" });
-      return res.json({ cancelled: true, status: "cancelled", runId: Number(cancelledRun.id) });
+      if (!cancelledRun) {
+        const { data: current, error: currentError } = await supabaseAdmin
+          .from("planning_runs")
+          .select("id, status")
+          .eq("id", run.id)
+          .eq("plan_id", planId)
+          .maybeSingle();
+        if (currentError) throw currentError;
+        const status = String(current?.status ?? "unknown");
+        return status === "cancelled"
+          ? res.json({ cancelled: true, status, runId: Number(run.id) })
+          : res.json({ cancelled: false, reason: "already_terminal", status, runId: Number(run.id) });
+      }
+      await waitForPlanningCommitIdle(planId);
+      const rollbackFailure = consumePlanningRollbackFailure(planId);
+      return res.json({
+        cancelled: true,
+        status: "cancelled",
+        runId: Number(cancelledRun.id),
+        rollbackGuaranteed: !rollbackFailure,
+        ...(rollbackFailure ? { warning: "No se pudo restaurar completamente la planificación previa." } : {}),
+      });
     } catch (err: any) {
       return res.status(500).json({ message: err?.message || "Failed to cancel planning run" });
     }
   });
 
-  const isPlanningRunCancelled = async (planningRunId: number | null): Promise<boolean> => {
-    if (!planningRunId) return false;
-    const { data, error } = await supabaseAdmin.from("planning_runs").select("status").eq("id", planningRunId).maybeSingle();
+  const readPlanningRunCommitState = async (planningRunId: number, planId: number) => {
+    const { data, error } = await supabaseAdmin
+      .from("planning_runs")
+      .select("id, plan_id, status, cancel_requested_at")
+      .eq("id", planningRunId)
+      .eq("plan_id", planId)
+      .maybeSingle();
     if (error) throw error;
-    return ["cancelled", "canceled", "stale"].includes(String(data?.status ?? "").toLowerCase());
+    return data ? {
+      id: Number(data.id),
+      planId: Number(data.plan_id),
+      status: String(data.status),
+      cancelRequestedAt: data.cancel_requested_at ? String(data.cancel_requested_at) : null,
+    } : null;
+  };
+
+  const assertPlanningRunNotCancelled = async (planningRunId: number | null, planId: number, phase: string): Promise<void> => {
+    if (!planningRunId) throw new PlanningCancelledError(0, phase, "Missing planning run");
+    const state = await readPlanningRunCommitState(planningRunId, planId);
+    assertPlanningRunStateActive(state, planningRunId, planId, phase);
+  };
+
+  const isPlanningRunActiveForCommit = async (planningRunId: number, planId: number): Promise<boolean> => {
+    try {
+      await assertPlanningRunNotCancelled(planningRunId, planId, "commit_check");
+      return true;
+    } catch (error) {
+      if (error instanceof PlanningCancelledError) return false;
+      throw error;
+    }
   };
 
   const buildReasonEnricher = async (planId: number) => {
@@ -4812,7 +4884,7 @@ function normalizeHexColor(value: unknown): string | null {
       planningRunId,
       phase,
       patch: fullPatch,
-      onlyWhileRunning: progressCtx?.onlyWhileRunning,
+      onlyWhileRunning: progressCtx?.onlyWhileRunning ?? true,
       attempt: async (updatePatch, onlyWhileRunning) => {
         let updateQuery = supabaseAdmin.from("planning_runs").update(updatePatch).eq("id", planningRunId);
         if (onlyWhileRunning) updateQuery = updateQuery.eq("status", "running");
@@ -4944,24 +5016,22 @@ function normalizeHexColor(value: unknown): string | null {
       }
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
+      await assertPlanningRunNotCancelled(planningRunId, planId, "run_created");
 
       if (totalPending === 0) {
-        await updatePlanningRunProgress(
-          planningRunId,
-          { status: "success", phase: "success", message: "No hay tareas pendientes que planificar", finished_at: new Date().toISOString() },
-          { phase: "success", plannedCount: 0, totalPending: 0, progressPercent: 100 },
-        );
+        const finishedAt = new Date().toISOString();
+        const { data: completedRun, error: completeError } = await supabaseAdmin
+          .from("planning_runs")
+          .update({ status: "success", phase: "success", phase_progress_pct: 100, message: "No hay tareas pendientes que planificar", finished_at: finishedAt, updated_at: finishedAt })
+          .eq("id", planningRunId)
+          .eq("plan_id", planId)
+          .eq("status", "running")
+          .is("cancel_requested_at", null)
+          .select("id")
+          .maybeSingle();
+        if (completeError) throw completeError;
+        if (!completedRun) throw new PlanningCancelledError(planningRunId, "no_work_success");
         return res.json({ success: true, hardFeasible: true, complete: true, feasible: true, planId, tasksUpdated: 0, warnings: [], planningStats: {}, reasons: [], unplanned: [], insights: [], runId: planningRunId, message: "No hay tareas pendientes que planificar" });
-      }
-
-      if ((mode === "full" || mode === "replan_pending_respecting_locks") && taskIdsToSolve.length > 0) {
-        const { error: clearPendingErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .update({ start_planned: null, end_planned: null })
-          .in("id", taskIdsToSolve)
-          .eq("status", "pending")
-          .neq("is_manual_block", true);
-        if (clearPendingErr) throw clearPendingErr;
       }
 
       await updatePlanningRunProgress(
@@ -5015,9 +5085,7 @@ function normalizeHexColor(value: unknown): string | null {
         { phase: "phase_a_base_solution", plannedCount: 0, totalPending, progressPercent: 18 },
       );
 
-      if (await isPlanningRunCancelled(planningRunId)) {
-        return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
-      }
+      await assertPlanningRunNotCancelled(planningRunId, planId, "before_generate");
 
       const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0
         ? requestedTimeLimitMs
@@ -5057,24 +5125,8 @@ function normalizeHexColor(value: unknown): string | null {
       } catch (error) {
         console.warn("[planning-progress] ignored pending progress failure", { planningRunId, error });
       }
-      if (await isPlanningRunCancelled(planningRunId)) {
-        return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
-      }
-      if (planningRunId) {
-        try {
-          await storage.createPlanningRunDiagnostics(
-            planningRunId,
-            planId,
-            buildRunDiagnostics(engineInput, result),
-          );
-        } catch (diagnosticError: any) {
-          console.warn("[generate] planning run diagnostics persistence failed", {
-            planId,
-            planningRunId,
-            error: diagnosticError?.message ?? diagnosticError,
-          });
-        }
-      }
+      await assertPlanningRunNotCancelled(planningRunId, planId, "after_generate");
+      const runDiagnostics = buildRunDiagnostics(engineInput, result);
       const enrich = await buildReasonEnricher(planId);
 
       const planned = Array.isArray((result as any)?.plannedTasks) ? (result as any).plannedTasks : [];
@@ -5082,18 +5134,29 @@ function normalizeHexColor(value: unknown): string | null {
         const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
         const isV3StubError = reasons.some((r: any) => String(r?.code ?? "") === "ENGINE_V3_NOT_ENABLED");
         if (planningRunId) {
-          await updatePlanningRunProgress(
-            planningRunId,
-            {
-              status: isV3StubError ? "error" : "infeasible",
+          await assertPlanningRunNotCancelled(planningRunId, planId, "before_infeasible_result");
+          const finishedAt = new Date().toISOString();
+          const { data: terminalRun, error: terminalError } = await supabaseAdmin
+            .from("planning_runs")
+            .update({
+              status: isV3StubError ? "failed" : "infeasible",
               message: isV3StubError ? "ENGINE_V3_NOT_ENABLED" : "INFEASIBLE_HARD",
               last_reasons: reasons,
               planned_count: 0,
-              phase: isV3StubError ? "error" : "done",
-              finished_at: new Date().toISOString(),
-            },
-            { phase: isV3StubError ? "error" : "done", plannedCount: 0, totalPending },
-          );
+              phase: isV3StubError ? "failed" : "infeasible",
+              phase_progress_pct: 100,
+              finished_at: finishedAt,
+              last_progress_at: finishedAt,
+              updated_at: finishedAt,
+            })
+            .eq("id", planningRunId)
+            .eq("plan_id", planId)
+            .eq("status", "running")
+            .is("cancel_requested_at", null)
+            .select("id")
+            .maybeSingle();
+          if (terminalError) throw terminalError;
+          if (!terminalRun) throw new PlanningCancelledError(planningRunId, "persist_infeasible_result");
         }
 
         return res.status(isV3StubError ? 400 : 422).json({
@@ -5104,51 +5167,157 @@ function normalizeHexColor(value: unknown): string | null {
         });
       }
 
-      let updated = 0;
-
       await updatePlanningRunProgress(
         planningRunId,
         { phase: "persisting_result", planned_count: 0, message: "Guardando tareas planificadas" },
-        { phase: "persisting_result", plannedCount: 0, totalPending, progressPercent: 96 },
+        { phase: "persisting_result", plannedCount: 0, totalPending, progressPercent: 96, onlyWhileRunning: true },
       );
+      if (!planningRunId || !(await isPlanningRunActiveForCommit(planningRunId, planId))) {
+        throw new PlanningCancelledError(planningRunId ?? 0, "before_commit_setup");
+      }
 
-      for (const p of planned) {
-        if (Number((p as any).taskId) < 0) {
-          const breakId = Math.abs(Number((p as any).taskId));
-          await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
-          updated++;
-        } else {
-          const persisted = await storage.updatePlannedTimes(
-            p.taskId,
-            p.startPlanned,
-            p.endPlanned,
-            Array.isArray((p as any).assignedResources) ? (p as any).assignedResources : [],
-          );
-          if (!persisted.updated) {
-            console.debug("[generate] skipped protected task", { taskId: Number((p as any).taskId) });
-            continue;
+      const solveTaskIdSet = new Set(taskIdsToSolve);
+      const plannedTaskIds = new Set<number>();
+      const plannedBreakIds = new Set<number>();
+      for (const item of planned) {
+        const itemId = Number((item as any)?.taskId);
+        if (itemId < 0) plannedBreakIds.add(Math.abs(itemId));
+        else if (solveTaskIdSet.has(itemId)) plannedTaskIds.add(itemId);
+      }
+      const taskIdsToClear = (mode === "full" || mode === "replan_pending_respecting_locks")
+        ? taskIdsToSolve.filter((taskId) => !plannedTaskIds.has(taskId))
+        : [];
+
+      type PlanningSnapshot = { tasks: any[]; breaks: any[] };
+      const operations = [
+        ...planned.filter((item: any) => Number(item?.taskId) < 0).map((item: any) => ({
+          key: `break:${Math.abs(Number(item.taskId))}`,
+          apply: async () => {
+            await storage.savePlannedBreakTimes(planId, Math.abs(Number(item.taskId)), String(item.startPlanned), String(item.endPlanned));
+            return true;
+          },
+        })),
+        ...planned.filter((item: any) => solveTaskIdSet.has(Number(item?.taskId))).map((item: any) => ({
+          key: `task:${Number(item.taskId)}`,
+          apply: async () => {
+            const persisted = await storage.updatePlannedTimes(
+              Number(item.taskId),
+              String(item.startPlanned),
+              String(item.endPlanned),
+              Array.isArray(item.assignedResources) ? item.assignedResources : [],
+            );
+            if (!persisted.updated) console.debug("[generate] skipped protected task", { taskId: Number(item.taskId) });
+            return persisted.updated;
+          },
+        })),
+        ...taskIdsToClear.map((taskId) => ({
+          key: `clear_task:${taskId}`,
+          apply: async () => {
+            const { data, error } = await supabaseAdmin
+              .from("daily_tasks")
+              .update({ start_planned: null, end_planned: null, assigned_resource_ids: null })
+              .eq("id", taskId)
+              .eq("plan_id", planId)
+              .eq("status", "pending")
+              .neq("is_manual_block", true)
+              .select("id")
+              .maybeSingle();
+            if (error) throw error;
+            return Boolean(data?.id);
+          },
+        })),
+      ];
+
+      const committed = await commitPlanningResultSafely({
+        planningRunId: planningRunId!,
+        planId,
+        assertActive: (phase) => assertPlanningRunNotCancelled(planningRunId, planId, phase),
+        takeSnapshot: async (): Promise<PlanningSnapshot> => {
+          const { data: taskSnapshot, error: taskSnapshotError } = await supabaseAdmin
+            .from("daily_tasks")
+            .select("id, start_planned, end_planned, assigned_resource_ids")
+            .eq("plan_id", planId)
+            .in("id", taskIdsToSolve);
+          if (taskSnapshotError) throw taskSnapshotError;
+          let breakSnapshot: any[] = [];
+          if (plannedBreakIds.size > 0) {
+            const { data, error } = await supabaseAdmin
+              .from("plan_breaks")
+              .select("id, planned_start, planned_end")
+              .eq("plan_id", planId)
+              .in("id", [...plannedBreakIds]);
+            if (error) throw error;
+            breakSnapshot = data ?? [];
           }
-          updated++;
-        }
-
-        if (planningRunId && updated % 5 === 0) {
-          const currentTaskId = Number((p as any)?.taskId ?? NaN);
-          const taskName = Number.isFinite(currentTaskId)
-            ? enrich({ taskId: currentTaskId }).taskName ?? null
-            : null;
+          return { tasks: taskSnapshot ?? [], breaks: breakSnapshot };
+        },
+        operations,
+        restoreSnapshot: async (rawSnapshot) => {
+          const snapshot = rawSnapshot as PlanningSnapshot;
+          for (const task of snapshot.tasks) {
+            const { error } = await supabaseAdmin
+              .from("daily_tasks")
+              .update({
+                start_planned: task.start_planned ?? null,
+                end_planned: task.end_planned ?? null,
+                assigned_resource_ids: task.assigned_resource_ids ?? null,
+              })
+              .eq("id", Number(task.id))
+              .eq("plan_id", planId);
+            if (error) throw error;
+          }
+          for (const planBreak of snapshot.breaks) {
+            const { error } = await supabaseAdmin
+              .from("plan_breaks")
+              .update({ planned_start: planBreak.planned_start ?? null, planned_end: planBreak.planned_end ?? null })
+              .eq("id", Number(planBreak.id))
+              .eq("plan_id", planId);
+            if (error) throw error;
+          }
+        },
+        onProgress: async (appliedCount, operation) => {
+          if (appliedCount === 0 || appliedCount % 5 !== 0) return;
+          const currentTaskId = Number(operation.key.split(":").at(-1));
           await updatePlanningRunProgress(
             planningRunId,
             {
-              planned_count: updated,
+              planned_count: appliedCount,
               phase: "persisting_result",
               message: "Guardando tareas planificadas",
               last_task_id: Number.isFinite(currentTaskId) ? currentTaskId : null,
-              last_task_name: taskName,
+              last_task_name: Number.isFinite(currentTaskId) ? enrich({ taskId: currentTaskId }).taskName ?? null : null,
             },
-            { phase: "persisting_result", plannedCount: updated, totalPending },
+            { phase: "persisting_result", plannedCount: appliedCount, totalPending, onlyWhileRunning: true },
           );
-        }
-      }
+        },
+        markSuccess: async (appliedCount) => {
+          const finishedAt = new Date().toISOString();
+          const { data, error } = await supabaseAdmin
+            .from("planning_runs")
+            .update({
+              status: "success",
+              planned_count: appliedCount,
+              phase: "success",
+              phase_progress_pct: 100,
+              finished_at: finishedAt,
+              last_progress_at: finishedAt,
+              updated_at: finishedAt,
+              message: null,
+            })
+            .eq("id", planningRunId!)
+            .eq("plan_id", planId)
+            .eq("status", "running")
+            .is("cancel_requested_at", null)
+            .select("id")
+            .maybeSingle();
+          if (error) throw error;
+          return Boolean(data?.id);
+        },
+        onRollbackFailure: (rollbackError) => {
+          console.error("[generate] planning rollback failed", { planId, planningRunId, rollbackError });
+        },
+      });
+      const updated = committed.appliedCount;
 
       const warnings = ((result as any)?.warnings ?? []).map((w: any) => enrich(w));
       const reasons = (result.reasons || []).slice(0, 100).map((r: any) => enrich(r));
@@ -5159,35 +5328,31 @@ function normalizeHexColor(value: unknown): string | null {
         ? { ...planningStats, v3PhaseBQuality: qualityInsight }
         : planningStats;
 
-      await supabaseAdmin
-        .from("plans")
-        .update({
-          planning_warnings: warnings,
-          planning_stats: planningStatsWithCpSat,
-        })
-        .eq("id", planId);
+      const { data: successfulRun, error: successfulRunError } = await supabaseAdmin
+        .from("planning_runs")
+        .select("id, status")
+        .eq("id", planningRunId!)
+        .eq("plan_id", planId)
+        .eq("status", "success")
+        .maybeSingle();
+      if (successfulRunError) throw successfulRunError;
+      if (!successfulRun) throw new PlanningCancelledError(planningRunId!, "before_diagnostics");
 
-      if (planningRunId) {
-        const finishedAt = new Date().toISOString();
-        await persistPlanningRunUpdateBestEffort({
+      try {
+        await storage.createPlanningRunDiagnostics(planningRunId!, planId, runDiagnostics);
+      } catch (diagnosticError: any) {
+        console.warn("[generate] planning run diagnostics persistence failed", {
+          planId,
           planningRunId,
-          phase: "success",
-          patch: {
-            status: "success",
-            planned_count: updated,
-            phase: "success",
-            phase_progress_pct: 100,
-            finished_at: finishedAt,
-            updated_at: finishedAt,
-            message: null,
-          },
-          attempt: async (updatePatch) => {
-            const { error } = await supabaseAdmin.from("planning_runs").update(updatePatch).eq("id", planningRunId);
-            return { error };
-          },
+          error: diagnosticError?.message ?? diagnosticError,
         });
       }
-      
+
+      await supabaseAdmin
+        .from("plans")
+        .update({ planning_warnings: warnings, planning_stats: planningStatsWithCpSat })
+        .eq("id", planId);
+
       res.json({
         success: true,
         hardFeasible: true,
@@ -5204,12 +5369,8 @@ function normalizeHexColor(value: unknown): string | null {
       });
 
     } catch (e: any) {
-      try {
-        if (await isPlanningRunCancelled(planningRunId)) {
-          return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
-        }
-      } catch {
-        // Preserve the original generation error if the status lookup also fails.
+      if (e instanceof PlanningCancelledError) {
+        return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Planificación cancelada. No se han aplicado cambios.", runId: planningRunId });
       }
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
       console.error("[generate-plan] failed", {
@@ -5224,7 +5385,7 @@ function normalizeHexColor(value: unknown): string | null {
       await updatePlanningRunProgress(
         planningRunId,
         { status: "failed", message: publicMessage, phase: "error", finished_at: new Date().toISOString() },
-        { phase: "error", plannedCount: 0, totalPending: 0 },
+        { phase: "error", plannedCount: 0, totalPending: 0, onlyWhileRunning: true },
       );
 
       if (msg.toLowerCase().includes("not found")) {

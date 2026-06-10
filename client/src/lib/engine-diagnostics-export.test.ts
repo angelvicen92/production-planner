@@ -175,7 +175,7 @@ test("includes key metrics without copying full engine or planning payloads", ()
   });
   assert.equal(serialized.includes("engineInput"), false);
   assert.equal(serialized.includes("planningOutput"), false);
-  assert.ok(serialized.length < 5_000);
+  assert.ok(serialized.length < 6_000);
 });
 
 
@@ -294,4 +294,40 @@ test("normalizes missing coach compaction metadata without nulls", () => {
   assert.deepEqual(snapshot.intelligence.coachCompactionTargetedCoaches, []);
   assert.deepEqual(snapshot.intelligence.coachCompactionBestBefore, {});
   assert.deepEqual(snapshot.intelligence.coachCompactionBestAfter, {});
+});
+
+test("meal diagnostics are always exported and preserve real scheduler metadata", () => {
+  const snapshot = buildEngineDiagnosticsSnapshot({
+    engineMetadata: {
+      mealMode: "flexible_meal_window",
+      mealModeReason: "configured_flexible_meal_window",
+      mealWindowStart: "13:00",
+      mealWindowEnd: "15:00",
+      mealDurationMinutes: 45,
+      mealSchedulerAttempted: true,
+      mealAssignmentsGenerated: 4,
+      mealSchedulerAccepted: true,
+      mealSchedulerReason: "flexible_meals_scheduled",
+      mealSchedulerRejectedReasons: [],
+      mealBlockingConflicts: 2,
+      mealMovedAssignments: [{ taskId: 91, fromStart: "13:00", toStart: "13:30", toEnd: "14:15" }],
+      mealSchedulerPhase: "post_pipeline",
+      mealSchedulerCouldAffectPipeline: true,
+      mealSchedulerPipelineIntegrationReason: "post_pipeline_meal_moves_can_change_pipeline_blockers",
+    },
+  }, { generatedAt });
+
+  assert.equal(snapshot.intelligence.mealMode, "flexible_meal_window");
+  assert.equal(snapshot.intelligence.mealSchedulerAttempted, true);
+  assert.equal(snapshot.intelligence.mealSchedulerAccepted, true);
+  assert.equal(snapshot.intelligence.mealSchedulerPhase, "post_pipeline");
+  assert.deepEqual(snapshot.intelligence.mealMovedAssignments, [{ taskId: 91, fromStart: "13:00", toStart: "13:30", toEnd: "14:15" }]);
+
+  const defaults = buildEngineDiagnosticsSnapshot({}, { generatedAt }).intelligence;
+  for (const key of [
+    "mealMode", "mealModeReason", "mealWindowStart", "mealWindowEnd", "mealDurationMinutes",
+    "mealSchedulerAttempted", "mealAssignmentsGenerated", "mealSchedulerAccepted", "mealSchedulerReason",
+    "mealSchedulerRejectedReasons", "mealBlockingConflicts", "mealMovedAssignments", "mealSchedulerPhase",
+    "mealSchedulerCouldAffectPipeline", "mealSchedulerPipelineIntegrationReason",
+  ]) assert.equal(Object.hasOwn(defaults, key), true, `missing ${key}`);
 });

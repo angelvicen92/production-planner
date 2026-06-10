@@ -23,6 +23,7 @@ import { detectCoachAssignments } from "./coachDetection";
 import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, type PipelineConflictDetail } from "./pipelineBuilder";
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 import { runMealSchedulerSafely } from "./mealScheduler";
+import { normalizeMealDiagnosticsMetadata } from "./mealDiagnostics";
 
 
 const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
@@ -936,7 +937,7 @@ const computeMakespanMinutes = (output: EngineOutput): number | null => {
   return Math.max(0, maxEnd - minStart);
 };
 
-const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta"]>): EngineOutput => {
+export const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta"]>): EngineOutput => {
   const warningsTop = (output.warnings ?? []).slice(0, 5).map((warning: any) => String(warning?.code ?? "WARNING"));
   const blockerSummary = summarizeStructuredBlockers(output);
   return {
@@ -951,14 +952,6 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       neighborhoodCandidatesGenerated: 0,
       neighborhoodCandidateAccepted: false,
       neighborhoodSearchTimeMs: 0,
-      mealMode: undefined,
-      mealSchedulerAttempted: false,
-      mealAssignmentsGenerated: 0,
-      mealSchedulerAccepted: false,
-      mealSchedulerReason: "generator_not_invoked",
-      mealSchedulerRejectedReasons: [],
-      mealBlockingConflicts: 0,
-      mealMovedAssignments: [],
       pipelineBuilderAttempted: false,
       pipelineCandidatesGenerated: 0,
       pipelineAccepted: false,
@@ -972,6 +965,7 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       pipelineStableTasks: [],
       pipelineFeederOutcomes: [],
       ...meta,
+      ...normalizeMealDiagnosticsMetadata(meta),
       ...normalizePipelineDiagnosticsMetadata(meta),
       plannedCount: Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0,
       unplannedCount: Array.isArray(output.unplanned) ? output.unplanned.length : 0,
@@ -1161,11 +1155,16 @@ const buildRescueProposal = (base: EngineOutput, input: EngineV3Input) => {
 };
 
 function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options): EngineOutput {
+  const initialMealDiagnostics = normalizeMealDiagnosticsMetadata({}, input);
+  const finalize = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta"]>) => withV3Meta(output, {
+    ...initialMealDiagnostics,
+    ...meta,
+  });
   emitProgress(options, "hard_validation", 12, "Validando restricciones hard de entrada");
 
   const hardValidation = prevalidateHard(input);
   if (hardValidation) {
-    return withV3Meta(hardValidation, {
+    return finalize(hardValidation, {
       prevalidationRun: true,
       prevalidationOk: false,
       phaseAUsed: false,
@@ -1279,7 +1278,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
               },
             ],
           };
-          output = withV3Meta(output, {
+          output = finalize(output, {
             prevalidationRun: true,
             prevalidationOk: true,
             phaseAUsed: true,
@@ -1323,7 +1322,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
               attemptsSummary: output.report?.attemptsSummary ?? [],
             },
           };
-          output = withV3Meta(output, {
+          output = finalize(output, {
             prevalidationRun: true,
             prevalidationOk: true,
             phaseAUsed: true,
@@ -1339,7 +1338,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         }
 
         emitProgress(options, "scoring_candidates", 94, "Plan completo encontrado; validando el candidato final");
-        return withV3Meta(output, output.v3Meta ?? {
+        return finalize(output, output.v3Meta ?? {
           prevalidationRun: true,
           prevalidationOk: true,
           phaseAUsed: true,
@@ -1401,7 +1400,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
             },
           ],
         };
-        output = withV3Meta(output, {
+        output = finalize(output, {
           prevalidationRun: true,
           prevalidationOk: true,
           phaseAUsed: true,
@@ -1446,7 +1445,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
             attemptsSummary: output.report?.attemptsSummary ?? [],
           },
         };
-        output = withV3Meta(output, {
+        output = finalize(output, {
           prevalidationRun: true,
           prevalidationOk: true,
           phaseAUsed: true,
@@ -1463,7 +1462,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
       }
 
       emitProgress(options, "scoring_candidates", 94, "Plan completo encontrado; validando el candidato final");
-      return withV3Meta(output, output.v3Meta ?? {
+      return finalize(output, output.v3Meta ?? {
         prevalidationRun: true,
         prevalidationOk: true,
         phaseAUsed: true,
@@ -1566,7 +1565,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
     };
 
     if (accepted && optimized.output.complete) {
-      return withV3Meta({
+      return finalize({
         ...optimized.output,
         insights: [...insights, qualityInsight],
         report: {
@@ -1607,7 +1606,7 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
 
   emitProgress(options, "scoring_candidates", 94, "No se encontró un plan completo; preparando diagnóstico");
 
-  return withV3Meta({
+  return finalize({
     ...fallback,
     feasible: false,
     complete: false,

@@ -4,6 +4,7 @@ import { diagnoseCompositeResources } from "./resourceDiagnostics";
 import { validateResourceBundles } from "./resourceBundleValidation";
 import { validateHardConstraints, type HardConstraintViolationDetail, type HardConstraintViolationCode } from "./hardValidation";
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
+import { normalizeMealDiagnosticsMetadata } from "./mealDiagnostics";
 
 type SelectedCandidateMetrics = NonNullable<NonNullable<EngineOutput["v3Meta"]>["selectedCandidateMetrics"]>;
 type PipelineConflictDiagnostic = NonNullable<NonNullable<EngineOutput["v3Meta"]>["pipelineConflictDetails"]>[number];
@@ -114,6 +115,9 @@ export interface EngineRunDiagnostics {
     mealSchedulerRejectedReasons: string[];
     mealBlockingConflicts: number;
     mealMovedAssignments: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
+    mealSchedulerPhase: "post_pipeline";
+    mealSchedulerCouldAffectPipeline: boolean;
+    mealSchedulerPipelineIntegrationReason: string;
     cpSatAttempted: boolean;
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
@@ -177,6 +181,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
   const bundleValidation = validateResourceBundles(input);
   const meta = output.v3Meta;
   const pipelineMetadata = normalizePipelineDiagnosticsMetadata(meta);
+  const mealMetadata = normalizeMealDiagnosticsMetadata(meta, input);
   const plannedTasks = output.plannedTasks?.length ?? 0;
   const unplannedTasks = output.unplanned?.length ?? Math.max(0, input.tasks.length - plannedTasks);
 
@@ -234,18 +239,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       pipelineStableTasks: (meta?.pipelineStableTasks ?? []).slice(0, 50),
       pipelineFeederOutcomes: uniqueCompactReasons(meta?.pipelineFeederOutcomes ?? []),
       ...pipelineMetadata,
-      mealMode: meta?.mealMode ?? "global_hard_break",
-      mealModeReason: meta?.mealModeReason ?? "meal_mode_inferred_legacy_global_break",
-      mealWindowStart: meta?.mealWindowStart ?? null,
-      mealWindowEnd: meta?.mealWindowEnd ?? null,
-      mealDurationMinutes: meta?.mealDurationMinutes ?? null,
-      mealSchedulerAttempted: meta?.mealSchedulerAttempted ?? false,
-      mealAssignmentsGenerated: meta?.mealAssignmentsGenerated ?? 0,
-      mealSchedulerAccepted: meta?.mealSchedulerAccepted ?? false,
-      mealSchedulerReason: meta?.mealSchedulerReason ?? "generator_not_invoked",
-      mealSchedulerRejectedReasons: uniqueCompactReasons(meta?.mealSchedulerRejectedReasons ?? []),
-      mealBlockingConflicts: meta?.mealBlockingConflicts ?? 0,
-      mealMovedAssignments: (meta?.mealMovedAssignments ?? []).slice(0, 50),
+      ...mealMetadata,
       cpSatAttempted: meta?.cpSatAttempted ?? false,
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,

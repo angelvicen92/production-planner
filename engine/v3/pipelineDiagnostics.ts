@@ -127,6 +127,11 @@ const compactConflictDetail = (
       return { taskId: finiteNumber(item.taskId) ?? 0, start: compactText(item.start), end: compactText(item.end) };
     }).filter((row) => row.taskId > 0) : [],
     laneRepairResult: compactText(detail.laneRepairResult, compactText(detail.repairResult, "not_attempted")),
+    mealMode: (detail.mealMode === "flexible_meal_window" ? "flexible_meal_window" : "global_hard_break") as "flexible_meal_window" | "global_hard_break",
+    mealCanMove: detail.mealCanMove === true,
+    mealMoveAttempted: detail.mealMoveAttempted === true,
+    mealMoveResult: compactText(detail.mealMoveResult, "not_attempted"),
+    mealAlternativeSlotsChecked: Math.max(0, finiteNumber(detail.mealAlternativeSlotsChecked) ?? 0),
     slackAnalysis: Array.isArray(detail.slackAnalysis) ? detail.slackAnalysis.slice(0, 6).map((row) => {
       const item = row as Record<string, unknown>;
       return {

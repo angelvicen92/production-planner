@@ -57,9 +57,10 @@ test("dismiss requests cancellation only for active or stale runs", () => {
   assert.equal(shouldCancelPlanningRunOnDismiss(run({ status: "success" }), now), false);
 });
 
-test("backend cancellation is idempotent and never cancels completed or persisting runs", () => {
+test("backend cancellation is idempotent and terminal states cannot be overwritten", () => {
   assert.equal(getPlanningRunCancellationDecision("running", "optimizing"), "cancel");
-  assert.equal(getPlanningRunCancellationDecision("success", "done"), "no_active_run");
-  assert.equal(getPlanningRunCancellationDecision("cancelled", "cancelled"), "no_active_run");
-  assert.equal(getPlanningRunCancellationDecision("running", "persisting"), "already_finalizing");
+  assert.equal(getPlanningRunCancellationDecision("running", "persisting_result"), "cancel");
+  assert.equal(getPlanningRunCancellationDecision("success", "done"), "already_terminal");
+  assert.equal(getPlanningRunCancellationDecision("cancelling", "cancelled"), "cancel");
+  assert.equal(getPlanningRunCancellationDecision("cancelled", "cancelled"), "already_cancelled");
 });

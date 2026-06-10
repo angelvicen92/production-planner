@@ -4,7 +4,10 @@ import {
   isAbortLikeError,
   normalizeRecoverablePlanningStatus,
   persistActivePlanningRunId,
+  persistCancelledPlanningRunId,
   readActivePlanningRunId,
+  readCancelledPlanningRunId,
+  shouldRecoverPlanningRun,
   shouldShowFinalPlanLoadError,
 } from "./planning-recovery";
 
@@ -32,4 +35,20 @@ test("running and success runs recover to operational states while backend failu
   assert.equal(normalizeRecoverablePlanningStatus("success"), "success");
   assert.equal(normalizeRecoverablePlanningStatus("failed"), "failed");
   assert.equal(shouldShowFinalPlanLoadError(new Error("backend failed"), false), true);
+});
+
+
+test("cancelled runs clear recovery and are never reattached", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  };
+  persistCancelledPlanningRunId(189, 45, storage);
+  assert.equal(readCancelledPlanningRunId(189, storage), 45);
+  assert.equal(shouldRecoverPlanningRun({ id: 45, status: "running" }, 45), false);
+  assert.equal(shouldRecoverPlanningRun({ id: 46, status: "cancelled" }, 45), false);
+  assert.equal(shouldRecoverPlanningRun({ id: 47, status: "running", cancelRequestedAt: "2026-06-10T10:00:00Z" }, 45), false);
+  assert.equal(shouldRecoverPlanningRun({ id: 48, status: "running" }, 45), true);
 });
