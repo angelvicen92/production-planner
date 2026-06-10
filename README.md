@@ -85,3 +85,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 047 — 2026-06-09 20:35 — Progreso vivo de planificación y slack-aware lane repair
 
 - ID 048 — 2026-06-09 21:05 — Meal window scheduler flexible y progreso real por fases
+- ID 049 — 2026-06-09 22:00 — Hotfix defensivo para progreso y meal scheduler tras Internal Server Error

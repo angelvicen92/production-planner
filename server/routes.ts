@@ -9,6 +9,7 @@ import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
 import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
+import { persistPlanningRunUpdateBestEffort, queuePlanningRunUpdateBestEffort } from "./planning-run-progress";
 import { getUserRole, withPermissionDenied } from "./authz";
 import { getPlanningRunCancellationDecision, isPlanningRunStale } from "@shared/planning-run-state";
 
@@ -4783,7 +4784,7 @@ function normalizeHexColor(value: unknown): string | null {
     patch: Record<string, any>,
     progressCtx?: { phase?: string | null; plannedCount?: number; totalPending?: number; progressPercent?: number; onlyWhileRunning?: boolean },
   ) => {
-    if (!planningRunId) return;
+    if (!planningRunId) return { ok: false, skipped: true, reason: "missing_planning_run_id" } as const;
     const phase = progressCtx?.phase ?? (typeof patch.phase === "string" ? patch.phase : null);
     const plannedCount = Number(progressCtx?.plannedCount ?? patch.planned_count ?? 0);
     const totalPending = Number(progressCtx?.totalPending ?? patch.total_pending ?? 0);
@@ -4800,23 +4801,31 @@ function normalizeHexColor(value: unknown): string | null {
       at: progressAt,
     }].slice(-20);
     planningProgressHistory.set(planningRunId, history);
-    let updateQuery = supabaseAdmin
-      .from("planning_runs")
-      .update({
-        ...patch,
-        phase_progress_pct: phaseProgressPct,
-        progress_history: history,
-        last_progress_at: progressAt,
-        updated_at: progressAt,
-      })
-      .eq("id", planningRunId);
-    if (progressCtx?.onlyWhileRunning) updateQuery = updateQuery.eq("status", "running");
-    await updateQuery;
+    const fullPatch = {
+      ...patch,
+      phase_progress_pct: phaseProgressPct,
+      progress_history: history,
+      last_progress_at: progressAt,
+      updated_at: progressAt,
+    };
+    return persistPlanningRunUpdateBestEffort({
+      planningRunId,
+      phase,
+      patch: fullPatch,
+      onlyWhileRunning: progressCtx?.onlyWhileRunning,
+      attempt: async (updatePatch, onlyWhileRunning) => {
+        let updateQuery = supabaseAdmin.from("planning_runs").update(updatePatch).eq("id", planningRunId);
+        if (onlyWhileRunning) updateQuery = updateQuery.eq("status", "running");
+        const { error } = await updateQuery;
+        return { error };
+      },
+    });
   };
 
   app.post(api.plans.generate.path, async (req, res) => {
     const planId = Number(req.params.id);
     let planningRunId: number | null = null;
+    let requestId: string | null = null;
     try {
       const input = z
         .object({
@@ -4831,7 +4840,7 @@ function normalizeHexColor(value: unknown): string | null {
         : modeRaw === "plan_pending"
           ? "only_unplanned"
           : modeRaw;
-      const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null;
+      requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null;
       const requestedTimeLimitMsRaw = Number((req.body as any)?.timeLimitMs ?? (req.query as any)?.timeLimitMs ?? NaN);
       const requestedTimeLimitMs = Number.isFinite(requestedTimeLimitMsRaw) && requestedTimeLimitMsRaw > 0
         ? Math.round(requestedTimeLimitMsRaw)
@@ -4906,24 +4915,33 @@ function normalizeHexColor(value: unknown): string | null {
         taskIdsToSolve = taskIdsToSolve.filter((taskId) => !plannedPendingIds.has(taskId));
       }
       const totalPending = taskIdsToSolve.length;
-      const { data: runRow, error: runErr } = await supabaseAdmin
-        .from("planning_runs")
-        .insert({
-          plan_id: planId,
-          status: "running",
-          total_pending: totalPending,
-          planned_count: 0,
+      const initialRunPatch = {
+        plan_id: planId,
+        status: "running",
+        total_pending: totalPending,
+        planned_count: 0,
+        phase: "queued",
+        phase_progress_pct: estimateProgressPct("queued", 0, totalPending),
+        message: "Planificación en cola",
+        engine: "v3",
+        requested_time_limit_ms: requestedTimeLimitMs,
+        request_id: requestId,
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      let { data: runRow, error: runErr } = await supabaseAdmin.from("planning_runs").insert(initialRunPatch).select("id").single();
+      if (runErr) {
+        console.warn("[planning-progress] planning run insert failed; retrying without phase progress", {
+          planId,
           phase: "queued",
-          phase_progress_pct: estimateProgressPct("queued", 0, totalPending),
-          message: "Planificación en cola",
-          engine: "v3",
-          requested_time_limit_ms: requestedTimeLimitMs,
-          request_id: requestId,
-          started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
+          error: runErr.message,
+          code: runErr.code,
+        });
+        const { phase_progress_pct: _phaseProgressPct, ...legacyInitialRunPatch } = initialRunPatch;
+        const fallback = await supabaseAdmin.from("planning_runs").insert(legacyInitialRunPatch).select("id").single();
+        runRow = fallback.data;
+        runErr = fallback.error;
+      }
       if (runErr) throw runErr;
       planningRunId = Number(runRow?.id);
 
@@ -5016,21 +5034,29 @@ function normalizeHexColor(value: unknown): string | null {
             if (progress.phase === lastPhase && now - lastUpdateAt < 750) return;
             lastPhase = progress.phase;
             lastUpdateAt = now;
-            progressUpdateChain = progressUpdateChain.then(() => updatePlanningRunProgress(
-              planningRunId,
-              {
-                phase: progress.phase,
-                message: progress.message,
-                ...(progress.candidatesEvaluated == null ? {} : { candidates_evaluated: progress.candidatesEvaluated }),
-                ...(progress.candidatesGenerated == null ? {} : { candidates_generated: progress.candidatesGenerated }),
-                ...(progress.currentBestReason == null ? {} : { current_best_reason: progress.currentBestReason }),
-              },
-              { phase: progress.phase, plannedCount: 0, totalPending, progressPercent: progress.progressPercent, onlyWhileRunning: true },
-            ));
+            progressUpdateChain = queuePlanningRunUpdateBestEffort(
+              progressUpdateChain,
+              () => updatePlanningRunProgress(
+                planningRunId,
+                {
+                  phase: progress.phase,
+                  message: progress.message,
+                  ...(progress.candidatesEvaluated == null ? {} : { candidates_evaluated: progress.candidatesEvaluated }),
+                  ...(progress.candidatesGenerated == null ? {} : { candidates_generated: progress.candidatesGenerated }),
+                  ...(progress.currentBestReason == null ? {} : { current_best_reason: progress.currentBestReason }),
+                },
+                { phase: progress.phase, plannedCount: 0, totalPending, progressPercent: progress.progressPercent, onlyWhileRunning: true },
+              ),
+              { planningRunId, phase: progress.phase },
+            );
           };
         })(),
       });
-      await progressUpdateChain;
+      try {
+        await progressUpdateChain;
+      } catch (error) {
+        console.warn("[planning-progress] ignored pending progress failure", { planningRunId, error });
+      }
       if (await isPlanningRunCancelled(planningRunId)) {
         return res.status(409).json({ message: "GENERATION_CANCELLED", detail: "Generación cancelada por el usuario", runId: planningRunId });
       }
@@ -5142,18 +5168,24 @@ function normalizeHexColor(value: unknown): string | null {
         .eq("id", planId);
 
       if (planningRunId) {
-        await supabaseAdmin
-          .from("planning_runs")
-          .update({
+        const finishedAt = new Date().toISOString();
+        await persistPlanningRunUpdateBestEffort({
+          planningRunId,
+          phase: "success",
+          patch: {
             status: "success",
             planned_count: updated,
             phase: "success",
             phase_progress_pct: 100,
-            finished_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            finished_at: finishedAt,
+            updated_at: finishedAt,
             message: null,
-          })
-          .eq("id", planningRunId);
+          },
+          attempt: async (updatePatch) => {
+            const { error } = await supabaseAdmin.from("planning_runs").update(updatePatch).eq("id", planningRunId);
+            return { error };
+          },
+        });
       }
       
       res.json({
@@ -5180,6 +5212,14 @@ function normalizeHexColor(value: unknown): string | null {
         // Preserve the original generation error if the status lookup also fails.
       }
       const msg = typeof e?.message === "string" ? e.message : "Unknown error";
+      console.error("[generate-plan] failed", {
+        planId,
+        planningRunId,
+        requestId,
+        name: e?.name ?? "Error",
+        message: msg,
+        stack: e?.stack,
+      });
       const publicMessage = msg.slice(0, 500);
       await updatePlanningRunProgress(
         planningRunId,
@@ -5190,11 +5230,12 @@ function normalizeHexColor(value: unknown): string | null {
       if (msg.toLowerCase().includes("not found")) {
         return res.status(404).json({ message: msg });
       }
+      const exposeErrorDetail = process.env.NODE_ENV !== "production" || process.env.EXPOSE_GENERATION_ERROR_DETAIL === "true";
       return res.status(500).json({
-        message: "ENGINE_ERROR",
-        detail: msg,
+        message: "GENERATION_FAILED",
+        ...(exposeErrorDetail ? { detail: msg } : {}),
         runId: planningRunId,
-        reasons: [{ code: "ENGINE_ERROR", message: "Fallo interno del motor", details: msg }],
+        reasons: [{ code: "GENERATION_FAILED", message: "Fallo interno del motor", ...(exposeErrorDetail ? { details: msg } : {}) }],
       });
     }
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { EngineInput, EngineOutput, TaskInput } from "../types";
 import { validateHardConstraints } from "./hardValidation";
-import { scheduleFlexibleMeals } from "./mealScheduler";
+import { runMealSchedulerSafely, scheduleFlexibleMeals } from "./mealScheduler";
 import { buildRunDiagnostics } from "./runDiagnostics";
 
 const task = (id: number, overrides: Partial<TaskInput> = {}): TaskInput => ({
@@ -58,4 +58,33 @@ test("meal scheduler preserves locked and in-progress meal assignments", () => {
   const scheduled = scheduleFlexibleMeals(engineInput, output([{ taskId: 10, startPlanned: "13:20", endPlanned: "13:50" }]));
   assert.equal(scheduled.output.plannedTasks[0].startPlanned, "13:20");
   assert.equal(scheduled.diagnostics.mealMovedAssignments.length, 0);
+});
+
+test("safe meal scheduler preserves the original output when the scheduler throws", () => {
+  const original = output([{ taskId: 1, startPlanned: "10:00", endPlanned: "10:30" }]);
+  const scheduled = runMealSchedulerSafely(input(), original, () => { throw new Error("scheduler exploded"); });
+
+  assert.equal(scheduled.output, original);
+  assert.equal(scheduled.diagnostics.mealSchedulerReason, "meal_scheduler_exception");
+  assert.ok(scheduled.diagnostics.mealSchedulerRejectedReasons.includes("meal_scheduler_exception"));
+});
+
+test("meal scheduler tolerates undefined task arrays", () => {
+  const malformedInput = { ...input(), tasks: undefined } as unknown as EngineInput;
+  const malformedOutput = { ...output([]), plannedTasks: undefined } as unknown as EngineOutput;
+
+  assert.doesNotThrow(() => scheduleFlexibleMeals(malformedInput, malformedOutput));
+});
+
+test("candidate validation exceptions reject the slot without crashing the scheduler", () => {
+  const meal = task(10, { templateName: "COMIDA", breakKind: "space_meal", spaceId: 10, durationOverrideMin: Number.NaN });
+  const engineInput = input({ mealMode: "flexible_meal_window", mealTaskTemplateName: "COMIDA", contestantMealDurationMinutes: 30, tasks: [meal] });
+  const scheduled = scheduleFlexibleMeals(
+    engineInput,
+    output([{ taskId: 10, startPlanned: "13:00", endPlanned: "13:30" }]),
+    { validateHardConstraints: () => { throw new Error("invalid candidate"); } },
+  );
+
+  assert.equal(scheduled.diagnostics.mealSchedulerAccepted, false);
+  assert.ok(scheduled.diagnostics.mealSchedulerRejectedReasons.includes("meal_candidate_validation_exception"));
 });

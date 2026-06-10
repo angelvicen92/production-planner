@@ -48,14 +48,52 @@ const sharesMealScope = (meal: TaskInput, other: TaskInput): boolean => {
     || (mealOccupiesSpace(meal) && meal.spaceId != null && Number(meal.spaceId) === Number(other.spaceId));
 };
 
-export function scheduleFlexibleMeals(input: EngineV3Input, output: EngineOutput): { output: EngineOutput; diagnostics: MealSchedulerDiagnostics } {
+type MealSchedulerDependencies = {
+  validateHardConstraints?: typeof validateHardConstraints;
+  calculateOperationalMetrics?: typeof calculateOperationalMetrics;
+};
+
+const schedulerExceptionDiagnostics = (input: EngineV3Input): MealSchedulerDiagnostics => {
+  let mode: ReturnType<typeof getMealMode> = { mode: "flexible_meal_window", reason: "default_flexible_meal_window" };
+  let window: ReturnType<typeof getMealWindow> = null;
+  try {
+    mode = getMealMode(input);
+    window = getMealWindow(input);
+  } catch {
+    // Diagnostics must remain available even when malformed input caused the scheduler exception.
+  }
+  return {
+    mealMode: mode.mode,
+    mealModeReason: mode.reason,
+    mealWindowStart: window?.start ?? null,
+    mealWindowEnd: window?.end ?? null,
+    mealDurationMinutes: null,
+    mealSchedulerAttempted: true,
+    mealAssignmentsGenerated: 0,
+    mealSchedulerAccepted: false,
+    mealSchedulerReason: "meal_scheduler_exception",
+    mealSchedulerRejectedReasons: ["meal_scheduler_exception"],
+    mealBlockingConflicts: 0,
+    mealMovedAssignments: [],
+  };
+};
+
+export function scheduleFlexibleMeals(
+  input: EngineV3Input,
+  output: EngineOutput,
+  dependencies: MealSchedulerDependencies = {},
+): { output: EngineOutput; diagnostics: MealSchedulerDiagnostics } {
+  try {
   const mode = getMealMode(input);
   const window = getMealWindow(input);
   const windowStart = toMinutes(window?.start);
   const windowEnd = toMinutes(window?.end);
-  const mealTasks = input.tasks.filter((task) => isMealTask(input, task));
+  const tasks = Array.isArray(input.tasks) ? input.tasks : [];
+  const plannedTasks = Array.isArray(output.plannedTasks) ? output.plannedTasks : [];
+  const mealTasks = tasks.filter((task) => isMealTask(input, task));
+  const configuredDuration = Number(input.contestantMealDurationMinutes);
   const defaultDuration = mealTasks.map((task) => Number(task.durationOverrideMin)).find((duration) => Number.isFinite(duration) && duration > 0)
-    ?? (Number(input.contestantMealDurationMinutes ?? 0) || null);
+    ?? (Number.isFinite(configuredDuration) && configuredDuration > 0 ? configuredDuration : 30);
   const base: MealSchedulerDiagnostics = {
     mealMode: mode.mode,
     mealModeReason: mode.reason,
@@ -77,9 +115,16 @@ export function scheduleFlexibleMeals(input: EngineV3Input, output: EngineOutput
   }
   if (!mealTasks.length) return { output, diagnostics: { ...base, mealSchedulerReason: "no_meal_assignments_required", mealSchedulerAccepted: true } };
 
-  const taskById = new Map(input.tasks.map((task) => [Number(task.id), task]));
-  const plannedById = new Map(output.plannedTasks.map((planned) => [Number(planned.taskId), { ...planned }]));
-  const baselineGap = calculateOperationalMetrics(input, output).mainStageGapMinutes;
+  const taskById = new Map(tasks.map((task) => [Number(task.id), task]));
+  const plannedById = new Map(plannedTasks.map((planned) => [Number(planned.taskId), { ...planned }]));
+  const calculateMetrics = dependencies.calculateOperationalMetrics ?? calculateOperationalMetrics;
+  const validateCandidate = dependencies.validateHardConstraints ?? validateHardConstraints;
+  let baselineGap = Number.POSITIVE_INFINITY;
+  try {
+    baselineGap = Number(calculateMetrics(input, { ...output, plannedTasks }).mainStageGapMinutes ?? Number.POSITIVE_INFINITY);
+  } catch (error) {
+    console.warn("[meal-scheduler] baseline diagnostics failed", { error: error instanceof Error ? error.message : String(error) });
+  }
   let acceptedOutput = output;
   const moved: MealSchedulerDiagnostics["mealMovedAssignments"] = [];
   const rejected = new Set<string>();
@@ -88,8 +133,9 @@ export function scheduleFlexibleMeals(input: EngineV3Input, output: EngineOutput
 
   for (const meal of mealTasks) {
     const current = plannedById.get(Number(meal.id));
-    const duration = Math.max(1, Math.round(Number(meal.durationOverrideMin ?? defaultDuration ?? 0)));
-    if (!current || !Number.isFinite(duration) || isProtectedMeal(input, { ...meal, startPlanned: current?.startPlanned, endPlanned: current?.endPlanned })) continue;
+    const requestedDuration = Number(meal.durationOverrideMin);
+    const duration = Math.max(1, Math.round(Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : defaultDuration));
+    if (!current || isProtectedMeal(input, { ...meal, startPlanned: current?.startPlanned, endPlanned: current?.endPlanned })) continue;
     const otherScoped = [...plannedById.values()].filter((planned) => {
       if (Number(planned.taskId) === Number(meal.id)) return false;
       const task = taskById.get(Number(planned.taskId));
@@ -132,9 +178,24 @@ export function scheduleFlexibleMeals(input: EngineV3Input, output: EngineOutput
         ? { ...planned, startPlanned: toHHMM(start), endPlanned: toHHMM(end), assignedResources: [] }
         : planned);
       const candidate = { ...acceptedOutput, plannedTasks: nextPlanned };
-      const hard = validateHardConstraints(input, candidate);
-      const candidateGap = calculateOperationalMetrics(input, candidate).mainStageGapMinutes;
-      if (!hard.hardValidationPassed || candidateGap !== baselineGap) continue;
+      let hard: ReturnType<typeof validateHardConstraints>;
+      let candidateGap: number;
+      try {
+        hard = validateCandidate(input, candidate);
+        candidateGap = Number(calculateMetrics(input, candidate).mainStageGapMinutes ?? Number.POSITIVE_INFINITY);
+      } catch (error) {
+        rejected.add("meal_candidate_validation_exception");
+        console.warn("[meal-scheduler] candidate validation failed", {
+          taskId: Number(meal.id),
+          start: toHHMM(start),
+          error: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      if (!hard.hardValidationPassed || candidateGap !== baselineGap) {
+        for (const code of hard.hardConstraintViolationCodes) rejected.add(code);
+        continue;
+      }
       const fromStart = current.startPlanned ?? null;
       plannedById.set(Number(meal.id), nextPlanned.find((planned) => Number(planned.taskId) === Number(meal.id))!);
       acceptedOutput = candidate;
@@ -158,4 +219,27 @@ export function scheduleFlexibleMeals(input: EngineV3Input, output: EngineOutput
       mealMovedAssignments: moved.slice(0, 50),
     },
   };
+  } catch (error) {
+    console.warn("[meal-scheduler] ignored scheduler failure", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return { output, diagnostics: schedulerExceptionDiagnostics(input) };
+  }
+}
+
+export function runMealSchedulerSafely(
+  input: EngineV3Input,
+  output: EngineOutput,
+  scheduler: (input: EngineV3Input, output: EngineOutput) => { output: EngineOutput; diagnostics: MealSchedulerDiagnostics } = scheduleFlexibleMeals,
+): { output: EngineOutput; diagnostics: MealSchedulerDiagnostics } {
+  try {
+    return scheduler(input, output);
+  } catch (error) {
+    console.warn("[meal-scheduler] ignored scheduler exception", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return { output, diagnostics: schedulerExceptionDiagnostics(input) };
+  }
 }
