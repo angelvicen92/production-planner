@@ -4,6 +4,7 @@ import { validateHardConstraints, type HardConstraintViolationCode, type HardCon
 import { toMinutes } from "./metrics";
 import { scoreCandidateSolution, type CandidateSolutionScore } from "./solutionScoring";
 import type { EngineV3Input } from "./types";
+import { getMealMode, getMealWindow } from "./mealSemantics";
 
 export type PipelineCandidateKind =
   | "pipeline_coachA_first"
@@ -85,6 +86,11 @@ export interface PipelineConflictDetail {
   laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
   laneRepairResult?: string;
+  mealMode?: "global_hard_break" | "flexible_meal_window";
+  mealCanMove?: boolean;
+  mealMoveAttempted?: boolean;
+  mealMoveResult?: string;
+  mealAlternativeSlotsChecked?: number;
   slackAnalysis?: TaskSlackAnalysis[];
   repairAttempted: boolean;
   repairStrategy: string;
@@ -203,11 +209,13 @@ const isBreakTask = (input: EngineV3Input, task: TaskInput): boolean => {
     || /(^|\s)(comida|almuerzo|meal|lunch)(\s|$)/.test(label);
 };
 
+const isFlexibleMealTask = (input: EngineV3Input, task: TaskInput | undefined): boolean => Boolean(task && isBreakTask(input, task) && getMealMode(input).mode === "flexible_meal_window");
+
 const isProtectedTask = (input: EngineV3Input, taskId: number): boolean => {
   const task = input.tasks.find((candidate) => Number(candidate.id) === taskId);
   const status = String(task?.status ?? "pending").toLowerCase();
-  if (status === "done" || status === "in_progress" || Boolean((task as any)?.isManualBlock)
-    || Boolean(task?.fixedWindowStart || task?.fixedWindowEnd) || Boolean(task && isBreakTask(input, task))) return true;
+  if (status === "done" || status === "in_progress" || Boolean((task as any)?.isManualBlock)) return true;
+  if (!isFlexibleMealTask(input, task) && (Boolean(task?.fixedWindowStart || task?.fixedWindowEnd) || Boolean(task && isBreakTask(input, task)))) return true;
   return Boolean(explicitLockForTask(input, taskId));
 };
 
@@ -365,7 +373,9 @@ const isMainStageTask = (input: EngineV3Input, task: TaskInput): boolean => Numb
 const isRepairMovableTask = (input: EngineV3Input, taskId: number): boolean => {
   const task = input.tasks.find((candidate) => Number(candidate.id) === taskId);
   if (!task) return false;
-  if (isProtectedTask(input, taskId) || isTransportOrMeal(input, task) || isMainStageTask(input, task)) return false;
+  if (isProtectedTask(input, taskId) || isMainStageTask(input, task)) return false;
+  if (isTransportTask(input, task)) return false;
+  if (isBreakTask(input, task)) return isFlexibleMealTask(input, task);
   return true;
 };
 
@@ -405,8 +415,8 @@ export const fixedReasonForTask = (input: EngineV3Input, taskId: number): string
   if (status === "in_progress") return "status_in_progress";
   const lock = explicitLockForTask(input, taskId);
   if (lock) return `explicit_${String(lock.lockType).toLowerCase()}_lock`;
-  if (task && isBreakTask(input, task)) return "protected_break_window";
-  if (task?.fixedWindowStart || task?.fixedWindowEnd) return "fixed_window";
+  if (task && isBreakTask(input, task) && !isFlexibleMealTask(input, task)) return "protected_break_window";
+  if ((task?.fixedWindowStart || task?.fixedWindowEnd) && !isFlexibleMealTask(input, task)) return "fixed_window";
   if (Boolean((task as any)?.isManualBlock)) return "manual_block";
   return undefined;
 };
@@ -490,6 +500,11 @@ export const computeTaskSlack = (
   if (successorStarts.length > 0) latestEnd = Math.min(latestEnd, ...successorStarts);
   if (task.fixedWindowStart) earliestStart = Math.max(earliestStart, toMinutes(task.fixedWindowStart) ?? earliestStart);
   if (task.fixedWindowEnd) latestEnd = Math.min(latestEnd, toMinutes(task.fixedWindowEnd) ?? latestEnd);
+  if (isFlexibleMealTask(constraints, task)) {
+    const mealWindow = getMealWindow(constraints);
+    earliestStart = Math.max(earliestStart, toMinutes(mealWindow?.start) ?? earliestStart);
+    latestEnd = Math.min(latestEnd, toMinutes(mealWindow?.end) ?? latestEnd);
+  }
 
   const assignedResources = new Set((current?.assignedResources ?? task.assignedResourceIds ?? []).map(Number));
   for (const other of constraints.tasks) {
@@ -874,9 +889,14 @@ const compactConflictDetail = (
     laneRepairBefore: laneRepair?.before.slice(0, 20) ?? [],
     laneRepairAfter: laneRepair?.after.slice(0, 20) ?? [],
     laneRepairResult: laneRepair?.reason ?? repairResult,
+    mealMode: getMealMode(input).mode,
+    mealCanMove: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" && !isDoneOrInProgress && !isExplicitLock,
+    mealMoveAttempted: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" && repairAttempted,
+    mealMoveResult: isBreakBlocker ? repairResult : undefined,
+    mealAlternativeSlotsChecked: isBreakBlocker && repairAttempted ? REPAIR_SHIFTS_MINUTES.length : 0,
     slackAnalysis: laneRepair?.slackAnalysis.slice(0, 6) ?? [],
     repairAttempted,
-    repairStrategy,
+    repairStrategy: isBreakBlocker && getMealMode(input).mode === "flexible_meal_window" ? "meal_aware_lane_repair" : repairStrategy,
     repairResult,
     message: String(violation.message ?? "").slice(0, 240),
   };
@@ -926,7 +946,7 @@ const isCandidateStructurallySafe = (
     && score.mainStageGapMinutes <= baselineScore.mainStageGapMinutes;
 };
 
-type SegmentRepairStrategy = "move_whole_segment_by_offset" | "reanchor_around_main_stage" | "pairwise_talent_swap" | "segment_micro_cascade" | "sequentialize_exclusive_lane" | "skip_break_window";
+type SegmentRepairStrategy = "move_whole_segment_by_offset" | "reanchor_around_main_stage" | "pairwise_talent_swap" | "segment_micro_cascade" | "sequentialize_exclusive_lane" | "skip_break_window" | "move_flexible_meal_within_window" | "stagger_meal_assignments" | "meal_aware_lane_repair";
 type RepairResult = {
   output: EngineOutput | null;
   attempts: number;
@@ -1037,7 +1057,7 @@ const protectedTasksUnchanged = (input: EngineV3Input, baseline: EngineOutput, o
   const baselineById = new Map((baseline.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
   return (output.plannedTasks ?? []).every((planned) => {
     const task = input.tasks.find((candidate) => Number(candidate.id) === Number(planned.taskId));
-    if (!task || (!isProtectedTask(input, Number(task.id)) && !isTransportOrMeal(input, task))) return true;
+    if (!task || (!isProtectedTask(input, Number(task.id)) && (!isTransportOrMeal(input, task) || isFlexibleMealTask(input, task)))) return true;
     const original = baselineById.get(Number(planned.taskId));
     return Boolean(original && original.startPlanned === planned.startPlanned && original.endPlanned === planned.endPlanned);
   });
@@ -1057,14 +1077,18 @@ const attemptPipelineRepair = (
   const rejectedReasons = new Set<string>();
   const initialValidation = validateHardConstraints(input, candidate, MAX_CONFLICT_DIAGNOSTICS);
   const laneConflicts = initialValidation.hardConstraintViolationDetails.filter((detail) => (
-    (detail.code === "SPACE_OVERLAP" && detail.spaceId != null) || (detail.code === "RESOURCE_OVERLAP" && detail.resourceId != null)
+    (detail.code === "SPACE_OVERLAP" && detail.spaceId != null)
+    || (detail.code === "RESOURCE_OVERLAP" && detail.resourceId != null)
+    || (detail.code === "MEAL_CROSSING" && detail.spaceId != null)
   ));
   for (const conflict of laneConflicts) {
     const lane = repairExclusiveLaneSequentially(candidate, {
       ...conflict,
       conflictKind: conflict.code === "SPACE_OVERLAP" ? "exclusive_lane_capacity" : "movable_task_conflict",
     }, { input, baseline });
-    strategiesTried.push("sequentialize_exclusive_lane" as SegmentRepairStrategy);
+    const includesFlexibleMeal = conflict.taskIds.some((taskId) => isFlexibleMealTask(input, input.tasks.find((task) => Number(task.id) === Number(taskId))));
+    strategiesTried.push(includesFlexibleMeal ? "meal_aware_lane_repair" : "sequentialize_exclusive_lane");
+    if (includesFlexibleMeal) strategiesTried.push("move_flexible_meal_within_window", "stagger_meal_assignments");
     attempts += 1;
     if (lane.output) {
       const laneValidation = validateHardConstraints(input, lane.output, MAX_CONFLICT_DIAGNOSTICS);

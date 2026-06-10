@@ -30,6 +30,8 @@ export type PlanningRun = {
   progressPct: number;
   progressMessage: string | null;
   phaseStartedAt: string | null;
+  lastProgressAt: string | null;
+  progressHistory: Array<{ phase: string; progressPercent: number; message?: string | null; at: string }>;
   candidatesEvaluated: number;
   candidatesGenerated: number;
   currentBestReason: string | null;
@@ -56,6 +58,7 @@ export function usePlanningRun(planId: number | null) {
     refetchInterval: (query) => {
       const run = query.state.data as PlanningRun | null | undefined;
       const hasPersistedContext = typeof window !== "undefined" && hasActivePlanningContext(Number(planId), window.localStorage);
+      if (String(run?.phase ?? "") === "persisting_result") return 300;
       return getPlanningRunUiState(run) === "active" || hasPersistedContext ? 700 : false;
     },
     refetchIntervalInBackground: true,

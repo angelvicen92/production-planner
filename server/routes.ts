@@ -1695,6 +1695,7 @@ function mapDeleteError(err: any, fallback: string) {
         id: Number(data.id),
         mealStart: String(data.meal_start),
         mealEnd: String(data.meal_end),
+        mealMode: String(data.meal_mode ?? "flexible_meal_window"),
         contestantMealDurationMinutes: Number(data.contestant_meal_duration_minutes),
         contestantMealMaxSimultaneous: Number(data.contestant_meal_max_simultaneous),
         spaceMealBreakMinutes: Number(data.space_meal_break_minutes ?? 45),
@@ -1728,6 +1729,7 @@ function mapDeleteError(err: any, fallback: string) {
       const patch: any = {};
       if (input.mealStart !== undefined) patch.meal_start = input.mealStart;
       if (input.mealEnd !== undefined) patch.meal_end = input.mealEnd;
+      if (input.mealMode !== undefined) patch.meal_mode = input.mealMode;
       if (input.contestantMealDurationMinutes !== undefined)
         patch.contestant_meal_duration_minutes = input.contestantMealDurationMinutes;
       if (input.contestantMealMaxSimultaneous !== undefined)
@@ -4413,10 +4415,12 @@ function normalizeHexColor(value: unknown): string | null {
         phase: data.phase ? String(data.phase) : null,
         progressPct: Number(data.phase_progress_pct ?? 0),
         progressMessage: data.message ? String(data.message) : null,
-        phaseStartedAt: String(data.updated_at ?? data.started_at),
-        candidatesEvaluated: Number((data.engine_metadata as any)?.candidateSolutionsEvaluated ?? 0),
-        candidatesGenerated: Number((data.engine_metadata as any)?.pipelineCandidatesGenerated ?? (data.engine_metadata as any)?.neighborhoodCandidatesGenerated ?? 0),
-        currentBestReason: String((data.engine_metadata as any)?.candidateSelectionReason ?? "") || null,
+        phaseStartedAt: String(data.last_progress_at ?? data.updated_at ?? data.started_at),
+        lastProgressAt: data.last_progress_at ? String(data.last_progress_at) : String(data.updated_at),
+        progressHistory: Array.isArray(data.progress_history) ? data.progress_history.slice(-20) : [],
+        candidatesEvaluated: Number(data.candidates_evaluated ?? (data.engine_metadata as any)?.candidateSolutionsEvaluated ?? 0),
+        candidatesGenerated: Number(data.candidates_generated ?? (data.engine_metadata as any)?.pipelineCandidatesGenerated ?? (data.engine_metadata as any)?.neighborhoodCandidatesGenerated ?? 0),
+        currentBestReason: String(data.current_best_reason ?? (data.engine_metadata as any)?.candidateSelectionReason ?? "") || null,
         engine: data.engine ? String(data.engine) : "v3",
         requestedTimeLimitMs: data.requested_time_limit_ms == null ? null : Number(data.requested_time_limit_ms),
         finishedAt: data.finished_at ? String(data.finished_at) : null,
@@ -4772,6 +4776,8 @@ function normalizeHexColor(value: unknown): string | null {
     return phaseProgress[String(phase ?? "")] ?? 0;
   };
 
+  const planningProgressHistory = new Map<number, Array<Record<string, unknown>>>();
+
   const updatePlanningRunProgress = async (
     planningRunId: number | null,
     patch: Record<string, any>,
@@ -4786,12 +4792,22 @@ function normalizeHexColor(value: unknown): string | null {
       ? Math.max(0, Math.min(100, Math.round(suppliedProgress)))
       : estimateProgressPct(phase, plannedCount, totalPending);
 
+    const progressAt = new Date().toISOString();
+    const history = [...(planningProgressHistory.get(planningRunId) ?? []), {
+      phase,
+      progressPercent: phaseProgressPct,
+      message: typeof patch.message === "string" ? patch.message.slice(0, 160) : null,
+      at: progressAt,
+    }].slice(-20);
+    planningProgressHistory.set(planningRunId, history);
     let updateQuery = supabaseAdmin
       .from("planning_runs")
       .update({
         ...patch,
         phase_progress_pct: phaseProgressPct,
-        updated_at: new Date().toISOString(),
+        progress_history: history,
+        last_progress_at: progressAt,
+        updated_at: progressAt,
       })
       .eq("id", planningRunId);
     if (progressCtx?.onlyWhileRunning) updateQuery = updateQuery.eq("status", "running");
@@ -5002,7 +5018,13 @@ function normalizeHexColor(value: unknown): string | null {
             lastUpdateAt = now;
             progressUpdateChain = progressUpdateChain.then(() => updatePlanningRunProgress(
               planningRunId,
-              { phase: progress.phase, message: progress.message },
+              {
+                phase: progress.phase,
+                message: progress.message,
+                ...(progress.candidatesEvaluated == null ? {} : { candidates_evaluated: progress.candidatesEvaluated }),
+                ...(progress.candidatesGenerated == null ? {} : { candidates_generated: progress.candidatesGenerated }),
+                ...(progress.currentBestReason == null ? {} : { current_best_reason: progress.currentBestReason }),
+              },
               { phase: progress.phase, plannedCount: 0, totalPending, progressPercent: progress.progressPercent, onlyWhileRunning: true },
             ));
           };

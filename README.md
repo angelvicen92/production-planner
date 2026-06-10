@@ -83,3 +83,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 046 — 2026-06-09 19:34 — Lane-only sequential repair y split de segmento para Pipeline Builder
 
 - ID 047 — 2026-06-09 20:35 — Progreso vivo de planificación y slack-aware lane repair
+
+- ID 048 — 2026-06-09 21:05 — Meal window scheduler flexible y progreso real por fases

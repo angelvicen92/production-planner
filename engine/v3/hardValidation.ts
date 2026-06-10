@@ -1,7 +1,7 @@
 import type { EngineOutput, ProtectedBreakInput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Input } from "./types";
 import { toMinutes } from "./metrics";
-import { getProtectedBreaks, isMealTask } from "./mealSemantics";
+import { getProtectedBreaks, isMealTask, mealOccupiesSpace } from "./mealSemantics";
 import { getSpaceCapacityResolution, type SpaceCapacitySource } from "./spaceCapacity";
 
 export const MAX_HARD_VIOLATION_DETAILS = 50;
@@ -217,7 +217,7 @@ export const validateHardConstraints = (
   const intervalsBySpace = new Map<number, Interval[]>();
   for (const interval of intervals) {
     const spaceId = positiveId(interval.task.spaceId);
-    if (spaceId === null || isItinerantWrapper(interval.task)) continue;
+    if (spaceId === null || isItinerantWrapper(interval.task) || (isMealTask(input, interval.task) && !mealOccupiesSpace(interval.task))) continue;
     const rows = intervalsBySpace.get(spaceId) ?? [];
     rows.push(interval);
     intervalsBySpace.set(spaceId, rows);

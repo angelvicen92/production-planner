@@ -9,6 +9,18 @@ const toMinutes = (value: string | null | undefined): number | null => {
   return hours * 60 + minutes;
 };
 
+export type MealMode = "global_hard_break" | "flexible_meal_window";
+
+export const getMealMode = (input: EngineInput): { mode: MealMode; reason: string } => {
+  const configured = String(input.mealMode ?? "").trim().toLowerCase();
+  if (configured === "global_hard_break" || configured === "flexible_meal_window") {
+    return { mode: configured, reason: "explicit_configuration" };
+  }
+  return { mode: "global_hard_break", reason: "meal_mode_inferred_legacy_global_break" };
+};
+
+export const mealOccupiesSpace = (task: TaskInput): boolean => task.mealOccupiesSpace === true;
+
 export type ResolvedProtectedBreak = ProtectedBreakInput & {
   kind: "meal" | "global" | "protected";
   source: "actual_meal" | "global_hard_break" | "protected_break";
@@ -32,6 +44,7 @@ export const getMealWindow = (input: EngineInput): TimeWindow | null => {
 
 export const getProtectedBreaks = (input: EngineInput): ResolvedProtectedBreak[] => {
   const breaks: ResolvedProtectedBreak[] = [];
+  const mode = getMealMode(input);
   const append = (
     candidate: ProtectedBreakInput | null | undefined,
     source: ResolvedProtectedBreak["source"],
@@ -41,6 +54,10 @@ export const getProtectedBreaks = (input: EngineInput): ResolvedProtectedBreak[]
     breaks.push({ ...candidate, kind: candidate.kind ?? defaultKind, source });
   };
 
+  if (mode.mode === "global_hard_break" && mode.reason === "explicit_configuration") {
+    const mealWindow = getMealWindow(input);
+    if (mealWindow) append({ ...mealWindow, kind: "global", label: "COMIDA" }, "global_hard_break", "global");
+  }
   append(input.actualMeal, "actual_meal", "meal");
   if (input.actualMealStart && input.actualMealEnd) {
     append({ start: input.actualMealStart, end: input.actualMealEnd, kind: "meal" }, "actual_meal", "meal");

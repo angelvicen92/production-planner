@@ -568,6 +568,11 @@ export async function buildEngineInput(
       end: p.work_end ?? p.workEnd,
     },
 
+    mealMode: (() => {
+      const value = String(p.meal_mode ?? p.mealMode ?? "").trim().toLowerCase();
+      return value === "global_hard_break" || value === "flexible_meal_window" ? value : undefined;
+    })(),
+
     meal: {
       start: p.meal_window_start ?? p.mealWindowStart ?? p.meal_start ?? p.mealStart,
       end: p.meal_window_end ?? p.mealWindowEnd ?? p.meal_end ?? p.mealEnd,
@@ -979,6 +984,7 @@ export async function buildEngineInput(
               contestantName: null,
               breakId: Number(b.id),
               breakKind: String(b.kind),
+              mealOccupiesSpace: Boolean(b.occupies_space ?? b.occupiesSpace ?? false),
               itinerantTeamId:
                 b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
               itinerantTeamRequirement: "none",

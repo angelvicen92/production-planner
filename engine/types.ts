@@ -54,6 +54,8 @@ export interface TaskInput {
     status: TaskStatus;
     breakId?: number;
     breakKind?: "space_meal" | "itinerant_meal" | string;
+    /** Flexible meals only consume space capacity when explicitly requested. */
+    mealOccupiesSpace?: boolean;
     fixedWindowStart?: string | null;
     fixedWindowEnd?: string | null;
 
@@ -144,6 +146,8 @@ export interface ResourceBundleSpaceAffinityInput {
 export interface EngineInput {
   planId: number;
   workDay: TimeWindow;
+  /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
+  mealMode?: "global_hard_break" | "flexible_meal_window";
   /** Flexible window where meals may be assigned. It is not a hard global block. */
   meal: TimeWindow;
   /** Explicit aliases for integrations that distinguish the flexible window. */
@@ -515,6 +519,11 @@ export interface EngineOutput {
       laneRepairBefore?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairAfter?: Array<{ taskId: number; start: string; end: string }>;
       laneRepairResult?: string;
+      mealMode?: "global_hard_break" | "flexible_meal_window";
+      mealCanMove?: boolean;
+      mealMoveAttempted?: boolean;
+      mealMoveResult?: string;
+      mealAlternativeSlotsChecked?: number;
       slackAnalysis?: Array<{
         taskId: number;
         taskName: string;
@@ -555,6 +564,18 @@ export interface EngineOutput {
     pipelineAlternativeLaneCandidatesGenerated?: number;
     pipelineAlternativeLaneAccepted?: boolean;
     pipelineAlternativeLaneRejectedReasons?: string[];
+    mealMode?: "global_hard_break" | "flexible_meal_window";
+    mealModeReason?: string;
+    mealWindowStart?: string | null;
+    mealWindowEnd?: string | null;
+    mealDurationMinutes?: number | null;
+    mealSchedulerAttempted?: boolean;
+    mealAssignmentsGenerated?: number;
+    mealSchedulerAccepted?: boolean;
+    mealSchedulerReason?: string;
+    mealSchedulerRejectedReasons?: string[];
+    mealBlockingConflicts?: number;
+    mealMovedAssignments?: Array<{ taskId: number; fromStart: string | null; toStart: string; toEnd: string }>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

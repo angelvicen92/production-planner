@@ -41,6 +41,7 @@ export function CreatePlanDialog() {
     workEnd: "18:00",
     mealStart: (defaults as any)?.mealStart ?? "13:00",
     mealEnd: (defaults as any)?.mealEnd ?? "16:00",
+    mealMode: (defaults as any)?.mealMode ?? "flexible_meal_window",
     contestantMealDurationMinutes:
       (defaults as any)?.contestantMealDurationMinutes ?? 75,
     contestantMealMaxSimultaneous:
@@ -76,6 +77,7 @@ export function CreatePlanDialog() {
               workEnd: "18:00",
               mealStart: (defaults as any)?.mealStart ?? "13:00",
               mealEnd: (defaults as any)?.mealEnd ?? "16:00",
+              mealMode: (defaults as any)?.mealMode ?? "flexible_meal_window",
               contestantMealDurationMinutes:
                 (defaults as any)?.contestantMealDurationMinutes ?? 75,
               contestantMealMaxSimultaneous:

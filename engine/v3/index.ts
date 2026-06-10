@@ -22,6 +22,7 @@ import { calculateEngineOperationalCompactionMetrics, compactOperationalMetrics 
 import { detectCoachAssignments } from "./coachDetection";
 import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, type PipelineConflictDetail } from "./pipelineBuilder";
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
+import { scheduleFlexibleMeals } from "./mealScheduler";
 
 
 const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
@@ -36,6 +37,7 @@ const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
   pipeline_builder: "Construyendo pipelines",
   pipeline_repair: "Reparando pipelines",
   lane_only_repair: "Reparando carriles exclusivos",
+  meal_scheduling: "Programando comidas",
   scoring_candidates: "Comparando candidatos",
   persisting_result: "Guardando resultado",
   success: "Completado",
@@ -949,6 +951,14 @@ const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput["v3Meta
       neighborhoodCandidatesGenerated: 0,
       neighborhoodCandidateAccepted: false,
       neighborhoodSearchTimeMs: 0,
+      mealMode: undefined,
+      mealSchedulerAttempted: false,
+      mealAssignmentsGenerated: 0,
+      mealSchedulerAccepted: false,
+      mealSchedulerReason: "generator_not_invoked",
+      mealSchedulerRejectedReasons: [],
+      mealBlockingConflicts: 0,
+      mealMovedAssignments: [],
       pipelineBuilderAttempted: false,
       pipelineCandidatesGenerated: 0,
       pipelineAccepted: false,
@@ -1248,7 +1258,10 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
           candidatesGenerated: Number(pipelineSelection.meta.pipelineCandidatesGenerated ?? 0),
           currentBestReason: pipelineSelection.meta.pipelineReason,
         });
-        const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
+        emitProgress(options, "meal_scheduling", 87, "Programando comidas escalonadas dentro de su ventana");
+        const mealSelection = scheduleFlexibleMeals(input, output);
+        output = mealSelection.output;
+        const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealSelection.diagnostics });
         output = pilotSelection.output;
         const backtrackingNeighborhoodMeta = pilotSelection.meta;
 
@@ -1367,7 +1380,10 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         candidatesGenerated: Number(pipelineSelection.meta.pipelineCandidatesGenerated ?? 0),
         currentBestReason: pipelineSelection.meta.pipelineReason,
       });
-      const pilotSelection = runCpSatPilotSelection(input, output, pipelineSelection.meta);
+      emitProgress(options, "meal_scheduling", 87, "Programando comidas escalonadas dentro de su ventana");
+      const mealSelection = scheduleFlexibleMeals(input, output);
+      output = mealSelection.output;
+      const pilotSelection = runCpSatPilotSelection(input, output, { ...pipelineSelection.meta, ...mealSelection.diagnostics });
       output = pilotSelection.output;
       const greedyNeighborhoodMeta = pilotSelection.meta;
 

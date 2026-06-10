@@ -83,6 +83,7 @@ interface PlanningTimelineProps {
     workEnd: string | null;
     mealStart: string | null;
     mealEnd: string | null;
+    mealMode?: "global_hard_break" | "flexible_meal_window" | null;
     dailyTasks: Task[];
     breaks?: Array<{
       id: number;
@@ -551,7 +552,8 @@ function TaskStatusMenuTrigger({
     uiItinerantGroupOrderIndex = null,
     uiUnlocatedGroupOrderIndex = null,
     }: PlanningTimelineProps) {
-  const { workStart, workEnd, mealStart, mealEnd, dailyTasks, breaks = [] } = plan;
+  const { workStart, workEnd, mealStart, mealEnd, mealMode, dailyTasks, breaks = [] } = plan;
+  const isFlexibleMealWindow = mealMode === "flexible_meal_window";
   const { nowTime } = useProductionClock();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -1940,7 +1942,7 @@ function TaskStatusMenuTrigger({
                                           {mealStartMin !== null &&
                                             mealEndMin !== null && (
                                               <div
-                                                className="absolute left-0 right-0 bg-orange-100/30 dark:bg-orange-900/10 border-y border-orange-200/20"
+                                                className={cn("absolute left-0 right-0 border-y", isFlexibleMealWindow ? "bg-orange-100/15 dark:bg-orange-900/5 border-orange-300/30 border-dashed" : "bg-slate-300/40 dark:bg-slate-700/30 border-slate-500/40")}
                                                 style={{
                                                   top: (mealStartMin - startMin) * pxPerMin,
                                                   height:
@@ -3160,7 +3162,7 @@ function TaskStatusMenuTrigger({
                     {/* Meal shading */}
                     {mealStartMin !== null && mealEndMin !== null && (
                       <div
-                        className="absolute top-0 bottom-0 bg-orange-100/30 dark:bg-orange-900/10 z-0 border-x border-orange-200/20"
+                        className={cn("absolute top-0 bottom-0 z-0 border-x", isFlexibleMealWindow ? "bg-orange-100/15 dark:bg-orange-900/5 border-orange-300/30 border-dashed" : "bg-slate-300/40 dark:bg-slate-700/30 border-slate-500/40")}
                         style={{
                           left: `${((mealStartMin - startMin) / duration) * 100}%`,
                           width: `${((mealEndMin - mealStartMin) / duration) * 100}%`,

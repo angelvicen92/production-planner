@@ -15,6 +15,7 @@ export type EngineV3ProgressPhase =
   | "pipeline_builder"
   | "pipeline_repair"
   | "lane_only_repair"
+  | "meal_scheduling"
   | "scoring_candidates"
   | "persisting_result"
   | "success"
