@@ -165,6 +165,7 @@ const PLANNING_PHASE_LABELS: Record<string, string> = {
   hard_validation: "Validando restricciones",
   backtracking: "Explorando alternativas",
   operational_neighborhoods: "Mejorando calidad operativa",
+  segment_solver: "Resolviendo segmento crítico",
   coach_compaction: "Compactando jornadas de coaches",
   coach_wave_ordering: "Ordenando olas de coaches",
   pipeline_builder: "Construyendo pipelines",
@@ -1591,6 +1592,13 @@ ${reasonMessage}` : message,
       return;
     }
 
+    if (run.status === "success") {
+      void (async () => {
+        await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id, runId) });
+        await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, runId), type: "all" });
+      })();
+    }
+
     const finalProgress = getRunProgress({ plannedCount: Number(run.plannedCount ?? 0), totalPending: Number(run.totalPending ?? 0), status: run.status, phaseProgressPct: run.progressPct, phase: run.phase, phaseStartedAt: run.phaseStartedAt });
     const unplannedCount = Math.max(0, finalProgress.totalCount - finalProgress.plannedCount);
     toast({
@@ -1946,6 +1954,10 @@ ${reasonMessage}` : message,
       await refetchPlan();
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
+      if (completedRunId !== null) {
+        await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId) });
+        await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId), type: "all" });
+      }
       const reasons = Array.isArray(data?.reasons) ? data.reasons : [];
       if (reasons.length > 0) {
         openDiagnosticDialog(data);
@@ -3631,6 +3643,8 @@ ${reasonMessage}` : message,
                 tasks={plan?.dailyTasks as unknown[] | undefined}
                 contestants={contestants as unknown[]}
                 resourceNamesById={planResourceItemNameById}
+                planningActive={planningInProgress || getPlanningRunUiState(planningRunQ.data) === "active"}
+                latestSuccessRunId={planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null}
               />
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">

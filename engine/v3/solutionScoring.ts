@@ -10,7 +10,7 @@ import { calculateDeclaredBundleMetrics } from "./resourceDiagnostics";
 import { validateHardConstraints } from "./hardValidation";
 import { calculateEngineOperationalCompactionMetrics } from "./operationalQuality";
 
-export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+export type CandidateSource = "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
 
 export interface CandidateSolutionScore {
   hardConstraintViolations: number;

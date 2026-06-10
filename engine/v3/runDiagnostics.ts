@@ -64,6 +64,28 @@ export interface EngineRunDiagnostics {
     coachWaveReason: string | null;
     coachWaveBefore: Record<string, number>;
     coachWaveAfter: Record<string, number>;
+    segmentSolverAttempted: boolean;
+    segmentSolverBackend: string;
+    segmentSolverSegmentsBuilt: number;
+    segmentSolverCandidatesGenerated: number;
+    segmentSolverAccepted: boolean;
+    segmentSolverReason: string;
+    segmentSolverRejectedReasons: string[];
+    segmentSolverTargetCoachName: string | null;
+    segmentSolverWindowStart: string | null;
+    segmentSolverWindowEnd: string | null;
+    segmentSolverTaskCount: number | null;
+    segmentSolverTalentNames: string[];
+    segmentSolverResourceNames: string[];
+    segmentSolverBestBefore: Record<string, number>;
+    segmentSolverBestAfter: Record<string, number>;
+    segmentSolverImprovement: string | null;
+    segmentSolverTimeoutMs: number;
+    segmentSolverElapsedMs: number;
+    segmentSolverMealMovesAttempted: boolean;
+    segmentSolverMealMovesAccepted: boolean;
+    segmentSolverMealMoveCount: number;
+    segmentSolverMealRejectedReasons: string[];
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -130,6 +152,7 @@ export interface EngineRunDiagnostics {
     cpSatAccepted: boolean;
     cpSatPilotAttempted: boolean;
     cpSatPilotAccepted: boolean;
+    cpSatPilotReason: string;
     cpSatSegmentsAttempted: number;
     cpSatSegmentsAccepted: number;
     fallbackReasons: string[];
@@ -234,6 +257,28 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       coachWaveReason: meta?.coachWaveReason ?? "generator_not_invoked",
       coachWaveBefore: meta?.coachWaveBefore ?? {},
       coachWaveAfter: meta?.coachWaveAfter ?? {},
+      segmentSolverAttempted: meta?.segmentSolverAttempted ?? false,
+      segmentSolverBackend: meta?.segmentSolverBackend ?? "bounded_exact_search",
+      segmentSolverSegmentsBuilt: meta?.segmentSolverSegmentsBuilt ?? 0,
+      segmentSolverCandidatesGenerated: meta?.segmentSolverCandidatesGenerated ?? 0,
+      segmentSolverAccepted: meta?.segmentSolverAccepted ?? false,
+      segmentSolverReason: compactText(meta?.segmentSolverReason) ?? "no_problematic_coach_segment",
+      segmentSolverRejectedReasons: uniqueCompactReasons(meta?.segmentSolverRejectedReasons ?? []),
+      segmentSolverTargetCoachName: compactText(meta?.segmentSolverTargetCoachName),
+      segmentSolverWindowStart: compactText(meta?.segmentSolverWindowStart),
+      segmentSolverWindowEnd: compactText(meta?.segmentSolverWindowEnd),
+      segmentSolverTaskCount: meta?.segmentSolverTaskCount ?? null,
+      segmentSolverTalentNames: (meta?.segmentSolverTalentNames ?? []).slice(0, 25),
+      segmentSolverResourceNames: (meta?.segmentSolverResourceNames ?? []).slice(0, 25),
+      segmentSolverBestBefore: meta?.segmentSolverBestBefore ?? {},
+      segmentSolverBestAfter: meta?.segmentSolverBestAfter ?? {},
+      segmentSolverImprovement: compactText(meta?.segmentSolverImprovement),
+      segmentSolverTimeoutMs: meta?.segmentSolverTimeoutMs ?? 2_000,
+      segmentSolverElapsedMs: meta?.segmentSolverElapsedMs ?? 0,
+      segmentSolverMealMovesAttempted: meta?.segmentSolverMealMovesAttempted ?? false,
+      segmentSolverMealMovesAccepted: meta?.segmentSolverMealMovesAccepted ?? false,
+      segmentSolverMealMoveCount: meta?.segmentSolverMealMoveCount ?? 0,
+      segmentSolverMealRejectedReasons: uniqueCompactReasons(meta?.segmentSolverMealRejectedReasons ?? []),
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,
@@ -252,6 +297,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       cpSatAccepted: meta?.cpSatAccepted ?? false,
       cpSatPilotAttempted: meta?.cpSatPilotAttempted ?? false,
       cpSatPilotAccepted: meta?.cpSatPilotAccepted ?? false,
+      cpSatPilotReason: compactText(meta?.cpSatPilotReason) ?? "missing_solver_runtime",
       cpSatSegmentsAttempted: meta?.cpSatSegmentsAttempted ?? 0,
       cpSatSegmentsAccepted: meta?.cpSatSegmentsAccepted ?? 0,
       fallbackReasons: uniqueCompactReasons([

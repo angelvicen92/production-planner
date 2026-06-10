@@ -10,6 +10,7 @@ export type EngineV3ProgressPhase =
   | "hard_validation"
   | "backtracking"
   | "operational_neighborhoods"
+  | "segment_solver"
   | "coach_compaction"
   | "coach_wave_ordering"
   | "pipeline_builder"
@@ -42,4 +43,7 @@ export type EngineV3Options = {
   maxBacktrackDepth?: number;
   maxSearchMs?: number;
   onProgress?: (progress: EngineV3Progress) => void;
+  shouldCancel?: () => boolean;
+  segmentSolverTimeoutMs?: number;
+  enableSegmentSolver?: boolean;
 };
