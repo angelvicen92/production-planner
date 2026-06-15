@@ -158,6 +158,7 @@ export interface SegmentSolverMeta {
   segmentSolverPrimaryStageFixedIntervals: PrimaryStageFixedInterval[];
   segmentSolverPrimaryStagePrunedCandidates: number;
   segmentSolverPrimaryStagePruneReasons: string[];
+  segmentSolverPrimaryStagePruneDetails: Array<Record<string, unknown>>;
   segmentSolverPrimaryStageGuardMisses: number;
   segmentSolverPrimaryStageGuardMissDetails: Array<Record<string, unknown>>;
 }
@@ -231,6 +232,7 @@ export const normalizeSegmentSolverMetadata = (meta?: Partial<NonNullable<Engine
   segmentSolverPrimaryStageFixedIntervals: meta?.segmentSolverPrimaryStageFixedIntervals ?? [],
   segmentSolverPrimaryStagePrunedCandidates: meta?.segmentSolverPrimaryStagePrunedCandidates ?? 0,
   segmentSolverPrimaryStagePruneReasons: meta?.segmentSolverPrimaryStagePruneReasons ?? [],
+  segmentSolverPrimaryStagePruneDetails: meta?.segmentSolverPrimaryStagePruneDetails ?? [],
   segmentSolverPrimaryStageGuardMisses: meta?.segmentSolverPrimaryStageGuardMisses ?? 0,
   segmentSolverPrimaryStageGuardMissDetails: meta?.segmentSolverPrimaryStageGuardMissDetails ?? [],
 }) as Partial<NonNullable<EngineOutput["v3Meta"]>>;
@@ -940,6 +942,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverFeasibleButNotSelected: false, segmentSolverCandidateMetrics: [],
     segmentSolverPrimaryStageGuardEnabled: false, segmentSolverPrimaryStageFixedIntervals: [],
     segmentSolverPrimaryStagePrunedCandidates: 0, segmentSolverPrimaryStagePruneReasons: [],
+    segmentSolverPrimaryStagePruneDetails: [],
     segmentSolverPrimaryStageGuardMisses: 0, segmentSolverPrimaryStageGuardMissDetails: [],
   };
   if (options.disabled) return { output: baseline, candidates: [], meta: emptyMeta };
@@ -957,7 +960,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverPrimaryStageGuardEnabled: Number.isFinite(Number(input.optimizerMainZoneId)),
     segmentSolverPrimaryStageFixedIntervals: buildPrimaryStageFixedIntervals(input, baseline),
     segmentSolverPrimaryStagePrunedCandidates: 0,
-    segmentSolverPrimaryStagePruneReasons: [] };
+    segmentSolverPrimaryStagePruneReasons: [], segmentSolverPrimaryStagePruneDetails: [] };
   if (!solveSegments.length) return { output: baseline, candidates: [], meta: { ...meta, segmentSolverReason: wideTooLarge ? "segment_too_large" : "no_movable_tasks", segmentSolverElapsedMs: Date.now() - startedAt } };
 
   const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task])); const plannedById = new Map((baseline.plannedTasks ?? []).map((task) => [Number(task.taskId), task]));
@@ -985,6 +988,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
         if (blocker.rejectionCode === "primary_stage_fixed_overlap" || blocker.rejectionCode === "primary_stage_task_not_movable") {
           meta.segmentSolverPrimaryStagePrunedCandidates += 1;
           meta.segmentSolverPrimaryStagePruneReasons.push(blocker.rejectionCode);
+          meta.segmentSolverPrimaryStagePruneDetails.push({ movedTaskIds: [...starts.keys()], strategy: segment.strategy, taskIds: blocker.taskIds, blockingTaskIds: blocker.blockingTaskIds, spaceId: blocker.spaceId, spaceName: blocker.spaceName, start: blocker.start, end: blocker.end });
         }
       }
       const direct = local.blockers.find((blocker) => [
@@ -1152,6 +1156,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   meta.segmentSolverFullValidationFailureCodes = uniq(meta.segmentSolverFullValidationFailureCodes).slice(0, 20);
   meta.segmentSolverUnderlyingFailureCodes = uniq(meta.segmentSolverUnderlyingFailureCodes).slice(0, 20);
   meta.segmentSolverPrimaryStagePruneReasons = uniq(meta.segmentSolverPrimaryStagePruneReasons).slice(0, 10);
+  meta.segmentSolverPrimaryStagePruneDetails = meta.segmentSolverPrimaryStagePruneDetails.slice(0, 10);
   meta.segmentSolverPrimaryStageGuardMissDetails = meta.segmentSolverPrimaryStageGuardMissDetails.slice(0, 10);
   if (!accepted && meta.segmentSolverPrimaryStagePrunedCandidates > 0 && meta.segmentSolverValidCandidates === 0 && meta.segmentSolverPrimaryStagePruneReasons.includes("primary_stage_offset_no_safe_slot")) {
     meta.segmentSolverReason = "primary_stage_fixed_overlap_no_safe_offset";

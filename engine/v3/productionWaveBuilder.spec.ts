@@ -44,7 +44,9 @@ test("production wave reports concrete blockers when no anchor exists", () => {
   const input = makeInput(); input.optimizerMainZoneId = 99;
   const generated = generateProductionWaveCandidates(input, makeOutput());
   assert.equal(generated.meta.productionWaveCandidatesGenerated, 0);
-  assert.ok(generated.meta.productionWaveRejectedReasons.includes("no_primary_stage_anchor_for_any_talent"));
+  assert.equal(generated.meta.productionWaveAttempted, true);
+  assert.ok(generated.meta.productionWaveRejectedReasons.includes("no_anchor_tasks_found"));
+  assert.ok(generated.meta.productionWaveAnchorCandidateSamples.length > 0);
 });
 
 test("production wave does not move done tasks or Main Stage anchors", () => {

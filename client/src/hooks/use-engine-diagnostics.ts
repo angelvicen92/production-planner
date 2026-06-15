@@ -56,6 +56,17 @@ export type EngineDiagnosticsMetadata = {
   coachWaveBefore?: Record<string, unknown> | null;
   coachWaveAfter?: Record<string, unknown> | null;
   productionWaveAttempted?: boolean | null;
+  productionWaveInvocationPoint?: string | null;
+  productionWaveInputTaskCount?: number | null;
+  productionWaveInputPlannedTasks?: number | null;
+  productionWaveInputMainStageTasks?: number | null;
+  productionWaveInputCoachCount?: number | null;
+  productionWaveInputTalentCount?: number | null;
+  productionWaveAnchorDetectionAttempted?: boolean | null;
+  productionWaveAnchorDetectionReason?: string | null;
+  productionWaveAnchorDetectionRejectedReasons?: string[] | null;
+  productionWaveAnchorCandidatesInspected?: number | null;
+  productionWaveAnchorCandidateSamples?: Array<Record<string, unknown>> | null;
   productionWaveAnchorsFound?: number | null;
   productionWaveCandidatesGenerated?: number | null;
   productionWaveAccepted?: boolean | null;
@@ -145,6 +156,7 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverPrimaryStageFixedIntervals?: Array<Record<string, unknown>> | null;
   segmentSolverPrimaryStagePrunedCandidates?: number | null;
   segmentSolverPrimaryStagePruneReasons?: string[] | null;
+  segmentSolverPrimaryStagePruneDetails?: Array<Record<string, unknown>> | null;
   segmentSolverPrimaryStageGuardMisses?: number | null;
   segmentSolverPrimaryStageGuardMissDetails?: Array<Record<string, unknown>> | null;
   pipelineBuilderAttempted?: boolean | null;

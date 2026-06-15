@@ -417,6 +417,17 @@ export interface EngineOutput {
     candidateSolutionsEvaluated?: number;
     bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "production_wave_builder" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
     productionWaveAttempted?: boolean;
+    productionWaveInvocationPoint?: string;
+    productionWaveInputTaskCount?: number;
+    productionWaveInputPlannedTasks?: number;
+    productionWaveInputMainStageTasks?: number;
+    productionWaveInputCoachCount?: number;
+    productionWaveInputTalentCount?: number;
+    productionWaveAnchorDetectionAttempted?: boolean;
+    productionWaveAnchorDetectionReason?: string;
+    productionWaveAnchorDetectionRejectedReasons?: string[];
+    productionWaveAnchorCandidatesInspected?: number;
+    productionWaveAnchorCandidateSamples?: Array<Record<string, unknown>>;
     productionWaveAnchorsFound?: number;
     productionWaveUnanchoredTalents?: string[];
     productionWaveAnchorSpaceName?: string;
@@ -695,6 +706,7 @@ export interface EngineOutput {
     segmentSolverPrimaryStageFixedIntervals?: Array<Record<string, unknown>>;
     segmentSolverPrimaryStagePrunedCandidates?: number;
     segmentSolverPrimaryStagePruneReasons?: string[];
+    segmentSolverPrimaryStagePruneDetails?: Array<Record<string, unknown>>;
     segmentSolverPrimaryStageGuardMisses?: number;
     segmentSolverPrimaryStageGuardMissDetails?: Array<Record<string, unknown>>;
     cpSatPilotAttempted?: boolean;

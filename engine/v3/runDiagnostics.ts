@@ -146,6 +146,9 @@ export interface EngineRunDiagnostics {
     segmentSolverPrimaryStageFixedIntervals: Array<Record<string, unknown>>;
     segmentSolverPrimaryStagePrunedCandidates: number;
     segmentSolverPrimaryStagePruneReasons: string[];
+    segmentSolverPrimaryStagePruneDetails: Array<Record<string, unknown>>;
+    segmentSolverPrimaryStageGuardMisses: number;
+    segmentSolverPrimaryStageGuardMissDetails: Array<Record<string, unknown>>;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -399,6 +402,9 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverPrimaryStageFixedIntervals: (meta?.segmentSolverPrimaryStageFixedIntervals ?? []).slice(0, 10),
       segmentSolverPrimaryStagePrunedCandidates: meta?.segmentSolverPrimaryStagePrunedCandidates ?? 0,
       segmentSolverPrimaryStagePruneReasons: uniqueCompactReasons(meta?.segmentSolverPrimaryStagePruneReasons ?? []),
+      segmentSolverPrimaryStagePruneDetails: (meta?.segmentSolverPrimaryStagePruneDetails ?? []).slice(0, 10),
+      segmentSolverPrimaryStageGuardMisses: meta?.segmentSolverPrimaryStageGuardMisses ?? 0,
+      segmentSolverPrimaryStageGuardMissDetails: (meta?.segmentSolverPrimaryStageGuardMissDetails ?? []).slice(0, 10),
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,
