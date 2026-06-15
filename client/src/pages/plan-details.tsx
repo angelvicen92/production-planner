@@ -1955,8 +1955,19 @@ ${reasonMessage}` : message,
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (completedRunId !== null) {
-        await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId) });
-        await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId), type: "all" });
+        try {
+          await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId) });
+          await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId), type: "all" });
+        } catch (diagnosticsError: any) {
+          console.warn("post-success diagnostics refetch failed", {
+            planningRunId: completedRunId,
+            latestSuccessRunId: completedRunId,
+            diagnosticsRunId: null,
+            lastProgressStatus: "success",
+            postSuccessRefetchError: diagnosticsError?.message ?? String(diagnosticsError),
+          });
+          toast({ title: "Plan aplicado, diagnóstico pendiente.", description: "Reintentar desde el panel de diagnóstico." });
+        }
       }
       const reasons = Array.isArray(data?.reasons) ? data.reasons : [];
       if (reasons.length > 0) {

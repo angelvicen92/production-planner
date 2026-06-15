@@ -159,6 +159,7 @@ export function PlanEngineDiagnostics({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Generando diagnóstico…</p>
           <Skeleton className="h-8 w-full" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
@@ -170,10 +171,13 @@ export function PlanEngineDiagnostics({
 
   if (diagnosticsQuery.isError) {
     return (
-      <Alert variant="destructive">
+      <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>No se pudo cargar el diagnóstico actualizado</AlertTitle>
-        <AlertDescription>La planificación sigue disponible; vuelve a intentarlo desde esta vista.</AlertDescription>
+        <AlertTitle>Plan aplicado, diagnóstico pendiente.</AlertTitle>
+        <AlertDescription className="flex items-center gap-2">
+          <span>La planificación sigue disponible.</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => void diagnosticsQuery.refetch()}>Reintentar</Button>
+        </AlertDescription>
       </Alert>
     );
   }

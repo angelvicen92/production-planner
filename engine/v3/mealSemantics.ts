@@ -72,5 +72,9 @@ export const isMealTask = (input: EngineInput, task: TaskInput): boolean => {
   if (task.breakKind === "space_meal" || task.breakKind === "itinerant_meal") return true;
   if (input.mealTaskTemplateId && Number(task.templateId) === Number(input.mealTaskTemplateId)) return true;
   const configuredName = String(input.mealTaskTemplateName ?? "").trim().toLowerCase();
-  return configuredName.length > 0 && String(task.templateName ?? "").trim().toLowerCase() === configuredName;
+  const taskName = String(task.templateName ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (configuredName.length > 0 && taskName === configuredName.normalize("NFD").replace(/[\u0300-\u036f]/g, "")) return true;
+  // TODO: replace this defensive legacy-name fallback with an admin-configured task category.
+  return getMealMode(input).mode === "flexible_meal_window"
+    && /(^|\s)(comida|meal|catering|sodexo)(\s|$)/.test(taskName);
 };
