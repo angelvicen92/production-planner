@@ -17,11 +17,14 @@ export const SEGMENT_SOLVER_MAX_MICRO_TASKS = 18;
 export const SEGMENT_SOLVER_MAX_EXPANDED_TASKS = 22;
 export const SEGMENT_SOLVER_MAX_MICRO_MOVABLE_TASKS = 14;
 export const SEGMENT_SOLVER_MAX_EXPANDED_MOVABLE_TASKS = 16;
-export const SEGMENT_SOLVER_MAX_ASSIGNMENTS = 1_500;
+export const SEGMENT_SOLVER_MAX_ASSIGNMENTS = 2_500;
 export const SEGMENT_SOLVER_GRID_MINUTES = 5;
-export const SEGMENT_SOLVER_DEFAULT_TIMEOUT_MS = 3_000;
-export const SEGMENT_SOLVER_MICRO_TIMEOUT_MS = 800;
+export const SEGMENT_SOLVER_DEFAULT_TIMEOUT_MS = 4_000;
+export const SEGMENT_SOLVER_MICRO_TIMEOUT_MS = 1_200;
 export const SEGMENT_SOLVER_MAX_WINDOW_MINUTES = 5 * 60;
+export const SEGMENT_SOLVER_MAX_REPAIR_DEPTH = 2;
+export const SEGMENT_SOLVER_MAX_REPAIR_ADDED_TASKS = 6;
+export const SEGMENT_SOLVER_MAX_REPAIR_MOVED_TASKS = 10;
 
 type MicroSegmentStrategy = "bridge" | "left_shift_right_block" | "right_shift_left_block" | "coach_block_reorder" | "left_shift_with_blocker_expansion" | "right_shift_with_blocker_expansion" | "bridge_with_blocker_expansion";
 
@@ -110,6 +113,13 @@ export interface SegmentSolverMeta {
   segmentSolverDirectRepairsAccepted: number;
   segmentSolverDirectRepairStrategiesTried: string[];
   segmentSolverDirectRepairRejectedReasons: string[];
+  segmentSolverRepairChainsAttempted: number;
+  segmentSolverRepairChainsAccepted: number;
+  segmentSolverRepairChainMaxDepthReached: number;
+  segmentSolverRepairChainDepths: number[];
+  segmentSolverRepairChainMovedTaskIds: number[];
+  segmentSolverRepairChainBlockedBy: string[];
+  segmentSolverRepairChainRejectedReasons: string[];
   segmentSolverEarlyStopReason?: string;
   segmentSolverBestFeasibleSeenAtMs?: number;
   segmentSolverFeasibleButNotSelected: boolean;
@@ -122,6 +132,56 @@ export interface SegmentSolverOptions {
   disabled?: boolean;
   shouldCancel?: () => boolean;
 }
+
+export const normalizeSegmentSolverMetadata = (meta?: Partial<NonNullable<EngineOutput["v3Meta"]>> | Partial<SegmentSolverMeta>): Partial<NonNullable<EngineOutput["v3Meta"]>> => ({
+  segmentSolverAttempted: meta?.segmentSolverAttempted ?? false,
+  segmentSolverBackend: meta?.segmentSolverBackend ?? "bounded_exact_search",
+  segmentSolverSegmentsBuilt: meta?.segmentSolverSegmentsBuilt ?? 0,
+  segmentSolverCandidatesGenerated: meta?.segmentSolverCandidatesGenerated ?? 0,
+  segmentSolverAccepted: meta?.segmentSolverAccepted ?? false,
+  segmentSolverReason: meta?.segmentSolverReason ?? "no_problematic_coach_segment",
+  segmentSolverRejectedReasons: meta?.segmentSolverRejectedReasons ?? [],
+  segmentSolverMicroSegmentsBuilt: meta?.segmentSolverMicroSegmentsBuilt ?? 0,
+  segmentSolverMicroSegmentStrategiesTried: meta?.segmentSolverMicroSegmentStrategiesTried ?? [],
+  segmentSolverMicroSegmentTaskCounts: meta?.segmentSolverMicroSegmentTaskCounts ?? [],
+  segmentSolverMicroSegmentRejectedReasons: meta?.segmentSolverMicroSegmentRejectedReasons ?? [],
+  segmentSolverAssignmentsExplored: meta?.segmentSolverAssignmentsExplored ?? 0,
+  segmentSolverValidCandidates: meta?.segmentSolverValidCandidates ?? 0,
+  segmentSolverBestCandidateMovedTaskIds: meta?.segmentSolverBestCandidateMovedTaskIds ?? [],
+  segmentSolverBestCandidateMovedTalentNames: meta?.segmentSolverBestCandidateMovedTalentNames ?? [],
+  segmentSolverTimeoutMs: meta?.segmentSolverTimeoutMs ?? SEGMENT_SOLVER_DEFAULT_TIMEOUT_MS,
+  segmentSolverElapsedMs: meta?.segmentSolverElapsedMs ?? 0,
+  segmentSolverMealMovesAttempted: meta?.segmentSolverMealMovesAttempted ?? false,
+  segmentSolverMealMovesAccepted: meta?.segmentSolverMealMovesAccepted ?? false,
+  segmentSolverMealMoveCount: meta?.segmentSolverMealMoveCount ?? 0,
+  segmentSolverMealRejectedReasons: meta?.segmentSolverMealRejectedReasons ?? [],
+  segmentSolverTopBlockers: meta?.segmentSolverTopBlockers ?? [],
+  segmentSolverTopResourceBlockers: meta?.segmentSolverTopResourceBlockers ?? [],
+  segmentSolverTopDependencyBlockers: meta?.segmentSolverTopDependencyBlockers ?? [],
+  segmentSolverTopMealBlockers: meta?.segmentSolverTopMealBlockers ?? [],
+  segmentSolverTopMainStageBlockers: meta?.segmentSolverTopMainStageBlockers ?? [],
+  segmentSolverLocalChecksPerformed: meta?.segmentSolverLocalChecksPerformed ?? 0,
+  segmentSolverLocalChecksRejected: meta?.segmentSolverLocalChecksRejected ?? 0,
+  segmentSolverFullValidationsPerformed: meta?.segmentSolverFullValidationsPerformed ?? 0,
+  segmentSolverFullValidationsRejected: meta?.segmentSolverFullValidationsRejected ?? 0,
+  segmentSolverExpandedMicroSegmentsBuilt: meta?.segmentSolverExpandedMicroSegmentsBuilt ?? 0,
+  segmentSolverExpansionTaskIds: meta?.segmentSolverExpansionTaskIds ?? [],
+  segmentSolverExpansionReasons: meta?.segmentSolverExpansionReasons ?? [],
+  segmentSolverExpansionRejectedReasons: meta?.segmentSolverExpansionRejectedReasons ?? [],
+  segmentSolverDirectRepairsAttempted: meta?.segmentSolverDirectRepairsAttempted ?? 0,
+  segmentSolverDirectRepairsAccepted: meta?.segmentSolverDirectRepairsAccepted ?? 0,
+  segmentSolverDirectRepairStrategiesTried: meta?.segmentSolverDirectRepairStrategiesTried ?? [],
+  segmentSolverDirectRepairRejectedReasons: meta?.segmentSolverDirectRepairRejectedReasons ?? [],
+  segmentSolverRepairChainsAttempted: meta?.segmentSolverRepairChainsAttempted ?? 0,
+  segmentSolverRepairChainsAccepted: meta?.segmentSolverRepairChainsAccepted ?? 0,
+  segmentSolverRepairChainMaxDepthReached: meta?.segmentSolverRepairChainMaxDepthReached ?? 0,
+  segmentSolverRepairChainDepths: meta?.segmentSolverRepairChainDepths ?? [],
+  segmentSolverRepairChainMovedTaskIds: meta?.segmentSolverRepairChainMovedTaskIds ?? [],
+  segmentSolverRepairChainBlockedBy: meta?.segmentSolverRepairChainBlockedBy ?? [],
+  segmentSolverRepairChainRejectedReasons: meta?.segmentSolverRepairChainRejectedReasons ?? [],
+  segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
+  segmentSolverCandidateMetrics: meta?.segmentSolverCandidateMetrics ?? [],
+}) as Partial<NonNullable<EngineOutput["v3Meta"]>>;
 
 export interface CriticalCoachSegment {
   coachId: number;
@@ -496,32 +556,107 @@ const fullRejectionReasons = (input: EngineV3Input, baseline: EngineOutput, cand
 };
 
 const improvementReason = (before: CandidateSolutionScore, after: CandidateSolutionScore): string => {
-  if (after.maxCoachGapMinutes < before.maxCoachGapMinutes) return "segment_solver selected: lower coach gap";
+  if (after.maxCoachGapMinutes <= before.maxCoachGapMinutes - 10 && after.makespan <= before.makespan + 10) return "segment_solver selected: reduced critical coach gap";
   if (after.coachSplitDayPenalty < before.coachSplitDayPenalty) return "segment_solver selected: lower split day";
   return "segment_solver selected: better operational quality";
 };
 
 export interface DirectRepairResult { starts?: Map<number, number>; strategy?: string; rejectedReasons: string[] }
 
+export interface RepairChainResult {
+  starts?: Map<number, number>;
+  segment: CoachMicroSegment;
+  depthReached: number;
+  addedTaskIds: number[];
+  movedTaskIds: number[];
+  strategiesTried: string[];
+  blockedBy: string[];
+  rejectedReasons: string[];
+}
+
 /** Repairs a direct external blocker with bounded shifts, lane ordering, or a flexible meal relocation. */
 export const repairDirectBlocker = (input: EngineV3Input, baseline: EngineOutput, segment: CoachMicroSegment, starts: Map<number, number>, blocker: SegmentSolverBlocker): DirectRepairResult => {
   const intervals = intervalIndex(input, baseline, starts); const byId = new Map(intervals.map((item) => [item.taskId, item]));
   const target = blocker.taskIds.map((id) => byId.get(id)).find(Boolean); const blocked = blocker.blockingTaskIds.map((id) => byId.get(id)).find(Boolean);
-  if (!target || !blocked || isFixedTask(input, blocked.task)) return { rejectedReasons: ["fixed_task_blocks_shift"] };
+  if (!target || !blocked || isFixedTask(input, blocked.task)) return { rejectedReasons: ["outside_blocker_not_movable", "fixed_task_blocks_shift"] };
   const mealWindow = getMealMode(input).mode === "flexible_meal_window" ? getMealWindow(input) : null;
   const mealStart = toMinutes(mealWindow?.start); const mealEnd = toMinutes(mealWindow?.end);
   const attempts: Array<{ strategy: string; start: number }> = [];
+  const duration = blocked.end - blocked.start;
+  if (blocker.rejectionCode === "dependency_predecessor_outside_segment") attempts.push({ strategy: "dependency_predecessor_included", start: target.start - duration });
+  if (blocker.rejectionCode === "dependency_successor_outside_segment") attempts.push({ strategy: "dependency_successor_included", start: target.end });
   for (const offset of [5, 10, 15, 30, -5, -10, -15]) attempts.push({ strategy: `shift_blocker_${offset > 0 ? "forward" : "backward"}_${Math.abs(offset)}`, start: blocked.start + offset });
   attempts.push({ strategy: "lane_sequentialization_after", start: target.end }, { strategy: "lane_sequentialization_before", start: target.start - (blocked.end - blocked.start) });
-  if (isMealTask(input, blocked.task) && mealStart !== null && mealEnd !== null) for (let start = mealStart; start + blocked.end - blocked.start <= mealEnd; start += 5) attempts.push({ strategy: "flexible_meal_slot_relocation", start });
+  if (isMealTask(input, blocked.task) && mealStart !== null && mealEnd !== null) {
+    const useful = uniq([target.start - duration, target.end, target.start - 5 - duration, target.end + 5, mealStart, mealEnd - duration])
+      .filter((start) => start >= mealStart && start + duration <= mealEnd)
+      .sort((a, b) => Math.abs(a - blocked.start) - Math.abs(b - blocked.start));
+    useful.forEach((start) => attempts.unshift({ strategy: "flexible_meal_slot_relocation", start }));
+  }
   const rejected = new Set<string>();
+  let chainedCandidate: { starts: Map<number, number>; strategy: string } | undefined;
   for (const attempt of attempts) {
     const repaired = new Map(starts); repaired.set(blocked.taskId, attempt.start);
     const local = checkLocalMoveFeasibility(input, baseline, { segment: { ...segment, taskIds: uniq([...segment.taskIds, blocked.taskId]) }, starts: repaired, strategy: attempt.strategy, moveDescription: `${blocked.taskId}@${hhmm(attempt.start)}` });
     if (local.feasible) return { starts: repaired, strategy: attempt.strategy, rejectedReasons: [] };
+    if (!chainedCandidate && local.blockers.some((item) => item.canExpandSegment && item.rejectionCode !== "fixed_task_blocks_shift")) chainedCandidate = { starts: repaired, strategy: attempt.strategy };
     local.blockers.forEach((item) => rejected.add(item.rejectionCode));
   }
+  if (chainedCandidate) return { ...chainedCandidate, rejectedReasons: [] };
+  if (isMealTask(input, blocked.task)) rejected.add("meal_no_slot_near_conflict");
+  else rejected.add("outside_blocker_shift_causes_secondary_conflict");
   return { rejectedReasons: [...rejected] };
+};
+
+/** Recursively repairs at most two concrete outside blockers while keeping the branch surgical. */
+export const repairBlockerChain = (
+  input: EngineV3Input,
+  baseline: EngineOutput,
+  initialSegment: CoachMicroSegment,
+  initialStarts: Map<number, number>,
+  maxDepth = SEGMENT_SOLVER_MAX_REPAIR_DEPTH,
+): RepairChainResult => {
+  const originalIds = new Set(initialSegment.taskIds);
+  const strategies: string[] = [];
+  const blockedBy: string[] = [];
+  const rejected = new Set<string>();
+  let maxDepthReached = 0;
+
+  const visit = (segment: CoachMicroSegment, starts: Map<number, number>, depth: number): { starts?: Map<number, number>; segment: CoachMicroSegment } => {
+    maxDepthReached = Math.max(maxDepthReached, depth);
+    const local = checkLocalMoveFeasibility(input, baseline, { segment, starts, strategy: segment.strategy });
+    if (local.feasible) return { starts, segment };
+    const blocker = local.blockers[0];
+    if (!blocker) { rejected.add("repair_chain_no_concrete_blocker"); return { segment }; }
+    blockedBy.push(blocker.rejectionCode);
+    if (blocker.rejectionCode === "fixed_task_blocks_shift" || !blocker.canExpandSegment) {
+      rejected.add(blocker.rejectionCode === "fixed_task_blocks_shift" ? "fixed_task_blocks_shift" : "outside_blocker_not_movable");
+      return { segment };
+    }
+    if (depth >= maxDepth) { rejected.add("repair_chain_max_depth_reached"); return { segment }; }
+    const added = blocker.suggestedExpansionTaskIds.filter((id) => !segment.taskIds.includes(id));
+    const totalAdded = uniq([...segment.taskIds, ...added]).filter((id) => !originalIds.has(id));
+    if (totalAdded.length > SEGMENT_SOLVER_MAX_REPAIR_ADDED_TASKS) { rejected.add("repair_chain_max_added_tasks_exceeded"); return { segment }; }
+    if (uniq([...starts.keys(), ...added]).length > SEGMENT_SOLVER_MAX_REPAIR_MOVED_TASKS) { rejected.add("repair_chain_max_moved_tasks_exceeded"); return { segment }; }
+    const expanded = { ...segment, taskIds: uniq([...segment.taskIds, ...added]), movableTaskIds: uniq([...segment.movableTaskIds, ...added]) };
+    const direct = repairDirectBlocker(input, baseline, expanded, starts, blocker);
+    if (!direct.starts) { direct.rejectedReasons.forEach((reason) => rejected.add(reason)); return { segment: expanded }; }
+    if (direct.strategy) strategies.push(direct.strategy);
+    return visit(expanded, direct.starts, depth + 1);
+  };
+
+  const result = visit(initialSegment, new Map(initialStarts), 0);
+  const movedTaskIds = [...(result.starts?.keys() ?? [])];
+  return {
+    starts: result.starts,
+    segment: result.segment,
+    depthReached: maxDepthReached,
+    addedTaskIds: result.segment.taskIds.filter((id) => !originalIds.has(id)),
+    movedTaskIds,
+    strategiesTried: uniq(strategies),
+    blockedBy: uniq(blockedBy),
+    rejectedReasons: [...rejected],
+  };
 };
 
 export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, options: SegmentSolverOptions = {}): { output: EngineOutput; candidates: EngineOutput[]; meta: SegmentSolverMeta } => {
@@ -537,6 +672,8 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverLocalChecksPerformed: 0, segmentSolverLocalChecksRejected: 0, segmentSolverFullValidationsPerformed: 0, segmentSolverFullValidationsRejected: 0,
     segmentSolverExpandedMicroSegmentsBuilt: 0, segmentSolverExpansionTaskIds: [], segmentSolverExpansionReasons: [], segmentSolverExpansionRejectedReasons: [],
     segmentSolverDirectRepairsAttempted: 0, segmentSolverDirectRepairsAccepted: 0, segmentSolverDirectRepairStrategiesTried: [], segmentSolverDirectRepairRejectedReasons: [],
+    segmentSolverRepairChainsAttempted: 0, segmentSolverRepairChainsAccepted: 0, segmentSolverRepairChainMaxDepthReached: 0,
+    segmentSolverRepairChainDepths: [], segmentSolverRepairChainMovedTaskIds: [], segmentSolverRepairChainBlockedBy: [], segmentSolverRepairChainRejectedReasons: [],
     segmentSolverFeasibleButNotSelected: false, segmentSolverCandidateMetrics: [],
   };
   if (options.disabled) return { output: baseline, candidates: [], meta: emptyMeta };
@@ -574,7 +711,10 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     if (!local.feasible) {
       meta.segmentSolverLocalChecksRejected += 1;
       for (const blocker of local.blockers) { rejected.add(blocker.rejectionCode); recordBlocker(blocker, segment); if (blocker.constraintType === "meal") mealRejected.add(blocker.rejectionCode); }
-      const direct = local.blockers.find((blocker) => ["resource_overlap_with_outside_task", "talent_overlap_with_outside_task", "space_overlap_with_outside_task", "meal_slot_resource_conflict"].includes(blocker.rejectionCode));
+      const direct = local.blockers.find((blocker) => [
+        "resource_overlap_with_outside_task", "talent_overlap_with_outside_task", "space_overlap_with_outside_task",
+        "meal_slot_resource_conflict", "dependency_predecessor_outside_segment", "dependency_successor_outside_segment",
+      ].includes(blocker.rejectionCode));
       if (allowRepair && direct) {
         const segmentKey = `${segment.strategy}:${segment.targetTaskIds.join(",")}`; const count = expansionCounts.get(segmentKey) ?? 0;
         if (direct.canExpandSegment && count < 2) {
@@ -582,10 +722,22 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
           if (expansion.segment) { meta.segmentSolverExpandedMicroSegmentsBuilt += 1; meta.segmentSolverExpansionTaskIds.push(...expansion.added); meta.segmentSolverExpansionReasons.push(direct.rejectionCode); meta.segmentSolverMicroSegmentStrategiesTried.push(expansion.segment.strategy); }
           else { meta.segmentSolverExpansionRejectedReasons.push(expansion.reason!); rejected.add(expansion.reason!); }
         }
-        meta.segmentSolverDirectRepairsAttempted += 1; const repair = repairDirectBlocker(input, baseline, segment, starts, direct);
-        if (repair.strategy) meta.segmentSolverDirectRepairStrategiesTried.push(repair.strategy);
-        if (repair.starts) { meta.segmentSolverDirectRepairsAccepted += 1; evaluate(segment, repair.starts, offsetMinutes, repair.strategy, false); }
-        else { meta.segmentSolverDirectRepairRejectedReasons.push(...repair.rejectedReasons); }
+        meta.segmentSolverDirectRepairsAttempted += 1;
+        meta.segmentSolverRepairChainsAttempted += 1;
+        const repair = repairBlockerChain(input, baseline, segment, starts);
+        meta.segmentSolverRepairChainMaxDepthReached = Math.max(meta.segmentSolverRepairChainMaxDepthReached, repair.depthReached);
+        meta.segmentSolverRepairChainDepths.push(repair.depthReached);
+        meta.segmentSolverRepairChainMovedTaskIds.push(...repair.movedTaskIds);
+        meta.segmentSolverRepairChainBlockedBy.push(...repair.blockedBy);
+        meta.segmentSolverRepairChainRejectedReasons.push(...repair.rejectedReasons);
+        meta.segmentSolverDirectRepairStrategiesTried.push(...repair.strategiesTried);
+        if (repair.starts) {
+          meta.segmentSolverDirectRepairsAccepted += 1;
+          meta.segmentSolverRepairChainsAccepted += 1;
+          evaluate(repair.segment, repair.starts, offsetMinutes, repair.strategiesTried.join(" -> "), false);
+        } else {
+          meta.segmentSolverDirectRepairRejectedReasons.push(...repair.rejectedReasons);
+        }
       }
       return;
     }
@@ -594,7 +746,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     if (reasons.length) { meta.segmentSolverFullValidationsRejected += 1; reasons.forEach((reason) => rejected.add(reason)); return; }
     const score = scoreCandidateSolution(input, candidate); const improvementMinutes = baseScore.maxCoachGapMinutes - score.maxCoachGapMinutes;
     const changes = movedIds.length;
-    if (score.hardConstraintViolations !== 0 || score.mainStageGapMinutes !== 0 || (improvementMinutes < 15 && compareSegmentScores(score, baseScore, changes, 0) <= 0)) { rejected.add("segment_candidate_valid_but_not_better"); return; }
+    if (score.hardConstraintViolations !== 0 || score.mainStageGapMinutes !== 0 || score.plannedTasks !== baseScore.plannedTasks || (improvementMinutes < 10 && compareSegmentScores(score, baseScore, changes, 0) <= 0)) { rejected.add("segment_candidate_valid_but_not_better"); return; }
     meta.segmentSolverValidCandidates += 1; meta.segmentSolverCandidatesGenerated += 1; if (candidates.length < 50) candidates.push(candidate);
     const metrics: SegmentSolverCandidateMetrics = { ...compactMetrics(score), movedTaskIds: movedIds.slice(0, 22), improvementMinutes, selected: false }; meta.segmentSolverCandidateMetrics.push(metrics);
     if (compareSegmentScores(score, bestScore, changes, bestChanges) > 0) { best = candidate; bestScore = score; bestChanges = changes; meta.segmentSolverBestFeasibleSeenAtMs ??= Date.now() - startedAt; }
@@ -618,6 +770,10 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   meta.segmentSolverRejectedReasons = [...rejected].slice(0, 20); meta.segmentSolverBestAfter = compactMetrics(accepted ? bestScore : baseScore); meta.segmentSolverImprovement = accepted ? improvementReason(baseScore, bestScore) : meta.segmentSolverValidCandidates ? `segment_candidate_valid_but_not_better: baseline=${JSON.stringify(compactMetrics(baseScore))}; candidate=${JSON.stringify(compactMetrics(bestScore))}` : `microsegment_no_valid_candidate${meta.segmentSolverTopBlockers[0] ? `: ${meta.segmentSolverTopBlockers[0].rejectionCode}` : ""}`;
   meta.segmentSolverBestCandidateMovedTaskIds = movedIds; meta.segmentSolverBestCandidateMovedTalentNames = movedTalentNames; meta.segmentSolverBestCandidateReason = accepted ? improvementReason(baseScore, bestScore) : meta.segmentSolverImprovement; meta.segmentSolverElapsedMs = Math.max(0, Date.now() - startedAt); meta.segmentSolverMealMovesAccepted = movedMealCount > 0; meta.segmentSolverMealMoveCount = movedMealCount; meta.segmentSolverMealRejectedReasons = [...mealRejected].slice(0, 10); meta.segmentSolverFeasibleButNotSelected = meta.segmentSolverValidCandidates > 0 && !accepted;
   const selectedIds = new Set(movedIds); meta.segmentSolverCandidateMetrics = meta.segmentSolverCandidateMetrics.slice(0, 10).map((item) => ({ ...item, selected: accepted && item.movedTaskIds.length === selectedIds.size && item.movedTaskIds.every((id) => selectedIds.has(id)) })); meta.segmentSolverExpansionTaskIds = uniq(meta.segmentSolverExpansionTaskIds).slice(0, 16); meta.segmentSolverExpansionReasons = uniq(meta.segmentSolverExpansionReasons).slice(0, 10); meta.segmentSolverExpansionRejectedReasons = uniq(meta.segmentSolverExpansionRejectedReasons).slice(0, 10); meta.segmentSolverDirectRepairStrategiesTried = uniq(meta.segmentSolverDirectRepairStrategiesTried).slice(0, 10); meta.segmentSolverDirectRepairRejectedReasons = uniq(meta.segmentSolverDirectRepairRejectedReasons).slice(0, 10);
+  meta.segmentSolverRepairChainDepths = meta.segmentSolverRepairChainDepths.slice(0, 20);
+  meta.segmentSolverRepairChainMovedTaskIds = uniq(meta.segmentSolverRepairChainMovedTaskIds).slice(0, SEGMENT_SOLVER_MAX_REPAIR_MOVED_TASKS);
+  meta.segmentSolverRepairChainBlockedBy = uniq(meta.segmentSolverRepairChainBlockedBy).slice(0, 10);
+  meta.segmentSolverRepairChainRejectedReasons = uniq(meta.segmentSolverRepairChainRejectedReasons).slice(0, 10);
   return { output: accepted ? best : baseline, candidates, meta };
 };
 

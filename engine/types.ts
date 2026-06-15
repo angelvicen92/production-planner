@@ -645,6 +645,13 @@ export interface EngineOutput {
     segmentSolverDirectRepairsAccepted?: number;
     segmentSolverDirectRepairStrategiesTried?: string[];
     segmentSolverDirectRepairRejectedReasons?: string[];
+    segmentSolverRepairChainsAttempted?: number;
+    segmentSolverRepairChainsAccepted?: number;
+    segmentSolverRepairChainMaxDepthReached?: number;
+    segmentSolverRepairChainDepths?: number[];
+    segmentSolverRepairChainMovedTaskIds?: number[];
+    segmentSolverRepairChainBlockedBy?: string[];
+    segmentSolverRepairChainRejectedReasons?: string[];
     segmentSolverEarlyStopReason?: string;
     segmentSolverBestFeasibleSeenAtMs?: number;
     segmentSolverFeasibleButNotSelected?: boolean;
