@@ -39,6 +39,7 @@ import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
 import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
+import { countRenderedPlanningTasks, evaluatePlanningReadyGate } from "@/lib/planning-ready-gate";
 import {
   hasActivePlanningContext,
   isAbortLikeError,
@@ -984,6 +985,8 @@ export default function PlanDetailsPage() {
   const [planningStatus, setPlanningStatus] = useState<PlanningStatus>("ready");
   const [hydratingPlanningRunId, setHydratingPlanningRunId] = useState<number | null>(null);
   const [planningDatasetVersion, setPlanningDatasetVersion] = useState("");
+  const [expectedTransportOutCount, setExpectedTransportOutCount] = useState(0);
+  const [waitingForTransportOutTasks, setWaitingForTransportOutTasks] = useState(false);
   const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(() => (
     typeof window === "undefined" ? null : readActivePlanningRunId(id, window.localStorage)
   ));
@@ -1962,8 +1965,9 @@ ${reasonMessage}` : message,
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
       const refreshedPlan = await refetchPlan();
       const refreshedTasks = ((refreshedPlan.data as any)?.dailyTasks ?? []) as any[];
+      setExpectedTransportOutCount(countRenderedPlanningTasks(refreshedTasks).visibleTransportOutCount);
       const pendingAfterRefresh = refreshedTasks.filter((task) => String(task?.status ?? "pending") === "pending" && !task?.isManualBlock && !task?.is_manual_block && (!task?.startPlanned || !task?.endPlanned));
-      if (pendingAfterRefresh.length > 0) throw new Error(`PLANNING_VIEW_NOT_READY:${pendingAfterRefresh.length}`);
+      setWaitingForTransportOutTasks(pendingAfterRefresh.length > 0);
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (completedRunId !== null) {
@@ -4035,17 +4039,43 @@ ${reasonMessage}` : message,
                 title="Planning"
                 viewKey={`plan-${id}-${timelineView}-${spaceVerticalMode}`}
                 supportsZoom
+                hydrationBlocked={planningInProgress}
               >
                 <div className="relative">
-                {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : "Aplicando planificación…"}</span></div>) : null}
+                {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{waitingForTransportOutTasks ? "Actualizando salidas/transporte OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : "Aplicando planificación…"}</span></div>) : null}
                 <PlanningTimeline
                   isHydratingPlanningResult={planningInProgress && hydratingPlanningRunId !== null}
                   planningRunId={hydratingPlanningRunId}
                   taskDatasetVersion={planningDatasetVersion}
-                  onScheduleRendered={(runId, datasetVersion) => {
+                  onScheduleRendered={(runId, datasetVersion, renderedCounts) => {
                     if (runId !== hydratingPlanningRunId || datasetVersion !== planningDatasetVersion) return;
+                    const diagnostics: any = queryClient.getQueryData(engineDiagnosticsQueryKey(id, runId));
+                    const diagnosticsPlannedTasks = Number.isFinite(Number(diagnostics?.plannedTasks)) ? Number(diagnostics.plannedTasks) : null;
+                    const visibleDatasetSize = ((plan?.dailyTasks ?? []) as any[]).length;
+                    const expectedPlannedTasks = diagnosticsPlannedTasks !== null && diagnosticsPlannedTasks <= visibleDatasetSize
+                      ? diagnosticsPlannedTasks
+                      : null;
+                    const expectedUnplannedTasks = Number.isFinite(Number(diagnostics?.unplannedTasks)) ? Number(diagnostics.unplannedTasks) : null;
+                    const gate = evaluatePlanningReadyGate({
+                      currentRunId: runId,
+                      latestSuccessRunId: planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null,
+                      diagnosticsRunId: Number.isFinite(Number(diagnostics?.id)) ? Number(diagnostics.id) : null,
+                      expectedPlannedTasks,
+                      expectedUnplannedTasks,
+                      expectedTransportOutCount,
+                      ...renderedCounts,
+                      taskDatasetVersion: datasetVersion,
+                      renderedTaskDatasetVersion: datasetVersion,
+                      exportReady: Number(diagnostics?.id) === runId,
+                    });
+                    setWaitingForTransportOutTasks(gate.isWaitingForTransportOutTasks);
+                    if (!gate.planningReady) {
+                      setPlanningStatus(Number(diagnostics?.id) === runId ? "rendering_schedule" : "generating_diagnostics");
+                      return;
+                    }
                     setPlanningStatus("ready");
                     setPlanningInProgress(false);
+                    setWaitingForTransportOutTasks(false);
                     setHydratingPlanningRunId(null);
                     setExpectedPlanningRunId(null);
                     toast({ title: "Planificación lista" });
@@ -4526,7 +4556,7 @@ ${reasonMessage}` : message,
                 {planningIssue ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Loader2 className="h-4 w-4 animate-spin" />}
                 {planningIssue
                   ? planningIssue.kind === "stale" ? "Generación bloqueada" : planningIssue.kind === "reconnecting" ? "Reconectando con la planificación..." : "No se pudo completar la generación"
-                  : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : planningStatus === "applying" ? "Aplicando planificación…" : `Planificando… ${planningProgress.percentage}%`}
+                  : waitingForTransportOutTasks ? "Actualizando salidas/transporte OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : planningStatus === "applying" ? "Aplicando planificación…" : `Planificando… ${planningProgress.percentage}%`}
               </DialogTitle>
               <DialogDescription>
                 {planningIssue ? planningIssue.message : <>

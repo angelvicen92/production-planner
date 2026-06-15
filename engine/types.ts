@@ -670,6 +670,10 @@ export interface EngineOutput {
     segmentSolverFeasibleButNotSelected?: boolean;
     segmentSolverCandidateMetrics?: Array<Record<string, unknown>>;
     segmentSolverFeasibleComparison?: Record<string, unknown>;
+    segmentSolverPrimaryStageGuardEnabled?: boolean;
+    segmentSolverPrimaryStageFixedIntervals?: Array<Record<string, unknown>>;
+    segmentSolverPrimaryStagePrunedCandidates?: number;
+    segmentSolverPrimaryStagePruneReasons?: string[];
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

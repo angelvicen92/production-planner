@@ -3,7 +3,7 @@ import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { validateHardConstraints } from "./hardValidation";
-import { buildCoachMicroSegments, buildCriticalCoachSegments, checkLocalMoveFeasibility, explainOptimizedCandidateInvalid, findCriticalCoachGap, repairDirectBlocker, runSegmentSolver, validateSegmentCandidateIntegrity, type CoachMicroSegment } from "./segmentSolver";
+import { buildCoachMicroSegments, buildCriticalCoachSegments, buildPrimaryStageFixedIntervals, checkLocalMoveFeasibility, explainOptimizedCandidateInvalid, findCriticalCoachGap, repairDirectBlocker, runSegmentSolver, validateSegmentCandidateIntegrity, type CoachMicroSegment } from "./segmentSolver";
 import { runSegmentSolverSelection } from "./index";
 
 const baseInput = (overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
@@ -77,6 +77,49 @@ test("segment solver keeps Main Stage fixed and continuous", () => {
   const result = runSegmentSolver(input, baseline, { timeoutMs: 500 });
   assert.equal(byId(result.output, 3)?.startPlanned, "10:00");
   assert.equal(byId(result.output, 4)?.startPlanned, "10:30");
+  assert.equal(result.meta.segmentSolverBestAfter?.mainStageGapMinutes, 0);
+});
+
+test("primary-stage guard indexes fixed intervals and prunes overlap before full validation", () => {
+  const input = baseInput({
+    tasks: baseInput().tasks.map((task) => task.id === 2 ? { ...task, spaceId: 10 } : task),
+  });
+  const baseline = baseOutput();
+  const intervals = buildPrimaryStageFixedIntervals(input, baseline);
+  assert.deepEqual(intervals.map((item) => item.taskId), [3, 4]);
+  const local = checkLocalMoveFeasibility(input, baseline, {
+    segment: localSegment(),
+    starts: new Map([[2, 10 * 60]]),
+    strategy: "left_shift_right_block",
+    offsetMinutes: -180,
+  });
+  assert.equal(local.feasible, false);
+  assert.equal(local.blockers[0]?.rejectionCode, "primary_stage_fixed_overlap");
+  assert.deepEqual(local.blockers[0]?.blockingTaskIds, [3]);
+});
+
+test("primary-stage task itself is never movable", () => {
+  const local = checkLocalMoveFeasibility(baseInput(), baseOutput(), {
+    segment: localSegment({ taskIds: [3], movableTaskIds: [3], targetTaskIds: [3] }),
+    starts: new Map([[3, 11 * 60]]),
+    strategy: "bridge",
+  });
+  assert.equal(local.blockers[0]?.rejectionCode, "primary_stage_task_not_movable");
+});
+
+test("primary-stage diagnostics count locally pruned candidates and retain zero stage gap", () => {
+  const input = baseInput({
+    tasks: baseInput().tasks.map((task) => task.id === 2 ? { ...task, spaceId: 10 } : task),
+  });
+  const baseline = baseOutput();
+  byId(baseline, 3)!.endPlanned = "11:30";
+  byId(baseline, 4)!.startPlanned = "11:30";
+  byId(baseline, 4)!.endPlanned = "12:30";
+  const result = runSegmentSolver(input, baseline, { timeoutMs: 500 });
+  assert.equal(result.meta.segmentSolverPrimaryStageGuardEnabled, true);
+  assert.ok(result.meta.segmentSolverPrimaryStageFixedIntervals.length > 0);
+  assert.ok(result.meta.segmentSolverPrimaryStagePrunedCandidates > 0);
+  assert.ok(result.meta.segmentSolverFullValidationsPerformed < result.meta.segmentSolverAssignmentsExplored);
   assert.equal(result.meta.segmentSolverBestAfter?.mainStageGapMinutes, 0);
 });
 

@@ -142,6 +142,10 @@ export interface EngineRunDiagnostics {
     segmentSolverFeasibleButNotSelected: boolean;
     segmentSolverCandidateMetrics: Array<Record<string, unknown>>;
     segmentSolverFeasibleComparison: Record<string, unknown>;
+    segmentSolverPrimaryStageGuardEnabled: boolean;
+    segmentSolverPrimaryStageFixedIntervals: Array<Record<string, unknown>>;
+    segmentSolverPrimaryStagePrunedCandidates: number;
+    segmentSolverPrimaryStagePruneReasons: string[];
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -391,6 +395,10 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
       segmentSolverCandidateMetrics: (meta?.segmentSolverCandidateMetrics ?? []).slice(0, 10),
       segmentSolverFeasibleComparison: meta?.segmentSolverFeasibleComparison ?? {},
+      segmentSolverPrimaryStageGuardEnabled: meta?.segmentSolverPrimaryStageGuardEnabled ?? false,
+      segmentSolverPrimaryStageFixedIntervals: (meta?.segmentSolverPrimaryStageFixedIntervals ?? []).slice(0, 10),
+      segmentSolverPrimaryStagePrunedCandidates: meta?.segmentSolverPrimaryStagePrunedCandidates ?? 0,
+      segmentSolverPrimaryStagePruneReasons: uniqueCompactReasons(meta?.segmentSolverPrimaryStagePruneReasons ?? []),
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,
