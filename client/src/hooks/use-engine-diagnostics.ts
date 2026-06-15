@@ -103,6 +103,13 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverFullValidationTopFailures?: Array<Record<string, unknown>> | null;
   segmentSolverFullValidationFailureCodes?: string[] | null;
   segmentSolverFullValidationFailureSummary?: Record<string, number> | null;
+  segmentSolverUnderlyingFailureCodes?: string[] | null;
+  segmentSolverUnderlyingFailureSummary?: Record<string, number> | null;
+  segmentSolverBestUnderlyingFailure?: string | null;
+  segmentSolverBestUnderlyingFailureDetails?: Record<string, unknown> | null;
+  segmentSolverCandidateIntegrityChecksPerformed?: number | null;
+  segmentSolverCandidateIntegrityFailures?: number | null;
+  segmentSolverCandidateIntegrityTopFailures?: Array<Record<string, unknown>> | null;
   segmentSolverBestRepairRejectedBy?: string | null;
   segmentSolverBestRepairMovedTaskIds?: number[] | null;
   segmentSolverBestRepairMovedTalentNames?: string[] | null;

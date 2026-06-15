@@ -640,6 +640,13 @@ export interface EngineOutput {
     segmentSolverFullValidationTopFailures?: Array<Record<string, unknown>>;
     segmentSolverFullValidationFailureCodes?: string[];
     segmentSolverFullValidationFailureSummary?: Record<string, number>;
+    segmentSolverUnderlyingFailureCodes?: string[];
+    segmentSolverUnderlyingFailureSummary?: Record<string, number>;
+    segmentSolverBestUnderlyingFailure?: string;
+    segmentSolverBestUnderlyingFailureDetails?: Record<string, unknown>;
+    segmentSolverCandidateIntegrityChecksPerformed?: number;
+    segmentSolverCandidateIntegrityFailures?: number;
+    segmentSolverCandidateIntegrityTopFailures?: Array<Record<string, unknown>>;
     segmentSolverBestRepairRejectedBy?: string;
     segmentSolverBestRepairMovedTaskIds?: number[];
     segmentSolverBestRepairMovedTalentNames?: string[];
