@@ -158,7 +158,6 @@ export function useGeneratePlan() {
     onSuccess: async (_data, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) }),
-        queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) }),
         queryClient.invalidateQueries({ queryKey: ["planning-run", variables.id] }),
         queryClient.invalidateQueries({ queryKey: [`/api/plans/${variables.id}/tasks`] }),
         queryClient.invalidateQueries({ queryKey: ["contestants", variables.id] }),
@@ -166,8 +165,10 @@ export function useGeneratePlan() {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: planQueryKey(variables.id) }),
         queryClient.refetchQueries({ queryKey: ["planning-run", variables.id] }),
-        queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) }),
       ]);
+      // Diagnostics are eventually consistent and must never turn an already-applied
+      // successful planning mutation into a UI failure.
+      void queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(variables.id) });
     },
   });
 }

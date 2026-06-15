@@ -100,6 +100,12 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverLocalChecksRejected?: number | null;
   segmentSolverFullValidationsPerformed?: number | null;
   segmentSolverFullValidationsRejected?: number | null;
+  segmentSolverFullValidationTopFailures?: Array<Record<string, unknown>> | null;
+  segmentSolverFullValidationFailureCodes?: string[] | null;
+  segmentSolverFullValidationFailureSummary?: Record<string, number> | null;
+  segmentSolverBestRepairRejectedBy?: string | null;
+  segmentSolverBestRepairMovedTaskIds?: number[] | null;
+  segmentSolverBestRepairMovedTalentNames?: string[] | null;
   segmentSolverExpandedMicroSegmentsBuilt?: number | null;
   segmentSolverExpansionTaskIds?: number[] | null;
   segmentSolverExpansionReasons?: string[] | null;
@@ -117,6 +123,7 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverRepairChainRejectedReasons?: string[] | null;
   segmentSolverCandidateMetrics?: Array<Record<string, unknown>> | null;
   segmentSolverFeasibleButNotSelected?: boolean | null;
+  segmentSolverFeasibleComparison?: Record<string, unknown> | null;
   pipelineBuilderAttempted?: boolean | null;
   pipelineCandidatesGenerated?: number | null;
   pipelineAccepted?: boolean | null;

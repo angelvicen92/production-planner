@@ -637,6 +637,12 @@ export interface EngineOutput {
     segmentSolverLocalChecksRejected?: number;
     segmentSolverFullValidationsPerformed?: number;
     segmentSolverFullValidationsRejected?: number;
+    segmentSolverFullValidationTopFailures?: Array<Record<string, unknown>>;
+    segmentSolverFullValidationFailureCodes?: string[];
+    segmentSolverFullValidationFailureSummary?: Record<string, number>;
+    segmentSolverBestRepairRejectedBy?: string;
+    segmentSolverBestRepairMovedTaskIds?: number[];
+    segmentSolverBestRepairMovedTalentNames?: string[];
     segmentSolverExpandedMicroSegmentsBuilt?: number;
     segmentSolverExpansionTaskIds?: number[];
     segmentSolverExpansionReasons?: string[];
@@ -656,6 +662,7 @@ export interface EngineOutput {
     segmentSolverBestFeasibleSeenAtMs?: number;
     segmentSolverFeasibleButNotSelected?: boolean;
     segmentSolverCandidateMetrics?: Array<Record<string, unknown>>;
+    segmentSolverFeasibleComparison?: Record<string, unknown>;
     cpSatPilotAttempted?: boolean;
     cpSatPilotAccepted?: boolean;
     cpSatPilotTaskCount?: number;

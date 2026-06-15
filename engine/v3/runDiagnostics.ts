@@ -109,6 +109,12 @@ export interface EngineRunDiagnostics {
     segmentSolverLocalChecksRejected: number;
     segmentSolverFullValidationsPerformed: number;
     segmentSolverFullValidationsRejected: number;
+    segmentSolverFullValidationTopFailures: Array<Record<string, unknown>>;
+    segmentSolverFullValidationFailureCodes: string[];
+    segmentSolverFullValidationFailureSummary: Record<string, number>;
+    segmentSolverBestRepairRejectedBy: string | null;
+    segmentSolverBestRepairMovedTaskIds: number[];
+    segmentSolverBestRepairMovedTalentNames: string[];
     segmentSolverExpandedMicroSegmentsBuilt: number;
     segmentSolverExpansionTaskIds: number[];
     segmentSolverExpansionReasons: string[];
@@ -128,6 +134,7 @@ export interface EngineRunDiagnostics {
     segmentSolverBestFeasibleSeenAtMs: number | null;
     segmentSolverFeasibleButNotSelected: boolean;
     segmentSolverCandidateMetrics: Array<Record<string, unknown>>;
+    segmentSolverFeasibleComparison: Record<string, unknown>;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -344,6 +351,12 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverLocalChecksRejected: meta?.segmentSolverLocalChecksRejected ?? 0,
       segmentSolverFullValidationsPerformed: meta?.segmentSolverFullValidationsPerformed ?? 0,
       segmentSolverFullValidationsRejected: meta?.segmentSolverFullValidationsRejected ?? 0,
+      segmentSolverFullValidationTopFailures: (meta?.segmentSolverFullValidationTopFailures ?? []).slice(0, 10),
+      segmentSolverFullValidationFailureCodes: uniqueCompactReasons(meta?.segmentSolverFullValidationFailureCodes ?? []),
+      segmentSolverFullValidationFailureSummary: meta?.segmentSolverFullValidationFailureSummary ?? {},
+      segmentSolverBestRepairRejectedBy: compactText(meta?.segmentSolverBestRepairRejectedBy),
+      segmentSolverBestRepairMovedTaskIds: (meta?.segmentSolverBestRepairMovedTaskIds ?? []).slice(0, 22),
+      segmentSolverBestRepairMovedTalentNames: (meta?.segmentSolverBestRepairMovedTalentNames ?? []).slice(0, 10),
       segmentSolverExpandedMicroSegmentsBuilt: meta?.segmentSolverExpandedMicroSegmentsBuilt ?? 0,
       segmentSolverExpansionTaskIds: (meta?.segmentSolverExpansionTaskIds ?? []).slice(0, 16),
       segmentSolverExpansionReasons: uniqueCompactReasons(meta?.segmentSolverExpansionReasons ?? []),
@@ -363,6 +376,7 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverBestFeasibleSeenAtMs: meta?.segmentSolverBestFeasibleSeenAtMs ?? null,
       segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
       segmentSolverCandidateMetrics: (meta?.segmentSolverCandidateMetrics ?? []).slice(0, 10),
+      segmentSolverFeasibleComparison: meta?.segmentSolverFeasibleComparison ?? {},
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,

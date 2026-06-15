@@ -252,6 +252,12 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverLocalChecksRejected: number;
     segmentSolverFullValidationsPerformed: number;
     segmentSolverFullValidationsRejected: number;
+    segmentSolverFullValidationTopFailures: CompactJsonValue;
+    segmentSolverFullValidationFailureCodes: CompactJsonValue;
+    segmentSolverFullValidationFailureSummary: CompactJsonValue;
+    segmentSolverBestRepairRejectedBy: string | null;
+    segmentSolverBestRepairMovedTaskIds: CompactJsonValue;
+    segmentSolverBestRepairMovedTalentNames: CompactJsonValue;
     segmentSolverExpandedMicroSegmentsBuilt: number;
     segmentSolverExpansionTaskIds: CompactJsonValue;
     segmentSolverExpansionReasons: CompactJsonValue;
@@ -269,6 +275,7 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverRepairChainRejectedReasons: CompactJsonValue;
     segmentSolverCandidateMetrics: CompactJsonValue;
     segmentSolverFeasibleButNotSelected: boolean;
+    segmentSolverFeasibleComparison: CompactJsonValue;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -442,6 +449,12 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverLocalChecksRejected: optionalNumber(metadata.segmentSolverLocalChecksRejected) ?? 0,
       segmentSolverFullValidationsPerformed: optionalNumber(metadata.segmentSolverFullValidationsPerformed) ?? 0,
       segmentSolverFullValidationsRejected: optionalNumber(metadata.segmentSolverFullValidationsRejected) ?? 0,
+      segmentSolverFullValidationTopFailures: compactJsonValue(metadata.segmentSolverFullValidationTopFailures) ?? [],
+      segmentSolverFullValidationFailureCodes: compactJsonValue(metadata.segmentSolverFullValidationFailureCodes) ?? [],
+      segmentSolverFullValidationFailureSummary: compactJsonValue(metadata.segmentSolverFullValidationFailureSummary) ?? {},
+      segmentSolverBestRepairRejectedBy: optionalString(metadata.segmentSolverBestRepairRejectedBy),
+      segmentSolverBestRepairMovedTaskIds: compactJsonValue(metadata.segmentSolverBestRepairMovedTaskIds) ?? [],
+      segmentSolverBestRepairMovedTalentNames: compactJsonValue(metadata.segmentSolverBestRepairMovedTalentNames) ?? [],
       segmentSolverExpandedMicroSegmentsBuilt: optionalNumber(metadata.segmentSolverExpandedMicroSegmentsBuilt) ?? 0,
       segmentSolverExpansionTaskIds: compactJsonValue(metadata.segmentSolverExpansionTaskIds) ?? [],
       segmentSolverExpansionReasons: compactJsonValue(metadata.segmentSolverExpansionReasons) ?? [],
@@ -459,6 +472,7 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverRepairChainRejectedReasons: compactJsonValue(metadata.segmentSolverRepairChainRejectedReasons) ?? [],
       segmentSolverCandidateMetrics: compactJsonValue(metadata.segmentSolverCandidateMetrics) ?? [],
       segmentSolverFeasibleButNotSelected: optionalBoolean(metadata.segmentSolverFeasibleButNotSelected) ?? false,
+      segmentSolverFeasibleComparison: compactJsonValue(metadata.segmentSolverFeasibleComparison) ?? {},
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
       pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
       pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,

@@ -259,6 +259,42 @@ test("direct repair relocates a flexible meal inside its window", () => {
   assert.ok((repair.starts?.get(10) ?? 0) >= 10 * 60); assert.ok((repair.starts?.get(10) ?? 9999) + 30 <= 12 * 60 + 30);
 });
 
+test("catering-like flexible task can be relocated inside the meal window", () => {
+  const input = baseInput({ meal: { start: "10:00", end: "12:30" }, tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Servicio Sodexo", zoneId: 3, spaceId: 31, contestantId: 10, status: "pending", durationOverrideMin: 30, resourceRequirements: { byItem: { 9001: 1 } } }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const starts = new Map([[2, 11 * 60]]); const local = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts, strategy: "left_shift_right_block" });
+  const repair = repairDirectBlocker(input, output, localSegment(), starts, local.blockers.find((item) => item.blockingTaskIds.includes(10))!);
+  assert.ok(repair.starts?.has(10));
+  assert.equal(repair.strategy, "sodexo_flexible_slot_relocated");
+});
+
+test("flexible meal does not block a coach room unless explicitly configured", () => {
+  const meal = { id: 10, planId: 52, templateId: 10, templateName: "Comida", breakKind: "itinerant_meal" as const, zoneId: 2, spaceId: 20, contestantId: 10, status: "pending", durationOverrideMin: 30 };
+  const input = baseInput({ tasks: baseInput().tasks.concat([meal]) });
+  const output = baseOutput();
+  output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [] });
+  const context = { segment: localSegment(), starts: new Map([[2, 11 * 60]]), strategy: "left_shift_right_block" };
+  assert.equal(checkLocalMoveFeasibility(input, output, context).blockers.some((item) => item.constraintType === "space"), false);
+
+  const explicitInput = baseInput({ tasks: baseInput().tasks.concat([{ ...meal, mealOccupiesSpace: true }]) });
+  assert.equal(checkLocalMoveFeasibility(explicitInput, output, context).blockers.some((item) => item.constraintType === "space"), true);
+});
+
+test("accepted local move rejected by full validation exports complete failure diagnostics", () => {
+  const input = baseInput({ contestantAvailabilityById: { 2: { start: "12:45", end: "14:00" } } });
+  const result = runSegmentSolver(input, baseOutput(), { timeoutMs: 500 });
+  assert.ok(result.meta.segmentSolverFullValidationsRejected > 0);
+  assert.ok(result.meta.segmentSolverFullValidationTopFailures.length > 0);
+  const failure = result.meta.segmentSolverFullValidationTopFailures[0];
+  assert.ok(failure.fullValidationViolationCode);
+  assert.ok(failure.movedTaskIds.length > 0);
+  assert.ok(failure.taskIds.length > 0);
+  assert.ok(failure.taskNames.length > 0);
+  assert.ok(failure.talentNames.length > 0);
+  assert.ok(result.meta.segmentSolverBestRepairRejectedBy);
+  assert.ok(result.meta.segmentSolverFullValidationFailureCodes.length > 0);
+});
+
 test("lane sequentialization resolves a direct same-space overlap", () => {
   const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Lane blocker", zoneId: 3, spaceId: 20, contestantId: 10, status: "pending", durationOverrideMin: 30 }]) });
   const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [] });

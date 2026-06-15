@@ -55,6 +55,9 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.equal(snapshot.intelligence.segmentSolverLocalChecksRejected, 0);
   assert.equal(snapshot.intelligence.segmentSolverFullValidationsPerformed, 0);
   assert.equal(snapshot.intelligence.segmentSolverFullValidationsRejected, 0);
+  assert.deepEqual(snapshot.intelligence.segmentSolverFullValidationTopFailures, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverFullValidationFailureCodes, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverFullValidationFailureSummary, {});
   assert.equal(snapshot.intelligence.segmentSolverExpandedMicroSegmentsBuilt, 0);
   assert.deepEqual(snapshot.intelligence.segmentSolverExpansionTaskIds, []);
   assert.equal(snapshot.intelligence.segmentSolverDirectRepairsAttempted, 0);
