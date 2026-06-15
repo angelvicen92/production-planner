@@ -240,6 +240,11 @@ const output: EngineOutput = {
   assert.deepEqual(withoutMeta.engineMetadata.pipelineStableTasks, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineFeederOutcomes, []);
   assert.deepEqual(withoutMeta.engineMetadata.pipelineConflictDetails, []);
+  assert.deepEqual(withoutMeta.engineMetadata.segmentSolverTopBlockers, []);
+  assert.equal(withoutMeta.engineMetadata.segmentSolverLocalChecksPerformed, 0);
+  assert.equal(withoutMeta.engineMetadata.segmentSolverFullValidationsPerformed, 0);
+  assert.equal(withoutMeta.engineMetadata.segmentSolverDirectRepairsAttempted, 0);
+  assert.equal(withoutMeta.engineMetadata.segmentSolverFeasibleButNotSelected, false);
   assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairAttempted, false);
   assert.equal(withoutMeta.engineMetadata.pipelineSegmentRepairReason, "not_attempted");
   assert.equal(withoutMeta.engineMetadata.mealMode, "global_hard_break");

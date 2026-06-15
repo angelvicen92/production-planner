@@ -93,3 +93,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 052 — 2026-06-10 14:54 — Segment solver real para cuello de botella y export JSON latest-run seguro
 
 - ID 053 — 2026-06-10 19:42 — Microsegment solver quirúrgico para gaps de coach
+
+- ID 054 — 2026-06-10 20:40 — Segment solver con blockers concretos y reparación incremental

@@ -100,6 +100,27 @@ export interface EngineRunDiagnostics {
     segmentSolverMealMovesAccepted: boolean;
     segmentSolverMealMoveCount: number;
     segmentSolverMealRejectedReasons: string[];
+    segmentSolverTopBlockers: Array<Record<string, unknown>>;
+    segmentSolverTopResourceBlockers: Array<Record<string, unknown>>;
+    segmentSolverTopDependencyBlockers: Array<Record<string, unknown>>;
+    segmentSolverTopMealBlockers: Array<Record<string, unknown>>;
+    segmentSolverTopMainStageBlockers: Array<Record<string, unknown>>;
+    segmentSolverLocalChecksPerformed: number;
+    segmentSolverLocalChecksRejected: number;
+    segmentSolverFullValidationsPerformed: number;
+    segmentSolverFullValidationsRejected: number;
+    segmentSolverExpandedMicroSegmentsBuilt: number;
+    segmentSolverExpansionTaskIds: number[];
+    segmentSolverExpansionReasons: string[];
+    segmentSolverExpansionRejectedReasons: string[];
+    segmentSolverDirectRepairsAttempted: number;
+    segmentSolverDirectRepairsAccepted: number;
+    segmentSolverDirectRepairStrategiesTried: string[];
+    segmentSolverDirectRepairRejectedReasons: string[];
+    segmentSolverEarlyStopReason: string | null;
+    segmentSolverBestFeasibleSeenAtMs: number | null;
+    segmentSolverFeasibleButNotSelected: boolean;
+    segmentSolverCandidateMetrics: Array<Record<string, unknown>>;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -307,6 +328,27 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverMealMovesAccepted: meta?.segmentSolverMealMovesAccepted ?? false,
       segmentSolverMealMoveCount: meta?.segmentSolverMealMoveCount ?? 0,
       segmentSolverMealRejectedReasons: uniqueCompactReasons(meta?.segmentSolverMealRejectedReasons ?? []),
+      segmentSolverTopBlockers: (meta?.segmentSolverTopBlockers ?? []).slice(0, 10),
+      segmentSolverTopResourceBlockers: (meta?.segmentSolverTopResourceBlockers ?? []).slice(0, 10),
+      segmentSolverTopDependencyBlockers: (meta?.segmentSolverTopDependencyBlockers ?? []).slice(0, 10),
+      segmentSolverTopMealBlockers: (meta?.segmentSolverTopMealBlockers ?? []).slice(0, 10),
+      segmentSolverTopMainStageBlockers: (meta?.segmentSolverTopMainStageBlockers ?? []).slice(0, 10),
+      segmentSolverLocalChecksPerformed: meta?.segmentSolverLocalChecksPerformed ?? 0,
+      segmentSolverLocalChecksRejected: meta?.segmentSolverLocalChecksRejected ?? 0,
+      segmentSolverFullValidationsPerformed: meta?.segmentSolverFullValidationsPerformed ?? 0,
+      segmentSolverFullValidationsRejected: meta?.segmentSolverFullValidationsRejected ?? 0,
+      segmentSolverExpandedMicroSegmentsBuilt: meta?.segmentSolverExpandedMicroSegmentsBuilt ?? 0,
+      segmentSolverExpansionTaskIds: (meta?.segmentSolverExpansionTaskIds ?? []).slice(0, 16),
+      segmentSolverExpansionReasons: uniqueCompactReasons(meta?.segmentSolverExpansionReasons ?? []),
+      segmentSolverExpansionRejectedReasons: uniqueCompactReasons(meta?.segmentSolverExpansionRejectedReasons ?? []),
+      segmentSolverDirectRepairsAttempted: meta?.segmentSolverDirectRepairsAttempted ?? 0,
+      segmentSolverDirectRepairsAccepted: meta?.segmentSolverDirectRepairsAccepted ?? 0,
+      segmentSolverDirectRepairStrategiesTried: uniqueCompactReasons(meta?.segmentSolverDirectRepairStrategiesTried ?? []),
+      segmentSolverDirectRepairRejectedReasons: uniqueCompactReasons(meta?.segmentSolverDirectRepairRejectedReasons ?? []),
+      segmentSolverEarlyStopReason: compactText(meta?.segmentSolverEarlyStopReason),
+      segmentSolverBestFeasibleSeenAtMs: meta?.segmentSolverBestFeasibleSeenAtMs ?? null,
+      segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
+      segmentSolverCandidateMetrics: (meta?.segmentSolverCandidateMetrics ?? []).slice(0, 10),
       pipelineBuilderAttempted: meta?.pipelineBuilderAttempted ?? false,
       pipelineCandidatesGenerated: meta?.pipelineCandidatesGenerated ?? 0,
       pipelineAccepted: meta?.pipelineAccepted ?? false,
