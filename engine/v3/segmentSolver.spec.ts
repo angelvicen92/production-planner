@@ -3,7 +3,7 @@ import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { validateHardConstraints } from "./hardValidation";
-import { buildCoachMicroSegments, buildCriticalCoachSegments, findCriticalCoachGap, runSegmentSolver } from "./segmentSolver";
+import { buildCoachMicroSegments, buildCriticalCoachSegments, checkLocalMoveFeasibility, findCriticalCoachGap, repairDirectBlocker, runSegmentSolver, type CoachMicroSegment } from "./segmentSolver";
 import { runSegmentSolverSelection } from "./index";
 
 const baseInput = (overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
@@ -188,4 +188,93 @@ test("left and right surgical strategies explore candidates and emit complete di
   assert.equal(result.meta.segmentSolverCriticalGapMinutes, 210);
   assert.ok(result.meta.segmentSolverBestCandidateMovedTaskIds.length > 0);
   assert.ok(result.meta.segmentSolverBestCandidateReason);
+});
+
+
+const localSegment = (overrides: Partial<CoachMicroSegment> = {}): CoachMicroSegment => ({
+  strategy: "left_shift_right_block", coachId: 9001, coachName: "Coach Uno", windowStart: 8 * 60, windowEnd: 16 * 60,
+  taskIds: [2], movableTaskIds: [2], targetTaskIds: [2], offsetMinutes: [-120, -90, -60, -30, -15],
+  talentIds: [2], talentNames: ["Talent B"], resourceIds: [9001], resourceNames: ["Coach Uno"], ...overrides,
+});
+
+test("resource outside-task rejection exposes a concrete blocker", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "External", zoneId: 3, spaceId: 31, contestantId: 10, contestantName: "Talent X", status: "done", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const result = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts: new Map([[2, 11 * 60]]), strategy: "left_shift_right_block", offsetMinutes: -120 });
+  const blocker = result.blockers.find((item) => item.resourceId === 9001);
+  assert.equal(result.feasible, false); assert.equal(blocker?.rejectionCode, "fixed_task_blocks_shift"); assert.deepEqual(blocker?.blockingTaskIds, [10]); assert.equal(blocker?.resourceName, "Coach Uno");
+});
+
+test("dependency outside-segment rejection identifies the predecessor", () => {
+  const input = baseInput({ tasks: baseInput().tasks.map((task) => task.id === 2 ? { ...task, dependsOnTaskIds: [6] } : task).concat([{ id: 6, planId: 52, templateId: 6, templateName: "Predecessor", zoneId: 3, spaceId: 32, contestantId: 2, contestantName: "Talent B", status: "pending", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 6, startPlanned: "11:30", endPlanned: "12:00", assignedResources: [] });
+  const result = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts: new Map([[2, 11 * 60]]), strategy: "left_shift_right_block" });
+  assert.equal(result.blockers[0]?.rejectionCode, "dependency_predecessor_outside_segment"); assert.deepEqual(result.blockers[0]?.suggestedExpansionTaskIds, [6]);
+});
+
+test("incremental feasibility rejects before full validation", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Locked blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const result = runSegmentSolver(input, output, { timeoutMs: 500 });
+  assert.ok(result.meta.segmentSolverLocalChecksPerformed > 0); assert.ok(result.meta.segmentSolverLocalChecksRejected > 0); assert.ok(result.meta.segmentSolverFullValidationsPerformed < result.meta.segmentSolverLocalChecksPerformed);
+});
+
+test("movable blocker triggers bounded expansion and direct repair", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Movable blocker", zoneId: 3, spaceId: 31, contestantId: 10, contestantName: "Talent X", status: "pending", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const result = runSegmentSolver(input, output, { timeoutMs: 500 });
+  assert.ok(result.meta.segmentSolverExpandedMicroSegmentsBuilt > 0); assert.ok(result.meta.segmentSolverExpansionTaskIds.includes(10)); assert.ok(result.meta.segmentSolverDirectRepairsAttempted > 0);
+});
+
+test("locked or done blockers do not expand", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Done blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const local = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts: new Map([[2, 11 * 60]]), strategy: "left_shift_right_block" });
+  assert.equal(local.blockers[0]?.canExpandSegment, false); assert.equal(local.blockers[0]?.rejectionCode, "fixed_task_blocks_shift");
+});
+
+test("direct repair shifts a flexible blocker into a valid local slot", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Flexible blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "pending", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const starts = new Map([[2, 11 * 60]]); const local = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts, strategy: "left_shift_right_block" });
+  const repair = repairDirectBlocker(input, output, localSegment(), starts, local.blockers.find((item) => item.resourceId === 9001)!);
+  assert.ok(repair.starts?.has(10)); assert.match(String(repair.strategy), /shift_blocker|lane_sequentialization/);
+});
+
+test("direct repair relocates a flexible meal inside its window", () => {
+  const input = baseInput({ meal: { start: "10:00", end: "12:30" }, tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Comida", breakKind: "itinerant_meal", zoneId: 3, spaceId: 31, contestantId: 10, status: "pending", durationOverrideMin: 30, resourceRequirements: { byItem: { 9001: 1 } } }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const starts = new Map([[2, 11 * 60]]); const local = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts, strategy: "left_shift_right_block" });
+  const repair = repairDirectBlocker(input, output, localSegment(), starts, local.blockers.find((item) => item.blockingTaskIds.includes(10))!);
+  assert.ok((repair.starts?.get(10) ?? 0) >= 10 * 60); assert.ok((repair.starts?.get(10) ?? 9999) + 30 <= 12 * 60 + 30);
+});
+
+test("lane sequentialization resolves a direct same-space overlap", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Lane blocker", zoneId: 3, spaceId: 20, contestantId: 10, status: "pending", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [] });
+  const starts = new Map([[2, 11 * 60]]); const local = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts, strategy: "left_shift_right_block" });
+  const repair = repairDirectBlocker(input, output, localSegment(), starts, local.blockers.find((item) => item.constraintType === "space")!);
+  assert.ok(repair.starts?.has(10));
+});
+
+test("partial fifteen-minute coach-gap improvement is generated", () => {
+  const result = runSegmentSolver(baseInput(), baseOutput(), { timeoutMs: 500 });
+  assert.ok(result.meta.segmentSolverCandidateMetrics.some((item) => item.improvementMinutes >= 15)); assert.ok(result.meta.segmentSolverValidCandidates > 0);
+});
+
+test("solver candidates preserve Main Stage continuity and fixed tasks", () => {
+  const input = baseInput(); const output = baseOutput(); const result = runSegmentSolver(input, output, { timeoutMs: 500 });
+  assert.equal(result.meta.segmentSolverBestAfter?.mainStageGapMinutes, 0); assert.equal(byId(result.output, 5)?.startPlanned, "14:00"); assert.equal(validateHardConstraints(input, result.output).hardValidationPassed, true);
+});
+
+test("diagnostics expose blocker and incremental validation counters", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Done blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const result = runSegmentSolver(input, output, { timeoutMs: 500 }); assert.ok(result.meta.segmentSolverTopBlockers.length > 0); assert.ok(result.meta.segmentSolverLocalChecksPerformed > 0); assert.ok(result.meta.segmentSolverFullValidationsPerformed >= 0);
+});
+
+test("timeout retains concrete blockers instead of only timeout", () => {
+  const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Done blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
+  const result = runSegmentSolver(input, output, { timeoutMs: 100 }); assert.ok(result.meta.segmentSolverTopBlockers.length > 0); assert.notEqual(result.meta.segmentSolverReason, "segment_solver_timeout");
 });
