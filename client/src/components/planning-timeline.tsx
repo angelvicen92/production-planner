@@ -75,6 +75,10 @@ type ResourceSelectable = {
 };
 
 interface PlanningTimelineProps {
+  isHydratingPlanningResult?: boolean;
+  planningRunId?: number | null;
+  taskDatasetVersion?: string;
+  onScheduleRendered?: (runId: number, taskDatasetVersion: string) => void;
   // Vista vertical para "Por plató y espacio"
   spaceVerticalMode?: "timeline" | "list";
 
@@ -551,6 +555,10 @@ function TaskStatusMenuTrigger({
     onSetManualBlockDuration,
     uiItinerantGroupOrderIndex = null,
     uiUnlocatedGroupOrderIndex = null,
+    isHydratingPlanningResult = false,
+    planningRunId = null,
+    taskDatasetVersion = "",
+    onScheduleRendered,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, mealMode, dailyTasks, breaks = [] } = plan;
   const isFlexibleMealWindow = mealMode === "flexible_meal_window";
@@ -559,6 +567,11 @@ function TaskStatusMenuTrigger({
   const confirm = useConfirm();
   const density = usePlanningDensity();
   const isPdf = density === "pdf";
+  useEffect(() => {
+    if (!isHydratingPlanningResult || !planningRunId || !taskDatasetVersion) return;
+    const frame = window.requestAnimationFrame(() => onScheduleRendered?.(planningRunId, taskDatasetVersion));
+    return () => window.cancelAnimationFrame(frame);
+  }, [isHydratingPlanningResult, onScheduleRendered, planningRunId, taskDatasetVersion]);
   const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
   const fullLockedSet = useMemo(() => new Set((fullLockedTaskIds ?? []).map((id) => Number(id))), [fullLockedTaskIds]);
   const isTaskFixed = (task: Task) =>

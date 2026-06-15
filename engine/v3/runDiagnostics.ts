@@ -112,6 +112,13 @@ export interface EngineRunDiagnostics {
     segmentSolverFullValidationTopFailures: Array<Record<string, unknown>>;
     segmentSolverFullValidationFailureCodes: string[];
     segmentSolverFullValidationFailureSummary: Record<string, number>;
+    segmentSolverUnderlyingFailureCodes: string[];
+    segmentSolverUnderlyingFailureSummary: Record<string, number>;
+    segmentSolverBestUnderlyingFailure: string | null;
+    segmentSolverBestUnderlyingFailureDetails: Record<string, unknown>;
+    segmentSolverCandidateIntegrityChecksPerformed: number;
+    segmentSolverCandidateIntegrityFailures: number;
+    segmentSolverCandidateIntegrityTopFailures: Array<Record<string, unknown>>;
     segmentSolverBestRepairRejectedBy: string | null;
     segmentSolverBestRepairMovedTaskIds: number[];
     segmentSolverBestRepairMovedTalentNames: string[];
@@ -354,6 +361,13 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverFullValidationTopFailures: (meta?.segmentSolverFullValidationTopFailures ?? []).slice(0, 10),
       segmentSolverFullValidationFailureCodes: uniqueCompactReasons(meta?.segmentSolverFullValidationFailureCodes ?? []),
       segmentSolverFullValidationFailureSummary: meta?.segmentSolverFullValidationFailureSummary ?? {},
+      segmentSolverUnderlyingFailureCodes: uniqueCompactReasons(meta?.segmentSolverUnderlyingFailureCodes ?? []),
+      segmentSolverUnderlyingFailureSummary: meta?.segmentSolverUnderlyingFailureSummary ?? {},
+      segmentSolverBestUnderlyingFailure: compactText(meta?.segmentSolverBestUnderlyingFailure),
+      segmentSolverBestUnderlyingFailureDetails: meta?.segmentSolverBestUnderlyingFailureDetails ?? {},
+      segmentSolverCandidateIntegrityChecksPerformed: meta?.segmentSolverCandidateIntegrityChecksPerformed ?? 0,
+      segmentSolverCandidateIntegrityFailures: meta?.segmentSolverCandidateIntegrityFailures ?? 0,
+      segmentSolverCandidateIntegrityTopFailures: (meta?.segmentSolverCandidateIntegrityTopFailures ?? []).slice(0, 10),
       segmentSolverBestRepairRejectedBy: compactText(meta?.segmentSolverBestRepairRejectedBy),
       segmentSolverBestRepairMovedTaskIds: (meta?.segmentSolverBestRepairMovedTaskIds ?? []).slice(0, 22),
       segmentSolverBestRepairMovedTalentNames: (meta?.segmentSolverBestRepairMovedTalentNames ?? []).slice(0, 10),

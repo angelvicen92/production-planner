@@ -3,7 +3,7 @@ import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
 import { validateHardConstraints } from "./hardValidation";
-import { buildCoachMicroSegments, buildCriticalCoachSegments, checkLocalMoveFeasibility, findCriticalCoachGap, repairDirectBlocker, runSegmentSolver, type CoachMicroSegment } from "./segmentSolver";
+import { buildCoachMicroSegments, buildCriticalCoachSegments, checkLocalMoveFeasibility, explainOptimizedCandidateInvalid, findCriticalCoachGap, repairDirectBlocker, runSegmentSolver, validateSegmentCandidateIntegrity, type CoachMicroSegment } from "./segmentSolver";
 import { runSegmentSolverSelection } from "./index";
 
 const baseInput = (overrides: Partial<EngineV3Input> = {}): EngineV3Input => ({
@@ -323,4 +323,32 @@ test("timeout retains concrete blockers instead of only timeout", () => {
   const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Done blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
   const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
   const result = runSegmentSolver(input, output, { timeoutMs: 100 }); assert.ok(result.meta.segmentSolverTopBlockers.length > 0); assert.notEqual(result.meta.segmentSolverReason, "segment_solver_timeout");
+});
+
+test("optimized candidate invalid unwraps talent overlap", () => {
+  const input = baseInput();
+  const baseline = baseOutput();
+  const candidate = structuredClone(baseline);
+  byId(candidate, 2)!.startPlanned = "09:00";
+  byId(candidate, 2)!.endPlanned = "09:30";
+  (input.tasks.find((task) => task.id === 2) as any).contestantId = 1;
+  (input.tasks.find((task) => task.id === 2) as any).spaceId = 21;
+  byId(candidate, 2)!.assignedResources = [];
+  const failure = explainOptimizedCandidateInvalid(candidate, input, { baseline, movedTaskIds: [2] });
+  assert.equal(failure.fullValidationViolationCode, "OPTIMIZED_CANDIDATE_INVALID");
+  assert.equal(failure.underlyingViolationCode, "TALENT_OVERLAP");
+  assert.deepEqual(failure.blockingTaskIds, [1]);
+});
+
+test("candidate integrity detects duplicate, lost and invalid tasks", () => {
+  const baseline = baseOutput();
+  const duplicate = structuredClone(baseline);
+  duplicate.plannedTasks!.push({ ...duplicate.plannedTasks![0] });
+  assert.ok(validateSegmentCandidateIntegrity(baseline, duplicate, [1]).some((failure) => failure.code === "candidate_duplicate_task"));
+  const lost = structuredClone(baseline);
+  lost.plannedTasks = lost.plannedTasks!.filter((task) => task.taskId !== 2);
+  assert.ok(validateSegmentCandidateIntegrity(baseline, lost, [1]).some((failure) => failure.code === "candidate_lost_task"));
+  const invalid = structuredClone(baseline);
+  byId(invalid, 1)!.endPlanned = byId(invalid, 1)!.startPlanned;
+  assert.ok(validateSegmentCandidateIntegrity(baseline, invalid, [1]).some((failure) => failure.code === "candidate_invalid_time_range"));
 });

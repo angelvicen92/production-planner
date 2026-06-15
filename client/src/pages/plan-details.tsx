@@ -980,6 +980,10 @@ export default function PlanDetailsPage() {
   const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
   const [highlightTaskId, setHighlightTaskId] = useState<number | null>(null);
   const [planningInProgress, setPlanningInProgress] = useState(false);
+  type PlanningStatus = "generating" | "applying" | "refetching_tasks" | "rendering_schedule" | "generating_diagnostics" | "ready" | "failed";
+  const [planningStatus, setPlanningStatus] = useState<PlanningStatus>("ready");
+  const [hydratingPlanningRunId, setHydratingPlanningRunId] = useState<number | null>(null);
+  const [planningDatasetVersion, setPlanningDatasetVersion] = useState("");
   const [expectedPlanningRunId, setExpectedPlanningRunId] = useState<number | null>(() => (
     typeof window === "undefined" ? null : readActivePlanningRunId(id, window.localStorage)
   ));
@@ -1046,6 +1050,7 @@ export default function PlanDetailsPage() {
 
     (async () => {
       try {
+        setPlanningStatus("generating");
         // 1) nombres de plan_resource_items (id -> name)
         const items = await apiRequest<any[]>(
           "GET",
@@ -1928,6 +1933,7 @@ ${reasonMessage}` : message,
     }).length;
     setPlanningProgress({ plannedCount: 0, totalCount: totalToPlan, percentage: 1 });
     let reconnectAfterAbort = false;
+    let awaitingScheduleRender = false;
 
       try {
         // ✅ El botón verde siempre fuerza motor v3 para este plan
@@ -1948,16 +1954,25 @@ ${reasonMessage}` : message,
       const lastCancelledRunId = readCancelledPlanningRunId(id, window.sessionStorage);
       if (cancelledByUserRef.current || (completedRunId && completedRunId === lastCancelledRunId)) return;
       setExpectedPlanningRunId(completedRunId);
+      setHydratingPlanningRunId(completedRunId);
+      setPlanningStatus("applying");
       persistActivePlanningRunId(id, completedRunId, window.localStorage);
+      setPlanningStatus("refetching_tasks");
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-      await refetchPlan();
+      const refreshedPlan = await refetchPlan();
+      const refreshedTasks = ((refreshedPlan.data as any)?.dailyTasks ?? []) as any[];
+      const pendingAfterRefresh = refreshedTasks.filter((task) => String(task?.status ?? "pending") === "pending" && !task?.isManualBlock && !task?.is_manual_block && (!task?.startPlanned || !task?.endPlanned));
+      if (pendingAfterRefresh.length > 0) throw new Error(`PLANNING_VIEW_NOT_READY:${pendingAfterRefresh.length}`);
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (completedRunId !== null) {
+        setPlanningStatus("generating_diagnostics");
         try {
           await queryClient.invalidateQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId) });
           await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId), type: "all" });
+          const diagnostics: any = queryClient.getQueryData(engineDiagnosticsQueryKey(id, completedRunId));
+          if (Number(diagnostics?.id) !== completedRunId) throw new Error("STALE_PLANNING_DIAGNOSTICS");
         } catch (diagnosticsError: any) {
           console.warn("post-success diagnostics refetch failed", {
             planningRunId: completedRunId,
@@ -1969,6 +1984,9 @@ ${reasonMessage}` : message,
           toast({ title: "Plan aplicado, diagnóstico pendiente.", description: "Reintentar desde el panel de diagnóstico." });
         }
       }
+      setPlanningDatasetVersion(`${completedRunId}:${refreshedTasks.length}:${refreshedTasks.map((task) => `${task.id}:${task.startPlanned}:${task.endPlanned}`).join("|")}`);
+      setPlanningStatus("rendering_schedule");
+      awaitingScheduleRender = completedRunId !== null;
       const reasons = Array.isArray(data?.reasons) ? data.reasons : [];
       if (reasons.length > 0) {
         openDiagnosticDialog(data);
@@ -1998,6 +2016,12 @@ ${reasonMessage}` : message,
         setErrorDialog({ open: true, reasons: err.reasons, diagnostic: null });
       } else {
         const detail = err?.payload?.detail ?? err?.detail ?? err?.message ?? "Error desconocido";
+        if (String(detail).startsWith("PLANNING_VIEW_NOT_READY")) {
+          setPlanningIssue({ kind: "failed", message: "Plan aplicado, pero no se pudo refrescar la vista. Reintentar." });
+          setPlanningStatus("failed");
+          setPlanningInProgress(true);
+          return;
+        }
         toast({
           title: "Error al planificar",
           description: detail,
@@ -2010,9 +2034,9 @@ ${reasonMessage}` : message,
       }
     } finally {
       generationAbortControllerRef.current = null;
-      if (!cancelledByUserRef.current && !reconnectAfterAbort) {
+      if (!cancelledByUserRef.current && !reconnectAfterAbort && !awaitingScheduleRender) {
         const activeRun = queryClient.getQueryData<any>(["planning-run", id]);
-        if (!activeRun || !["running", "pending", "queued", "optimizing"].includes(String(activeRun.status))) {
+        if ((!activeRun || !["running", "pending", "queued", "optimizing"].includes(String(activeRun.status))) && !hydratingPlanningRunId) {
           setPlanningInProgress(false);
           setExpectedPlanningRunId(null);
         }
@@ -4013,8 +4037,19 @@ ${reasonMessage}` : message,
                 supportsZoom
               >
                 <div className="relative">
-                {(planningInProgress || generatePlan.isPending) ? (<div className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">Aplicando planificación...</span></div>) : null}
+                {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : "Aplicando planificación…"}</span></div>) : null}
                 <PlanningTimeline
+                  isHydratingPlanningResult={planningInProgress && hydratingPlanningRunId !== null}
+                  planningRunId={hydratingPlanningRunId}
+                  taskDatasetVersion={planningDatasetVersion}
+                  onScheduleRendered={(runId, datasetVersion) => {
+                    if (runId !== hydratingPlanningRunId || datasetVersion !== planningDatasetVersion) return;
+                    setPlanningStatus("ready");
+                    setPlanningInProgress(false);
+                    setHydratingPlanningRunId(null);
+                    setExpectedPlanningRunId(null);
+                    toast({ title: "Planificación lista" });
+                  }}
                   plan={plan as any}
                   contestants={contestants as any}
                   viewMode={timelineView}
@@ -4491,7 +4526,7 @@ ${reasonMessage}` : message,
                 {planningIssue ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Loader2 className="h-4 w-4 animate-spin" />}
                 {planningIssue
                   ? planningIssue.kind === "stale" ? "Generación bloqueada" : planningIssue.kind === "reconnecting" ? "Reconectando con la planificación..." : "No se pudo completar la generación"
-                  : `Planificando… ${planningProgress.percentage}%`}
+                  : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : planningStatus === "applying" ? "Aplicando planificación…" : `Planificando… ${planningProgress.percentage}%`}
               </DialogTitle>
               <DialogDescription>
                 {planningIssue ? planningIssue.message : <>

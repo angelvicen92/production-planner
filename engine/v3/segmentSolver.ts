@@ -108,6 +108,13 @@ export interface SegmentSolverMeta {
   segmentSolverFullValidationTopFailures: SegmentSolverFullValidationFailure[];
   segmentSolverFullValidationFailureCodes: string[];
   segmentSolverFullValidationFailureSummary: Record<string, number>;
+  segmentSolverUnderlyingFailureCodes: string[];
+  segmentSolverUnderlyingFailureSummary: Record<string, number>;
+  segmentSolverBestUnderlyingFailure?: string;
+  segmentSolverBestUnderlyingFailureDetails?: Record<string, unknown>;
+  segmentSolverCandidateIntegrityChecksPerformed: number;
+  segmentSolverCandidateIntegrityFailures: number;
+  segmentSolverCandidateIntegrityTopFailures: SegmentSolverCandidateIntegrityFailure[];
   segmentSolverBestRepairRejectedBy?: string;
   segmentSolverBestRepairMovedTaskIds: number[];
   segmentSolverBestRepairMovedTalentNames: string[];
@@ -180,6 +187,11 @@ export const normalizeSegmentSolverMetadata = (meta?: Partial<NonNullable<Engine
   segmentSolverFullValidationTopFailures: meta?.segmentSolverFullValidationTopFailures ?? [],
   segmentSolverFullValidationFailureCodes: meta?.segmentSolverFullValidationFailureCodes ?? [],
   segmentSolverFullValidationFailureSummary: meta?.segmentSolverFullValidationFailureSummary ?? {},
+  segmentSolverUnderlyingFailureCodes: meta?.segmentSolverUnderlyingFailureCodes ?? [],
+  segmentSolverUnderlyingFailureSummary: meta?.segmentSolverUnderlyingFailureSummary ?? {},
+  segmentSolverCandidateIntegrityChecksPerformed: meta?.segmentSolverCandidateIntegrityChecksPerformed ?? 0,
+  segmentSolverCandidateIntegrityFailures: meta?.segmentSolverCandidateIntegrityFailures ?? 0,
+  segmentSolverCandidateIntegrityTopFailures: meta?.segmentSolverCandidateIntegrityTopFailures ?? [],
   segmentSolverBestRepairMovedTaskIds: meta?.segmentSolverBestRepairMovedTaskIds ?? [],
   segmentSolverBestRepairMovedTalentNames: meta?.segmentSolverBestRepairMovedTalentNames ?? [],
   segmentSolverExpandedMicroSegmentsBuilt: meta?.segmentSolverExpandedMicroSegmentsBuilt ?? 0,
@@ -456,22 +468,147 @@ export interface SegmentSolverFullValidationFailure {
   movedTalentNames: string[];
   repairChainDepth: number;
   fullValidationViolationCode: string;
+  underlyingViolationCode: string;
+  underlyingViolationDetails: Record<string, unknown>;
   fullValidationViolationDetails: Array<Record<string, unknown>>;
   constraintType: string;
   taskIds: number[];
   taskNames: string[];
   talentNames: string[];
   resourceName?: string;
+  resourceId?: number;
   spaceName?: string;
+  spaceId?: number;
   start?: string;
   end?: string;
   blockingTaskIds: number[];
   blockingTaskNames: string[];
+  dependencyFromTaskId?: number;
+  dependencyToTaskId?: number;
+  repairStrategy: string;
   isMainStageRelated: boolean;
   isMealRelated: boolean;
   isTransportRelated: boolean;
   isFixedRelated: boolean;
 }
+
+export interface SegmentSolverCandidateIntegrityFailure {
+  code: string;
+  taskIds: number[];
+  details?: Record<string, unknown>;
+}
+
+export const validateSegmentCandidateIntegrity = (
+  baseline: EngineOutput,
+  candidate: EngineOutput,
+  movedTaskIds: number[],
+): SegmentSolverCandidateIntegrityFailure[] => {
+  const failures: SegmentSolverCandidateIntegrityFailure[] = [];
+  const before = baseline.plannedTasks ?? [];
+  const after = candidate.plannedTasks ?? [];
+  const beforeById = new Map(before.map((task) => [Number(task.taskId), task]));
+  const counts = new Map<number, number>();
+  for (const task of after) counts.set(Number(task.taskId), (counts.get(Number(task.taskId)) ?? 0) + 1);
+  const duplicates = [...counts].filter(([, count]) => count > 1).map(([id]) => id);
+  if (duplicates.length) failures.push({ code: "candidate_duplicate_task", taskIds: duplicates });
+  const lost = before.map((task) => Number(task.taskId)).filter((id) => !counts.has(id));
+  if (lost.length) failures.push({ code: "candidate_lost_task", taskIds: lost });
+  const unexpected = after.map((task) => Number(task.taskId)).filter((id) => !beforeById.has(id));
+  if (unexpected.length) failures.push({ code: "candidate_unknown_task", taskIds: unexpected });
+  const invalid = after.filter((task) => {
+    const start = toMinutes(task.startPlanned); const end = toMinutes(task.endPlanned);
+    return start === null || end === null || start >= end;
+  }).map((task) => Number(task.taskId));
+  if (invalid.length) failures.push({ code: "candidate_invalid_time_range", taskIds: invalid });
+  const durationChanged = after.filter((task) => {
+    const original = beforeById.get(Number(task.taskId));
+    const start = toMinutes(task.startPlanned); const end = toMinutes(task.endPlanned);
+    const oldStart = toMinutes(original?.startPlanned); const oldEnd = toMinutes(original?.endPlanned);
+    return original && start !== null && end !== null && oldStart !== null && oldEnd !== null && end - start !== oldEnd - oldStart;
+  }).map((task) => Number(task.taskId));
+  if (durationChanged.length) failures.push({ code: "candidate_duration_changed", taskIds: durationChanged });
+  const resourcesLost = after.filter((task) => {
+    const original = beforeById.get(Number(task.taskId));
+    return original && JSON.stringify(original.assignedResources ?? []) !== JSON.stringify(task.assignedResources ?? []);
+  }).map((task) => Number(task.taskId));
+  if (resourcesLost.length) failures.push({ code: "candidate_resource_assignment_lost", taskIds: resourcesLost });
+  const missingMoved = movedTaskIds.filter((id) => !beforeById.has(id) || !counts.has(id));
+  if (missingMoved.length) failures.push({ code: "candidate_patch_integrity_error", taskIds: missingMoved });
+  if (after.length !== before.length && !lost.length && !duplicates.length) {
+    failures.push({ code: "candidate_planned_task_count_mismatch", taskIds: [], details: { expected: before.length, actual: after.length } });
+  }
+  return failures;
+};
+
+const optimizedErrorCode = (error: string): string => {
+  if (error.startsWith("CONTESTANT_OVERLAP_")) return "TALENT_OVERLAP";
+  if (error.startsWith("RESOURCE_OVERLAP_")) return "RESOURCE_OVERLAP";
+  if (error.startsWith("SPACE_CAPACITY_EXCEEDED_")) return "SPACE_OVERLAP";
+  if (error.startsWith("DEPENDENCY_BROKEN_")) return "DEPENDENCY_VIOLATION";
+  if (error.startsWith("MOVED_LOCKED_TIME_")) return "LOCK_MOVED";
+  if (error.startsWith("MOVED_FIXED_STATUS_")) return "FIXED_STATUS_MOVED";
+  if (error.startsWith("INVALID_INTERVAL_")) return "INVALID_TIME_RANGE";
+  if (error.startsWith("DURATION_CHANGED_")) return "DURATION_CHANGED";
+  if (error.startsWith("UNKNOWN_TASK_")) return "MISSING_TASK";
+  if (error.startsWith("OUTSIDE_WORKDAY_")) return "AVAILABILITY_VIOLATION";
+  return "OPTIMIZED_CANDIDATE_INVALID";
+};
+
+export const explainOptimizedCandidateInvalid = (
+  candidate: EngineOutput,
+  input: EngineV3Input,
+  context: { baseline: EngineOutput; movedTaskIds: number[]; repairStrategy?: string; repairChainDepth?: number },
+): SegmentSolverFullValidationFailure => {
+  const validation = validateHardConstraints(input, candidate);
+  const optimizedErrors = validateOptimizedCandidate(input, context.baseline, candidate);
+  const detail = validation.hardConstraintViolationDetails[0];
+  const error = optimizedErrors[0] ?? "";
+  const underlyingViolationCode = detail?.code === "CONTESTANT_OVERLAP" ? "TALENT_OVERLAP" : detail?.code ?? optimizedErrorCode(error);
+  const parsedIds = error.match(/\d+/g)?.map(Number) ?? [];
+  const taskIds = uniq(detail?.taskIds?.length ? detail.taskIds : parsedIds.slice(-2));
+  const moved = new Set(context.movedTaskIds);
+  const blockingTaskIds = taskIds.filter((id) => !moved.has(id));
+  const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]));
+  const related = taskIds.map((id) => taskById.get(id)).filter((task): task is TaskInput => Boolean(task));
+  const constraintType = underlyingViolationCode.includes("DEPENDENCY") ? "dependency"
+    : underlyingViolationCode.includes("TALENT") || underlyingViolationCode.includes("CONTESTANT") ? "talent"
+      : underlyingViolationCode.includes("RESOURCE") ? "resource"
+        : underlyingViolationCode.includes("SPACE") ? "space"
+          : underlyingViolationCode.includes("MEAL") ? "meal"
+            : underlyingViolationCode.includes("LOCK") || underlyingViolationCode.includes("FIXED") ? "fixed" : "hard";
+  const dependencyFromTaskId = underlyingViolationCode === "DEPENDENCY_VIOLATION" ? taskIds[0] : undefined;
+  const dependencyToTaskId = underlyingViolationCode === "DEPENDENCY_VIOLATION" ? taskIds[1] : undefined;
+  const underlyingViolationDetails = { optimizedError: error || undefined, hardValidationDetail: detail };
+  return {
+    strategy: context.repairStrategy ?? "segment_move",
+    repairStrategy: context.repairStrategy ?? "segment_move",
+    movedTaskIds: context.movedTaskIds,
+    movedTalentNames: uniq(context.movedTaskIds.map((id) => String(taskById.get(id)?.contestantName ?? "").trim()).filter(Boolean)),
+    repairChainDepth: context.repairChainDepth ?? 0,
+    fullValidationViolationCode: "OPTIMIZED_CANDIDATE_INVALID",
+    underlyingViolationCode,
+    underlyingViolationDetails,
+    fullValidationViolationDetails: detail ? [{ ...detail }] : [underlyingViolationDetails],
+    constraintType,
+    taskIds,
+    taskNames: related.map((task) => taskLabel(input, task) || `Task ${task.id}`),
+    talentNames: uniq(related.map((task) => String(task.contestantName ?? "").trim()).filter(Boolean)),
+    resourceId: detail?.resourceId,
+    resourceName: detail?.resourceId ? resourceName(input, detail.resourceId) : undefined,
+    spaceId: detail?.spaceId,
+    spaceName: detail?.spaceName,
+    start: detail?.start,
+    end: detail?.end,
+    blockingTaskIds,
+    blockingTaskNames: blockingTaskIds.map((id) => blockerName(input, id)),
+    dependencyFromTaskId,
+    dependencyToTaskId,
+    isMainStageRelated: related.some((task) => Number(task.zoneId) === Number(input.optimizerMainZoneId)),
+    isMealRelated: related.some((task) => isMealTask(input, task)),
+    isTransportRelated: related.some((task) => isTransportTask(input, task)),
+    isFixedRelated: related.some((task) => isFixedTask(input, task)),
+  };
+};
 
 type LocalMoveContext = {
   segment: CoachMicroSegment;
@@ -715,6 +852,8 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverTopBlockers: [], segmentSolverTopResourceBlockers: [], segmentSolverTopDependencyBlockers: [], segmentSolverTopMealBlockers: [], segmentSolverTopMainStageBlockers: [],
     segmentSolverLocalChecksPerformed: 0, segmentSolverLocalChecksRejected: 0, segmentSolverFullValidationsPerformed: 0, segmentSolverFullValidationsRejected: 0,
     segmentSolverFullValidationTopFailures: [], segmentSolverFullValidationFailureCodes: [], segmentSolverFullValidationFailureSummary: {},
+    segmentSolverUnderlyingFailureCodes: [], segmentSolverUnderlyingFailureSummary: {},
+    segmentSolverCandidateIntegrityChecksPerformed: 0, segmentSolverCandidateIntegrityFailures: 0, segmentSolverCandidateIntegrityTopFailures: [],
     segmentSolverBestRepairMovedTaskIds: [], segmentSolverBestRepairMovedTalentNames: [],
     segmentSolverExpandedMicroSegmentsBuilt: 0, segmentSolverExpansionTaskIds: [], segmentSolverExpansionReasons: [], segmentSolverExpansionRejectedReasons: [],
     segmentSolverDirectRepairsAttempted: 0, segmentSolverDirectRepairsAccepted: 0, segmentSolverDirectRepairStrategiesTried: [], segmentSolverDirectRepairRejectedReasons: [],
@@ -788,6 +927,14 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
       return;
     }
     const candidate = candidateWithStarts(baseline, starts); const movedIds = changedTaskIds(baseline, candidate); if (!movedIds.length) return;
+    meta.segmentSolverCandidateIntegrityChecksPerformed += 1;
+    const integrityFailures = validateSegmentCandidateIntegrity(baseline, candidate, movedIds);
+    if (integrityFailures.length) {
+      meta.segmentSolverCandidateIntegrityFailures += 1;
+      meta.segmentSolverCandidateIntegrityTopFailures.push(...integrityFailures.slice(0, Math.max(0, 10 - meta.segmentSolverCandidateIntegrityTopFailures.length)));
+      integrityFailures.forEach((failure) => rejected.add(failure.code));
+      return;
+    }
     meta.segmentSolverFullValidationsPerformed += 1;
     const full = fullRejectionReasons(input, baseline, candidate);
     if (full.reasons.length) {
@@ -797,20 +944,32 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
       const details = full.validation.hardConstraintViolationDetails.slice(0, 3);
       const primary = details[0];
       const violationCode = primary?.code ?? (full.optimizedErrors[0] ? "OPTIMIZED_CANDIDATE_INVALID" : full.reasons[0]);
+      const explained = explainOptimizedCandidateInvalid(candidate, input, {
+        baseline,
+        movedTaskIds: movedIds,
+        repairStrategy: moveDescription || segment.strategy,
+        repairChainDepth: Math.max(0, moveDescription ? moveDescription.split(" -> ").filter(Boolean).length : 0),
+      });
+      const underlyingCode = explained.underlyingViolationCode;
       meta.segmentSolverFullValidationFailureCodes.push(violationCode);
       meta.segmentSolverFullValidationFailureSummary[violationCode] = (meta.segmentSolverFullValidationFailureSummary[violationCode] ?? 0) + 1;
+      meta.segmentSolverUnderlyingFailureCodes.push(underlyingCode);
+      meta.segmentSolverUnderlyingFailureSummary[underlyingCode] = (meta.segmentSolverUnderlyingFailureSummary[underlyingCode] ?? 0) + 1;
       if (meta.segmentSolverFullValidationTopFailures.length < 10) {
         const detailTaskIds = uniq(details.flatMap((detail) => detail.taskIds ?? []));
         const relatedTasks = detailTaskIds.map((taskId) => taskById.get(taskId)).filter((task): task is TaskInput => Boolean(task));
         const allTasks = uniq([...movedTasks, ...relatedTasks]);
-        meta.segmentSolverFullValidationTopFailures.push({
+        meta.segmentSolverFullValidationTopFailures.push(primary ? {
           strategy: moveDescription || segment.strategy,
           movedTaskIds: movedIds.slice(0, 22),
           movedTalentNames: uniq(movedTasks.map((task) => String(task.contestantName ?? "").trim()).filter(Boolean)),
           repairChainDepth: Math.max(0, moveDescription ? moveDescription.split(" -> ").filter(Boolean).length : 0),
           fullValidationViolationCode: violationCode,
+          underlyingViolationCode: underlyingCode,
+          underlyingViolationDetails: explained.underlyingViolationDetails,
           fullValidationViolationDetails: details.map((detail) => ({ ...detail, details: detail.details ? Object.fromEntries(Object.entries(detail.details).slice(0, 3)) : undefined })),
           constraintType: primary?.code?.toLowerCase() ?? "hard",
+          repairStrategy: moveDescription || segment.strategy,
           taskIds: detailTaskIds.slice(0, 10),
           taskNames: uniq(allTasks.map((task) => taskLabel(input, task) || `Task ${task.id}`)).slice(0, 10),
           talentNames: uniq(allTasks.map((task) => String(task.contestantName ?? "").trim()).filter(Boolean)).slice(0, 10),
@@ -820,14 +979,18 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
           end: primary?.end,
           blockingTaskIds: detailTaskIds.filter((id) => !movedIds.includes(id)).slice(0, 10),
           blockingTaskNames: detailTaskIds.filter((id) => !movedIds.includes(id)).map((id) => blockerName(input, id)).slice(0, 10),
+          resourceId: primary?.resourceId,
+          spaceId: primary?.spaceId,
           isMainStageRelated: allTasks.some((task) => Number(task.zoneId) === Number(input.optimizerMainZoneId)) || full.reasons.includes("main_stage_gap_would_open"),
           isMealRelated: allTasks.some((task) => isMealTask(input, task)),
           isTransportRelated: allTasks.some((task) => isTransportTask(input, task)),
           isFixedRelated: allTasks.some((task) => isFixedTask(input, task)),
-        });
+        } : explained);
       }
       if (!meta.segmentSolverBestRepairRejectedBy || movedIds.length > meta.segmentSolverBestRepairMovedTaskIds.length) {
-        meta.segmentSolverBestRepairRejectedBy = violationCode;
+        meta.segmentSolverBestRepairRejectedBy = underlyingCode;
+        meta.segmentSolverBestUnderlyingFailure = underlyingCode;
+        meta.segmentSolverBestUnderlyingFailureDetails = explained.underlyingViolationDetails;
         meta.segmentSolverBestRepairMovedTaskIds = movedIds.slice(0, 22);
         meta.segmentSolverBestRepairMovedTalentNames = uniq(movedTasks.map((task) => String(task.contestantName ?? "").trim()).filter(Boolean));
       }
@@ -864,6 +1027,11 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   meta.segmentSolverRepairChainBlockedBy = uniq(meta.segmentSolverRepairChainBlockedBy).slice(0, 10);
   meta.segmentSolverRepairChainRejectedReasons = uniq(meta.segmentSolverRepairChainRejectedReasons).slice(0, 10);
   meta.segmentSolverFullValidationFailureCodes = uniq(meta.segmentSolverFullValidationFailureCodes).slice(0, 20);
+  meta.segmentSolverUnderlyingFailureCodes = uniq(meta.segmentSolverUnderlyingFailureCodes).slice(0, 20);
+  if (!accepted && meta.segmentSolverUnderlyingFailureCodes.length) {
+    const topUnderlying = Object.entries(meta.segmentSolverUnderlyingFailureSummary).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (topUnderlying) meta.segmentSolverReason = topUnderlying.toLowerCase();
+  }
   if (meta.segmentSolverFeasibleButNotSelected) {
     meta.segmentSolverFeasibleComparison = {
       selectedMaxCoachGap: baseScore.maxCoachGapMinutes,
