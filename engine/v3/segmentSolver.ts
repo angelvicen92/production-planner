@@ -40,7 +40,17 @@ export type SegmentSolverReason =
   | "missing_solver_runtime"
   | "no_movable_tasks"
   | "segment_solver_timeout"
+  | "primary_stage_fixed_overlap_no_safe_offset"
   | "cancelled";
+
+export interface PrimaryStageFixedInterval {
+  taskId: number;
+  spaceId: number;
+  spaceName: string;
+  start: string;
+  end: string;
+  fixedReason: string;
+}
 
 export type SegmentSolverCompactMetrics = Pick<CandidateSolutionScore,
   | "maxCoachGapMinutes" | "coachSplitDayPenalty" | "coachIdlePenalty" | "coachSpanPenalty"
@@ -144,6 +154,10 @@ export interface SegmentSolverMeta {
     candidateMakespan: number;
     notSelectedReason: string;
   };
+  segmentSolverPrimaryStageGuardEnabled: boolean;
+  segmentSolverPrimaryStageFixedIntervals: PrimaryStageFixedInterval[];
+  segmentSolverPrimaryStagePrunedCandidates: number;
+  segmentSolverPrimaryStagePruneReasons: string[];
 }
 
 export interface SegmentSolverOptions {
@@ -211,6 +225,10 @@ export const normalizeSegmentSolverMetadata = (meta?: Partial<NonNullable<Engine
   segmentSolverRepairChainRejectedReasons: meta?.segmentSolverRepairChainRejectedReasons ?? [],
   segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
   segmentSolverCandidateMetrics: meta?.segmentSolverCandidateMetrics ?? [],
+  segmentSolverPrimaryStageGuardEnabled: meta?.segmentSolverPrimaryStageGuardEnabled ?? false,
+  segmentSolverPrimaryStageFixedIntervals: meta?.segmentSolverPrimaryStageFixedIntervals ?? [],
+  segmentSolverPrimaryStagePrunedCandidates: meta?.segmentSolverPrimaryStagePrunedCandidates ?? 0,
+  segmentSolverPrimaryStagePruneReasons: meta?.segmentSolverPrimaryStagePruneReasons ?? [],
 }) as Partial<NonNullable<EngineOutput["v3Meta"]>>;
 
 export interface CriticalCoachSegment {
@@ -267,6 +285,39 @@ const isFixedTask = (input: EngineV3Input, task: TaskInput): boolean => {
   if (isTransportTask(input, task)) return true;
   if ((task.fixedWindowStart || task.fixedWindowEnd) && !isMealTask(input, task)) return true;
   return false;
+};
+
+const fixedReason = (input: EngineV3Input, task: TaskInput): string => {
+  const status = normalize(task.status);
+  if (status === "done" || status === "in_progress") return status;
+  if ((input.locks ?? []).some((lock) => Number(lock.taskId) === Number(task.id))) return "explicit_lock";
+  if (Boolean((task as any).isManualBlock)) return "synthetic_block";
+  if (task.fixedWindowStart || task.fixedWindowEnd) return "fixed_window";
+  return "primary_stage_default_fixed";
+};
+
+export const buildPrimaryStageFixedIntervals = (
+  input: EngineV3Input,
+  output: EngineOutput,
+): PrimaryStageFixedInterval[] => {
+  const mainZoneId = Number(input.optimizerMainZoneId);
+  if (!Number.isFinite(mainZoneId)) return [];
+  const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]));
+  return (output.plannedTasks ?? []).flatMap((planned): PrimaryStageFixedInterval[] => {
+    const task = taskById.get(Number(planned.taskId));
+    const start = toMinutes(planned.startPlanned);
+    const end = toMinutes(planned.endPlanned);
+    const spaceId = Number(task?.spaceId);
+    if (!task || Number(task.zoneId) !== mainZoneId || !Number.isFinite(spaceId) || spaceId <= 0 || start === null || end === null || !isFixedTask(input, task)) return [];
+    return [{
+      taskId: Number(task.id),
+      spaceId,
+      spaceName: spaceName(input, spaceId),
+      start: hhmm(start),
+      end: hhmm(end),
+      fixedReason: fixedReason(input, task),
+    }];
+  }).slice(0, 10);
 };
 
 export const findCriticalCoachGap = (input: EngineV3Input, output: EngineOutput, coachId: number): CriticalCoachGap | null => {
@@ -433,7 +484,9 @@ export type SegmentMoveRejectionCode =
   | "resource_overlap_with_outside_task" | "dependency_predecessor_outside_segment" | "dependency_successor_outside_segment"
   | "meal_slot_resource_conflict" | "main_stage_gap_would_open" | "talent_overlap_with_outside_task"
   | "space_overlap_with_outside_task" | "fixed_task_blocks_shift" | "microsegment_expansion_limit_reached"
-  | "local_move_outside_workday" | "microsegment_candidate_hard_invalid";
+  | "local_move_outside_workday" | "microsegment_candidate_hard_invalid"
+  | "primary_stage_fixed_overlap" | "main_stage_fixed_interval_overlap"
+  | "primary_stage_task_not_movable" | "primary_stage_offset_adjusted" | "primary_stage_offset_no_safe_slot";
 
 export interface SegmentSolverBlocker {
   strategy: string;
@@ -700,6 +753,27 @@ export const classifySegmentMoveRejection = (input: EngineV3Input, blocker: Segm
 export const checkLocalMoveFeasibility = (input: EngineV3Input, baseline: EngineOutput, context: LocalMoveContext): { feasible: boolean; blockers: SegmentSolverBlocker[] } => {
   const dayStart = toMinutes(input.workDay.start) ?? 0; const dayEnd = toMinutes(input.workDay.end) ?? 24 * 60;
   const moved = intervalIndex(input, baseline, context.starts).filter((item) => context.starts.has(item.taskId));
+  const movedPrimaryStage = moved.filter((item) => Number(item.task.zoneId) === Number(input.optimizerMainZoneId));
+  if (movedPrimaryStage.length) {
+    return { feasible: false, blockers: [makeBlocker(input, context, "primary_stage_task_not_movable", "main_stage", movedPrimaryStage, [], { canExpandSegment: false, suggestedExpansionTaskIds: [] })] };
+  }
+  const fixedIntervals = buildPrimaryStageFixedIntervals(input, baseline);
+  for (const item of moved) {
+    const conflicts = fixedIntervals.filter((fixed) => {
+      const start = toMinutes(fixed.start); const end = toMinutes(fixed.end);
+      return fixed.spaceId === Number(item.task.spaceId) && start !== null && end !== null && intervalOverlaps(item.start, item.end, start, end);
+    });
+    if (conflicts.length) {
+      const effective = intervalIndex(input, baseline);
+      const blocking = effective.filter((interval) => conflicts.some((fixed) => fixed.taskId === interval.taskId));
+      return { feasible: false, blockers: [makeBlocker(input, context, "primary_stage_fixed_overlap", "main_stage", [item], blocking, {
+        spaceId: conflicts[0].spaceId,
+        spaceName: conflicts[0].spaceName,
+        canExpandSegment: false,
+        suggestedExpansionTaskIds: [],
+      })] };
+    }
+  }
   const outsideDay = moved.filter((item) => item.start < dayStart || item.end > dayEnd);
   if (outsideDay.length) return { feasible: false, blockers: [makeBlocker(input, context, "local_move_outside_workday", "workday", outsideDay)] };
   const blockers = findBlockingIntervals(input, baseline, context).map((blocker) => classifySegmentMoveRejection(input, blocker));
@@ -860,6 +934,8 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverRepairChainsAttempted: 0, segmentSolverRepairChainsAccepted: 0, segmentSolverRepairChainMaxDepthReached: 0,
     segmentSolverRepairChainDepths: [], segmentSolverRepairChainMovedTaskIds: [], segmentSolverRepairChainBlockedBy: [], segmentSolverRepairChainRejectedReasons: [],
     segmentSolverFeasibleButNotSelected: false, segmentSolverCandidateMetrics: [],
+    segmentSolverPrimaryStageGuardEnabled: false, segmentSolverPrimaryStageFixedIntervals: [],
+    segmentSolverPrimaryStagePrunedCandidates: 0, segmentSolverPrimaryStagePruneReasons: [],
   };
   if (options.disabled) return { output: baseline, candidates: [], meta: emptyMeta };
   const segments = buildCriticalCoachSegments(input, baseline, options.maxSegments);
@@ -872,7 +948,11 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverCriticalGapMinutes: gap.gapMinutes, segmentSolverLeftBlockTalentNames: gap.leftBlockTalentNames, segmentSolverRightBlockTalentNames: gap.rightBlockTalentNames,
     segmentSolverMicroSegmentsBuilt: solveSegments.length, segmentSolverMicroSegmentStrategiesTried: solveSegments.map((segment) => segment.strategy),
     segmentSolverMicroSegmentTaskCounts: solveSegments.map((segment) => segment.taskIds.length), segmentSolverMicroSegmentRejectedReasons: microBuild.rejectedReasons,
-    segmentSolverReason: wideTooLarge ? "wide_segment_too_large_microsegments_attempted" : "microsegment_built", segmentSolverRejectedReasons: wideTooLarge ? ["wide_segment_too_large"] : [] };
+    segmentSolverReason: wideTooLarge ? "wide_segment_too_large_microsegments_attempted" : "microsegment_built", segmentSolverRejectedReasons: wideTooLarge ? ["wide_segment_too_large"] : [],
+    segmentSolverPrimaryStageGuardEnabled: Number.isFinite(Number(input.optimizerMainZoneId)),
+    segmentSolverPrimaryStageFixedIntervals: buildPrimaryStageFixedIntervals(input, baseline),
+    segmentSolverPrimaryStagePrunedCandidates: 0,
+    segmentSolverPrimaryStagePruneReasons: [] };
   if (!solveSegments.length) return { output: baseline, candidates: [], meta: { ...meta, segmentSolverReason: wideTooLarge ? "segment_too_large" : "no_movable_tasks", segmentSolverElapsedMs: Date.now() - startedAt } };
 
   const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task])); const plannedById = new Map((baseline.plannedTasks ?? []).map((task) => [Number(task.taskId), task]));
@@ -895,7 +975,13 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     const context = { segment, starts, strategy: segment.strategy, offsetMinutes, moveDescription }; const local = checkLocalMoveFeasibility(input, baseline, context);
     if (!local.feasible) {
       meta.segmentSolverLocalChecksRejected += 1;
-      for (const blocker of local.blockers) { rejected.add(blocker.rejectionCode); recordBlocker(blocker, segment); if (blocker.constraintType === "meal") mealRejected.add(blocker.rejectionCode); }
+      for (const blocker of local.blockers) {
+        rejected.add(blocker.rejectionCode); recordBlocker(blocker, segment); if (blocker.constraintType === "meal") mealRejected.add(blocker.rejectionCode);
+        if (blocker.rejectionCode === "primary_stage_fixed_overlap" || blocker.rejectionCode === "primary_stage_task_not_movable") {
+          meta.segmentSolverPrimaryStagePrunedCandidates += 1;
+          meta.segmentSolverPrimaryStagePruneReasons.push(blocker.rejectionCode);
+        }
+      }
       const direct = local.blockers.find((blocker) => [
         "resource_overlap_with_outside_task", "talent_overlap_with_outside_task", "space_overlap_with_outside_task",
         "meal_slot_resource_conflict", "dependency_predecessor_outside_segment", "dependency_successor_outside_segment",
@@ -1008,9 +1094,23 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   for (const segment of solveSegments) {
     if (Date.now() >= globalDeadline || earlyStop) { timedOut ||= Date.now() >= globalDeadline; break; }
     const microDeadline = Math.min(globalDeadline, Date.now() + SEGMENT_SOLVER_MICRO_TIMEOUT_MS); let assignments = 0;
-    const movable = segment.movableTaskIds.map((taskId) => { const task = taskById.get(taskId)!; const planned = plannedById.get(taskId)!; const currentStart = toMinutes(planned.startPlanned)!; const currentEnd = toMinutes(planned.endPlanned)!; const duration = currentEnd - currentStart; const meal = isMealTask(input, task) && mealStart !== null && mealEnd !== null; const minStart = Math.max(segment.windowStart, meal ? mealStart! : segment.windowStart); const maxStart = Math.min(segment.windowEnd, meal ? mealEnd! : segment.windowEnd) - duration; const strategyOffsets = segment.targetTaskIds.includes(taskId) ? segment.offsetMinutes : [-30, -15, 0, 15, 30]; const domain = uniq([currentStart, ...strategyOffsets.map((offset) => currentStart + offset)]).filter((start) => start >= minStart && start <= maxStart && start % 5 === 0); return { taskId, task, currentStart, isMeal: meal, domain }; }).filter((item) => item.domain.length);
+    const movable = segment.movableTaskIds.map((taskId) => { const task = taskById.get(taskId)!; const planned = plannedById.get(taskId)!; const currentStart = toMinutes(planned.startPlanned)!; const currentEnd = toMinutes(planned.endPlanned)!; const duration = currentEnd - currentStart; const meal = isMealTask(input, task) && mealStart !== null && mealEnd !== null; const minStart = Math.max(segment.windowStart, meal ? mealStart! : segment.windowStart); const maxStart = Math.min(segment.windowEnd, meal ? mealEnd! : segment.windowEnd) - duration; const strategyOffsets = segment.targetTaskIds.includes(taskId) ? segment.offsetMinutes.flatMap((offset) => [offset, offset - 5, offset + 5, offset - 10, offset + 10, offset - 15, offset + 15]) : [-30, -15, 0, 15, 30]; const domain = uniq([currentStart, ...strategyOffsets.map((offset) => currentStart + offset)]).filter((start) => start >= minStart && start <= maxStart && start % 5 === 0); return { taskId, task, currentStart, isMeal: meal, domain }; }).filter((item) => item.domain.length);
     meta.segmentSolverMealMovesAttempted ||= movable.some((item) => item.isMeal);
-    for (const offset of segment.offsetMinutes) { if (Date.now() >= microDeadline || assignments >= SEGMENT_SOLVER_MAX_ASSIGNMENTS || earlyStop || cancelled) break; const starts = new Map<number, number>(); for (const item of movable) if (segment.targetTaskIds.includes(item.taskId) && item.domain.includes(item.currentStart + offset)) starts.set(item.taskId, item.currentStart + offset); if (starts.size) { assignments += 1; evaluate(segment, starts, offset); } }
+    for (const targetOffset of segment.offsetMinutes) {
+      if (Date.now() >= microDeadline || assignments >= SEGMENT_SOLVER_MAX_ASSIGNMENTS || earlyStop || cancelled) break;
+      let foundSafeOffset = false;
+      for (const offset of uniq([targetOffset, targetOffset - 5, targetOffset + 5, targetOffset - 10, targetOffset + 10, targetOffset - 15, targetOffset + 15])) {
+        const starts = new Map<number, number>();
+        for (const item of movable) if (segment.targetTaskIds.includes(item.taskId) && item.domain.includes(item.currentStart + offset)) starts.set(item.taskId, item.currentStart + offset);
+        if (!starts.size) continue;
+        assignments += 1;
+        const local = checkLocalMoveFeasibility(input, baseline, { segment, starts, strategy: segment.strategy, offsetMinutes: offset });
+        const primaryBlocked = local.blockers.some((blocker) => blocker.rejectionCode === "primary_stage_fixed_overlap");
+        evaluate(segment, starts, offset, offset === targetOffset ? undefined : "primary_stage_offset_adjusted");
+        if (!primaryBlocked) { foundSafeOffset = true; if (offset !== targetOffset) meta.segmentSolverPrimaryStagePruneReasons.push("primary_stage_offset_adjusted"); break; }
+      }
+      if (!foundSafeOffset) meta.segmentSolverPrimaryStagePruneReasons.push("primary_stage_offset_no_safe_slot");
+    }
     if (!earlyStop && !cancelled && segment.strategy === "coach_block_reorder") { const items = movable.filter((item) => segment.targetTaskIds.includes(item.taskId)).slice(0, 4); const slots = items.map((item) => item.currentStart).sort((a, b) => a - b); if (items.length > 1) evaluate(segment, new Map(items.map((item, index) => [item.taskId, slots[items.length - index - 1]])), undefined, "reverse_coach_block_order"); }
     for (const item of movable) { if (earlyStop || cancelled || Date.now() >= microDeadline) break; for (const start of item.domain.slice(0, 8)) { if (start === item.currentStart) continue; assignments += 1; evaluate(segment, new Map([[item.taskId, start]]), start - item.currentStart); if (earlyStop || cancelled || Date.now() >= microDeadline) break; } }
   }
@@ -1028,6 +1128,10 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   meta.segmentSolverRepairChainRejectedReasons = uniq(meta.segmentSolverRepairChainRejectedReasons).slice(0, 10);
   meta.segmentSolverFullValidationFailureCodes = uniq(meta.segmentSolverFullValidationFailureCodes).slice(0, 20);
   meta.segmentSolverUnderlyingFailureCodes = uniq(meta.segmentSolverUnderlyingFailureCodes).slice(0, 20);
+  meta.segmentSolverPrimaryStagePruneReasons = uniq(meta.segmentSolverPrimaryStagePruneReasons).slice(0, 10);
+  if (!accepted && meta.segmentSolverPrimaryStagePrunedCandidates > 0 && meta.segmentSolverValidCandidates === 0 && meta.segmentSolverPrimaryStagePruneReasons.includes("primary_stage_offset_no_safe_slot")) {
+    meta.segmentSolverReason = "primary_stage_fixed_overlap_no_safe_offset";
+  }
   if (!accepted && meta.segmentSolverUnderlyingFailureCodes.length) {
     const topUnderlying = Object.entries(meta.segmentSolverUnderlyingFailureSummary).sort((a, b) => b[1] - a[1])[0]?.[0];
     if (topUnderlying) meta.segmentSolverReason = topUnderlying.toLowerCase();

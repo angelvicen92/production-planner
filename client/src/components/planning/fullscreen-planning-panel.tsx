@@ -12,6 +12,7 @@ interface FullscreenPlanningPanelProps {
   supportsZoom?: boolean;
   children: ReactNode;
   toolbarRight?: ReactNode;
+  hydrationBlocked?: boolean;
 }
 
 const memoryState = new Map<string, { isFullscreen: boolean; density: DensityMode; zoom: number }>();
@@ -49,6 +50,7 @@ export function FullscreenPlanningPanel({
   supportsZoom = false,
   children,
   toolbarRight,
+  hydrationBlocked = false,
 }: FullscreenPlanningPanelProps) {
   const initialState = useMemo(() => {
     const cached = memoryState.get(viewKey);
@@ -126,8 +128,8 @@ export function FullscreenPlanningPanel({
           {toolbarRight}
 
           <div className="flex items-center gap-1 rounded-md border p-1">
-            <Button variant={density === "normal" ? "default" : "ghost"} size="sm" onClick={() => setDensity("normal")}>Normal</Button>
-            <Button variant={density === "pdf" ? "default" : "ghost"} size="sm" onClick={() => setDensity("pdf")}>PDF</Button>
+            <Button variant={density === "normal" ? "default" : "ghost"} size="sm" disabled={hydrationBlocked} onClick={() => setDensity("normal")}>Normal</Button>
+            <Button variant={density === "pdf" ? "default" : "ghost"} size="sm" disabled={hydrationBlocked} onClick={() => setDensity("pdf")}>PDF</Button>
           </div>
 
           <div className="flex items-center gap-1 rounded-md border px-1 py-1">

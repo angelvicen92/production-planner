@@ -131,6 +131,10 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverCandidateMetrics?: Array<Record<string, unknown>> | null;
   segmentSolverFeasibleButNotSelected?: boolean | null;
   segmentSolverFeasibleComparison?: Record<string, unknown> | null;
+  segmentSolverPrimaryStageGuardEnabled?: boolean | null;
+  segmentSolverPrimaryStageFixedIntervals?: Array<Record<string, unknown>> | null;
+  segmentSolverPrimaryStagePrunedCandidates?: number | null;
+  segmentSolverPrimaryStagePruneReasons?: string[] | null;
   pipelineBuilderAttempted?: boolean | null;
   pipelineCandidatesGenerated?: number | null;
   pipelineAccepted?: boolean | null;

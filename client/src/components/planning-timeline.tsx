@@ -21,6 +21,7 @@ import { usePlanningDensity } from "@/components/planning/fullscreen-planning-pa
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { countRenderedPlanningTasks, type RenderedPlanningCounts } from "@/lib/planning-ready-gate";
 
 interface Task {
   id: number;
@@ -78,7 +79,7 @@ interface PlanningTimelineProps {
   isHydratingPlanningResult?: boolean;
   planningRunId?: number | null;
   taskDatasetVersion?: string;
-  onScheduleRendered?: (runId: number, taskDatasetVersion: string) => void;
+  onScheduleRendered?: (runId: number, taskDatasetVersion: string, renderedCounts: RenderedPlanningCounts) => void;
   // Vista vertical para "Por plató y espacio"
   spaceVerticalMode?: "timeline" | "list";
 
@@ -569,9 +570,13 @@ function TaskStatusMenuTrigger({
   const isPdf = density === "pdf";
   useEffect(() => {
     if (!isHydratingPlanningResult || !planningRunId || !taskDatasetVersion) return;
-    const frame = window.requestAnimationFrame(() => onScheduleRendered?.(planningRunId, taskDatasetVersion));
+    const frame = window.requestAnimationFrame(() => onScheduleRendered?.(
+      planningRunId,
+      taskDatasetVersion,
+      countRenderedPlanningTasks(dailyTasks),
+    ));
     return () => window.cancelAnimationFrame(frame);
-  }, [isHydratingPlanningResult, onScheduleRendered, planningRunId, taskDatasetVersion]);
+  }, [dailyTasks, isHydratingPlanningResult, onScheduleRendered, planningRunId, taskDatasetVersion]);
   const timeLockedSet = useMemo(() => new Set((timeLockedTaskIds ?? []).map((id) => Number(id))), [timeLockedTaskIds]);
   const fullLockedSet = useMemo(() => new Set((fullLockedTaskIds ?? []).map((id) => Number(id))), [fullLockedTaskIds]);
   const isTaskFixed = (task: Task) =>

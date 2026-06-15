@@ -276,6 +276,10 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverCandidateMetrics: CompactJsonValue;
     segmentSolverFeasibleButNotSelected: boolean;
     segmentSolverFeasibleComparison: CompactJsonValue;
+    segmentSolverPrimaryStageGuardEnabled: boolean;
+    segmentSolverPrimaryStageFixedIntervals: CompactJsonValue;
+    segmentSolverPrimaryStagePrunedCandidates: number;
+    segmentSolverPrimaryStagePruneReasons: CompactJsonValue;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -473,6 +477,10 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverCandidateMetrics: compactJsonValue(metadata.segmentSolverCandidateMetrics) ?? [],
       segmentSolverFeasibleButNotSelected: optionalBoolean(metadata.segmentSolverFeasibleButNotSelected) ?? false,
       segmentSolverFeasibleComparison: compactJsonValue(metadata.segmentSolverFeasibleComparison) ?? {},
+      segmentSolverPrimaryStageGuardEnabled: optionalBoolean(metadata.segmentSolverPrimaryStageGuardEnabled) ?? false,
+      segmentSolverPrimaryStageFixedIntervals: compactJsonValue(Array.isArray(metadata.segmentSolverPrimaryStageFixedIntervals) ? metadata.segmentSolverPrimaryStageFixedIntervals.slice(0, 10) : []) ?? [],
+      segmentSolverPrimaryStagePrunedCandidates: optionalNumber(metadata.segmentSolverPrimaryStagePrunedCandidates) ?? 0,
+      segmentSolverPrimaryStagePruneReasons: compactJsonValue(metadata.segmentSolverPrimaryStagePruneReasons) ?? [],
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
       pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
       pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,
