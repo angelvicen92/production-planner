@@ -24,7 +24,7 @@ import { generatePipelineBuilderCandidates, type PipelineBuilderDiagnostics, typ
 import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 import { runMealSchedulerSafely } from "./mealScheduler";
 import { normalizeMealDiagnosticsMetadata } from "./mealDiagnostics";
-import { runSegmentSolver, segmentSolverSelectionReason, type SegmentSolverMeta } from "./segmentSolver";
+import { normalizeSegmentSolverMetadata, runSegmentSolver, segmentSolverSelectionReason, type SegmentSolverMeta } from "./segmentSolver";
 
 
 const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
@@ -1056,6 +1056,7 @@ export const withV3Meta = (output: EngineOutput, meta: NonNullable<EngineOutput[
       pipelineMovedTasks: [],
       pipelineStableTasks: [],
       pipelineFeederOutcomes: [],
+      ...normalizeSegmentSolverMetadata(meta),
       ...meta,
       ...normalizeMealDiagnosticsMetadata(meta),
       ...normalizePipelineDiagnosticsMetadata(meta),

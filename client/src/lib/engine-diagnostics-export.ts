@@ -243,6 +243,32 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverMealMovesAccepted: boolean;
     segmentSolverMealMoveCount: number;
     segmentSolverMealRejectedReasons: CompactJsonValue;
+    segmentSolverTopBlockers: CompactJsonValue;
+    segmentSolverTopResourceBlockers: CompactJsonValue;
+    segmentSolverTopDependencyBlockers: CompactJsonValue;
+    segmentSolverTopMealBlockers: CompactJsonValue;
+    segmentSolverTopMainStageBlockers: CompactJsonValue;
+    segmentSolverLocalChecksPerformed: number;
+    segmentSolverLocalChecksRejected: number;
+    segmentSolverFullValidationsPerformed: number;
+    segmentSolverFullValidationsRejected: number;
+    segmentSolverExpandedMicroSegmentsBuilt: number;
+    segmentSolverExpansionTaskIds: CompactJsonValue;
+    segmentSolverExpansionReasons: CompactJsonValue;
+    segmentSolverExpansionRejectedReasons: CompactJsonValue;
+    segmentSolverDirectRepairsAttempted: number;
+    segmentSolverDirectRepairsAccepted: number;
+    segmentSolverDirectRepairStrategiesTried: CompactJsonValue;
+    segmentSolverDirectRepairRejectedReasons: CompactJsonValue;
+    segmentSolverRepairChainsAttempted: number;
+    segmentSolverRepairChainsAccepted: number;
+    segmentSolverRepairChainMaxDepthReached: number;
+    segmentSolverRepairChainDepths: CompactJsonValue;
+    segmentSolverRepairChainMovedTaskIds: CompactJsonValue;
+    segmentSolverRepairChainBlockedBy: CompactJsonValue;
+    segmentSolverRepairChainRejectedReasons: CompactJsonValue;
+    segmentSolverCandidateMetrics: CompactJsonValue;
+    segmentSolverFeasibleButNotSelected: boolean;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -407,6 +433,32 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverMealMovesAccepted: optionalBoolean(metadata.segmentSolverMealMovesAccepted) ?? false,
       segmentSolverMealMoveCount: optionalNumber(metadata.segmentSolverMealMoveCount) ?? 0,
       segmentSolverMealRejectedReasons: compactJsonValue(metadata.segmentSolverMealRejectedReasons) ?? [],
+      segmentSolverTopBlockers: compactJsonValue(metadata.segmentSolverTopBlockers) ?? [],
+      segmentSolverTopResourceBlockers: compactJsonValue(metadata.segmentSolverTopResourceBlockers) ?? [],
+      segmentSolverTopDependencyBlockers: compactJsonValue(metadata.segmentSolverTopDependencyBlockers) ?? [],
+      segmentSolverTopMealBlockers: compactJsonValue(metadata.segmentSolverTopMealBlockers) ?? [],
+      segmentSolverTopMainStageBlockers: compactJsonValue(metadata.segmentSolverTopMainStageBlockers) ?? [],
+      segmentSolverLocalChecksPerformed: optionalNumber(metadata.segmentSolverLocalChecksPerformed) ?? 0,
+      segmentSolverLocalChecksRejected: optionalNumber(metadata.segmentSolverLocalChecksRejected) ?? 0,
+      segmentSolverFullValidationsPerformed: optionalNumber(metadata.segmentSolverFullValidationsPerformed) ?? 0,
+      segmentSolverFullValidationsRejected: optionalNumber(metadata.segmentSolverFullValidationsRejected) ?? 0,
+      segmentSolverExpandedMicroSegmentsBuilt: optionalNumber(metadata.segmentSolverExpandedMicroSegmentsBuilt) ?? 0,
+      segmentSolverExpansionTaskIds: compactJsonValue(metadata.segmentSolverExpansionTaskIds) ?? [],
+      segmentSolverExpansionReasons: compactJsonValue(metadata.segmentSolverExpansionReasons) ?? [],
+      segmentSolverExpansionRejectedReasons: compactJsonValue(metadata.segmentSolverExpansionRejectedReasons) ?? [],
+      segmentSolverDirectRepairsAttempted: optionalNumber(metadata.segmentSolverDirectRepairsAttempted) ?? 0,
+      segmentSolverDirectRepairsAccepted: optionalNumber(metadata.segmentSolverDirectRepairsAccepted) ?? 0,
+      segmentSolverDirectRepairStrategiesTried: compactJsonValue(metadata.segmentSolverDirectRepairStrategiesTried) ?? [],
+      segmentSolverDirectRepairRejectedReasons: compactJsonValue(metadata.segmentSolverDirectRepairRejectedReasons) ?? [],
+      segmentSolverRepairChainsAttempted: optionalNumber(metadata.segmentSolverRepairChainsAttempted) ?? 0,
+      segmentSolverRepairChainsAccepted: optionalNumber(metadata.segmentSolverRepairChainsAccepted) ?? 0,
+      segmentSolverRepairChainMaxDepthReached: optionalNumber(metadata.segmentSolverRepairChainMaxDepthReached) ?? 0,
+      segmentSolverRepairChainDepths: compactJsonValue(metadata.segmentSolverRepairChainDepths) ?? [],
+      segmentSolverRepairChainMovedTaskIds: compactJsonValue(metadata.segmentSolverRepairChainMovedTaskIds) ?? [],
+      segmentSolverRepairChainBlockedBy: compactJsonValue(metadata.segmentSolverRepairChainBlockedBy) ?? [],
+      segmentSolverRepairChainRejectedReasons: compactJsonValue(metadata.segmentSolverRepairChainRejectedReasons) ?? [],
+      segmentSolverCandidateMetrics: compactJsonValue(metadata.segmentSolverCandidateMetrics) ?? [],
+      segmentSolverFeasibleButNotSelected: optionalBoolean(metadata.segmentSolverFeasibleButNotSelected) ?? false,
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
       pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
       pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,

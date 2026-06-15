@@ -66,7 +66,7 @@ test("bounded exact segment candidate lowers coach gap and wins selection", () =
   assert.ok((result.meta.segmentSolverCandidatesGenerated ?? 0) > 0);
   assert.equal(result.meta.segmentSolverAccepted, true);
   assert.equal(result.meta.solutionSource, "segment_solver");
-  assert.match(String(result.meta.candidateSelectionReason), /segment_solver selected: lower coach gap/);
+  assert.match(String(result.meta.candidateSelectionReason), /segment_solver selected: reduced critical coach gap/);
   assert.ok(Number(result.meta.segmentSolverBestAfter?.maxCoachGapMinutes) < Number(result.meta.segmentSolverBestBefore?.maxCoachGapMinutes));
   assert.equal(validateHardConstraints(input, result.output).hardValidationPassed, true);
 });
@@ -212,6 +212,13 @@ test("dependency outside-segment rejection identifies the predecessor", () => {
   assert.equal(result.blockers[0]?.rejectionCode, "dependency_predecessor_outside_segment"); assert.deepEqual(result.blockers[0]?.suggestedExpansionTaskIds, [6]);
 });
 
+test("dependency outside-segment rejection identifies the successor", () => {
+  const input = baseInput({ tasks: baseInput().tasks.map((task) => task.id === 6 ? { ...task, dependsOnTaskIds: [2] } : task).concat([{ id: 6, planId: 52, templateId: 6, templateName: "Successor", zoneId: 3, spaceId: 32, contestantId: 2, contestantName: "Talent B", status: "pending", durationOverrideMin: 30, dependsOnTaskIds: [2] }]) });
+  const output = baseOutput(); output.plannedTasks!.push({ taskId: 6, startPlanned: "11:15", endPlanned: "11:45", assignedResources: [] });
+  const result = checkLocalMoveFeasibility(input, output, { segment: localSegment(), starts: new Map([[2, 11 * 60]]), strategy: "left_shift_right_block" });
+  assert.equal(result.blockers[0]?.rejectionCode, "dependency_successor_outside_segment"); assert.deepEqual(result.blockers[0]?.suggestedExpansionTaskIds, [6]);
+});
+
 test("incremental feasibility rejects before full validation", () => {
   const input = baseInput({ tasks: baseInput().tasks.concat([{ id: 10, planId: 52, templateId: 10, templateName: "Locked blocker", zoneId: 3, spaceId: 31, contestantId: 10, status: "done", durationOverrideMin: 30 }]) });
   const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
@@ -224,6 +231,9 @@ test("movable blocker triggers bounded expansion and direct repair", () => {
   const output = baseOutput(); output.plannedTasks!.push({ taskId: 10, startPlanned: "11:00", endPlanned: "11:30", assignedResources: [9001] });
   const result = runSegmentSolver(input, output, { timeoutMs: 500 });
   assert.ok(result.meta.segmentSolverExpandedMicroSegmentsBuilt > 0); assert.ok(result.meta.segmentSolverExpansionTaskIds.includes(10)); assert.ok(result.meta.segmentSolverDirectRepairsAttempted > 0);
+  assert.ok(result.meta.segmentSolverRepairChainsAttempted > 0);
+  assert.ok(result.meta.segmentSolverRepairChainMaxDepthReached <= 2);
+  assert.ok(result.meta.segmentSolverRepairChainMovedTaskIds.length <= 10);
 });
 
 test("locked or done blockers do not expand", () => {

@@ -46,6 +46,28 @@ test("builds a defensive snapshot from incomplete diagnostics", () => {
   assert.deepEqual(snapshot.intelligence.pipelineUnmappedTalents, []);
   assert.deepEqual(snapshot.intelligence.pipelineMovedTasks, []);
   assert.deepEqual(snapshot.intelligence.pipelineStableTasks, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverTopBlockers, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverTopResourceBlockers, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverTopDependencyBlockers, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverTopMealBlockers, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverTopMainStageBlockers, []);
+  assert.equal(snapshot.intelligence.segmentSolverLocalChecksPerformed, 0);
+  assert.equal(snapshot.intelligence.segmentSolverLocalChecksRejected, 0);
+  assert.equal(snapshot.intelligence.segmentSolverFullValidationsPerformed, 0);
+  assert.equal(snapshot.intelligence.segmentSolverFullValidationsRejected, 0);
+  assert.equal(snapshot.intelligence.segmentSolverExpandedMicroSegmentsBuilt, 0);
+  assert.deepEqual(snapshot.intelligence.segmentSolverExpansionTaskIds, []);
+  assert.equal(snapshot.intelligence.segmentSolverDirectRepairsAttempted, 0);
+  assert.equal(snapshot.intelligence.segmentSolverDirectRepairsAccepted, 0);
+  assert.equal(snapshot.intelligence.segmentSolverRepairChainsAttempted, 0);
+  assert.equal(snapshot.intelligence.segmentSolverRepairChainsAccepted, 0);
+  assert.equal(snapshot.intelligence.segmentSolverRepairChainMaxDepthReached, 0);
+  assert.deepEqual(snapshot.intelligence.segmentSolverRepairChainDepths, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverRepairChainMovedTaskIds, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverRepairChainBlockedBy, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverRepairChainRejectedReasons, []);
+  assert.deepEqual(snapshot.intelligence.segmentSolverCandidateMetrics, []);
+  assert.equal(snapshot.intelligence.segmentSolverFeasibleButNotSelected, false);
   assert.deepEqual(snapshot.humanReviewTemplate, {
     observedIssue: null,
     expectedBehavior: null,
@@ -177,7 +199,7 @@ test("includes key metrics without copying full engine or planning payloads", ()
   });
   assert.equal(serialized.includes("engineInput"), false);
   assert.equal(serialized.includes("planningOutput"), false);
-  assert.ok(serialized.length < 7_000);
+  assert.ok(serialized.length < 9_000);
 });
 
 

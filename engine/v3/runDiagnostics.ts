@@ -117,6 +117,13 @@ export interface EngineRunDiagnostics {
     segmentSolverDirectRepairsAccepted: number;
     segmentSolverDirectRepairStrategiesTried: string[];
     segmentSolverDirectRepairRejectedReasons: string[];
+    segmentSolverRepairChainsAttempted: number;
+    segmentSolverRepairChainsAccepted: number;
+    segmentSolverRepairChainMaxDepthReached: number;
+    segmentSolverRepairChainDepths: number[];
+    segmentSolverRepairChainMovedTaskIds: number[];
+    segmentSolverRepairChainBlockedBy: string[];
+    segmentSolverRepairChainRejectedReasons: string[];
     segmentSolverEarlyStopReason: string | null;
     segmentSolverBestFeasibleSeenAtMs: number | null;
     segmentSolverFeasibleButNotSelected: boolean;
@@ -345,6 +352,13 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       segmentSolverDirectRepairsAccepted: meta?.segmentSolverDirectRepairsAccepted ?? 0,
       segmentSolverDirectRepairStrategiesTried: uniqueCompactReasons(meta?.segmentSolverDirectRepairStrategiesTried ?? []),
       segmentSolverDirectRepairRejectedReasons: uniqueCompactReasons(meta?.segmentSolverDirectRepairRejectedReasons ?? []),
+      segmentSolverRepairChainsAttempted: meta?.segmentSolverRepairChainsAttempted ?? 0,
+      segmentSolverRepairChainsAccepted: meta?.segmentSolverRepairChainsAccepted ?? 0,
+      segmentSolverRepairChainMaxDepthReached: meta?.segmentSolverRepairChainMaxDepthReached ?? 0,
+      segmentSolverRepairChainDepths: (meta?.segmentSolverRepairChainDepths ?? []).slice(0, 20),
+      segmentSolverRepairChainMovedTaskIds: (meta?.segmentSolverRepairChainMovedTaskIds ?? []).slice(0, 10),
+      segmentSolverRepairChainBlockedBy: uniqueCompactReasons(meta?.segmentSolverRepairChainBlockedBy ?? []),
+      segmentSolverRepairChainRejectedReasons: uniqueCompactReasons(meta?.segmentSolverRepairChainRejectedReasons ?? []),
       segmentSolverEarlyStopReason: compactText(meta?.segmentSolverEarlyStopReason),
       segmentSolverBestFeasibleSeenAtMs: meta?.segmentSolverBestFeasibleSeenAtMs ?? null,
       segmentSolverFeasibleButNotSelected: meta?.segmentSolverFeasibleButNotSelected ?? false,
