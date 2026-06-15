@@ -39,7 +39,7 @@ import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
 import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
-import { countRenderedPlanningTasks, evaluatePlanningReadyGate } from "@/lib/planning-ready-gate";
+import { countRenderedPlanningTasks, derivePlanningReadinessExpectation, evaluatePlanningReadyGate } from "@/lib/planning-ready-gate";
 import {
   hasActivePlanningContext,
   isAbortLikeError,
@@ -1961,13 +1961,7 @@ ${reasonMessage}` : message,
       setPlanningStatus("applying");
       persistActivePlanningRunId(id, completedRunId, window.localStorage);
       setPlanningStatus("refetching_tasks");
-      await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-      const refreshedPlan = await refetchPlan();
-      const refreshedTasks = ((refreshedPlan.data as any)?.dailyTasks ?? []) as any[];
-      setExpectedTransportOutCount(countRenderedPlanningTasks(refreshedTasks).visibleTransportOutCount);
-      const pendingAfterRefresh = refreshedTasks.filter((task) => String(task?.status ?? "pending") === "pending" && !task?.isManualBlock && !task?.is_manual_block && (!task?.startPlanned || !task?.endPlanned));
-      setWaitingForTransportOutTasks(pendingAfterRefresh.length > 0);
+      let refreshedTasks: any[] = [];
       await queryClient.invalidateQueries({ queryKey: ["planning-run", id] });
       await queryClient.refetchQueries({ queryKey: ["planning-run", id] });
       if (completedRunId !== null) {
@@ -1977,6 +1971,7 @@ ${reasonMessage}` : message,
           await queryClient.refetchQueries({ queryKey: engineDiagnosticsQueryKey(id, completedRunId), type: "all" });
           const diagnostics: any = queryClient.getQueryData(engineDiagnosticsQueryKey(id, completedRunId));
           if (Number(diagnostics?.id) !== completedRunId) throw new Error("STALE_PLANNING_DIAGNOSTICS");
+          setExpectedTransportOutCount(derivePlanningReadinessExpectation(diagnostics, completedRunId).transportOutTasks);
         } catch (diagnosticsError: any) {
           console.warn("post-success diagnostics refetch failed", {
             planningRunId: completedRunId,
@@ -1988,6 +1983,24 @@ ${reasonMessage}` : message,
           toast({ title: "Plan aplicado, diagnóstico pendiente.", description: "Reintentar desde el panel de diagnóstico." });
         }
       }
+      const hydrationStartedAt = Date.now();
+      let hydrated = false;
+      while (!hydrated && Date.now() - hydrationStartedAt < 10_000) {
+        await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+        await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+        const refreshedPlan = await refetchPlan();
+        refreshedTasks = ((refreshedPlan.data as any)?.dailyTasks ?? []) as any[];
+        const diagnostics: any = completedRunId === null ? null : queryClient.getQueryData(engineDiagnosticsQueryKey(id, completedRunId));
+        const expectation = derivePlanningReadinessExpectation(diagnostics, completedRunId);
+        const counts = countRenderedPlanningTasks(refreshedTasks);
+        hydrated = expectation.diagnosticsReady
+          && counts.pendingUnplannedCount === (expectation.unplannedTasks ?? 0)
+          && counts.visibleScheduledTasksCount >= (expectation.scheduledVisibleTasks ?? expectation.plannedTasks ?? Number.MAX_SAFE_INTEGER)
+          && counts.visibleTransportOutCount >= expectation.transportOutTasks;
+        setWaitingForTransportOutTasks(counts.visibleTransportOutCount < expectation.transportOutTasks || counts.pendingUnplannedCount > (expectation.unplannedTasks ?? 0));
+        if (!hydrated) await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+      if (!hydrated) throw new Error("PLANNING_VIEW_NOT_READY_HYDRATION_TIMEOUT");
       setPlanningDatasetVersion(`${completedRunId}:${refreshedTasks.length}:${refreshedTasks.map((task) => `${task.id}:${task.startPlanned}:${task.endPlanned}`).join("|")}`);
       setPlanningStatus("rendering_schedule");
       awaitingScheduleRender = completedRunId !== null;
@@ -4042,7 +4055,7 @@ ${reasonMessage}` : message,
                 hydrationBlocked={planningInProgress}
               >
                 <div className="relative">
-                {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{waitingForTransportOutTasks ? "Actualizando salidas/transporte OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : "Aplicando planificación…"}</span></div>) : null}
+                {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{waitingForTransportOutTasks ? "Actualizando salidas OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Pintando tiras…" : "Aplicando planificación…"}</span></div>) : null}
                 <PlanningTimeline
                   isHydratingPlanningResult={planningInProgress && hydratingPlanningRunId !== null}
                   planningRunId={hydratingPlanningRunId}
@@ -4050,19 +4063,14 @@ ${reasonMessage}` : message,
                   onScheduleRendered={(runId, datasetVersion, renderedCounts) => {
                     if (runId !== hydratingPlanningRunId || datasetVersion !== planningDatasetVersion) return;
                     const diagnostics: any = queryClient.getQueryData(engineDiagnosticsQueryKey(id, runId));
-                    const diagnosticsPlannedTasks = Number.isFinite(Number(diagnostics?.plannedTasks)) ? Number(diagnostics.plannedTasks) : null;
-                    const visibleDatasetSize = ((plan?.dailyTasks ?? []) as any[]).length;
-                    const expectedPlannedTasks = diagnosticsPlannedTasks !== null && diagnosticsPlannedTasks <= visibleDatasetSize
-                      ? diagnosticsPlannedTasks
-                      : null;
-                    const expectedUnplannedTasks = Number.isFinite(Number(diagnostics?.unplannedTasks)) ? Number(diagnostics.unplannedTasks) : null;
+                    const expectation = derivePlanningReadinessExpectation(diagnostics, runId);
                     const gate = evaluatePlanningReadyGate({
                       currentRunId: runId,
                       latestSuccessRunId: planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null,
                       diagnosticsRunId: Number.isFinite(Number(diagnostics?.id)) ? Number(diagnostics.id) : null,
-                      expectedPlannedTasks,
-                      expectedUnplannedTasks,
-                      expectedTransportOutCount,
+                      expectedPlannedTasks: expectation.scheduledVisibleTasks ?? expectation.plannedTasks,
+                      expectedUnplannedTasks: expectation.unplannedTasks,
+                      expectedTransportOutCount: expectation.transportOutTasks,
                       ...renderedCounts,
                       taskDatasetVersion: datasetVersion,
                       renderedTaskDatasetVersion: datasetVersion,
@@ -4556,7 +4564,7 @@ ${reasonMessage}` : message,
                 {planningIssue ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Loader2 className="h-4 w-4 animate-spin" />}
                 {planningIssue
                   ? planningIssue.kind === "stale" ? "Generación bloqueada" : planningIssue.kind === "reconnecting" ? "Reconectando con la planificación..." : "No se pudo completar la generación"
-                  : waitingForTransportOutTasks ? "Actualizando salidas/transporte OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Actualizando tiras…" : planningStatus === "applying" ? "Aplicando planificación…" : `Planificando… ${planningProgress.percentage}%`}
+                  : waitingForTransportOutTasks ? "Actualizando salidas OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Pintando tiras…" : planningStatus === "applying" ? "Aplicando planificación…" : `Planificando… ${planningProgress.percentage}%`}
               </DialogTitle>
               <DialogDescription>
                 {planningIssue ? planningIssue.message : <>

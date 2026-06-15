@@ -391,6 +391,12 @@ export function PlanEngineDiagnostics({
                 detail={`${metric(metadata.segmentSolverCandidatesGenerated)} candidatos · ${label(metadata.segmentSolverReason)}`}
               />
               <UsageBadge
+                label="Production Wave"
+                attempted={metadata.productionWaveAttempted === true}
+                accepted={metadata.productionWaveAccepted === true}
+                detail={`${metric(metadata.productionWaveAnchorsFound)} anchors · ${metric(metadata.productionWaveCandidatesGenerated)} candidatos · ${label(metadata.productionWaveReason)}`}
+              />
+              <UsageBadge
                 label="CP-SAT pilot"
                 attempted={metadata.cpSatPilotAttempted === true}
                 accepted={metadata.cpSatPilotAccepted === true}

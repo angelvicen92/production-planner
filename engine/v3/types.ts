@@ -10,6 +10,7 @@ export type EngineV3ProgressPhase =
   | "hard_validation"
   | "backtracking"
   | "operational_neighborhoods"
+  | "production_wave_builder"
   | "segment_solver"
   | "coach_compaction"
   | "coach_wave_ordering"
