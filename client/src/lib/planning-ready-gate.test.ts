@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { countRenderedPlanningTasks, evaluatePlanningReadyGate, isTransportOutTask } from "./planning-ready-gate";
+import { countRenderedPlanningTasks, derivePlanningReadinessExpectation, evaluatePlanningReadyGate, isTransportOutTask } from "./planning-ready-gate";
 
 const readyInput = {
   currentRunId: 206, latestSuccessRunId: 206, diagnosticsRunId: 206,
@@ -14,6 +14,29 @@ test("delayed OUT tasks keep planning hydration blocked", () => {
   assert.equal(gate.planningReady, false);
   assert.equal(gate.isWaitingForTransportOutTasks, true);
   assert.equal(gate.missingTransportOutCount, 19);
+});
+
+test("expected OUT comes from stable diagnostics, never from the incomplete visual dataset", () => {
+  const expectation = derivePlanningReadinessExpectation({
+    id: 206,
+    plannedTasks: 193,
+    unplannedTasks: 0,
+    operationalQuality: { counts: { scheduledTasksAnalyzed: 193, transportOutTasksAnalyzed: 19 } },
+  }, 206);
+  assert.equal(expectation.transportOutTasks, 19);
+  assert.equal(expectation.scheduledVisibleTasks, 193);
+  assert.equal(countRenderedPlanningTasks(Array.from({ length: 174 }, () => ({ startPlanned: "10:00", endPlanned: "10:05" }))).visibleTransportOutCount, 0);
+});
+
+test("complete tasks with stale diagnostics and ready diagnostics with incomplete tasks stay blocked", () => {
+  assert.equal(evaluatePlanningReadyGate({ ...readyInput, diagnosticsRunId: 205 }).planningReady, false);
+  assert.equal(evaluatePlanningReadyGate({ ...readyInput, visibleScheduledTasksCount: 174, visibleTransportOutCount: 0 }).planningReady, false);
+});
+
+test("hydration timeout remains a recoverable gate failure", () => {
+  const timedOut = evaluatePlanningReadyGate({ ...readyInput, visibleScheduledTasksCount: 174, visibleTransportOutCount: 0, pendingUnplannedCount: 19 });
+  assert.equal(timedOut.planningReady, false);
+  assert.equal(timedOut.missingScheduledTasks, 19);
 });
 
 test("planning closes only after complete dataset was rendered", () => {

@@ -25,6 +25,7 @@ import { normalizePipelineDiagnosticsMetadata } from "./pipelineDiagnostics";
 import { runMealSchedulerSafely } from "./mealScheduler";
 import { normalizeMealDiagnosticsMetadata } from "./mealDiagnostics";
 import { normalizeSegmentSolverMetadata, runSegmentSolver, segmentSolverSelectionReason, type SegmentSolverMeta } from "./segmentSolver";
+import { selectProductionWaveCandidate, type ProductionWaveMeta } from "./productionWaveBuilder";
 
 
 const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
@@ -34,6 +35,7 @@ const PROGRESS_LABELS: Record<EngineV3ProgressPhase, string> = {
   hard_validation: "Validando restricciones",
   backtracking: "Explorando alternativas",
   operational_neighborhoods: "Mejorando calidad operativa",
+  production_wave_builder: "Construyendo olas de producción",
   segment_solver: "Optimizando segmento crítico",
   coach_compaction: "Compactando jornadas de coaches",
   coach_wave_ordering: "Ordenando olas de coaches",
@@ -109,9 +111,9 @@ type BacktrackingMeta = {
   backtrackingTimeMs: number;
   backtrackingFallbackReason?: string;
   greedyFailedBeforeBacktracking: boolean;
-  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  solutionSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "production_wave_builder" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   candidateSolutionsEvaluated?: number;
-  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
+  bestCandidateSource?: "phaseA_greedy" | "phaseA_backtracking" | "operational_neighborhood" | "production_wave_builder" | "pipeline_builder" | "segment_solver" | "cp_sat_pilot" | "cp_sat" | "fallback" | "infeasible";
   bestCandidateScore?: string;
   greedyCandidateScore?: string;
   backtrackingBestScore?: string;
@@ -777,6 +779,33 @@ export const runSegmentSolverSelection = (
   };
 };
 
+export const runProductionWaveSelection = (
+  input: EngineV3Input,
+  baseOutput: EngineOutput,
+  baseSource: NonNullable<BacktrackingMeta["solutionSource"]>,
+  baseMeta: Partial<BacktrackingMeta> = {},
+): { output: EngineOutput; meta: Partial<BacktrackingMeta> & ProductionWaveMeta } => {
+  const result = selectProductionWaveCandidate(input, baseOutput);
+  const score = scoreCandidateSolution(input, result.output);
+  const source = result.meta.productionWaveAccepted ? "production_wave_builder" : baseSource;
+  const reason = result.meta.productionWaveAccepted
+    ? result.meta.productionWaveReason
+    : baseMeta.candidateSelectionReason ?? result.meta.productionWaveReason;
+  return {
+    output: result.output,
+    meta: {
+      ...baseMeta,
+      ...result.meta,
+      solutionSource: source,
+      bestCandidateSource: source,
+      candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1) + result.meta.productionWaveCandidatesGenerated,
+      bestCandidateScore: summarizeCandidateScore(score),
+      candidateSelectionReason: reason,
+      candidateComparisonSummary: reason,
+    },
+  };
+};
+
 export const runPipelineBuilderSelection = (
   input: EngineV3Input,
   baseOutput: EngineOutput,
@@ -1335,14 +1364,22 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
         emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
         const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_backtracking");
         output = neighborhoodSelection.output;
+        emitProgress(options, "production_wave_builder", 52, "Construyendo candidatos anclados al Main Stage");
+        const productionWaveSelection = runProductionWaveSelection(
+          input,
+          output,
+          neighborhoodSelection.meta.solutionSource ?? "phaseA_backtracking",
+          { ...backtrackingAcceptedMeta, ...neighborhoodSelection.meta },
+        );
+        output = productionWaveSelection.output;
         emitProgress(options, "segment_solver", 54, "Optimizando el segmento del coach con peor hueco");
         const segmentSelection = runSegmentSolverSelection(
           input,
           output,
-          neighborhoodSelection.meta.solutionSource ?? "phaseA_backtracking",
+          productionWaveSelection.meta.solutionSource ?? "phaseA_backtracking",
           {
             ...backtrackingAcceptedMeta,
-            ...neighborhoodSelection.meta,
+            ...productionWaveSelection.meta,
             candidateSolutionsEvaluated: Math.max(
               Number(backtrackingAcceptedMeta.candidateSolutionsEvaluated ?? 1),
               Number(neighborhoodSelection.meta.candidateSolutionsEvaluated ?? 1),
@@ -1484,8 +1521,16 @@ function generatePlanV3Unchecked(input: EngineV3Input, options?: EngineV3Options
       emitProgress(options, "operational_neighborhoods", 48, "Evaluando vecindarios operativos");
       const neighborhoodSelection = runOperationalNeighborhoodSelection(input, output, "phaseA_greedy");
       output = neighborhoodSelection.output;
+      emitProgress(options, "production_wave_builder", 52, "Construyendo candidatos anclados al Main Stage");
+      const productionWaveSelection = runProductionWaveSelection(
+        input,
+        output,
+        neighborhoodSelection.meta.solutionSource ?? "phaseA_greedy",
+        neighborhoodSelection.meta,
+      );
+      output = productionWaveSelection.output;
       emitProgress(options, "segment_solver", 54, "Optimizando el segmento del coach con peor hueco");
-      const segmentSelection = runSegmentSolverSelection(input, output, neighborhoodSelection.meta.solutionSource ?? "phaseA_greedy", neighborhoodSelection.meta, options);
+      const segmentSelection = runSegmentSolverSelection(input, output, productionWaveSelection.meta.solutionSource ?? "phaseA_greedy", productionWaveSelection.meta, options);
       output = segmentSelection.output;
       emitProgress(options, "coach_compaction", 58, "Compactando jornadas y huecos de coaches");
       emitProgress(options, "coach_wave_ordering", 66, "Ordenando olas locales de coaches");

@@ -158,6 +158,8 @@ export interface SegmentSolverMeta {
   segmentSolverPrimaryStageFixedIntervals: PrimaryStageFixedInterval[];
   segmentSolverPrimaryStagePrunedCandidates: number;
   segmentSolverPrimaryStagePruneReasons: string[];
+  segmentSolverPrimaryStageGuardMisses: number;
+  segmentSolverPrimaryStageGuardMissDetails: Array<Record<string, unknown>>;
 }
 
 export interface SegmentSolverOptions {
@@ -229,6 +231,8 @@ export const normalizeSegmentSolverMetadata = (meta?: Partial<NonNullable<Engine
   segmentSolverPrimaryStageFixedIntervals: meta?.segmentSolverPrimaryStageFixedIntervals ?? [],
   segmentSolverPrimaryStagePrunedCandidates: meta?.segmentSolverPrimaryStagePrunedCandidates ?? 0,
   segmentSolverPrimaryStagePruneReasons: meta?.segmentSolverPrimaryStagePruneReasons ?? [],
+  segmentSolverPrimaryStageGuardMisses: meta?.segmentSolverPrimaryStageGuardMisses ?? 0,
+  segmentSolverPrimaryStageGuardMissDetails: meta?.segmentSolverPrimaryStageGuardMissDetails ?? [],
 }) as Partial<NonNullable<EngineOutput["v3Meta"]>>;
 
 export interface CriticalCoachSegment {
@@ -936,6 +940,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
     segmentSolverFeasibleButNotSelected: false, segmentSolverCandidateMetrics: [],
     segmentSolverPrimaryStageGuardEnabled: false, segmentSolverPrimaryStageFixedIntervals: [],
     segmentSolverPrimaryStagePrunedCandidates: 0, segmentSolverPrimaryStagePruneReasons: [],
+    segmentSolverPrimaryStageGuardMisses: 0, segmentSolverPrimaryStageGuardMissDetails: [],
   };
   if (options.disabled) return { output: baseline, candidates: [], meta: emptyMeta };
   const segments = buildCriticalCoachSegments(input, baseline, options.maxSegments);
@@ -1037,6 +1042,24 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
         repairChainDepth: Math.max(0, moveDescription ? moveDescription.split(" -> ").filter(Boolean).length : 0),
       });
       const underlyingCode = explained.underlyingViolationCode;
+      const missRelatedTasks = explained.taskIds.map((taskId) => taskById.get(taskId)).filter((task): task is TaskInput => Boolean(task));
+      const guardMiss = underlyingCode === "SPACE_OVERLAP"
+        && missRelatedTasks.some((task) => Number(task.zoneId) === Number(input.optimizerMainZoneId))
+        && missRelatedTasks.some((task) => isFixedTask(input, task));
+      if (guardMiss) {
+        meta.segmentSolverPrimaryStageGuardMisses += 1;
+        meta.segmentSolverPrimaryStagePruneReasons.push("primary_stage_guard_missed_overlap");
+        meta.segmentSolverPrimaryStageGuardMissDetails.push({
+          movedTaskIds: movedIds.slice(0, 22),
+          blockingTaskIds: explained.blockingTaskIds,
+          taskIds: explained.taskIds,
+          spaceName: explained.spaceName,
+          start: explained.start,
+          end: explained.end,
+          strategy: moveDescription || segment.strategy,
+          offsetMinutes,
+        });
+      }
       meta.segmentSolverFullValidationFailureCodes.push(violationCode);
       meta.segmentSolverFullValidationFailureSummary[violationCode] = (meta.segmentSolverFullValidationFailureSummary[violationCode] ?? 0) + 1;
       meta.segmentSolverUnderlyingFailureCodes.push(underlyingCode);
@@ -1129,6 +1152,7 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
   meta.segmentSolverFullValidationFailureCodes = uniq(meta.segmentSolverFullValidationFailureCodes).slice(0, 20);
   meta.segmentSolverUnderlyingFailureCodes = uniq(meta.segmentSolverUnderlyingFailureCodes).slice(0, 20);
   meta.segmentSolverPrimaryStagePruneReasons = uniq(meta.segmentSolverPrimaryStagePruneReasons).slice(0, 10);
+  meta.segmentSolverPrimaryStageGuardMissDetails = meta.segmentSolverPrimaryStageGuardMissDetails.slice(0, 10);
   if (!accepted && meta.segmentSolverPrimaryStagePrunedCandidates > 0 && meta.segmentSolverValidCandidates === 0 && meta.segmentSolverPrimaryStagePruneReasons.includes("primary_stage_offset_no_safe_slot")) {
     meta.segmentSolverReason = "primary_stage_fixed_overlap_no_safe_offset";
   }

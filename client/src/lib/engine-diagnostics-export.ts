@@ -207,6 +207,16 @@ export type EngineDiagnosticsSnapshot = {
     coachWaveReason: string;
     coachWaveBefore: CompactJsonValue;
     coachWaveAfter: CompactJsonValue;
+    productionWaveAttempted: boolean;
+    productionWaveAnchorsFound: number;
+    productionWaveCandidatesGenerated: number;
+    productionWaveAccepted: boolean;
+    productionWaveReason: string;
+    productionWaveRejectedReasons: CompactJsonValue;
+    productionWaveCandidateMetrics: CompactJsonValue;
+    productionWaveBestBefore: CompactJsonValue;
+    productionWaveBestAfter: CompactJsonValue;
+    productionWaveComparison: CompactJsonValue;
     segmentSolverAttempted: boolean;
     segmentSolverBackend: string;
     segmentSolverSegmentsBuilt: number;
@@ -280,6 +290,8 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverPrimaryStageFixedIntervals: CompactJsonValue;
     segmentSolverPrimaryStagePrunedCandidates: number;
     segmentSolverPrimaryStagePruneReasons: CompactJsonValue;
+    segmentSolverPrimaryStageGuardMisses: number;
+    segmentSolverPrimaryStageGuardMissDetails: CompactJsonValue;
     pipelineBuilderAttempted: boolean;
     pipelineCandidatesGenerated: number;
     pipelineAccepted: boolean;
@@ -408,6 +420,16 @@ export function buildEngineDiagnosticsSnapshot(
       coachWaveReason: optionalString(metadata.coachWaveReason) ?? "generator_not_invoked",
       coachWaveBefore: compactJsonValue(metadata.coachWaveBefore) ?? {},
       coachWaveAfter: compactJsonValue(metadata.coachWaveAfter) ?? {},
+      productionWaveAttempted: optionalBoolean(metadata.productionWaveAttempted) ?? false,
+      productionWaveAnchorsFound: optionalNumber(metadata.productionWaveAnchorsFound) ?? 0,
+      productionWaveCandidatesGenerated: optionalNumber(metadata.productionWaveCandidatesGenerated) ?? 0,
+      productionWaveAccepted: optionalBoolean(metadata.productionWaveAccepted) ?? false,
+      productionWaveReason: optionalString(metadata.productionWaveReason) ?? "not_attempted",
+      productionWaveRejectedReasons: compactJsonValue(metadata.productionWaveRejectedReasons) ?? [],
+      productionWaveCandidateMetrics: compactJsonValue(metadata.productionWaveCandidateMetrics) ?? [],
+      productionWaveBestBefore: compactJsonValue(metadata.productionWaveBestBefore) ?? {},
+      productionWaveBestAfter: compactJsonValue(metadata.productionWaveBestAfter) ?? {},
+      productionWaveComparison: compactJsonValue(metadata.productionWaveComparison) ?? {},
       segmentSolverAttempted: optionalBoolean(metadata.segmentSolverAttempted) ?? false,
       segmentSolverBackend: optionalString(metadata.segmentSolverBackend) ?? "bounded_exact_search",
       segmentSolverSegmentsBuilt: optionalNumber(metadata.segmentSolverSegmentsBuilt) ?? 0,
@@ -481,6 +503,8 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverPrimaryStageFixedIntervals: compactJsonValue(Array.isArray(metadata.segmentSolverPrimaryStageFixedIntervals) ? metadata.segmentSolverPrimaryStageFixedIntervals.slice(0, 10) : []) ?? [],
       segmentSolverPrimaryStagePrunedCandidates: optionalNumber(metadata.segmentSolverPrimaryStagePrunedCandidates) ?? 0,
       segmentSolverPrimaryStagePruneReasons: compactJsonValue(metadata.segmentSolverPrimaryStagePruneReasons) ?? [],
+      segmentSolverPrimaryStageGuardMisses: optionalNumber(metadata.segmentSolverPrimaryStageGuardMisses) ?? 0,
+      segmentSolverPrimaryStageGuardMissDetails: compactJsonValue(metadata.segmentSolverPrimaryStageGuardMissDetails) ?? [],
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,
       pipelineCandidatesGenerated: optionalNumber(metadata.pipelineCandidatesGenerated) ?? 0,
       pipelineAccepted: optionalBoolean(metadata.pipelineAccepted) ?? false,

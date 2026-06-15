@@ -16,6 +16,43 @@ export type PlanningReadyGateInput = RenderedPlanningCounts & {
   exportReady: boolean;
 };
 
+export type PlanningReadinessExpectation = {
+  runId: number | null;
+  plannedTasks: number | null;
+  scheduledVisibleTasks: number | null;
+  transportOutTasks: number;
+  unplannedTasks: number | null;
+  diagnosticsReady: boolean;
+  appliedAt: string | null;
+  tasksUpdatedAt: string | null;
+};
+
+export const derivePlanningReadinessExpectation = (diagnostics: any, runId: number | null): PlanningReadinessExpectation => {
+  const numberOrNull = (value: unknown) => Number.isFinite(Number(value)) ? Number(value) : null;
+  const diagnosticsRunId = numberOrNull(diagnostics?.id ?? diagnostics?.runId);
+  const plannedTasks = numberOrNull(diagnostics?.plannedTasks ?? diagnostics?.summary?.plannedTasks);
+  const scheduledVisibleTasks = numberOrNull(
+    diagnostics?.scheduledVisibleTasks
+    ?? diagnostics?.operationalQuality?.counts?.scheduledTasksAnalyzed
+    ?? plannedTasks,
+  );
+  const transportOutTasks = numberOrNull(
+    diagnostics?.transportOutTasks
+    ?? diagnostics?.operationalQuality?.counts?.transportOutTasksAnalyzed
+    ?? diagnostics?.transportSummary?.outTasks,
+  ) ?? 0;
+  return {
+    runId: diagnosticsRunId,
+    plannedTasks,
+    scheduledVisibleTasks,
+    transportOutTasks,
+    unplannedTasks: numberOrNull(diagnostics?.unplannedTasks ?? diagnostics?.summary?.unplannedTasks),
+    diagnosticsReady: runId !== null && diagnosticsRunId === runId,
+    appliedAt: diagnostics?.appliedAt ?? diagnostics?.applied_at ?? null,
+    tasksUpdatedAt: diagnostics?.tasksUpdatedAt ?? diagnostics?.tasks_updated_at ?? null,
+  };
+};
+
 const normalize = (value: unknown): string => String(value ?? "")
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "")

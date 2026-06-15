@@ -55,6 +55,16 @@ export type EngineDiagnosticsMetadata = {
   coachWaveReason?: string | null;
   coachWaveBefore?: Record<string, unknown> | null;
   coachWaveAfter?: Record<string, unknown> | null;
+  productionWaveAttempted?: boolean | null;
+  productionWaveAnchorsFound?: number | null;
+  productionWaveCandidatesGenerated?: number | null;
+  productionWaveAccepted?: boolean | null;
+  productionWaveReason?: string | null;
+  productionWaveRejectedReasons?: string[] | null;
+  productionWaveCandidateMetrics?: Array<Record<string, unknown>> | null;
+  productionWaveBestBefore?: Record<string, unknown> | null;
+  productionWaveBestAfter?: Record<string, unknown> | null;
+  productionWaveComparison?: Record<string, unknown> | null;
   segmentSolverAttempted?: boolean | null;
   segmentSolverBackend?: string | null;
   segmentSolverSegmentsBuilt?: number | null;
@@ -135,6 +145,8 @@ export type EngineDiagnosticsMetadata = {
   segmentSolverPrimaryStageFixedIntervals?: Array<Record<string, unknown>> | null;
   segmentSolverPrimaryStagePrunedCandidates?: number | null;
   segmentSolverPrimaryStagePruneReasons?: string[] | null;
+  segmentSolverPrimaryStageGuardMisses?: number | null;
+  segmentSolverPrimaryStageGuardMissDetails?: Array<Record<string, unknown>> | null;
   pipelineBuilderAttempted?: boolean | null;
   pipelineCandidatesGenerated?: number | null;
   pipelineAccepted?: boolean | null;
