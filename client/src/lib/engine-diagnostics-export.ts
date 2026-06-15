@@ -208,6 +208,17 @@ export type EngineDiagnosticsSnapshot = {
     coachWaveBefore: CompactJsonValue;
     coachWaveAfter: CompactJsonValue;
     productionWaveAttempted: boolean;
+    productionWaveInvocationPoint: string;
+    productionWaveInputTaskCount: number;
+    productionWaveInputPlannedTasks: number;
+    productionWaveInputMainStageTasks: number;
+    productionWaveInputCoachCount: number;
+    productionWaveInputTalentCount: number;
+    productionWaveAnchorDetectionAttempted: boolean;
+    productionWaveAnchorDetectionReason: string;
+    productionWaveAnchorDetectionRejectedReasons: CompactJsonValue;
+    productionWaveAnchorCandidatesInspected: number;
+    productionWaveAnchorCandidateSamples: CompactJsonValue;
     productionWaveAnchorsFound: number;
     productionWaveCandidatesGenerated: number;
     productionWaveAccepted: boolean;
@@ -290,6 +301,7 @@ export type EngineDiagnosticsSnapshot = {
     segmentSolverPrimaryStageFixedIntervals: CompactJsonValue;
     segmentSolverPrimaryStagePrunedCandidates: number;
     segmentSolverPrimaryStagePruneReasons: CompactJsonValue;
+    segmentSolverPrimaryStagePruneDetails: CompactJsonValue;
     segmentSolverPrimaryStageGuardMisses: number;
     segmentSolverPrimaryStageGuardMissDetails: CompactJsonValue;
     pipelineBuilderAttempted: boolean;
@@ -421,6 +433,17 @@ export function buildEngineDiagnosticsSnapshot(
       coachWaveBefore: compactJsonValue(metadata.coachWaveBefore) ?? {},
       coachWaveAfter: compactJsonValue(metadata.coachWaveAfter) ?? {},
       productionWaveAttempted: optionalBoolean(metadata.productionWaveAttempted) ?? false,
+      productionWaveInvocationPoint: optionalString(metadata.productionWaveInvocationPoint) ?? "not_invoked",
+      productionWaveInputTaskCount: optionalNumber(metadata.productionWaveInputTaskCount) ?? 0,
+      productionWaveInputPlannedTasks: optionalNumber(metadata.productionWaveInputPlannedTasks) ?? 0,
+      productionWaveInputMainStageTasks: optionalNumber(metadata.productionWaveInputMainStageTasks) ?? 0,
+      productionWaveInputCoachCount: optionalNumber(metadata.productionWaveInputCoachCount) ?? 0,
+      productionWaveInputTalentCount: optionalNumber(metadata.productionWaveInputTalentCount) ?? 0,
+      productionWaveAnchorDetectionAttempted: optionalBoolean(metadata.productionWaveAnchorDetectionAttempted) ?? false,
+      productionWaveAnchorDetectionReason: optionalString(metadata.productionWaveAnchorDetectionReason) ?? "not_attempted",
+      productionWaveAnchorDetectionRejectedReasons: compactJsonValue(metadata.productionWaveAnchorDetectionRejectedReasons) ?? [],
+      productionWaveAnchorCandidatesInspected: optionalNumber(metadata.productionWaveAnchorCandidatesInspected) ?? 0,
+      productionWaveAnchorCandidateSamples: compactJsonValue(metadata.productionWaveAnchorCandidateSamples) ?? [],
       productionWaveAnchorsFound: optionalNumber(metadata.productionWaveAnchorsFound) ?? 0,
       productionWaveCandidatesGenerated: optionalNumber(metadata.productionWaveCandidatesGenerated) ?? 0,
       productionWaveAccepted: optionalBoolean(metadata.productionWaveAccepted) ?? false,
@@ -503,6 +526,7 @@ export function buildEngineDiagnosticsSnapshot(
       segmentSolverPrimaryStageFixedIntervals: compactJsonValue(Array.isArray(metadata.segmentSolverPrimaryStageFixedIntervals) ? metadata.segmentSolverPrimaryStageFixedIntervals.slice(0, 10) : []) ?? [],
       segmentSolverPrimaryStagePrunedCandidates: optionalNumber(metadata.segmentSolverPrimaryStagePrunedCandidates) ?? 0,
       segmentSolverPrimaryStagePruneReasons: compactJsonValue(metadata.segmentSolverPrimaryStagePruneReasons) ?? [],
+      segmentSolverPrimaryStagePruneDetails: compactJsonValue(metadata.segmentSolverPrimaryStagePruneDetails) ?? [],
       segmentSolverPrimaryStageGuardMisses: optionalNumber(metadata.segmentSolverPrimaryStageGuardMisses) ?? 0,
       segmentSolverPrimaryStageGuardMissDetails: compactJsonValue(metadata.segmentSolverPrimaryStageGuardMissDetails) ?? [],
       pipelineBuilderAttempted: optionalBoolean(metadata.pipelineBuilderAttempted) ?? false,

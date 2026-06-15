@@ -28,6 +28,19 @@ test("expected OUT comes from stable diagnostics, never from the incomplete visu
   assert.equal(countRenderedPlanningTasks(Array.from({ length: 174 }, () => ({ startPlanned: "10:00", endPlanned: "10:05" }))).visibleTransportOutCount, 0);
 });
 
+test("expected OUT sums diagnostics transport groups and releases only at 19/19", () => {
+  const expectation = derivePlanningReadinessExpectation({
+    id: 206,
+    plannedTasks: 193,
+    unplannedTasks: 0,
+    transportSummary: { groups: [{ direction: "IN", taskCount: 19 }, { direction: "OUT", taskCount: 10 }, { direction: "OUT", taskCount: 9 }] },
+  }, 206);
+  assert.equal(expectation.transportOutTasks, 19);
+  assert.equal(expectation.expectedSource, "diagnostics.transportSummary.groups");
+  assert.equal(evaluatePlanningReadyGate({ ...readyInput, visibleTransportOutCount: 0 }).planningReady, false);
+  assert.equal(evaluatePlanningReadyGate({ ...readyInput, visibleTransportOutCount: 19 }).planningReady, true);
+});
+
 test("complete tasks with stale diagnostics and ready diagnostics with incomplete tasks stay blocked", () => {
   assert.equal(evaluatePlanningReadyGate({ ...readyInput, diagnosticsRunId: 205 }).planningReady, false);
   assert.equal(evaluatePlanningReadyGate({ ...readyInput, visibleScheduledTasksCount: 174, visibleTransportOutCount: 0 }).planningReady, false);

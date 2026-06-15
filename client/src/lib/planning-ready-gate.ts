@@ -21,6 +21,7 @@ export type PlanningReadinessExpectation = {
   plannedTasks: number | null;
   scheduledVisibleTasks: number | null;
   transportOutTasks: number;
+  expectedSource: string;
   unplannedTasks: number | null;
   diagnosticsReady: boolean;
   appliedAt: string | null;
@@ -36,16 +37,27 @@ export const derivePlanningReadinessExpectation = (diagnostics: any, runId: numb
     ?? diagnostics?.operationalQuality?.counts?.scheduledTasksAnalyzed
     ?? plannedTasks,
   );
+  const groupOutTasks = Array.isArray(diagnostics?.transportSummary?.groups)
+    ? diagnostics.transportSummary.groups
+      .filter((group: any) => normalize(group?.direction) === "out")
+      .reduce((sum: number, group: any) => sum + (numberOrNull(group?.taskCount ?? group?.count ?? group?.tasks) ?? 0), 0)
+    : null;
   const transportOutTasks = numberOrNull(
     diagnostics?.transportOutTasks
     ?? diagnostics?.operationalQuality?.counts?.transportOutTasksAnalyzed
+    ?? groupOutTasks
     ?? diagnostics?.transportSummary?.outTasks,
   ) ?? 0;
+  const expectedSource = numberOrNull(diagnostics?.transportOutTasks) !== null ? "diagnostics.transportOutTasks"
+    : numberOrNull(diagnostics?.operationalQuality?.counts?.transportOutTasksAnalyzed) !== null ? "diagnostics.operationalQuality.counts.transportOutTasksAnalyzed"
+      : groupOutTasks !== null ? "diagnostics.transportSummary.groups"
+        : numberOrNull(diagnostics?.transportSummary?.outTasks) !== null ? "diagnostics.transportSummary.outTasks" : "unavailable";
   return {
     runId: diagnosticsRunId,
     plannedTasks,
     scheduledVisibleTasks,
     transportOutTasks,
+    expectedSource,
     unplannedTasks: numberOrNull(diagnostics?.unplannedTasks ?? diagnostics?.summary?.unplannedTasks),
     diagnosticsReady: runId !== null && diagnosticsRunId === runId,
     appliedAt: diagnostics?.appliedAt ?? diagnostics?.applied_at ?? null,
