@@ -153,8 +153,8 @@ export function useCreatePlan() {
 export function useGeneratePlan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, mode, timeLimitMs, signal }: { id: number; mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending"; timeLimitMs?: number; signal?: AbortSignal }) =>
-      apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { ...(mode ? { mode } : {}), ...(timeLimitMs ? { timeLimitMs } : {}) }, { signal }),
+    mutationFn: ({ id, mode, timeLimitMs, engineVersion, signal }: { id: number; mode?: "full" | "only_unplanned" | "replan_pending_respecting_locks" | "generate_planning" | "plan_pending"; timeLimitMs?: number; engineVersion?: "v3" | "v4"; signal?: AbortSignal }) =>
+      apiRequest("POST", buildUrl(api.plans.generate.path, { id }), { ...(mode ? { mode } : {}), ...(timeLimitMs ? { timeLimitMs } : {}), ...(engineVersion ? { engineVersion } : {}) }, { signal }),
     onSuccess: async (_data, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: planQueryKey(variables.id) }),

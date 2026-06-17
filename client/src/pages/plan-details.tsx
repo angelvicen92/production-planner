@@ -746,6 +746,12 @@ export default function PlanDetailsPage() {
 
   const generatePlan = useGeneratePlan();
   const planningRunQ = usePlanningRun(id);
+  const [selectedPlanningEngine, setSelectedPlanningEngine] = useState<"v3" | "v4">("v3");
+  const v4ResultQ = useQuery({
+    queryKey: ["engine-result", id, "v4"],
+    queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestEngineResult.path, { id, engineVersion: "v4" })),
+    enabled: Number.isFinite(id) && id > 0,
+  });
 
   const updatePlan = useUpdatePlan();
   const { nowTime, nowSeconds } = useProductionClock();
@@ -1623,6 +1629,28 @@ ${reasonMessage}` : message,
     );
   }, [plan?.dailyTasks]);
 
+  const planningViewPlan = useMemo(() => {
+    if (selectedPlanningEngine !== "v4" || !Array.isArray((v4ResultQ.data as any)?.plannedTasks)) return plan;
+    const plannedByTaskId = new Map<number, any>(
+      ((v4ResultQ.data as any)?.plannedTasks ?? [])
+        .map((item: any) => [Number(item?.taskId), item])
+        .filter(([taskId]: [number, any]) => Number.isFinite(taskId) && taskId > 0),
+    );
+    return {
+      ...(plan as any),
+      dailyTasks: ((plan?.dailyTasks ?? []) as any[]).map((task: any) => {
+        const planned = plannedByTaskId.get(Number(task?.id));
+        if (!planned) return task;
+        return {
+          ...task,
+          startPlanned: planned.startPlanned,
+          endPlanned: planned.endPlanned,
+          assignedResourceIds: planned.assignedResources ?? task.assignedResourceIds,
+        };
+      }),
+    };
+  }, [plan, selectedPlanningEngine, v4ResultQ.data]);
+
   const reasonsByTaskId = useMemo(() => {
     const map = new Map<number, any>();
     const reasons = Array.isArray(planningRunQ.data?.lastReasons) ? planningRunQ.data?.lastReasons : [];
@@ -2188,7 +2216,26 @@ ${reasonMessage}` : message,
               )}
               {generatePlan.isPending
                 ? "Planificando..."
-                : "Generar/Recalcular"}
+                : "Generar V3"}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000, engineVersion: "v4" });
+                  await queryClient.invalidateQueries({ queryKey: ["engine-result", id, "v4"] });
+                  await queryClient.refetchQueries({ queryKey: ["engine-result", id, "v4"] });
+                  setSelectedPlanningEngine("v4");
+                  toast({ title: "Planificación V4 generada", description: "Guardada separada de V3; la lógica real V4 aún no está implementada." });
+                } catch (err: any) {
+                  toast({ title: "No se pudo generar V4", description: err?.message || "Error desconocido", variant: "destructive" });
+                }
+              }}
+              disabled={generatePlan.isPending}
+            >
+              {generatePlan.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
+              Generar V4
             </Button>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Límite</span>
@@ -3690,6 +3737,22 @@ ${reasonMessage}` : message,
 
           <TabsContent value="planning" className="mt-0">
             <div className="space-y-4">
+              <Card className="p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">Planificación consultada</div>
+                    <div className="text-xs text-muted-foreground">V3 escribe en el plan actual; V4 se guarda como resultado paralelo separado.</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={selectedPlanningEngine === "v3" ? "default" : "outline"} onClick={() => setSelectedPlanningEngine("v3")}>
+                      Ver planificación V3
+                    </Button>
+                    <Button type="button" size="sm" variant={selectedPlanningEngine === "v4" ? "default" : "outline"} onClick={() => setSelectedPlanningEngine("v4")}>
+                      Ver planificación V4
+                    </Button>
+                  </div>
+                </div>
+              </Card>
               <PlanEngineDiagnostics
                 planId={id}
                 tasks={plan?.dailyTasks as unknown[] | undefined}
@@ -3698,6 +3761,31 @@ ${reasonMessage}` : message,
                 planningActive={planningInProgress || getPlanningRunUiState(planningRunQ.data) === "active"}
                 latestSuccessRunId={planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null}
               />
+              {selectedPlanningEngine === "v4" ? (
+                <Card className="p-4">
+                  <CardHeader className="p-0 pb-3">
+                    <CardTitle className="text-base">Diagnosis Motor V4</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 text-sm">
+                    {v4ResultQ.isLoading ? (
+                      <p className="text-muted-foreground">Cargando diagnosis V4…</p>
+                    ) : v4ResultQ.error ? (
+                      <Alert variant="destructive"><AlertTitle>Error V4</AlertTitle><AlertDescription>No se pudo cargar la diagnosis V4.</AlertDescription></Alert>
+                    ) : !(v4ResultQ.data as any)?.diagnostics ? (
+                      <p className="text-muted-foreground">Todavía no existe planificación V4 para este plan.</p>
+                    ) : (
+                      <div className="grid gap-2 md:grid-cols-3">
+                        <div><span className="font-medium">Estado:</span> {String((v4ResultQ.data as any).status ?? (v4ResultQ.data as any).diagnostics?.status ?? "—")}</div>
+                        <div><span className="font-medium">Motor:</span> {String((v4ResultQ.data as any).diagnostics?.engineVersion ?? "v4")}</div>
+                        <div><span className="font-medium">Timestamp:</span> {String((v4ResultQ.data as any).diagnostics?.generatedAt ?? (v4ResultQ.data as any).createdAt ?? "—")}</div>
+                        <div><span className="font-medium">Tareas planificadas:</span> {Number((v4ResultQ.data as any).diagnostics?.plannedTasks ?? 0)}</div>
+                        <div><span className="font-medium">Tareas no planificadas:</span> {Number((v4ResultQ.data as any).diagnostics?.unplannedTasks ?? 0)}</div>
+                        <div className="md:col-span-3 text-amber-700">{String((v4ResultQ.data as any).diagnostics?.warning ?? "La lógica V4 real aún no está implementada.")}</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : null}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-semibold">Visual Timeline</h2>
@@ -3773,7 +3861,7 @@ ${reasonMessage}` : message,
                   </Badge>
                   <Badge variant="outline" className="bg-emerald-50/50">
                     Tasks:{" "}
-                    {plan.dailyTasks?.filter((t: any) => t.startPlanned).length}
+                    {(planningViewPlan as any)?.dailyTasks?.filter((t: any) => t.startPlanned).length}
                   </Badge>
                   <Button
                     type="button"
@@ -4088,7 +4176,7 @@ ${reasonMessage}` : message,
                     setExpectedPlanningRunId(null);
                     toast({ title: "Planificación lista" });
                   }}
-                  plan={plan as any}
+                  plan={planningViewPlan as any}
                   contestants={contestants as any}
                   viewMode={timelineView}
                   spaceVerticalMode={spaceVerticalMode}

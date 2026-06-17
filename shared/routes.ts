@@ -41,7 +41,7 @@ export const updatePlanSchema = z
   camerasAvailable: z.number().int().min(0).max(20).optional(),
 
   // ✅ Permite elegir motor por plan
-  optimizerEngine: z.enum(["v3"]).optional(),
+  optimizerEngine: z.enum(["v3", "v4"]).optional(),
 })
 .strict();
 
@@ -86,6 +86,10 @@ export const api = {
     latestEngineDiagnostics: {
       method: "GET" as const,
       path: "/api/plans/:id/engine-diagnostics/latest",
+    },
+    latestEngineResult: {
+      method: "GET" as const,
+      path: "/api/plans/:id/engine-results/:engineVersion/latest",
     },
   },
   // Staff catalog (Producción / Redacción)
@@ -341,6 +345,7 @@ export const api = {
         .object({
           mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
           timeLimitMs: z.number().int().positive().max(300000).optional(),
+          engineVersion: z.enum(["v3", "v4"]).optional(),
         })
         .strict()
         .optional(),
