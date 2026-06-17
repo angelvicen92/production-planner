@@ -107,3 +107,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 062 — 2026-06-17 00:00 — Infraestructura paralela Motor V4 con resultados y diagnosis separados
 
 - ID 063 — 2026-06-17 00:00 — V4 Strategic Analysis Layer
+- ID 064 — 2026-06-17 00:00 — V4 Main Flow Sequence Builder

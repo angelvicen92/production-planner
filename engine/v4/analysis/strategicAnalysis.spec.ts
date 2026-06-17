@@ -39,6 +39,10 @@ test("V4 strategic analysis detects main flow, continuous spaces, pressures and 
   assert.equal(analysis.criticalTalents[0]?.id, 100);
   assert.equal(analysis.criticalResources[0]?.id, 501);
   assert.equal(analysis.criticalSpaces[0]?.id, 10);
+  assert.equal(analysis.mainFlowCandidates[0]?.talentId, 100);
+  assert.equal(analysis.mainFlowSequence[0]?.talentId, 100);
+  assert.ok(analysis.mainFlowSequence[0]?.score > 0);
+  assert.ok(analysis.costOfDelayRanking[0]?.costOfDelay > 0);
   assert.ok(["MEDIUM", "HIGH", "CRITICAL"].includes(analysis.riskScore));
 });
 
@@ -47,4 +51,5 @@ test("V4 strategic analysis warns but continues without a main flow", () => {
   assert.equal(analysis.mainFlow, null);
   assert.ok(analysis.warnings.some((warning) => warning.code === "V4_MAIN_FLOW_NOT_CONFIGURED"));
   assert.ok(Array.isArray(analysis.criticalSpaces));
+  assert.deepEqual(analysis.mainFlowSequence, []);
 });
