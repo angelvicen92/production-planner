@@ -194,6 +194,7 @@ export function PlanEngineDiagnostics({
   }
 
   const metadata = diagnostics.engineMetadata ?? {};
+  const v4Quality = (metadata as any)?.quality ?? (diagnostics as any)?.quality ?? null;
   const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
     ? diagnostics.diagnosticWarnings.resourceDiagnosticWarnings
     : [];
@@ -365,6 +366,59 @@ export function PlanEngineDiagnostics({
             <MetricCell title="Cambios de coach" value={metric(diagnostics.coachSwitchCount)} />
             <MetricCell title="Offset talento restrictivo" value={metric(diagnostics.restrictiveTalentAverageStartOffset, " min")} />
           </div>
+        </section>
+
+        <section aria-labelledby="diagnostics-v4-quality">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 id="diagnostics-v4-quality" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              V4 Quality
+            </h3>
+            {v4Quality?.grade ? <Badge variant="outline">{label(v4Quality.grade)}</Badge> : null}
+          </div>
+          {v4Quality ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <MetricCell title="Quality Score" value={metric(v4Quality?.qualityScore)} />
+                <MetricCell title="Main Flow Continuity" value={metric(v4Quality?.mainFlowQuality?.continuityPercent, "%")} />
+                <MetricCell title="Makespan" value={v4Quality?.makespan?.lastTaskEnd ? String(v4Quality.makespan.lastTaskEnd) : "—"} />
+                <MetricCell title="Permanencia media" value={metric(v4Quality?.talentStayTime?.averageStayMinutes, " min")} />
+              </div>
+              <p className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                {v4Quality?.summary ?? "Quality summary no disponible."}
+              </p>
+              <div className="grid gap-3 lg:grid-cols-3">
+                <div className="rounded-md border px-3 py-2 text-sm">
+                  <div className="font-medium">Main Flow</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {metric(v4Quality?.mainFlowQuality?.internalGapCount)} gaps · {metric(v4Quality?.mainFlowQuality?.internalGapMinutes, " min")} internos · máximo {metric(v4Quality?.mainFlowQuality?.maxInternalGapMinutes, " min")}
+                  </p>
+                </div>
+                <div className="rounded-md border px-3 py-2 text-sm">
+                  <div className="font-medium">Talent Stay Summary</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {metric(v4Quality?.talentStayTime?.talentCount)} talents · máximo {metric(v4Quality?.talentStayTime?.maxStayMinutes, " min")} · total {metric(v4Quality?.talentStayTime?.totalStayMinutes, " min")}
+                  </p>
+                </div>
+                <div className="rounded-md border px-3 py-2 text-sm">
+                  <div className="font-medium">Critical Resource Summary</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {Array.isArray(v4Quality?.criticalResourceUsage) ? v4Quality.criticalResourceUsage.length : 0} recursos · {metric(v4Quality?.risk?.affectedCriticalResources?.length)} afectados por unplanned
+                  </p>
+                </div>
+              </div>
+              {Array.isArray(v4Quality?.warnings) && v4Quality.warnings.length ? (
+                <Alert>
+                  <TriangleAlert className="h-4 w-4" />
+                  <AlertTitle>Warnings V4 Quality</AlertTitle>
+                  <AlertDescription>{v4Quality.warnings.slice(0, 3).join(" · ")}</AlertDescription>
+                </Alert>
+              ) : null}
+            </div>
+          ) : (
+            <p className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+              Esta ejecución no incluye todavía evaluación de calidad V4.
+            </p>
+          )}
         </section>
 
         <div className="grid gap-5 lg:grid-cols-2">
