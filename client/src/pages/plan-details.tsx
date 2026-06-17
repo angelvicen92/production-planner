@@ -728,6 +728,7 @@ function PlanStaffRolesTab({
 function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoading: boolean; error: unknown }) {
   const diagnostics = result?.diagnostics ?? null;
   const analysis = diagnostics?.strategicAnalysis ?? null;
+  const guidedOrdering = diagnostics?.guidedOrdering ?? null;
   const list = (value: unknown) => Array.isArray(value) ? value : [];
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
@@ -752,6 +753,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const criticalSpaces = list(analysis?.criticalSpaces);
   const mainFlowSequence = list(analysis?.mainFlowSequence);
   const costOfDelayRanking = list(analysis?.costOfDelayRanking);
+  const priorityBuckets = list(guidedOrdering?.priorityBuckets);
+  const topOrderedTasks = list(guidedOrdering?.topOrderedTasks);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -836,6 +839,38 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
           ) : <p className="text-sm text-muted-foreground">Sin ranking de coste de demora.</p>}
         </section>
       </div>
+
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Guided Ordering</h3>
+          <Badge variant={guidedOrdering?.applied ? "default" : "outline"}>
+            {guidedOrdering?.applied ? "Aplicado" : "No aplicado"}
+          </Badge>
+        </div>
+        {guidedOrdering ? (
+          <div className="space-y-2 text-sm">
+            <div className="grid gap-2 md:grid-cols-2">
+              <div><span className="font-medium">Tareas reordenadas:</span> {Number(guidedOrdering?.reorderedTaskCount ?? 0)}</div>
+              <div><span className="font-medium">Top tareas:</span> {topOrderedTasks.length ? topOrderedTasks.slice(0, 10).map(String).join(", ") : "—"}</div>
+            </div>
+            <p className="text-muted-foreground">{String(guidedOrdering?.reason ?? "Sin motivo registrado.")}</p>
+            {priorityBuckets.length ? (
+              <ul className="grid gap-2 md:grid-cols-2">
+                {priorityBuckets.map((bucket: any, index: number) => (
+                  <li key={`${bucket?.name ?? "bucket"}-${index}`} className="rounded border p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{String(bucket?.name ?? "Prioridad")}</span>
+                      <Badge variant="outline">{Number(bucket?.taskCount ?? 0)} tareas</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{String(bucket?.reason ?? "—")}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-muted-foreground">No hay buckets de prioridad para mostrar.</p>}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene guided ordering.</p>}
+      </section>
 
       <div className="grid gap-3 md:grid-cols-3">
         <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Talents</h3>{renderCritical(criticalTalents, "Sin talentos críticos detectados.")}</section>
