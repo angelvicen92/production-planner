@@ -729,6 +729,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const diagnostics = result?.diagnostics ?? null;
   const analysis = diagnostics?.strategicAnalysis ?? null;
   const guidedOrdering = diagnostics?.guidedOrdering ?? null;
+  const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
   const list = (value: unknown) => Array.isArray(value) ? value : [];
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
@@ -755,6 +756,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const costOfDelayRanking = list(analysis?.costOfDelayRanking);
   const priorityBuckets = list(guidedOrdering?.priorityBuckets);
   const topOrderedTasks = list(guidedOrdering?.topOrderedTasks);
+  const improvementMoves = list(mainFlowImprovement?.moves);
+  const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -870,6 +873,43 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
             ) : <p className="text-sm text-muted-foreground">No hay buckets de prioridad para mostrar.</p>}
           </div>
         ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene guided ordering.</p>}
+      </section>
+
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Main Flow Improvement</h3>
+          <Badge variant={mainFlowImprovement?.applied ? "default" : "outline"}>
+            {mainFlowImprovement?.applied ? "Aplicado" : "No aplicado"}
+          </Badge>
+        </div>
+        {mainFlowImprovement ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-4">
+              <div><span className="font-medium">Gaps antes:</span> {Number(mainFlowImprovement?.gapsBefore ?? 0)}</div>
+              <div><span className="font-medium">Gaps después:</span> {Number(mainFlowImprovement?.gapsAfter ?? mainFlowImprovement?.gapsBefore ?? 0)}</div>
+              <div><span className="font-medium">Min antes:</span> {Number(mainFlowImprovement?.gapMinutesBefore ?? 0)}</div>
+              <div><span className="font-medium">Min después:</span> {Number(mainFlowImprovement?.gapMinutesAfter ?? mainFlowImprovement?.gapMinutesBefore ?? 0)}</div>
+            </div>
+            {!mainFlowImprovement?.applied ? <p className="text-muted-foreground">{String(mainFlowImprovement?.reason ?? "No se encontró mejora segura.")}</p> : null}
+            <div>
+              <div className="font-medium">Movimientos realizados</div>
+              {improvementMoves.length ? (
+                <ul className="mt-1 space-y-1">{improvementMoves.map((move: any, index: number) => (
+                  <li key={`${move?.taskId ?? "move"}-${index}`} className="rounded border p-2 text-xs">
+                    Tarea {String(move?.taskId ?? "—")} → {String(move?.toStart ?? "—")}-{String(move?.toEnd ?? "—")} (gap {String(move?.coveredGapStart ?? "—")}-{String(move?.coveredGapEnd ?? "—")})
+                  </li>
+                ))}</ul>
+              ) : <p className="text-xs text-muted-foreground">Sin movimientos aplicados.</p>}
+            </div>
+            <div>
+              <div className="font-medium">Motivos de descarte</div>
+              {improvementSkippedReasons.length ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-muted-foreground">{improvementSkippedReasons.slice(0, 8).map((reason: any, index: number) => <li key={`${String(reason)}-${index}`}>{String(reason)}</li>)}</ul>
+              ) : <p className="text-xs text-muted-foreground">Sin descartes registrados.</p>}
+            </div>
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene main flow improvement.</p>}
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
