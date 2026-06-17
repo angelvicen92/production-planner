@@ -750,6 +750,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const criticalTalents = list(analysis?.criticalTalents);
   const criticalResources = list(analysis?.criticalResources);
   const criticalSpaces = list(analysis?.criticalSpaces);
+  const mainFlowSequence = list(analysis?.mainFlowSequence);
+  const costOfDelayRanking = list(analysis?.costOfDelayRanking);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -764,6 +766,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
       ))}
     </ul>
   ) : <p className="text-muted-foreground">{empty}</p>;
+
+  const renderReasons = (item: any) => list(item?.reasons).slice(0, 3).map(String).join(" · ") || "—";
 
   return (
     <div className="space-y-4">
@@ -789,6 +793,47 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
           {continuousSpaces.length ? (
             <ul className="text-sm">{continuousSpaces.map((space: any) => <li key={space?.id}>{String(space?.name ?? space?.id)} · {Number(space?.totalLoadMinutes ?? 0)} min · ocupación {score(space?.estimatedOccupancy)}</li>)}</ul>
           ) : <p className="text-sm text-muted-foreground">No hay espacios continuos detectados.</p>}
+        </section>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="rounded-lg border p-3">
+          <h3 className="mb-2 font-medium">Main Flow Sequence</h3>
+          {mainFlowSequence.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-1 pr-2">#</th><th className="py-1 pr-2">Talent</th><th className="py-1 pr-2">Score</th><th className="py-1">Motivos principales</th></tr>
+                </thead>
+                <tbody>
+                  {mainFlowSequence.map((item: any, index: number) => (
+                    <tr key={`${item?.talentId}-${index}`} className="border-t align-top">
+                      <td className="py-2 pr-2">{index + 1}</td>
+                      <td className="py-2 pr-2 font-medium">{String(item?.talentName ?? item?.talentId ?? "—")}</td>
+                      <td className="py-2 pr-2"><Badge variant="outline">{score(item?.score)}</Badge></td>
+                      <td className="py-2 text-muted-foreground">{renderReasons(item)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">No hay talentos candidatos para atravesar el flujo principal.</p>}
+        </section>
+        <section className="rounded-lg border p-3">
+          <h3 className="mb-2 font-medium">Cost Of Delay Ranking</h3>
+          {costOfDelayRanking.length ? (
+            <ul className="space-y-2">
+              {costOfDelayRanking.map((item: any, index: number) => (
+                <li key={`${item?.talentId}-${index}`} className="rounded border p-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{index + 1}. {String(item?.talentName ?? item?.talentId ?? "—")}</span>
+                    <Badge variant={Number(item?.costOfDelay ?? 0) >= 75 ? "destructive" : "secondary"}>{score(item?.costOfDelay)}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{renderReasons(item)}</div>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="text-sm text-muted-foreground">Sin ranking de coste de demora.</p>}
         </section>
       </div>
 
