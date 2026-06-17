@@ -5058,6 +5058,15 @@ function normalizeHexColor(value: unknown): string | null {
 
         if (totalPending === 0) {
           const finishedAt = new Date().toISOString();
+          const engineInput = await buildEngineInput(planId, storage);
+          const v4 = generatePlanV4({ ...engineInput, tasks: [] }, { requestId: requestId ?? undefined, timeLimitMs: 1 });
+          const diagnostics = {
+            ...v4.diagnostics,
+            generatedAt: finishedAt,
+            plannedTasks: 0,
+            unplannedTasks: 0,
+            warning: "La lógica real del Motor V4 aún no está implementada.",
+          };
           await supabaseAdmin
             .from("planning_runs")
             .update({
@@ -5068,10 +5077,7 @@ function normalizeHexColor(value: unknown): string | null {
               planned_count: 0,
               planned_tasks: 0,
               unplanned_tasks: 0,
-              engine_metadata: {
-                warning: "La lógica real del Motor V4 aún no está implementada.",
-                generatedAt: finishedAt,
-              },
+              engine_metadata: diagnostics,
               finished_at: finishedAt,
               updated_at: finishedAt,
             })
@@ -5084,14 +5090,7 @@ function normalizeHexColor(value: unknown): string | null {
             status: "success",
             planned_tasks: [],
             unplanned_tasks: [],
-            diagnostics: {
-              status: "success",
-              engineVersion: "v4",
-              generatedAt: finishedAt,
-              plannedTasks: 0,
-              unplannedTasks: 0,
-              warning: "La lógica real del Motor V4 aún no está implementada.",
-            },
+            diagnostics,
           });
           return res.json({ success: true, hardFeasible: true, complete: true, feasible: true, planId, tasksUpdated: 0, warnings: [], planningStats: {}, reasons: [], unplanned: [], insights: [], runId: planningRunId, engineVersion: "v4", message: "No hay tareas pendientes que planificar con V4" });
         }

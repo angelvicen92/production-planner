@@ -725,6 +725,82 @@ function PlanStaffRolesTab({
   );
 }
 
+function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoading: boolean; error: unknown }) {
+  const diagnostics = result?.diagnostics ?? null;
+  const analysis = diagnostics?.strategicAnalysis ?? null;
+  const list = (value: unknown) => Array.isArray(value) ? value : [];
+  const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
+  const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
+
+  if (isLoading) {
+    return <p className="text-muted-foreground">Cargando diagnosis V4…</p>;
+  }
+  if (error) {
+    return <Alert variant="destructive"><AlertTitle>Error V4</AlertTitle><AlertDescription>No se pudo cargar la diagnosis V4.</AlertDescription></Alert>;
+  }
+  if (!diagnostics) {
+    return <p className="text-muted-foreground">Todavía no existe planificación V4 para este plan.</p>;
+  }
+  if (!analysis) {
+    return <p className="text-muted-foreground">La diagnosis V4 no contiene análisis estratégico todavía.</p>;
+  }
+
+  const mainFlow = analysis?.mainFlow ?? null;
+  const continuousSpaces = list(analysis?.continuousSpaces);
+  const criticalTalents = list(analysis?.criticalTalents);
+  const criticalResources = list(analysis?.criticalResources);
+  const criticalSpaces = list(analysis?.criticalSpaces);
+
+  const renderCritical = (items: any[], empty: string) => items.length ? (
+    <ul className="space-y-1">
+      {items.map((item: any) => (
+        <li key={`${item?.id}-${item?.name}`} className="rounded border p-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium">{String(item?.name ?? item?.id ?? "—")}</span>
+            <Badge variant="outline">{score(item?.pressureScore)}</Badge>
+          </div>
+          <div className="text-xs text-muted-foreground">{Number(item?.taskCount ?? 0)} tareas · {Number(item?.totalDurationMinutes ?? 0)} min</div>
+        </li>
+      ))}
+    </ul>
+  ) : <p className="text-muted-foreground">{empty}</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 md:grid-cols-3">
+        <div><span className="font-medium">Estado:</span> {String(result?.status ?? diagnostics?.status ?? "—")}</div>
+        <div><span className="font-medium">Motor:</span> {String(diagnostics?.engineVersion ?? "v4")}</div>
+        <div><span className="font-medium">Timestamp:</span> {String(diagnostics?.generatedAt ?? result?.createdAt ?? "—")}</div>
+        <div><span className="font-medium">Tareas planificadas:</span> {Number(diagnostics?.plannedTasks ?? 0)}</div>
+        <div><span className="font-medium">Tareas no planificadas:</span> {Number(diagnostics?.unplannedTasks ?? 0)}</div>
+        <div><span className="font-medium">Risk Score:</span> <Badge variant={riskVariant as any}>{String(analysis?.riskScore ?? "—")}</Badge></div>
+        <div className="md:col-span-3 text-amber-700">{String(diagnostics?.warning ?? "La lógica V4 real aún no está implementada.")}</div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <section className="rounded-lg border p-3">
+          <h3 className="font-medium">Main Flow</h3>
+          {mainFlow ? (
+            <p className="text-sm">{String(mainFlow?.name ?? "—")} · prioridad {String(mainFlow?.priority ?? "—")} · id {String(mainFlow?.id ?? "—")}</p>
+          ) : <p className="text-sm text-muted-foreground">No hay flujo principal configurado.</p>}
+        </section>
+        <section className="rounded-lg border p-3">
+          <h3 className="font-medium">Continuous Spaces</h3>
+          {continuousSpaces.length ? (
+            <ul className="text-sm">{continuousSpaces.map((space: any) => <li key={space?.id}>{String(space?.name ?? space?.id)} · {Number(space?.totalLoadMinutes ?? 0)} min · ocupación {score(space?.estimatedOccupancy)}</li>)}</ul>
+          ) : <p className="text-sm text-muted-foreground">No hay espacios continuos detectados.</p>}
+        </section>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Talents</h3>{renderCritical(criticalTalents, "Sin talentos críticos detectados.")}</section>
+        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Resources</h3>{renderCritical(criticalResources, "Sin recursos críticos detectados.")}</section>
+        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Spaces</h3>{renderCritical(criticalSpaces, "Sin espacios críticos detectados.")}</section>
+      </div>
+    </div>
+  );
+}
+
 export default function PlanDetailsPage() {
   const params = useParams();
   const id = parseInt(params.id || "0");
@@ -3767,22 +3843,7 @@ ${reasonMessage}` : message,
                     <CardTitle className="text-base">Diagnosis Motor V4</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 text-sm">
-                    {v4ResultQ.isLoading ? (
-                      <p className="text-muted-foreground">Cargando diagnosis V4…</p>
-                    ) : v4ResultQ.error ? (
-                      <Alert variant="destructive"><AlertTitle>Error V4</AlertTitle><AlertDescription>No se pudo cargar la diagnosis V4.</AlertDescription></Alert>
-                    ) : !(v4ResultQ.data as any)?.diagnostics ? (
-                      <p className="text-muted-foreground">Todavía no existe planificación V4 para este plan.</p>
-                    ) : (
-                      <div className="grid gap-2 md:grid-cols-3">
-                        <div><span className="font-medium">Estado:</span> {String((v4ResultQ.data as any).status ?? (v4ResultQ.data as any).diagnostics?.status ?? "—")}</div>
-                        <div><span className="font-medium">Motor:</span> {String((v4ResultQ.data as any).diagnostics?.engineVersion ?? "v4")}</div>
-                        <div><span className="font-medium">Timestamp:</span> {String((v4ResultQ.data as any).diagnostics?.generatedAt ?? (v4ResultQ.data as any).createdAt ?? "—")}</div>
-                        <div><span className="font-medium">Tareas planificadas:</span> {Number((v4ResultQ.data as any).diagnostics?.plannedTasks ?? 0)}</div>
-                        <div><span className="font-medium">Tareas no planificadas:</span> {Number((v4ResultQ.data as any).diagnostics?.unplannedTasks ?? 0)}</div>
-                        <div className="md:col-span-3 text-amber-700">{String((v4ResultQ.data as any).diagnostics?.warning ?? "La lógica V4 real aún no está implementada.")}</div>
-                      </div>
-                    )}
+                    <V4StrategicDiagnosis result={v4ResultQ.data} isLoading={v4ResultQ.isLoading} error={v4ResultQ.error} />
                   </CardContent>
                 </Card>
               ) : null}
