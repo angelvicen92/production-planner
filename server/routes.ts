@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
+import { generatePlanV4 } from "../engine/v4";
 import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { persistPlanningRunUpdateBestEffort, queuePlanningRunUpdateBestEffort } from "./planning-run-progress";
 import { getUserRole, withPermissionDenied } from "./authz";
@@ -4389,6 +4390,48 @@ function normalizeHexColor(value: unknown): string | null {
     }
   });
 
+  app.get(api.planningRuns.latestEngineResult.path, async (req, res) => {
+    try {
+      const planId = Number(req.params.id);
+      const engineVersion = String(req.params.engineVersion ?? "");
+      if (!Number.isFinite(planId) || planId <= 0) return res.status(400).json({ message: "Invalid plan id" });
+      if (engineVersion !== "v3" && engineVersion !== "v4") return res.status(400).json({ message: "Invalid engine version" });
+
+      const userId = (req as any)?.user?.id as string | undefined;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      if (!(await ensureUserCanAccessPlan(userId, planId))) return res.status(404).json({ message: "Plan not found" });
+
+      if (engineVersion === "v3") {
+        const diagnostics = await storage.getLatestPlanningRunDiagnostics(planId);
+        return res.json({ engineVersion, diagnostics, plannedTasks: null, unplannedTasks: null });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("engine_plan_results")
+        .select("id, plan_id, planning_run_id, engine_version, status, planned_tasks, unplanned_tasks, diagnostics, created_at, updated_at")
+        .eq("plan_id", planId)
+        .eq("engine_version", engineVersion)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return res.json(data ? {
+        id: Number(data.id),
+        planId: Number(data.plan_id),
+        planningRunId: data.planning_run_id == null ? null : Number(data.planning_run_id),
+        engineVersion: String(data.engine_version),
+        status: String(data.status),
+        plannedTasks: Array.isArray(data.planned_tasks) ? data.planned_tasks : [],
+        unplannedTasks: Array.isArray(data.unplanned_tasks) ? data.unplanned_tasks : [],
+        diagnostics: data.diagnostics ?? null,
+        createdAt: String(data.created_at),
+        updatedAt: String(data.updated_at),
+      } : null);
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || "Failed to fetch engine result" });
+    }
+  });
+
   app.get(api.planningRuns.latestByPlan.path, async (req, res) => {
     res.set("Cache-Control", "no-store, max-age=0");
     try {
@@ -4903,9 +4946,11 @@ function normalizeHexColor(value: unknown): string | null {
         .object({
           mode: z.enum(["full", "only_unplanned", "replan_pending_respecting_locks", "generate_planning", "plan_pending"]).optional(),
           timeLimitMs: z.number().int().positive().max(300000).optional(),
+          engineVersion: z.enum(["v3", "v4"]).optional(),
         })
         .strict()
         .parse(req.body ?? {});
+      const requestedEngineVersion = input.engineVersion ?? "v3";
       const modeRaw = input.mode ?? "full";
       const mode = modeRaw === "generate_planning"
         ? "full"
@@ -4929,7 +4974,7 @@ function normalizeHexColor(value: unknown): string | null {
         .maybeSingle();
       if (planErr) throw planErr;
       if (!planRow?.id) return res.status(404).json({ message: "Plan not found" });
-      if (String((planRow as any)?.optimizer_engine ?? "") !== "v3") {
+      if (requestedEngineVersion === "v3" && String((planRow as any)?.optimizer_engine ?? "") !== "v3") {
         await supabaseAdmin
           .from("plans")
           .update({ optimizer_engine: "v3" })
@@ -4987,6 +5032,125 @@ function normalizeHexColor(value: unknown): string | null {
         taskIdsToSolve = taskIdsToSolve.filter((taskId) => !plannedPendingIds.has(taskId));
       }
       const totalPending = taskIdsToSolve.length;
+      if (requestedEngineVersion === "v4") {
+        const startedAt = new Date().toISOString();
+        const { data: runRow, error: runErr } = await supabaseAdmin
+          .from("planning_runs")
+          .insert({
+            plan_id: planId,
+            status: "running",
+            total_pending: totalPending,
+            planned_count: 0,
+            phase: "queued",
+            phase_progress_pct: 1,
+            message: "Motor V4 en cola",
+            engine: "v4",
+            engine_version: "v4",
+            requested_time_limit_ms: requestedTimeLimitMs,
+            request_id: requestId,
+            started_at: startedAt,
+            updated_at: startedAt,
+          })
+          .select("id")
+          .single();
+        if (runErr) throw runErr;
+        planningRunId = Number(runRow?.id);
+
+        if (totalPending === 0) {
+          const finishedAt = new Date().toISOString();
+          await supabaseAdmin
+            .from("planning_runs")
+            .update({
+              status: "success",
+              phase: "success",
+              phase_progress_pct: 100,
+              message: "No hay tareas pendientes que planificar con V4",
+              planned_count: 0,
+              planned_tasks: 0,
+              unplanned_tasks: 0,
+              engine_metadata: {
+                warning: "La lógica real del Motor V4 aún no está implementada.",
+                generatedAt: finishedAt,
+              },
+              finished_at: finishedAt,
+              updated_at: finishedAt,
+            })
+            .eq("id", planningRunId)
+            .eq("plan_id", planId);
+          await supabaseAdmin.from("engine_plan_results").insert({
+            plan_id: planId,
+            planning_run_id: planningRunId,
+            engine_version: "v4",
+            status: "success",
+            planned_tasks: [],
+            unplanned_tasks: [],
+            diagnostics: {
+              status: "success",
+              engineVersion: "v4",
+              generatedAt: finishedAt,
+              plannedTasks: 0,
+              unplannedTasks: 0,
+              warning: "La lógica real del Motor V4 aún no está implementada.",
+            },
+          });
+          return res.json({ success: true, hardFeasible: true, complete: true, feasible: true, planId, tasksUpdated: 0, warnings: [], planningStats: {}, reasons: [], unplanned: [], insights: [], runId: planningRunId, engineVersion: "v4", message: "No hay tareas pendientes que planificar con V4" });
+        }
+
+        await supabaseAdmin.from("planning_runs").update({ phase: "loading_input", phase_progress_pct: 10, message: "Cargando entrada V4", updated_at: new Date().toISOString() }).eq("id", planningRunId);
+        const engineInput = await buildEngineInput(planId, storage);
+        const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0 ? requestedTimeLimitMs : defaultV3Ms;
+        const v4 = generatePlanV4(engineInput, { requestId: requestId ?? undefined, timeLimitMs: effectiveTimeLimitMs });
+        const result = v4.output as any;
+        const planned = Array.isArray(result?.plannedTasks) ? result.plannedTasks : [];
+        const unplanned = Array.isArray(result?.unplanned) ? result.unplanned : [];
+        const finishedAt = new Date().toISOString();
+
+        await supabaseAdmin.from("engine_plan_results").insert({
+          plan_id: planId,
+          planning_run_id: planningRunId,
+          engine_version: "v4",
+          status: v4.diagnostics.status,
+          planned_tasks: planned,
+          unplanned_tasks: unplanned,
+          diagnostics: v4.diagnostics,
+          updated_at: finishedAt,
+        });
+
+        await supabaseAdmin
+          .from("planning_runs")
+          .update({
+            status: v4.diagnostics.status === "success" ? "success" : "infeasible",
+            phase: v4.diagnostics.status === "success" ? "success" : "infeasible",
+            phase_progress_pct: 100,
+            planned_count: planned.length,
+            planned_tasks: planned.length,
+            unplanned_tasks: unplanned.length,
+            solution_source: "v4_delegates_to_v3",
+            engine_metadata: v4.diagnostics,
+            message: v4.diagnostics.warning,
+            finished_at: finishedAt,
+            updated_at: finishedAt,
+          })
+          .eq("id", planningRunId)
+          .eq("plan_id", planId);
+
+        return res.json({
+          success: v4.diagnostics.status === "success",
+          hardFeasible: result?.hardFeasible !== false,
+          complete: !!result?.complete,
+          feasible: !!result?.complete,
+          planId,
+          tasksUpdated: 0,
+          warnings: result?.warnings ?? [],
+          planningStats: {},
+          reasons: result?.reasons ?? [],
+          unplanned,
+          insights: result?.insights ?? [],
+          runId: planningRunId,
+          engineVersion: "v4",
+          message: "Resultado V4 guardado separado de V3; no se han sobrescrito tareas del plan.",
+        });
+      }
       const initialRunPatch = {
         plan_id: planId,
         status: "running",
