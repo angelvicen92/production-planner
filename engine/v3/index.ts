@@ -785,7 +785,56 @@ export const runProductionWaveSelection = (
   baseSource: NonNullable<BacktrackingMeta["solutionSource"]>,
   baseMeta: Partial<BacktrackingMeta> = {},
 ): { output: EngineOutput; meta: Partial<BacktrackingMeta> & ProductionWaveMeta } => {
-  const result = selectProductionWaveCandidate(input, baseOutput);
+  let result: ReturnType<typeof selectProductionWaveCandidate>;
+  try {
+    result = selectProductionWaveCandidate(input, baseOutput);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const score = scoreCandidateSolution(input, baseOutput);
+    const metrics = summarizeCandidateScore(score);
+    const emptyMetrics = { maxCoachGapMinutes: score.maxCoachGapMinutes, coachSplitDayPenalty: score.coachSplitDayPenalty, talentIdlePenalty: score.talentIdlePenalty, makespan: score.makespan, mainStageGapMinutes: score.mainStageGapMinutes, hardConstraintViolations: score.hardConstraintViolations, plannedTasks: score.plannedTasks };
+    return {
+      output: baseOutput,
+      meta: {
+        ...baseMeta,
+        productionWaveAttempted: true,
+        productionWaveInvocationPoint: "after_operational_neighborhood",
+        productionWaveInputTaskCount: input.tasks?.length ?? 0,
+        productionWaveInputPlannedTasks: baseOutput.plannedTasks?.length ?? 0,
+        productionWaveInputMainStageTasks: 0,
+        productionWaveInputCoachCount: input.coachResourceIds?.length ?? 0,
+        productionWaveInputTalentCount: new Set((input.tasks ?? []).map((task) => String(task.contestantName ?? "").trim()).filter(Boolean)).size,
+        productionWaveAnchorDetectionAttempted: true,
+        productionWaveAnchorDetectionReason: "exception",
+        productionWaveAnchorDetectionRejectedReasons: [`exception:${message}`],
+        productionWaveAnchorCandidatesInspected: 0,
+        productionWaveAnchorCandidateSamples: [],
+        productionWaveAnchorsFound: 0,
+        productionWaveUnanchoredTalents: [],
+        productionWaveCandidatesGenerated: 0,
+        productionWaveAccepted: false,
+        productionWaveReason: "exception",
+        productionWaveRejectedReasons: [`exception:${message}`],
+        productionWaveCandidateMetrics: [],
+        productionWaveBestBefore: emptyMetrics,
+        productionWaveBestAfter: emptyMetrics,
+        productionWaveMovedTaskIds: [],
+        productionWaveMovedTalentNames: [],
+        productionWaveCoachGapBefore: score.maxCoachGapMinutes,
+        productionWaveCoachGapAfter: score.maxCoachGapMinutes,
+        productionWaveMakespanBefore: score.makespan,
+        productionWaveMakespanAfter: score.makespan,
+        productionWaveFeasibleButNotSelected: false,
+        productionWaveComparison: { exception: message },
+        solutionSource: baseSource,
+        bestCandidateSource: baseSource,
+        candidateSolutionsEvaluated: Number(baseMeta.candidateSolutionsEvaluated ?? 1),
+        bestCandidateScore: metrics,
+        candidateSelectionReason: baseMeta.candidateSelectionReason ?? "production_wave_builder exception",
+        candidateComparisonSummary: baseMeta.candidateComparisonSummary ?? "production_wave_builder exception",
+      },
+    };
+  }
   const score = scoreCandidateSolution(input, result.output);
   const source = result.meta.productionWaveAccepted ? "production_wave_builder" : baseSource;
   const reason = result.meta.productionWaveAccepted

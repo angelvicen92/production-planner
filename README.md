@@ -102,3 +102,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 059 — 2026-06-15 16:00 — Production Wave Builder candidate-first y Main Stage guard efectivo
 - ID 060 — 2026-06-15 17:00 — Activación real Production Wave y guard Main Stage efectivo
+
+- ID 061 — 2026-06-15 21:48 — Contrato runtime Production Wave y poda Main Stage pre-validation
