@@ -52,6 +52,13 @@ export interface PrimaryStageFixedInterval {
   fixedReason: string;
 }
 
+export interface PrimaryStageContext {
+  primaryStageSpaceIds: number[];
+  primaryStageTaskIds: number[];
+  fixedIntervals: PrimaryStageFixedInterval[];
+  anchorCandidates: TaskInput[];
+}
+
 export type SegmentSolverCompactMetrics = Pick<CandidateSolutionScore,
   | "maxCoachGapMinutes" | "coachSplitDayPenalty" | "coachIdlePenalty" | "coachSpanPenalty"
   | "talentIdlePenalty" | "makespan" | "hardConstraintViolations" | "mainStageGapMinutes" | "plannedTasks"
@@ -324,6 +331,54 @@ export const buildPrimaryStageFixedIntervals = (
       fixedReason: fixedReason(input, task),
     }];
   }).slice(0, 10);
+};
+
+
+export const detectPrimaryStageContext = (input: EngineV3Input, output: EngineOutput): PrimaryStageContext => {
+  const fixedIntervals = buildPrimaryStageFixedIntervals(input, output);
+  const plannedById = new Map((output.plannedTasks ?? []).map((planned) => [Number(planned.taskId), planned]));
+  const mainZoneId = Number(input.optimizerMainZoneId);
+  const fixedSpaceIds = fixedIntervals.map((interval) => Number(interval.spaceId)).filter((id) => Number.isFinite(id) && id > 0);
+  const zoneSpaceIds = (input.tasks ?? [])
+    .filter((task) => Number(task.zoneId) === mainZoneId && plannedById.has(Number(task.id)))
+    .map((task) => Number(task.spaceId))
+    .filter((id) => Number.isFinite(id) && id > 0);
+  const primaryStageSpaceIds = uniq([...fixedSpaceIds, ...zoneSpaceIds]);
+  const anchorCandidates = (input.tasks ?? []).filter((task) => {
+    if (!plannedById.has(Number(task.id))) return false;
+    const spaceId = Number(task.spaceId);
+    return Number(task.zoneId) === mainZoneId || primaryStageSpaceIds.includes(spaceId);
+  });
+  return {
+    primaryStageSpaceIds,
+    primaryStageTaskIds: anchorCandidates.map((task) => Number(task.id)),
+    fixedIntervals,
+    anchorCandidates,
+  };
+};
+
+export const checkPrimaryStageFixedOverlap = (
+  input: EngineV3Input,
+  candidate: EngineOutput,
+  fixedIntervals: PrimaryStageFixedInterval[],
+): Record<string, unknown> | null => {
+  if (!fixedIntervals.length) return null;
+  const taskById = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]));
+  for (const planned of candidate.plannedTasks ?? []) {
+    const task = taskById.get(Number(planned.taskId));
+    const taskId = Number(planned.taskId);
+    const spaceId = Number(task?.spaceId);
+    const start = toMinutes(planned.startPlanned);
+    const end = toMinutes(planned.endPlanned);
+    if (!task || start === null || end === null || !Number.isFinite(spaceId) || isMealTask(input, task) && !mealOccupiesSpace(task)) continue;
+    for (const fixed of fixedIntervals) {
+      if (fixed.taskId === taskId || fixed.spaceId !== spaceId) continue;
+      const fixedStart = toMinutes(fixed.start); const fixedEnd = toMinutes(fixed.end);
+      if (fixedStart === null || fixedEnd === null || !intervalOverlaps(start, end, fixedStart, fixedEnd)) continue;
+      return { taskIds: [taskId], blockingTaskIds: [fixed.taskId], spaceId, spaceName: fixed.spaceName, start: hhmm(Math.max(start, fixedStart)), end: hhmm(Math.min(end, fixedEnd)) };
+    }
+  }
+  return null;
 };
 
 export const findCriticalCoachGap = (input: EngineV3Input, output: EngineOutput, coachId: number): CriticalCoachGap | null => {
@@ -1028,6 +1083,14 @@ export const runSegmentSolver = (input: EngineV3Input, baseline: EngineOutput, o
       meta.segmentSolverCandidateIntegrityFailures += 1;
       meta.segmentSolverCandidateIntegrityTopFailures.push(...integrityFailures.slice(0, Math.max(0, 10 - meta.segmentSolverCandidateIntegrityTopFailures.length)));
       integrityFailures.forEach((failure) => rejected.add(failure.code));
+      return;
+    }
+    const primaryStageViolation = checkPrimaryStageFixedOverlap(input, candidate, meta.segmentSolverPrimaryStageFixedIntervals);
+    if (primaryStageViolation) {
+      meta.segmentSolverPrimaryStagePrunedCandidates += 1;
+      meta.segmentSolverPrimaryStagePruneReasons.push("primary_stage_fixed_overlap");
+      meta.segmentSolverPrimaryStagePruneDetails.push({ movedTaskIds: movedIds, strategy: moveDescription || segment.strategy, offsetMinutes, ...primaryStageViolation });
+      rejected.add("primary_stage_fixed_overlap");
       return;
     }
     meta.segmentSolverFullValidationsPerformed += 1;

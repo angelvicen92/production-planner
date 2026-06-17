@@ -448,6 +448,7 @@ export interface EngineOutput {
     productionWaveMakespanAfter?: number;
     productionWaveFeasibleButNotSelected?: boolean;
     productionWaveComparison?: Record<string, unknown>;
+    engineIntegrationWarnings?: string[];
     bestCandidateScore?: string;
     greedyCandidateScore?: string;
     backtrackingBestScore?: string;

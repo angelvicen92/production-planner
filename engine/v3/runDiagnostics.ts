@@ -64,6 +64,31 @@ export interface EngineRunDiagnostics {
     coachWaveReason: string | null;
     coachWaveBefore: Record<string, number>;
     coachWaveAfter: Record<string, number>;
+    productionWaveAttempted: boolean;
+    productionWaveInvocationPoint: string;
+    productionWaveInputTaskCount: number;
+    productionWaveInputPlannedTasks: number;
+    productionWaveInputMainStageTasks: number;
+    productionWaveInputCoachCount: number;
+    productionWaveInputTalentCount: number;
+    productionWaveAnchorDetectionAttempted: boolean;
+    productionWaveAnchorDetectionReason: string;
+    productionWaveAnchorDetectionRejectedReasons: string[];
+    productionWaveAnchorCandidatesInspected: number;
+    productionWaveAnchorCandidateSamples: Array<Record<string, unknown>>;
+    productionWaveAnchorsFound: number;
+    productionWaveUnanchoredTalents: string[];
+    productionWaveCandidatesGenerated: number;
+    productionWaveAccepted: boolean;
+    productionWaveReason: string;
+    productionWaveRejectedReasons: string[];
+    productionWaveCandidateMetrics: Array<Record<string, unknown>>;
+    productionWaveBestBefore: Record<string, number>;
+    productionWaveBestAfter: Record<string, number>;
+    productionWaveMovedTaskIds: number[];
+    productionWaveMovedTalentNames: string[];
+    productionWaveFeasibleButNotSelected: boolean;
+    engineIntegrationWarnings: string[];
     segmentSolverAttempted: boolean;
     segmentSolverBackend: string;
     segmentSolverSegmentsBuilt: number;
@@ -279,6 +304,12 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
   const plannedTasks = output.plannedTasks?.length ?? 0;
   const unplannedTasks = output.unplanned?.length ?? Math.max(0, input.tasks.length - plannedTasks);
 
+  const baseFeasible = plannedTasks > 0 && hardValidation.hardConstraintViolations === 0 && metrics.mainStageGapMinutes === 0 && (output.hardFeasible !== false);
+  const engineIntegrationWarnings = uniqueCompactReasons([
+    ...(meta?.engineIntegrationWarnings ?? []),
+    ...(baseFeasible && meta?.productionWaveAttempted === false && meta?.productionWaveReason === "not_attempted" ? ["ENGINE_INTEGRATION_WARNING_PRODUCTION_WAVE_NOT_INVOKED"] : []),
+  ]);
+
   return {
     engineVersion: "v3",
     solutionSource: meta?.solutionSource ?? (output.hardFeasible === false ? "infeasible" : "unknown"),
@@ -320,6 +351,31 @@ export const buildRunDiagnostics = (input: EngineInput, output: EngineOutput): E
       coachWaveReason: meta?.coachWaveReason ?? "generator_not_invoked",
       coachWaveBefore: meta?.coachWaveBefore ?? {},
       coachWaveAfter: meta?.coachWaveAfter ?? {},
+      productionWaveAttempted: meta?.productionWaveAttempted ?? false,
+      productionWaveInvocationPoint: meta?.productionWaveInvocationPoint ?? "not_invoked",
+      productionWaveInputTaskCount: meta?.productionWaveInputTaskCount ?? 0,
+      productionWaveInputPlannedTasks: meta?.productionWaveInputPlannedTasks ?? 0,
+      productionWaveInputMainStageTasks: meta?.productionWaveInputMainStageTasks ?? 0,
+      productionWaveInputCoachCount: meta?.productionWaveInputCoachCount ?? 0,
+      productionWaveInputTalentCount: meta?.productionWaveInputTalentCount ?? 0,
+      productionWaveAnchorDetectionAttempted: meta?.productionWaveAnchorDetectionAttempted ?? false,
+      productionWaveAnchorDetectionReason: meta?.productionWaveAnchorDetectionReason ?? "not_attempted",
+      productionWaveAnchorDetectionRejectedReasons: uniqueCompactReasons(meta?.productionWaveAnchorDetectionRejectedReasons ?? []),
+      productionWaveAnchorCandidatesInspected: meta?.productionWaveAnchorCandidatesInspected ?? 0,
+      productionWaveAnchorCandidateSamples: (meta?.productionWaveAnchorCandidateSamples ?? []).slice(0, 10),
+      productionWaveAnchorsFound: meta?.productionWaveAnchorsFound ?? 0,
+      productionWaveUnanchoredTalents: (meta?.productionWaveUnanchoredTalents ?? []).slice(0, 25),
+      productionWaveCandidatesGenerated: meta?.productionWaveCandidatesGenerated ?? 0,
+      productionWaveAccepted: meta?.productionWaveAccepted ?? false,
+      productionWaveReason: meta?.productionWaveReason ?? "not_attempted",
+      productionWaveRejectedReasons: uniqueCompactReasons(meta?.productionWaveRejectedReasons ?? []),
+      productionWaveCandidateMetrics: (meta?.productionWaveCandidateMetrics ?? []).slice(0, 10),
+      productionWaveBestBefore: meta?.productionWaveBestBefore ?? {},
+      productionWaveBestAfter: meta?.productionWaveBestAfter ?? {},
+      productionWaveMovedTaskIds: (meta?.productionWaveMovedTaskIds ?? []).slice(0, 50),
+      productionWaveMovedTalentNames: (meta?.productionWaveMovedTalentNames ?? []).slice(0, 25),
+      productionWaveFeasibleButNotSelected: meta?.productionWaveFeasibleButNotSelected ?? false,
+      engineIntegrationWarnings,
       segmentSolverAttempted: meta?.segmentSolverAttempted ?? false,
       segmentSolverBackend: meta?.segmentSolverBackend ?? "bounded_exact_search",
       segmentSolverSegmentsBuilt: meta?.segmentSolverSegmentsBuilt ?? 0,
