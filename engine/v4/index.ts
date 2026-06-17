@@ -1,6 +1,7 @@
 import { generatePlanV3 } from "../v3";
 import type { EngineInput, EngineOutput } from "../types";
 import type { EngineV3Options } from "../v3/types";
+import { analyzeStrategicScenario, type V4StrategicAnalysis } from "./analysis";
 
 export const ENGINE_V4_VERSION = "v4" as const;
 
@@ -11,6 +12,7 @@ export interface EngineV4Diagnostics {
   plannedTasks: number;
   unplannedTasks: number;
   warning: string;
+  strategicAnalysis: V4StrategicAnalysis;
 }
 
 export interface EngineV4Result {
@@ -19,6 +21,7 @@ export interface EngineV4Result {
 }
 
 export function generatePlanV4(input: EngineInput, options?: EngineV3Options): EngineV4Result {
+  const strategicAnalysis = analyzeStrategicScenario(input);
   const output = generatePlanV3(input, options);
   const plannedTasks = Array.isArray((output as any).plannedTasks) ? (output as any).plannedTasks.length : 0;
   const unplannedTasks = Array.isArray((output as any).unplanned) ? (output as any).unplanned.length : 0;
@@ -32,6 +35,7 @@ export function generatePlanV4(input: EngineInput, options?: EngineV3Options): E
       plannedTasks,
       unplannedTasks,
       warning: "La lógica real del Motor V4 aún no está implementada; esta fase delega temporalmente en V3 y persiste el resultado por separado.",
+      strategicAnalysis,
     },
   };
 }

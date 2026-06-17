@@ -163,6 +163,7 @@ export async function buildEngineInput(
       const spaceNameById: Record<number, string> = {};
       const spaceCapacityById: Record<number, number> = {};
       const spaceIsExclusiveById: Record<number, boolean> = {};
+      const spacePriorityById: Record<number, number> = {};
       for (const s of (allSpaces as any[]) ?? []) {
         const id = Number((s as any)?.id);
         if (!Number.isFinite(id) || id <= 0) continue;
@@ -188,6 +189,8 @@ export async function buildEngineInput(
       spaceCapacityById[id] = Math.max(1, Math.floor(capacity));
     }
     spaceIsExclusiveById[id] = (spaceCapacityById[id] ?? 1) === 1;
+    const priority = Number((s as any)?.priorityLevel ?? (s as any)?.priority_level ?? 1);
+    if (Number.isFinite(priority)) spacePriorityById[id] = Math.max(1, Math.floor(priority));
   }
 
 
@@ -631,6 +634,7 @@ export async function buildEngineInput(
     spaceNameById,
     spaceCapacityById,
     spaceIsExclusiveById,
+    spacePriorityById,
     groupingBySpaceId,
     minimizeChangesBySpace: Object.fromEntries(Object.entries(groupingBySpaceId).map(([k, v]) => [Number(k), { level: v.level, minChain: v.minChain }])),
     zoneResourceTypeRequirements,

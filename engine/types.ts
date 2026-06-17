@@ -200,6 +200,8 @@ export interface EngineInput {
   spaceConcurrencyById?: Record<number, number>;
   // Metadato explicativo; no aumenta capacidad por sí solo.
   spaceIsExclusiveById?: Record<number, boolean>;
+  // Prioridad operativa del catálogo de espacios. Sólo diagnóstico en V4.
+  spacePriorityById?: Record<number, number>;
 
   // ✅ Requisitos genéricos por tipo (override por plan)
   // Key: zoneId -> (resourceTypeId -> quantity)
