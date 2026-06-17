@@ -112,3 +112,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 066 — 2026-06-17 00:00 — V4 Post-Plan Quality Evaluator
 - ID 067 — 2026-06-17 00:00 — V4 Main Flow Continuity Improvement Pass
+- ID 068 — 2026-06-17 00:00 — V4 Multi-Strategy Candidate Runner

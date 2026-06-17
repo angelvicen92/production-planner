@@ -730,6 +730,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const analysis = diagnostics?.strategicAnalysis ?? null;
   const guidedOrdering = diagnostics?.guidedOrdering ?? null;
   const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
+  const candidateRunner = diagnostics?.candidateRunner ?? null;
   const list = (value: unknown) => Array.isArray(value) ? value : [];
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
@@ -758,6 +759,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const topOrderedTasks = list(guidedOrdering?.topOrderedTasks);
   const improvementMoves = list(mainFlowImprovement?.moves);
   const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
+  const candidateDiagnostics = list(candidateRunner?.candidates);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -843,6 +845,52 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
         </section>
       </div>
 
+
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Candidate Strategies</h3>
+          <Badge variant={candidateRunner?.applied ? "default" : "outline"}>
+            {candidateRunner?.applied ? "Aplicado" : "Sin datos"}
+          </Badge>
+        </div>
+        {candidateRunner ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-2">
+              <div><span className="font-medium">Estrategia ganadora:</span> {String(candidateRunner?.bestStrategyId ?? diagnostics?.bestStrategyId ?? "—")}</div>
+              <div><span className="font-medium">Candidatos evaluados:</span> {Number(candidateRunner?.candidateCount ?? candidateDiagnostics.length ?? 0)}</div>
+            </div>
+            {candidateDiagnostics.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-muted-foreground">
+                    <tr>
+                      <th className="py-1 pr-2">Estrategia</th>
+                      <th className="py-1 pr-2">Quality</th>
+                      <th className="py-1 pr-2">Gaps flujo</th>
+                      <th className="py-1 pr-2">Makespan</th>
+                      <th className="py-1 pr-2">No planificadas</th>
+                      <th className="py-1">Seleccionada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {candidateDiagnostics.map((candidate: any, index: number) => (
+                      <tr key={`${candidate?.strategyId ?? "strategy"}-${index}`} className="border-t align-top">
+                        <td className="py-2 pr-2 font-medium">{String(candidate?.strategyId ?? "—")}</td>
+                        <td className="py-2 pr-2"><Badge variant="outline">{score(candidate?.qualityScore)}</Badge></td>
+                        <td className="py-2 pr-2">{Number(candidate?.mainFlowGapMinutes ?? 0)} min</td>
+                        <td className="py-2 pr-2">{String(candidate?.makespan ?? "—")}</td>
+                        <td className="py-2 pr-2">{Number(candidate?.unplannedTasks ?? 0)}</td>
+                        <td className="py-2">{candidate?.selected ? <Badge>Ganadora</Badge> : <Badge variant="outline">No</Badge>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p className="text-sm text-muted-foreground">No hay candidatos de estrategia para mostrar.</p>}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene candidate runner.</p>}
+      </section>
 
       <section className="rounded-lg border p-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
