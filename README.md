@@ -116,3 +116,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 069 — 2026-06-17 00:00 — V4 Main Flow First Scheduler
 
 - ID 070 — 2026-06-18 00:00 — V4 Production Wave Scheduler V1
+
+- ID 071 — 2026-06-18 00:00 — V4 Hierarchical Post-Optimizer V1
