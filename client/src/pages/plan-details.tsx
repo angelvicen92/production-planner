@@ -732,6 +732,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
   const candidateRunner = diagnostics?.candidateRunner ?? null;
   const postOptimizer = diagnostics?.postOptimizer ?? null;
+  const blockRepacker = diagnostics?.blockRepacker ?? null;
   const executiveSummary = diagnostics?.executiveSummary ?? null;
   const finalAcceptance = diagnostics?.finalAcceptance ?? null;
   const performance = diagnostics?.performance ?? null;
@@ -771,6 +772,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const productionWaveWarnings = list(productionWave?.warnings);
   const postOptimizerWarnings = list(postOptimizer?.warnings);
   const postOptimizerPasses = list(postOptimizer?.passes);
+  const blockRepackerWarnings = list(blockRepacker?.warnings);
+  const blockRepackerMoves = list(blockRepacker?.acceptedMoves);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -986,6 +989,41 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
             </div>
           </div>
         ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene post optimizer.</p>}
+      </section>
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Strategic Block Repacker</h3>
+          <Badge variant={blockRepacker?.applied ? "default" : "outline"}>
+            {blockRepacker?.applied ? "Aplicado" : "Omitido"}
+          </Badge>
+        </div>
+        {blockRepacker ? (
+          <div className="space-y-3 text-sm">
+            {blockRepacker?.skippedReason ? <p className="text-muted-foreground">{String(blockRepacker.skippedReason)}</p> : null}
+            <div className="grid gap-2 md:grid-cols-3">
+              <div><span className="font-medium">Bloques:</span> {Number(blockRepacker?.blocksDetected ?? 0)} detectados / {Number(blockRepacker?.blocksEvaluated ?? 0)} evaluados</div>
+              <div><span className="font-medium">Movimientos:</span> {Number(blockRepacker?.movesAccepted ?? 0)} aceptados / {Number(blockRepacker?.movesRejected ?? 0)} rechazados</div>
+              <div><span className="font-medium">Makespan:</span> {String(blockRepacker?.makespanBefore ?? "—")} → {String(blockRepacker?.makespanAfter ?? blockRepacker?.makespanBefore ?? "—")}</div>
+              <div><span className="font-medium">Gaps flujo:</span> {Number(blockRepacker?.mainFlowGapMinutesBefore ?? 0)} → {Number(blockRepacker?.mainFlowGapMinutesAfter ?? blockRepacker?.mainFlowGapMinutesBefore ?? 0)} min</div>
+              <div><span className="font-medium">Permanencia total:</span> {Number(blockRepacker?.totalTalentStayBefore ?? 0)} → {Number(blockRepacker?.totalTalentStayAfter ?? blockRepacker?.totalTalentStayBefore ?? 0)} min</div>
+            </div>
+            {blockRepackerMoves.length ? (
+              <div>
+                <div className="font-medium">Top movimientos aceptados</div>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                  {blockRepackerMoves.slice(0, 5).map((move: any, index: number) => <li key={`${move?.blockType ?? "block"}-${index}`}>{String(move?.blockType ?? "—")} · {String(move?.from ?? "—")} → {String(move?.to ?? "—")} · tareas {list(move?.taskIds).join(", ") || "—"}</li>)}
+                </ul>
+              </div>
+            ) : <p className="text-xs text-muted-foreground">Sin movimientos aceptados.</p>}
+            <div>
+              <div className="font-medium">Warnings</div>
+              {blockRepackerWarnings.length ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-amber-700">{blockRepackerWarnings.map((warning: any, index: number) => <li key={`${String(warning)}-${index}`}>{String(warning)}</li>)}</ul>
+              ) : <p className="text-xs text-muted-foreground">Sin warnings.</p>}
+            </div>
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene strategic block repacker.</p>}
       </section>
 
       <section className="rounded-lg border p-3">

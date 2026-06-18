@@ -4,6 +4,7 @@ import { analyzeStrategicScenario } from "../analysis";
 import { runV4CandidateStrategies, type V4CandidateStrategyId } from "../candidates";
 import { compareV3AndV4Quality, type V3V4QualityComparison } from "../comparison";
 import { optimizeV4PlanPostSelection, type V4PostOptimizerDiagnostics } from "../postOptimizer";
+import { repackV4StrategicBlocks, type V4BlockRepackerDiagnostics } from "../blockRepacker";
 import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
 import type { EngineV4Diagnostics, EngineV4Result } from "../index";
 const ENGINE_V4_VERSION = "v4" as const;
@@ -18,6 +19,7 @@ export interface V4ProOrchestratorOptions extends EngineV3Options {
   enableNativeCriticalCore?: boolean;
   enableProductionWave?: boolean;
   enablePostOptimizer?: boolean;
+  enableBlockRepacker?: boolean;
 }
 
 export interface V4FinalAcceptanceDiagnostics {
@@ -53,6 +55,24 @@ const EMPTY_POST: V4PostOptimizerDiagnostics = {
   totalTalentStayBefore: 0,
   totalTalentStayAfter: 0,
   passes: [],
+  warnings: [],
+};
+
+
+const EMPTY_BLOCK_REPACKER: V4BlockRepackerDiagnostics = {
+  applied: false,
+  skippedReason: "Block repacker not run.",
+  blocksDetected: 0,
+  blocksEvaluated: 0,
+  movesAccepted: 0,
+  movesRejected: 0,
+  makespanBefore: null,
+  makespanAfter: null,
+  mainFlowGapMinutesBefore: 0,
+  mainFlowGapMinutesAfter: 0,
+  totalTalentStayBefore: 0,
+  totalTalentStayAfter: 0,
+  acceptedMoves: [],
   warnings: [],
 };
 
@@ -135,10 +155,19 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
     ? optimizeV4PlanPostSelection(input, candidateResult.bestOutput, strategicAnalysis, candidateResult.bestQuality, { ...rawOptions, postOptimizer: { ...(rawOptions as any).postOptimizer, maxRuntimeMs: Math.max(50, remaining) } } as any)
     : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { ...EMPTY_POST, warnings: ["Post-optimizer skipped: candidate was not safe enough or no runtime budget remained."] } };
 
-  const comparisonBeforeGate = compareV3AndV4Quality(baselineQuality, optimized.quality);
-  const finalAcceptance = finalAcceptanceGate(input, baselineOutput, baselineQuality, optimized.output, optimized.quality);
-  const finalOutput = finalAcceptance.accepted ? optimized.output : baselineOutput;
-  const finalQuality = finalAcceptance.accepted ? optimized.quality : baselineQuality;
+  const remainingAfterPostOptimizer = maxRuntimeMs - (Date.now() - started);
+  const canBlockRepack = rawOptions.enableBlockRepacker !== false
+    && remainingAfterPostOptimizer > 50
+    && optimized.output.hardFeasible !== false
+    && unplanned(optimized.output) <= unplanned(baselineOutput);
+  const repacked = canBlockRepack
+    ? repackV4StrategicBlocks(input, optimized.output, strategicAnalysis, optimized.quality, { ...rawOptions, blockRepacker: { ...(rawOptions as any).blockRepacker, maxRuntimeMs: Math.max(50, remainingAfterPostOptimizer) } } as any)
+    : { output: optimized.output, quality: optimized.quality, diagnostics: { ...EMPTY_BLOCK_REPACKER, skippedReason: "Block repacker skipped: candidate was not safe enough or no runtime budget remained.", warnings: ["Block repacker skipped: candidate was not safe enough or no runtime budget remained."] } };
+
+  const comparisonBeforeGate = compareV3AndV4Quality(baselineQuality, repacked.quality);
+  const finalAcceptance = finalAcceptanceGate(input, baselineOutput, baselineQuality, repacked.output, repacked.quality);
+  const finalOutput = finalAcceptance.accepted ? repacked.output : baselineOutput;
+  const finalQuality = finalAcceptance.accepted ? repacked.quality : baselineQuality;
   const comparison = finalAcceptance.accepted ? comparisonBeforeGate : { ...comparisonBeforeGate, verdict: "V4_REJECTED" as const, reasons: [...comparisonBeforeGate.reasons, finalAcceptance.reason] };
   const allProfile = PROFILE_STRATEGIES[profile];
   const skippedStrategies = allProfile.filter((strategy) => !candidateResult.candidatesDiagnostics.candidates.some((c) => c.strategyId === strategy));
@@ -157,9 +186,10 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
     qualityBeforeImprovement: candidateResult.bestQualityBeforeImprovement,
     qualityBeforePostOptimizer: candidateResult.bestQuality,
     postOptimizer: optimized.diagnostics,
+    blockRepacker: repacked.diagnostics,
     mainFlowImprovement: candidateResult.bestMainFlowImprovement,
     candidateRunner: candidateResult.candidatesDiagnostics,
-    v3V4Comparison: { v3Baseline: baselineQuality, v4Final: optimized.quality, comparison },
+    v3V4Comparison: { v3Baseline: baselineQuality, v4Final: repacked.quality, comparison },
     bestStrategyId: candidateResult.bestStrategyId,
     finalAcceptance,
     performance,
