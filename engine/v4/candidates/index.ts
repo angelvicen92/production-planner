@@ -52,6 +52,7 @@ export interface V4CandidateRunnerResult {
   bestQuality: V4PlanQualityEvaluation;
   bestStrategyId: V4CandidateStrategyId;
   candidatesDiagnostics: V4CandidateRunnerDiagnostics;
+  baselineOutput: EngineOutput;
   bestGuidedOrdering: V4GuidedOrderingDiagnostics;
   bestMainFlowImprovement: MainFlowImprovementDiagnostics;
   bestQualityBeforeImprovement: V4PlanQualityEvaluation;
@@ -68,6 +69,7 @@ const STRATEGY_ORDER: V4CandidateStrategyId[] = [
   "strategy_v4_native_remainder",
 ];
 const MAX_DEFAULT_STRATEGIES = 8;
+interface V4CandidateRunnerOptions extends EngineV3Options { enabledStrategies?: V4CandidateStrategyId[]; maxRuntimeMs?: number; }
 const INF = Number.POSITIVE_INFINITY;
 
 function emptyGuidedOrdering(reason: string): V4GuidedOrderingDiagnostics {
@@ -136,9 +138,14 @@ function compareCandidates(a: V4CandidateDiagnostic, b: V4CandidateDiagnostic): 
     || STRATEGY_ORDER.indexOf(a.strategyId) - STRATEGY_ORDER.indexOf(b.strategyId);
 }
 
-export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: V4StrategicAnalysis, options?: EngineV3Options): V4CandidateRunnerResult {
-  const strategies = STRATEGY_ORDER.slice(0, MAX_DEFAULT_STRATEGIES);
-  const candidates = strategies.map((strategyId) => {
+export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: V4StrategicAnalysis, options?: V4CandidateRunnerOptions): V4CandidateRunnerResult {
+  const started = Date.now();
+  const maxRuntimeMs = Number(options?.maxRuntimeMs ?? Number.POSITIVE_INFINITY);
+  const enabled = Array.isArray(options?.enabledStrategies) && options.enabledStrategies.length ? options.enabledStrategies : STRATEGY_ORDER;
+  const strategies = enabled.filter((strategy) => STRATEGY_ORDER.includes(strategy)).slice(0, MAX_DEFAULT_STRATEGIES);
+  const candidates: Array<any> = [];
+  for (const strategyId of strategies) {
+    if (Date.now() - started >= maxRuntimeMs && candidates.length > 0) break;
     const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
     const mainFlowFirst = strategyId === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, options) : null;
     const productionWave = strategyId === "strategy_v4_production_wave" ? buildProductionWavePlan(input, strategicAnalysis, options) : null;
@@ -149,8 +156,8 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     const initialQuality = evaluateV4PlanQuality(candidateInput, initialOutput, strategicAnalysis);
     const improved = improveMainFlowContinuity(candidateInput, initialOutput, strategicAnalysis, initialQuality);
     const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
-    return { strategyId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics, productionWaveScheduler: productionWave?.diagnostics, nativeRemainderScheduler: nativeRemainder?.diagnostics, nativeCriticalCoreScheduler: nativeCriticalCore?.diagnostics };
-  });
+    candidates.push({ strategyId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics, productionWaveScheduler: productionWave?.diagnostics, nativeRemainderScheduler: nativeRemainder?.diagnostics, nativeCriticalCoreScheduler: nativeCriticalCore?.diagnostics });
+  }
 
   let bestIndex = 0;
   const diagnostics = candidates.map((candidate): V4CandidateDiagnostic => ({
@@ -209,6 +216,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
   for (let i = 1; i < diagnostics.length; i += 1) if (compareCandidates(diagnostics[i], diagnostics[bestIndex]) < 0) bestIndex = i;
   diagnostics[bestIndex].selected = true;
   const best = candidates[bestIndex];
+  const baselineOutput = candidates.find((candidate) => candidate.strategyId === "strategy_baseline_v3_order")?.output ?? best.output;
   return {
     bestOutput: best.output,
     bestQuality: best.quality,
@@ -216,6 +224,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     bestGuidedOrdering: best.guidedOrdering,
     bestMainFlowImprovement: best.mainFlowImprovement,
     bestQualityBeforeImprovement: best.qualityBeforeImprovement,
+    baselineOutput,
     candidatesDiagnostics: { applied: true, bestStrategyId: best.strategyId, candidateCount: diagnostics.length, candidates: diagnostics },
   };
 }

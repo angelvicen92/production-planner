@@ -207,6 +207,9 @@ export function PlanEngineDiagnostics({
     : (metadata as any)?.nativeCriticalCoreScheduler ?? (diagnostics as any)?.nativeCriticalCoreScheduler ?? null;
   const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
   const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
+  const executiveSummary = (metadata as any)?.executiveSummary ?? (diagnostics as any)?.executiveSummary ?? null;
+  const finalAcceptance = (metadata as any)?.finalAcceptance ?? (diagnostics as any)?.finalAcceptance ?? null;
+  const performance = (metadata as any)?.performance ?? (diagnostics as any)?.performance ?? null;
   const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
     ? diagnostics.diagnosticWarnings.resourceDiagnosticWarnings
     : [];
@@ -386,6 +389,22 @@ export function PlanEngineDiagnostics({
           <h3 id="diagnostics-v4-full" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             V4 Diagnostics
           </h3>
+          <div className="mb-3 grid gap-3 lg:grid-cols-3">
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Executive Summary</div>
+              <p className="mt-1 text-xs text-muted-foreground">{executiveSummary ? `${label(executiveSummary?.verdict)} · ${executiveSummary?.headline ?? "—"} · estrategia ${label(executiveSummary?.selectedStrategy)}` : "Sin resumen ejecutivo V4."}</p>
+              {Array.isArray(executiveSummary?.risks) && executiveSummary.risks.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Riesgos: {executiveSummary.risks.slice(0, 2).join(" · ")}</p> : null}
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Final Acceptance</div>
+              <p className="mt-1 text-xs text-muted-foreground">{finalAcceptance ? `${finalAcceptance?.accepted ? "aceptado" : "rechazado"} · fallback V3 ${finalAcceptance?.fallbackToV3Baseline ? "sí" : "no"} · ${finalAcceptance?.reason ?? "—"}` : "Sin gate final disponible."}</p>
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Performance</div>
+              <p className="mt-1 text-xs text-muted-foreground">{performance ? `${metric(performance?.runtimeMs, " ms")} · ${metric(performance?.strategiesEvaluated)} estrategias · perfil ${label(performance?.profile)} · budget ${performance?.budgetExceeded ? "excedido" : "ok"}` : "Sin métricas de performance."}</p>
+              {Array.isArray(performance?.skippedStrategies) && performance.skippedStrategies.length ? <p className="mt-1 text-xs text-muted-foreground">Omitidas: {performance.skippedStrategies.slice(0, 4).map(label).join(" · ")}</p> : null}
+            </div>
+          </div>
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-md border px-3 py-2 text-sm">
               <div className="font-medium">Candidate Runner</div>

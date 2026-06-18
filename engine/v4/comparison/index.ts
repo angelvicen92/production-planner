@@ -1,6 +1,6 @@
 import type { V4PlanQualityEvaluation } from "../quality";
 
-export type V4ComparisonVerdict = "V4_BETTER" | "V4_EQUAL" | "V4_WORSE";
+export type V4ComparisonVerdict = "V4_BETTER" | "V4_EQUAL" | "V4_WORSE" | "V4_REJECTED";
 
 export interface V3V4QualityComparison {
   verdict: V4ComparisonVerdict;
