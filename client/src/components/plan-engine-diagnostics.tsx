@@ -195,6 +195,12 @@ export function PlanEngineDiagnostics({
 
   const metadata = diagnostics.engineMetadata ?? {};
   const v4Quality = (metadata as any)?.quality ?? (diagnostics as any)?.quality ?? null;
+  const candidateRunner = (metadata as any)?.candidateRunner ?? (diagnostics as any)?.candidateRunner ?? null;
+  const productionWave = Array.isArray(candidateRunner?.candidates)
+    ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_production_wave")?.productionWaveScheduler
+    : (metadata as any)?.productionWaveScheduler ?? (diagnostics as any)?.productionWaveScheduler ?? null;
+  const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
+  const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
   const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
     ? diagnostics.diagnosticWarnings.resourceDiagnosticWarnings
     : [];
@@ -365,6 +371,42 @@ export function PlanEngineDiagnostics({
             <MetricCell title="N.º gaps Main Stage" value={metric(diagnostics.mainStageGapCount)} />
             <MetricCell title="Cambios de coach" value={metric(diagnostics.coachSwitchCount)} />
             <MetricCell title="Offset talento restrictivo" value={metric(diagnostics.restrictiveTalentAverageStartOffset, " min")} />
+          </div>
+        </section>
+
+
+
+        <section aria-labelledby="diagnostics-v4-full">
+          <h3 id="diagnostics-v4-full" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            V4 Diagnostics
+          </h3>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Candidate Runner</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {candidateRunner ? `${metric(candidateRunner?.candidateCount)} candidatos · best ${label(candidateRunner?.bestStrategyId)}` : "Sin candidate runner disponible."}
+              </p>
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Production Wave</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {productionWave ? `${productionWave?.accepted === false ? "rechazada" : productionWave?.applied ? "aplicada" : "no aplicada"} · ${metric(productionWave?.mainFlowTasksPlaced)} main · ${metric(productionWave?.prerequisitesPlaced)} prereq · gaps ${metric(productionWave?.mainFlowGapMinutes, " min")}` : "Sin production wave disponible."}
+              </p>
+              {productionWave?.rejectionReason ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{productionWave.rejectionReason}</p> : null}
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Post Optimizer</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {postOptimizer ? `${postOptimizer?.applied ? "aplicado" : "sin cambios"} · ${metric(postOptimizer?.acceptedMoves)} movimientos aceptados` : "Sin post optimizer disponible."}
+              </p>
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">V3/V4 Comparison</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {v3V4Comparison?.comparison ? `${label(v3V4Comparison.comparison.verdict)} · Δscore ${metric(v3V4Comparison.comparison.deltas?.qualityScore)} · Δgap ${metric(v3V4Comparison.comparison.deltas?.mainFlowGapMinutes, " min")} · Δmakespan ${metric(v3V4Comparison.comparison.deltas?.makespanMinutes, " min")}` : "Sin comparación V3/V4 disponible."}
+              </p>
+              {Array.isArray(v3V4Comparison?.comparison?.reasons) && v3V4Comparison.comparison.reasons.length ? <p className="mt-1 text-xs text-muted-foreground">{v3V4Comparison.comparison.reasons.slice(0, 2).join(" · ")}</p> : null}
+            </div>
           </div>
         </section>
 

@@ -118,3 +118,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 070 — 2026-06-18 00:00 — V4 Production Wave Scheduler V1
 
 - ID 071 — 2026-06-18 00:00 — V4 Hierarchical Post-Optimizer V1
+- ID 072 — 2026-06-18 15:14 — V4 Production Wave V2 and V3/V4 Comparison Gate
