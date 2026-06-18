@@ -761,7 +761,10 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
   const candidateDiagnostics = list(candidateRunner?.candidates);
   const mainFlowFirst = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_main_flow_first")?.mainFlowFirstScheduler ?? diagnostics?.mainFlowFirstScheduler ?? null;
+  const productionWave = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_production_wave")?.productionWaveScheduler ?? diagnostics?.productionWaveScheduler ?? null;
   const mainFlowFirstBlockers = list(mainFlowFirst?.blockers);
+  const productionWaveBlockers = list(productionWave?.blockers);
+  const productionWaveWarnings = list(productionWave?.warnings);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -892,6 +895,55 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
             ) : <p className="text-sm text-muted-foreground">No hay candidatos de estrategia para mostrar.</p>}
           </div>
         ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene candidate runner.</p>}
+      </section>
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Production Wave</h3>
+          <Badge variant={productionWave?.applied ? "default" : productionWave?.fallbackUsed ? "secondary" : productionWave?.infeasible ? "destructive" : "outline"}>
+            {productionWave?.applied ? "Aplicada" : productionWave?.fallbackUsed ? "Fallback" : productionWave?.infeasible ? "Descartada" : "Sin datos"}
+          </Badge>
+        </div>
+        {productionWave ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-3">
+              <div><span className="font-medium">Espacio principal:</span> {String(productionWave?.mainFlowSpaceId ?? mainFlow?.id ?? "—")}</div>
+              <div><span className="font-medium">Inicio / fin wave:</span> {String(productionWave?.waveStart ?? "—")} / {String(productionWave?.waveEnd ?? "—")}</div>
+              <div><span className="font-medium">Flujo principal:</span> {Number(productionWave?.mainFlowTasksPlaced ?? 0)}</div>
+              <div><span className="font-medium">Prerequisitos:</span> {Number(productionWave?.prerequisitesPlaced ?? 0)}</div>
+              <div><span className="font-medium">Dependientes compactados:</span> {Number(productionWave?.dependentTasksPlaced ?? 0)}</div>
+              <div><span className="font-medium">Locks internos estratégicos:</span> {Number(productionWave?.strategicInternalLocks ?? 0)}</div>
+              <div><span className="font-medium">Huecos flujo principal:</span> {Number(productionWave?.mainFlowGapMinutes ?? 0)} min</div>
+              <div><span className="font-medium">Validación recursos:</span> {productionWave?.resourceAwareValidation ? "Sí" : "No"}</div>
+            </div>
+            <p className="text-muted-foreground">{String(productionWave?.reason ?? "Sin detalle registrado.")}</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <h4 className="font-medium">Blockers</h4>
+                {productionWaveBlockers.length ? (
+                  <ul className="mt-2 space-y-2">
+                    {productionWaveBlockers.slice(0, 6).map((blocker: any, index: number) => (
+                      <li key={`${blocker?.taskId ?? "blocker"}-${index}`} className="rounded border p-2">
+                        <span className="font-medium">Tarea {String(blocker?.taskId ?? "—")}:</span> {String(blocker?.reason ?? "Blocker sin motivo")}
+                        {blocker?.details ? <div className="text-xs text-muted-foreground">{String(blocker?.details)}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-muted-foreground">Sin blockers principales.</p>}
+              </div>
+              <div>
+                <h4 className="font-medium">Warnings</h4>
+                {productionWaveWarnings.length ? (
+                  <ul className="mt-2 space-y-2">
+                    {productionWaveWarnings.slice(0, 6).map((warning: any, index: number) => (
+                      <li key={`production-wave-warning-${index}`} className="rounded border p-2 text-amber-700">{String(warning)}</li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-muted-foreground">Sin warnings.</p>}
+              </div>
+            </div>
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene datos de Production Wave.</p>}
       </section>
 
       <section className="rounded-lg border p-3">
