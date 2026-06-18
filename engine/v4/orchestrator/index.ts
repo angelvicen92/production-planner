@@ -1,0 +1,169 @@
+import type { EngineInput, EngineOutput } from "../../types";
+import type { EngineV3Options } from "../../v3/types";
+import { analyzeStrategicScenario } from "../analysis";
+import { runV4CandidateStrategies, type V4CandidateStrategyId } from "../candidates";
+import { compareV3AndV4Quality, type V3V4QualityComparison } from "../comparison";
+import { optimizeV4PlanPostSelection, type V4PostOptimizerDiagnostics } from "../postOptimizer";
+import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
+import type { EngineV4Diagnostics, EngineV4Result } from "../index";
+const ENGINE_V4_VERSION = "v4" as const;
+
+export type V4StrategyProfile = "safe" | "balanced" | "aggressive";
+
+export interface V4ProOrchestratorOptions extends EngineV3Options {
+  v4Profile?: V4StrategyProfile;
+  maxRuntimeMs?: number;
+  maxStrategies?: number;
+  enableNativeRemainder?: boolean;
+  enableNativeCriticalCore?: boolean;
+  enableProductionWave?: boolean;
+  enablePostOptimizer?: boolean;
+}
+
+export interface V4FinalAcceptanceDiagnostics {
+  accepted: boolean;
+  fallbackToV3Baseline: boolean;
+  reason: string;
+  checks: Record<string, boolean>;
+}
+
+export interface V4PerformanceDiagnostics {
+  runtimeMs: number;
+  strategiesEvaluated: number;
+  profile: V4StrategyProfile;
+  budgetExceeded: boolean;
+  skippedStrategies: V4CandidateStrategyId[];
+  warnings: string[];
+}
+
+const PROFILE_STRATEGIES: Record<V4StrategyProfile, V4CandidateStrategyId[]> = {
+  safe: ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_critical_resources_first", "strategy_v4_production_wave"],
+  balanced: ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_critical_resources_first", "strategy_critical_talents_first", "strategy_v4_production_wave", "strategy_v4_native_critical_core"],
+  aggressive: ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_critical_resources_first", "strategy_critical_talents_first", "strategy_v4_production_wave", "strategy_v4_native_critical_core", "strategy_v4_native_remainder"],
+};
+
+const EMPTY_POST: V4PostOptimizerDiagnostics = {
+  applied: false,
+  movesAccepted: 0,
+  movesRejected: 0,
+  makespanBefore: null,
+  makespanAfter: null,
+  mainFlowGapMinutesBefore: 0,
+  mainFlowGapMinutesAfter: 0,
+  totalTalentStayBefore: 0,
+  totalTalentStayAfter: 0,
+  passes: [],
+  warnings: [],
+};
+
+const minutes = (value?: string | null): number => {
+  const [h, m] = String(value ?? "").split(":").map(Number);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 0;
+};
+const unplanned = (output: EngineOutput) => Array.isArray(output.unplanned) ? output.unplanned.length : 0;
+const planned = (output: EngineOutput) => Array.isArray(output.plannedTasks) ? output.plannedTasks.length : 0;
+
+function enabledStrategies(options: V4ProOrchestratorOptions): V4CandidateStrategyId[] {
+  const profile = options.v4Profile ?? "balanced";
+  let strategies = [...PROFILE_STRATEGIES[profile]];
+  if (options.enableProductionWave === false) strategies = strategies.filter((s) => s !== "strategy_v4_production_wave");
+  if (options.enableNativeCriticalCore === false) strategies = strategies.filter((s) => s !== "strategy_v4_native_critical_core");
+  if (profile !== "aggressive" && options.enableNativeRemainder === true && !strategies.includes("strategy_v4_native_remainder")) strategies.push("strategy_v4_native_remainder");
+  if (options.enableNativeRemainder !== true) strategies = strategies.filter((s) => s !== "strategy_v4_native_remainder");
+  return strategies.slice(0, Math.max(1, Number(options.maxStrategies ?? 8)));
+}
+
+function preserveProtectedTasks(input: EngineInput, baseline: EngineOutput, candidate: EngineOutput): boolean {
+  const taskStatus = new Map((input.tasks ?? []).map((task) => [Number(task.id), String(task.status ?? "").toLowerCase()]));
+  const locked = new Set((input.locks ?? []).map((lock) => Number(lock.taskId)).filter(Number.isFinite));
+  const protectedIds = new Set([...locked, ...(input.tasks ?? []).filter((task) => ["done", "in_progress"].includes(String(task.status ?? "").toLowerCase())).map((task) => Number(task.id))]);
+  const baselineById = new Map((baseline.plannedTasks ?? []).map((item) => [Number(item.taskId), item]));
+  const candidateById = new Map((candidate.plannedTasks ?? []).map((item) => [Number(item.taskId), item]));
+  for (const id of protectedIds) {
+    const a = baselineById.get(id);
+    const b = candidateById.get(id);
+    if (!a && !b) continue;
+    if (!a || !b) return false;
+    if (a.startPlanned !== b.startPlanned || a.endPlanned !== b.endPlanned) return false;
+  }
+  return [...taskStatus.entries()].every(([id, status]) => !["done", "in_progress"].includes(status) || protectedIds.has(id));
+}
+
+function finalAcceptanceGate(input: EngineInput, baseline: EngineOutput, baselineQuality: V4PlanQualityEvaluation, candidate: EngineOutput, candidateQuality: V4PlanQualityEvaluation): V4FinalAcceptanceDiagnostics {
+  const deltas = compareV3AndV4Quality(baselineQuality, candidateQuality).deltas;
+  const strongMainFlowImprovement = deltas.mainFlowGapMinutes <= -15;
+  const checks = {
+    unplannedNotWorse: unplanned(candidate) <= unplanned(baseline),
+    hardFeasibilityNotWorse: baseline.hardFeasible === false || candidate.hardFeasible !== false,
+    mainFlowNotWorse: deltas.mainFlowGapMinutes <= 0,
+    makespanSafe: deltas.makespanMinutes <= 5 || strongMainFlowImprovement,
+    protectedTasksUntouched: preserveProtectedTasks(input, baseline, candidate),
+  };
+  const accepted = Object.values(checks).every(Boolean) && (deltas.mainFlowGapMinutes < 0 || deltas.makespanMinutes < 0 || deltas.qualityScore > 0 || deltas.unplannedTasks < 0);
+  return accepted
+    ? { accepted: true, fallbackToV3Baseline: false, reason: "V4 improved main-flow continuity or makespan without losing feasibility.", checks }
+    : { accepted: false, fallbackToV3Baseline: true, reason: "V4 did not beat baseline safely.", checks };
+}
+
+function executiveSummary(verdict: string, finalAcceptance: V4FinalAcceptanceDiagnostics, comparison: V3V4QualityComparison | null, selectedStrategy: V4CandidateStrategyId) {
+  const wins = (comparison?.reasons ?? []).filter((r) => /improves|reduces|plans/.test(r)).slice(0, 3);
+  const losses = (comparison?.reasons ?? []).filter((r) => /worsens|increases|leaves|drops/.test(r)).slice(0, 3);
+  const risks = finalAcceptance.accepted ? [] : [finalAcceptance.reason];
+  const headline = finalAcceptance.accepted
+    ? "V4 mejora el plan sin perder seguridad operativa."
+    : "V4 queda como experimental y se mantiene el baseline V3 seguro.";
+  return { verdict, headline, wins, losses, risks, selectedStrategy };
+}
+
+export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrchestratorOptions = {}): EngineV4Result {
+  const started = Date.now();
+  const profile = rawOptions.v4Profile ?? "balanced";
+  const maxRuntimeMs = Number(rawOptions.maxRuntimeMs ?? 8000);
+  const strategies = enabledStrategies(rawOptions);
+  const strategicAnalysis = analyzeStrategicScenario(input);
+  const candidateResult = runV4CandidateStrategies(input, strategicAnalysis, { ...rawOptions, enabledStrategies: strategies, maxRuntimeMs } as any);
+  const baselineDiagnostic = candidateResult.candidatesDiagnostics.candidates.find((candidate) => candidate.strategyId === "strategy_baseline_v3_order");
+  const baselineOutput = candidateResult.baselineOutput ?? candidateResult.bestOutput;
+  const baselineQuality = baselineDiagnostic?.quality ?? evaluateV4PlanQuality(input, baselineOutput, strategicAnalysis);
+
+  const remaining = maxRuntimeMs - (Date.now() - started);
+  const canPostOptimize = rawOptions.enablePostOptimizer !== false
+    && remaining > 50
+    && candidateResult.bestOutput.hardFeasible !== false
+    && unplanned(candidateResult.bestOutput) <= unplanned(baselineOutput);
+  const optimized = canPostOptimize
+    ? optimizeV4PlanPostSelection(input, candidateResult.bestOutput, strategicAnalysis, candidateResult.bestQuality, { ...rawOptions, postOptimizer: { ...(rawOptions as any).postOptimizer, maxRuntimeMs: Math.max(50, remaining) } } as any)
+    : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { ...EMPTY_POST, warnings: ["Post-optimizer skipped: candidate was not safe enough or no runtime budget remained."] } };
+
+  const comparisonBeforeGate = compareV3AndV4Quality(baselineQuality, optimized.quality);
+  const finalAcceptance = finalAcceptanceGate(input, baselineOutput, baselineQuality, optimized.output, optimized.quality);
+  const finalOutput = finalAcceptance.accepted ? optimized.output : baselineOutput;
+  const finalQuality = finalAcceptance.accepted ? optimized.quality : baselineQuality;
+  const comparison = finalAcceptance.accepted ? comparisonBeforeGate : { ...comparisonBeforeGate, verdict: "V4_REJECTED" as const, reasons: [...comparisonBeforeGate.reasons, finalAcceptance.reason] };
+  const allProfile = PROFILE_STRATEGIES[profile];
+  const skippedStrategies = allProfile.filter((strategy) => !candidateResult.candidatesDiagnostics.candidates.some((c) => c.strategyId === strategy));
+  const runtimeMs = Date.now() - started;
+  const performance = { runtimeMs, strategiesEvaluated: candidateResult.candidatesDiagnostics.candidateCount, profile, budgetExceeded: runtimeMs >= maxRuntimeMs, skippedStrategies, warnings: runtimeMs >= maxRuntimeMs ? ["Strategy budget exceeded; remaining strategies or optimizations were skipped."] : [] };
+  const diagnostics: EngineV4Diagnostics = {
+    status: (finalOutput as any).hardFeasible === false ? "infeasible" : "success",
+    engineVersion: ENGINE_V4_VERSION,
+    generatedAt: new Date().toISOString(),
+    plannedTasks: planned(finalOutput),
+    unplannedTasks: unplanned(finalOutput),
+    warning: finalAcceptance.accepted ? "Motor V4 Pro aceptado por la quality gate final." : "Motor V4 Pro no superó la gate final; se devuelve baseline V3 seguro.",
+    strategicAnalysis,
+    guidedOrdering: candidateResult.bestGuidedOrdering,
+    quality: finalQuality,
+    qualityBeforeImprovement: candidateResult.bestQualityBeforeImprovement,
+    qualityBeforePostOptimizer: candidateResult.bestQuality,
+    postOptimizer: optimized.diagnostics,
+    mainFlowImprovement: candidateResult.bestMainFlowImprovement,
+    candidateRunner: candidateResult.candidatesDiagnostics,
+    v3V4Comparison: { v3Baseline: baselineQuality, v4Final: optimized.quality, comparison },
+    bestStrategyId: candidateResult.bestStrategyId,
+    finalAcceptance,
+    performance,
+    executiveSummary: executiveSummary(comparison.verdict, finalAcceptance, comparison, candidateResult.bestStrategyId),
+  } as EngineV4Diagnostics;
+  return { output: finalOutput, diagnostics };
+}

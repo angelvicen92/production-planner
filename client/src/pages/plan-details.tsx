@@ -732,6 +732,9 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
   const candidateRunner = diagnostics?.candidateRunner ?? null;
   const postOptimizer = diagnostics?.postOptimizer ?? null;
+  const executiveSummary = diagnostics?.executiveSummary ?? null;
+  const finalAcceptance = diagnostics?.finalAcceptance ?? null;
+  const performance = diagnostics?.performance ?? null;
   const list = (value: unknown) => Array.isArray(value) ? value : [];
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
@@ -795,6 +798,45 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
         <div><span className="font-medium">Tareas no planificadas:</span> {Number(diagnostics?.unplannedTasks ?? 0)}</div>
         <div><span className="font-medium">Risk Score:</span> <Badge variant={riskVariant as any}>{String(analysis?.riskScore ?? "—")}</Badge></div>
         <div className="md:col-span-3 text-amber-700">{String(diagnostics?.warning ?? "La lógica V4 real aún no está implementada.")}</div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <section className="rounded-lg border p-3">
+          <h3 className="font-medium">Executive Summary</h3>
+          {executiveSummary ? (
+            <div className="mt-2 space-y-2 text-sm">
+              <div><span className="font-medium">Verdict:</span> {String(executiveSummary?.verdict ?? "—")}</div>
+              <div><span className="font-medium">Headline:</span> {String(executiveSummary?.headline ?? "—")}</div>
+              <div><span className="font-medium">Selected strategy:</span> {String(executiveSummary?.selectedStrategy ?? "—")}</div>
+              <div><span className="font-medium">Fallback:</span> {finalAcceptance?.fallbackToV3Baseline ? "sí" : "no"}</div>
+              <div><span className="font-medium">Wins:</span> {list(executiveSummary?.wins).map(String).join(" · ") || "—"}</div>
+              <div><span className="font-medium">Losses:</span> {list(executiveSummary?.losses).map(String).join(" · ") || "—"}</div>
+              <div><span className="font-medium">Risks:</span> {list(executiveSummary?.risks).map(String).join(" · ") || "—"}</div>
+            </div>
+          ) : <p className="mt-2 text-sm text-muted-foreground">Sin resumen ejecutivo V4.</p>}
+        </section>
+        <section className="rounded-lg border p-3">
+          <h3 className="font-medium">Final Acceptance</h3>
+          {finalAcceptance ? (
+            <div className="mt-2 space-y-2 text-sm">
+              <div><span className="font-medium">Aceptado:</span> {finalAcceptance?.accepted ? "sí" : "no"}</div>
+              <div><span className="font-medium">Fallback V3:</span> {finalAcceptance?.fallbackToV3Baseline ? "sí" : "no"}</div>
+              <div><span className="font-medium">Razón:</span> {String(finalAcceptance?.reason ?? "—")}</div>
+            </div>
+          ) : <p className="mt-2 text-sm text-muted-foreground">Sin final acceptance gate.</p>}
+        </section>
+        <section className="rounded-lg border p-3">
+          <h3 className="font-medium">Performance</h3>
+          {performance ? (
+            <div className="mt-2 space-y-2 text-sm">
+              <div><span className="font-medium">Runtime:</span> {Number(performance?.runtimeMs ?? 0)} ms</div>
+              <div><span className="font-medium">Estrategias:</span> {Number(performance?.strategiesEvaluated ?? 0)}</div>
+              <div><span className="font-medium">Perfil:</span> {String(performance?.profile ?? "—")}</div>
+              <div><span className="font-medium">Budget exceeded:</span> {performance?.budgetExceeded ? "sí" : "no"}</div>
+              <div><span className="font-medium">Omitidas:</span> {list(performance?.skippedStrategies).map(String).join(" · ") || "—"}</div>
+            </div>
+          ) : <p className="mt-2 text-sm text-muted-foreground">Sin métricas de performance.</p>}
+        </section>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
