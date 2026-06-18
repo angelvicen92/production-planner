@@ -202,6 +202,9 @@ export function PlanEngineDiagnostics({
   const nativeRemainder = Array.isArray(candidateRunner?.candidates)
     ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_native_remainder")?.nativeRemainderScheduler
     : (metadata as any)?.nativeRemainderScheduler ?? (diagnostics as any)?.nativeRemainderScheduler ?? null;
+  const nativeCriticalCore = Array.isArray(candidateRunner?.candidates)
+    ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_native_critical_core")?.nativeCriticalCoreScheduler
+    : (metadata as any)?.nativeCriticalCoreScheduler ?? (diagnostics as any)?.nativeCriticalCoreScheduler ?? null;
   const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
   const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
   const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
@@ -396,6 +399,15 @@ export function PlanEngineDiagnostics({
                 {productionWave ? `${productionWave?.accepted === false ? "rechazada" : productionWave?.applied ? "aplicada" : "no aplicada"} · ${metric(productionWave?.mainFlowTasksPlaced)} main · ${metric(productionWave?.prerequisitesPlaced)} prereq · gaps ${metric(productionWave?.mainFlowGapMinutes, " min")}` : "Sin production wave disponible."}
               </p>
               {productionWave?.rejectionReason ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{productionWave.rejectionReason}</p> : null}
+            </div>
+
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Native Critical Core</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {nativeCriticalCore ? `${nativeCriticalCore?.discarded ? "descartado" : nativeCriticalCore?.applied ? "aplicado" : "no aplicado"} · core ${metric(nativeCriticalCore?.coreTasksPlaced)}/${metric(nativeCriticalCore?.coreTasksSelected)} · delegadas ${metric(nativeCriticalCore?.coreTasksDelegated)} · locks ${metric(nativeCriticalCore?.strategicInternalLocks)} · V3 fill ${nativeCriticalCore?.v3FillUsed ? "sí" : "no"} · gaps ${metric(nativeCriticalCore?.flowGapMinutesBeforeV3Fill, " min")}→${metric(nativeCriticalCore?.finalMainFlowGapMinutes, " min")} · makespan ${nativeCriticalCore?.finalMakespan ?? "—"}` : "Sin native critical core disponible."}
+              </p>
+              {Array.isArray(nativeCriticalCore?.blockers) && nativeCriticalCore.blockers.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Blockers: {nativeCriticalCore.blockers.slice(0, 2).map((blocker: any) => `${blocker?.taskId ?? "—"}: ${blocker?.reason ?? "—"}`).join(" · ")}</p> : null}
+              {Array.isArray(nativeCriticalCore?.warnings) && nativeCriticalCore.warnings.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{nativeCriticalCore.warnings.slice(0, 2).join(" · ")}</p> : null}
             </div>
             <div className="rounded-md border px-3 py-2 text-sm">
               <div className="font-medium">Native Remainder Scheduler</div>

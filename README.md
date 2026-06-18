@@ -121,3 +121,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 072 — 2026-06-18 15:14 — V4 Production Wave V2 and V3/V4 Comparison Gate
 
 - ID 073 — 2026-06-18 00:00 — V4 Native Remainder Scheduler V1
+
+- ID 074 — 2026-06-18 15:50 — V4 Native Critical Core with V3 Fill
