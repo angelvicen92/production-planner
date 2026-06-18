@@ -5,6 +5,7 @@ import type { V4StrategicAnalysis } from "../analysis";
 import { buildV4GuidedInput, type V4GuidedOrderingDiagnostics } from "../guidedInput";
 import { improveMainFlowContinuity, type MainFlowImprovementDiagnostics } from "../improvement";
 import { buildMainFlowFirstPlan, type MainFlowFirstDiagnostics } from "../mainFlowScheduler";
+import { buildProductionWavePlan, type ProductionWaveDiagnostics } from "../productionWaveScheduler";
 import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
 
 export type V4CandidateStrategyId =
@@ -12,7 +13,8 @@ export type V4CandidateStrategyId =
   | "strategy_main_flow_guided"
   | "strategy_critical_resources_first"
   | "strategy_critical_talents_first"
-  | "strategy_v4_main_flow_first";
+  | "strategy_v4_main_flow_first"
+  | "strategy_v4_production_wave";
 
 export interface V4CandidateDiagnostic {
   strategyId: V4CandidateStrategyId;
@@ -29,6 +31,7 @@ export interface V4CandidateDiagnostic {
   quality: V4PlanQualityEvaluation;
   mainFlowImprovement: MainFlowImprovementDiagnostics;
   mainFlowFirstScheduler?: MainFlowFirstDiagnostics;
+  productionWaveScheduler?: ProductionWaveDiagnostics;
 }
 
 export interface V4CandidateRunnerDiagnostics {
@@ -54,8 +57,9 @@ const STRATEGY_ORDER: V4CandidateStrategyId[] = [
   "strategy_critical_resources_first",
   "strategy_critical_talents_first",
   "strategy_v4_main_flow_first",
+  "strategy_v4_production_wave",
 ];
-const MAX_DEFAULT_STRATEGIES = 5;
+const MAX_DEFAULT_STRATEGIES = 6;
 const INF = Number.POSITIVE_INFINITY;
 
 function emptyGuidedOrdering(reason: string): V4GuidedOrderingDiagnostics {
@@ -85,7 +89,7 @@ function buildStrategyInput(strategyId: V4CandidateStrategyId, input: EngineInpu
   if (strategyId === "strategy_baseline_v3_order") {
     return { input, guidedOrdering: emptyGuidedOrdering("Baseline V3 order: original pending task order without V4 guided ordering.") };
   }
-  if (strategyId === "strategy_main_flow_guided" || strategyId === "strategy_v4_main_flow_first") return buildV4GuidedInput(input, strategicAnalysis);
+  if (strategyId === "strategy_main_flow_guided" || strategyId === "strategy_v4_main_flow_first" || strategyId === "strategy_v4_production_wave") return buildV4GuidedInput(input, strategicAnalysis);
 
   const guided = buildV4GuidedInput(input, strategicAnalysis);
   const guidedRank = new Map((guided.input.tasks ?? []).filter((task) => task.status === "pending").map((task, index) => [Number(task.id), index]));
@@ -129,12 +133,13 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
   const candidates = strategies.map((strategyId) => {
     const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
     const mainFlowFirst = strategyId === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, options) : null;
-    const candidateInput = mainFlowFirst?.delegatedInput ?? candidate.input;
-    const initialOutput = mainFlowFirst?.output ?? generatePlanV3(candidateInput, options);
+    const productionWave = strategyId === "strategy_v4_production_wave" ? buildProductionWavePlan(input, strategicAnalysis, options) : null;
+    const candidateInput = productionWave?.delegatedInput ?? mainFlowFirst?.delegatedInput ?? candidate.input;
+    const initialOutput = productionWave?.output ?? mainFlowFirst?.output ?? generatePlanV3(candidateInput, options);
     const initialQuality = evaluateV4PlanQuality(candidateInput, initialOutput, strategicAnalysis);
     const improved = improveMainFlowContinuity(candidateInput, initialOutput, strategicAnalysis, initialQuality);
     const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
-    return { strategyId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics };
+    return { strategyId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics, productionWaveScheduler: productionWave?.diagnostics };
   });
 
   let bestIndex = 0;
@@ -153,6 +158,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     quality: candidate.quality,
     mainFlowImprovement: candidate.mainFlowImprovement,
     mainFlowFirstScheduler: candidate.mainFlowFirstScheduler,
+    productionWaveScheduler: candidate.productionWaveScheduler,
   }));
   for (let i = 1; i < diagnostics.length; i += 1) if (compareCandidates(diagnostics[i], diagnostics[bestIndex]) < 0) bestIndex = i;
   diagnostics[bestIndex].selected = true;
