@@ -3,6 +3,7 @@ import { validateHardConstraints } from "../v3/hardValidation";
 import type { EngineInput, EngineOutput, LockInput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Options } from "../v3/types";
 import type { V4StrategicAnalysis } from "./analysis";
+import type { MainFlowSequenceVariant } from "./mainFlowSequenceSearch";
 import { evaluateV4PlanQuality } from "./quality";
 
 export interface V4NativeCriticalCoreBlocker { taskId: number; reason: string; details?: string; }
@@ -22,8 +23,10 @@ export interface V4NativeCriticalCoreDiagnostics {
   warnings: string[];
   infeasible?: boolean;
   reason?: string;
+  sequenceVariantId?: string;
+  sequenceVariantLabel?: string;
 }
-export interface V4NativeCriticalCoreOptions extends EngineV3Options { maxSlotsEvaluatedPerTask?: number; maxCoreIterations?: number; maxRuntimeMs?: number; slotStepMinutes?: number; }
+export interface V4NativeCriticalCoreOptions extends EngineV3Options { maxSlotsEvaluatedPerTask?: number; maxCoreIterations?: number; maxRuntimeMs?: number; slotStepMinutes?: number; sequenceOverride?: MainFlowSequenceVariant; }
 export interface V4NativeCriticalCoreResult { output: EngineOutput; delegatedInput: EngineInput; diagnostics: V4NativeCriticalCoreDiagnostics; }
 
 type Interval = { start: number; end: number; taskId?: number; resources?: number[]; kind?: string };
@@ -121,8 +124,10 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
   const coreIds = new Set<number>(); const addWithDeps = (task: TaskInput, depth = 0) => { if (depth > 20 || coreIds.has(task.id) || protectedTask(task)) return; coreIds.add(task.id); for (const depId of depsOf(task)) { const dep = byId.get(depId); if (dep?.status === "pending") addWithDeps(dep, depth + 1); } for (const tmpl of tmplDepsOf(task)) for (const dep of tasks) if (dep.templateId === tmpl && dep.contestantId === task.contestantId && dep.status === "pending") addWithDeps(dep, depth + 1); };
   for (const task of tasks) if (task.status === "pending" && !protectedTask(task) && (mainFlowId !== null && (spaceOf(task) === mainFlowId || Number(task.zoneId) === mainFlowId) || resOf(task).some((id) => criticalResources.has(id)) || criticalTalents.has(talentOf(task) ?? -1) || continuousSpaces.has(spaceOf(task) ?? -1))) addWithDeps(task);
   const diag: V4NativeCriticalCoreDiagnostics = { applied: true, coreTasksSelected: coreIds.size, coreTasksPlaced: 0, coreTasksDelegated: 0, strategicInternalLocks: 0, v3FillUsed: false, flowGapMinutesBeforeV3Fill: 0, finalMainFlowGapMinutes: 0, finalMakespan: null, iterations: 0, blockers: [], warnings: [] };
+  diag.sequenceVariantId = options.sequenceOverride?.id;
+  diag.sequenceVariantLabel = options.sequenceOverride?.label;
   const pending = new Set([...coreIds].filter((id) => { const t = byId.get(id); if (!t || unsafeResources(t)) { if (t) diag.warnings.push(`Task ${id} delegated to V3: unsafe resource requirement.`); return false; } return true; }));
-  const delegatedUnsafe = coreIds.size - pending.size; const placed = new Map<number, Interval>(); const order = new Map(tasks.map((t, i) => [t.id, i])); const flowRank = new Map((strategicAnalysis.mainFlowSequence ?? []).map((x, i) => [x.talentId, i]));
+  const delegatedUnsafe = coreIds.size - pending.size; const placed = new Map<number, Interval>(); const order = new Map(tasks.map((t, i) => [t.id, i])); const sequence = options.sequenceOverride?.sequence ?? strategicAnalysis.mainFlowSequence ?? []; const flowRank = new Map(sequence.map((x, i) => [x.talentId, i]));
   while (pending.size && diag.iterations < maxCoreIterations && Date.now() - started <= maxRuntimeMs) {
     diag.iterations += 1; let progressed = false; const ready: Array<{ task: TaskInput; earliest: number }> = [];
     for (const id of pending) { const task = byId.get(id); if (!task) continue; const blockersBefore = diag.blockers.length; const earliest = depEnd(byId, placed, task, diag.blockers); if (earliest !== null) ready.push({ task, earliest }); else diag.blockers.splice(blockersBefore); }

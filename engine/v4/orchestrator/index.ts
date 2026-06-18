@@ -185,6 +185,7 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
     blockRepacker: repacked.diagnostics,
     improvementEngine: improved.diagnostics,
     mainFlowImprovement: candidateResult.bestMainFlowImprovement,
+    mainFlowSequenceSearch: candidateResult.candidatesDiagnostics.mainFlowSequenceSearch,
     candidateRunner: candidateResult.candidatesDiagnostics,
     v3V4Comparison: { v3Baseline: baselineQuality, v4Final: repacked.quality, comparison },
     bestStrategyId: candidateResult.bestStrategyId,

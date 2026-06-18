@@ -731,6 +731,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const guidedOrdering = diagnostics?.guidedOrdering ?? null;
   const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
   const candidateRunner = diagnostics?.candidateRunner ?? null;
+  const sequenceSearch = diagnostics?.mainFlowSequenceSearch ?? candidateRunner?.mainFlowSequenceSearch ?? null;
   const postOptimizer = diagnostics?.postOptimizer ?? null;
   const blockRepacker = diagnostics?.blockRepacker ?? null;
   const executiveSummary = diagnostics?.executiveSummary ?? null;
@@ -765,6 +766,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const improvementMoves = list(mainFlowImprovement?.moves);
   const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
   const candidateDiagnostics = list(candidateRunner?.candidates);
+  const sequenceVariants = list(sequenceSearch?.variants);
   const mainFlowFirst = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_main_flow_first")?.mainFlowFirstScheduler ?? diagnostics?.mainFlowFirstScheduler ?? null;
   const productionWave = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_production_wave")?.productionWaveScheduler ?? diagnostics?.productionWaveScheduler ?? null;
   const mainFlowFirstBlockers = list(mainFlowFirst?.blockers);
@@ -898,7 +900,42 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
         </section>
       </div>
 
-
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Main Flow Sequence Search</h3>
+          <Badge variant={sequenceSearch?.applied ? "default" : "outline"}>
+            {sequenceSearch?.applied ? "Aplicado" : "No aplicado"}
+          </Badge>
+        </div>
+        {sequenceSearch ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-2">
+              <div><span className="font-medium">Variantes generadas:</span> {Number(sequenceSearch?.variantCount ?? sequenceVariants.length ?? 0)}</div>
+              <div><span className="font-medium">Variante seleccionada:</span> {String(sequenceSearch?.selectedVariantId ?? "—")}</div>
+            </div>
+            {sequenceVariants.length ? (
+              <div className="grid gap-2 md:grid-cols-2">
+                {sequenceVariants.map((variant: any) => (
+                  <div key={String(variant?.id ?? variant?.label)} className="rounded border p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{String(variant?.label ?? variant?.id ?? "—")}</span>
+                      <Badge variant="outline">{Number(variant?.talentCount ?? 0)} talentos</Badge>
+                    </div>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {list(variant?.topTalents).slice(0, 5).map((talent: any, index: number) => (
+                        <li key={`${variant?.id}-${talent?.talentId}-${index}`}>
+                          #{index + 1} Talent {String(talent?.talentId ?? "—")} · {score(talent?.score)} · {renderReasons(talent)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground">No hay variantes de secuencia para mostrar.</p>}
+            {list(sequenceSearch?.warnings).length ? <div className="text-xs text-amber-700">{list(sequenceSearch?.warnings).map(String).join(" · ")}</div> : null}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene búsqueda de secuencias.</p>}
+      </section>
 
       <section className="rounded-lg border p-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -920,6 +957,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
                     <tr>
                       <th className="py-1 pr-2">Estrategia</th>
                       <th className="py-1 pr-2">Quality</th>
+                      <th className="py-1 pr-2">Sequence variant</th>
                       <th className="py-1 pr-2">Gaps flujo</th>
                       <th className="py-1 pr-2">Makespan</th>
                       <th className="py-1 pr-2">No planificadas</th>
@@ -931,6 +969,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
                       <tr key={`${candidate?.strategyId ?? "strategy"}-${index}`} className="border-t align-top">
                         <td className="py-2 pr-2 font-medium">{String(candidate?.strategyId ?? "—")}</td>
                         <td className="py-2 pr-2"><Badge variant="outline">{score(candidate?.qualityScore)}</Badge></td>
+                        <td className="py-2 pr-2">{String(candidate?.sequenceVariantId ?? "—")}</td>
                         <td className="py-2 pr-2">{Number(candidate?.mainFlowGapMinutes ?? 0)} min</td>
                         <td className="py-2 pr-2">{String(candidate?.makespan ?? "—")}</td>
                         <td className="py-2 pr-2">{Number(candidate?.unplannedTasks ?? 0)}</td>

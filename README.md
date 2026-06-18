@@ -129,3 +129,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 076 — 2026-06-18 18:07 — V4 Strategic Block Repacker V1
 
 - ID 077 — 2026-06-18 19:23 — V4 Hierarchical Improvement Engine V1
+
+- ID 078 — 2026-06-18 19:39 — V4 Main Flow Sequence Search V1
