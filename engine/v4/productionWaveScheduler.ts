@@ -3,6 +3,7 @@ import { validateHardConstraints } from "../v3/hardValidation";
 import type { EngineInput, EngineOutput, LockInput, TaskInput, TimeWindow } from "../types";
 import type { EngineV3Options } from "../v3/types";
 import type { V4StrategicAnalysis } from "./analysis";
+import type { MainFlowSequenceVariant } from "./mainFlowSequenceSearch";
 import { buildV4GuidedInput } from "./guidedInput";
 
 export interface ProductionWaveBlocker { taskId: number; reason: string; details?: string; }
@@ -27,10 +28,12 @@ export interface ProductionWaveDiagnostics {
   dependencyChains?: Array<{ mainFlowTaskId: number; chainTaskIds: number[]; placed: boolean; reason: string }>;
   infeasible?: boolean;
   reason?: string;
+  sequenceVariantId?: string;
+  sequenceVariantLabel?: string;
 }
 export interface ProductionWaveResult { output: EngineOutput; delegatedInput: EngineInput; diagnostics: ProductionWaveDiagnostics; }
 
-interface Options { maxDependencyDepth?: number; maxWaveStartCandidates?: number; }
+interface Options { maxDependencyDepth?: number; maxWaveStartCandidates?: number; sequenceOverride?: MainFlowSequenceVariant; }
 type Interval = { start: number; end: number; taskId?: number; kind?: string; resources?: number[] };
 const INF = Number.POSITIVE_INFINITY;
 const toMin = (v?: string | null): number | null => { const [h, m] = String(v ?? "").split(":").map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null; };
@@ -128,7 +131,10 @@ export function buildProductionWavePlan(input: EngineInput, strategicAnalysis: V
   const diag: ProductionWaveDiagnostics = { applied: false, mainFlowSpaceId: strategicAnalysis.mainFlow?.id ?? null, waveStart: null, waveEnd: null, mainFlowTasksPlaced: 0, prerequisitesPlaced: 0, dependentTasksPlaced: 0, strategicInternalLocks: 0, mainFlowGapMinutes: 0, resourceAwareValidation: true, blockers: [], warnings: [], fallbackUsed: false };
   if (!strategicAnalysis.mainFlow) { const guided = buildV4GuidedInput(input, strategicAnalysis); return { output: generatePlanV3(guided.input, options), delegatedInput: guided.input, diagnostics: { ...diag, fallbackUsed: true, reason: "No main flow configured; delegated to V3." } }; }
   const tasks = input.tasks ?? []; const byId = new Map(tasks.map((t) => [t.id, t]));
-  const order = new Map((strategicAnalysis.mainFlowSequence ?? []).map((x, i) => [x.talentId, i]));
+  diag.sequenceVariantId = options?.sequenceOverride?.id;
+  diag.sequenceVariantLabel = options?.sequenceOverride?.label;
+  const sequence = options?.sequenceOverride?.sequence ?? strategicAnalysis.mainFlowSequence ?? [];
+  const order = new Map(sequence.map((x, i) => [x.talentId, i]));
   const main = tasks.filter((t) => t.status === "pending" && !isProtected(t) && isMainFlowTask(t, strategicAnalysis.mainFlow!.id)).sort((a, b) => (order.get(Number(a.contestantId)) ?? INF) - (order.get(Number(b.contestantId)) ?? INF));
   const dependentsByTask = new Map<number, TaskInput[]>();
   for (const t of tasks) for (const dep of directDeps(t)) dependentsByTask.set(dep, [...(dependentsByTask.get(dep) ?? []), t]);
