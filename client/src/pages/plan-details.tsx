@@ -760,6 +760,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const improvementMoves = list(mainFlowImprovement?.moves);
   const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
   const candidateDiagnostics = list(candidateRunner?.candidates);
+  const mainFlowFirst = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_main_flow_first")?.mainFlowFirstScheduler ?? diagnostics?.mainFlowFirstScheduler ?? null;
+  const mainFlowFirstBlockers = list(mainFlowFirst?.blockers);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -890,6 +892,37 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
             ) : <p className="text-sm text-muted-foreground">No hay candidatos de estrategia para mostrar.</p>}
           </div>
         ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene candidate runner.</p>}
+      </section>
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Main Flow First Scheduler</h3>
+          <Badge variant={mainFlowFirst?.applied ? "default" : mainFlowFirst?.fallbackUsed ? "secondary" : "outline"}>
+            {mainFlowFirst?.applied ? "Aplicado" : mainFlowFirst?.fallbackUsed ? "Fallback" : "Sin datos"}
+          </Badge>
+        </div>
+        {mainFlowFirst ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-3">
+              <div><span className="font-medium">Espacio principal:</span> {String(mainFlowFirst?.mainFlowSpaceId ?? mainFlow?.id ?? "—")}</div>
+              <div><span className="font-medium">Tareas flujo colocadas:</span> {Number(mainFlowFirst?.scheduledMainFlowTasks ?? 0)}</div>
+              <div><span className="font-medium">Tareas flujo sin colocar:</span> {Number(mainFlowFirst?.unscheduledMainFlowTasks ?? 0)}</div>
+              <div><span className="font-medium">Prerequisitos colocados:</span> {Number(mainFlowFirst?.placedPrerequisites ?? 0)}</div>
+              <div><span className="font-medium">Inicio / fin:</span> {String(mainFlowFirst?.blockStart ?? "—")} / {String(mainFlowFirst?.blockEnd ?? "—")}</div>
+              <div><span className="font-medium">Huecos internos:</span> {Number(mainFlowFirst?.internalGapMinutes ?? 0)} min</div>
+            </div>
+            <p className="text-muted-foreground">{String(mainFlowFirst?.reason ?? "Sin detalle registrado.")}</p>
+            {mainFlowFirstBlockers.length ? (
+              <ul className="grid gap-2 md:grid-cols-2">
+                {mainFlowFirstBlockers.slice(0, 6).map((blocker: any, index: number) => (
+                  <li key={`${blocker?.taskId ?? "blocker"}-${index}`} className="rounded border p-2">
+                    <span className="font-medium">Tarea {String(blocker?.taskId ?? "—")}:</span> {String(blocker?.reason ?? "Blocker sin motivo")}
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-muted-foreground">Sin blockers principales.</p>}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene datos del Main Flow First Scheduler.</p>}
       </section>
 
       <section className="rounded-lg border p-3">

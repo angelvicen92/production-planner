@@ -4,13 +4,15 @@ import type { EngineV3Options } from "../../v3/types";
 import type { V4StrategicAnalysis } from "../analysis";
 import { buildV4GuidedInput, type V4GuidedOrderingDiagnostics } from "../guidedInput";
 import { improveMainFlowContinuity, type MainFlowImprovementDiagnostics } from "../improvement";
+import { buildMainFlowFirstPlan, type MainFlowFirstDiagnostics } from "../mainFlowScheduler";
 import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
 
 export type V4CandidateStrategyId =
   | "strategy_baseline_v3_order"
   | "strategy_main_flow_guided"
   | "strategy_critical_resources_first"
-  | "strategy_critical_talents_first";
+  | "strategy_critical_talents_first"
+  | "strategy_v4_main_flow_first";
 
 export interface V4CandidateDiagnostic {
   strategyId: V4CandidateStrategyId;
@@ -26,6 +28,7 @@ export interface V4CandidateDiagnostic {
   qualityBeforeImprovement: V4PlanQualityEvaluation;
   quality: V4PlanQualityEvaluation;
   mainFlowImprovement: MainFlowImprovementDiagnostics;
+  mainFlowFirstScheduler?: MainFlowFirstDiagnostics;
 }
 
 export interface V4CandidateRunnerDiagnostics {
@@ -50,8 +53,9 @@ const STRATEGY_ORDER: V4CandidateStrategyId[] = [
   "strategy_main_flow_guided",
   "strategy_critical_resources_first",
   "strategy_critical_talents_first",
+  "strategy_v4_main_flow_first",
 ];
-const MAX_DEFAULT_STRATEGIES = 4;
+const MAX_DEFAULT_STRATEGIES = 5;
 const INF = Number.POSITIVE_INFINITY;
 
 function emptyGuidedOrdering(reason: string): V4GuidedOrderingDiagnostics {
@@ -81,7 +85,7 @@ function buildStrategyInput(strategyId: V4CandidateStrategyId, input: EngineInpu
   if (strategyId === "strategy_baseline_v3_order") {
     return { input, guidedOrdering: emptyGuidedOrdering("Baseline V3 order: original pending task order without V4 guided ordering.") };
   }
-  if (strategyId === "strategy_main_flow_guided") return buildV4GuidedInput(input, strategicAnalysis);
+  if (strategyId === "strategy_main_flow_guided" || strategyId === "strategy_v4_main_flow_first") return buildV4GuidedInput(input, strategicAnalysis);
 
   const guided = buildV4GuidedInput(input, strategicAnalysis);
   const guidedRank = new Map((guided.input.tasks ?? []).filter((task) => task.status === "pending").map((task, index) => [Number(task.id), index]));
@@ -124,11 +128,13 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
   const strategies = STRATEGY_ORDER.slice(0, MAX_DEFAULT_STRATEGIES);
   const candidates = strategies.map((strategyId) => {
     const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
-    const initialOutput = generatePlanV3(candidate.input, options);
-    const initialQuality = evaluateV4PlanQuality(candidate.input, initialOutput, strategicAnalysis);
-    const improved = improveMainFlowContinuity(candidate.input, initialOutput, strategicAnalysis, initialQuality);
-    const quality = evaluateV4PlanQuality(candidate.input, improved.output, strategicAnalysis);
-    return { strategyId, candidateInput: candidate.input, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics };
+    const mainFlowFirst = strategyId === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, options) : null;
+    const candidateInput = mainFlowFirst?.delegatedInput ?? candidate.input;
+    const initialOutput = mainFlowFirst?.output ?? generatePlanV3(candidateInput, options);
+    const initialQuality = evaluateV4PlanQuality(candidateInput, initialOutput, strategicAnalysis);
+    const improved = improveMainFlowContinuity(candidateInput, initialOutput, strategicAnalysis, initialQuality);
+    const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
+    return { strategyId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics };
   });
 
   let bestIndex = 0;
@@ -146,6 +152,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     qualityBeforeImprovement: candidate.qualityBeforeImprovement,
     quality: candidate.quality,
     mainFlowImprovement: candidate.mainFlowImprovement,
+    mainFlowFirstScheduler: candidate.mainFlowFirstScheduler,
   }));
   for (let i = 1; i < diagnostics.length; i += 1) if (compareCandidates(diagnostics[i], diagnostics[bestIndex]) < 0) bestIndex = i;
   diagnostics[bestIndex].selected = true;
