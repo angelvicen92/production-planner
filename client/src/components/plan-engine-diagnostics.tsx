@@ -207,6 +207,7 @@ export function PlanEngineDiagnostics({
     : (metadata as any)?.nativeCriticalCoreScheduler ?? (diagnostics as any)?.nativeCriticalCoreScheduler ?? null;
   const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
   const blockRepacker = (metadata as any)?.blockRepacker ?? (diagnostics as any)?.blockRepacker ?? null;
+  const improvementEngine = (metadata as any)?.improvementEngine ?? (diagnostics as any)?.improvementEngine ?? null;
   const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
   const executiveSummary = (metadata as any)?.executiveSummary ?? (diagnostics as any)?.executiveSummary ?? null;
   const finalAcceptance = (metadata as any)?.finalAcceptance ?? (diagnostics as any)?.finalAcceptance ?? null;
@@ -405,6 +406,37 @@ export function PlanEngineDiagnostics({
               <p className="mt-1 text-xs text-muted-foreground">{performance ? `${metric(performance?.runtimeMs, " ms")} · ${metric(performance?.strategiesEvaluated)} estrategias · perfil ${label(performance?.profile)} · budget ${performance?.budgetExceeded ? "excedido" : "ok"}` : "Sin métricas de performance."}</p>
               {Array.isArray(performance?.skippedStrategies) && performance.skippedStrategies.length ? <p className="mt-1 text-xs text-muted-foreground">Omitidas: {performance.skippedStrategies.slice(0, 4).map(label).join(" · ")}</p> : null}
             </div>
+          </div>
+          <div className="mb-3 rounded-md border px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-medium">Improvement Engine</div>
+              <Badge variant={improvementEngine?.applied ? "default" : "outline"}>{improvementEngine?.applied ? "aplicado" : "omitido"}</Badge>
+            </div>
+            {improvementEngine ? (
+              <div className="mt-2 space-y-2">
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  <MetricCell title="Runtime" value={metric(improvementEngine?.runtimeMs, " ms")} />
+                  <MetricCell title="Aceptados / rechazados" value={`${metric(improvementEngine?.movesAccepted)} / ${metric(improvementEngine?.movesRejected)}`} />
+                  <MetricCell title="Makespan" value={`${improvementEngine?.makespanBefore ?? "—"} → ${improvementEngine?.makespanAfter ?? "—"}`} />
+                  <MetricCell title="Gap flujo principal" value={`${metric(improvementEngine?.mainFlowGapMinutesBefore, " min")} → ${metric(improvementEngine?.mainFlowGapMinutesAfter, " min")}`} />
+                  <MetricCell title="Permanencia total" value={`${metric(improvementEngine?.totalTalentStayBefore, " min")} → ${metric(improvementEngine?.totalTalentStayAfter, " min")}`} />
+                  <MetricCell title="Iteraciones" value={metric(improvementEngine?.iterations)} />
+                </div>
+                {Array.isArray(improvementEngine?.families) && improvementEngine.families.length ? (
+                  <p className="text-xs text-muted-foreground">
+                    Familias: {improvementEngine.families.map((family: any) => `${label(family?.name)} ${metric(family?.accepted)}/${metric(family?.candidates)}`).join(" · ")}
+                  </p>
+                ) : <p className="text-xs text-muted-foreground">Sin familias ejecutadas.</p>}
+                {Array.isArray(improvementEngine?.acceptedMoves) && improvementEngine.acceptedMoves.length ? (
+                  <ul className="space-y-1 text-xs text-muted-foreground">
+                    {improvementEngine.acceptedMoves.slice(0, 5).map((move: any, index: number) => (
+                      <li key={`${move?.family ?? "move"}-${index}`}>{label(move?.family)} · tareas {(move?.taskIds ?? []).join(", ") || "—"} · {move?.from ?? "—"} → {move?.to ?? "—"} · {move?.reason ?? "—"}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {Array.isArray(improvementEngine?.warnings) && improvementEngine.warnings.length ? <p className="text-xs text-amber-700 dark:text-amber-400">{improvementEngine.warnings.slice(0, 3).join(" · ")}</p> : null}
+              </div>
+            ) : <p className="mt-1 text-xs text-muted-foreground">Sin improvement engine disponible para esta ejecución.</p>}
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-md border px-3 py-2 text-sm">

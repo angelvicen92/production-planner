@@ -3,8 +3,9 @@ import type { EngineV3Options } from "../../v3/types";
 import { analyzeStrategicScenario } from "../analysis";
 import { runV4CandidateStrategies, type V4CandidateStrategyId } from "../candidates";
 import { compareV3AndV4Quality, type V3V4QualityComparison } from "../comparison";
-import { optimizeV4PlanPostSelection, type V4PostOptimizerDiagnostics } from "../postOptimizer";
-import { repackV4StrategicBlocks, type V4BlockRepackerDiagnostics } from "../blockRepacker";
+import type { V4PostOptimizerDiagnostics } from "../postOptimizer";
+import type { V4BlockRepackerDiagnostics } from "../blockRepacker";
+import { runV4HierarchicalImprovementEngine } from "../improvementEngine";
 import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
 import type { EngineV4Diagnostics, EngineV4Result } from "../index";
 const ENGINE_V4_VERSION = "v4" as const;
@@ -20,6 +21,7 @@ export interface V4ProOrchestratorOptions extends EngineV3Options {
   enableProductionWave?: boolean;
   enablePostOptimizer?: boolean;
   enableBlockRepacker?: boolean;
+  enableImprovementEngine?: boolean;
 }
 
 export interface V4FinalAcceptanceDiagnostics {
@@ -147,22 +149,16 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
   const baselineQuality = baselineDiagnostic?.quality ?? evaluateV4PlanQuality(input, baselineOutput, strategicAnalysis);
 
   const remaining = maxRuntimeMs - (Date.now() - started);
-  const canPostOptimize = rawOptions.enablePostOptimizer !== false
+  const canImprove = rawOptions.enableImprovementEngine !== false
     && remaining > 50
     && candidateResult.bestOutput.hardFeasible !== false
     && unplanned(candidateResult.bestOutput) <= unplanned(baselineOutput);
-  const optimized = canPostOptimize
-    ? optimizeV4PlanPostSelection(input, candidateResult.bestOutput, strategicAnalysis, candidateResult.bestQuality, { ...rawOptions, postOptimizer: { ...(rawOptions as any).postOptimizer, maxRuntimeMs: Math.max(50, remaining) } } as any)
-    : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { ...EMPTY_POST, warnings: ["Post-optimizer skipped: candidate was not safe enough or no runtime budget remained."] } };
+  const improved = canImprove
+    ? runV4HierarchicalImprovementEngine(input, candidateResult.bestOutput, strategicAnalysis, candidateResult.bestQuality, { ...rawOptions, improvementEngine: { ...(rawOptions as any).improvementEngine, maxRuntimeMs: Math.max(50, remaining) } } as any)
+    : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { applied: false, runtimeMs: 0, iterations: 0, movesAccepted: 0, movesRejected: 0, qualityBefore: candidateResult.bestQuality, qualityAfter: candidateResult.bestQuality, makespanBefore: candidateResult.bestQuality.makespan.lastTaskEnd, makespanAfter: candidateResult.bestQuality.makespan.lastTaskEnd, mainFlowGapMinutesBefore: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, mainFlowGapMinutesAfter: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, totalTalentStayBefore: candidateResult.bestQuality.talentStayTime.totalStayMinutes, totalTalentStayAfter: candidateResult.bestQuality.talentStayTime.totalStayMinutes, families: [], acceptedMoves: [], warnings: ["Improvement engine skipped: candidate was not safe enough or no runtime budget remained."] } };
 
-  const remainingAfterPostOptimizer = maxRuntimeMs - (Date.now() - started);
-  const canBlockRepack = rawOptions.enableBlockRepacker !== false
-    && remainingAfterPostOptimizer > 50
-    && optimized.output.hardFeasible !== false
-    && unplanned(optimized.output) <= unplanned(baselineOutput);
-  const repacked = canBlockRepack
-    ? repackV4StrategicBlocks(input, optimized.output, strategicAnalysis, optimized.quality, { ...rawOptions, blockRepacker: { ...(rawOptions as any).blockRepacker, maxRuntimeMs: Math.max(50, remainingAfterPostOptimizer) } } as any)
-    : { output: optimized.output, quality: optimized.quality, diagnostics: { ...EMPTY_BLOCK_REPACKER, skippedReason: "Block repacker skipped: candidate was not safe enough or no runtime budget remained.", warnings: ["Block repacker skipped: candidate was not safe enough or no runtime budget remained."] } };
+  const optimized = { output: improved.output, quality: improved.quality, diagnostics: { ...EMPTY_POST, warnings: ["Post-optimizer superseded by V4 hierarchical improvement engine."] } };
+  const repacked = { output: improved.output, quality: improved.quality, diagnostics: { ...EMPTY_BLOCK_REPACKER, skippedReason: "Block repacker managed internally by V4 hierarchical improvement engine.", warnings: ["Block repacker superseded by V4 hierarchical improvement engine."] } };
 
   const comparisonBeforeGate = compareV3AndV4Quality(baselineQuality, repacked.quality);
   const finalAcceptance = finalAcceptanceGate(input, baselineOutput, baselineQuality, repacked.output, repacked.quality);
@@ -187,6 +183,7 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
     qualityBeforePostOptimizer: candidateResult.bestQuality,
     postOptimizer: optimized.diagnostics,
     blockRepacker: repacked.diagnostics,
+    improvementEngine: improved.diagnostics,
     mainFlowImprovement: candidateResult.bestMainFlowImprovement,
     candidateRunner: candidateResult.candidatesDiagnostics,
     v3V4Comparison: { v3Baseline: baselineQuality, v4Final: repacked.quality, comparison },

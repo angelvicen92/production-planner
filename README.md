@@ -127,3 +127,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 075 — 2026-06-18 16:03 — V4 Pro Orchestrator and Quality Gate
 
 - ID 076 — 2026-06-18 18:07 — V4 Strategic Block Repacker V1
+
+- ID 077 — 2026-06-18 19:23 — V4 Hierarchical Improvement Engine V1
