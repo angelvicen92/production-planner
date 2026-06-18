@@ -199,6 +199,9 @@ export function PlanEngineDiagnostics({
   const productionWave = Array.isArray(candidateRunner?.candidates)
     ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_production_wave")?.productionWaveScheduler
     : (metadata as any)?.productionWaveScheduler ?? (diagnostics as any)?.productionWaveScheduler ?? null;
+  const nativeRemainder = Array.isArray(candidateRunner?.candidates)
+    ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_native_remainder")?.nativeRemainderScheduler
+    : (metadata as any)?.nativeRemainderScheduler ?? (diagnostics as any)?.nativeRemainderScheduler ?? null;
   const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
   const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
   const resourceWarnings = Array.isArray(diagnostics.diagnosticWarnings?.resourceDiagnosticWarnings)
@@ -393,6 +396,19 @@ export function PlanEngineDiagnostics({
                 {productionWave ? `${productionWave?.accepted === false ? "rechazada" : productionWave?.applied ? "aplicada" : "no aplicada"} · ${metric(productionWave?.mainFlowTasksPlaced)} main · ${metric(productionWave?.prerequisitesPlaced)} prereq · gaps ${metric(productionWave?.mainFlowGapMinutes, " min")}` : "Sin production wave disponible."}
               </p>
               {productionWave?.rejectionReason ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{productionWave.rejectionReason}</p> : null}
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Native Remainder Scheduler</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {nativeRemainder ? `${nativeRemainder?.discarded ? "descartado" : nativeRemainder?.applied ? "aplicado" : "no aplicado"} · wave ${metric(nativeRemainder?.placedByWave)} · native ${metric(nativeRemainder?.placedByNativeScheduler)} · unplanned ${metric(nativeRemainder?.unplanned)} · makespan ${nativeRemainder?.makespan ?? "—"} · gaps ${metric(nativeRemainder?.mainFlowGapMinutes, " min")}` : "Sin native remainder scheduler disponible."}
+              </p>
+              {Array.isArray(nativeRemainder?.buckets) && nativeRemainder.buckets.length ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {nativeRemainder.buckets.slice(0, 5).map((bucket: any) => `${label(bucket?.name)} ${metric(bucket?.placed)}/${metric(bucket?.tasks)}`).join(" · ")}
+                </p>
+              ) : null}
+              {Array.isArray(nativeRemainder?.blockers) && nativeRemainder.blockers.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Blockers: {nativeRemainder.blockers.slice(0, 2).map((blocker: any) => `${blocker?.taskId ?? "—"}: ${blocker?.reason ?? "—"}`).join(" · ")}</p> : null}
+              {Array.isArray(nativeRemainder?.warnings) && nativeRemainder.warnings.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{nativeRemainder.warnings.slice(0, 2).join(" · ")}</p> : null}
             </div>
             <div className="rounded-md border px-3 py-2 text-sm">
               <div className="font-medium">Post Optimizer</div>
