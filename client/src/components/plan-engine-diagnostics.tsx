@@ -206,6 +206,7 @@ export function PlanEngineDiagnostics({
     ? candidateRunner.candidates.find((candidate: any) => candidate?.strategyId === "strategy_v4_native_critical_core")?.nativeCriticalCoreScheduler
     : (metadata as any)?.nativeCriticalCoreScheduler ?? (diagnostics as any)?.nativeCriticalCoreScheduler ?? null;
   const postOptimizer = (metadata as any)?.postOptimizer ?? (diagnostics as any)?.postOptimizer ?? null;
+  const blockRepacker = (metadata as any)?.blockRepacker ?? (diagnostics as any)?.blockRepacker ?? null;
   const v3V4Comparison = (metadata as any)?.v3V4Comparison ?? (diagnostics as any)?.v3V4Comparison ?? null;
   const executiveSummary = (metadata as any)?.executiveSummary ?? (diagnostics as any)?.executiveSummary ?? null;
   const finalAcceptance = (metadata as any)?.finalAcceptance ?? (diagnostics as any)?.finalAcceptance ?? null;
@@ -446,6 +447,13 @@ export function PlanEngineDiagnostics({
               <p className="mt-1 text-xs text-muted-foreground">
                 {postOptimizer ? `${postOptimizer?.applied ? "aplicado" : "sin cambios"} · ${metric(postOptimizer?.acceptedMoves)} movimientos aceptados` : "Sin post optimizer disponible."}
               </p>
+            </div>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              <div className="font-medium">Strategic Block Repacker</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {blockRepacker ? `${blockRepacker?.applied ? "aplicado" : "omitido"} · ${metric(blockRepacker?.blocksDetected)} bloques · ${metric(blockRepacker?.movesAccepted)} aceptados / ${metric(blockRepacker?.movesRejected)} rechazados · makespan ${blockRepacker?.makespanBefore ?? "—"} → ${blockRepacker?.makespanAfter ?? blockRepacker?.makespanBefore ?? "—"}` : "Sin strategic block repacker disponible."}
+              </p>
+              {Array.isArray(blockRepacker?.warnings) && blockRepacker.warnings.length ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{blockRepacker.warnings.slice(0, 2).join(" · ")}</p> : null}
             </div>
             <div className="rounded-md border px-3 py-2 text-sm">
               <div className="font-medium">V3/V4 Comparison</div>

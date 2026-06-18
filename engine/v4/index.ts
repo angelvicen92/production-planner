@@ -5,6 +5,7 @@ import type { V4GuidedOrderingDiagnostics } from "./guidedInput";
 import type { V4PlanQualityEvaluation } from "./quality";
 import type { MainFlowImprovementDiagnostics } from "./improvement";
 import type { V4PostOptimizerDiagnostics } from "./postOptimizer";
+import type { V4BlockRepackerDiagnostics } from "./blockRepacker";
 import type { V4CandidateRunnerDiagnostics, V4CandidateStrategyId } from "./candidates";
 import type { V3V4QualityComparison } from "./comparison";
 import { runV4ProOrchestrator } from "./orchestrator";
@@ -24,6 +25,7 @@ export interface EngineV4Diagnostics {
   qualityBeforeImprovement?: V4PlanQualityEvaluation;
   qualityBeforePostOptimizer?: V4PlanQualityEvaluation;
   postOptimizer: V4PostOptimizerDiagnostics;
+  blockRepacker?: V4BlockRepackerDiagnostics;
   mainFlowImprovement: MainFlowImprovementDiagnostics;
   candidateRunner: V4CandidateRunnerDiagnostics;
   v3V4Comparison: { v3Baseline: V4PlanQualityEvaluation | null; v4Final: V4PlanQualityEvaluation; comparison: V3V4QualityComparison | null };
