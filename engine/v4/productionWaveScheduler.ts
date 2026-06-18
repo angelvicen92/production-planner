@@ -20,12 +20,17 @@ export interface ProductionWaveDiagnostics {
   blockers: ProductionWaveBlocker[];
   warnings: string[];
   fallbackUsed: boolean;
+  accepted?: boolean;
+  rejectionReason?: string;
+  maxWaveStartCandidates?: number;
+  waveStartCandidates?: string[];
+  dependencyChains?: Array<{ mainFlowTaskId: number; chainTaskIds: number[]; placed: boolean; reason: string }>;
   infeasible?: boolean;
   reason?: string;
 }
 export interface ProductionWaveResult { output: EngineOutput; delegatedInput: EngineInput; diagnostics: ProductionWaveDiagnostics; }
 
-interface Options { maxDependencyDepth?: number; }
+interface Options { maxDependencyDepth?: number; maxWaveStartCandidates?: number; }
 type Interval = { start: number; end: number; taskId?: number; kind?: string; resources?: number[] };
 const INF = Number.POSITIVE_INFINITY;
 const toMin = (v?: string | null): number | null => { const [h, m] = String(v ?? "").split(":").map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null; };
@@ -83,11 +88,23 @@ function conflicts(input: EngineInput, byId: Map<number, TaskInput>, placed: Map
   return null;
 }
 
-function findSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, earliest: number, warnings: string[]): Interval | null {
+function findSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, earliest: number, warnings: string[], latestEnd?: number): Interval | null {
   const workStart = toMin(input.workDay.start) ?? 0; const workEnd = toMin(input.workDay.end) ?? 24 * 60;
   const avail = input.contestantAvailabilityById?.[talentOf(task) ?? -1];
-  const startMin = Math.max(workStart, earliest, toMin(avail?.start) ?? workStart); const endMax = Math.min(workEnd, toMin(avail?.end) ?? workEnd);
+  const startMin = Math.max(workStart, earliest, toMin(avail?.start) ?? workStart); const endMax = Math.min(workEnd, toMin(avail?.end) ?? workEnd, latestEnd ?? workEnd);
   for (let s = startMin; s + duration(task) <= endMax; s += 5) {
+    const c = { start: s, end: s + duration(task), taskId: task.id };
+    if (!conflicts(input, byId, placed, task, c, warnings)) return c;
+  }
+  return null;
+}
+
+function findLatestSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, latestEnd: number, warnings: string[]): Interval | null {
+  const workStart = toMin(input.workDay.start) ?? 0; const workEnd = toMin(input.workDay.end) ?? 24 * 60;
+  const avail = input.contestantAvailabilityById?.[talentOf(task) ?? -1];
+  const endMax = Math.min(workEnd, latestEnd, toMin(avail?.end) ?? workEnd);
+  const startMin = Math.max(workStart, toMin(avail?.start) ?? workStart);
+  for (let s = endMax - duration(task); s >= startMin; s -= 5) {
     const c = { start: s, end: s + duration(task), taskId: task.id };
     if (!conflicts(input, byId, placed, task, c, warnings)) return c;
   }
@@ -110,26 +127,68 @@ function expandPrerequisites(root: TaskInput, tasks: TaskInput[], byId: Map<numb
 export function buildProductionWavePlan(input: EngineInput, strategicAnalysis: V4StrategicAnalysis, options?: EngineV3Options & Options): ProductionWaveResult {
   const diag: ProductionWaveDiagnostics = { applied: false, mainFlowSpaceId: strategicAnalysis.mainFlow?.id ?? null, waveStart: null, waveEnd: null, mainFlowTasksPlaced: 0, prerequisitesPlaced: 0, dependentTasksPlaced: 0, strategicInternalLocks: 0, mainFlowGapMinutes: 0, resourceAwareValidation: true, blockers: [], warnings: [], fallbackUsed: false };
   if (!strategicAnalysis.mainFlow) { const guided = buildV4GuidedInput(input, strategicAnalysis); return { output: generatePlanV3(guided.input, options), delegatedInput: guided.input, diagnostics: { ...diag, fallbackUsed: true, reason: "No main flow configured; delegated to V3." } }; }
-  const tasks = input.tasks ?? []; const byId = new Map(tasks.map((t) => [t.id, t])); const placed = new Map<number, Interval>();
+  const tasks = input.tasks ?? []; const byId = new Map(tasks.map((t) => [t.id, t]));
   const order = new Map((strategicAnalysis.mainFlowSequence ?? []).map((x, i) => [x.talentId, i]));
   const main = tasks.filter((t) => t.status === "pending" && !isProtected(t) && isMainFlowTask(t, strategicAnalysis.mainFlow!.id)).sort((a, b) => (order.get(Number(a.contestantId)) ?? INF) - (order.get(Number(b.contestantId)) ?? INF));
-  let cursor = Math.min(...[toMin(input.workDay.start) ?? 0, ...(main.map((m) => toMin(input.workDay.start) ?? 0))]);
   const dependentsByTask = new Map<number, TaskInput[]>();
   for (const t of tasks) for (const dep of directDeps(t)) dependentsByTask.set(dep, [...(dependentsByTask.get(dep) ?? []), t]);
-  for (const task of main) {
-    for (const dep of expandPrerequisites(task, tasks, byId, Number(options?.maxDependencyDepth ?? 3), diag.blockers)) {
-      if (placed.has(dep.id)) continue;
-      const slot = findSlot(input, byId, placed, dep, toMin(input.workDay.start) ?? 0, diag.warnings);
-      if (slot && slot.end <= Math.max(cursor, slot.end)) { placed.set(dep.id, slot); diag.prerequisitesPlaced += 1; cursor = Math.max(cursor, slot.end); }
-      else diag.blockers.push({ taskId: task.id, reason: "Prerequisite not safely placeable", details: `Prerequisite ${dep.id}` });
+  const workStart = toMin(input.workDay.start) ?? 0;
+  const maxCandidates = Math.max(1, Number(options?.maxWaveStartCandidates ?? 6));
+  const prereqEarliest = main.flatMap((task) => expandPrerequisites(task, tasks, byId, Number(options?.maxDependencyDepth ?? 3), diag.blockers));
+  const firstAfterPrereq = prereqEarliest.reduce((cursor, dep) => cursor + duration(dep), workStart);
+  const startCandidates = unique([workStart, workStart + 15, workStart + 30, workStart + 45, firstAfterPrereq]).slice(0, maxCandidates).sort((a, b) => a - b);
+  diag.maxWaveStartCandidates = maxCandidates;
+  diag.waveStartCandidates = startCandidates.map(hhmm);
+
+  const simulate = (waveStart: number) => {
+    const localWarnings: string[] = [];
+    const localBlockers: ProductionWaveBlocker[] = [];
+    const dependencyChains: Array<{ mainFlowTaskId: number; chainTaskIds: number[]; placed: boolean; reason: string }> = [];
+    const placed = new Map<number, Interval>();
+    let cursor = waveStart;
+    let prereqCount = 0;
+    let mainCount = 0;
+    let dependentCount = 0;
+    for (const task of main) {
+      const prereqs = expandPrerequisites(task, tasks, byId, Number(options?.maxDependencyDepth ?? 3), localBlockers);
+      const chainIds: number[] = [];
+      for (const dep of prereqs.reverse()) {
+        if (placed.has(dep.id)) continue;
+        const latest = Math.max(workStart + duration(dep), cursor);
+        const slot = findLatestSlot(input, byId, placed, dep, latest, localWarnings) ?? findSlot(input, byId, placed, dep, workStart, localWarnings, latest);
+        chainIds.push(dep.id);
+        if (slot && slot.end <= cursor) { placed.set(dep.id, slot); prereqCount += 1; }
+        else localBlockers.push({ taskId: task.id, reason: "Prerequisite not safely placeable just-in-time", details: `Prerequisite ${dep.id} delegated to V3` });
+      }
+      if (chainIds.length) dependencyChains.push({ mainFlowTaskId: task.id, chainTaskIds: chainIds, placed: chainIds.every((id) => placed.has(id)), reason: chainIds.every((id) => placed.has(id)) ? "Placed before main flow task" : "Some dependencies delegated to V3" });
+      const mainSlot = findSlot(input, byId, placed, task, cursor, localWarnings);
+      if (mainSlot) { placed.set(task.id, mainSlot); mainCount += 1; cursor = mainSlot.end; }
+      else { localBlockers.push({ taskId: task.id, reason: "No resource-aware slot found", details: "Delegated to V3 without internal lock." }); continue; }
+      for (const dep of (dependentsByTask.get(task.id) ?? []).filter((t) => t.status === "pending" && !isProtected(t) && !placed.has(t.id)).slice(0, 1)) {
+        const slot = findSlot(input, byId, placed, dep, cursor, localWarnings);
+        if (slot && slot.start - cursor <= 15) { placed.set(dep.id, slot); dependentCount += 1; cursor = slot.end; }
+      }
     }
-    const mainSlot = findSlot(input, byId, placed, task, cursor, diag.warnings);
-    if (mainSlot) { placed.set(task.id, mainSlot); diag.mainFlowTasksPlaced += 1; cursor = mainSlot.end; }
-    else { diag.blockers.push({ taskId: task.id, reason: "No resource-aware slot found", details: "Delegated to V3 without internal lock." }); continue; }
-    for (const dep of (dependentsByTask.get(task.id) ?? []).filter((t) => t.status === "pending" && !isProtected(t) && !placed.has(t.id)).slice(0, 1)) {
-      const slot = findSlot(input, byId, placed, dep, cursor, diag.warnings);
-      if (slot && slot.start - cursor <= 15) { placed.set(dep.id, slot); diag.dependentTasksPlaced += 1; cursor = slot.end; }
-    }
+    const mainWave = [...placed.entries()].filter(([id]) => main.some((t) => t.id === id)).map(([, p]) => p).sort((a, b) => a.start - b.start);
+    const gap = mainWave.reduce((sum, item, i) => i ? sum + Math.max(0, item.start - mainWave[i - 1].end) : 0, 0);
+    const end = mainWave.length ? Math.max(...mainWave.map((p) => p.end)) : INF;
+    const makespan = placed.size ? Math.max(...[...placed.values()].map((p) => p.end)) - workStart : INF;
+    return { waveStart, placed, prereqCount, mainCount, dependentCount, gap, end, makespan, localWarnings, localBlockers, dependencyChains };
+  };
+  const attempts = startCandidates.map(simulate).sort((a, b) => a.gap - b.gap || a.end - b.end || b.mainCount - a.mainCount || b.prereqCount - a.prereqCount || a.makespan - b.makespan);
+  const bestAttempt = attempts[0];
+  if (!bestAttempt) { const guided = buildV4GuidedInput(input, strategicAnalysis); return { output: generatePlanV3(guided.input, options), delegatedInput: guided.input, diagnostics: { ...diag, fallbackUsed: true, accepted: false, rejectionReason: "No production wave start candidates available.", reason: "Production wave delegated to V3." } }; }
+  diag.blockers.push(...bestAttempt.localBlockers);
+  diag.warnings.push(...bestAttempt.localWarnings);
+  diag.dependencyChains = bestAttempt.dependencyChains;
+  diag.prerequisitesPlaced = bestAttempt.prereqCount;
+  diag.mainFlowTasksPlaced = bestAttempt.mainCount;
+  diag.dependentTasksPlaced = bestAttempt.dependentCount;
+  const placed = bestAttempt.placed;
+  const placementRatio = main.length ? diag.mainFlowTasksPlaced / main.length : 1;
+  if (placementRatio < 0.6 && diag.blockers.length === 0) {
+    const guided = buildV4GuidedInput(input, strategicAnalysis);
+    return { output: generatePlanV3(guided.input, options), delegatedInput: guided.input, diagnostics: { ...diag, fallbackUsed: true, accepted: false, rejectionReason: "Production wave placed less than 60% of the main flow without clear blockers.", reason: "Production wave did not improve main flow continuity versus baseline." } };
   }
   const internalLocks: LockInput[] = [...placed].map(([taskId, p], i) => ({ id: -970000 - i, planId: input.planId, taskId, lockType: "time", lockedStart: hhmm(p.start), lockedEnd: hhmm(p.end) }));
   const delegatedInput = { ...input, locks: [...(input.locks ?? []), ...internalLocks] };
@@ -141,5 +200,10 @@ export function buildProductionWavePlan(input: EngineInput, strategicAnalysis: V
   const intact = tasks.filter((t) => t.status === "done" || t.status === "in_progress").every((t) => { const p = output.plannedTasks?.find((x: any) => Number(x.taskId) === t.id) as any; return !p || (p.startPlanned ?? p.start) === (t.startPlanned ?? t.startReal ?? p.startPlanned ?? p.start); });
   const ok = output.hardFeasible !== false && validation.hardValidationPassed && intact;
   if (!ok) output = { ...output, hardFeasible: false } as EngineOutput;
-  return { output, delegatedInput, diagnostics: { ...diag, applied: ok, infeasible: !ok, reason: ok ? "Production wave created strategic internal locks and delegated the rest to V3." : "Production wave discarded by hard defensive safety gate." } };
+  const reducedPlanned = (output.plannedTasks?.length ?? 0) < (generatePlanV3(buildV4GuidedInput(input, strategicAnalysis).input, options).plannedTasks?.length ?? 0);
+  if (reducedPlanned) {
+    const guided = buildV4GuidedInput(input, strategicAnalysis);
+    return { output: generatePlanV3(guided.input, options), delegatedInput: guided.input, diagnostics: { ...diag, applied: false, fallbackUsed: true, accepted: false, infeasible: !ok, rejectionReason: "Production wave reduced the number of planned tasks versus baseline.", reason: "Production wave rejected and delegated to V3." } };
+  }
+  return { output, delegatedInput, diagnostics: { ...diag, applied: ok, accepted: ok, infeasible: !ok, rejectionReason: ok ? undefined : "Production wave generated hard infeasible output.", reason: ok ? "Production wave created strategic internal locks and delegated the rest to V3." : "Production wave discarded by hard defensive safety gate." } };
 }
