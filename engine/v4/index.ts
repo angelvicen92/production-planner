@@ -4,6 +4,7 @@ import { analyzeStrategicScenario, type V4StrategicAnalysis } from "./analysis";
 import type { V4GuidedOrderingDiagnostics } from "./guidedInput";
 import type { V4PlanQualityEvaluation } from "./quality";
 import type { MainFlowImprovementDiagnostics } from "./improvement";
+import { optimizeV4PlanPostSelection, type V4PostOptimizerDiagnostics } from "./postOptimizer";
 import { runV4CandidateStrategies, type V4CandidateRunnerDiagnostics, type V4CandidateStrategyId } from "./candidates";
 
 export const ENGINE_V4_VERSION = "v4" as const;
@@ -19,6 +20,8 @@ export interface EngineV4Diagnostics {
   guidedOrdering: V4GuidedOrderingDiagnostics;
   quality: V4PlanQualityEvaluation;
   qualityBeforeImprovement?: V4PlanQualityEvaluation;
+  qualityBeforePostOptimizer?: V4PlanQualityEvaluation;
+  postOptimizer: V4PostOptimizerDiagnostics;
   mainFlowImprovement: MainFlowImprovementDiagnostics;
   candidateRunner: V4CandidateRunnerDiagnostics;
   bestStrategyId: V4CandidateStrategyId;
@@ -40,13 +43,22 @@ export function generatePlanV4(input: EngineInput, options?: EngineV3Options): E
     bestMainFlowImprovement: improvementDiagnostics,
     bestQualityBeforeImprovement: initialQuality,
   } = runV4CandidateStrategies(input, strategicAnalysis, options);
-  const plannedTasks = Array.isArray((output as any).plannedTasks) ? (output as any).plannedTasks.length : 0;
-  const unplannedTasks = Array.isArray((output as any).unplanned) ? (output as any).unplanned.length : 0;
+  const optimized = optimizeV4PlanPostSelection(
+    input,
+    output,
+    strategicAnalysis,
+    quality,
+    options,
+  );
+  const finalOutput = optimized.output;
+  const finalQuality = optimized.quality;
+  const plannedTasks = Array.isArray((finalOutput as any).plannedTasks) ? (finalOutput as any).plannedTasks.length : 0;
+  const unplannedTasks = Array.isArray((finalOutput as any).unplanned) ? (finalOutput as any).unplanned.length : 0;
 
   return {
-    output,
+    output: finalOutput,
     diagnostics: {
-      status: (output as any).hardFeasible === false ? "infeasible" : "success",
+      status: (finalOutput as any).hardFeasible === false ? "infeasible" : "success",
       engineVersion: ENGINE_V4_VERSION,
       generatedAt: new Date().toISOString(),
       plannedTasks,
@@ -54,8 +66,10 @@ export function generatePlanV4(input: EngineInput, options?: EngineV3Options): E
       warning: "Motor V4 evalúa múltiples estrategias rápidas, selecciona la mejor por calidad jerárquica y delega la viabilidad hard en V3.",
       strategicAnalysis,
       guidedOrdering,
-      quality,
+      quality: finalQuality,
       qualityBeforeImprovement: initialQuality,
+      qualityBeforePostOptimizer: quality,
+      postOptimizer: optimized.diagnostics,
       mainFlowImprovement: improvementDiagnostics,
       candidateRunner: candidatesDiagnostics,
       bestStrategyId,

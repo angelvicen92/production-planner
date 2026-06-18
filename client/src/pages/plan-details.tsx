@@ -731,6 +731,7 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const guidedOrdering = diagnostics?.guidedOrdering ?? null;
   const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
   const candidateRunner = diagnostics?.candidateRunner ?? null;
+  const postOptimizer = diagnostics?.postOptimizer ?? null;
   const list = (value: unknown) => Array.isArray(value) ? value : [];
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
@@ -765,6 +766,8 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const mainFlowFirstBlockers = list(mainFlowFirst?.blockers);
   const productionWaveBlockers = list(productionWave?.blockers);
   const productionWaveWarnings = list(productionWave?.warnings);
+  const postOptimizerWarnings = list(postOptimizer?.warnings);
+  const postOptimizerPasses = list(postOptimizer?.passes);
 
   const renderCritical = (items: any[], empty: string) => items.length ? (
     <ul className="space-y-1">
@@ -895,6 +898,52 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
             ) : <p className="text-sm text-muted-foreground">No hay candidatos de estrategia para mostrar.</p>}
           </div>
         ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene candidate runner.</p>}
+      </section>
+
+
+      <section className="rounded-lg border p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">Post Optimizer</h3>
+          <Badge variant={postOptimizer?.applied ? "default" : "outline"}>
+            {postOptimizer?.applied ? "Aplicado" : "No aplicado"}
+          </Badge>
+        </div>
+        {postOptimizer ? (
+          <div className="space-y-3 text-sm">
+            <div className="grid gap-2 md:grid-cols-3">
+              <div><span className="font-medium">Makespan antes:</span> {String(postOptimizer?.makespanBefore ?? "—")}</div>
+              <div><span className="font-medium">Makespan después:</span> {String(postOptimizer?.makespanAfter ?? postOptimizer?.makespanBefore ?? "—")}</div>
+              <div><span className="font-medium">Movimientos:</span> {Number(postOptimizer?.movesAccepted ?? 0)} aceptados / {Number(postOptimizer?.movesRejected ?? 0)} rechazados</div>
+              <div><span className="font-medium">Gaps flujo antes:</span> {Number(postOptimizer?.mainFlowGapMinutesBefore ?? 0)} min</div>
+              <div><span className="font-medium">Gaps flujo después:</span> {Number(postOptimizer?.mainFlowGapMinutesAfter ?? postOptimizer?.mainFlowGapMinutesBefore ?? 0)} min</div>
+              <div><span className="font-medium">Permanencia total:</span> {Number(postOptimizer?.totalTalentStayBefore ?? 0)} → {Number(postOptimizer?.totalTalentStayAfter ?? postOptimizer?.totalTalentStayBefore ?? 0)} min</div>
+            </div>
+            {postOptimizerPasses.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-muted-foreground">
+                    <tr><th className="py-1 pr-2">Pass</th><th className="py-1 pr-2">Aceptados</th><th className="py-1">Rechazados</th></tr>
+                  </thead>
+                  <tbody>
+                    {postOptimizerPasses.map((pass: any, index: number) => (
+                      <tr key={`${pass?.name ?? "pass"}-${index}`} className="border-t">
+                        <td className="py-2 pr-2 font-medium">{String(pass?.name ?? "—")}</td>
+                        <td className="py-2 pr-2">{Number(pass?.accepted ?? 0)}</td>
+                        <td className="py-2">{Number(pass?.rejected ?? 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p className="text-muted-foreground">Sin passes registrados.</p>}
+            <div>
+              <div className="font-medium">Warnings</div>
+              {postOptimizerWarnings.length ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-amber-700">{postOptimizerWarnings.map((warning: any, index: number) => <li key={`${String(warning)}-${index}`}>{String(warning)}</li>)}</ul>
+              ) : <p className="text-xs text-muted-foreground">Sin warnings.</p>}
+            </div>
+          </div>
+        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene post optimizer.</p>}
       </section>
 
       <section className="rounded-lg border p-3">
