@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateRegressionGate, runV4Benchmark, type V4BenchmarkMetrics } from "./runV4Benchmark";
+import { analyzeStrategicScenario } from "../analysis";
+import { runV4CandidateStrategies } from "../candidates";
+import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 
 const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics => ({
   scenarioName: "fixture",
@@ -16,6 +19,9 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
   makespanMinutes: 60,
   totalTalentStayMinutes: 120,
   selectedStrategy: null,
+  strategiesEvaluated: 0,
+  strategiesSkipped: 0,
+  runtimeBudgetExceeded: false,
   accepted: true,
   fallbackToV3Baseline: false,
   verdict: "V3_BASELINE",
@@ -25,6 +31,8 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
 test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced results", () => {
   const originalLog = console.log;
   const originalWarn = console.warn;
+  const originalBudget = process.env.V4_BENCHMARK_MAX_RUNTIME_MS;
+  process.env.V4_BENCHMARK_MAX_RUNTIME_MS = "3000";
   console.log = () => undefined;
   console.warn = () => undefined;
   try {
@@ -35,6 +43,8 @@ test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced res
     assert.equal(summary.v3.engine, "v3");
     assert.equal(summary.v4Balanced.engine, "v4");
     assert.equal(summary.v4Balanced.profile, "balanced");
+    assert.equal(summary.v4Safe, undefined);
+    assert.equal(summary.v4Aggressive, undefined);
     assert.equal(typeof summary.v3.plannedTasks, "number");
     assert.equal(typeof summary.v4Balanced.unplannedTasks, "number");
     assert.equal(typeof summary.v4Balanced.runtimeMs, "number");
@@ -43,6 +53,7 @@ test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced res
   } finally {
     console.log = originalLog;
     console.warn = originalWarn;
+    if (originalBudget === undefined) delete process.env.V4_BENCHMARK_MAX_RUNTIME_MS; else process.env.V4_BENCHMARK_MAX_RUNTIME_MS = originalBudget;
   }
 });
 
@@ -62,4 +73,81 @@ test("strict regression gate reports human causes for regressions", () => {
   assert.ok(gate.causes.some((cause) => cause.includes("main-flow")));
   assert.ok(gate.causes.some((cause) => cause.includes("runtime")));
   assert.ok(gate.causes.some((cause) => cause.includes("without improving makespan or qualityScore")));
+});
+
+
+test("V4 benchmark strict does not execute aggressive profile", () => {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  const originalBudget = process.env.V4_BENCHMARK_MAX_RUNTIME_MS;
+  process.env.V4_BENCHMARK_MAX_RUNTIME_MS = "3000";
+  const originalExitCode = process.exitCode;
+  console.log = () => undefined;
+  console.warn = () => undefined;
+  console.error = () => undefined;
+  try {
+    process.exitCode = undefined;
+    const result = runV4Benchmark(["--strict"]);
+    assert.equal(result.mode, "strict");
+    assert.ok(result.scenarios.every((summary) => summary.v4Aggressive === undefined));
+    assert.ok(result.scenarios.every((summary) => summary.v4Safe === undefined));
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+    console.error = originalError;
+    process.exitCode = originalExitCode;
+    if (originalBudget === undefined) delete process.env.V4_BENCHMARK_MAX_RUNTIME_MS; else process.env.V4_BENCHMARK_MAX_RUNTIME_MS = originalBudget;
+  }
+});
+
+test("V4 benchmark aggressive profile only runs with aggressive flag", () => {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalBudget = process.env.V4_BENCHMARK_MAX_RUNTIME_MS;
+  process.env.V4_BENCHMARK_MAX_RUNTIME_MS = "3000";
+  console.log = () => undefined;
+  console.warn = () => undefined;
+  try {
+    const normal = runV4Benchmark(["--quick"]);
+    const aggressive = runV4Benchmark(["--quick", "--aggressive"]);
+    assert.equal(normal.scenarios.some((summary) => summary.v4Aggressive), false);
+    assert.equal(aggressive.mode, "aggressive");
+    assert.equal(aggressive.scenarios.every((summary) => summary.v4Aggressive?.profile === "aggressive"), true);
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+    if (originalBudget === undefined) delete process.env.V4_BENCHMARK_MAX_RUNTIME_MS; else process.env.V4_BENCHMARK_MAX_RUNTIME_MS = originalBudget;
+  }
+});
+
+test("strict regression gate fails with human runtime budget cause", () => {
+  const v3 = metric();
+  const v4 = metric({ engine: "v4", profile: "balanced", runtimeMs: 101, qualityScore: 81, verdict: "V4_BETTER" });
+  const gate = evaluateRegressionGate(v3, v4, 100);
+  assert.equal(gate.passed, false);
+  assert.ok(gate.causes.includes("V4 balanced exceeded runtime budget"));
+});
+
+test("candidate runner respects maxStrategies after expansion and records budget skips", () => {
+  const scenario = benchmarkScenarios.find((item) => item.id === "A") ?? benchmarkScenarios[0];
+  const input = scenario.input as any;
+  const strategic = analyzeStrategicScenario(input);
+  const capped = runV4CandidateStrategies(input, strategic, {
+    v4Profile: "balanced" as any,
+    enabledStrategies: ["strategy_baseline_v3_order", "strategy_v4_production_wave", "strategy_v4_native_critical_core"] as any,
+    maxStrategies: 2,
+    maxRuntimeMs: 8000,
+  } as any);
+  assert.equal(capped.candidatesDiagnostics.candidates.filter((candidate) => !candidate.skipped).length, 2);
+  assert.equal(capped.candidatesDiagnostics.candidateCount, 2);
+
+  const budgeted = runV4CandidateStrategies(input, strategic, {
+    v4Profile: "balanced" as any,
+    enabledStrategies: ["strategy_baseline_v3_order", "strategy_v4_production_wave", "strategy_v4_native_critical_core"] as any,
+    maxStrategies: 6,
+    maxRuntimeMs: 1,
+  } as any);
+  assert.ok(budgeted.candidatesDiagnostics.candidates.some((candidate) => candidate.skipped && candidate.skipReason === "Runtime budget exceeded before strategy execution."));
+  assert.equal(budgeted.candidatesDiagnostics.candidates.some((candidate) => candidate.strategyId === "strategy_v4_native_remainder"), false);
 });

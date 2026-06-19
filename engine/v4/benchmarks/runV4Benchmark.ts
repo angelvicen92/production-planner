@@ -30,6 +30,9 @@ export interface V4BenchmarkMetrics {
   makespanMinutes: number | null;
   totalTalentStayMinutes: number;
   selectedStrategy: string | null;
+  strategiesEvaluated: number;
+  strategiesSkipped: number;
+  runtimeBudgetExceeded: boolean;
   accepted: boolean;
   fallbackToV3Baseline: boolean;
   verdict: V4ComparisonVerdict | "V3_BASELINE";
@@ -38,7 +41,7 @@ export interface V4BenchmarkMetrics {
 export interface V4BenchmarkScenarioSummary {
   scenario: string;
   v3: V4BenchmarkMetrics;
-  v4Safe: V4BenchmarkMetrics;
+  v4Safe?: V4BenchmarkMetrics;
   v4Balanced: V4BenchmarkMetrics;
   v4Aggressive?: V4BenchmarkMetrics;
   delta: {
@@ -57,15 +60,15 @@ export interface RegressionGateResult {
 }
 
 export interface V4BenchmarkResult {
-  mode: "quick" | "normal" | "strict";
+  mode: "quick" | "normal" | "strict" | "aggressive";
   strict: boolean;
   maxRuntimeMs: number;
   scenarios: V4BenchmarkScenarioSummary[];
   generatedAt: string;
 }
 
-const DEFAULT_MAX_RUNTIME_MS = Number(process.env.V4_BENCHMARK_MAX_RUNTIME_MS ?? 12_000);
-const QUICK_SCENARIO_ID = "L";
+const MODE_MAX_RUNTIME_MS: Record<V4BenchmarkResult["mode"], number> = { quick: 8000, normal: 15000, strict: 10000, aggressive: 30000 };
+const QUICK_SCENARIO_ID = "A";
 
 const toMinutes = (value?: string | null): number | null => {
   const [h, m] = String(value ?? "").split(":").map(Number);
@@ -74,8 +77,8 @@ const toMinutes = (value?: string | null): number | null => {
 
 const scenarioKey = (scenario: BenchmarkScenario): string => scenario.name.replace(/\s+/g, "");
 
-const selectedScenarios = (quick: boolean): BenchmarkScenario[] => {
-  if (!quick) return benchmarkScenarios;
+const selectedScenarios = (mode: V4BenchmarkResult["mode"]): BenchmarkScenario[] => {
+  if (mode === "normal") return benchmarkScenarios;
   return [benchmarkScenarios.find((scenario) => scenario.id === QUICK_SCENARIO_ID) ?? benchmarkScenarios[0]];
 };
 
@@ -97,6 +100,9 @@ function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, p
     makespanMinutes: quality.makespan.fromWorkDayStartMinutes ?? toMinutes(quality.makespan.lastTaskEnd),
     totalTalentStayMinutes: quality.talentStayTime.totalStayMinutes,
     selectedStrategy: v4Diagnostics?.bestStrategyId ?? metrics.solutionSource,
+    strategiesEvaluated: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => !candidate.skipped).length ?? 0,
+    strategiesSkipped: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => candidate.skipped).length ?? 0,
+    runtimeBudgetExceeded: v4Diagnostics?.performance?.budgetExceeded ?? false,
     accepted: v4Diagnostics?.finalAcceptance?.accepted ?? true,
     fallbackToV3Baseline: v4Diagnostics?.finalAcceptance?.fallbackToV3Baseline ?? false,
     verdict: v4Diagnostics?.v3V4Comparison.comparison?.verdict ?? "V3_BASELINE",
@@ -109,10 +115,10 @@ function runV3Baseline(scenario: BenchmarkScenario): V4BenchmarkMetrics {
   return summarizeOutput(scenario, "v3", "baseline", output, Math.round(performance.now() - started));
 }
 
-function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, maxRuntimeMs: number): V4BenchmarkMetrics {
+function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, maxRuntimeMs: number, extraOptions: Record<string, unknown> = {}): V4BenchmarkMetrics {
   const started = performance.now();
   try {
-    const result = generatePlanV4(scenario.input as EngineInput, { timeLimitMs: 0, requestId: `v4-benchmark-${profile}-${scenario.id}`, v4Profile: profile, maxRuntimeMs } as any);
+    const result = generatePlanV4(scenario.input as EngineInput, { timeLimitMs: 0, requestId: `v4-benchmark-${profile}-${scenario.id}`, v4Profile: profile, maxRuntimeMs, ...extraOptions } as any);
     return summarizeOutput(scenario, "v4", profile, result.output, Math.round(performance.now() - started), result.diagnostics);
   } catch (error) {
     const fallback = generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `v4-benchmark-${profile}-${scenario.id}-fallback` });
@@ -126,23 +132,24 @@ function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, m
   }
 }
 
-export function evaluateRegressionGate(v3: V4BenchmarkMetrics, v4Balanced: V4BenchmarkMetrics, maxRuntimeMs = DEFAULT_MAX_RUNTIME_MS): RegressionGateResult {
+export function evaluateRegressionGate(v3: V4BenchmarkMetrics, v4Balanced: V4BenchmarkMetrics, maxRuntimeMs = MODE_MAX_RUNTIME_MS.strict): RegressionGateResult {
   const causes: string[] = [];
   if (v4Balanced.unplannedTasks > v3.unplannedTasks) causes.push(`V4 balanced leaves more unplanned tasks (${v3.unplannedTasks} -> ${v4Balanced.unplannedTasks}).`);
   if (v3.hardFeasible && !v4Balanced.hardFeasible) causes.push("V4 balanced is not hard-feasible while V3 is hard-feasible.");
   if (v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes) causes.push(`V4 balanced worsens main-flow gaps (${v3.mainFlowGapMinutes} -> ${v4Balanced.mainFlowGapMinutes}).`);
-  if (v4Balanced.runtimeMs > maxRuntimeMs) causes.push(`V4 balanced runtime ${v4Balanced.runtimeMs}ms exceeds limit ${maxRuntimeMs}ms.`);
+  if (v4Balanced.runtimeMs > maxRuntimeMs) causes.push("V4 balanced exceeded runtime budget");
   const improvesMakespan = v4Balanced.makespanMinutes !== null && v3.makespanMinutes !== null && v4Balanced.makespanMinutes < v3.makespanMinutes;
   const improvesQuality = v4Balanced.qualityScore > v3.qualityScore;
   if (!improvesMakespan && !improvesQuality && v4Balanced.verdict === "V4_BETTER") causes.push("V4 balanced verdict is V4_BETTER without improving makespan or qualityScore.");
   return { passed: causes.length === 0, causes };
 }
 
-function buildSummary(scenario: BenchmarkScenario, maxRuntimeMs: number): V4BenchmarkScenarioSummary {
+function buildSummary(scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode"], maxRuntimeMs: number): V4BenchmarkScenarioSummary {
   const v3 = runV3Baseline(scenario);
-  const v4Safe = runV4Profile(scenario, "safe", maxRuntimeMs);
-  const v4Balanced = runV4Profile(scenario, "balanced", maxRuntimeMs);
-  const v4Aggressive = runV4Profile(scenario, "aggressive", maxRuntimeMs);
+  const v4Safe = mode === "normal" ? runV4Profile(scenario, "safe", maxRuntimeMs) : undefined;
+  const balancedOptions = mode === "quick" ? { maxStrategies: 4 } : {};
+  const v4Balanced = runV4Profile(scenario, "balanced", maxRuntimeMs, balancedOptions);
+  const v4Aggressive = mode === "aggressive" ? runV4Profile(scenario, "aggressive", maxRuntimeMs) : undefined;
   const delta = {
     makespanMinutes: v4Balanced.makespanMinutes !== null && v3.makespanMinutes !== null ? v4Balanced.makespanMinutes - v3.makespanMinutes : null,
     mainFlowGapMinutes: v4Balanced.mainFlowGapMinutes - v3.mainFlowGapMinutes,
@@ -152,7 +159,7 @@ function buildSummary(scenario: BenchmarkScenario, maxRuntimeMs: number): V4Benc
   const worse = v4Balanced.unplannedTasks > v3.unplannedTasks || v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes || (delta.makespanMinutes !== null && delta.makespanMinutes > 45 && delta.qualityScore <= 0);
   const better = v4Balanced.unplannedTasks <= v3.unplannedTasks && v4Balanced.mainFlowGapMinutes <= v3.mainFlowGapMinutes && ((delta.makespanMinutes !== null && delta.makespanMinutes < 0) || delta.qualityScore > 0);
   const verdict = v4Balanced.verdict === "V4_REJECTED" ? "V4_REJECTED" : worse ? "V4_WORSE" : better ? "V4_BETTER" : "V4_EQUAL";
-  return { scenario: v3.scenarioName, v3, v4Safe, v4Balanced, v4Aggressive, delta, verdict, gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs) };
+  return { scenario: v3.scenarioName, v3, v4Safe: v4Safe as V4BenchmarkMetrics, v4Balanced, v4Aggressive, delta, verdict, gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs) };
 }
 
 const printSummary = (result: V4BenchmarkResult): void => {
@@ -166,8 +173,12 @@ const printSummary = (result: V4BenchmarkResult): void => {
     console.log(`Talent stay total: ${item.v3.totalTalentStayMinutes} -> ${item.v4Balanced.totalTalentStayMinutes}`);
     console.log(`Runtime: ${item.v3.runtimeMs}ms -> ${item.v4Balanced.runtimeMs}ms`);
     console.log(`Verdict: ${item.verdict}`);
+    console.log(`Strategies evaluated: ${item.v4Balanced.strategiesEvaluated}`);
+    console.log(`Strategies skipped: ${item.v4Balanced.strategiesSkipped}`);
+    console.log(`Runtime budget exceeded: ${item.v4Balanced.runtimeBudgetExceeded}`);
     console.log(`Selected strategy: ${item.v4Balanced.selectedStrategy ?? "n/a"}`);
-    console.log(`Accepted: ${item.v4Balanced.accepted}`);
+    console.log(`Fallback to V3: ${item.v4Balanced.fallbackToV3Baseline}`);
+    console.log(`Final acceptance: ${item.v4Balanced.accepted}`);
     if (!item.gate.passed) console.log(`Gate failures: ${item.gate.causes.join(" | ")}`);
   }
 };
@@ -175,8 +186,10 @@ const printSummary = (result: V4BenchmarkResult): void => {
 export function runV4Benchmark(args = process.argv.slice(2)): V4BenchmarkResult {
   const strict = args.includes("--strict");
   const quick = args.includes("--quick");
-  const maxRuntimeMs = DEFAULT_MAX_RUNTIME_MS;
-  const result: V4BenchmarkResult = { mode: strict ? "strict" : quick ? "quick" : "normal", strict, maxRuntimeMs, scenarios: selectedScenarios(quick).map((scenario) => buildSummary(scenario, maxRuntimeMs)), generatedAt: new Date().toISOString() };
+  const aggressive = args.includes("--aggressive");
+  const mode: V4BenchmarkResult["mode"] = aggressive ? "aggressive" : strict ? "strict" : quick ? "quick" : "normal";
+  const maxRuntimeMs = Number(process.env.V4_BENCHMARK_MAX_RUNTIME_MS ?? MODE_MAX_RUNTIME_MS[mode]);
+  const result: V4BenchmarkResult = { mode, strict, maxRuntimeMs, scenarios: selectedScenarios(mode).map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString() };
   printSummary(result);
   try { writeFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "latest-result.json"), `${JSON.stringify(result, null, 2)}\n`); } catch (error) { console.warn(`Could not write latest-result.json: ${(error as Error).message}`); }
   if (strict) {

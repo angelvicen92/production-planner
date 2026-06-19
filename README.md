@@ -133,3 +133,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 078 — 2026-06-18 19:39 — V4 Main Flow Sequence Search V1
 
 - ID 079 — 2026-06-18 00:00 — V4/V3 Benchmark Harness and Regression Gate
+
+- ID 080 — 2026-06-19 00:00 — V4 Performance Budget and Benchmark Stabilization
