@@ -16,7 +16,10 @@
     "benchmark:engine": "tsx engine/v3/benchmarks/runBenchmark.ts",
     "benchmark:engine:quick": "tsx engine/v3/benchmarks/runBenchmark.ts --quick",
     "benchmark:engine:full": "tsx engine/v3/benchmarks/runBenchmark.ts --full",
-    "test:planning-run": "tsx --test shared/planning-run-state.test.ts shared/planning-progress.test.ts"
+    "test:planning-run": "tsx --test shared/planning-run-state.test.ts shared/planning-progress.test.ts",
+    "benchmark:v4": "tsx engine/v4/benchmarks/runV4Benchmark.ts",
+    "benchmark:v4:strict": "tsx engine/v4/benchmarks/runV4Benchmark.ts --strict",
+    "benchmark:v4:quick": "tsx engine/v4/benchmarks/runV4Benchmark.ts --quick"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
