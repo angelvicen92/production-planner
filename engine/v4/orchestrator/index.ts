@@ -92,7 +92,8 @@ function enabledStrategies(options: V4ProOrchestratorOptions): V4CandidateStrate
   if (options.enableNativeCriticalCore === false) strategies = strategies.filter((s) => s !== "strategy_v4_native_critical_core");
   if (profile !== "aggressive" && options.enableNativeRemainder === true && !strategies.includes("strategy_v4_native_remainder")) strategies.push("strategy_v4_native_remainder");
   if (options.enableNativeRemainder !== true) strategies = strategies.filter((s) => s !== "strategy_v4_native_remainder");
-  return strategies.slice(0, Math.max(1, Number(options.maxStrategies ?? 8)));
+  const profileDefaults: Record<V4StrategyProfile, number> = { safe: 4, balanced: 6, aggressive: 12 };
+  return strategies.slice(0, Math.max(1, Number(options.maxStrategies ?? profileDefaults[profile])));
 }
 
 function preserveProtectedTasks(input: EngineInput, baseline: EngineOutput, candidate: EngineOutput): boolean {
@@ -150,7 +151,7 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
 
   const remaining = maxRuntimeMs - (Date.now() - started);
   const canImprove = rawOptions.enableImprovementEngine !== false
-    && remaining > 50
+    && remaining >= 750
     && candidateResult.bestOutput.hardFeasible !== false
     && unplanned(candidateResult.bestOutput) <= unplanned(baselineOutput);
   const improved = canImprove
@@ -168,7 +169,9 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
   const allProfile = PROFILE_STRATEGIES[profile];
   const skippedStrategies = allProfile.filter((strategy) => !candidateResult.candidatesDiagnostics.candidates.some((c) => c.strategyId === strategy));
   const runtimeMs = Date.now() - started;
-  const performance = { runtimeMs, strategiesEvaluated: candidateResult.candidatesDiagnostics.candidateCount, profile, budgetExceeded: runtimeMs >= maxRuntimeMs, skippedStrategies, warnings: runtimeMs >= maxRuntimeMs ? ["Strategy budget exceeded; remaining strategies or optimizations were skipped."] : [] };
+  const budgetExceeded = runtimeMs >= maxRuntimeMs || candidateResult.candidatesDiagnostics.budgetExceeded;
+  const perfWarnings = budgetExceeded ? ["Strategy budget exceeded; remaining strategies or optimizations were skipped."] : [];
+  const performance = { runtimeMs, strategiesEvaluated: candidateResult.candidatesDiagnostics.candidateCount, profile, budgetExceeded, skippedStrategies, warnings: perfWarnings };
   const diagnostics: EngineV4Diagnostics = {
     status: (finalOutput as any).hardFeasible === false ? "infeasible" : "success",
     engineVersion: ENGINE_V4_VERSION,

@@ -19,7 +19,8 @@
     "test:planning-run": "tsx --test shared/planning-run-state.test.ts shared/planning-progress.test.ts",
     "benchmark:v4": "tsx engine/v4/benchmarks/runV4Benchmark.ts",
     "benchmark:v4:strict": "tsx engine/v4/benchmarks/runV4Benchmark.ts --strict",
-    "benchmark:v4:quick": "tsx engine/v4/benchmarks/runV4Benchmark.ts --quick"
+    "benchmark:v4:quick": "tsx engine/v4/benchmarks/runV4Benchmark.ts --quick",
+    "benchmark:v4:aggressive": "tsx engine/v4/benchmarks/runV4Benchmark.ts --aggressive"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
