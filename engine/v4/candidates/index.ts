@@ -48,6 +48,14 @@ export interface V4CandidateDiagnostic {
   timedOut: boolean;
 }
 
+export interface V4StrategyPortfolioDiagnostics {
+  profile: string;
+  requestedMaxStrategies: number;
+  finalStrategies: V4CandidateStrategyId[];
+  mustRunStrategies: V4CandidateStrategyId[];
+  missingMustRunStrategies: V4CandidateStrategyId[];
+}
+
 export interface V4CandidateRunnerDiagnostics {
   applied: boolean;
   bestStrategyId: V4CandidateStrategyId | null;
@@ -56,6 +64,7 @@ export interface V4CandidateRunnerDiagnostics {
   budgetExceeded: boolean;
   candidates: V4CandidateDiagnostic[];
   mainFlowSequenceSearch?: MainFlowSequenceSearchDiagnostics;
+  portfolio?: V4StrategyPortfolioDiagnostics;
 }
 
 export interface V4CandidateRunnerResult {
@@ -114,6 +123,72 @@ function reorderPending(input: EngineInput, compare: (a: TaskInput, b: TaskInput
 }
 
 function baseStrategyId(strategyId: V4CandidateStrategyId): V4CandidateStrategyId { return String(strategyId).split("__")[0] as V4CandidateStrategyId; }
+
+interface V4StrategyPortfolioOptions { maxStrategies?: number; enableNativeRemainder?: boolean; }
+
+const variantStrategy = (base: "strategy_v4_production_wave" | "strategy_v4_native_critical_core", id: string): V4CandidateStrategyId => `${base}__${id}` as V4CandidateStrategyId;
+const hasBaseEnabled = (enabled: Set<V4CandidateStrategyId>, base: V4CandidateStrategyId): boolean => enabled.has(base) || [...enabled].some((item) => baseStrategyId(item) === base);
+
+function addUnique(target: V4CandidateStrategyId[], strategy: V4CandidateStrategyId, enabled: Set<V4CandidateStrategyId>, variantById: Map<string, unknown>, nativeRemainderAllowed: boolean): boolean {
+  const base = baseStrategyId(strategy);
+  if (!hasBaseEnabled(enabled, base)) return false;
+  if (base === "strategy_v4_native_remainder" && !nativeRemainderAllowed) return false;
+  const variant = String(strategy).includes("__") ? String(strategy).split("__")[1] : null;
+  const exactVariantEnabled = enabled.has(strategy);
+  if (variant && !variantById.has(variant) && !exactVariantEnabled) return false;
+  const finalStrategy = variant && !variantById.has(variant) ? base : strategy;
+  if (!target.includes(finalStrategy)) target.push(finalStrategy);
+  return true;
+}
+
+function addVariantWithFallback(target: V4CandidateStrategyId[], base: "strategy_v4_production_wave" | "strategy_v4_native_critical_core", ids: string[], enabled: Set<V4CandidateStrategyId>, variantById: Map<string, unknown>, nativeRemainderAllowed: boolean): boolean {
+  for (const id of ids) if (addUnique(target, variantStrategy(base, id), enabled, variantById, nativeRemainderAllowed)) return true;
+  return addUnique(target, base, enabled, variantById, nativeRemainderAllowed);
+}
+
+export function buildV4StrategyPortfolio(profile: string, enabledStrategies: V4CandidateStrategyId[], sequenceVariants: Array<{ id: string }>, options: V4StrategyPortfolioOptions = {}): { strategies: V4CandidateStrategyId[]; diagnostics: V4StrategyPortfolioDiagnostics } {
+  const requestedMaxStrategies = Math.max(1, Number(options.maxStrategies ?? PROFILE_MAX_STRATEGIES[profile] ?? PROFILE_MAX_STRATEGIES.balanced));
+  const maxStrategies = Math.min(requestedMaxStrategies, PROFILE_MAX_STRATEGIES[profile] ?? requestedMaxStrategies);
+  const enabled = new Set(enabledStrategies.length ? enabledStrategies : STRATEGY_ORDER);
+  const variantById = new Map(sequenceVariants.map((variant) => [variant.id, variant]));
+  const nativeRemainderAllowed = profile === "aggressive" || options.enableNativeRemainder === true;
+  const strategies: V4CandidateStrategyId[] = [];
+  const mustRunStrategies: V4CandidateStrategyId[] = [];
+
+  if (profile === "safe") {
+    addUnique(strategies, "strategy_baseline_v3_order", enabled, variantById, nativeRemainderAllowed);
+    addUnique(strategies, "strategy_main_flow_guided", enabled, variantById, nativeRemainderAllowed);
+    addVariantWithFallback(strategies, "strategy_v4_production_wave", ["pressure_default"], enabled, variantById, nativeRemainderAllowed);
+    addVariantWithFallback(strategies, "strategy_v4_production_wave", ["balanced_hybrid"], enabled, variantById, nativeRemainderAllowed);
+  } else if (profile === "balanced") {
+    addUnique(strategies, "strategy_baseline_v3_order", enabled, variantById, nativeRemainderAllowed);
+    addUnique(strategies, "strategy_main_flow_guided", enabled, variantById, nativeRemainderAllowed);
+    addUnique(strategies, "strategy_critical_resources_first", enabled, variantById, nativeRemainderAllowed);
+    addVariantWithFallback(strategies, "strategy_v4_production_wave", ["balanced_hybrid", "pressure_default", "earliest_deadline_first"], enabled, variantById, nativeRemainderAllowed);
+    const firstNative = addVariantWithFallback(strategies, "strategy_v4_native_critical_core", ["balanced_hybrid", "pressure_default", "earliest_deadline_first"], enabled, variantById, nativeRemainderAllowed);
+    if (firstNative) mustRunStrategies.push(strategies[strategies.length - 1]);
+    addVariantWithFallback(strategies, "strategy_v4_native_critical_core", ["earliest_deadline_first", "balanced_hybrid", "pressure_default"], enabled, variantById, nativeRemainderAllowed);
+  } else {
+    const aggressiveVariantIds = sequenceVariants.map((v) => v.id);
+    for (const strategy of enabledStrategies.length ? enabledStrategies : STRATEGY_ORDER) {
+      if (strategy === "strategy_v4_production_wave") {
+        addUnique(strategies, strategy, enabled, variantById, nativeRemainderAllowed);
+        for (const id of aggressiveVariantIds) addUnique(strategies, variantStrategy(strategy, id), enabled, variantById, nativeRemainderAllowed);
+      } else if (strategy === "strategy_v4_native_critical_core") {
+        addUnique(strategies, strategy, enabled, variantById, nativeRemainderAllowed);
+        for (const id of aggressiveVariantIds) addUnique(strategies, variantStrategy(strategy, id), enabled, variantById, nativeRemainderAllowed);
+      } else addUnique(strategies, strategy, enabled, variantById, nativeRemainderAllowed);
+    }
+  }
+
+  let finalStrategies = strategies.slice(0, maxStrategies);
+  if (profile === "aggressive" && nativeRemainderAllowed && hasBaseEnabled(enabled, "strategy_v4_native_remainder") && !finalStrategies.includes("strategy_v4_native_remainder")) {
+    finalStrategies = [...finalStrategies.slice(0, Math.max(0, maxStrategies - 1)), "strategy_v4_native_remainder"];
+  }
+  const missingMustRunStrategies = mustRunStrategies.filter((strategy) => !finalStrategies.includes(strategy));
+  return { strategies: finalStrategies, diagnostics: { profile, requestedMaxStrategies, finalStrategies, mustRunStrategies, missingMustRunStrategies } };
+}
+
 function buildStrategyInput(strategyId: V4CandidateStrategyId, input: EngineInput, strategicAnalysis: V4StrategicAnalysis): { input: EngineInput; guidedOrdering: V4GuidedOrderingDiagnostics } {
   strategyId = baseStrategyId(strategyId);
   if (strategyId === "strategy_baseline_v3_order") {
@@ -168,23 +243,8 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
   const sequenceSearch = buildMainFlowSequenceVariants(input, strategicAnalysis, { maxSequenceVariants });
   const variantById = new Map(sequenceSearch.variants.map((variant) => [variant.id, variant]));
   const enabled = Array.isArray(options?.enabledStrategies) && options.enabledStrategies.length ? options.enabledStrategies : STRATEGY_ORDER;
-  const nativeRemainderAllowed = profile === "aggressive" || options?.enableNativeRemainder === true;
-  const expanded: V4CandidateStrategyId[] = [];
-  const balancedVariantIds = ["pressure_default", "earliest_deadline_first", "balanced_hybrid"];
-  const aggressiveVariantIds = sequenceSearch.variants.map((v) => v.id).slice(0, maxSequenceVariants);
-  for (const strategy of enabled) {
-    if (strategy === "strategy_v4_native_remainder" && !nativeRemainderAllowed) continue;
-    if (strategy === "strategy_v4_production_wave") {
-      expanded.push(strategy);
-      const ids = profile === "aggressive" ? aggressiveVariantIds : balancedVariantIds.slice(0, maxSequenceVariants);
-      for (const id of ids) if (variantById.has(id)) expanded.push(`strategy_v4_production_wave__${id}` as V4CandidateStrategyId);
-    } else if (strategy === "strategy_v4_native_critical_core") {
-      expanded.push(strategy);
-      const ids = profile === "aggressive" ? aggressiveVariantIds : balancedVariantIds.slice(0, maxSequenceVariants);
-      for (const id of ids) if (variantById.has(id)) expanded.push(`strategy_v4_native_critical_core__${id}` as V4CandidateStrategyId);
-    } else expanded.push(strategy);
-  }
-  const strategies = [...new Set(expanded)].filter((strategy) => STRATEGY_ORDER.includes(baseStrategyId(strategy))).slice(0, maxStrategies);
+  const portfolio = buildV4StrategyPortfolio(profile, enabled, sequenceSearch.variants, { maxStrategies, enableNativeRemainder: options?.enableNativeRemainder });
+  const strategies = portfolio.strategies;
   const candidates: Array<any> = [];
   const skippedDiagnostics: V4CandidateDiagnostic[] = [];
   const makeSkipped = (strategyId: V4CandidateStrategyId, reason: string, timedOut = false): V4CandidateDiagnostic => ({
@@ -216,24 +276,28 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
       continue;
     }
     const strategyStarted = Date.now();
-    const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
     const sequenceVariantId = String(strategyId).includes("__") ? String(strategyId).split("__")[1] : undefined;
-    const sequenceOverride = sequenceVariantId ? variantById.get(sequenceVariantId) : undefined;
-    const remainingForStrategy = Math.max(0, maxRuntimeMs - (Date.now() - started));
-    const strategyOptions = { ...(options as any), ...(sequenceOverride ? { sequenceOverride } : {}), maxRuntimeMs: remainingForStrategy };
-    const mainFlowFirst = base === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, strategyOptions) : null;
-    const productionWave = base === "strategy_v4_production_wave" ? buildProductionWavePlan(input, strategicAnalysis, strategyOptions) : null;
-    const nativeCriticalCore = base === "strategy_v4_native_critical_core" ? buildV4NativeCriticalCorePlan(input, strategicAnalysis, strategyOptions as any) : null;
-    const nativeRemainder = base === "strategy_v4_native_remainder" ? buildV4NativeRemainderPlan(input, strategicAnalysis, strategyOptions) : null;
-    const candidateInput = nativeCriticalCore?.delegatedInput ?? productionWave?.delegatedInput ?? mainFlowFirst?.delegatedInput ?? candidate.input;
-    const initialOutput = nativeCriticalCore?.output ?? nativeRemainder?.output ?? productionWave?.output ?? mainFlowFirst?.output ?? generatePlanV3(candidateInput, strategyOptions);
-    const initialQuality = evaluateV4PlanQuality(candidateInput, initialOutput, strategicAnalysis);
-    const remainingForImprovement = maxRuntimeMs - (Date.now() - started);
-    const improved = remainingForImprovement >= 750
-      ? improveMainFlowContinuity(candidateInput, initialOutput, strategicAnalysis, initialQuality)
-      : { output: initialOutput, improvementDiagnostics: { applied: false, movesAttempted: 0, movesAccepted: 0, warnings: ["Improvement engine skipped: runtime budget below 750ms."], reason: "Runtime budget below 750ms." } } as any;
-    const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
-    candidates.push({ strategyId, sequenceVariantId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics, productionWaveScheduler: productionWave?.diagnostics, nativeRemainderScheduler: nativeRemainder?.diagnostics, nativeCriticalCoreScheduler: nativeCriticalCore?.diagnostics, runtimeMs: Date.now() - strategyStarted, timedOut: Date.now() - started >= maxRuntimeMs });
+    try {
+      const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
+      const sequenceOverride = sequenceVariantId ? variantById.get(sequenceVariantId) : undefined;
+      const remainingForStrategy = Math.max(0, maxRuntimeMs - (Date.now() - started));
+      const strategyOptions = { ...(options as any), ...(sequenceOverride ? { sequenceOverride } : {}), maxRuntimeMs: remainingForStrategy };
+      const mainFlowFirst = base === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, strategyOptions) : null;
+      const productionWave = base === "strategy_v4_production_wave" ? buildProductionWavePlan(input, strategicAnalysis, strategyOptions) : null;
+      const nativeCriticalCore = base === "strategy_v4_native_critical_core" ? buildV4NativeCriticalCorePlan(input, strategicAnalysis, strategyOptions as any) : null;
+      const nativeRemainder = base === "strategy_v4_native_remainder" ? buildV4NativeRemainderPlan(input, strategicAnalysis, strategyOptions) : null;
+      const candidateInput = nativeCriticalCore?.delegatedInput ?? productionWave?.delegatedInput ?? mainFlowFirst?.delegatedInput ?? candidate.input;
+      const initialOutput = nativeCriticalCore?.output ?? nativeRemainder?.output ?? productionWave?.output ?? mainFlowFirst?.output ?? generatePlanV3(candidateInput, strategyOptions);
+      const initialQuality = evaluateV4PlanQuality(candidateInput, initialOutput, strategicAnalysis);
+      const remainingForImprovement = maxRuntimeMs - (Date.now() - started);
+      const improved = remainingForImprovement >= 750
+        ? improveMainFlowContinuity(candidateInput, initialOutput, strategicAnalysis, initialQuality)
+        : { output: initialOutput, improvementDiagnostics: { applied: false, movesAttempted: 0, movesAccepted: 0, warnings: ["Improvement engine skipped: runtime budget below 750ms."], reason: "Runtime budget below 750ms." } } as any;
+      const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
+      candidates.push({ strategyId, sequenceVariantId, candidateInput, output: improved.output, guidedOrdering: candidate.guidedOrdering, qualityBeforeImprovement: initialQuality, quality, mainFlowImprovement: improved.improvementDiagnostics, mainFlowFirstScheduler: mainFlowFirst?.diagnostics, productionWaveScheduler: productionWave?.diagnostics, nativeRemainderScheduler: nativeRemainder?.diagnostics, nativeCriticalCoreScheduler: nativeCriticalCore?.diagnostics, runtimeMs: Date.now() - strategyStarted, timedOut: Date.now() - started >= maxRuntimeMs });
+    } catch (error) {
+      skippedDiagnostics.push(makeSkipped(strategyId, `Strategy execution failed: ${(error as Error).message}`));
+    }
   }
 
   let bestIndex = 0;
@@ -294,6 +358,6 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     bestMainFlowImprovement: best.mainFlowImprovement,
     bestQualityBeforeImprovement: best.qualityBeforeImprovement,
     baselineOutput,
-    candidatesDiagnostics: { applied: true, bestStrategyId: best.strategyId, candidateCount: diagnostics.length, skippedCount: skippedDiagnostics.length, budgetExceeded: Date.now() - started >= maxRuntimeMs || skippedDiagnostics.some((d) => d.timedOut), candidates: [...diagnostics, ...skippedDiagnostics], mainFlowSequenceSearch: { ...sequenceSearch.diagnostics, selectedVariantId: diagnostics[bestIndex].sequenceVariantId ?? null } },
+    candidatesDiagnostics: { applied: true, bestStrategyId: best.strategyId, candidateCount: diagnostics.length, skippedCount: skippedDiagnostics.length, budgetExceeded: Date.now() - started >= maxRuntimeMs || skippedDiagnostics.some((d) => d.timedOut), candidates: [...diagnostics, ...skippedDiagnostics], mainFlowSequenceSearch: { ...sequenceSearch.diagnostics, selectedVariantId: diagnostics[bestIndex].sequenceVariantId ?? null }, portfolio: portfolio.diagnostics },
   };
 }

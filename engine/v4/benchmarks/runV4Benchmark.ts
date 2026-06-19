@@ -30,6 +30,8 @@ export interface V4BenchmarkMetrics {
   makespanMinutes: number | null;
   totalTalentStayMinutes: number;
   selectedStrategy: string | null;
+  executedStrategies: string[];
+  missingMustRunStrategies: string[];
   strategiesEvaluated: number;
   strategiesSkipped: number;
   runtimeBudgetExceeded: boolean;
@@ -100,6 +102,8 @@ function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, p
     makespanMinutes: quality.makespan.fromWorkDayStartMinutes ?? toMinutes(quality.makespan.lastTaskEnd),
     totalTalentStayMinutes: quality.talentStayTime.totalStayMinutes,
     selectedStrategy: v4Diagnostics?.bestStrategyId ?? metrics.solutionSource,
+    executedStrategies: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => !candidate.skipped).map((candidate: any) => candidate.strategyId) ?? [],
+    missingMustRunStrategies: v4Diagnostics?.candidateRunner?.portfolio?.missingMustRunStrategies ?? [],
     strategiesEvaluated: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => !candidate.skipped).length ?? 0,
     strategiesSkipped: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => candidate.skipped).length ?? 0,
     runtimeBudgetExceeded: v4Diagnostics?.performance?.budgetExceeded ?? false,
@@ -138,6 +142,7 @@ export function evaluateRegressionGate(v3: V4BenchmarkMetrics, v4Balanced: V4Ben
   if (v3.hardFeasible && !v4Balanced.hardFeasible) causes.push("V4 balanced is not hard-feasible while V3 is hard-feasible.");
   if (v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes) causes.push(`V4 balanced worsens main-flow gaps (${v3.mainFlowGapMinutes} -> ${v4Balanced.mainFlowGapMinutes}).`);
   if (v4Balanced.runtimeMs > maxRuntimeMs) causes.push("V4 balanced exceeded runtime budget");
+  if (!v4Balanced.executedStrategies.some((strategy) => strategy.startsWith("strategy_v4_native_critical_core"))) causes.push("V4 balanced did not execute any native critical core strategy.");
   const improvesMakespan = v4Balanced.makespanMinutes !== null && v3.makespanMinutes !== null && v4Balanced.makespanMinutes < v3.makespanMinutes;
   const improvesQuality = v4Balanced.qualityScore > v3.qualityScore;
   if (!improvesMakespan && !improvesQuality && v4Balanced.verdict === "V4_BETTER") causes.push("V4 balanced verdict is V4_BETTER without improving makespan or qualityScore.");
@@ -147,7 +152,7 @@ export function evaluateRegressionGate(v3: V4BenchmarkMetrics, v4Balanced: V4Ben
 function buildSummary(scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode"], maxRuntimeMs: number): V4BenchmarkScenarioSummary {
   const v3 = runV3Baseline(scenario);
   const v4Safe = mode === "normal" ? runV4Profile(scenario, "safe", maxRuntimeMs) : undefined;
-  const balancedOptions = mode === "quick" ? { maxStrategies: 4 } : {};
+  const balancedOptions = mode === "quick" ? { maxStrategies: 6 } : {};
   const v4Balanced = runV4Profile(scenario, "balanced", maxRuntimeMs, balancedOptions);
   const v4Aggressive = mode === "aggressive" ? runV4Profile(scenario, "aggressive", maxRuntimeMs) : undefined;
   const delta = {

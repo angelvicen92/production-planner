@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateRegressionGate, runV4Benchmark, type V4BenchmarkMetrics } from "./runV4Benchmark";
 import { analyzeStrategicScenario } from "../analysis";
-import { runV4CandidateStrategies } from "../candidates";
+import { buildV4StrategyPortfolio, runV4CandidateStrategies } from "../candidates";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 
 const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics => ({
@@ -19,6 +19,8 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
   makespanMinutes: 60,
   totalTalentStayMinutes: 120,
   selectedStrategy: null,
+  executedStrategies: ["strategy_v4_native_critical_core__balanced_hybrid"],
+  missingMustRunStrategies: [],
   strategiesEvaluated: 0,
   strategiesSkipped: 0,
   runtimeBudgetExceeded: false,
@@ -129,19 +131,16 @@ test("strict regression gate fails with human runtime budget cause", () => {
   assert.ok(gate.causes.includes("V4 balanced exceeded runtime budget"));
 });
 
-test("candidate runner respects maxStrategies after expansion and records budget skips", () => {
+test("candidate runner records budget skips and portfolio keeps must-run within maxStrategies", () => {
+  const variants = [{ id: "pressure_default" }, { id: "earliest_deadline_first" }, { id: "balanced_hybrid" }];
+  const capped = buildV4StrategyPortfolio("balanced", ["strategy_baseline_v3_order", "strategy_v4_production_wave", "strategy_v4_native_critical_core"] as any, variants, { maxStrategies: 6 });
+  assert.equal(capped.strategies.length, 4);
+  assert.ok(capped.strategies.some((strategy) => strategy.startsWith("strategy_v4_native_critical_core")));
+  assert.equal(capped.diagnostics.missingMustRunStrategies.length, 0);
+
   const scenario = benchmarkScenarios.find((item) => item.id === "A") ?? benchmarkScenarios[0];
   const input = scenario.input as any;
   const strategic = analyzeStrategicScenario(input);
-  const capped = runV4CandidateStrategies(input, strategic, {
-    v4Profile: "balanced" as any,
-    enabledStrategies: ["strategy_baseline_v3_order", "strategy_v4_production_wave", "strategy_v4_native_critical_core"] as any,
-    maxStrategies: 2,
-    maxRuntimeMs: 8000,
-  } as any);
-  assert.equal(capped.candidatesDiagnostics.candidates.filter((candidate) => !candidate.skipped).length, 2);
-  assert.equal(capped.candidatesDiagnostics.candidateCount, 2);
-
   const budgeted = runV4CandidateStrategies(input, strategic, {
     v4Profile: "balanced" as any,
     enabledStrategies: ["strategy_baseline_v3_order", "strategy_v4_production_wave", "strategy_v4_native_critical_core"] as any,
@@ -150,4 +149,27 @@ test("candidate runner respects maxStrategies after expansion and records budget
   } as any);
   assert.ok(budgeted.candidatesDiagnostics.candidates.some((candidate) => candidate.skipped && candidate.skipReason === "Runtime budget exceeded before strategy execution."));
   assert.equal(budgeted.candidatesDiagnostics.candidates.some((candidate) => candidate.strategyId === "strategy_v4_native_remainder"), false);
+});
+
+test("strategy portfolio calibrates profile-specific V4 candidates", () => {
+  const variants = [{ id: "pressure_default" }, { id: "earliest_deadline_first" }, { id: "balanced_hybrid" }];
+  const balanced = buildV4StrategyPortfolio("balanced", ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_critical_resources_first", "strategy_critical_talents_first", "strategy_v4_production_wave", "strategy_v4_native_critical_core", "strategy_v4_native_remainder"] as any, variants, { maxStrategies: 6 });
+  assert.ok(balanced.strategies.some((strategy) => strategy.startsWith("strategy_v4_native_critical_core")));
+  assert.equal(balanced.strategies.some((strategy) => strategy === "strategy_v4_native_remainder"), false);
+  assert.equal(balanced.diagnostics.missingMustRunStrategies.length, 0);
+
+  const safe = buildV4StrategyPortfolio("safe", ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_v4_production_wave", "strategy_v4_native_remainder"] as any, variants, {});
+  assert.ok(safe.strategies.length <= 4);
+  assert.equal(safe.strategies.some((strategy) => strategy === "strategy_v4_native_remainder"), false);
+
+  const aggressive = buildV4StrategyPortfolio("aggressive", ["strategy_baseline_v3_order", "strategy_main_flow_guided", "strategy_critical_resources_first", "strategy_critical_talents_first", "strategy_v4_production_wave", "strategy_v4_native_critical_core", "strategy_v4_native_remainder"] as any, variants, {});
+  assert.ok(aggressive.strategies.includes("strategy_v4_native_remainder"));
+});
+
+test("strict regression gate fails when balanced lacks native critical core", () => {
+  const v3 = metric();
+  const v4 = metric({ engine: "v4", profile: "balanced", executedStrategies: ["strategy_baseline_v3_order", "strategy_v4_production_wave__balanced_hybrid"] });
+  const gate = evaluateRegressionGate(v3, v4, 100);
+  assert.equal(gate.passed, false);
+  assert.ok(gate.causes.includes("V4 balanced did not execute any native critical core strategy."));
 });
