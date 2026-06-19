@@ -139,7 +139,21 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
   diag.coreTasksPlaced = placed.size; diag.coreTasksDelegated = pending.size + delegatedUnsafe; diag.flowGapMinutesBeforeV3Fill = mainGap(placed, byId, mainFlowId);
   const internalLocks: LockInput[] = [...placed].map(([taskId, p], i) => ({ id: -980000 - i, planId: input.planId, taskId, lockType: "time", lockedStart: hhmm(p.start), lockedEnd: hhmm(p.end) }));
   const delegatedInput = { ...input, locks: [...(input.locks ?? []), ...internalLocks] }; diag.strategicInternalLocks = internalLocks.length; diag.v3FillUsed = true;
-  let output = generatePlanV3(delegatedInput, options); const hard = validateHardConstraints(delegatedInput as any, output); if (!hard.hardValidationPassed) output = { ...output, hardFeasible: false } as EngineOutput;
-  const quality = evaluateV4PlanQuality(delegatedInput, output, strategicAnalysis); diag.finalMainFlowGapMinutes = quality.mainFlowQuality?.internalGapMinutes ?? 0; diag.finalMakespan = quality.makespan.lastTaskEnd; diag.infeasible = output.hardFeasible === false || (output.unplanned?.length ?? 0) > 0; diag.applied = output.hardFeasible !== false; diag.reason = diag.applied ? "V4 placed the critical native core with temporary internal locks; V3 filled the remaining flexible work." : "Native critical core discarded: V3 fill or hard validation failed.";
-  return { output, delegatedInput, diagnostics: diag };
+  let output: EngineOutput;
+  let qualityInput: EngineInput = delegatedInput;
+  try {
+    output = generatePlanV3(delegatedInput, options);
+    const hard = validateHardConstraints(delegatedInput as any, output);
+    if (!hard.hardValidationPassed) output = { ...output, hardFeasible: false } as EngineOutput;
+  } catch (error) {
+    diag.warnings.push(`Native critical core V3 fill failed; falling back to original V3 input: ${(error as Error).message}`);
+    diag.discarded = true;
+    diag.applied = false;
+    diag.infeasible = true;
+    diag.reason = "Native critical core discarded: V3 fill failed.";
+    qualityInput = input;
+    output = generatePlanV3(input, options);
+  }
+  const quality = evaluateV4PlanQuality(qualityInput, output, strategicAnalysis); diag.finalMainFlowGapMinutes = quality.mainFlowQuality?.internalGapMinutes ?? 0; diag.finalMakespan = quality.makespan.lastTaskEnd; diag.infeasible = diag.infeasible || output.hardFeasible === false || (output.unplanned?.length ?? 0) > 0; diag.applied = diag.applied && output.hardFeasible !== false; diag.reason = diag.reason ?? (diag.applied ? "V4 placed the critical native core with temporary internal locks; V3 filled the remaining flexible work." : "Native critical core discarded: V3 fill or hard validation failed.");
+  return { output, delegatedInput: qualityInput, diagnostics: diag };
 }
