@@ -144,3 +144,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 085 — 2026-06-24 10:16 — V4 Native Core Failure Diagnosis and Runtime Short-Circuit
 - ID 086 — 2026-06-24 13:36 — V4 Main Flow Gap Targeting for Native Critical Core
 - ID 087 — 2026-06-24 00:00 — V4 Actual Main Flow Gap Closure V1
+
+- ID 088 — 2026-06-24 14:14 — V4 Gap Closure Safety and Benchmark Proof

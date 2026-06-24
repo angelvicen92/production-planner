@@ -105,7 +105,7 @@ function cleanReason(reason: string | null): string {
 function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
   const gapTargeting = item.v4Balanced.nativeCriticalCoreGapTargeting as any;
-  const mainGapBlocker = Array.isArray(gapTargeting?.blockers) && gapTargeting.blockers.length ? String(gapTargeting.blockers[0]).replace(/[.]+$/, "") : null;
+  const mainGapBlocker = String(gapTargeting?.mainBlocker ?? (Array.isArray(gapTargeting?.blockers) && gapTargeting.blockers.length ? gapTargeting.blockers[0] : "")).replace(/[.]+$/, "") || null;
   if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: smoke early exit correctly used V3 fallback.";
   if (losses.includes("MAKESPAN_WORSE") && d.makespanMinutes !== null) return item.scenarioType === "representative"
     ? `Representative V4 worse: improve Native Critical Core slot scoring; selected strategy loses makespan by ${d.makespanMinutes} min.`
@@ -121,6 +121,7 @@ function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCat
       default: return `Inspect Native Critical Core acceptance inputs: discarded reason ${item.v4Balanced.nativeCriticalCoreRejectionReason ?? "UNKNOWN"}.`;
     }
   }
+  if (gapTargeting?.applied && Number(gapTargeting?.candidateGapMinutes ?? 0) >= Number(gapTargeting?.baselineGapMinutes ?? 0)) return `Gap targeting ran but did not reduce main-flow gaps. Main blocker: ${mainGapBlocker ?? "Candidate did not reduce gap"}.`;
   if (losses.includes("FALLBACK_TO_V3")) return item.scenarioType === "representative"
     ? `Representative V4 rejected: fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`
     : `Fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`;
