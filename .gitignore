@@ -7,3 +7,5 @@ vite.config.ts.*
 .cache
 .local
 .upm
+# V4 benchmark runtime output
+engine/v4/benchmarks/latest-result.json
