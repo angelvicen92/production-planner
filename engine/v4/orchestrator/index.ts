@@ -192,13 +192,17 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
   const baselineQuality = baselineDiagnostic?.quality ?? evaluateV4PlanQuality(input, baselineOutput, strategicAnalysis);
 
   const remaining = maxRuntimeMs - (Date.now() - started);
+  const nonBaselineSelected = candidateResult.bestStrategyId !== "strategy_baseline_v3_order";
+  const anyNonBaselineAccepted = candidateResult.candidatesDiagnostics.candidates.some((candidate) => candidate.strategyId !== "strategy_baseline_v3_order" && !candidate.skipped && !candidate.discarded);
   const canImprove = rawOptions.enableImprovementEngine !== false
+    && nonBaselineSelected
+    && anyNonBaselineAccepted
     && remaining >= 750
     && candidateResult.bestOutput.hardFeasible !== false
     && unplanned(candidateResult.bestOutput) <= unplanned(baselineOutput);
   const improved = canImprove
     ? runV4HierarchicalImprovementEngine(input, candidateResult.bestOutput, strategicAnalysis, candidateResult.bestQuality, { ...rawOptions, improvementEngine: { ...(rawOptions as any).improvementEngine, maxRuntimeMs: Math.max(50, remaining) } } as any)
-    : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { applied: false, runtimeMs: 0, iterations: 0, movesAccepted: 0, movesRejected: 0, qualityBefore: candidateResult.bestQuality, qualityAfter: candidateResult.bestQuality, makespanBefore: candidateResult.bestQuality.makespan.lastTaskEnd, makespanAfter: candidateResult.bestQuality.makespan.lastTaskEnd, mainFlowGapMinutesBefore: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, mainFlowGapMinutesAfter: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, totalTalentStayBefore: candidateResult.bestQuality.talentStayTime.totalStayMinutes, totalTalentStayAfter: candidateResult.bestQuality.talentStayTime.totalStayMinutes, families: [], acceptedMoves: [], warnings: ["Improvement engine skipped: candidate was not safe enough or no runtime budget remained."] } };
+    : { output: candidateResult.bestOutput, quality: candidateResult.bestQuality, diagnostics: { applied: false, runtimeMs: 0, iterations: 0, movesAccepted: 0, movesRejected: 0, qualityBefore: candidateResult.bestQuality, qualityAfter: candidateResult.bestQuality, makespanBefore: candidateResult.bestQuality.makespan.lastTaskEnd, makespanAfter: candidateResult.bestQuality.makespan.lastTaskEnd, mainFlowGapMinutesBefore: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, mainFlowGapMinutesAfter: candidateResult.bestQuality.mainFlowQuality?.internalGapMinutes ?? 0, totalTalentStayBefore: candidateResult.bestQuality.talentStayTime.totalStayMinutes, totalTalentStayAfter: candidateResult.bestQuality.talentStayTime.totalStayMinutes, families: [], acceptedMoves: [], skipReason: !nonBaselineSelected || !anyNonBaselineAccepted ? "No non-baseline V4 candidate selected." : "Candidate was not safe enough or no runtime budget remained.", warnings: [!nonBaselineSelected || !anyNonBaselineAccepted ? "Improvement engine skipped: No non-baseline V4 candidate selected." : "Improvement engine skipped: candidate was not safe enough or no runtime budget remained."] } };
 
   const optimized = { output: improved.output, quality: improved.quality, diagnostics: { ...EMPTY_POST, warnings: ["Post-optimizer superseded by V4 hierarchical improvement engine."] } };
   const repacked = { output: improved.output, quality: improved.quality, diagnostics: { ...EMPTY_BLOCK_REPACKER, skippedReason: "Block repacker managed internally by V4 hierarchical improvement engine.", warnings: ["Block repacker superseded by V4 hierarchical improvement engine."] } };

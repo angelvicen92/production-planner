@@ -29,6 +29,9 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
   runtimeBudgetExceeded: false,
   finalAcceptanceReason: null,
   nativeCriticalCoreDiscarded: false,
+  nativeCriticalCoreRejectionReason: null,
+  nativeCriticalCoreRejectionDetails: null,
+  candidateFutilityStopApplied: false,
   productionWaveDiscarded: false,
   improvementEngineApplied: false,
   improvementMovesAccepted: 0,
@@ -96,6 +99,7 @@ test("simple scenarios activate V4 early exit and representative scenarios do no
   assert.equal(simpleResult.diagnostics.candidateRunner.applied, false);
   assert.notEqual(representativeResult.diagnostics.complexityAssessment?.level, "SIMPLE");
   assert.equal(representativeResult.diagnostics.earlyExit?.applied, false);
+  assert.notEqual(representativeResult.diagnostics.candidateRunner.candidates[0]?.skipReason, "Perfect baseline early accept.");
 });
 
 test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced results", () => {
@@ -296,6 +300,12 @@ test("evidence report diagnoses native critical core discarded", () => {
   const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreDiscarded: true }));
   assert.ok(report.losses.includes("NATIVE_CORE_DISCARDED"));
   assert.equal(report.strategyDiagnosis.nativeCriticalCoreDiscarded, true);
+});
+
+test("evidence report generates specific action from native core rejection reason", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreDiscarded: true, nativeCriticalCoreRejectionReason: "MAIN_FLOW_GAP_NOT_IMPROVED" }));
+  assert.equal(report.strategyDiagnosis.nativeCriticalCoreRejectionReason, "MAIN_FLOW_GAP_NOT_IMPROVED");
+  assert.equal(report.requiredNextAction, "Native Critical Core ran but did not reduce main-flow gaps. Tune core placement around main-flow continuity.");
 });
 
 test("evidence report diagnoses runtime too slow", () => {
