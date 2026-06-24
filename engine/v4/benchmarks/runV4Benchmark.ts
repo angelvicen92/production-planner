@@ -12,6 +12,7 @@ import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 import { calculateMetrics } from "../../v3/benchmarks/metrics";
 import type { BenchmarkScenario } from "../../v3/benchmarks/types";
 import type { V4StrategyProfile } from "../orchestrator";
+import { buildV4BenchmarkEvidenceReport, type V4BenchmarkEvidenceItem } from "./evidenceReport";
 
 export type BenchmarkEngine = "v3" | "v4";
 export type V4BenchmarkProfile = "baseline" | V4StrategyProfile;
@@ -34,7 +35,13 @@ export interface V4BenchmarkMetrics {
   missingMustRunStrategies: string[];
   strategiesEvaluated: number;
   strategiesSkipped: number;
+  skippedStrategies: string[];
   runtimeBudgetExceeded: boolean;
+  finalAcceptanceReason: string | null;
+  nativeCriticalCoreDiscarded: boolean;
+  productionWaveDiscarded: boolean;
+  improvementEngineApplied: boolean;
+  improvementMovesAccepted: number;
   accepted: boolean;
   fallbackToV3Baseline: boolean;
   verdict: V4ComparisonVerdict | "V3_BASELINE";
@@ -54,6 +61,7 @@ export interface V4BenchmarkScenarioSummary {
   };
   verdict: V4ComparisonVerdict;
   gate: RegressionGateResult;
+  gateMaxRuntimeMs: number;
 }
 
 export interface RegressionGateResult {
@@ -67,6 +75,7 @@ export interface V4BenchmarkResult {
   maxRuntimeMs: number;
   scenarios: V4BenchmarkScenarioSummary[];
   generatedAt: string;
+  evidenceReport: V4BenchmarkEvidenceItem[];
 }
 
 const MODE_MAX_RUNTIME_MS: Record<V4BenchmarkResult["mode"], number> = { quick: 8000, normal: 15000, strict: 10000, aggressive: 30000 };
@@ -104,9 +113,15 @@ function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, p
     selectedStrategy: v4Diagnostics?.bestStrategyId ?? metrics.solutionSource,
     executedStrategies: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => !candidate.skipped).map((candidate: any) => candidate.strategyId) ?? [],
     missingMustRunStrategies: v4Diagnostics?.candidateRunner?.portfolio?.missingMustRunStrategies ?? [],
+    skippedStrategies: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => candidate.skipped).map((candidate: any) => candidate.strategyId) ?? [],
     strategiesEvaluated: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => !candidate.skipped).length ?? 0,
     strategiesSkipped: v4Diagnostics?.candidateRunner?.candidates?.filter((candidate: any) => candidate.skipped).length ?? 0,
     runtimeBudgetExceeded: v4Diagnostics?.performance?.budgetExceeded ?? false,
+    finalAcceptanceReason: v4Diagnostics?.finalAcceptance?.reason ?? null,
+    nativeCriticalCoreDiscarded: v4Diagnostics?.candidateRunner?.candidates?.some((candidate: any) => candidate.nativeCriticalCoreScheduler?.discarded) ?? false,
+    productionWaveDiscarded: v4Diagnostics?.candidateRunner?.candidates?.some((candidate: any) => candidate.productionWaveScheduler?.discarded || candidate.productionWaveScheduler?.accepted === false) ?? false,
+    improvementEngineApplied: v4Diagnostics?.improvementEngine?.applied ?? false,
+    improvementMovesAccepted: v4Diagnostics?.improvementEngine?.movesAccepted ?? 0,
     accepted: v4Diagnostics?.finalAcceptance?.accepted ?? true,
     fallbackToV3Baseline: v4Diagnostics?.finalAcceptance?.fallbackToV3Baseline ?? false,
     verdict: v4Diagnostics?.v3V4Comparison.comparison?.verdict ?? "V3_BASELINE",
@@ -128,6 +143,12 @@ function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, m
     const fallback = generatePlanV3(scenario.input, { timeLimitMs: 0, requestId: `v4-benchmark-${profile}-${scenario.id}-fallback` });
     return {
       ...summarizeOutput(scenario, "v4", profile, fallback, Math.round(performance.now() - started)),
+      skippedStrategies: [],
+      finalAcceptanceReason: (error as Error).message,
+      nativeCriticalCoreDiscarded: false,
+      productionWaveDiscarded: false,
+      improvementEngineApplied: false,
+      improvementMovesAccepted: 0,
       accepted: false,
       fallbackToV3Baseline: true,
       selectedStrategy: `error_fallback_to_v3: ${(error as Error).message}`,
@@ -164,7 +185,7 @@ function buildSummary(scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode
   const worse = v4Balanced.unplannedTasks > v3.unplannedTasks || v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes || (delta.makespanMinutes !== null && delta.makespanMinutes > 45 && delta.qualityScore <= 0);
   const better = v4Balanced.unplannedTasks <= v3.unplannedTasks && v4Balanced.mainFlowGapMinutes <= v3.mainFlowGapMinutes && ((delta.makespanMinutes !== null && delta.makespanMinutes < 0) || delta.qualityScore > 0);
   const verdict = v4Balanced.verdict === "V4_REJECTED" ? "V4_REJECTED" : worse ? "V4_WORSE" : better ? "V4_BETTER" : "V4_EQUAL";
-  return { scenario: v3.scenarioName, v3, v4Safe: v4Safe as V4BenchmarkMetrics, v4Balanced, v4Aggressive, delta, verdict, gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs) };
+  return { scenario: v3.scenarioName, v3, v4Safe: v4Safe as V4BenchmarkMetrics, v4Balanced, v4Aggressive, delta, verdict, gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs), gateMaxRuntimeMs: maxRuntimeMs };
 }
 
 const printSummary = (result: V4BenchmarkResult): void => {
@@ -188,19 +209,39 @@ const printSummary = (result: V4BenchmarkResult): void => {
   }
 };
 
+const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
+  console.log("\nV4 EVIDENCE REPORT");
+  for (const item of report) {
+    console.log(`\nScenario: ${item.scenarioName}`);
+    console.log(`Verdict: ${item.verdict}`);
+    console.log(`Main reason: ${item.mainReason}`);
+    console.log(`Selected strategy: ${item.strategyDiagnosis.selectedStrategy ?? "n/a"}`);
+    console.log(`Fallback: ${item.fallbackUsed}`);
+    console.log(`Native core: ${item.strategyDiagnosis.nativeCriticalCoreExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.nativeCriticalCoreDiscarded}`);
+    console.log(`Production wave: ${item.strategyDiagnosis.productionWaveExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.productionWaveDiscarded}`);
+    console.log(`Improvement engine: ${item.strategyDiagnosis.improvementMovesAccepted} moves accepted`);
+    console.log(`Losses: ${item.losses.length ? item.losses.join(", ") : "none"}`);
+    console.log("Required next action:");
+    console.log(item.requiredNextAction);
+  }
+};
+
 export function runV4Benchmark(args = process.argv.slice(2)): V4BenchmarkResult {
   const strict = args.includes("--strict");
   const quick = args.includes("--quick");
   const aggressive = args.includes("--aggressive");
   const mode: V4BenchmarkResult["mode"] = aggressive ? "aggressive" : strict ? "strict" : quick ? "quick" : "normal";
   const maxRuntimeMs = Number(process.env.V4_BENCHMARK_MAX_RUNTIME_MS ?? MODE_MAX_RUNTIME_MS[mode]);
-  const result: V4BenchmarkResult = { mode, strict, maxRuntimeMs, scenarios: selectedScenarios(mode).map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString() };
+  const result = { mode, strict, maxRuntimeMs, scenarios: selectedScenarios(mode).map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString(), evidenceReport: [] } as V4BenchmarkResult;
+  result.evidenceReport = buildV4BenchmarkEvidenceReport(result);
   printSummary(result);
+  printEvidenceReport(result.evidenceReport);
   try { writeFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "latest-result.json"), `${JSON.stringify(result, null, 2)}\n`); } catch (error) { console.warn(`Could not write latest-result.json: ${(error as Error).message}`); }
   if (strict) {
     const failures = result.scenarios.filter((scenario) => !scenario.gate.passed);
     if (failures.length > 0) {
       console.error(`\nV4 strict regression gate failed:\n${failures.map((failure) => `- ${failure.scenario}: ${failure.gate.causes.join("; ")}`).join("\n")}`);
+      printEvidenceReport(result.evidenceReport.filter((item) => failures.some((failure) => failure.scenario === item.scenarioName)));
       process.exitCode = 1;
     }
   }
