@@ -44,6 +44,8 @@ export interface V4BenchmarkMetrics {
   improvementMovesAccepted: number;
   accepted: boolean;
   fallbackToV3Baseline: boolean;
+  earlyExitApplied: boolean;
+  complexityLevel: "SIMPLE" | "NORMAL" | "COMPLEX" | null;
   verdict: V4ComparisonVerdict | "V3_BASELINE";
 }
 
@@ -70,7 +72,7 @@ export interface RegressionGateResult {
 }
 
 export interface V4BenchmarkResult {
-  mode: "quick" | "normal" | "strict" | "aggressive";
+  mode: "smoke" | "quick" | "normal" | "strict" | "aggressive";
   strict: boolean;
   maxRuntimeMs: number;
   scenarios: V4BenchmarkScenarioSummary[];
@@ -78,8 +80,9 @@ export interface V4BenchmarkResult {
   evidenceReport: V4BenchmarkEvidenceItem[];
 }
 
-const MODE_MAX_RUNTIME_MS: Record<V4BenchmarkResult["mode"], number> = { quick: 8000, normal: 15000, strict: 10000, aggressive: 30000 };
-const QUICK_SCENARIO_ID = "A";
+const MODE_MAX_RUNTIME_MS: Record<V4BenchmarkResult["mode"], number> = { smoke: 3000, quick: 8000, normal: 15000, strict: 10000, aggressive: 30000 };
+const SMOKE_SCENARIO_ID = "A";
+const REPRESENTATIVE_SCENARIO_IDS = ["L", "I"] as const;
 
 const toMinutes = (value?: string | null): number | null => {
   const [h, m] = String(value ?? "").split(":").map(Number);
@@ -88,10 +91,22 @@ const toMinutes = (value?: string | null): number | null => {
 
 const scenarioKey = (scenario: BenchmarkScenario): string => scenario.name.replace(/\s+/g, "");
 
+const representativeScenario = (): BenchmarkScenario =>
+  REPRESENTATIVE_SCENARIO_IDS.map((id) => benchmarkScenarios.find((scenario) => scenario.id === id)).find(Boolean)
+  ?? benchmarkScenarios.find((scenario) => /realistic|realista|voz|voice/i.test(`${scenario.id} ${scenario.name} ${scenario.description ?? ""}`))
+  ?? benchmarkScenarios.find((scenario) => scenario.id !== SMOKE_SCENARIO_ID)
+  ?? benchmarkScenarios[0];
+
+const smokeScenario = (): BenchmarkScenario => benchmarkScenarios.find((scenario) => scenario.id === SMOKE_SCENARIO_ID) ?? benchmarkScenarios[0];
+
 const selectedScenarios = (mode: V4BenchmarkResult["mode"]): BenchmarkScenario[] => {
+  if (mode === "smoke") return [smokeScenario()];
   if (mode === "normal") return benchmarkScenarios;
-  return [benchmarkScenarios.find((scenario) => scenario.id === QUICK_SCENARIO_ID) ?? benchmarkScenarios[0]];
+  return [representativeScenario()];
 };
+
+const scenarioType = (scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode"]): "smoke/simple" | "representative" =>
+  mode === "smoke" || scenario.id === SMOKE_SCENARIO_ID ? "smoke/simple" : "representative";
 
 function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, profile: V4BenchmarkProfile, output: EngineOutput, runtimeMs: number, v4Diagnostics?: ReturnType<typeof generatePlanV4>["diagnostics"]): V4BenchmarkMetrics {
   const strategic = analyzeStrategicScenario(scenario.input as EngineInput);
@@ -124,6 +139,8 @@ function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, p
     improvementMovesAccepted: v4Diagnostics?.improvementEngine?.movesAccepted ?? 0,
     accepted: v4Diagnostics?.finalAcceptance?.accepted ?? true,
     fallbackToV3Baseline: v4Diagnostics?.finalAcceptance?.fallbackToV3Baseline ?? false,
+    earlyExitApplied: v4Diagnostics?.earlyExit?.applied ?? false,
+    complexityLevel: v4Diagnostics?.complexityAssessment?.level ?? null,
     verdict: v4Diagnostics?.v3V4Comparison.comparison?.verdict ?? "V3_BASELINE",
   };
 }
@@ -151,6 +168,8 @@ function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, m
       improvementMovesAccepted: 0,
       accepted: false,
       fallbackToV3Baseline: true,
+      earlyExitApplied: false,
+      complexityLevel: null,
       selectedStrategy: `error_fallback_to_v3: ${(error as Error).message}`,
       verdict: "V4_REJECTED",
     };
@@ -163,7 +182,7 @@ export function evaluateRegressionGate(v3: V4BenchmarkMetrics, v4Balanced: V4Ben
   if (v3.hardFeasible && !v4Balanced.hardFeasible) causes.push("V4 balanced is not hard-feasible while V3 is hard-feasible.");
   if (v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes) causes.push(`V4 balanced worsens main-flow gaps (${v3.mainFlowGapMinutes} -> ${v4Balanced.mainFlowGapMinutes}).`);
   if (v4Balanced.runtimeMs > maxRuntimeMs) causes.push("V4 balanced exceeded runtime budget");
-  if (!v4Balanced.executedStrategies.some((strategy) => strategy.startsWith("strategy_v4_native_critical_core"))) causes.push("V4 balanced did not execute any native critical core strategy.");
+  if (!v4Balanced.earlyExitApplied && !v4Balanced.executedStrategies.some((strategy) => strategy.startsWith("strategy_v4_native_critical_core"))) causes.push("V4 balanced did not execute any native critical core strategy.");
   const improvesMakespan = v4Balanced.makespanMinutes !== null && v3.makespanMinutes !== null && v4Balanced.makespanMinutes < v3.makespanMinutes;
   const improvesQuality = v4Balanced.qualityScore > v3.qualityScore;
   if (!improvesMakespan && !improvesQuality && v4Balanced.verdict === "V4_BETTER") causes.push("V4 balanced verdict is V4_BETTER without improving makespan or qualityScore.");
@@ -190,8 +209,10 @@ function buildSummary(scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode
 
 const printSummary = (result: V4BenchmarkResult): void => {
   console.log("V4 BENCHMARK SUMMARY");
+  console.log(`Mode: ${result.mode}`);
   for (const item of result.scenarios) {
     console.log(`\nScenario: ${item.scenario}`);
+    console.log(`Scenario type: ${scenarioType({ id: item.scenario === scenarioKey(smokeScenario()) ? smokeScenario().id : "", name: item.scenario, description: "", input: {} as any, operationalExpectation: "", riskNotes: [] }, result.mode)}`);
     console.log(`V3 makespan: ${item.v3.makespan ?? "n/a"}`);
     console.log(`V4 balanced makespan: ${item.v4Balanced.makespan ?? "n/a"}`);
     console.log(`Main flow gaps: ${item.v3.mainFlowGapMinutes} -> ${item.v4Balanced.mainFlowGapMinutes}`);
@@ -205,6 +226,7 @@ const printSummary = (result: V4BenchmarkResult): void => {
     console.log(`Selected strategy: ${item.v4Balanced.selectedStrategy ?? "n/a"}`);
     console.log(`Fallback to V3: ${item.v4Balanced.fallbackToV3Baseline}`);
     console.log(`Final acceptance: ${item.v4Balanced.accepted}`);
+    if (item.v4Balanced.earlyExitApplied) console.log("V4 early exit: simple scenario, V3 fallback used.");
     if (!item.gate.passed) console.log(`Gate failures: ${item.gate.causes.join(" | ")}`);
   }
 };
@@ -228,9 +250,10 @@ const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
 
 export function runV4Benchmark(args = process.argv.slice(2)): V4BenchmarkResult {
   const strict = args.includes("--strict");
+  const smoke = args.includes("--smoke");
   const quick = args.includes("--quick");
   const aggressive = args.includes("--aggressive");
-  const mode: V4BenchmarkResult["mode"] = aggressive ? "aggressive" : strict ? "strict" : quick ? "quick" : "normal";
+  const mode: V4BenchmarkResult["mode"] = smoke ? "smoke" : aggressive ? "aggressive" : strict ? "strict" : quick ? "quick" : "normal";
   const maxRuntimeMs = Number(process.env.V4_BENCHMARK_MAX_RUNTIME_MS ?? MODE_MAX_RUNTIME_MS[mode]);
   const result = { mode, strict, maxRuntimeMs, scenarios: selectedScenarios(mode).map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString(), evidenceReport: [] } as V4BenchmarkResult;
   result.evidenceReport = buildV4BenchmarkEvidenceReport(result);

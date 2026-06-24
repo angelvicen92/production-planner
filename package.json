@@ -20,7 +20,8 @@
     "benchmark:v4": "tsx engine/v4/benchmarks/runV4Benchmark.ts",
     "benchmark:v4:strict": "tsx engine/v4/benchmarks/runV4Benchmark.ts --strict",
     "benchmark:v4:quick": "tsx engine/v4/benchmarks/runV4Benchmark.ts --quick",
-    "benchmark:v4:aggressive": "tsx engine/v4/benchmarks/runV4Benchmark.ts --aggressive"
+    "benchmark:v4:aggressive": "tsx engine/v4/benchmarks/runV4Benchmark.ts --aggressive",
+    "benchmark:v4:smoke": "tsx engine/v4/benchmarks/runV4Benchmark.ts --smoke"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

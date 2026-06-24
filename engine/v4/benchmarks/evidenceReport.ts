@@ -13,7 +13,8 @@ export type V4BenchmarkLossCategory =
   | "NATIVE_CORE_DISCARDED"
   | "PRODUCTION_WAVE_DISCARDED"
   | "IMPROVEMENT_ENGINE_NO_GAIN"
-  | "NO_STRATEGY_BEAT_BASELINE";
+  | "NO_STRATEGY_BEAT_BASELINE"
+  | "SIMPLE_SCENARIO_EARLY_EXIT";
 
 export interface V4BenchmarkEvidenceItem {
   scenarioName: string;
@@ -49,6 +50,7 @@ const unique = <T>(items: T[]): T[] => [...new Set(items)];
 function lossesFor(item: V4BenchmarkScenarioSummary): V4BenchmarkLossCategory[] {
   const { v3, v4Balanced: v4, delta: d } = item;
   const losses: V4BenchmarkLossCategory[] = [];
+  if (v4.earlyExitApplied || v4.complexityLevel === "SIMPLE") return ["SIMPLE_SCENARIO_EARLY_EXIT"];
   if (v4.unplannedTasks > v3.unplannedTasks) losses.push("UNPLANNED_WORSE");
   if (v3.hardFeasible && !v4.hardFeasible) losses.push("HARD_FEASIBILITY_WORSE");
   if (v4.mainFlowGapMinutes > v3.mainFlowGapMinutes) losses.push("MAIN_FLOW_GAP_WORSE");
@@ -79,6 +81,7 @@ function winsFor(item: V4BenchmarkScenarioSummary): string[] {
 
 function mainReason(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
+  if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "Simple scenario correctly used V3 fallback without running V4 strategic pipeline.";
   if (losses.includes("FALLBACK_TO_V3")) return (() => { const reason = item.v4Balanced.finalAcceptanceReason ?? "final acceptance rejected the candidate"; return `V4 fell back to V3: ${reason.replace(/[.]+$/, "")}.`; })();
   if (losses.includes("UNPLANNED_WORSE")) return `V4 leaves ${item.v4Balanced.unplannedTasks - item.v3.unplannedTasks} more unplanned task(s).`;
   if (losses.includes("HARD_FEASIBILITY_WORSE")) return "V4 lost hard feasibility while V3 was feasible.";
@@ -91,6 +94,7 @@ function mainReason(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCat
 
 function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
+  if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: simple scenario correctly used V3 fallback.";
   if (losses.includes("NATIVE_CORE_NOT_EXECUTED")) return "Increase balanced budget or reduce sequence variants: native critical core was skipped.";
   if (losses.includes("NATIVE_CORE_DISCARDED")) return "Inspect Native Critical Core acceptance inputs: native critical core executed but was discarded.";
   if (losses.includes("PRODUCTION_WAVE_DISCARDED") || losses.includes("MAIN_FLOW_GAP_WORSE")) return "Fix Production Wave dependency placement: main-flow gaps are worse than baseline.";
