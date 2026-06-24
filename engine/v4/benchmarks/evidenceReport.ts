@@ -17,7 +17,9 @@ export type V4BenchmarkLossCategory =
   | "SIMPLE_SCENARIO_EARLY_EXIT";
 
 export interface V4BenchmarkEvidenceItem {
+  scenarioId: string;
   scenarioName: string;
+  scenarioType: V4BenchmarkScenarioSummary["scenarioType"];
   verdict: string;
   mainReason: string;
   v3Summary: Pick<V4BenchmarkMetrics, "unplannedTasks" | "hardFeasible" | "mainFlowGapMinutes" | "makespan" | "makespanMinutes" | "totalTalentStayMinutes" | "qualityScore" | "runtimeMs">;
@@ -92,14 +94,22 @@ function mainReason(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCat
   return "V4 is equal to V3 or no strategy produced a safe measurable gain.";
 }
 
+function cleanReason(reason: string | null): string {
+  return (reason ?? "V4 did not beat baseline safely").replace(/[.]+$/, "");
+}
+
 function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
-  if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: simple scenario correctly used V3 fallback.";
+  if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: smoke early exit correctly used V3 fallback.";
+  if (losses.includes("FALLBACK_TO_V3")) return item.scenarioType === "representative"
+    ? `Representative V4 rejected: fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`
+    : `Fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`;
+  if (losses.includes("MAKESPAN_WORSE") && d.makespanMinutes !== null) return item.scenarioType === "representative"
+    ? `Representative V4 worse: improve Native Critical Core slot scoring; selected strategy loses makespan by ${d.makespanMinutes} min.`
+    : `Improve Native Critical Core slot scoring: selected strategy loses makespan by ${d.makespanMinutes} min.`;
   if (losses.includes("NATIVE_CORE_NOT_EXECUTED")) return "Increase balanced budget or reduce sequence variants: native critical core was skipped.";
   if (losses.includes("NATIVE_CORE_DISCARDED")) return "Inspect Native Critical Core acceptance inputs: native critical core executed but was discarded.";
   if (losses.includes("PRODUCTION_WAVE_DISCARDED") || losses.includes("MAIN_FLOW_GAP_WORSE")) return "Fix Production Wave dependency placement: main-flow gaps are worse than baseline.";
-  if (losses.includes("FALLBACK_TO_V3")) return `Fix final acceptance blocker: ${item.v4Balanced.finalAcceptanceReason ?? "V4 did not beat baseline safely"}.`;
-  if (losses.includes("MAKESPAN_WORSE") && d.makespanMinutes !== null) return `Improve Native Critical Core slot scoring: selected strategy loses makespan by ${d.makespanMinutes} min.`;
   if (losses.includes("RUNTIME_TOO_SLOW")) return "Do not tune engine yet: V4 is equal to V3 but slower.";
   if (item.verdict === "V4_BETTER") return "Proceed to tuning: V4 beats V3 on continuity and makespan.";
   return "Compare candidate diagnostics before adding heuristics: no strategy beat baseline safely.";
@@ -110,7 +120,9 @@ export function buildV4BenchmarkEvidenceReport(result: V4BenchmarkResult): V4Ben
     const v4 = item.v4Balanced;
     const losses = lossesFor(item);
     return {
-      scenarioName: item.scenario,
+      scenarioId: item.scenarioId,
+      scenarioName: item.scenarioName,
+      scenarioType: item.scenarioType,
       verdict: item.verdict,
       mainReason: mainReason(item, losses),
       v3Summary: summary(item.v3),

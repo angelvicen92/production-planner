@@ -51,6 +51,10 @@ export interface V4BenchmarkMetrics {
 
 export interface V4BenchmarkScenarioSummary {
   scenario: string;
+  scenarioId: string;
+  scenarioName: string;
+  scenarioType: "smoke" | "representative" | "normal";
+  taskCount: number;
   v3: V4BenchmarkMetrics;
   v4Safe?: V4BenchmarkMetrics;
   v4Balanced: V4BenchmarkMetrics;
@@ -105,8 +109,22 @@ const selectedScenarios = (mode: V4BenchmarkResult["mode"]): BenchmarkScenario[]
   return [representativeScenario()];
 };
 
-const scenarioType = (scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode"]): "smoke/simple" | "representative" =>
-  mode === "smoke" || scenario.id === SMOKE_SCENARIO_ID ? "smoke/simple" : "representative";
+const hasRepresentativeScenario = (): boolean => REPRESENTATIVE_SCENARIO_IDS.some((id) => benchmarkScenarios.some((scenario) => scenario.id === id));
+
+const scenarioType = (scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode"]): V4BenchmarkScenarioSummary["scenarioType"] => {
+  if (mode === "normal") return scenario.id === SMOKE_SCENARIO_ID ? "smoke" : REPRESENTATIVE_SCENARIO_IDS.includes(scenario.id as any) ? "representative" : "normal";
+  if (scenario.id === SMOKE_SCENARIO_ID) return "smoke";
+  return "representative";
+};
+
+function assertBenchmarkScenarioSelection(mode: V4BenchmarkResult["mode"], scenarios: BenchmarkScenario[]): void {
+  if ((mode === "quick" || mode === "strict") && hasRepresentativeScenario() && scenarios.some((scenario) => scenario.id === SMOKE_SCENARIO_ID)) {
+    throw new Error("V4 benchmark quick/strict selected smoke scenario A instead of representative scenario.");
+  }
+  if (mode === "aggressive" && hasRepresentativeScenario() && scenarios.some((scenario) => scenario.id === SMOKE_SCENARIO_ID)) {
+    throw new Error("V4 benchmark aggressive selected smoke scenario A instead of representative scenario.");
+  }
+}
 
 function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, profile: V4BenchmarkProfile, output: EngineOutput, runtimeMs: number, v4Diagnostics?: ReturnType<typeof generatePlanV4>["diagnostics"]): V4BenchmarkMetrics {
   const strategic = analyzeStrategicScenario(scenario.input as EngineInput);
@@ -204,15 +222,31 @@ function buildSummary(scenario: BenchmarkScenario, mode: V4BenchmarkResult["mode
   const worse = v4Balanced.unplannedTasks > v3.unplannedTasks || v4Balanced.mainFlowGapMinutes > v3.mainFlowGapMinutes || (delta.makespanMinutes !== null && delta.makespanMinutes > 45 && delta.qualityScore <= 0);
   const better = v4Balanced.unplannedTasks <= v3.unplannedTasks && v4Balanced.mainFlowGapMinutes <= v3.mainFlowGapMinutes && ((delta.makespanMinutes !== null && delta.makespanMinutes < 0) || delta.qualityScore > 0);
   const verdict = v4Balanced.verdict === "V4_REJECTED" ? "V4_REJECTED" : worse ? "V4_WORSE" : better ? "V4_BETTER" : "V4_EQUAL";
-  return { scenario: v3.scenarioName, v3, v4Safe: v4Safe as V4BenchmarkMetrics, v4Balanced, v4Aggressive, delta, verdict, gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs), gateMaxRuntimeMs: maxRuntimeMs };
+  return {
+    scenario: v3.scenarioName,
+    scenarioId: scenario.id,
+    scenarioName: scenario.name,
+    scenarioType: scenarioType(scenario, mode),
+    taskCount: scenario.input.tasks.length,
+    v3,
+    v4Safe: v4Safe as V4BenchmarkMetrics,
+    v4Balanced,
+    v4Aggressive,
+    delta,
+    verdict,
+    gate: evaluateRegressionGate(v3, v4Balanced, maxRuntimeMs),
+    gateMaxRuntimeMs: maxRuntimeMs,
+  };
 }
 
 const printSummary = (result: V4BenchmarkResult): void => {
   console.log("V4 BENCHMARK SUMMARY");
   console.log(`Mode: ${result.mode}`);
   for (const item of result.scenarios) {
-    console.log(`\nScenario: ${item.scenario}`);
-    console.log(`Scenario type: ${scenarioType({ id: item.scenario === scenarioKey(smokeScenario()) ? smokeScenario().id : "", name: item.scenario, description: "", input: {} as any, operationalExpectation: "", riskNotes: [] }, result.mode)}`);
+    console.log(`\nScenario ID: ${item.scenarioId}`);
+    console.log(`Scenario Name: ${item.scenarioName}`);
+    console.log(`Scenario Type: ${item.scenarioType}`);
+    console.log(`Task count: ${item.taskCount}`);
     console.log(`V3 makespan: ${item.v3.makespan ?? "n/a"}`);
     console.log(`V4 balanced makespan: ${item.v4Balanced.makespan ?? "n/a"}`);
     console.log(`Main flow gaps: ${item.v3.mainFlowGapMinutes} -> ${item.v4Balanced.mainFlowGapMinutes}`);
@@ -234,7 +268,9 @@ const printSummary = (result: V4BenchmarkResult): void => {
 const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
   console.log("\nV4 EVIDENCE REPORT");
   for (const item of report) {
-    console.log(`\nScenario: ${item.scenarioName}`);
+    console.log(`\nScenario ID: ${item.scenarioId}`);
+    console.log(`Scenario Name: ${item.scenarioName}`);
+    console.log(`Scenario Type: ${item.scenarioType}`);
     console.log(`Verdict: ${item.verdict}`);
     console.log(`Main reason: ${item.mainReason}`);
     console.log(`Selected strategy: ${item.strategyDiagnosis.selectedStrategy ?? "n/a"}`);
@@ -255,7 +291,9 @@ export function runV4Benchmark(args = process.argv.slice(2)): V4BenchmarkResult 
   const aggressive = args.includes("--aggressive");
   const mode: V4BenchmarkResult["mode"] = smoke ? "smoke" : aggressive ? "aggressive" : strict ? "strict" : quick ? "quick" : "normal";
   const maxRuntimeMs = Number(process.env.V4_BENCHMARK_MAX_RUNTIME_MS ?? MODE_MAX_RUNTIME_MS[mode]);
-  const result = { mode, strict, maxRuntimeMs, scenarios: selectedScenarios(mode).map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString(), evidenceReport: [] } as V4BenchmarkResult;
+  const scenarios = selectedScenarios(mode);
+  assertBenchmarkScenarioSelection(mode, scenarios);
+  const result = { mode, strict, maxRuntimeMs, scenarios: scenarios.map((scenario) => buildSummary(scenario, mode, maxRuntimeMs)), generatedAt: new Date().toISOString(), evidenceReport: [] } as V4BenchmarkResult;
   result.evidenceReport = buildV4BenchmarkEvidenceReport(result);
   printSummary(result);
   printEvidenceReport(result.evidenceReport);

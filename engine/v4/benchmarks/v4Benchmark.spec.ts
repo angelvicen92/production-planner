@@ -50,7 +50,9 @@ test("V4 benchmark smoke uses the small scenario A", () => {
     const result = runV4Benchmark(["--smoke"]);
     assert.equal(result.mode, "smoke");
     assert.equal(result.scenarios.length, 1);
-    assert.equal(result.scenarios[0].scenario, "Talentconsalidatemprana");
+    assert.equal(result.scenarios[0].scenarioId, "A");
+    assert.equal(result.scenarios[0].scenarioName, "Talent con salida temprana");
+    assert.equal(result.scenarios[0].scenarioType, "smoke");
   } finally {
     console.log = originalLog;
     console.warn = originalWarn;
@@ -70,10 +72,12 @@ test("V4 benchmark quick and strict use representative scenario when realistic v
     const quick = runV4Benchmark(["--quick"]);
     const strict = runV4Benchmark(["--strict"]);
     assert.equal(benchmarkScenarios.some((scenario) => scenario.id === "L"), true);
-    assert.equal(quick.scenarios[0].scenario, "JornadaaudiovisualanonimizadatipoLaVoz");
-    assert.equal(strict.scenarios[0].scenario, "JornadaaudiovisualanonimizadatipoLaVoz");
-    assert.notEqual(quick.scenarios[0].scenario, "Talentconsalidatemprana");
-    assert.notEqual(strict.scenarios[0].scenario, "Talentconsalidatemprana");
+    assert.equal(quick.scenarios[0].scenarioId, "L");
+    assert.equal(strict.scenarios[0].scenarioId, "L");
+    assert.equal(quick.scenarios[0].scenarioType, "representative");
+    assert.equal(strict.scenarios[0].scenarioType, "representative");
+    assert.notEqual(quick.scenarios[0].scenarioId, "A");
+    assert.notEqual(strict.scenarios[0].scenarioId, "A");
   } finally {
     console.log = originalLog;
     console.warn = originalWarn;
@@ -116,6 +120,10 @@ test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced res
     assert.equal(typeof summary.v4Balanced.runtimeMs, "number");
     assert.equal(typeof summary.v4Balanced.qualityScore, "number");
     assert.ok("makespanMinutes" in summary.delta);
+    assert.equal(summary.scenarioId, "L");
+    assert.equal(summary.scenarioType, "representative");
+    assert.equal(summary.scenarioName, "Jornada audiovisual anonimizada tipo La Voz");
+    assert.equal(typeof summary.taskCount, "number");
   } finally {
     console.log = originalLog;
     console.warn = originalWarn;
@@ -249,6 +257,10 @@ const evidenceResult = (v4Overrides: Partial<V4BenchmarkMetrics> = {}, summaryOv
   };
   const summary: V4BenchmarkScenarioSummary = {
     scenario: "fixture",
+    scenarioId: "L",
+    scenarioName: "Fixture representative",
+    scenarioType: "representative",
+    taskCount: 120,
     v3,
     v4Balanced: v4,
     delta,
@@ -307,5 +319,21 @@ test("evidence report diagnoses main flow gap worse", () => {
 test("evidence report classifies simple scenario early exit as no-action", () => {
   const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ accepted: false, fallbackToV3Baseline: true, earlyExitApplied: true, complexityLevel: "SIMPLE", verdict: "V4_REJECTED", finalAcceptanceReason: "Simple scenario: V4 strategic overhead not justified.", executedStrategies: [] }));
   assert.deepEqual(report.losses, ["SIMPLE_SCENARIO_EARLY_EXIT"]);
-  assert.equal(report.requiredNextAction, "No action: simple scenario correctly used V3 fallback.");
+  assert.equal(report.scenarioId, "L");
+  assert.equal(report.scenarioType, "representative");
+  assert.equal(report.requiredNextAction, "No action: smoke early exit correctly used V3 fallback.");
+});
+
+
+test("evidence report serializes scenario identity and representative rejection action", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ accepted: false, fallbackToV3Baseline: true, verdict: "V4_REJECTED", finalAcceptanceReason: "V4 did not beat baseline safely." }));
+  assert.equal(report.scenarioId, "L");
+  assert.equal(report.scenarioName, "Fixture representative");
+  assert.equal(report.scenarioType, "representative");
+  assert.ok(report.requiredNextAction.startsWith("Representative V4 rejected:"));
+});
+
+test("evidence report differentiates representative V4 worse action", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ makespanMinutes: 130, makespan: "10:30", qualityScore: 80 }, { verdict: "V4_WORSE" }));
+  assert.ok(report.requiredNextAction.startsWith("Representative V4 worse:"));
 });
