@@ -303,6 +303,12 @@ export const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => 
     console.log(`Alternatives found: ${Number(gapTargeting?.alternativeSearch?.alternativesFound ?? 0)}`);
     console.log(`Alternatives tried: ${Number(gapTargeting?.alternativeSearch?.alternativesTried ?? 0)}`);
     console.log(`Main blocker: ${gapTargeting?.mainBlocker ?? gapTargeting?.blockers?.[0] ?? "n/a"}`);
+    const resourceAttempt = gapTargeting?.attempts?.find?.((attempt: any) => String(attempt.reason ?? "").toLowerCase().includes("resource") || String(attempt.details ?? "").toLowerCase().includes("resource") || String(attempt.reason ?? "").toLowerCase().includes("camera") || String(attempt.details ?? "").toLowerCase().includes("camera"));
+    const resourceBlocker = String(resourceAttempt?.reason ?? gapTargeting?.mainBlocker ?? "");
+    const resourceDetails = resourceAttempt?.details ?? gapTargeting?.mainBlockerDetails ?? "n/a";
+    const resourceKind = /camera/i.test(`${resourceBlocker} ${resourceDetails}`) ? "camera capacity" : /anyOf|cannot be resolved safely/i.test(`${resourceBlocker} ${resourceDetails}`) ? "ambiguous anyOf" : /conflict|overlap/i.test(`${resourceBlocker} ${resourceDetails}`) ? "explicit conflict" : /availability|missing/i.test(`${resourceBlocker} ${resourceDetails}`) ? "missing availability" : "n/a";
+    console.log(`Resource blocker: ${resourceKind}`);
+    console.log(`Resource details: ${resourceDetails}`);
     console.log(`Best operation: ${gapTargeting?.bestOperation ?? gapTargeting?.attempts?.find?.((attempt: any) => attempt.success)?.operation ?? gapTargeting?.attempts?.[0]?.operation ?? "n/a"}`);
     console.log(`Candidate futility stop: ${item.strategyDiagnosis.candidateFutilityStopApplied}`);
     console.log(`Production wave: ${item.strategyDiagnosis.productionWaveExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.productionWaveDiscarded}`);

@@ -59,7 +59,74 @@ const depsOf = (task: TaskInput) => uniq([...(task.dependsOnTaskIds ?? []), task
 const tmplDepsOf = (task: TaskInput) => uniq([...(task.dependsOnTemplateIds ?? []), task.dependsOnTemplateId]);
 const resOf = (task?: TaskInput | null) => uniq([...(task?.assignedResourceIds ?? []), ...Object.keys(task?.resourceRequirements?.byItem ?? {}), ...(task?.resourceRequirements?.anyOf ?? []).flatMap((g) => g.resourceItemIds ?? [])]);
 const protectedTask = (task: TaskInput) => task.status === "done" || task.status === "in_progress" || Boolean(task.fixedWindowStart && task.fixedWindowEnd);
-const unsafeResources = (task: TaskInput) => Boolean(task.resourceRequirements?.byType && Object.keys(task.resourceRequirements.byType).length) || (task.resourceRequirements?.anyOf ?? []).some((g) => !g.resourceItemIds?.length || Number(g.quantity ?? 1) !== 1);
+
+
+export interface V4ResourceValidationResult { ok: boolean; unsafe: boolean; conflicts: string[]; warnings: string[]; reason?: string; details?: string; blockerType?: "explicit conflict" | "ambiguous anyOf" | "missing availability" | "camera capacity" | "none"; }
+export interface V4ResourceValidationContext { byId?: Map<number, TaskInput>; criticalResourceIds?: Set<number> | number[]; allowNonCriticalUnsafe?: boolean; }
+
+function explicitResourceIds(task?: TaskInput | null, planned?: PlannedRow | null): number[] {
+  return uniq([...(planned?.assignedResources ?? []), ...(task?.assignedResourceIds ?? []), ...Object.keys(task?.resourceRequirements?.byItem ?? {})]);
+}
+
+function deterministicRequirementIds(task: TaskInput): number[] {
+  return uniq((task.resourceRequirements?.anyOf ?? []).filter((g) => Number(g.quantity ?? 1) === 1 && (g.resourceItemIds ?? []).length === 1).flatMap((g) => g.resourceItemIds ?? []));
+}
+
+function ambiguousRequirements(task: TaskInput): Array<{ label: string; ids: number[] }> {
+  const out: Array<{ label: string; ids: number[] }> = [];
+  for (const [typeId, quantity] of Object.entries(task.resourceRequirements?.byType ?? {})) out.push({ label: `byType ${typeId} x${quantity}`, ids: [] });
+  for (const group of task.resourceRequirements?.anyOf ?? []) {
+    const ids = uniq(group.resourceItemIds ?? []);
+    if (!ids.length || Number(group.quantity ?? 1) !== 1 || ids.length > 1) out.push({ label: `anyOf ${ids.length ? ids.join(",") : "empty"} x${Number(group.quantity ?? 1)}`, ids });
+  }
+  return out;
+}
+
+function resourceValidationIntervals(input: EngineInput, output: EngineOutput, byId: Map<number, TaskInput>): Interval[] {
+  const fromOutput = candidateIntervalsFromOutput(input, output, byId);
+  const fixed = fixedIntervals(input, byId);
+  return [...fixed, ...fromOutput];
+}
+
+export function validateTaskResourcesAt(input: EngineInput, output: EngineOutput, task: TaskInput, startMin: number, endMin: number, context: V4ResourceValidationContext = {}): V4ResourceValidationResult {
+  const byId = context.byId ?? new Map((input.tasks ?? []).map((t) => [Number(t.id), t]));
+  const rows = plannedRows(output);
+  const taskRow = rows.get(task.id);
+  const concreteIds = uniq([...explicitResourceIds(task, taskRow), ...deterministicRequirementIds(task)]);
+  const interval = { start: startMin, end: endMin, taskId: task.id, resources: concreteIds };
+  const conflicts: string[] = []; const warnings: string[] = [];
+  for (const busy of resourceValidationIntervals(input, output, byId)) {
+    if (busy.taskId === task.id || !overlaps(interval, busy)) continue;
+    const shared = concreteIds.find((id) => (busy.resources ?? []).includes(id));
+    if (shared) conflicts.push(`Resource ${shared} overlaps with task ${busy.taskId} at ${hhmm(busy.start)}-${hhmm(busy.end)}.`);
+  }
+  const cameraNeed = Math.max(0, Number(task.camerasOverride ?? 0) || 0);
+  if (cameraNeed > 0) {
+    const available = Number(input.camerasAvailable);
+    if (!Number.isFinite(available) || available <= 0) warnings.push(`Camera availability is missing while task ${task.id} requires ${cameraNeed} camera(s).`);
+    else {
+      let used = 0;
+      for (const row of output.plannedTasks ?? []) {
+        if (Number(row.taskId) === task.id) continue;
+        const s = rowStart(row); const e = rowEnd(row);
+        if (s === null || e === null || !overlaps({ start: startMin, end: endMin }, { start: s, end: e })) continue;
+        used += Math.max(0, Number(byId.get(Number(row.taskId))?.camerasOverride ?? 0) || 0);
+      }
+      if (used + cameraNeed > available) conflicts.push(`Camera capacity exceeded: ${used + cameraNeed}/${available} cameras at ${hhmm(startMin)}-${hhmm(endMin)}.`);
+    }
+  }
+  if (conflicts.length) return { ok: false, unsafe: false, conflicts, warnings, reason: conflicts.some((c) => c.startsWith("Camera")) ? "Camera capacity" : "Resource conflict", details: conflicts[0], blockerType: conflicts.some((c) => c.startsWith("Camera")) ? "camera capacity" : "explicit conflict" };
+  const ambiguous = ambiguousRequirements(task);
+  if (ambiguous.length) {
+    const critical = new Set(Array.isArray(context.criticalResourceIds) ? context.criticalResourceIds.map(Number) : [...(context.criticalResourceIds ?? [])].map(Number));
+    const criticalAmbiguous = ambiguous.find((req) => req.ids.some((id) => critical.has(id)));
+    const details = `Task ${task.id} has unresolved ${ambiguous[0].label} requirement: Resource requirement anyOf cannot be resolved safely.`;
+    return { ok: Boolean(context.allowNonCriticalUnsafe && !criticalAmbiguous), unsafe: true, conflicts: [], warnings: [details], reason: "Resource requirement anyOf cannot be resolved safely", details, blockerType: "ambiguous anyOf" };
+  }
+  return { ok: true, unsafe: false, conflicts: [], warnings, reason: warnings.length ? "Resource validation warning" : "No resource conflict", details: warnings[0] ?? "Explicit resources valid." , blockerType: warnings.length ? "missing availability" : "none" };
+}
+
+function unsafeResources(task: TaskInput): boolean { return ambiguousRequirements(task).length > 0; }
 
 function breakIntervals(input: EngineInput): Interval[] {
   const windows: TimeWindow[] = [...(input.globalHardBreaks ?? [])];
@@ -130,6 +197,7 @@ export function summarizeGapClosureBlocker(attempts: GapAttempt[], blockers: str
   const priority = [
     "Talent conflict",
     "Space conflict",
+    "Resource requirement anyOf cannot be resolved safely",
     "Resource conflict",
     "Dependency not ready",
     "Hard validation failed",
@@ -141,7 +209,7 @@ export function summarizeGapClosureBlocker(attempts: GapAttempt[], blockers: str
   const successful = attempts.find((attempt) => attempt.success);
   for (const label of priority) {
     const found = normalized.find((item) => String(item.reason).toLowerCase().includes(label.toLowerCase()) || String(item.details ?? "").toLowerCase().includes(label.toLowerCase()));
-    if (found) return { mainBlocker: label === "Candidate did not safely reduce gap" ? "Candidate did not reduce gap" : label, mainBlockerDetails: found.details ?? found.reason, bestOperation: successful?.operation ?? found.operation };
+    if (found) return { mainBlocker: label === "Candidate did not safely reduce gap" ? "Candidate did not reduce gap" : label === "Resource requirement anyOf cannot be resolved safely" ? "Resource validation unsafe" : label, mainBlockerDetails: found.details ?? found.reason, bestOperation: successful?.operation ?? found.operation };
   }
   if (successful) return { mainBlocker: "Gap reduced", mainBlockerDetails: successful.reason, bestOperation: successful.operation };
   const first = normalized[0];
@@ -175,13 +243,14 @@ function candidateIntervalsFromOutput(input: EngineInput, output: EngineOutput, 
   }).filter((row) => row.end > row.start);
 }
 
-export function canPlaceTaskAt(input: EngineInput, currentOutput: EngineOutput, taskId: number, startMin: number, endMin: number, byId = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]))): PlacementCheck {
+export function canPlaceTaskAt(input: EngineInput, currentOutput: EngineOutput, taskId: number, startMin: number, endMin: number, byId = new Map((input.tasks ?? []).map((task) => [Number(task.id), task])), context: V4ResourceValidationContext = {}): PlacementCheck {
   const task = byId.get(Number(taskId));
   if (!task) return { ok: false, reason: "Missing task", details: `Task ${taskId} does not exist.` };
   if (task.status !== "pending") return { ok: false, reason: "Task is not pending", details: `Task ${taskId} status is ${task.status}.` };
   if (protectedTask(task)) return { ok: false, reason: "Task is protected", details: "Done, in-progress, or fixed-window tasks cannot be moved." };
   if (taskLockedByRealLock(input, task.id)) return { ok: false, reason: "Real lock", details: `Task ${task.id} has a real lock.` };
-  if (unsafeResources(task)) return { ok: false, reason: "Resource validation unsafe", details: "Task has by-type or unresolved alternative resource requirements.", warning: `Rejected move for task ${task.id}: resources cannot be validated safely.` };
+  const resourceValidation = validateTaskResourcesAt(input, currentOutput, task, startMin, endMin, { ...context, byId, allowNonCriticalUnsafe: true });
+  if (!resourceValidation.ok) return { ok: false, reason: resourceValidation.reason === "Camera capacity" ? "Camera capacity" : resourceValidation.unsafe ? "Resource validation unsafe" : "Resource conflict", details: resourceValidation.details ?? resourceValidation.conflicts[0] ?? resourceValidation.warnings[0], warning: resourceValidation.warnings[0] };
   const workStart = toMin(input.workDay.start) ?? 0; const workEnd = toMin(input.workDay.end) ?? 1440;
   if (startMin < workStart || endMin > workEnd || endMin <= startMin) return { ok: false, reason: "Outside work day", details: `${hhmm(startMin)}-${hhmm(endMin)} is outside the work day.` };
   const av = input.contestantAvailabilityById?.[talentOf(task) ?? -1];
@@ -270,7 +339,7 @@ export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineO
       if (++perGap > limits.maxAttemptsPerGap || Date.now() - started > limits.maxRuntimeMs) { warnings.push("Gap targeting runtime or attempt budget reached; returning best candidate found."); return false; }
       let candidate = cloneOutput(bestOutput);
       for (const move of moves) {
-        const check = canPlaceTaskAt(input, candidate, move.taskId, move.start, move.end, byId);
+        const check = canPlaceTaskAt(input, candidate, move.taskId, move.start, move.end, byId, { criticalResourceIds: (strategicAnalysis.criticalResources ?? []).map((resource) => Number(resource.id)) });
         if (!check.ok) { if (check.warning) warnings.push(check.warning); attempts.push({ gapStart: hhmm(gap.start), gapEnd: hhmm(gap.end), previousTaskId: gap.previousTaskId, nextTaskId: gap.nextTaskId, operation, success: false, movedTaskIds: moves.map((m) => m.taskId), reason: check.reason, details: check.details }); blockers.push(`${operation}: ${check.details ?? check.reason}`); return false; }
         candidate = moveRows(candidate, [move]);
       }
