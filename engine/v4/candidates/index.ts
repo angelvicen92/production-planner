@@ -275,6 +275,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     timedOut,
   });
   let baselineSnapshot: { mainFlowGapMinutes: number; makespanMinutes: number; qualityScore: number; unplannedTasks: number } | null = null;
+  let baselineCandidate: { output: EngineOutput; quality: V4PlanQualityEvaluation } | null = null;
   let futilityStop = { applied: false, reason: null as string | null };
   const improvedBaseline = (quality: V4PlanQualityEvaluation): boolean => baselineSnapshot !== null && ((quality.mainFlowQuality?.internalGapMinutes ?? 0) < baselineSnapshot.mainFlowGapMinutes || minutesFromHHMM(quality.makespan.lastTaskEnd) < baselineSnapshot.makespanMinutes || quality.qualityScore > baselineSnapshot.qualityScore);
   for (const strategyId of strategies) {
@@ -301,10 +302,10 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
       const candidate = buildStrategyInput(strategyId, input, strategicAnalysis);
       const sequenceOverride = sequenceVariantId ? variantById.get(sequenceVariantId) : undefined;
       const remainingForStrategy = Math.max(0, maxRuntimeMs - (Date.now() - started));
-      const strategyOptions = { ...(options as any), ...(sequenceOverride ? { sequenceOverride } : {}), maxRuntimeMs: remainingForStrategy };
+      const strategyOptions: any = { ...(options as any), ...(sequenceOverride ? { sequenceOverride } : {}), ...(baselineSnapshot && baselineCandidate ? { baselineOutput: baselineCandidate.output, baselineQuality: baselineCandidate.quality } : {}), maxRuntimeMs: remainingForStrategy };
       const mainFlowFirst = base === "strategy_v4_main_flow_first" ? buildMainFlowFirstPlan(input, strategicAnalysis, strategyOptions) : null;
       const productionWave = base === "strategy_v4_production_wave" ? buildProductionWavePlan(input, strategicAnalysis, strategyOptions) : null;
-      const nativeCriticalCore = base === "strategy_v4_native_critical_core" ? buildV4NativeCriticalCorePlan(input, strategicAnalysis, strategyOptions as any) : null;
+      const nativeCriticalCore: ReturnType<typeof buildV4NativeCriticalCorePlan> | null = base === "strategy_v4_native_critical_core" ? buildV4NativeCriticalCorePlan(input, strategicAnalysis, strategyOptions as any) : null;
       const nativeRemainder = base === "strategy_v4_native_remainder" ? buildV4NativeRemainderPlan(input, strategicAnalysis, strategyOptions) : null;
       const candidateInput = nativeCriticalCore?.delegatedInput ?? productionWave?.delegatedInput ?? mainFlowFirst?.delegatedInput ?? candidate.input;
       const initialOutput = nativeCriticalCore?.output ?? nativeRemainder?.output ?? productionWave?.output ?? mainFlowFirst?.output ?? generatePlanV3(candidateInput, strategyOptions);
@@ -316,6 +317,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
       const quality = evaluateV4PlanQuality(candidateInput, improved.output, strategicAnalysis);
       if (base === "strategy_baseline_v3_order") {
         baselineSnapshot = { mainFlowGapMinutes: quality.mainFlowQuality?.internalGapMinutes ?? 0, makespanMinutes: minutesFromHHMM(quality.makespan.lastTaskEnd), qualityScore: quality.qualityScore, unplannedTasks: unplannedCount(improved.output) };
+        baselineCandidate = { output: improved.output, quality };
         if (baselineSnapshot && baselineSnapshot.unplannedTasks === 0 && baselineSnapshot.mainFlowGapMinutes === 0 && quality.qualityScore >= 98) {
           futilityStop = { applied: false, reason: "Perfect baseline early accept." };
         }
@@ -361,7 +363,7 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     const isNativeRemainder = itemBaseStrategy === "strategy_v4_native_remainder";
     const isNativeCriticalCore = itemBaseStrategy === "strategy_v4_native_critical_core";
     if (!isNativeRemainder && !isNativeCriticalCore) continue;
-    const makespanAllowance = isNativeCriticalCore ? 15 : 30;
+    const makespanAllowance = isNativeCriticalCore ? 5 : 30;
     let discardReason: string | null = null;
     if (item.hardFeasible === false) discardReason = "HARD_VALIDATION_FAILED";
     else if (item.unplannedTasks > baseline.unplannedTasks) discardReason = "UNPLANNED_WORSE";
@@ -372,12 +374,14 @@ export function runV4CandidateStrategies(input: EngineInput, strategicAnalysis: 
     const worseThanBaseline = discardReason !== null;
     if (worseThanBaseline && item.nativeCriticalCoreScheduler) {
       item.discarded = true; item.discardReason = discardReason; item.discardDetails = { baselineMainFlowGapMinutes: baseline.mainFlowGapMinutes, candidateMainFlowGapMinutes: item.mainFlowGapMinutes, baselineMakespanMinutes: minutesFromHHMM(baseline.makespan), candidateMakespanMinutes: minutesFromHHMM(item.makespan), baselineUnplanned: baseline.unplannedTasks, candidateUnplanned: item.unplannedTasks };
-      item.hardFeasible = false;
-      item.nativeCriticalCoreScheduler = { ...item.nativeCriticalCoreScheduler, applied: false, accepted: false, discarded: true, rejectionReason: discardReason as any, rejectionDetails: item.discardDetails as any, infeasible: item.nativeCriticalCoreScheduler.infeasible || item.hardFeasible === false, reason: item.nativeCriticalCoreScheduler.reason ?? "Native critical core discarded by candidate runner acceptance gate.", warnings: [...(item.nativeCriticalCoreScheduler.warnings ?? []), "Native critical core discarded: worse than V3 baseline on unplanned tasks, main-flow continuity, makespan or hard feasibility."] };
+      const hardInfeasible = discardReason === "HARD_VALIDATION_FAILED";
+      item.hardFeasible = hardInfeasible ? false : item.hardFeasible;
+      item.nativeCriticalCoreScheduler = { ...item.nativeCriticalCoreScheduler, applied: false, accepted: false, discarded: true, rejectionReason: discardReason as any, rejectionDetails: item.discardDetails as any, infeasible: item.nativeCriticalCoreScheduler.infeasible || hardInfeasible, reason: item.nativeCriticalCoreScheduler.reason ?? "Native critical core discarded by candidate runner acceptance gate.", warnings: [...(item.nativeCriticalCoreScheduler.warnings ?? []), "Native critical core discarded: worse than V3 baseline on unplanned tasks, main-flow continuity, makespan or hard feasibility."] };
     }
     if (worseThanBaseline && item.nativeRemainderScheduler) {
-      item.hardFeasible = false;
-      item.nativeRemainderScheduler = { ...item.nativeRemainderScheduler, applied: false, discarded: true, infeasible: item.nativeRemainderScheduler.infeasible || item.hardFeasible === false, reason: item.nativeRemainderScheduler.reason ?? "Native remainder discarded by candidate runner quality gate.", warnings: [...(item.nativeRemainderScheduler.warnings ?? []), "Native remainder discarded: worse than V3 baseline on unplanned tasks, main-flow continuity, makespan or hard feasibility."] };
+      const hardInfeasible = discardReason === "HARD_VALIDATION_FAILED";
+      item.hardFeasible = hardInfeasible ? false : item.hardFeasible;
+      item.nativeRemainderScheduler = { ...item.nativeRemainderScheduler, applied: false, discarded: true, infeasible: item.nativeRemainderScheduler.infeasible || hardInfeasible, reason: item.nativeRemainderScheduler.reason ?? "Native remainder discarded by candidate runner quality gate.", warnings: [...(item.nativeRemainderScheduler.warnings ?? []), "Native remainder discarded: worse than V3 baseline on unplanned tasks, main-flow continuity, makespan or hard feasibility."] };
     }
   }
   for (let i = 1; i < diagnostics.length; i += 1) if (compareCandidates(diagnostics[i], diagnostics[bestIndex]) < 0) bestIndex = i;
