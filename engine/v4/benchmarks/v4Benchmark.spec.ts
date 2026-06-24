@@ -5,6 +5,7 @@ import { buildV4BenchmarkEvidenceReport } from "./evidenceReport";
 import { analyzeStrategicScenario } from "../analysis";
 import { buildV4StrategyPortfolio, runV4CandidateStrategies } from "../candidates";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
+import { generatePlanV4 } from "../index";
 
 const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics => ({
   scenarioName: "fixture",
@@ -33,8 +34,64 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
   improvementMovesAccepted: 0,
   accepted: true,
   fallbackToV3Baseline: false,
+  earlyExitApplied: false,
+  complexityLevel: null,
   verdict: "V3_BASELINE",
   ...overrides,
+});
+
+
+test("V4 benchmark smoke uses the small scenario A", () => {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  console.log = () => undefined;
+  console.warn = () => undefined;
+  try {
+    const result = runV4Benchmark(["--smoke"]);
+    assert.equal(result.mode, "smoke");
+    assert.equal(result.scenarios.length, 1);
+    assert.equal(result.scenarios[0].scenario, "Talentconsalidatemprana");
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+  }
+});
+
+test("V4 benchmark quick and strict use representative scenario when realistic voice day exists", () => {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  const originalExitCode = process.exitCode;
+  console.log = () => undefined;
+  console.warn = () => undefined;
+  console.error = () => undefined;
+  try {
+    process.exitCode = undefined;
+    const quick = runV4Benchmark(["--quick"]);
+    const strict = runV4Benchmark(["--strict"]);
+    assert.equal(benchmarkScenarios.some((scenario) => scenario.id === "L"), true);
+    assert.equal(quick.scenarios[0].scenario, "JornadaaudiovisualanonimizadatipoLaVoz");
+    assert.equal(strict.scenarios[0].scenario, "JornadaaudiovisualanonimizadatipoLaVoz");
+    assert.notEqual(quick.scenarios[0].scenario, "Talentconsalidatemprana");
+    assert.notEqual(strict.scenarios[0].scenario, "Talentconsalidatemprana");
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+    console.error = originalError;
+    process.exitCode = originalExitCode;
+  }
+});
+
+test("simple scenarios activate V4 early exit and representative scenarios do not", () => {
+  const simple = benchmarkScenarios.find((scenario) => scenario.id === "A")!;
+  const representative = benchmarkScenarios.find((scenario) => scenario.id === "L")!;
+  const simpleResult = generatePlanV4(simple.input as any, { v4Profile: "balanced" } as any);
+  const representativeResult = generatePlanV4(representative.input as any, { v4Profile: "balanced", maxRuntimeMs: 2500, maxStrategies: 1 } as any);
+  assert.equal(simpleResult.diagnostics.complexityAssessment?.level, "SIMPLE");
+  assert.equal(simpleResult.diagnostics.earlyExit?.applied, true);
+  assert.equal(simpleResult.diagnostics.candidateRunner.applied, false);
+  assert.notEqual(representativeResult.diagnostics.complexityAssessment?.level, "SIMPLE");
+  assert.equal(representativeResult.diagnostics.earlyExit?.applied, false);
 });
 
 test("V4 benchmark quick mode executes and returns comparable V3/V4 balanced results", () => {
@@ -245,4 +302,10 @@ test("evidence report diagnoses main flow gap worse", () => {
   const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ mainFlowGapMinutes: 25 }, { verdict: "V4_WORSE" }));
   assert.ok(report.losses.includes("MAIN_FLOW_GAP_WORSE"));
   assert.ok(report.requiredNextAction.includes("Production Wave"));
+});
+
+test("evidence report classifies simple scenario early exit as no-action", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ accepted: false, fallbackToV3Baseline: true, earlyExitApplied: true, complexityLevel: "SIMPLE", verdict: "V4_REJECTED", finalAcceptanceReason: "Simple scenario: V4 strategic overhead not justified.", executedStrategies: [] }));
+  assert.deepEqual(report.losses, ["SIMPLE_SCENARIO_EARLY_EXIT"]);
+  assert.equal(report.requiredNextAction, "No action: simple scenario correctly used V3 fallback.");
 });

@@ -1,5 +1,6 @@
 import type { EngineInput, EngineOutput } from "../../types";
 import type { EngineV3Options } from "../../v3/types";
+import { generatePlanV3 } from "../../v3";
 import { analyzeStrategicScenario } from "../analysis";
 import { runV4CandidateStrategies, type V4CandidateStrategyId } from "../candidates";
 import { compareV3AndV4Quality, type V3V4QualityComparison } from "../comparison";
@@ -8,6 +9,7 @@ import type { V4BlockRepackerDiagnostics } from "../blockRepacker";
 import { runV4HierarchicalImprovementEngine } from "../improvementEngine";
 import { evaluateV4PlanQuality, type V4PlanQualityEvaluation } from "../quality";
 import type { EngineV4Diagnostics, EngineV4Result } from "../index";
+import { assessV4ScenarioComplexity } from "./complexity";
 const ENGINE_V4_VERSION = "v4" as const;
 
 export type V4StrategyProfile = "safe" | "balanced" | "aggressive";
@@ -144,6 +146,46 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
   const maxRuntimeMs = Number(rawOptions.maxRuntimeMs ?? 8000);
   const strategies = enabledStrategies(rawOptions);
   const strategicAnalysis = analyzeStrategicScenario(input);
+  const complexityAssessment = assessV4ScenarioComplexity(input, strategicAnalysis);
+  if (complexityAssessment.level === "SIMPLE") {
+    const baselineOutput = generatePlanV3(input, { ...rawOptions, timeLimitMs: 0 });
+    const baselineQuality = evaluateV4PlanQuality(input, baselineOutput, strategicAnalysis);
+    const comparison = compareV3AndV4Quality(baselineQuality, baselineQuality);
+    const finalAcceptance = {
+      accepted: false,
+      fallbackToV3Baseline: true,
+      reason: "Simple scenario: V4 strategic overhead not justified.",
+      checks: { simpleScenarioEarlyExit: true },
+    };
+    const runtimeMs = Date.now() - started;
+    const diagnostics: EngineV4Diagnostics = {
+      status: (baselineOutput as any).hardFeasible === false ? "infeasible" : "success",
+      engineVersion: ENGINE_V4_VERSION,
+      generatedAt: new Date().toISOString(),
+      plannedTasks: planned(baselineOutput),
+      unplannedTasks: unplanned(baselineOutput),
+      warning: "Motor V4 Pro omitido: escenario simple, se devuelve baseline V3 seguro.",
+      strategicAnalysis,
+      guidedOrdering: { applied: false, reorderedTaskCount: 0, priorityBuckets: [], topOrderedTasks: [], reason: "Simple scenario early exit." },
+      quality: baselineQuality,
+      qualityBeforeImprovement: baselineQuality,
+      qualityBeforePostOptimizer: baselineQuality,
+      postOptimizer: { ...EMPTY_POST, warnings: ["Simple scenario early exit: post-optimizer not run."] },
+      blockRepacker: { ...EMPTY_BLOCK_REPACKER, skippedReason: "Simple scenario early exit.", warnings: ["Simple scenario early exit: block repacker not run."] },
+      improvementEngine: { applied: false, runtimeMs: 0, iterations: 0, movesAccepted: 0, movesRejected: 0, qualityBefore: baselineQuality, qualityAfter: baselineQuality, makespanBefore: baselineQuality.makespan.lastTaskEnd, makespanAfter: baselineQuality.makespan.lastTaskEnd, mainFlowGapMinutesBefore: baselineQuality.mainFlowQuality?.internalGapMinutes ?? 0, mainFlowGapMinutesAfter: baselineQuality.mainFlowQuality?.internalGapMinutes ?? 0, totalTalentStayBefore: baselineQuality.talentStayTime.totalStayMinutes, totalTalentStayAfter: baselineQuality.talentStayTime.totalStayMinutes, families: [], acceptedMoves: [], warnings: ["Simple scenario early exit: improvement engine not run."] },
+      mainFlowImprovement: { applied: false, movesAccepted: 0, movesRejected: 0, mainFlowGapMinutesBefore: baselineQuality.mainFlowQuality?.internalGapMinutes ?? 0, mainFlowGapMinutesAfter: baselineQuality.mainFlowQuality?.internalGapMinutes ?? 0, warnings: ["Simple scenario early exit: main-flow improvement not run."] } as any,
+      mainFlowSequenceSearch: undefined,
+      candidateRunner: { applied: false, bestStrategyId: "strategy_baseline_v3_order", candidateCount: 0, skippedCount: 0, budgetExceeded: false, candidates: [] },
+      v3V4Comparison: { v3Baseline: baselineQuality, v4Final: baselineQuality, comparison: { ...comparison, verdict: "V4_REJECTED" as const, reasons: [...comparison.reasons, finalAcceptance.reason] } },
+      bestStrategyId: "strategy_baseline_v3_order",
+      finalAcceptance,
+      performance: { runtimeMs, strategiesEvaluated: 0, profile, budgetExceeded: false, skippedStrategies: PROFILE_STRATEGIES[profile], warnings: ["Simple scenario early exit: candidate runner not run."] },
+      executiveSummary: executiveSummary("V4_REJECTED", finalAcceptance, comparison, "strategy_baseline_v3_order"),
+      complexityAssessment,
+      earlyExit: { applied: true, fallbackToV3Baseline: true, reason: "Simple scenario: V4 strategic overhead not justified." },
+    };
+    return { output: baselineOutput, diagnostics };
+  }
   const candidateResult = runV4CandidateStrategies(input, strategicAnalysis, { ...rawOptions, enabledStrategies: strategies, maxRuntimeMs } as any);
   const baselineDiagnostic = candidateResult.candidatesDiagnostics.candidates.find((candidate) => candidate.strategyId === "strategy_baseline_v3_order");
   const baselineOutput = candidateResult.baselineOutput ?? candidateResult.bestOutput;
@@ -180,6 +222,8 @@ export function runV4ProOrchestrator(input: EngineInput, rawOptions: V4ProOrches
     unplannedTasks: unplanned(finalOutput),
     warning: finalAcceptance.accepted ? "Motor V4 Pro aceptado por la quality gate final." : "Motor V4 Pro no superó la gate final; se devuelve baseline V3 seguro.",
     strategicAnalysis,
+    complexityAssessment,
+    earlyExit: { applied: false, fallbackToV3Baseline: false, reason: "V4 strategic pipeline executed." },
     guidedOrdering: candidateResult.bestGuidedOrdering,
     quality: finalQuality,
     qualityBeforeImprovement: candidateResult.bestQualityBeforeImprovement,

@@ -138,3 +138,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 081 — 2026-06-19 00:00 — V4 Strategy Portfolio Calibration
 
 - ID 082 — 2026-06-19 12:04 — V4 Benchmark Evidence Report and Loss Diagnosis
+- ID 083 — 2026-06-24 00:00 — V4 Representative Benchmark and Simple Scenario Early Exit

@@ -37,6 +37,8 @@ export interface EngineV4Diagnostics {
   finalAcceptance?: { accepted: boolean; fallbackToV3Baseline: boolean; reason: string; checks?: Record<string, boolean> };
   performance?: { runtimeMs: number; strategiesEvaluated: number; profile: string; budgetExceeded: boolean; skippedStrategies: V4CandidateStrategyId[]; warnings?: string[] };
   executiveSummary?: { verdict: string; headline: string; wins: string[]; losses: string[]; risks: string[]; selectedStrategy: V4CandidateStrategyId };
+  complexityAssessment?: import("./orchestrator/complexity").V4ScenarioComplexityAssessment;
+  earlyExit?: { applied: boolean; fallbackToV3Baseline: boolean; reason: string };
 }
 
 export interface EngineV4Result {
