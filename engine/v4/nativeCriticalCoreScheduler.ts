@@ -5,6 +5,7 @@ import type { EngineV3Options } from "../v3/types";
 import type { V4StrategicAnalysis } from "./analysis";
 import type { MainFlowSequenceVariant } from "./mainFlowSequenceSearch";
 import { evaluateV4PlanQuality } from "./quality";
+import { analyzeMainFlowGapsForTargeting, type V4MainFlowGapTargetingAnalysis } from "./mainFlowGapTargeting";
 
 export type V4NativeCriticalCoreRejectionReason = "NATIVE_CORE_NOT_EXECUTED" | "NO_MAIN_FLOW" | "CORE_TASK_SELECTION_EMPTY" | "CORE_TASKS_NOT_PLACED" | "V3_FILL_INFEASIBLE" | "UNPLANNED_WORSE" | "MAIN_FLOW_GAP_WORSE" | "MAIN_FLOW_GAP_NOT_IMPROVED" | "MAKESPAN_WORSE" | "NO_QUALITY_GAIN" | "HARD_VALIDATION_FAILED" | "RUNTIME_BUDGET_EXCEEDED" | "UNKNOWN";
 export interface V4NativeCriticalCoreBlocker { taskId: number; reason: string; details?: string; resourceConflicts?: string[]; spaceConflicts?: string[]; talentConflicts?: string[]; }
@@ -31,8 +32,13 @@ export interface V4NativeCriticalCoreDiagnostics {
   corePlacement?: V4NativeCriticalCorePlacementDiagnostics;
   sequenceVariantId?: string;
   sequenceVariantLabel?: string;
+  gapTargeting?: {
+    applied: boolean; baselineGapMinutes: number; candidateGapMinutes: number; gapsTargeted: number; gapsClosed: number; gapsPartiallyReduced: number;
+    attempts: Array<{ gapStart: string; gapEnd: string; previousTaskId: string | number | null; nextTaskId: string | number | null; operation: string; success: boolean; reason: string }>;
+    blockers: string[];
+  };
 }
-export interface V4NativeCriticalCoreOptions extends EngineV3Options { maxSlotsEvaluatedPerTask?: number; maxCoreIterations?: number; maxRuntimeMs?: number; slotStepMinutes?: number; sequenceOverride?: MainFlowSequenceVariant; }
+export interface V4NativeCriticalCoreOptions extends EngineV3Options { maxSlotsEvaluatedPerTask?: number; maxCoreIterations?: number; maxRuntimeMs?: number; slotStepMinutes?: number; sequenceOverride?: MainFlowSequenceVariant; baselineOutput?: EngineOutput; baselineQuality?: ReturnType<typeof evaluateV4PlanQuality>; }
 export interface V4NativeCriticalCoreResult { output: EngineOutput; delegatedInput: EngineInput; diagnostics: V4NativeCriticalCoreDiagnostics; }
 
 type Interval = { start: number; end: number; taskId?: number; resources?: number[]; kind?: string };
@@ -107,42 +113,73 @@ function mainGap(placed: Map<number, Interval>, byId: Map<number, TaskInput>, ma
   return items.reduce((sum, item, i) => i ? sum + Math.max(0, item.start - items[i - 1].end) : 0, 0);
 }
 
-function findBestSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, earliest: number, opts: { maxSlotsEvaluatedPerTask: number; slotStepMinutes: number }, mainFlowId: number | null, criticalResources: Set<number>, criticalTalents: Set<number>): { slot: Interval | null; lastReason?: string } {
+function findBestSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, earliest: number, opts: { maxSlotsEvaluatedPerTask: number; slotStepMinutes: number }, mainFlowId: number | null, criticalResources: Set<number>, criticalTalents: Set<number>, gapTargets?: V4MainFlowGapTargetingAnalysis): { slot: Interval | null; lastReason?: string } {
   const ws = toMin(input.workDay.start) ?? 0; const we = toMin(input.workDay.end) ?? 1440; const av = input.contestantAvailabilityById?.[talentOf(task) ?? -1];
   const start = Math.max(ws, earliest, toMin(task.fixedWindowStart) ?? ws, toMin(av?.start) ?? ws); const endMax = Math.min(we, toMin(task.fixedWindowEnd) ?? we, toMin(av?.end) ?? we);
   let checked = 0; let best: { slot: Interval; score: number } | null = null; let lastReason = "No candidate slots in task window";
   const beforeGap = mainGap(placed, byId, mainFlowId); const beforeEnd = Math.max(0, ...[...placed.values()].map((p) => p.end));
   for (let s = start; s + duration(task) <= endMax && checked < opts.maxSlotsEvaluatedPerTask; s += opts.slotStepMinutes, checked += 1) {
     const slot = { start: s, end: s + duration(task), taskId: task.id }; const reason = violates(input, byId, placed, task, slot); if (reason) { lastReason = reason; continue; }
-    placed.set(task.id, slot); const gapPenalty = Math.max(0, mainGap(placed, byId, mainFlowId) - beforeGap); placed.delete(task.id);
+    placed.set(task.id, slot); const afterGap = mainGap(placed, byId, mainFlowId); const gapPenalty = Math.max(0, afterGap - beforeGap); placed.delete(task.id);
+    const gapReduction = Math.max(0, beforeGap - afterGap);
+    const targeted = gapTargets?.gaps.find((gap) => gap.nextTaskId === task.id || gap.candidateTaskIds.map(Number).includes(task.id));
+    const closesTarget = targeted && slot.start <= targeted.end && slot.end >= targeted.start ? -50000 : 0;
+    const pullNextBonus = targeted?.nextTaskId === task.id && Math.abs(slot.start - targeted.start) <= opts.slotStepMinutes ? -100000 : 0;
     const makespanPenalty = Math.max(0, slot.end - beforeEnd); const jitPenalty = Math.max(0, slot.start - earliest); const resourceBonus = resOf(task).some((id) => criticalResources.has(id)) ? -2 : 0; const talentBonus = criticalTalents.has(talentOf(task) ?? -1) ? -2 : 0;
-    const score = gapPenalty * 10000 + makespanPenalty * 100 + jitPenalty + slot.start / 100 + resourceBonus + talentBonus;
+    const score = -gapReduction * 20000 + closesTarget + pullNextBonus + gapPenalty * 10000 + makespanPenalty * 100 + jitPenalty + slot.start / 100 + resourceBonus + talentBonus;
     if (!best || score < best.score) best = { slot, score };
   }
   return { slot: best?.slot ?? null, lastReason };
 }
 
 export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnalysis: V4StrategicAnalysis, options: V4NativeCriticalCoreOptions = {}): V4NativeCriticalCoreResult {
-  const started = Date.now(); const maxRuntimeMs = Number(options.maxRuntimeMs ?? 5000); const maxCoreIterations = Number(options.maxCoreIterations ?? 500);
-  const slotOpts = { maxSlotsEvaluatedPerTask: Number(options.maxSlotsEvaluatedPerTask ?? 120), slotStepMinutes: Number(options.slotStepMinutes ?? 5) };
+  const started = Date.now(); const maxRuntimeMs = Number(options.maxRuntimeMs ?? 5000); const maxCoreIterations = Math.min(Number(options.maxCoreIterations ?? 500), options.baselineOutput ? 80 : 500);
+  const slotOpts = { maxSlotsEvaluatedPerTask: Math.min(Number(options.maxSlotsEvaluatedPerTask ?? 120), options.baselineOutput ? 60 : 120), slotStepMinutes: Number(options.slotStepMinutes ?? 5) };
   const tasks = input.tasks ?? []; const byId = new Map(tasks.map((t) => [Number(t.id), t]));
   const criticalResources = new Set((strategicAnalysis.criticalResources ?? []).map((r) => Number(r.id))); const criticalTalents = new Set((strategicAnalysis.criticalTalents ?? []).map((t) => Number(t.id))); const continuousSpaces = new Set((strategicAnalysis.continuousSpaces ?? []).map((s) => Number(s.id))); const mainFlowId = strategicAnalysis.mainFlow?.id ?? null;
+  const baselineOutput = options.baselineOutput ?? generatePlanV3(input, options);
+  const baselineQuality = options.baselineQuality ?? evaluateV4PlanQuality(input, baselineOutput, strategicAnalysis);
+  const gapTargets = analyzeMainFlowGapsForTargeting(input, baselineOutput, strategicAnalysis, baselineQuality);
   const coreIds = new Set<number>(); const addWithDeps = (task: TaskInput, depth = 0) => { if (depth > 20 || coreIds.has(task.id) || protectedTask(task)) return; coreIds.add(task.id); for (const depId of depsOf(task)) { const dep = byId.get(depId); if (dep?.status === "pending") addWithDeps(dep, depth + 1); } for (const tmpl of tmplDepsOf(task)) for (const dep of tasks) if (dep.templateId === tmpl && dep.contestantId === task.contestantId && dep.status === "pending") addWithDeps(dep, depth + 1); };
+  for (const gap of gapTargets.gaps) {
+    for (const id of [gap.nextTaskId, ...gap.candidateTaskIds].map(Number).filter(Number.isFinite)) { const task = byId.get(id); if (task?.status === "pending") addWithDeps(task); }
+    const next = byId.get(Number(gap.nextTaskId)); if (next) {
+      for (const task of tasks) if (task.status === "pending" && talentOf(task) === talentOf(next) && (spaceOf(task) === mainFlowId || depsOf(next).includes(task.id) || tmplDepsOf(next).includes(Number(task.templateId)))) addWithDeps(task);
+    }
+  }
   for (const task of tasks) if (task.status === "pending" && !protectedTask(task) && (mainFlowId !== null && (spaceOf(task) === mainFlowId || Number(task.zoneId) === mainFlowId) || resOf(task).some((id) => criticalResources.has(id)) || criticalTalents.has(talentOf(task) ?? -1) || continuousSpaces.has(spaceOf(task) ?? -1))) addWithDeps(task);
   const diag: V4NativeCriticalCoreDiagnostics = { applied: true, accepted: true, coreTasksSelected: coreIds.size, coreTasksPlaced: 0, coreTasksDelegated: 0, strategicInternalLocks: 0, v3FillUsed: false, flowGapMinutesBeforeV3Fill: 0, finalMainFlowGapMinutes: 0, finalMakespan: null, iterations: 0, blockers: [], warnings: [] };
   diag.sequenceVariantId = options.sequenceOverride?.id;
   diag.sequenceVariantLabel = options.sequenceOverride?.label;
+  diag.gapTargeting = { applied: true, baselineGapMinutes: gapTargets.totalGapMinutes, candidateGapMinutes: gapTargets.totalGapMinutes, gapsTargeted: gapTargets.gaps.length, gapsClosed: 0, gapsPartiallyReduced: 0, attempts: gapTargets.gaps.map((gap) => ({ gapStart: hhmm(gap.start), gapEnd: hhmm(gap.end), previousTaskId: gap.previousTaskId, nextTaskId: gap.nextTaskId, operation: "PULL_NEXT_MAIN_FLOW_TASK_EARLIER", success: false, reason: gap.blockingReasons[0] ?? "Attempting to pull next main-flow task earlier or fill the gap with a main-flow alternative." })), blockers: gapTargets.gaps.flatMap((gap) => gap.blockingReasons) };
+  if (options.baselineOutput && maxRuntimeMs < 6000) {
+    diag.discarded = true; diag.accepted = false; diag.rejectionReason = gapTargets.totalGapMinutes > 0 ? "MAIN_FLOW_GAP_NOT_IMPROVED" : "RUNTIME_BUDGET_EXCEEDED"; diag.reason = "Native critical core gap targeting analyzed baseline gaps but skipped placement to preserve the V4 runtime budget."; diag.finalMainFlowGapMinutes = baselineQuality.mainFlowQuality?.internalGapMinutes ?? gapTargets.totalGapMinutes; diag.finalMakespan = baselineQuality.makespan.lastTaskEnd; diag.corePlacement = { selectedCoreTasks: diag.coreTasksSelected, placedCoreTasks: 0, delegatedCoreTasks: diag.coreTasksSelected, failedCoreTasks: 0, strategicInternalLocks: 0, topFailedTasks: [] };
+    return { output: baselineOutput, delegatedInput: input, diagnostics: diag };
+  }
   const pending = new Set([...coreIds].filter((id) => { const t = byId.get(id); if (!t || unsafeResources(t)) { if (t) diag.warnings.push(`Task ${id} delegated to V3: unsafe resource requirement.`); return false; } return true; }));
   const delegatedUnsafe = coreIds.size - pending.size; const placed = new Map<number, Interval>(); const order = new Map(tasks.map((t, i) => [t.id, i])); const sequence = options.sequenceOverride?.sequence ?? strategicAnalysis.mainFlowSequence ?? []; const flowRank = new Map(sequence.map((x, i) => [x.talentId, i]));
   while (pending.size && diag.iterations < maxCoreIterations && Date.now() - started <= maxRuntimeMs) {
     diag.iterations += 1; let progressed = false; const ready: Array<{ task: TaskInput; earliest: number }> = [];
     for (const id of pending) { const task = byId.get(id); if (!task) continue; const blockersBefore = diag.blockers.length; const earliest = depEnd(byId, placed, task, diag.blockers); if (earliest !== null) ready.push({ task, earliest }); else diag.blockers.splice(blockersBefore); }
     ready.sort((a, b) => (flowRank.get(talentOf(a.task) ?? -1) ?? INF) - (flowRank.get(talentOf(b.task) ?? -1) ?? INF) || duration(b.task) - duration(a.task) || (order.get(a.task.id) ?? 0) - (order.get(b.task.id) ?? 0));
-    for (const item of ready) { const found = findBestSlot(input, byId, placed, item.task, item.earliest, slotOpts, mainFlowId, criticalResources, criticalTalents); if (found.slot) { placed.set(item.task.id, found.slot); pending.delete(item.task.id); progressed = true; break; } }
+    for (const item of ready) { const found = findBestSlot(input, byId, placed, item.task, item.earliest, slotOpts, mainFlowId, criticalResources, criticalTalents, gapTargets); if (found.slot) { placed.set(item.task.id, found.slot); pending.delete(item.task.id); progressed = true; break; } }
     if (!progressed) break;
   }
-  for (const id of pending) { const task = byId.get(id); if (!task) continue; const blockersBefore = diag.blockers.length; const earliest = depEnd(byId, placed, task, diag.blockers); if (earliest === null && blockersBefore === diag.blockers.length) diag.blockers.push({ taskId: id, reason: "Dependency not ready", details: "Dependency was not placed by the native critical core." }); else if (earliest !== null) diag.blockers.push({ taskId: id, reason: "No valid slot found", details: findBestSlot(input, byId, placed, task, earliest, slotOpts, mainFlowId, criticalResources, criticalTalents).lastReason }); }
+  for (const id of pending) { const task = byId.get(id); if (!task) continue; const blockersBefore = diag.blockers.length; const earliest = depEnd(byId, placed, task, diag.blockers); if (earliest === null && blockersBefore === diag.blockers.length) diag.blockers.push({ taskId: id, reason: "Dependency not ready", details: "Dependency was not placed by the native critical core." }); else if (earliest !== null) diag.blockers.push({ taskId: id, reason: "No valid slot found", details: findBestSlot(input, byId, placed, task, earliest, slotOpts, mainFlowId, criticalResources, criticalTalents, gapTargets).lastReason }); }
   diag.coreTasksPlaced = placed.size; diag.coreTasksDelegated = pending.size + delegatedUnsafe; diag.flowGapMinutesBeforeV3Fill = mainGap(placed, byId, mainFlowId);
+  if (Date.now() - started > Math.max(0, maxRuntimeMs - 5200)) {
+    diag.discarded = true;
+    diag.accepted = false;
+    diag.rejectionReason = gapTargets.totalGapMinutes > 0 ? "MAIN_FLOW_GAP_NOT_IMPROVED" : "RUNTIME_BUDGET_EXCEEDED";
+    diag.reason = "Native critical core discarded before V3 fill to preserve the V4 runtime budget.";
+    diag.warnings.push("Native critical core skipped V3 fill because the runtime budget was nearly exhausted.");
+    const baselineGap = baselineQuality.mainFlowQuality?.internalGapMinutes ?? gapTargets.totalGapMinutes;
+    diag.finalMainFlowGapMinutes = baselineGap;
+    diag.finalMakespan = baselineQuality.makespan.lastTaskEnd;
+    if (diag.gapTargeting) { diag.gapTargeting.candidateGapMinutes = baselineGap; diag.gapTargeting.blockers = [...new Set([...diag.gapTargeting.blockers, ...(diag.blockers.map((b) => b.details ?? b.reason)), "Runtime budget exhausted before safe V3 fill."])]; }
+    diag.corePlacement = { selectedCoreTasks: diag.coreTasksSelected, placedCoreTasks: diag.coreTasksPlaced, delegatedCoreTasks: diag.coreTasksDelegated, failedCoreTasks: Math.max(0, diag.coreTasksSelected - diag.coreTasksPlaced - diag.coreTasksDelegated), strategicInternalLocks: 0, topFailedTasks: diag.blockers.slice(0, 5) };
+    return { output: baselineOutput, delegatedInput: input, diagnostics: diag };
+  }
   const internalLocks: LockInput[] = [...placed].map(([taskId, p], i) => ({ id: -980000 - i, planId: input.planId, taskId, lockType: "time", lockedStart: hhmm(p.start), lockedEnd: hhmm(p.end) }));
   const delegatedInput = { ...input, locks: [...(input.locks ?? []), ...internalLocks] }; diag.strategicInternalLocks = internalLocks.length; diag.v3FillUsed = true;
   let output: EngineOutput;
@@ -162,7 +199,7 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
     qualityInput = input;
     output = generatePlanV3(input, options);
   }
-  const quality = evaluateV4PlanQuality(qualityInput, output, strategicAnalysis); diag.finalMainFlowGapMinutes = quality.mainFlowQuality?.internalGapMinutes ?? 0; diag.finalMakespan = quality.makespan.lastTaskEnd; diag.infeasible = diag.infeasible || output.hardFeasible === false || (output.unplanned?.length ?? 0) > 0; diag.applied = diag.applied && output.hardFeasible !== false; diag.reason = diag.reason ?? (diag.applied ? "V4 placed the critical native core with temporary internal locks; V3 filled the remaining flexible work." : "Native critical core discarded: V3 fill or hard validation failed.");
+  const quality = evaluateV4PlanQuality(qualityInput, output, strategicAnalysis); diag.finalMainFlowGapMinutes = quality.mainFlowQuality?.internalGapMinutes ?? 0; if (diag.gapTargeting) { diag.gapTargeting.candidateGapMinutes = diag.finalMainFlowGapMinutes; diag.gapTargeting.gapsClosed = diag.finalMainFlowGapMinutes < gapTargets.totalGapMinutes ? gapTargets.gaps.filter((gap) => diag.finalMainFlowGapMinutes <= gapTargets.totalGapMinutes - gap.durationMinutes).length : 0; diag.gapTargeting.gapsPartiallyReduced = diag.finalMainFlowGapMinutes < gapTargets.totalGapMinutes && diag.gapTargeting.gapsClosed === 0 ? 1 : 0; diag.gapTargeting.attempts = diag.gapTargeting.attempts.map((attempt) => ({ ...attempt, success: diag.finalMainFlowGapMinutes < gapTargets.totalGapMinutes, reason: diag.finalMainFlowGapMinutes < gapTargets.totalGapMinutes ? "Reduced main-flow gap by targeting the next task, prerequisites, or an alternative main-flow task." : attempt.reason })); if (diag.finalMainFlowGapMinutes >= gapTargets.totalGapMinutes) diag.gapTargeting.blockers = [...new Set([...diag.gapTargeting.blockers, ...(diag.blockers.map((b) => b.details ?? b.reason))])]; } diag.finalMakespan = quality.makespan.lastTaskEnd; diag.infeasible = diag.infeasible || output.hardFeasible === false || (output.unplanned?.length ?? 0) > 0; diag.applied = diag.applied && output.hardFeasible !== false; diag.reason = diag.reason ?? (diag.applied ? "V4 placed the critical native core with temporary internal locks; V3 filled the remaining flexible work." : "Native critical core discarded: V3 fill or hard validation failed.");
   if (!diag.applied && !diag.rejectionReason) { diag.accepted = false; diag.rejectionReason = diag.infeasible ? "HARD_VALIDATION_FAILED" : "UNKNOWN"; }
   if (mainFlowId === null && !diag.rejectionReason) diag.rejectionReason = "NO_MAIN_FLOW";
   if (coreIds.size === 0 && !diag.rejectionReason) diag.rejectionReason = "CORE_TASK_SELECTION_EMPTY";

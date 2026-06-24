@@ -37,6 +37,7 @@ export interface V4BenchmarkEvidenceItem {
     nativeCriticalCoreDiscarded: boolean;
     nativeCriticalCoreRejectionReason: string | null;
     nativeCriticalCoreRejectionDetails: Record<string, unknown> | null;
+    nativeCriticalCoreGapTargeting: Record<string, unknown> | null;
     candidateFutilityStopApplied: boolean;
     productionWaveExecuted: boolean;
     productionWaveDiscarded: boolean;
@@ -103,6 +104,8 @@ function cleanReason(reason: string | null): string {
 
 function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
+  const gapTargeting = item.v4Balanced.nativeCriticalCoreGapTargeting as any;
+  const mainGapBlocker = Array.isArray(gapTargeting?.blockers) && gapTargeting.blockers.length ? String(gapTargeting.blockers[0]).replace(/[.]+$/, "") : null;
   if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: smoke early exit correctly used V3 fallback.";
   if (losses.includes("MAKESPAN_WORSE") && d.makespanMinutes !== null) return item.scenarioType === "representative"
     ? `Representative V4 worse: improve Native Critical Core slot scoring; selected strategy loses makespan by ${d.makespanMinutes} min.`
@@ -110,7 +113,7 @@ function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCat
   if (losses.includes("NATIVE_CORE_NOT_EXECUTED")) return "Increase balanced budget or reduce sequence variants: native critical core was skipped.";
   if (losses.includes("NATIVE_CORE_DISCARDED")) {
     switch (item.v4Balanced.nativeCriticalCoreRejectionReason) {
-      case "MAIN_FLOW_GAP_NOT_IMPROVED": return "Native Critical Core ran but did not reduce main-flow gaps. Tune core placement around main-flow continuity.";
+      case "MAIN_FLOW_GAP_NOT_IMPROVED": return mainGapBlocker ? `Native Critical Core ran but did not reduce main-flow gaps. Main blocker: ${mainGapBlocker}.` : "Native Critical Core ran but did not reduce main-flow gaps. Tune core placement around main-flow continuity.";
       case "V3_FILL_INFEASIBLE": return "Native Critical Core creates internal locks that make V3 fill infeasible. Relax or reduce strategic locks.";
       case "MAKESPAN_WORSE": return "Native Critical Core worsens makespan. Improve slot scoring to prefer earlier completion.";
       case "CORE_TASKS_NOT_PLACED": return "Native Critical Core selected tasks but placed none. Inspect core placement blockers before tuning scoring.";
@@ -152,6 +155,7 @@ export function buildV4BenchmarkEvidenceReport(result: V4BenchmarkResult): V4Ben
         nativeCriticalCoreDiscarded: v4.nativeCriticalCoreDiscarded,
         nativeCriticalCoreRejectionReason: v4.nativeCriticalCoreRejectionReason,
         nativeCriticalCoreRejectionDetails: v4.nativeCriticalCoreRejectionDetails,
+        nativeCriticalCoreGapTargeting: v4.nativeCriticalCoreGapTargeting,
         candidateFutilityStopApplied: v4.candidateFutilityStopApplied,
         productionWaveExecuted: has(v4.executedStrategies, "strategy_v4_production_wave"),
         productionWaveDiscarded: v4.productionWaveDiscarded,
