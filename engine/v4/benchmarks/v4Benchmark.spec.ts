@@ -7,7 +7,7 @@ import { buildV4StrategyPortfolio, runV4CandidateStrategies } from "../candidate
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 import { generatePlanV4 } from "../index";
 
-import { canPlaceTaskAt, summarizeGapClosureBlocker, tryCloseMainFlowGaps } from "../nativeCriticalCoreScheduler";
+import { canPlaceTaskAt, summarizeGapClosureBlocker, tryCloseMainFlowGaps, validateTaskResourcesAt } from "../nativeCriticalCoreScheduler";
 import { evaluateV4PlanQuality } from "../quality";
 
 const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics => ({
@@ -435,6 +435,66 @@ test("PULL_SEGMENT_AFTER_GAP does not include done, in-progress or locked tasks"
     const segmentAttempt = result.attempts.find((attempt) => attempt.operation === "PULL_SEGMENT_AFTER_GAP");
     assert.notEqual(segmentAttempt?.success, true);
   }
+});
+
+
+test("resource validation allows explicit resource without overlap", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, camerasAvailable: 2, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", durationOverrideMin: 10, assignedResourceIds: [45] },
+    { id: 2, planId: 1, templateId: 2, status: "pending", durationOverrideMin: 10, assignedResourceIds: [45] },
+  ], locks: [] };
+  const output: any = { plannedTasks: [{ taskId: 2, startPlanned: "09:30", endPlanned: "09:40", assignedResources: [45] }], unplanned: [] };
+  assert.equal(validateTaskResourcesAt(input, output, input.tasks[0], 540, 550).ok, true);
+  assert.equal(canPlaceTaskAt(input, output, 1, 540, 550).ok, true);
+});
+
+test("resource validation rejects explicit resource overlap", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, camerasAvailable: 2, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", durationOverrideMin: 10, assignedResourceIds: [45] },
+    { id: 2, planId: 1, templateId: 2, status: "pending", durationOverrideMin: 10, assignedResourceIds: [45] },
+  ], locks: [] };
+  const output: any = { plannedTasks: [{ taskId: 2, startPlanned: "09:05", endPlanned: "09:15", assignedResources: [45] }], unplanned: [] };
+  const check = canPlaceTaskAt(input, output, 1, 540, 550);
+  assert.equal(check.ok, false);
+  if (!check.ok) assert.equal(check.reason, "Resource conflict");
+});
+
+test("ambiguous anyOf returns unsafe details", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }] };
+  const result = validateTaskResourcesAt(input, { plannedTasks: [], unplanned: [] } as any, input.tasks[0], 540, 550);
+  assert.equal(result.unsafe, true);
+  assert.match(result.details ?? "", /Resource requirement anyOf cannot be resolved safely/);
+});
+
+test("ambiguous non-critical anyOf can place with warning", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }], locks: [] };
+  assert.equal(canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550).ok, true);
+});
+
+test("ambiguous critical anyOf rejects placement", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }], locks: [] };
+  const check = canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550, undefined, { criticalResourceIds: new Set([7]) });
+  assert.equal(check.ok, false);
+  if (!check.ok) assert.match(check.details ?? "", /anyOf cannot be resolved safely/);
+});
+
+test("camera capacity validation allows within capacity and rejects overflow", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, camerasAvailable: 2, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", camerasOverride: 1 },
+    { id: 2, planId: 1, templateId: 2, status: "pending", camerasOverride: 1 },
+    { id: 3, planId: 1, templateId: 3, status: "pending", camerasOverride: 2 },
+  ], locks: [] };
+  const output: any = { plannedTasks: [{ taskId: 2, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [] }], unplanned: [] };
+  assert.equal(canPlaceTaskAt(input, output, 1, 540, 550).ok, true);
+  const overflow = canPlaceTaskAt(input, output, 3, 540, 550);
+  assert.equal(overflow.ok, false);
+  if (!overflow.ok) assert.equal(overflow.reason, "Camera capacity");
+});
+
+test("canPlaceTaskAt no longer rejects deterministic resources as generic unsafe", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7] }] } }], locks: [] };
+  const check = canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550);
+  assert.equal(check.ok, true);
 });
 
 test("canPlaceTaskAt rejects moving a task after an already planned dependent", () => {
