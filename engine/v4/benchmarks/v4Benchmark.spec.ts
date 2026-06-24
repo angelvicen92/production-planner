@@ -352,7 +352,7 @@ test("evidence report differentiates representative V4 worse action", () => {
 });
 
 
-test("PULL_SEGMENT_AFTER_GAP only considers consecutive main-flow tasks", () => {
+test("PULL_SEGMENT_AFTER_GAP skips non-main-flow rows and finds next main-flow segment", () => {
   const input: any = {
     planId: 1,
     workDay: { start: "09:00", end: "11:00" },
@@ -371,8 +371,70 @@ test("PULL_SEGMENT_AFTER_GAP only considers consecutive main-flow tasks", () => 
   const quality = evaluateV4PlanQuality(input, output, strategic);
   const result = tryCloseMainFlowGaps(input, output, strategic, quality, { totalGapMinutes: 10, gaps: [{ start: 550, end: 560, durationMinutes: 10, previousTaskId: 1, nextTaskId: null, candidateTaskIds: [], blockingReasons: [] }] } as any, Date.now(), 1000);
   const segmentAttempt = result.attempts.find((attempt) => attempt.operation === "PULL_SEGMENT_AFTER_GAP");
-  assert.equal(segmentAttempt?.success, false);
-  assert.equal(segmentAttempt?.reason, "No movable main-flow task found");
+  assert.equal(segmentAttempt?.success, true);
+  assert.deepEqual(segmentAttempt?.movedTaskIds, [3]);
+  assert.equal(result.segmentSearch.mainFlowRowsAfterGap, 1);
+  assert.equal(result.segmentSearch.segmentCandidates, 1);
+});
+
+
+test("flowOrder ranks same-fit alternatives before later strategic tasks", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", spaceId: 1, contestantId: 1, durationOverrideMin: 10 },
+    { id: 4, planId: 1, templateId: 4, status: "done", spaceId: 1, contestantId: 4, durationOverrideMin: 5 },
+    { id: 2, planId: 1, templateId: 2, status: "pending", spaceId: 1, contestantId: 20, durationOverrideMin: 10 },
+    { id: 3, planId: 1, templateId: 3, status: "pending", spaceId: 1, contestantId: 10, durationOverrideMin: 10 },
+  ] };
+  const output: any = { plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [] },
+    { taskId: 4, startPlanned: "09:20", endPlanned: "09:25", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:25", endPlanned: "09:35", assignedResources: [] },
+    { taskId: 3, startPlanned: "09:35", endPlanned: "09:45", assignedResources: [] },
+  ], unplanned: [], hardFeasible: true };
+  const strategic: any = { mainFlow: { id: 1 }, mainFlowSequence: [{ talentId: 10 }, { talentId: 20 }], criticalResources: [], criticalTalents: [], continuousSpaces: [] };
+  const quality = evaluateV4PlanQuality(input, output, strategic);
+  const result = tryCloseMainFlowGaps(input, output, strategic, quality, { totalGapMinutes: 10, gaps: [{ start: 550, end: 560, durationMinutes: 10, previousTaskId: 1, nextTaskId: null, candidateTaskIds: [], blockingReasons: [] }] } as any, Date.now(), 1000);
+  const alternativeAttempt = result.attempts.find((attempt) => attempt.operation === "INSERT_ALTERNATIVE_MAIN_FLOW_TASK" && attempt.success);
+  assert.deepEqual(alternativeAttempt?.movedTaskIds, [3]);
+  assert.equal(result.alternativeSearch.alternativesFound, 2);
+});
+
+test("exact-fit alternatives are tried before shorter alternatives", () => {
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", spaceId: 1, contestantId: 1, durationOverrideMin: 10 },
+    { id: 4, planId: 1, templateId: 4, status: "done", spaceId: 1, contestantId: 4, durationOverrideMin: 5 },
+    { id: 2, planId: 1, templateId: 2, status: "pending", spaceId: 1, contestantId: 10, durationOverrideMin: 5 },
+    { id: 3, planId: 1, templateId: 3, status: "pending", spaceId: 1, contestantId: 20, durationOverrideMin: 10 },
+  ] };
+  const output: any = { plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [] },
+    { taskId: 4, startPlanned: "09:20", endPlanned: "09:25", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:25", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 3, startPlanned: "09:30", endPlanned: "09:40", assignedResources: [] },
+  ], unplanned: [], hardFeasible: true };
+  const strategic: any = { mainFlow: { id: 1 }, mainFlowSequence: [{ talentId: 10 }, { talentId: 20 }], criticalResources: [], criticalTalents: [], continuousSpaces: [] };
+  const quality = evaluateV4PlanQuality(input, output, strategic);
+  const result = tryCloseMainFlowGaps(input, output, strategic, quality, { totalGapMinutes: 10, gaps: [{ start: 550, end: 560, durationMinutes: 10, previousTaskId: 1, nextTaskId: null, candidateTaskIds: [], blockingReasons: [] }] } as any, Date.now(), 1000);
+  const alternativeAttempt = result.attempts.find((attempt) => attempt.operation === "INSERT_ALTERNATIVE_MAIN_FLOW_TASK" && attempt.success);
+  assert.deepEqual(alternativeAttempt?.movedTaskIds, [3]);
+});
+
+test("PULL_SEGMENT_AFTER_GAP does not include done, in-progress or locked tasks", () => {
+  for (const protectedPatch of [{ status: "done" }, { status: "in_progress" }, { status: "pending", lock: true }]) {
+    const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, locks: protectedPatch.lock ? [{ id: 1, taskId: 3, lockedStart: "09:30", lockedEnd: "09:40" }] : [], tasks: [
+      { id: 1, planId: 1, templateId: 1, status: "pending", spaceId: 1, durationOverrideMin: 10 },
+      { id: 3, planId: 1, templateId: 3, ...protectedPatch, spaceId: 1, durationOverrideMin: 10 },
+    ] };
+    const output: any = { plannedTasks: [
+      { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [] },
+      { taskId: 3, startPlanned: "09:30", endPlanned: "09:40", assignedResources: [] },
+    ], unplanned: [], hardFeasible: true };
+    const strategic: any = { mainFlow: { id: 1 }, mainFlowSequence: [], criticalResources: [], criticalTalents: [], continuousSpaces: [] };
+    const quality = evaluateV4PlanQuality(input, output, strategic);
+    const result = tryCloseMainFlowGaps(input, output, strategic, quality, { totalGapMinutes: 20, gaps: [{ start: 550, end: 570, durationMinutes: 20, previousTaskId: 1, nextTaskId: null, candidateTaskIds: [], blockingReasons: [] }] } as any, Date.now(), 1000);
+    const segmentAttempt = result.attempts.find((attempt) => attempt.operation === "PULL_SEGMENT_AFTER_GAP");
+    assert.notEqual(segmentAttempt?.success, true);
+  }
 });
 
 test("canPlaceTaskAt rejects moving a task after an already planned dependent", () => {
@@ -403,7 +465,7 @@ test("summarizeGapClosureBlocker prioritizes concrete conflicts over generic mes
 });
 
 test("evidence report prints gap targeting proof fields", () => {
-  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreGapTargeting: { applied: true, baselineGapMinutes: 10, candidateGapMinutes: 5, gapsTargeted: 1, gapsClosed: 1, mainBlocker: "Talent conflict", bestOperation: "PULL_SEGMENT_AFTER_GAP", attempts: [] } as any }));
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreGapTargeting: { applied: true, baselineGapMinutes: 10, candidateGapMinutes: 5, gapsTargeted: 1, gapsClosed: 1, mainBlocker: "Talent conflict", bestOperation: "PULL_SEGMENT_AFTER_GAP", segmentSearch: { mainFlowRowsAfterGap: 5, segmentCandidates: 2 }, alternativeSearch: { alternativesFound: 3, alternativesTried: 2 }, attempts: [] } as any }));
   const originalLog = console.log;
   const lines: string[] = [];
   console.log = (value?: unknown) => { lines.push(String(value)); };
@@ -412,4 +474,7 @@ test("evidence report prints gap targeting proof fields", () => {
   assert.ok(lines.includes("Gap targeting candidate: 5"));
   assert.ok(lines.includes("Main blocker: Talent conflict"));
   assert.ok(lines.includes("Best operation: PULL_SEGMENT_AFTER_GAP"));
+  assert.ok(lines.includes("Segment candidates: 2"));
+  assert.ok(lines.includes("Alternatives found: 3"));
+  assert.ok(lines.includes("Alternatives tried: 2"));
 });
