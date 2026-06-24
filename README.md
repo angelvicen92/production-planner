@@ -140,3 +140,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 082 — 2026-06-19 12:04 — V4 Benchmark Evidence Report and Loss Diagnosis
 - ID 083 — 2026-06-24 00:00 — V4 Representative Benchmark and Simple Scenario Early Exit
 - ID 084 — 2026-06-24 00:00 — V4 Benchmark Trustworthiness and Latest Result Hygiene
+
+- ID 085 — 2026-06-24 10:16 — V4 Native Core Failure Diagnosis and Runtime Short-Circuit

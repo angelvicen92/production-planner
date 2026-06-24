@@ -35,6 +35,9 @@ export interface V4BenchmarkEvidenceItem {
     selectedStrategy: string | null;
     nativeCriticalCoreExecuted: boolean;
     nativeCriticalCoreDiscarded: boolean;
+    nativeCriticalCoreRejectionReason: string | null;
+    nativeCriticalCoreRejectionDetails: Record<string, unknown> | null;
+    candidateFutilityStopApplied: boolean;
     productionWaveExecuted: boolean;
     productionWaveDiscarded: boolean;
     improvementEngineApplied: boolean;
@@ -101,14 +104,23 @@ function cleanReason(reason: string | null): string {
 function nextAction(item: V4BenchmarkScenarioSummary, losses: V4BenchmarkLossCategory[]): string {
   const d = item.delta;
   if (losses.includes("SIMPLE_SCENARIO_EARLY_EXIT")) return "No action: smoke early exit correctly used V3 fallback.";
-  if (losses.includes("FALLBACK_TO_V3")) return item.scenarioType === "representative"
-    ? `Representative V4 rejected: fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`
-    : `Fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`;
   if (losses.includes("MAKESPAN_WORSE") && d.makespanMinutes !== null) return item.scenarioType === "representative"
     ? `Representative V4 worse: improve Native Critical Core slot scoring; selected strategy loses makespan by ${d.makespanMinutes} min.`
     : `Improve Native Critical Core slot scoring: selected strategy loses makespan by ${d.makespanMinutes} min.`;
   if (losses.includes("NATIVE_CORE_NOT_EXECUTED")) return "Increase balanced budget or reduce sequence variants: native critical core was skipped.";
-  if (losses.includes("NATIVE_CORE_DISCARDED")) return "Inspect Native Critical Core acceptance inputs: native critical core executed but was discarded.";
+  if (losses.includes("NATIVE_CORE_DISCARDED")) {
+    switch (item.v4Balanced.nativeCriticalCoreRejectionReason) {
+      case "MAIN_FLOW_GAP_NOT_IMPROVED": return "Native Critical Core ran but did not reduce main-flow gaps. Tune core placement around main-flow continuity.";
+      case "V3_FILL_INFEASIBLE": return "Native Critical Core creates internal locks that make V3 fill infeasible. Relax or reduce strategic locks.";
+      case "MAKESPAN_WORSE": return "Native Critical Core worsens makespan. Improve slot scoring to prefer earlier completion.";
+      case "CORE_TASKS_NOT_PLACED": return "Native Critical Core selected tasks but placed none. Inspect core placement blockers before tuning scoring.";
+      case "CORE_TASK_SELECTION_EMPTY": return "Native Critical Core found no eligible core tasks. Inspect strategic analysis main-flow and critical-resource inputs.";
+      default: return `Inspect Native Critical Core acceptance inputs: discarded reason ${item.v4Balanced.nativeCriticalCoreRejectionReason ?? "UNKNOWN"}.`;
+    }
+  }
+  if (losses.includes("FALLBACK_TO_V3")) return item.scenarioType === "representative"
+    ? `Representative V4 rejected: fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`
+    : `Fix final acceptance blocker: ${cleanReason(item.v4Balanced.finalAcceptanceReason)}.`;
   if (losses.includes("PRODUCTION_WAVE_DISCARDED") || losses.includes("MAIN_FLOW_GAP_WORSE")) return "Fix Production Wave dependency placement: main-flow gaps are worse than baseline.";
   if (losses.includes("RUNTIME_TOO_SLOW")) return "Do not tune engine yet: V4 is equal to V3 but slower.";
   if (item.verdict === "V4_BETTER") return "Proceed to tuning: V4 beats V3 on continuity and makespan.";
@@ -138,6 +150,9 @@ export function buildV4BenchmarkEvidenceReport(result: V4BenchmarkResult): V4Ben
         selectedStrategy: v4.selectedStrategy,
         nativeCriticalCoreExecuted: has(v4.executedStrategies, "strategy_v4_native_critical_core"),
         nativeCriticalCoreDiscarded: v4.nativeCriticalCoreDiscarded,
+        nativeCriticalCoreRejectionReason: v4.nativeCriticalCoreRejectionReason,
+        nativeCriticalCoreRejectionDetails: v4.nativeCriticalCoreRejectionDetails,
+        candidateFutilityStopApplied: v4.candidateFutilityStopApplied,
         productionWaveExecuted: has(v4.executedStrategies, "strategy_v4_production_wave"),
         productionWaveDiscarded: v4.productionWaveDiscarded,
         improvementEngineApplied: v4.improvementEngineApplied,

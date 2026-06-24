@@ -6,7 +6,9 @@ import type { V4StrategicAnalysis } from "./analysis";
 import type { MainFlowSequenceVariant } from "./mainFlowSequenceSearch";
 import { evaluateV4PlanQuality } from "./quality";
 
-export interface V4NativeCriticalCoreBlocker { taskId: number; reason: string; details?: string; }
+export type V4NativeCriticalCoreRejectionReason = "NATIVE_CORE_NOT_EXECUTED" | "NO_MAIN_FLOW" | "CORE_TASK_SELECTION_EMPTY" | "CORE_TASKS_NOT_PLACED" | "V3_FILL_INFEASIBLE" | "UNPLANNED_WORSE" | "MAIN_FLOW_GAP_WORSE" | "MAIN_FLOW_GAP_NOT_IMPROVED" | "MAKESPAN_WORSE" | "NO_QUALITY_GAIN" | "HARD_VALIDATION_FAILED" | "RUNTIME_BUDGET_EXCEEDED" | "UNKNOWN";
+export interface V4NativeCriticalCoreBlocker { taskId: number; reason: string; details?: string; resourceConflicts?: string[]; spaceConflicts?: string[]; talentConflicts?: string[]; }
+export interface V4NativeCriticalCorePlacementDiagnostics { selectedCoreTasks: number; placedCoreTasks: number; delegatedCoreTasks: number; failedCoreTasks: number; strategicInternalLocks: number; topFailedTasks: V4NativeCriticalCoreBlocker[]; }
 export interface V4NativeCriticalCoreDiagnostics {
   applied: boolean;
   discarded?: boolean;
@@ -23,6 +25,10 @@ export interface V4NativeCriticalCoreDiagnostics {
   warnings: string[];
   infeasible?: boolean;
   reason?: string;
+  accepted?: boolean;
+  rejectionReason?: V4NativeCriticalCoreRejectionReason;
+  rejectionDetails?: Record<string, number>;
+  corePlacement?: V4NativeCriticalCorePlacementDiagnostics;
   sequenceVariantId?: string;
   sequenceVariantLabel?: string;
 }
@@ -123,7 +129,7 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
   const criticalResources = new Set((strategicAnalysis.criticalResources ?? []).map((r) => Number(r.id))); const criticalTalents = new Set((strategicAnalysis.criticalTalents ?? []).map((t) => Number(t.id))); const continuousSpaces = new Set((strategicAnalysis.continuousSpaces ?? []).map((s) => Number(s.id))); const mainFlowId = strategicAnalysis.mainFlow?.id ?? null;
   const coreIds = new Set<number>(); const addWithDeps = (task: TaskInput, depth = 0) => { if (depth > 20 || coreIds.has(task.id) || protectedTask(task)) return; coreIds.add(task.id); for (const depId of depsOf(task)) { const dep = byId.get(depId); if (dep?.status === "pending") addWithDeps(dep, depth + 1); } for (const tmpl of tmplDepsOf(task)) for (const dep of tasks) if (dep.templateId === tmpl && dep.contestantId === task.contestantId && dep.status === "pending") addWithDeps(dep, depth + 1); };
   for (const task of tasks) if (task.status === "pending" && !protectedTask(task) && (mainFlowId !== null && (spaceOf(task) === mainFlowId || Number(task.zoneId) === mainFlowId) || resOf(task).some((id) => criticalResources.has(id)) || criticalTalents.has(talentOf(task) ?? -1) || continuousSpaces.has(spaceOf(task) ?? -1))) addWithDeps(task);
-  const diag: V4NativeCriticalCoreDiagnostics = { applied: true, coreTasksSelected: coreIds.size, coreTasksPlaced: 0, coreTasksDelegated: 0, strategicInternalLocks: 0, v3FillUsed: false, flowGapMinutesBeforeV3Fill: 0, finalMainFlowGapMinutes: 0, finalMakespan: null, iterations: 0, blockers: [], warnings: [] };
+  const diag: V4NativeCriticalCoreDiagnostics = { applied: true, accepted: true, coreTasksSelected: coreIds.size, coreTasksPlaced: 0, coreTasksDelegated: 0, strategicInternalLocks: 0, v3FillUsed: false, flowGapMinutesBeforeV3Fill: 0, finalMainFlowGapMinutes: 0, finalMakespan: null, iterations: 0, blockers: [], warnings: [] };
   diag.sequenceVariantId = options.sequenceOverride?.id;
   diag.sequenceVariantLabel = options.sequenceOverride?.label;
   const pending = new Set([...coreIds].filter((id) => { const t = byId.get(id); if (!t || unsafeResources(t)) { if (t) diag.warnings.push(`Task ${id} delegated to V3: unsafe resource requirement.`); return false; } return true; }));
@@ -151,9 +157,16 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
     diag.applied = false;
     diag.infeasible = true;
     diag.reason = "Native critical core discarded: V3 fill failed.";
+    diag.accepted = false;
+    diag.rejectionReason = "V3_FILL_INFEASIBLE";
     qualityInput = input;
     output = generatePlanV3(input, options);
   }
   const quality = evaluateV4PlanQuality(qualityInput, output, strategicAnalysis); diag.finalMainFlowGapMinutes = quality.mainFlowQuality?.internalGapMinutes ?? 0; diag.finalMakespan = quality.makespan.lastTaskEnd; diag.infeasible = diag.infeasible || output.hardFeasible === false || (output.unplanned?.length ?? 0) > 0; diag.applied = diag.applied && output.hardFeasible !== false; diag.reason = diag.reason ?? (diag.applied ? "V4 placed the critical native core with temporary internal locks; V3 filled the remaining flexible work." : "Native critical core discarded: V3 fill or hard validation failed.");
+  if (!diag.applied && !diag.rejectionReason) { diag.accepted = false; diag.rejectionReason = diag.infeasible ? "HARD_VALIDATION_FAILED" : "UNKNOWN"; }
+  if (mainFlowId === null && !diag.rejectionReason) diag.rejectionReason = "NO_MAIN_FLOW";
+  if (coreIds.size === 0 && !diag.rejectionReason) diag.rejectionReason = "CORE_TASK_SELECTION_EMPTY";
+  if (coreIds.size > 0 && placed.size === 0 && !diag.rejectionReason) diag.rejectionReason = "CORE_TASKS_NOT_PLACED";
+  diag.corePlacement = { selectedCoreTasks: diag.coreTasksSelected, placedCoreTasks: diag.coreTasksPlaced, delegatedCoreTasks: diag.coreTasksDelegated, failedCoreTasks: Math.max(0, diag.coreTasksSelected - diag.coreTasksPlaced - diag.coreTasksDelegated), strategicInternalLocks: diag.strategicInternalLocks, topFailedTasks: diag.blockers.slice(0, 5) };
   return { output, delegatedInput: qualityInput, diagnostics: diag };
 }

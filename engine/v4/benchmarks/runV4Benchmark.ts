@@ -39,6 +39,9 @@ export interface V4BenchmarkMetrics {
   runtimeBudgetExceeded: boolean;
   finalAcceptanceReason: string | null;
   nativeCriticalCoreDiscarded: boolean;
+  nativeCriticalCoreRejectionReason: string | null;
+  nativeCriticalCoreRejectionDetails: Record<string, unknown> | null;
+  candidateFutilityStopApplied: boolean;
   productionWaveDiscarded: boolean;
   improvementEngineApplied: boolean;
   improvementMovesAccepted: number;
@@ -152,6 +155,9 @@ function summarizeOutput(scenario: BenchmarkScenario, engine: BenchmarkEngine, p
     runtimeBudgetExceeded: v4Diagnostics?.performance?.budgetExceeded ?? false,
     finalAcceptanceReason: v4Diagnostics?.finalAcceptance?.reason ?? null,
     nativeCriticalCoreDiscarded: v4Diagnostics?.candidateRunner?.candidates?.some((candidate: any) => candidate.nativeCriticalCoreScheduler?.discarded) ?? false,
+    nativeCriticalCoreRejectionReason: v4Diagnostics?.candidateRunner?.candidates?.find((candidate: any) => candidate.nativeCriticalCoreScheduler?.rejectionReason)?.nativeCriticalCoreScheduler?.rejectionReason ?? null,
+    nativeCriticalCoreRejectionDetails: v4Diagnostics?.candidateRunner?.candidates?.find((candidate: any) => candidate.nativeCriticalCoreScheduler?.rejectionDetails)?.nativeCriticalCoreScheduler?.rejectionDetails ?? null,
+    candidateFutilityStopApplied: v4Diagnostics?.candidateRunner?.futilityStop?.applied ?? false,
     productionWaveDiscarded: v4Diagnostics?.candidateRunner?.candidates?.some((candidate: any) => candidate.productionWaveScheduler?.discarded || candidate.productionWaveScheduler?.accepted === false) ?? false,
     improvementEngineApplied: v4Diagnostics?.improvementEngine?.applied ?? false,
     improvementMovesAccepted: v4Diagnostics?.improvementEngine?.movesAccepted ?? 0,
@@ -181,6 +187,9 @@ function runV4Profile(scenario: BenchmarkScenario, profile: V4StrategyProfile, m
       skippedStrategies: [],
       finalAcceptanceReason: (error as Error).message,
       nativeCriticalCoreDiscarded: false,
+      nativeCriticalCoreRejectionReason: null,
+      nativeCriticalCoreRejectionDetails: null,
+      candidateFutilityStopApplied: false,
       productionWaveDiscarded: false,
       improvementEngineApplied: false,
       improvementMovesAccepted: 0,
@@ -276,6 +285,10 @@ const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
     console.log(`Selected strategy: ${item.strategyDiagnosis.selectedStrategy ?? "n/a"}`);
     console.log(`Fallback: ${item.fallbackUsed}`);
     console.log(`Native core: ${item.strategyDiagnosis.nativeCriticalCoreExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.nativeCriticalCoreDiscarded}`);
+    console.log(`Native core rejection: ${item.strategyDiagnosis.nativeCriticalCoreRejectionReason ?? "n/a"}`);
+    const nativeDetails = item.strategyDiagnosis.nativeCriticalCoreRejectionDetails as any;
+    console.log(`Native core details: ${nativeDetails ? `gap ${nativeDetails.baselineMainFlowGapMinutes} -> ${nativeDetails.candidateMainFlowGapMinutes}, makespan ${nativeDetails.baselineMakespanMinutes} -> ${nativeDetails.candidateMakespanMinutes}` : "n/a"}`);
+    console.log(`Candidate futility stop: ${item.strategyDiagnosis.candidateFutilityStopApplied}`);
     console.log(`Production wave: ${item.strategyDiagnosis.productionWaveExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.productionWaveDiscarded}`);
     console.log(`Improvement engine: ${item.strategyDiagnosis.improvementMovesAccepted} moves accepted`);
     console.log(`Losses: ${item.losses.length ? item.losses.join(", ") : "none"}`);
