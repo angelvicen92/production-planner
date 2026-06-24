@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluateRegressionGate, runV4Benchmark, type V4BenchmarkMetrics } from "./runV4Benchmark";
+import { evaluateRegressionGate, runV4Benchmark, type V4BenchmarkMetrics, type V4BenchmarkScenarioSummary, type V4BenchmarkResult } from "./runV4Benchmark";
+import { buildV4BenchmarkEvidenceReport } from "./evidenceReport";
 import { analyzeStrategicScenario } from "../analysis";
 import { buildV4StrategyPortfolio, runV4CandidateStrategies } from "../candidates";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
@@ -23,7 +24,13 @@ const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics
   missingMustRunStrategies: [],
   strategiesEvaluated: 0,
   strategiesSkipped: 0,
+  skippedStrategies: [],
   runtimeBudgetExceeded: false,
+  finalAcceptanceReason: null,
+  nativeCriticalCoreDiscarded: false,
+  productionWaveDiscarded: false,
+  improvementEngineApplied: false,
+  improvementMovesAccepted: 0,
   accepted: true,
   fallbackToV3Baseline: false,
   verdict: "V3_BASELINE",
@@ -172,4 +179,70 @@ test("strict regression gate fails when balanced lacks native critical core", ()
   const gate = evaluateRegressionGate(v3, v4, 100);
   assert.equal(gate.passed, false);
   assert.ok(gate.causes.includes("V4 balanced did not execute any native critical core strategy."));
+});
+
+const evidenceResult = (v4Overrides: Partial<V4BenchmarkMetrics> = {}, summaryOverrides: Partial<V4BenchmarkScenarioSummary> = {}): V4BenchmarkResult => {
+  const v3 = metric();
+  const v4 = metric({ engine: "v4", profile: "balanced", selectedStrategy: "strategy_v4_native_critical_core__balanced_hybrid", verdict: "V4_BETTER", ...v4Overrides });
+  const delta = {
+    makespanMinutes: v4.makespanMinutes !== null && v3.makespanMinutes !== null ? v4.makespanMinutes - v3.makespanMinutes : null,
+    mainFlowGapMinutes: v4.mainFlowGapMinutes - v3.mainFlowGapMinutes,
+    qualityScore: v4.qualityScore - v3.qualityScore,
+    runtimeMs: v4.runtimeMs - v3.runtimeMs,
+  };
+  const summary: V4BenchmarkScenarioSummary = {
+    scenario: "fixture",
+    v3,
+    v4Balanced: v4,
+    delta,
+    verdict: v4.verdict === "V4_REJECTED" ? "V4_REJECTED" : delta.mainFlowGapMinutes > 0 ? "V4_WORSE" : delta.makespanMinutes !== null && delta.makespanMinutes > 45 ? "V4_WORSE" : v4.verdict as any,
+    gate: evaluateRegressionGate(v3, v4, 100),
+    gateMaxRuntimeMs: 100,
+    ...summaryOverrides,
+  };
+  return { mode: "quick", strict: false, maxRuntimeMs: 100, scenarios: [summary], generatedAt: "2026-06-19T00:00:00.000Z", evidenceReport: [] };
+};
+
+test("evidence report identifies V4 better wins and next action", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ qualityScore: 90, makespanMinutes: 50, makespan: "09:50" }));
+  assert.equal(report.verdict, "V4_BETTER");
+  assert.ok(report.wins.some((win) => win.includes("Reduces makespan")));
+  assert.equal(report.requiredNextAction, "Proceed to tuning: V4 beats V3 on continuity and makespan.");
+});
+
+test("evidence report diagnoses final acceptance fallback", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ accepted: false, fallbackToV3Baseline: true, verdict: "V4_REJECTED", finalAcceptanceReason: "V4 did not beat baseline safely." }));
+  assert.ok(report.losses.includes("FALLBACK_TO_V3"));
+  assert.equal(report.fallbackUsed, true);
+  assert.ok(report.requiredNextAction.includes("final acceptance"));
+});
+
+test("evidence report diagnoses native critical core missing", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ executedStrategies: ["strategy_baseline_v3_order"], skippedStrategies: ["strategy_v4_native_critical_core__balanced_hybrid"] }));
+  assert.ok(report.losses.includes("NATIVE_CORE_NOT_EXECUTED"));
+  assert.equal(report.strategyDiagnosis.nativeCriticalCoreExecuted, false);
+});
+
+test("evidence report diagnoses native critical core discarded", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreDiscarded: true }));
+  assert.ok(report.losses.includes("NATIVE_CORE_DISCARDED"));
+  assert.equal(report.strategyDiagnosis.nativeCriticalCoreDiscarded, true);
+});
+
+test("evidence report diagnoses runtime too slow", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ runtimeMs: 200, runtimeBudgetExceeded: true }));
+  assert.ok(report.losses.includes("RUNTIME_TOO_SLOW"));
+  assert.ok(report.mainReason.includes("runtime"));
+});
+
+test("evidence report diagnoses makespan worse", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ makespanMinutes: 130, makespan: "10:30", qualityScore: 80 }, { verdict: "V4_WORSE" }));
+  assert.ok(report.losses.includes("MAKESPAN_WORSE"));
+  assert.ok(report.mainReason.includes("makespan"));
+});
+
+test("evidence report diagnoses main flow gap worse", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ mainFlowGapMinutes: 25 }, { verdict: "V4_WORSE" }));
+  assert.ok(report.losses.includes("MAIN_FLOW_GAP_WORSE"));
+  assert.ok(report.requiredNextAction.includes("Production Wave"));
 });
