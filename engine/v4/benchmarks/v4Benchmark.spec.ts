@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluateRegressionGate, runV4Benchmark, type V4BenchmarkMetrics, type V4BenchmarkScenarioSummary, type V4BenchmarkResult } from "./runV4Benchmark";
+import { evaluateRegressionGate, printEvidenceReport, runV4Benchmark, type V4BenchmarkMetrics, type V4BenchmarkScenarioSummary, type V4BenchmarkResult } from "./runV4Benchmark";
 import { buildV4BenchmarkEvidenceReport } from "./evidenceReport";
 import { analyzeStrategicScenario } from "../analysis";
 import { buildV4StrategyPortfolio, runV4CandidateStrategies } from "../candidates";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 import { generatePlanV4 } from "../index";
+
+import { canPlaceTaskAt, summarizeGapClosureBlocker, tryCloseMainFlowGaps } from "../nativeCriticalCoreScheduler";
+import { evaluateV4PlanQuality } from "../quality";
 
 const metric = (overrides: Partial<V4BenchmarkMetrics> = {}): V4BenchmarkMetrics => ({
   scenarioName: "fixture",
@@ -346,4 +349,67 @@ test("evidence report serializes scenario identity and representative rejection 
 test("evidence report differentiates representative V4 worse action", () => {
   const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ makespanMinutes: 130, makespan: "10:30", qualityScore: 80 }, { verdict: "V4_WORSE" }));
   assert.ok(report.requiredNextAction.startsWith("Representative V4 worse:"));
+});
+
+
+test("PULL_SEGMENT_AFTER_GAP only considers consecutive main-flow tasks", () => {
+  const input: any = {
+    planId: 1,
+    workDay: { start: "09:00", end: "11:00" },
+    tasks: [
+      { id: 1, planId: 1, templateId: 1, status: "pending", spaceId: 1, durationOverrideMin: 10 },
+      { id: 2, planId: 1, templateId: 2, status: "pending", spaceId: 2, durationOverrideMin: 10 },
+      { id: 3, planId: 1, templateId: 3, status: "pending", spaceId: 1, durationOverrideMin: 10 },
+    ],
+  };
+  const output: any = { plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:20", endPlanned: "09:30", assignedResources: [] },
+    { taskId: 3, startPlanned: "09:30", endPlanned: "09:40", assignedResources: [] },
+  ], unplanned: [], hardFeasible: true };
+  const strategic: any = { mainFlow: { id: 1 }, criticalResources: [], criticalTalents: [], continuousSpaces: [] };
+  const quality = evaluateV4PlanQuality(input, output, strategic);
+  const result = tryCloseMainFlowGaps(input, output, strategic, quality, { totalGapMinutes: 10, gaps: [{ start: 550, end: 560, durationMinutes: 10, previousTaskId: 1, nextTaskId: null, candidateTaskIds: [], blockingReasons: [] }] } as any, Date.now(), 1000);
+  const segmentAttempt = result.attempts.find((attempt) => attempt.operation === "PULL_SEGMENT_AFTER_GAP");
+  assert.equal(segmentAttempt?.success, false);
+  assert.equal(segmentAttempt?.reason, "No movable main-flow task found");
+});
+
+test("canPlaceTaskAt rejects moving a task after an already planned dependent", () => {
+  const input: any = {
+    planId: 1,
+    workDay: { start: "09:00", end: "11:00" },
+    tasks: [
+      { id: 1, planId: 1, templateId: 1, status: "pending", durationOverrideMin: 10 },
+      { id: 2, planId: 1, templateId: 2, status: "pending", dependsOnTaskIds: [1], durationOverrideMin: 10 },
+    ],
+  };
+  const output: any = { plannedTasks: [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [] },
+    { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedResources: [] },
+  ], unplanned: [], hardFeasible: true };
+  const check = canPlaceTaskAt(input, output, 1, 560, 570);
+  assert.equal(check.ok, false);
+  if (!check.ok) assert.equal(check.reason, "Dependent would start too early");
+});
+
+test("summarizeGapClosureBlocker prioritizes concrete conflicts over generic messages", () => {
+  const summary = summarizeGapClosureBlocker([
+    { gapStart: "09:10", gapEnd: "09:20", previousTaskId: 1, nextTaskId: 2, operation: "PULL_NEXT_MAIN_FLOW_TASK_EARLIER", success: false, reason: "Candidate did not safely reduce gap", details: "Generic failure." },
+    { gapStart: "09:10", gapEnd: "09:20", previousTaskId: 1, nextTaskId: 2, operation: "PULL_SEGMENT_AFTER_GAP", success: false, reason: "Talent conflict", details: "Talent has task 88 at 10:30-10:40." },
+  ], []);
+  assert.equal(summary.mainBlocker, "Talent conflict");
+  assert.equal(summary.mainBlockerDetails, "Talent has task 88 at 10:30-10:40.");
+});
+
+test("evidence report prints gap targeting proof fields", () => {
+  const [report] = buildV4BenchmarkEvidenceReport(evidenceResult({ nativeCriticalCoreGapTargeting: { applied: true, baselineGapMinutes: 10, candidateGapMinutes: 5, gapsTargeted: 1, gapsClosed: 1, mainBlocker: "Talent conflict", bestOperation: "PULL_SEGMENT_AFTER_GAP", attempts: [] } as any }));
+  const originalLog = console.log;
+  const lines: string[] = [];
+  console.log = (value?: unknown) => { lines.push(String(value)); };
+  try { printEvidenceReport([report]); } finally { console.log = originalLog; }
+  assert.ok(lines.includes("Gap targeting baseline: 10"));
+  assert.ok(lines.includes("Gap targeting candidate: 5"));
+  assert.ok(lines.includes("Main blocker: Talent conflict"));
+  assert.ok(lines.includes("Best operation: PULL_SEGMENT_AFTER_GAP"));
 });

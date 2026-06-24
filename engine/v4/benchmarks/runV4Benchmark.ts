@@ -277,7 +277,7 @@ const printSummary = (result: V4BenchmarkResult): void => {
   }
 };
 
-const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
+export const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
   console.log("\nV4 EVIDENCE REPORT");
   for (const item of report) {
     console.log(`\nScenario ID: ${item.scenarioId}`);
@@ -292,11 +292,15 @@ const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
     const nativeDetails = item.strategyDiagnosis.nativeCriticalCoreRejectionDetails as any;
     console.log(`Native core details: ${nativeDetails ? `gap ${nativeDetails.baselineMainFlowGapMinutes} -> ${nativeDetails.candidateMainFlowGapMinutes}, makespan ${nativeDetails.baselineMakespanMinutes} -> ${nativeDetails.candidateMakespanMinutes}` : "n/a"}`);
     const gapTargeting = item.strategyDiagnosis.nativeCriticalCoreGapTargeting as any;
-    console.log(`Gap targeting: ${gapTargeting?.applied ? "applied" : "not applied"}`);
+    console.log(`Gap targeting: applied ${gapTargeting?.applied ? "true" : "false"}`);
+    console.log(`Gap targeting baseline: ${Number(gapTargeting?.baselineGapMinutes ?? item.v3Summary.mainFlowGapMinutes)}`);
+    console.log(`Gap targeting candidate: ${Number(gapTargeting?.candidateGapMinutes ?? item.v4Summary.mainFlowGapMinutes)}`);
+    console.log(`Baseline gap: ${Number(gapTargeting?.baselineGapMinutes ?? item.v3Summary.mainFlowGapMinutes)}`);
+    console.log(`Candidate gap: ${Number(gapTargeting?.candidateGapMinutes ?? item.v4Summary.mainFlowGapMinutes)}`);
     console.log(`Gaps targeted: ${Number(gapTargeting?.gapsTargeted ?? 0)}`);
     console.log(`Gaps closed: ${Number(gapTargeting?.gapsClosed ?? 0)}`);
-    console.log(`Candidate gap: ${Number(gapTargeting?.candidateGapMinutes ?? item.v4Summary.mainFlowGapMinutes)}`);
-    if (gapTargeting?.blockers?.length) console.log(`Main blocker: ${gapTargeting.blockers[0]}`);
+    console.log(`Main blocker: ${gapTargeting?.mainBlocker ?? gapTargeting?.blockers?.[0] ?? "n/a"}`);
+    console.log(`Best operation: ${gapTargeting?.bestOperation ?? gapTargeting?.attempts?.find?.((attempt: any) => attempt.success)?.operation ?? gapTargeting?.attempts?.[0]?.operation ?? "n/a"}`);
     console.log(`Candidate futility stop: ${item.strategyDiagnosis.candidateFutilityStopApplied}`);
     console.log(`Production wave: ${item.strategyDiagnosis.productionWaveExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.productionWaveDiscarded}`);
     console.log(`Improvement engine: ${item.strategyDiagnosis.improvementMovesAccepted} moves accepted`);
