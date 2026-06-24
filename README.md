@@ -146,3 +146,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 087 — 2026-06-24 00:00 — V4 Actual Main Flow Gap Closure V1
 
 - ID 088 — 2026-06-24 14:14 — V4 Gap Closure Safety and Benchmark Proof
+
+- ID 089 — 2026-06-24 18:33 — V4 Gap Closure Bugfix and Flow Order Targeting

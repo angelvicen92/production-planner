@@ -299,6 +299,9 @@ export const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => 
     console.log(`Candidate gap: ${Number(gapTargeting?.candidateGapMinutes ?? item.v4Summary.mainFlowGapMinutes)}`);
     console.log(`Gaps targeted: ${Number(gapTargeting?.gapsTargeted ?? 0)}`);
     console.log(`Gaps closed: ${Number(gapTargeting?.gapsClosed ?? 0)}`);
+    console.log(`Segment candidates: ${Number(gapTargeting?.segmentSearch?.segmentCandidates ?? 0)}`);
+    console.log(`Alternatives found: ${Number(gapTargeting?.alternativeSearch?.alternativesFound ?? 0)}`);
+    console.log(`Alternatives tried: ${Number(gapTargeting?.alternativeSearch?.alternativesTried ?? 0)}`);
     console.log(`Main blocker: ${gapTargeting?.mainBlocker ?? gapTargeting?.blockers?.[0] ?? "n/a"}`);
     console.log(`Best operation: ${gapTargeting?.bestOperation ?? gapTargeting?.attempts?.find?.((attempt: any) => attempt.success)?.operation ?? gapTargeting?.attempts?.[0]?.operation ?? "n/a"}`);
     console.log(`Candidate futility stop: ${item.strategyDiagnosis.candidateFutilityStopApplied}`);
