@@ -295,6 +295,7 @@ const printEvidenceReport = (report: V4BenchmarkEvidenceItem[]): void => {
     console.log(`Gap targeting: ${gapTargeting?.applied ? "applied" : "not applied"}`);
     console.log(`Gaps targeted: ${Number(gapTargeting?.gapsTargeted ?? 0)}`);
     console.log(`Gaps closed: ${Number(gapTargeting?.gapsClosed ?? 0)}`);
+    console.log(`Candidate gap: ${Number(gapTargeting?.candidateGapMinutes ?? item.v4Summary.mainFlowGapMinutes)}`);
     if (gapTargeting?.blockers?.length) console.log(`Main blocker: ${gapTargeting.blockers[0]}`);
     console.log(`Candidate futility stop: ${item.strategyDiagnosis.candidateFutilityStopApplied}`);
     console.log(`Production wave: ${item.strategyDiagnosis.productionWaveExecuted ? "executed" : "not executed"}, discarded: ${item.strategyDiagnosis.productionWaveDiscarded}`);
