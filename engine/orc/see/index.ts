@@ -5,3 +5,5 @@ export { buildOpportunityDetectionEvidence, detectOpportunitiesFromOperationalMa
 export { opportunityPriorityValue, prioritizeOpportunities } from "./opportunityPriority";
 export type { SearchSpaceBuildOptions, SearchSpaceBuildResult } from "./searchSpaceBuilder";
 export { buildSearchSpacesForOpportunities } from "./searchSpaceBuilder";
+export type { CandidateBuilderOptions, CandidateBuilderResult } from "./candidateBuilder";
+export { buildCandidatesFromSearchSpaces } from "./candidateBuilder";
