@@ -1,5 +1,5 @@
 import type { EngineInput } from "../../types";
-import type { Candidate, CandidateState, Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
+import type { Candidate, CandidateState, Evidence, OperationalState, Opportunity, SearchSpace, SimulatedState } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
@@ -8,6 +8,7 @@ import { buildSearchSpacesForOpportunities } from "../see/searchSpaceBuilder";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { prioritizeOpportunities } from "../see/opportunityPriority";
 import { buildCandidateStates } from "../transformation/transformationEngine";
+import { simulateCandidateStates } from "../simulation/simulationEngine";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -16,6 +17,7 @@ export interface ORCShadowModeResult {
   searchSpaces: SearchSpace[];
   candidates: Candidate[];
   candidateStates: CandidateState[];
+  simulatedStates: SimulatedState[];
   evidence: Evidence[];
   candidateSummary: {
     searchSpaceCount: number;
@@ -29,6 +31,7 @@ export interface ORCShadowModeResult {
     searchSpaceCount: number;
     candidateCount: number;
     candidateStateCount: number;
+    simulatedStateCount: number;
     topOpportunityId: string | null;
     topOpportunityKind: string | null;
     generatedAt: string | null;
@@ -85,11 +88,13 @@ export function runORCShadowMode(
   const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt });
   const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt });
   const transformationResult = buildCandidateStates(operationalState, candidateResult.candidates, { createdAt });
+  const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
   const evidence = [
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt),
     ...searchSpaceResult.evidence,
     ...candidateResult.evidence,
     ...transformationResult.evidence,
+    ...simulationResult.evidence,
     buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, createdAt),
   ];
 
@@ -100,6 +105,7 @@ export function runORCShadowMode(
     searchSpaces: searchSpaceResult.searchSpaces,
     candidates: candidateResult.candidates,
     candidateStates: transformationResult.candidateStates,
+    simulatedStates: simulationResult.simulatedStates,
     evidence,
     candidateSummary: candidateResult.summary,
     summary: {
@@ -108,6 +114,7 @@ export function runORCShadowMode(
       searchSpaceCount: searchSpaceResult.searchSpaces.length,
       candidateCount: candidateResult.candidates.length,
       candidateStateCount: transformationResult.candidateStates.length,
+      simulatedStateCount: simulationResult.simulatedStates.length,
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,

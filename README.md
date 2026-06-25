@@ -160,3 +160,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 096 — 2026-06-25 15:35 — ORC SEE Candidate Generation Baseline (Read-Only)
 
 - ID 097 — 2026-06-25 15:44 — ORC Transformation Engine Baseline (Read-Only)
+- ID 098 — 2026-06-25 15:53 — ORC Simulation Engine Baseline (Read-Only)

@@ -51,13 +51,16 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.ok(Array.isArray(shadow.searchSpaces));
   assert.ok(Array.isArray(shadow.candidates));
   assert.ok(Array.isArray(shadow.candidateStates));
+  assert.ok(Array.isArray(shadow.simulatedStates));
   assert.equal(shadow.candidateStates.length, shadow.candidates.length);
+  assert.equal(shadow.simulatedStates.length, shadow.candidateStates.length);
   assert.equal(shadow.candidateSummary.candidateCount, shadow.candidates.length);
   assert.equal(shadow.summary.enabled, true);
   assert.equal(shadow.summary.opportunityCount, shadow.opportunities.length);
   assert.equal(shadow.summary.searchSpaceCount, shadow.searchSpaces.length);
   assert.equal(shadow.summary.candidateCount, shadow.candidates.length);
   assert.equal(shadow.summary.candidateStateCount, shadow.candidateStates.length);
+  assert.equal(shadow.summary.simulatedStateCount, shadow.simulatedStates.length);
   assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
@@ -78,6 +81,7 @@ test("runORCShadowMode is deterministic with the same input and createdAt", () =
   assert.equal(structuralEquals(first?.searchSpaces, second?.searchSpaces), true);
   assert.equal(structuralEquals(first?.candidates, second?.candidates), true);
   assert.equal(structuralEquals(first?.candidateStates, second?.candidateStates), true);
+  assert.equal(structuralEquals(first?.simulatedStates, second?.simulatedStates), true);
 });
 
 test("runORCShadowMode tolerates minimal incomplete input", () => {
@@ -102,9 +106,11 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.deepEqual(shadow?.searchSpaces, []);
   assert.deepEqual(shadow?.candidates, []);
   assert.deepEqual(shadow?.candidateStates, []);
+  assert.deepEqual(shadow?.simulatedStates, []);
   assert.equal(shadow?.summary.searchSpaceCount, 0);
   assert.equal(shadow?.candidateSummary.candidateCount, 0);
   assert.equal(shadow?.summary.candidateStateCount, 0);
+  assert.equal(shadow?.summary.simulatedStateCount, 0);
   assert.ok((shadow?.evidence.length ?? 0) > 0);
 });
 
@@ -117,4 +123,16 @@ test("runORCShadowMode does not alter generatePlanV4 output", () => {
   const after = generatePlanV4(input, options);
   assert.equal(structuralEquals(v4Comparable(before), v4Comparable(after)), true);
   assert.notEqual(shadow, null);
+});
+
+
+test("runORCShadowMode integrates read-only simulated states", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.simulatedStates.length, shadow.candidateStates.length);
+  assert.equal(shadow.summary.simulatedStateCount, shadow.simulatedStates.length);
+  assert.equal(shadow.simulatedStates[0]?.simulationMode, "READ_ONLY_BASELINE");
+  assert.equal(shadow.simulatedStates[0]?.readOnly, true);
+  assert.equal(structuralEquals(shadow.simulatedStates[0]?.operationalStateSnapshot, shadow.operationalState), true);
+  assert.notEqual(shadow.simulatedStates[0]?.operationalStateSnapshot, shadow.operationalState);
 });

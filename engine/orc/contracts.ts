@@ -1,4 +1,4 @@
-import type { EngineInput, EngineOutput, LockInput, PlanResourceItemInput, TaskInput, TimeWindow } from "../types";
+import type { EngineInput, LockInput, PlanResourceItemInput, TaskInput, TimeWindow } from "../types";
 
 export type ORCJsonPrimitive = string | number | boolean | null;
 export type ORCJsonValue = ORCJsonPrimitive | ORCJsonValue[] | { [key: string]: ORCJsonValue };
@@ -87,13 +87,14 @@ export interface Opportunity {
 }
 
 export interface SimulatedState {
-  id: string;
-  candidateId: string;
-  operationalStateId: string;
-  plannedTasks: NonNullable<EngineOutput["plannedTasks"]>;
-  metrics: ORCRecord;
-  evidenceIds: string[];
-  metadata: ORCRecord;
+  readonly id: string;
+  readonly candidateStateId: string;
+  readonly baseStateId: string;
+  readonly operationalStateSnapshot: Readonly<OperationalState>;
+  readonly appliedTransformations: ReadonlyArray<PlannedTransformation>;
+  readonly simulationMode: "READ_ONLY_BASELINE";
+  readonly readOnly: true;
+  readonly createdAt: string | null;
 }
 
 export interface ValidationResult {
