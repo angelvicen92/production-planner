@@ -4,7 +4,7 @@ import type { Candidate, CognitiveState, OperationalState, Opportunity, SearchSp
 import { deepFreeze } from "./immutability";
 import { stableStringify, structuralEquals } from "./structuralEquality";
 
-const cognitive = (overrides: Partial<CognitiveState> = {}): CognitiveState => ({ opportunities: [], searchSpaces: [], candidates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {}, ...overrides });
+const cognitive = (overrides: Partial<CognitiveState> = {}): CognitiveState => ({ opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {}, ...overrides });
 const emptyState = (overrides: Partial<OperationalState> = {}): OperationalState => ({
   id: "state:empty", planId: 1, workDay: null, planning: [], tasks: [], resources: [],
   spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },

@@ -158,3 +158,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 091 — 2026-06-24 20:49 — V4 AnyOf Resource Resolution for Gap Moves
 
 - ID 096 — 2026-06-25 15:35 — ORC SEE Candidate Generation Baseline (Read-Only)
+
+- ID 097 — 2026-06-25 15:44 — ORC Transformation Engine Baseline (Read-Only)
