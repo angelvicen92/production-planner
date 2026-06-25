@@ -22,16 +22,39 @@ export interface OperationalValue {
   metadata: ORCRecord;
 }
 
-export interface CandidateState {
+export interface CandidateLifecycleState {
   status: "draft" | "valid" | "invalid" | "committed" | "rejected";
   reason?: string | null;
   evidenceIds: string[];
   metadata: ORCRecord;
 }
 
+export type PlannedTransformationKind =
+  | "MOVE_CHAIN"
+  | "REORDER_REGION"
+  | "REASSIGN_RESOURCE"
+  | "COMPACT_REGION"
+  | "SCHEDULE_PENDING";
+
+export interface PlannedTransformation {
+  readonly kind: PlannedTransformationKind;
+  readonly reason: string;
+}
+
+export interface CandidateState {
+  readonly id: string;
+  readonly candidateId: string;
+  readonly strategy: string;
+  readonly originOpportunity: string | null;
+  readonly plannedTransformations: ReadonlyArray<PlannedTransformation>;
+  readonly estimatedImpact: ORCJsonValue;
+  readonly estimatedCost: ORCJsonValue;
+  readonly confidence: number;
+}
+
 export interface Candidate {
   id: string;
-  state: CandidateState;
+  state: CandidateLifecycleState;
   assignments: Array<{
     taskId: number;
     startPlanned?: string | null;
@@ -96,6 +119,7 @@ export interface CognitiveState {
   opportunities: Opportunity[];
   searchSpaces: SearchSpace[];
   candidates: Candidate[];
+  candidateStates: CandidateState[];
   simulatedStates: SimulatedState[];
   validationResults: ValidationResult[];
   operationalValues: OperationalValue[];

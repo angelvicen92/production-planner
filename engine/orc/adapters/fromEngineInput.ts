@@ -10,6 +10,7 @@ const cognitiveEmpty = (): CognitiveState => ({
   opportunities: [],
   searchSpaces: [],
   candidates: [],
+  candidateStates: [],
   simulatedStates: [],
   validationResults: [],
   operationalValues: [],
