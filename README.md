@@ -18,6 +18,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 ## Historial de cambios Codex
 
+- ID 094 — 2026-06-25 15:03 — ORC SEE Shadow Mode Evidence
 - ID 093 — 2026-06-25 13:57 — ORC SEE Read-Only Opportunity Detection Baseline
 - ID 092 — 2026-06-25 00:00 — ORC State Contracts Baseline
 - ID 001 — 2026-05-26 18:33 — Auditoría base, tests y trazabilidad del proyecto
