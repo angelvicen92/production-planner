@@ -5,4 +5,5 @@ export { buildOperationalStateFromEngineInput } from "./adapters/fromEngineInput
 export * from "./see";
 export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";
+export * from "./validation/validationEngine";
 export * from "./shadow/runORCShadowMode";

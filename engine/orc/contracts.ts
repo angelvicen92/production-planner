@@ -98,13 +98,13 @@ export interface SimulatedState {
 }
 
 export interface ValidationResult {
-  id: string;
-  candidateId?: string | null;
-  valid: boolean;
-  severity: "info" | "warning" | "error";
-  reasons: string[];
-  evidenceIds: string[];
-  metadata: ORCRecord;
+  readonly id: string;
+  readonly simulatedStateId: string;
+  readonly result: "VALID" | "INVALID";
+  readonly violatedConstraints: ReadonlyArray<string>;
+  readonly explanation: string;
+  readonly validatedAt: string | null;
+  readonly evidenceIds: ReadonlyArray<string>;
 }
 
 export interface CommitDecision {
