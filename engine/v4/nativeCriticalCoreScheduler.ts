@@ -9,6 +9,7 @@ import { analyzeMainFlowGapsForTargeting, type V4MainFlowGapTarget, type V4MainF
 
 export type V4NativeCriticalCoreRejectionReason = "NATIVE_CORE_NOT_EXECUTED" | "NO_MAIN_FLOW" | "CORE_TASK_SELECTION_EMPTY" | "CORE_TASKS_NOT_PLACED" | "V3_FILL_INFEASIBLE" | "UNPLANNED_WORSE" | "MAIN_FLOW_GAP_WORSE" | "MAIN_FLOW_GAP_NOT_IMPROVED" | "MAKESPAN_WORSE" | "NO_QUALITY_GAIN" | "HARD_VALIDATION_FAILED" | "RUNTIME_BUDGET_EXCEEDED" | "UNKNOWN";
 export interface V4NativeCriticalCoreBlocker { taskId: number; reason: string; details?: string; resourceConflicts?: string[]; spaceConflicts?: string[]; talentConflicts?: string[]; }
+export interface V4ResolvedAnyOfAssignment { taskId: number; requirement: string; selectedResourceIds: number[]; startMin?: number; endMin?: number; }
 export interface V4NativeCriticalCorePlacementDiagnostics { selectedCoreTasks: number; placedCoreTasks: number; delegatedCoreTasks: number; failedCoreTasks: number; strategicInternalLocks: number; topFailedTasks: V4NativeCriticalCoreBlocker[]; }
 export interface V4NativeCriticalCoreDiagnostics {
   applied: boolean;
@@ -35,6 +36,7 @@ export interface V4NativeCriticalCoreDiagnostics {
   gapTargeting?: {
     applied: boolean; baselineGapMinutes: number; candidateGapMinutes: number; gapsTargeted: number; gapsClosed: number; gapsPartiallyReduced: number;
     attempts: Array<{ gapStart: string; gapEnd: string; previousTaskId: string | number | null; nextTaskId: string | number | null; operation: string; success: boolean; movedTaskIds?: number[]; reason: string; details?: string }>;
+    resolvedAnyOfAssignments?: V4ResolvedAnyOfAssignment[];
     blockers: string[];
     mainBlocker?: string;
     mainBlockerDetails?: string;
@@ -58,11 +60,12 @@ const talentOf = (task?: TaskInput | null) => Number.isFinite(Number(task?.conte
 const depsOf = (task: TaskInput) => uniq([...(task.dependsOnTaskIds ?? []), task.dependsOnTaskId]);
 const tmplDepsOf = (task: TaskInput) => uniq([...(task.dependsOnTemplateIds ?? []), task.dependsOnTemplateId]);
 const resOf = (task?: TaskInput | null) => uniq([...(task?.assignedResourceIds ?? []), ...Object.keys(task?.resourceRequirements?.byItem ?? {}), ...(task?.resourceRequirements?.anyOf ?? []).flatMap((g) => g.resourceItemIds ?? [])]);
+const schedulableResOf = (task?: TaskInput | null, planned?: PlannedRow | null) => uniq([...(planned?.assignedResources ?? []), ...(task?.assignedResourceIds ?? []), ...Object.keys(task?.resourceRequirements?.byItem ?? {}), ...(task ? deterministicRequirementIds(task) : [])]);
 const protectedTask = (task: TaskInput) => task.status === "done" || task.status === "in_progress" || Boolean(task.fixedWindowStart && task.fixedWindowEnd);
 
 
-export interface V4ResourceValidationResult { ok: boolean; unsafe: boolean; conflicts: string[]; warnings: string[]; reason?: string; details?: string; blockerType?: "explicit conflict" | "ambiguous anyOf" | "missing availability" | "camera capacity" | "none"; }
-export interface V4ResourceValidationContext { byId?: Map<number, TaskInput>; criticalResourceIds?: Set<number> | number[]; allowNonCriticalUnsafe?: boolean; }
+export interface V4ResourceValidationResult { ok: boolean; unsafe: boolean; conflicts: string[]; warnings: string[]; reason?: string; details?: string; blockerType?: "explicit conflict" | "ambiguous anyOf" | "insufficient anyOf capacity" | "missing availability" | "camera capacity" | "none"; resolvedAssignments?: V4ResolvedAnyOfAssignment[]; }
+export interface V4ResourceValidationContext { byId?: Map<number, TaskInput>; criticalResourceIds?: Set<number> | number[]; allowNonCriticalUnsafe?: boolean; resolvedAnyOfAssignments?: V4ResolvedAnyOfAssignment[]; }
 
 function explicitResourceIds(task?: TaskInput | null, planned?: PlannedRow | null): number[] {
   return uniq([...(planned?.assignedResources ?? []), ...(task?.assignedResourceIds ?? []), ...Object.keys(task?.resourceRequirements?.byItem ?? {})]);
@@ -92,14 +95,49 @@ export function validateTaskResourcesAt(input: EngineInput, output: EngineOutput
   const byId = context.byId ?? new Map((input.tasks ?? []).map((t) => [Number(t.id), t]));
   const rows = plannedRows(output);
   const taskRow = rows.get(task.id);
+  const critical = new Set(Array.isArray(context.criticalResourceIds) ? context.criticalResourceIds.map(Number) : [...(context.criticalResourceIds ?? [])].map(Number));
+  const interval = { start: startMin, end: endMin, taskId: task.id };
+  const conflicts: string[] = []; const warnings: string[] = []; const resolvedAssignments: V4ResolvedAnyOfAssignment[] = [];
+  const busyIntervals = [
+    ...resourceValidationIntervals(input, output, byId),
+    ...(context.resolvedAnyOfAssignments ?? []).map((a) => ({ start: Number(a.startMin ?? startMin), end: Number(a.endMin ?? endMin), taskId: a.taskId, resources: a.selectedResourceIds, kind: "resolved_anyOf" })),
+  ];
+  const hasExplicitConflict = (resourceId: number) => busyIntervals.some((busy) => busy.taskId !== task.id && overlaps(interval, busy) && (busy.resources ?? []).includes(resourceId));
+  const hasAvailability = (resourceId: number) => (input.planResourceItems ?? []).some((item) => Number(item.id) === resourceId || Number(item.resourceItemId) === resourceId);
+  const isAvailable = (resourceId: number) => {
+    const item = (input.planResourceItems ?? []).find((it) => Number(it.id) === resourceId || Number(it.resourceItemId) === resourceId);
+    return item ? item.isAvailable !== false : undefined;
+  };
+
   const concreteIds = uniq([...explicitResourceIds(task, taskRow), ...deterministicRequirementIds(task)]);
-  const interval = { start: startMin, end: endMin, taskId: task.id, resources: concreteIds };
-  const conflicts: string[] = []; const warnings: string[] = [];
-  for (const busy of resourceValidationIntervals(input, output, byId)) {
+  for (const busy of busyIntervals) {
     if (busy.taskId === task.id || !overlaps(interval, busy)) continue;
     const shared = concreteIds.find((id) => (busy.resources ?? []).includes(id));
     if (shared) conflicts.push(`Resource ${shared} overlaps with task ${busy.taskId} at ${hhmm(busy.start)}-${hhmm(busy.end)}.`);
   }
+
+  for (const group of task.resourceRequirements?.anyOf ?? []) {
+    const ids = uniq(group.resourceItemIds ?? []); const quantity = Math.max(1, Number(group.quantity ?? 1) || 1);
+    if (!ids.length) { conflicts.push(`Need ${quantity} from [], only 0 available.`); continue; }
+    const unavailableCritical = ids.find((id) => !hasAvailability(id) && critical.has(id));
+    if (unavailableCritical !== undefined) {
+      const details = `Task ${task.id} has unresolved anyOf ${ids.join(",")} x${quantity} requirement: critical resource ${unavailableCritical} has no evaluable availability.`;
+      return { ok: false, unsafe: true, conflicts: [], warnings: [details], reason: "Resource requirement anyOf cannot be resolved safely", details, blockerType: "ambiguous anyOf" };
+    }
+    const candidates = ids
+      .map((id) => ({ id, unavailable: isAvailable(id) === false, missingAvailability: !hasAvailability(id), conflict: hasExplicitConflict(id), used: busyIntervals.filter((busy) => (busy.resources ?? []).includes(id) && overlaps({ start: Math.floor(startMin / 1440) * 1440, end: Math.floor(startMin / 1440) * 1440 + 1440 }, busy)).length, critical: critical.has(id) }))
+      .filter((c) => !c.conflict && !c.unavailable);
+    const selectable = candidates.sort((a, b) => a.used - b.used || Number(a.critical) - Number(b.critical) || a.id - b.id).slice(0, quantity);
+    if (selectable.length < quantity) {
+      const details = `Need ${quantity} from [${ids.join(",")}], only ${selectable.length} available.`;
+      return { ok: false, unsafe: false, conflicts: [details], warnings, reason: "Resource conflict", details, blockerType: "insufficient anyOf capacity" };
+    }
+    const selectedResourceIds = selectable.map((c) => c.id);
+    const missing = selectable.filter((c) => c.missingAvailability).map((c) => c.id);
+    if (missing.length) warnings.push(`Resource availability is missing for non-critical anyOf resources ${missing.join(",")}; allowing temporary assignment for task ${task.id}.`);
+    resolvedAssignments.push({ taskId: task.id, requirement: `${ids.join(",")} x${quantity}`, selectedResourceIds, startMin, endMin });
+  }
+
   const cameraNeed = Math.max(0, Number(task.camerasOverride ?? 0) || 0);
   if (cameraNeed > 0) {
     const available = Number(input.camerasAvailable);
@@ -115,18 +153,11 @@ export function validateTaskResourcesAt(input: EngineInput, output: EngineOutput
       if (used + cameraNeed > available) conflicts.push(`Camera capacity exceeded: ${used + cameraNeed}/${available} cameras at ${hhmm(startMin)}-${hhmm(endMin)}.`);
     }
   }
-  if (conflicts.length) return { ok: false, unsafe: false, conflicts, warnings, reason: conflicts.some((c) => c.startsWith("Camera")) ? "Camera capacity" : "Resource conflict", details: conflicts[0], blockerType: conflicts.some((c) => c.startsWith("Camera")) ? "camera capacity" : "explicit conflict" };
-  const ambiguous = ambiguousRequirements(task);
-  if (ambiguous.length) {
-    const critical = new Set(Array.isArray(context.criticalResourceIds) ? context.criticalResourceIds.map(Number) : [...(context.criticalResourceIds ?? [])].map(Number));
-    const criticalAmbiguous = ambiguous.find((req) => req.ids.some((id) => critical.has(id)));
-    const details = `Task ${task.id} has unresolved ${ambiguous[0].label} requirement: Resource requirement anyOf cannot be resolved safely.`;
-    return { ok: Boolean(context.allowNonCriticalUnsafe && !criticalAmbiguous), unsafe: true, conflicts: [], warnings: [details], reason: "Resource requirement anyOf cannot be resolved safely", details, blockerType: "ambiguous anyOf" };
-  }
-  return { ok: true, unsafe: false, conflicts: [], warnings, reason: warnings.length ? "Resource validation warning" : "No resource conflict", details: warnings[0] ?? "Explicit resources valid." , blockerType: warnings.length ? "missing availability" : "none" };
+  if (conflicts.length) return { ok: false, unsafe: false, conflicts, warnings, reason: conflicts.some((c) => c.startsWith("Camera")) ? "Camera capacity" : "Resource conflict", details: conflicts[0], blockerType: conflicts.some((c) => c.startsWith("Camera")) ? "camera capacity" : "explicit conflict", resolvedAssignments };
+  return { ok: true, unsafe: warnings.length > 0, conflicts: [], warnings, reason: warnings.length ? "Resource validation warning" : "No resource conflict", details: resolvedAssignments.length ? `Resolved anyOf requirement with resources ${resolvedAssignments.flatMap((a) => a.selectedResourceIds).join(",")}.` : warnings[0] ?? "Explicit resources valid.", blockerType: warnings.length ? "missing availability" : "none", resolvedAssignments };
 }
 
-function unsafeResources(task: TaskInput): boolean { return ambiguousRequirements(task).length > 0; }
+function unsafeResources(task: TaskInput): boolean { return Object.keys(task.resourceRequirements?.byType ?? {}).length > 0 || (task.resourceRequirements?.anyOf ?? []).some((g) => !(g.resourceItemIds ?? []).length); }
 
 function breakIntervals(input: EngineInput): Interval[] {
   const windows: TimeWindow[] = [...(input.globalHardBreaks ?? [])];
@@ -140,7 +171,7 @@ function fixedIntervals(input: EngineInput, byId: Map<number, TaskInput>): Inter
   const out: Interval[] = [];
   for (const task of input.tasks ?? []) {
     const s = toMin(task.startPlanned ?? task.startReal ?? task.fixedWindowStart); const e = toMin(task.endPlanned ?? task.endReal ?? task.fixedWindowEnd);
-    if (s !== null && e !== null && e > s && (protectedTask(task) || task.startPlanned || task.startReal || task.fixedWindowStart)) out.push({ start: s, end: e, taskId: task.id, resources: resOf(task), kind: task.status });
+    if (s !== null && e !== null && e > s && (protectedTask(task) || task.startPlanned || task.startReal || task.fixedWindowStart)) out.push({ start: s, end: e, taskId: task.id, resources: schedulableResOf(task), kind: task.status });
   }
   for (const lock of input.locks ?? []) {
     const task = byId.get(Number(lock.taskId)); const s = toMin(lock.lockedStart); const e = toMin(lock.lockedEnd);
@@ -168,7 +199,7 @@ function depEnd(byId: Map<number, TaskInput>, placed: Map<number, Interval>, tas
 function violates(input: EngineInput, byId: Map<number, TaskInput>, placed: Map<number, Interval>, task: TaskInput, c: Interval): string | null {
   if (breakIntervals(input).some((b) => overlaps(c, b))) return "break or meal conflict";
   const all = [...fixedIntervals(input, byId), ...[...placed].map(([id, p]) => ({ ...p, taskId: id, resources: resOf(byId.get(id)) }))];
-  const sId = spaceOf(task); const tId = talentOf(task); const rIds = resOf(task);
+  const sId = spaceOf(task); const tId = talentOf(task); const rIds = schedulableResOf(task);
   for (const busy of all) {
     if (busy.taskId === task.id || !overlaps(c, busy)) continue;
     const other = byId.get(Number(busy.taskId));
@@ -216,7 +247,7 @@ export function summarizeGapClosureBlocker(attempts: GapAttempt[], blockers: str
   return { mainBlocker: first ? String(first.reason).replace(/:.*/, "") : "No movable main-flow task found", mainBlockerDetails: first?.details, bestOperation: first?.operation };
 }
 
-type PlacementCheck = { ok: true } | { ok: false; reason: string; details?: string; warning?: string };
+type PlacementCheck = { ok: true; resolvedAssignments?: V4ResolvedAnyOfAssignment[]; warnings?: string[] } | { ok: false; reason: string; details?: string; warning?: string; resolvedAssignments?: V4ResolvedAnyOfAssignment[] };
 
 type PlannedRow = EngineOutput["plannedTasks"][number];
 
@@ -239,7 +270,7 @@ function taskLockedByRealLock(input: EngineInput, taskId: number): boolean {
 function candidateIntervalsFromOutput(input: EngineInput, output: EngineOutput, byId: Map<number, TaskInput>): Interval[] {
   return (output.plannedTasks ?? []).map((row) => {
     const task = byId.get(Number(row.taskId));
-    return { start: toMin(row.startPlanned) ?? 0, end: toMin(row.endPlanned) ?? 0, taskId: Number(row.taskId), resources: uniq([...(row.assignedResources ?? []), ...resOf(task)]), kind: "candidate" };
+    return { start: toMin(row.startPlanned) ?? 0, end: toMin(row.endPlanned) ?? 0, taskId: Number(row.taskId), resources: schedulableResOf(task, row), kind: "candidate" };
   }).filter((row) => row.end > row.start);
 }
 
@@ -250,14 +281,14 @@ export function canPlaceTaskAt(input: EngineInput, currentOutput: EngineOutput, 
   if (protectedTask(task)) return { ok: false, reason: "Task is protected", details: "Done, in-progress, or fixed-window tasks cannot be moved." };
   if (taskLockedByRealLock(input, task.id)) return { ok: false, reason: "Real lock", details: `Task ${task.id} has a real lock.` };
   const resourceValidation = validateTaskResourcesAt(input, currentOutput, task, startMin, endMin, { ...context, byId, allowNonCriticalUnsafe: true });
-  if (!resourceValidation.ok) return { ok: false, reason: resourceValidation.reason === "Camera capacity" ? "Camera capacity" : resourceValidation.unsafe ? "Resource validation unsafe" : "Resource conflict", details: resourceValidation.details ?? resourceValidation.conflicts[0] ?? resourceValidation.warnings[0], warning: resourceValidation.warnings[0] };
+  if (!resourceValidation.ok) return { ok: false, reason: resourceValidation.reason === "Camera capacity" ? "Camera capacity" : resourceValidation.blockerType === "insufficient anyOf capacity" ? "Resource conflict" : resourceValidation.unsafe ? "Resource validation unsafe" : "Resource conflict", details: resourceValidation.details ?? resourceValidation.conflicts[0] ?? resourceValidation.warnings[0], warning: resourceValidation.warnings[0], resolvedAssignments: resourceValidation.resolvedAssignments };
   const workStart = toMin(input.workDay.start) ?? 0; const workEnd = toMin(input.workDay.end) ?? 1440;
   if (startMin < workStart || endMin > workEnd || endMin <= startMin) return { ok: false, reason: "Outside work day", details: `${hhmm(startMin)}-${hhmm(endMin)} is outside the work day.` };
   const av = input.contestantAvailabilityById?.[talentOf(task) ?? -1];
   if ((av?.start && startMin < (toMin(av.start) ?? 0)) || (av?.end && endMin > (toMin(av.end) ?? 1440))) return { ok: false, reason: "Talent unavailable", details: `Talent is unavailable at ${hhmm(startMin)}-${hhmm(endMin)}.` };
   const fixedStart = toMin(task.fixedWindowStart); const fixedEnd = toMin(task.fixedWindowEnd);
   if ((fixedStart !== null && startMin < fixedStart) || (fixedEnd !== null && endMin > fixedEnd)) return { ok: false, reason: "Fixed window", details: `Task fixed window blocks ${hhmm(startMin)}-${hhmm(endMin)}.` };
-  const interval = { start: startMin, end: endMin, taskId: task.id, resources: resOf(task) };
+  const interval = { start: startMin, end: endMin, taskId: task.id, resources: schedulableResOf(task) };
   if (breakIntervals(input).some((b) => overlaps(interval, b))) return { ok: false, reason: "Break or meal conflict", details: `Hard break overlaps ${hhmm(startMin)}-${hhmm(endMin)}.` };
   const rows = plannedRows(currentOutput);
   for (const depId of depsOf(task)) { const dep = rows.get(depId); const original = byId.get(depId); const depEndMin = rowEnd(dep) ?? toMin(original?.endPlanned ?? original?.endReal); if (depEndMin === null || depEndMin > startMin) return { ok: false, reason: "Dependency not ready", details: `Dependency ${depId} ends ${depEndMin === null ? "unplanned" : hhmm(depEndMin)} for task ${task.id}.` }; }
@@ -270,7 +301,7 @@ export function canPlaceTaskAt(input: EngineInput, currentOutput: EngineOutput, 
     if (dependentStart !== null && dependentStart < endMin) return { ok: false, reason: "Dependent would start too early", details: `Dependent task ${dependent.id} starts ${hhmm(dependentStart)} before task ${task.id} would end ${hhmm(endMin)}.` };
   }
   const all = [...fixedIntervals(input, byId), ...candidateIntervalsFromOutput(input, currentOutput, byId)];
-  const sId = spaceOf(task); const tId = talentOf(task); const rIds = resOf(task);
+  const sId = spaceOf(task); const tId = talentOf(task); const rIds = schedulableResOf(task, rows.get(task.id));
   for (const busy of all) {
     if (busy.taskId === task.id || !overlaps(interval, busy)) continue;
     const other = byId.get(Number(busy.taskId));
@@ -278,12 +309,12 @@ export function canPlaceTaskAt(input: EngineInput, currentOutput: EngineOutput, 
     if (tId !== null && talentOf(other) === tId) return { ok: false, reason: "Talent conflict", details: `Talent has task ${busy.taskId} at ${hhmm(busy.start)}-${hhmm(busy.end)}.` };
     const shared = rIds.find((id) => (busy.resources ?? []).includes(id)); if (shared) return { ok: false, reason: "Resource conflict", details: `Resource ${shared} is used by task ${busy.taskId} at ${hhmm(busy.start)}-${hhmm(busy.end)}.` };
   }
-  return { ok: true };
+  return { ok: true, resolvedAssignments: resourceValidation.resolvedAssignments, warnings: resourceValidation.warnings };
 }
 
-function moveRows(output: EngineOutput, moves: Array<{ taskId: number; start: number; end: number }>): EngineOutput {
+function moveRows(output: EngineOutput, moves: Array<{ taskId: number; start: number; end: number; assignedResources?: number[] }>): EngineOutput {
   const candidate = cloneOutput(output); const byMove = new Map(moves.map((m) => [m.taskId, m]));
-  candidate.plannedTasks = (candidate.plannedTasks ?? []).map((row) => { const move = byMove.get(Number(row.taskId)); return move ? { ...row, startPlanned: hhmm(move.start), endPlanned: hhmm(move.end) } : row; });
+  candidate.plannedTasks = (candidate.plannedTasks ?? []).map((row) => { const move = byMove.get(Number(row.taskId)); return move ? { ...row, startPlanned: hhmm(move.start), endPlanned: hhmm(move.end), assignedResources: uniq([...(row.assignedResources ?? []), ...(move.assignedResources ?? [])]) } : row; });
   return candidate;
 }
 
@@ -307,7 +338,7 @@ function findBestSlot(input: EngineInput, byId: Map<number, TaskInput>, placed: 
 }
 
 
-export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineOutput, strategicAnalysis: V4StrategicAnalysis, baselineQuality: ReturnType<typeof evaluateV4PlanQuality>, gapTargets: V4MainFlowGapTargetingAnalysis, started: number, maxRuntimeMs: number): { output: EngineOutput; quality: ReturnType<typeof evaluateV4PlanQuality>; attempts: GapAttempt[]; blockers: string[]; warnings: string[]; targeted: number; closed: number; partial: number; segmentSearch: { mainFlowRowsAfterGap: number; segmentCandidates: number; segmentRejectedReason?: string }; alternativeSearch: { alternativesFound: number; alternativesTried: number } } {
+export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineOutput, strategicAnalysis: V4StrategicAnalysis, baselineQuality: ReturnType<typeof evaluateV4PlanQuality>, gapTargets: V4MainFlowGapTargetingAnalysis, started: number, maxRuntimeMs: number): { output: EngineOutput; quality: ReturnType<typeof evaluateV4PlanQuality>; attempts: GapAttempt[]; blockers: string[]; warnings: string[]; targeted: number; closed: number; partial: number; segmentSearch: { mainFlowRowsAfterGap: number; segmentCandidates: number; segmentRejectedReason?: string }; alternativeSearch: { alternativesFound: number; alternativesTried: number }; resolvedAnyOfAssignments: V4ResolvedAnyOfAssignment[] } {
   const limits = { maxGapTargets: 3, maxAttemptsPerGap: 6, maxSegmentTasks: 3, maxPrerequisitesToMove: 2, maxRuntimeMs: Math.min(1500, maxRuntimeMs) };
   const byId = new Map((input.tasks ?? []).map((task) => [Number(task.id), task]));
   const flowOrder = new Map<number, number>();
@@ -320,7 +351,7 @@ export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineO
   let bestOutput = cloneOutput(baselineOutput); let bestQuality = baselineQuality;
   const baselineGap = baselineQuality.mainFlowQuality?.internalGapMinutes ?? gapTargets.totalGapMinutes;
   const baselineUnplanned = baselineOutput.unplanned?.length ?? 0; const baselineMakespan = makespanMinutes(baselineQuality);
-  let bestGap = baselineGap; const attempts: GapAttempt[] = []; const blockers: string[] = []; const warnings: string[] = [];
+  let bestGap = baselineGap; const attempts: GapAttempt[] = []; const blockers: string[] = []; const warnings: string[] = []; const resolvedAnyOfAssignments: V4ResolvedAnyOfAssignment[] = [];
   const segmentSearch = { mainFlowRowsAfterGap: 0, segmentCandidates: 0, segmentRejectedReason: undefined as string | undefined };
   const alternativeSearch = { alternativesFound: 0, alternativesTried: 0 };
   const accept = (candidate: EngineOutput, operation: string, gap: V4MainFlowGapTarget, movedTaskIds: number[], reason: string, allowEqualMakespan = true): boolean => {
@@ -338,12 +369,18 @@ export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineO
     const tryMove = (operation: string, moves: Array<{ taskId: number; start: number; end: number }>, reason: string, allowEqualMakespan = true): boolean => {
       if (++perGap > limits.maxAttemptsPerGap || Date.now() - started > limits.maxRuntimeMs) { warnings.push("Gap targeting runtime or attempt budget reached; returning best candidate found."); return false; }
       let candidate = cloneOutput(bestOutput);
+      const tempResolved: V4ResolvedAnyOfAssignment[] = [];
       for (const move of moves) {
-        const check = canPlaceTaskAt(input, candidate, move.taskId, move.start, move.end, byId, { criticalResourceIds: (strategicAnalysis.criticalResources ?? []).map((resource) => Number(resource.id)) });
+        const check = canPlaceTaskAt(input, candidate, move.taskId, move.start, move.end, byId, { criticalResourceIds: (strategicAnalysis.criticalResources ?? []).map((resource) => Number(resource.id)), resolvedAnyOfAssignments: [...resolvedAnyOfAssignments, ...tempResolved] });
         if (!check.ok) { if (check.warning) warnings.push(check.warning); attempts.push({ gapStart: hhmm(gap.start), gapEnd: hhmm(gap.end), previousTaskId: gap.previousTaskId, nextTaskId: gap.nextTaskId, operation, success: false, movedTaskIds: moves.map((m) => m.taskId), reason: check.reason, details: check.details }); blockers.push(`${operation}: ${check.details ?? check.reason}`); return false; }
-        candidate = moveRows(candidate, [move]);
+        const assignedResources = (check.resolvedAssignments ?? []).flatMap((a) => a.selectedResourceIds);
+        tempResolved.push(...(check.resolvedAssignments ?? []));
+        for (const warning of check.warnings ?? []) warnings.push(warning);
+        candidate = moveRows(candidate, [{ ...move, assignedResources }]);
       }
-      return accept(candidate, operation, gap, moves.map((m) => m.taskId), reason, allowEqualMakespan);
+      const accepted = accept(candidate, operation, gap, moves.map((m) => m.taskId), reason, allowEqualMakespan);
+      if (accepted) resolvedAnyOfAssignments.push(...tempResolved);
+      return accepted;
     };
     const nextId = Number(gap.nextTaskId); const nextTask = byId.get(nextId);
     if (Number.isFinite(nextId) && nextTask) {
@@ -386,7 +423,7 @@ export function tryCloseMainFlowGaps(input: EngineInput, baselineOutput: EngineO
     alternativeSearch.alternativesFound += alternatives.length;
     for (const alt of alternatives.slice(0, 2)) { alternativeSearch.alternativesTried += 1; if (tryMove("INSERT_ALTERNATIVE_MAIN_FLOW_TASK", [{ taskId: alt.taskId, start: gap.start, end: gap.start + duration(alt.task!) }], "Inserted alternative main-flow task into the gap.", false)) break; }
   }
-  return { output: bestOutput, quality: bestQuality, attempts, blockers: [...new Set(blockers)], warnings, targeted: Math.min(gapTargets.gaps.length, limits.maxGapTargets), closed: bestGap < baselineGap ? Math.max(1, gapTargets.gaps.filter((g) => bestGap <= baselineGap - g.durationMinutes).length) : 0, partial: bestGap < baselineGap ? 1 : 0, segmentSearch, alternativeSearch };
+  return { output: bestOutput, quality: bestQuality, attempts, blockers: [...new Set(blockers)], warnings, targeted: Math.min(gapTargets.gaps.length, limits.maxGapTargets), closed: bestGap < baselineGap ? Math.max(1, gapTargets.gaps.filter((g) => bestGap <= baselineGap - g.durationMinutes).length) : 0, partial: bestGap < baselineGap ? 1 : 0, segmentSearch, alternativeSearch, resolvedAnyOfAssignments };
 }
 
 export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnalysis: V4StrategicAnalysis, options: V4NativeCriticalCoreOptions = {}): V4NativeCriticalCoreResult {
@@ -412,7 +449,7 @@ export function buildV4NativeCriticalCorePlan(input: EngineInput, strategicAnaly
   if (gapTargets.totalGapMinutes > 0) {
     const closure = tryCloseMainFlowGaps(input, baselineOutput, strategicAnalysis, baselineQuality, gapTargets, started, Math.min(maxRuntimeMs, 1500));
     diag.warnings.push(...closure.warnings);
-    diag.gapTargeting = { applied: closure.attempts.some((attempt) => attempt.success), baselineGapMinutes: gapTargets.totalGapMinutes, candidateGapMinutes: closure.quality.mainFlowQuality?.internalGapMinutes ?? gapTargets.totalGapMinutes, gapsTargeted: closure.targeted, gapsClosed: closure.closed, gapsPartiallyReduced: closure.closed ? 0 : closure.partial, attempts: closure.attempts, blockers: closure.blockers, segmentSearch: closure.segmentSearch, alternativeSearch: closure.alternativeSearch, ...summarizeGapClosureBlocker(closure.attempts, closure.blockers) };
+    diag.gapTargeting = { applied: closure.attempts.some((attempt) => attempt.success), baselineGapMinutes: gapTargets.totalGapMinutes, candidateGapMinutes: closure.quality.mainFlowQuality?.internalGapMinutes ?? gapTargets.totalGapMinutes, gapsTargeted: closure.targeted, gapsClosed: closure.closed, gapsPartiallyReduced: closure.closed ? 0 : closure.partial, attempts: closure.attempts, blockers: closure.blockers, segmentSearch: closure.segmentSearch, alternativeSearch: closure.alternativeSearch, resolvedAnyOfAssignments: closure.resolvedAnyOfAssignments, ...summarizeGapClosureBlocker(closure.attempts, closure.blockers) };
     if (diag.gapTargeting.mainBlocker === "No movable main-flow task found" && closure.segmentSearch.segmentCandidates > 0) {
       diag.gapTargeting.mainBlocker = closure.segmentSearch.segmentRejectedReason ?? "Candidate did not reduce gap";
       diag.gapTargeting.mainBlockerDetails = closure.blockers[0] ?? "Main-flow segment candidates existed but no safe move reduced the gap within the targeting budget.";

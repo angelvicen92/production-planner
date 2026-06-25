@@ -459,23 +459,71 @@ test("resource validation rejects explicit resource overlap", () => {
   if (!check.ok) assert.equal(check.reason, "Resource conflict");
 });
 
-test("ambiguous anyOf returns unsafe details", () => {
-  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }] };
+test("anyOf x2 with five free resources resolves two deterministically", () => {
+  const items = [7, 8, 9, 10, 11].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `R${id}`, isAvailable: true }));
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, planResourceItems: items, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 2, resourceItemIds: [7, 8, 9, 10, 11] }] } }] };
   const result = validateTaskResourcesAt(input, { plannedTasks: [], unplanned: [] } as any, input.tasks[0], 540, 550);
-  assert.equal(result.unsafe, true);
-  assert.match(result.details ?? "", /Resource requirement anyOf cannot be resolved safely/);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.resolvedAssignments?.[0]?.selectedResourceIds, [7, 8]);
+});
+
+test("anyOf x2 with only one free resource rejects insufficient capacity", () => {
+  const items = [7, 8].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `R${id}`, isAvailable: true }));
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, planResourceItems: items, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 2, resourceItemIds: [7, 8] }] } },
+    { id: 2, planId: 1, templateId: 2, status: "pending", assignedResourceIds: [8] },
+  ] };
+  const result = validateTaskResourcesAt(input, { plannedTasks: [{ taskId: 2, startPlanned: "09:00", endPlanned: "09:20", assignedResources: [8] }], unplanned: [] } as any, input.tasks[0], 540, 550);
+  assert.equal(result.ok, false);
+  assert.equal(result.blockerType, "insufficient anyOf capacity");
 });
 
 test("ambiguous non-critical anyOf can place with warning", () => {
   const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }], locks: [] };
-  assert.equal(canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550).ok, true);
+  const check = canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550);
+  assert.equal(check.ok, true);
+  if (check.ok) assert.match(check.warnings?.[0] ?? "", /missing/);
 });
 
 test("ambiguous critical anyOf rejects placement", () => {
   const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, tasks: [{ id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } }], locks: [] };
   const check = canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 1, 540, 550, undefined, { criticalResourceIds: new Set([7]) });
   assert.equal(check.ok, false);
-  if (!check.ok) assert.match(check.details ?? "", /anyOf cannot be resolved safely/);
+  if (!check.ok) assert.match(check.details ?? "", /critical resource 7 has no evaluable availability/);
+});
+
+
+
+test("resolved anyOf assignments are respected by later validation", () => {
+  const items = [7, 8].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `R${id}`, isAvailable: true }));
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, planResourceItems: items, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 2, resourceItemIds: [7, 8] }] } },
+    { id: 2, planId: 1, templateId: 2, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8] }] } },
+  ] };
+  const first = validateTaskResourcesAt(input, { plannedTasks: [], unplanned: [] } as any, input.tasks[0], 540, 550);
+  const second = validateTaskResourcesAt(input, { plannedTasks: [], unplanned: [] } as any, input.tasks[1], 540, 550, { resolvedAnyOfAssignments: first.resolvedAssignments });
+  assert.equal(second.ok, false);
+  assert.match(second.details ?? "", /only 0 available/);
+});
+
+test("deterministic anyOf selection prefers less used, non-critical, then lower id", () => {
+  const items = [7, 8, 9].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `R${id}`, isAvailable: true }));
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "17:00" }, planResourceItems: items, tasks: [
+    { id: 1, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [7, 8, 9] }] } },
+    { id: 2, planId: 1, templateId: 2, status: "pending", assignedResourceIds: [7] },
+  ] };
+  const output: any = { plannedTasks: [{ taskId: 2, startPlanned: "12:00", endPlanned: "12:10", assignedResources: [7] }], unplanned: [] };
+  const result = validateTaskResourcesAt(input, output, input.tasks[0], 540, 550, { criticalResourceIds: [8] });
+  assert.deepEqual(result.resolvedAssignments?.[0]?.selectedResourceIds, [9]);
+});
+
+
+test("gap closure placement accepts resolved anyOf instead of ambiguous blocker", () => {
+  const items = [12101, 12102, 12103, 12104, 12105].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `R${id}`, isAvailable: true }));
+  const input: any = { planId: 1, workDay: { start: "09:00", end: "11:00" }, planResourceItems: items, tasks: [{ id: 120033, planId: 1, templateId: 1, status: "pending", resourceRequirements: { anyOf: [{ quantity: 2, resourceItemIds: [12101, 12102, 12103, 12104, 12105] }] } }], locks: [] };
+  const check = canPlaceTaskAt(input, { plannedTasks: [], unplanned: [] } as any, 120033, 540, 550);
+  assert.equal(check.ok, true);
+  if (check.ok) assert.deepEqual(check.resolvedAssignments?.[0]?.selectedResourceIds, [12101, 12102]);
 });
 
 test("camera capacity validation allows within capacity and rejects overflow", () => {
@@ -537,4 +585,6 @@ test("evidence report prints gap targeting proof fields", () => {
   assert.ok(lines.includes("Segment candidates: 2"));
   assert.ok(lines.includes("Alternatives found: 3"));
   assert.ok(lines.includes("Alternatives tried: 2"));
+  assert.ok(lines.includes("AnyOf resolved: false"));
+  assert.ok(lines.includes("Resolved resources: []"));
 });
