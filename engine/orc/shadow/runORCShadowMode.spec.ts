@@ -48,8 +48,10 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.operationalMap.stateId, shadow.operationalState.id);
   assert.ok(shadow.opportunities.length > 0);
   assert.ok(shadow.evidence.length > 0);
+  assert.ok(Array.isArray(shadow.searchSpaces));
   assert.equal(shadow.summary.enabled, true);
   assert.equal(shadow.summary.opportunityCount, shadow.opportunities.length);
+  assert.equal(shadow.summary.searchSpaceCount, shadow.searchSpaces.length);
   assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
@@ -67,6 +69,7 @@ test("runORCShadowMode is deterministic with the same input and createdAt", () =
   const first = runORCShadowMode(input, { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
   const second = runORCShadowMode(input, { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
   assert.equal(structuralEquals(first, second), true);
+  assert.equal(structuralEquals(first?.searchSpaces, second?.searchSpaces), true);
 });
 
 test("runORCShadowMode tolerates minimal incomplete input", () => {
@@ -88,6 +91,8 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.equal(shadow?.operationalState.planId, 95);
   assert.equal(shadow?.operationalMap.taskCount, 0);
   assert.deepEqual(shadow?.opportunities, []);
+  assert.deepEqual(shadow?.searchSpaces, []);
+  assert.equal(shadow?.summary.searchSpaceCount, 0);
   assert.ok((shadow?.evidence.length ?? 0) > 0);
 });
 
