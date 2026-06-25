@@ -54,10 +54,12 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.ok(Array.isArray(shadow.simulatedStates));
   assert.ok(Array.isArray(shadow.validationResults));
   assert.ok(Array.isArray(shadow.operationalValues));
+  assert.ok(Array.isArray(shadow.commitDecisions));
   assert.equal(shadow.candidateStates.length, shadow.candidates.length);
   assert.equal(shadow.simulatedStates.length, shadow.candidateStates.length);
   assert.equal(shadow.validationResults.length, shadow.simulatedStates.length);
   assert.equal(shadow.operationalValues.length, shadow.validationResults.length);
+  assert.equal(shadow.commitDecisions.length, shadow.operationalValues.length);
   assert.equal(shadow.candidateSummary.candidateCount, shadow.candidates.length);
   assert.equal(shadow.summary.enabled, true);
   assert.equal(shadow.summary.opportunityCount, shadow.opportunities.length);
@@ -67,10 +69,13 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.simulatedStateCount, shadow.simulatedStates.length);
   assert.equal(shadow.validationResults.length, shadow.simulatedStates.length);
   assert.equal(shadow.operationalValues.length, shadow.validationResults.length);
+  assert.equal(shadow.commitDecisions.length, shadow.operationalValues.length);
   assert.equal(shadow.validationResults[0]?.result, "VALID");
   assert.equal(shadow.summary.validCount, shadow.validationResults.length);
   assert.equal(shadow.summary.invalidCount, 0);
   assert.equal(shadow.summary.evaluatedCount, shadow.operationalValues.length);
+  assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
+  assert.equal(shadow.summary.rejectCount, 0);
   assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
@@ -93,6 +98,7 @@ test("runORCShadowMode is deterministic with the same input and createdAt", () =
   assert.equal(structuralEquals(first?.candidateStates, second?.candidateStates), true);
   assert.equal(structuralEquals(first?.simulatedStates, second?.simulatedStates), true);
   assert.equal(structuralEquals(first?.operationalValues, second?.operationalValues), true);
+  assert.equal(structuralEquals(first?.commitDecisions, second?.commitDecisions), true);
 });
 
 test("runORCShadowMode tolerates minimal incomplete input", () => {
@@ -120,6 +126,7 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.deepEqual(shadow?.simulatedStates, []);
   assert.deepEqual(shadow?.validationResults, []);
   assert.deepEqual(shadow?.operationalValues, []);
+  assert.deepEqual(shadow?.commitDecisions, []);
   assert.equal(shadow?.summary.searchSpaceCount, 0);
   assert.equal(shadow?.candidateSummary.candidateCount, 0);
   assert.equal(shadow?.summary.candidateStateCount, 0);
@@ -127,6 +134,8 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.equal(shadow?.summary.validCount, 0);
   assert.equal(shadow?.summary.invalidCount, 0);
   assert.equal(shadow?.summary.evaluatedCount, 0);
+  assert.equal(shadow?.summary.commitCount, 0);
+  assert.equal(shadow?.summary.rejectCount, 0);
   assert.ok((shadow?.evidence.length ?? 0) > 0);
 });
 
@@ -159,6 +168,20 @@ test("runORCShadowMode integrates read-only operational values", () => {
   assert.notEqual(shadow, null);
   assert.equal(shadow.operationalValues.length, shadow.validationResults.filter((validationResult) => validationResult.result === "VALID").length);
   assert.equal(shadow.summary.evaluatedCount, shadow.operationalValues.length);
+  assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
+  assert.equal(shadow.summary.rejectCount, 0);
   assert.equal(shadow.operationalValues[0]?.simulatedStateId, shadow.simulatedStates[0]?.id);
   assert.equal(shadow.operationalValues[0]?.evaluatedAt, "2026-06-25T00:00:00.000Z");
+});
+
+
+test("runORCShadowMode integrates read-only commit decisions", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.commitDecisions.length, shadow.operationalValues.length);
+  assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
+  assert.equal(shadow.summary.rejectCount, 0);
+  assert.equal(shadow.commitDecisions[0]?.decision, "COMMIT");
+  assert.equal(shadow.commitDecisions[0]?.operationalValueId, shadow.operationalValues[0]?.simulatedStateId);
+  assert.equal(shadow.commitDecisions[0]?.createdAt, "2026-06-25T00:00:00.000Z");
 });

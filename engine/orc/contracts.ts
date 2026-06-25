@@ -115,12 +115,12 @@ export interface ValidationResult {
 }
 
 export interface CommitDecision {
-  id: string;
-  candidateId?: string | null;
-  decision: "commit" | "reject" | "defer";
-  reason?: string | null;
-  evidenceIds: string[];
-  metadata: ORCRecord;
+  readonly decision: "COMMIT" | "REJECT";
+  readonly operationalValueId: string | null;
+  readonly reason: string;
+  readonly differences: ReadonlyArray<ORCRecord>;
+  readonly evidenceId: string;
+  readonly createdAt: string | null;
 }
 
 export interface CognitiveState {

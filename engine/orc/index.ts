@@ -7,4 +7,5 @@ export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";
 export * from "./validation/validationEngine";
 export * from "./evaluator/operationalEvaluator";
+export * from "./commit/commitEngine";
 export * from "./shadow/runORCShadowMode";

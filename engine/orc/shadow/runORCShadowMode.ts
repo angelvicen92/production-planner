@@ -1,5 +1,5 @@
 import type { EngineInput } from "../../types";
-import type { Candidate, CandidateState, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
+import type { Candidate, CandidateState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
@@ -11,6 +11,7 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
+import { buildCommitDecisions } from "../commit/commitEngine";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -22,6 +23,7 @@ export interface ORCShadowModeResult {
   simulatedStates: SimulatedState[];
   validationResults: ValidationResult[];
   operationalValues: OperationalValue[];
+  commitDecisions: CommitDecision[];
   evidence: Evidence[];
   candidateSummary: {
     searchSpaceCount: number;
@@ -39,6 +41,8 @@ export interface ORCShadowModeResult {
     validCount: number;
     invalidCount: number;
     evaluatedCount: number;
+    commitCount: number;
+    rejectCount: number;
     topOpportunityId: string | null;
     topOpportunityKind: string | null;
     generatedAt: string | null;
@@ -56,6 +60,8 @@ function buildShadowSummaryEvidence(
   opportunities: Opportunity[],
   searchSpaceCount: number,
   candidateCount: number,
+  commitCount: number,
+  rejectCount: number,
   createdAt: string | null,
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
@@ -72,6 +78,8 @@ function buildShadowSummaryEvidence(
       opportunityCount: opportunities.length,
       searchSpaceCount,
       candidateCount,
+      commitCount,
+      rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
@@ -98,6 +106,7 @@ export function runORCShadowMode(
   const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
   const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
   const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
+  const commitResult = buildCommitDecisions(evaluatorResult.operationalValues, { createdAt });
   const evidence = [
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt),
     ...searchSpaceResult.evidence,
@@ -106,7 +115,8 @@ export function runORCShadowMode(
     ...simulationResult.evidence,
     ...validationResult.evidence,
     ...evaluatorResult.evidence,
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, createdAt),
+    ...commitResult.evidence,
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt),
   ];
 
   return {
@@ -119,6 +129,7 @@ export function runORCShadowMode(
     simulatedStates: simulationResult.simulatedStates,
     validationResults: validationResult.validationResults,
     operationalValues: evaluatorResult.operationalValues,
+    commitDecisions: commitResult.commitDecisions,
     evidence,
     candidateSummary: candidateResult.summary,
     summary: {
@@ -131,6 +142,8 @@ export function runORCShadowMode(
       validCount: validationResult.summary.validCount,
       invalidCount: validationResult.summary.invalidCount,
       evaluatedCount: evaluatorResult.summary.evaluatedCount,
+      commitCount: commitResult.summary.commitCount,
+      rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
