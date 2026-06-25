@@ -150,3 +150,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 089 — 2026-06-24 18:33 — V4 Gap Closure Bugfix and Flow Order Targeting
 
 - ID 090 — 2026-06-24 19:23 — V4 Resource Validation Audit and Safe Resource Move Support
+
+- ID 091 — 2026-06-24 20:49 — V4 AnyOf Resource Resolution for Gap Moves
