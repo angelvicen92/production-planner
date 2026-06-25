@@ -3,3 +3,4 @@ export { deepFreeze } from "./immutability";
 export { stableStringify, structuralEquals } from "./structuralEquality";
 export { buildOperationalStateFromEngineInput } from "./adapters/fromEngineInput";
 export * from "./see";
+export * from "./shadow/runORCShadowMode";

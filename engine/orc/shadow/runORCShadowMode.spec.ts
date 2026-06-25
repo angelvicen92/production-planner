@@ -1,0 +1,103 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { EngineInput } from "../../types";
+import { generatePlanV4 } from "../../v4";
+import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
+import { stableStringify, structuralEquals } from "../structuralEquality";
+import { runORCShadowMode } from "./runORCShadowMode";
+
+const minimalInput = (): EngineInput => ({
+  planId: 94,
+  workDay: { start: "09:00", end: "18:00" },
+  meal: { start: "13:00", end: "14:00" },
+  camerasAvailable: 2,
+  tasks: [
+    { id: 1, planId: 94, templateId: 10, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7] },
+    { id: 2, planId: 94, templateId: 11, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "10:00", endPlanned: "10:30", assignedResourceIds: [7] },
+    { id: 3, planId: 94, templateId: 12, status: "pending", contestantId: 2 },
+  ],
+  locks: [],
+  optimizerMainZoneId: 10,
+  zoneResourceAssignments: {},
+  spaceResourceAssignments: {},
+  zoneResourceTypeRequirements: {},
+  spaceResourceTypeRequirements: {},
+  planResourceItems: [{ id: 7, resourceItemId: 70, typeId: 1, name: "Camera 1", isAvailable: true }],
+  resourceItemComponents: {},
+  groupingZoneIds: [],
+});
+
+const v4Comparable = (result: ReturnType<typeof generatePlanV4>) => ({
+  feasible: result.output.feasible,
+  complete: result.output.complete,
+  hardFeasible: result.output.hardFeasible,
+  plannedTasks: result.output.plannedTasks,
+  unplanned: result.output.unplanned,
+  warnings: result.output.warnings,
+  reasons: result.output.reasons,
+});
+
+test("runORCShadowMode returns null when explicitly disabled", () => {
+  assert.equal(runORCShadowMode(minimalInput(), { enabled: false }), null);
+});
+
+test("runORCShadowMode produces operational state, map, opportunities, evidence and summary when enabled", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.operationalState.schemaVersion, "ORC-SPEC-01");
+  assert.equal(shadow.operationalMap.stateId, shadow.operationalState.id);
+  assert.ok(shadow.opportunities.length > 0);
+  assert.ok(shadow.evidence.length > 0);
+  assert.equal(shadow.summary.enabled, true);
+  assert.equal(shadow.summary.opportunityCount, shadow.opportunities.length);
+  assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
+  assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
+  assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
+});
+
+test("runORCShadowMode does not mutate EngineInput", () => {
+  const input = minimalInput();
+  const before = stableStringify(input);
+  runORCShadowMode(input, { enabled: true, createdAt: null });
+  assert.equal(stableStringify(input), before);
+});
+
+test("runORCShadowMode is deterministic with the same input and createdAt", () => {
+  const input = minimalInput();
+  const first = runORCShadowMode(input, { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  const second = runORCShadowMode(input, { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.equal(structuralEquals(first, second), true);
+});
+
+test("runORCShadowMode tolerates minimal incomplete input", () => {
+  const incomplete = {
+    planId: 95,
+    workDay: { start: "09:00", end: "10:00" },
+    meal: { start: "12:00", end: "13:00" },
+    camerasAvailable: 1,
+    tasks: [],
+    locks: [],
+    zoneResourceAssignments: {},
+    spaceResourceAssignments: {},
+    zoneResourceTypeRequirements: {},
+    spaceResourceTypeRequirements: {},
+    planResourceItems: [],
+  } as EngineInput;
+  const shadow = runORCShadowMode(incomplete, { enabled: true, createdAt: null });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow?.operationalState.planId, 95);
+  assert.equal(shadow?.operationalMap.taskCount, 0);
+  assert.deepEqual(shadow?.opportunities, []);
+  assert.ok((shadow?.evidence.length ?? 0) > 0);
+});
+
+test("runORCShadowMode does not alter generatePlanV4 output", () => {
+  const scenario = benchmarkScenarios[0];
+  const input = scenario.input as EngineInput;
+  const options = { v4Profile: "balanced", maxRuntimeMs: 1000, maxStrategies: 1 } as any;
+  const before = generatePlanV4(input, options);
+  const shadow = runORCShadowMode(input, { enabled: true, createdAt: null });
+  const after = generatePlanV4(input, options);
+  assert.equal(structuralEquals(v4Comparable(before), v4Comparable(after)), true);
+  assert.notEqual(shadow, null);
+});
