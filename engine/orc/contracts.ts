@@ -1,4 +1,5 @@
 import type { EngineInput, LockInput, PlanResourceItemInput, TaskInput, TimeWindow } from "../types";
+export type { CognitiveState } from "./cognitive/cognitiveState";
 
 export type ORCJsonPrimitive = string | number | boolean | null;
 export type ORCJsonValue = ORCJsonPrimitive | ORCJsonValue[] | { [key: string]: ORCJsonValue };
@@ -123,7 +124,7 @@ export interface CommitDecision {
   readonly createdAt: string | null;
 }
 
-export interface CognitiveState {
+export interface CognitiveArtifacts {
   opportunities: Opportunity[];
   searchSpaces: SearchSpace[];
   candidates: Candidate[];
@@ -170,7 +171,7 @@ export interface OperationalState {
   locks: LockInput[];
   constraints: ORCRecord;
   operationalMetrics: ORCRecord;
-  cognitive: CognitiveState;
+  cognitive: CognitiveArtifacts;
   source: "EngineInput";
   schemaVersion: "ORC-SPEC-01";
 }

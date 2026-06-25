@@ -9,3 +9,4 @@ export * from "./validation/validationEngine";
 export * from "./evaluator/operationalEvaluator";
 export * from "./commit/commitEngine";
 export * from "./shadow/runORCShadowMode";
+export * from "./cognitive/cognitiveState";

@@ -18,6 +18,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 ## Historial de cambios Codex
 
+- ID 102 — 2026-06-25 17:10 — ORC Cognitive State & Session Memory Baseline
 - ID 101 — 2026-06-25 16:24 — ORC Commit Engine Baseline (Shadow Mode)
 - ID 095 — 2026-06-25 15:28 — ORC SEE Read-Only Search Space Baseline
 - ID 094 — 2026-06-25 15:03 — ORC SEE Shadow Mode Evidence

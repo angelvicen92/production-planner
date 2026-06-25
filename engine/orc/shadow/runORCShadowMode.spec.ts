@@ -185,3 +185,29 @@ test("runORCShadowMode integrates read-only commit decisions", () => {
   assert.equal(shadow.commitDecisions[0]?.operationalValueId, shadow.operationalValues[0]?.simulatedStateId);
   assert.equal(shadow.commitDecisions[0]?.createdAt, "2026-06-25T00:00:00.000Z");
 });
+
+test("runORCShadowMode builds temporal cognitive state evidence", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.deepEqual(shadow.cognitiveStateInitial.exploredOpportunityIds, []);
+  assert.deepEqual(shadow.cognitiveState.exploredOpportunityIds, shadow.opportunities.map((opportunity) => opportunity.id));
+  assert.deepEqual(shadow.cognitiveState.exhaustedSearchSpaceIds, shadow.searchSpaces.map((searchSpace) => searchSpace.id));
+  assert.deepEqual(shadow.cognitiveState.simulatedCandidateIds, shadow.simulatedStates.map((simulatedState) => simulatedState.candidateStateId));
+  assert.equal(shadow.cognitiveState.remainingBudget.opportunities, 0);
+  assert.equal(shadow.cognitiveState.remainingBudget.searchSpaces, 0);
+  assert.equal(shadow.cognitiveState.remainingBudget.candidates, 0);
+  assert.equal(shadow.cognitiveState.remainingBudget.simulations, 0);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-initial"));
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-final"));
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-diff"));
+});
+
+test("runORCShadowMode starts with a fresh cognitive memory for each execution", () => {
+  const first = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  const second = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(first, null);
+  assert.notEqual(second, null);
+  assert.notEqual(first.cognitiveStateInitial, second.cognitiveStateInitial);
+  assert.deepEqual(first.cognitiveStateInitial, second.cognitiveStateInitial);
+  assert.equal(structuralEquals(first.cognitiveState, second.cognitiveState), true);
+});
