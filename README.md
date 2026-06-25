@@ -18,6 +18,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 ## Historial de cambios Codex
 
+- ID 092 — 2026-06-25 00:00 — ORC State Contracts Baseline
 - ID 001 — 2026-05-26 18:33 — Auditoría base, tests y trazabilidad del proyecto
 - ID 002 — 2026-05-26 18:46 — Auditoría y cierre integral de RLS en tablas públicas Supabase
 - ID 003 — 2026-05-30 16:21 — Auditoría profunda del motor V3, rutas reales y falsos negativos
