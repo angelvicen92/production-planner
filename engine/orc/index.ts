@@ -10,3 +10,4 @@ export * from "./evaluator/operationalEvaluator";
 export * from "./commit/commitEngine";
 export * from "./shadow/runORCShadowMode";
 export * from "./cognitive/cognitiveState";
+export * from "./cognitive/reasoningBudget";

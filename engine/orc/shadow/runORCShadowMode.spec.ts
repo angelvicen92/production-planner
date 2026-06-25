@@ -193,10 +193,11 @@ test("runORCShadowMode builds temporal cognitive state evidence", () => {
   assert.deepEqual(shadow.cognitiveState.exploredOpportunityIds, shadow.opportunities.map((opportunity) => opportunity.id));
   assert.deepEqual(shadow.cognitiveState.exhaustedSearchSpaceIds, shadow.searchSpaces.map((searchSpace) => searchSpace.id));
   assert.deepEqual(shadow.cognitiveState.simulatedCandidateIds, shadow.simulatedStates.map((simulatedState) => simulatedState.candidateStateId));
-  assert.equal(shadow.cognitiveState.remainingBudget.opportunities, 0);
-  assert.equal(shadow.cognitiveState.remainingBudget.searchSpaces, 0);
-  assert.equal(shadow.cognitiveState.remainingBudget.candidates, 0);
-  assert.equal(shadow.cognitiveState.remainingBudget.simulations, 0);
+  assert.equal(shadow.cognitiveState.reasoningBudget.consumedOpportunities, shadow.opportunities.length);
+  assert.equal(shadow.cognitiveState.reasoningBudget.consumedSearchSpaces, shadow.searchSpaces.length);
+  assert.equal(shadow.cognitiveState.reasoningBudget.consumedCandidates, shadow.candidates.length);
+  assert.equal(shadow.cognitiveState.reasoningBudget.consumedSimulations, shadow.simulatedStates.length);
+  assert.equal(shadow.summary.reasoningBudget.consumedOpportunities, shadow.opportunities.length);
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-initial"));
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-final"));
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "cognitive-state-diff"));

@@ -8,9 +8,10 @@ import {
   recordExploredOpportunity,
   recordObservedCommit,
   recordSimulatedCandidate,
-  updateRemainingBudget,
+  updateReasoningBudget,
   createInitialSessionMemory,
 } from "./cognitiveState";
+import { consumeCandidate, consumeSimulation, createReasoningBudget } from "./reasoningBudget";
 
 test("createInitialCognitiveState creates an empty temporal session memory", () => {
   const state = createInitialCognitiveState("2026-06-25T00:00:00.000Z");
@@ -20,13 +21,13 @@ test("createInitialCognitiveState creates an empty temporal session memory", () 
     discardedCandidateIds: [],
     simulatedCandidateIds: [],
     committedCandidateIds: [],
-    remainingBudget: { opportunities: 0, searchSpaces: 0, candidates: 0, simulations: 0 },
+    reasoningBudget: createReasoningBudget(),
     temporaryKnowledge: {},
     confidence: 0,
     createdAt: "2026-06-25T00:00:00.000Z",
   });
   assert.equal(Object.isFrozen(state), true);
-  assert.equal(Object.isFrozen(state.remainingBudget), true);
+  assert.equal(Object.isFrozen(state.reasoningBudget), true);
   assert.equal(Object.isFrozen(state.exploredOpportunityIds), true);
 });
 
@@ -57,20 +58,21 @@ test("cognitive updates record opportunities, search spaces and candidates", () 
   assert.deepEqual(initial, createInitialCognitiveState(null));
 });
 
-test("updateRemainingBudget is pure and preserves unrelated state", () => {
+test("updateReasoningBudget is pure and preserves unrelated state", () => {
   const initial = recordExploredOpportunity(createInitialCognitiveState(null), "opp:1");
   const before = stableStringify(initial);
-  const updated = updateRemainingBudget(initial, { candidates: 3, simulations: 2 });
+  const updated = updateReasoningBudget(initial, consumeSimulation(consumeCandidate(initial.reasoningBudget)));
 
   assert.equal(stableStringify(initial), before);
-  assert.deepEqual(updated.remainingBudget, { opportunities: 0, searchSpaces: 0, candidates: 3, simulations: 2 });
+  assert.equal(updated.reasoningBudget.consumedCandidates, 1);
+  assert.equal(updated.reasoningBudget.consumedSimulations, 1);
   assert.deepEqual(updated.exploredOpportunityIds, ["opp:1"]);
   assert.notEqual(updated, initial);
-  assert.notEqual(updated.remainingBudget, initial.remainingBudget);
+  assert.notEqual(updated.reasoningBudget, initial.reasoningBudget);
 });
 
 test("cognitive updates are deterministic and structurally equal for the same inputs", () => {
-  const build = () => updateRemainingBudget(recordSimulatedCandidate(recordExploredOpportunity(createInitialCognitiveState("t"), "opp:1"), "candidate:1"), { opportunities: 1 });
+  const build = () => updateReasoningBudget(recordSimulatedCandidate(recordExploredOpportunity(createInitialCognitiveState("t"), "opp:1"), "candidate:1"), consumeCandidate(createReasoningBudget()));
   assert.equal(structuralEquals(build(), build()), true);
 });
 
