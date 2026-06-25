@@ -49,3 +49,5 @@ export interface EngineV4Result {
 export function generatePlanV4(input: EngineInput, options?: EngineV3Options): EngineV4Result {
   return runV4ProOrchestrator(input, options as any);
 }
+
+export type * from "../orc/contracts";
