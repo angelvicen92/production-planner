@@ -14,12 +14,19 @@ export interface Evidence {
 }
 
 export interface OperationalValue {
-  id: string;
-  name: string;
-  value: number | string | boolean | null;
-  unit?: string | null;
-  evidenceIds: string[];
-  metadata: ORCRecord;
+  readonly simulatedStateId: string;
+  readonly continuity: number;
+  readonly makespan: number;
+  readonly permanence: number;
+  readonly compaction: number;
+  readonly resourcePressure: number;
+  readonly robustness: number;
+  readonly stability: number;
+  readonly futureFreedom: number;
+  readonly overallScore: number;
+  readonly evaluatedAt: string | null;
+  readonly evidenceIds: ReadonlyArray<string>;
+  readonly metadata: ORCRecord;
 }
 
 export interface CandidateLifecycleState {

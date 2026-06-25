@@ -1,5 +1,5 @@
 import type { EngineInput } from "../../types";
-import type { Candidate, CandidateState, Evidence, OperationalState, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
+import type { Candidate, CandidateState, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
@@ -10,6 +10,7 @@ import { prioritizeOpportunities } from "../see/opportunityPriority";
 import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
+import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -20,6 +21,7 @@ export interface ORCShadowModeResult {
   candidateStates: CandidateState[];
   simulatedStates: SimulatedState[];
   validationResults: ValidationResult[];
+  operationalValues: OperationalValue[];
   evidence: Evidence[];
   candidateSummary: {
     searchSpaceCount: number;
@@ -36,6 +38,7 @@ export interface ORCShadowModeResult {
     simulatedStateCount: number;
     validCount: number;
     invalidCount: number;
+    evaluatedCount: number;
     topOpportunityId: string | null;
     topOpportunityKind: string | null;
     generatedAt: string | null;
@@ -94,6 +97,7 @@ export function runORCShadowMode(
   const transformationResult = buildCandidateStates(operationalState, candidateResult.candidates, { createdAt });
   const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
   const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
+  const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
   const evidence = [
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt),
     ...searchSpaceResult.evidence,
@@ -101,6 +105,7 @@ export function runORCShadowMode(
     ...transformationResult.evidence,
     ...simulationResult.evidence,
     ...validationResult.evidence,
+    ...evaluatorResult.evidence,
     buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, createdAt),
   ];
 
@@ -113,6 +118,7 @@ export function runORCShadowMode(
     candidateStates: transformationResult.candidateStates,
     simulatedStates: simulationResult.simulatedStates,
     validationResults: validationResult.validationResults,
+    operationalValues: evaluatorResult.operationalValues,
     evidence,
     candidateSummary: candidateResult.summary,
     summary: {
@@ -124,6 +130,7 @@ export function runORCShadowMode(
       simulatedStateCount: simulationResult.simulatedStates.length,
       validCount: validationResult.summary.validCount,
       invalidCount: validationResult.summary.invalidCount,
+      evaluatedCount: evaluatorResult.summary.evaluatedCount,
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
