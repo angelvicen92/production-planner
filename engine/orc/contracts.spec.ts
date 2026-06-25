@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Candidate, CognitiveState, OperationalState, Opportunity, SearchSpace } from "./contracts";
+import type { Candidate, CognitiveArtifacts, OperationalState, Opportunity, SearchSpace } from "./contracts";
 import { deepFreeze } from "./immutability";
 import { stableStringify, structuralEquals } from "./structuralEquality";
 
-const cognitive = (overrides: Partial<CognitiveState> = {}): CognitiveState => ({ opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {}, ...overrides });
+const cognitive = (overrides: Partial<CognitiveArtifacts> = {}): CognitiveArtifacts => ({ opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {}, ...overrides });
 const emptyState = (overrides: Partial<OperationalState> = {}): OperationalState => ({
   id: "state:empty", planId: 1, workDay: null, planning: [], tasks: [], resources: [],
   spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },

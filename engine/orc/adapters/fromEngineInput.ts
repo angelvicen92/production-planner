@@ -1,12 +1,12 @@
 import type { EngineInput, TimeWindow } from "../../types";
-import type { CognitiveState, OperationalState, ORCRecord } from "../contracts";
+import type { CognitiveArtifacts, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
 
 const clone = <T>(value: T): T => value === undefined ? value : JSON.parse(JSON.stringify(value));
 const record = <T>(value: T | null | undefined, fallback: T): T => clone(value ?? fallback);
 const timeWindow = (value: TimeWindow | null | undefined): TimeWindow | null => value ? clone(value) : null;
 
-const cognitiveEmpty = (): CognitiveState => ({
+const cognitiveEmpty = (): CognitiveArtifacts => ({
   opportunities: [],
   searchSpaces: [],
   candidates: [],

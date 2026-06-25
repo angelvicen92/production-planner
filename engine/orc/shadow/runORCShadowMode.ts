@@ -1,5 +1,5 @@
 import type { EngineInput } from "../../types";
-import type { Candidate, CandidateState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
+import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
@@ -12,6 +12,7 @@ import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 import { buildCommitDecisions } from "../commit/commitEngine";
+import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordObservedCommit, recordSimulatedCandidate, updateRemainingBudget } from "../cognitive/cognitiveState";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -25,6 +26,9 @@ export interface ORCShadowModeResult {
   operationalValues: OperationalValue[];
   commitDecisions: CommitDecision[];
   evidence: Evidence[];
+  cognitiveState: CognitiveState;
+  cognitiveStateInitial: CognitiveState;
+  cognitiveStateDiff: Record<string, unknown>;
   candidateSummary: {
     searchSpaceCount: number;
     candidateCount: number;
@@ -89,6 +93,36 @@ function buildShadowSummaryEvidence(
   };
 }
 
+function buildCognitiveStateEvidence(
+  operationalState: OperationalState,
+  kind: "cognitive-state-initial" | "cognitive-state-final" | "cognitive-state-diff",
+  stateOrDiff: CognitiveState | Record<string, unknown>,
+  createdAt: string | null,
+): Evidence {
+  return {
+    id: `evidence:orc-shadow:${kind}:${operationalState.id}`,
+    source: "orc-shadow",
+    kind,
+    subjectId: operationalState.id,
+    createdAt,
+    data: stateOrDiff as Record<string, never>,
+  };
+}
+
+function diffCognitiveStates(initial: CognitiveState, final: CognitiveState): Record<string, unknown> {
+  return {
+    exploredOpportunityIdsAdded: final.exploredOpportunityIds.filter((id) => !initial.exploredOpportunityIds.includes(id)),
+    exhaustedSearchSpaceIdsAdded: final.exhaustedSearchSpaceIds.filter((id) => !initial.exhaustedSearchSpaceIds.includes(id)),
+    discardedCandidateIdsAdded: final.discardedCandidateIds.filter((id) => !initial.discardedCandidateIds.includes(id)),
+    simulatedCandidateIdsAdded: final.simulatedCandidateIds.filter((id) => !initial.simulatedCandidateIds.includes(id)),
+    committedCandidateIdsAdded: final.committedCandidateIds.filter((id) => !initial.committedCandidateIds.includes(id)),
+    remainingBudgetBefore: initial.remainingBudget,
+    remainingBudgetAfter: final.remainingBudget,
+    confidenceBefore: initial.confidence,
+    confidenceAfter: final.confidence,
+  };
+}
+
 export function runORCShadowMode(
   input: EngineInput,
   options: ORCShadowModeOptions = {},
@@ -97,17 +131,30 @@ export function runORCShadowMode(
 
   const createdAt = options.createdAt ?? null;
   const operationalState = buildOperationalStateFromEngineInput(input);
+  const cognitiveStateInitial = createInitialCognitiveState(createdAt);
+  let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
   const opportunities = prioritizeOpportunities(detectOpportunitiesFromOperationalMap(operationalState, operationalMap));
   const topOpportunity = opportunities[0] ?? null;
+  cognitiveState = opportunities.reduce((state, opportunity) => recordExploredOpportunity(state, opportunity.id), cognitiveState);
+  cognitiveState = updateRemainingBudget(cognitiveState, { opportunities: 0 });
   const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt });
+  cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => recordExhaustedSearchSpace(state, searchSpace.id), cognitiveState);
+  cognitiveState = updateRemainingBudget(cognitiveState, { searchSpaces: 0 });
   const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt });
+  cognitiveState = updateRemainingBudget(cognitiveState, { candidates: 0 });
   const transformationResult = buildCandidateStates(operationalState, candidateResult.candidates, { createdAt });
   const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
+  cognitiveState = simulationResult.simulatedStates.reduce((state, simulatedState) => recordSimulatedCandidate(state, simulatedState.candidateStateId), cognitiveState);
+  cognitiveState = updateRemainingBudget(cognitiveState, { simulations: 0 });
   const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
   const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
   const commitResult = buildCommitDecisions(evaluatorResult.operationalValues, { createdAt });
+  const simulatedCandidateIdByOperationalValueId = new Map(simulationResult.simulatedStates.map((simulatedState) => [simulatedState.id, simulatedState.candidateStateId]));
+  cognitiveState = commitResult.commitDecisions.filter((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null).reduce((state, decision) => recordObservedCommit(state, simulatedCandidateIdByOperationalValueId.get(String(decision.operationalValueId)) ?? String(decision.operationalValueId)), cognitiveState);
+  const cognitiveStateDiff = diffCognitiveStates(cognitiveStateInitial, cognitiveState);
   const evidence = [
+    buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt),
     ...searchSpaceResult.evidence,
     ...candidateResult.evidence,
@@ -116,6 +163,8 @@ export function runORCShadowMode(
     ...validationResult.evidence,
     ...evaluatorResult.evidence,
     ...commitResult.evidence,
+    buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
+    buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
     buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt),
   ];
 
@@ -131,6 +180,9 @@ export function runORCShadowMode(
     operationalValues: evaluatorResult.operationalValues,
     commitDecisions: commitResult.commitDecisions,
     evidence,
+    cognitiveState,
+    cognitiveStateInitial,
+    cognitiveStateDiff,
     candidateSummary: candidateResult.summary,
     summary: {
       enabled: true,
