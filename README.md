@@ -44,7 +44,6 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 024 — 2026-05-31 01:45 — Guía de validación real del motor y checklist de prueba en app
 - ID 025 — 2026-05-31 02:05 — Optimización de scripts rápidos/completos de tests y benchmarks del Motor V3
 
-- ID 117 — 2026-06-26 22:35 — ORC Real-Scenario Validation Framework v1
 
 ## Verificación básica
 
@@ -189,3 +188,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 114 — 2026-06-26 17:09 — ORC Golden Benchmark Suite v1
 - ID 115 — 2026-06-26 18:20 — ORC Baseline Report Generator v1
 - ID 116 — 2026-06-26 18:29 — ORC Calibration Framework v1
+- ID 117 — 2026-06-26 22:35 — ORC Real-Scenario Validation Framework v1
+- ID 118 — 2026-06-26 22:59 — ORC Advisory Decision Interface v1

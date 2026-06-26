@@ -9,6 +9,7 @@ export * from "./validation/validationEngine";
 export * from "./evaluator/operationalEvaluator";
 export * from "./decision/rankingEngine";
 export * from "./commit/commitEngine";
+export * from "./advisory/advisoryDecision";
 export * from "./shadow/runORCShadowMode";
 export * from "./cognitive/cognitiveState";
 export * from "./cognitive/reasoningBudget";

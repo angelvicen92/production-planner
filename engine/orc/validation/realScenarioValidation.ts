@@ -1,6 +1,7 @@
 import type { EngineOutput as EngineResult } from "../../types";
 import { roundBenchmarkMetric, type ORCBenchmarkResult } from "../benchmarks/orcBenchmarkHarness";
 import type { CalibrationReport } from "../benchmarks/calibrationFramework";
+import type { AdvisoryDecision } from "../advisory/advisoryDecision";
 
 export const REAL_SCENARIO_VALIDATION_VERSION = "ORC-REAL-SCENARIO-VALIDATION-V1";
 
@@ -22,6 +23,8 @@ export interface RealScenarioValidationReport {
     onlyV4: string[];
     common: string[];
   };
+
+  advisoryDecision: AdvisoryDecision | null;
 
   summary: string;
 }
@@ -82,6 +85,14 @@ const buildORCEvidence = (benchmark: ORCBenchmarkResult, calibration: Calibratio
   `reasoning-efficiency:${calibration.quality.reasoningBudgetEfficiency}`,
 ]);
 
+const extractAdvisoryDecision = (benchmark: ORCBenchmarkResult): AdvisoryDecision | null => {
+  const candidate = asRecord(benchmark.summary).advisoryDecision;
+  if (candidate === null) return null;
+  const record = asRecord(candidate);
+  if (typeof record.decisionId !== "string") return null;
+  return record as unknown as AdvisoryDecision;
+};
+
 const buildV4Evidence = (planningResult: EngineResult, evidence: Evidence): string[] => {
   const plannedTaskIds = (planningResult.plannedTasks ?? []).map((task) => `planned-task:${task.taskId}`);
   const unplannedTaskIds = (planningResult.unplanned ?? []).map((task) => `unplanned-task:${task.taskId}`);
@@ -122,6 +133,7 @@ export function validateRealScenario(
   const onlyORC = difference(onlyComparableORC, onlyComparableV4);
   const onlyV4 = difference(onlyComparableV4, onlyComparableORC);
   const planningDifferences = onlyORC.length + onlyV4.length;
+  const advisoryDecision = extractAdvisoryDecision(benchmark);
 
   return {
     scenarioId: evidence.scenarioId,
@@ -138,6 +150,7 @@ export function validateRealScenario(
       onlyV4,
       common,
     },
+    advisoryDecision,
     summary: `${REAL_SCENARIO_VALIDATION_VERSION}: scenario ${evidence.scenarioId} compared ORC benchmark ${evidence.benchmarkVersion} against V4 output using baseline ${evidence.baselineVersion}; structural differences=${planningDifferences}.`,
   };
 }
