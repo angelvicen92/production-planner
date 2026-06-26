@@ -282,3 +282,12 @@ test("runORCShadowMode exposes adaptive search-space summary and evidence", () =
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "adaptive-search-space-built"));
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.adaptiveSearchSpace != null));
 });
+
+test("runORCShadowMode exposes strategy candidate summary and evidence", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.summary.strategyCandidates.generated, shadow.candidates.length);
+  assert.equal(typeof shadow.summary.strategyCandidates.averageCandidatesPerSearchSpace, "number");
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "strategy-candidate-generated"));
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.strategyCandidates != null));
+});

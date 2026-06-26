@@ -12,3 +12,5 @@ export { reprioritizeOpportunities } from "./adaptivePriority";
 
 export type { AdaptiveSearchSpaceResult } from "./adaptiveSearchSpaceBuilder";
 export { buildAdaptiveSearchSpaces } from "./adaptiveSearchSpaceBuilder";
+export type { StrategyCandidateResult } from "./strategyCandidateBuilder";
+export { buildStrategyCandidates } from "./strategyCandidateBuilder";
