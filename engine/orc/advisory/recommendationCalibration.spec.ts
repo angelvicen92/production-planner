@@ -30,6 +30,7 @@ test("buildRecommendationCalibrationReport handles an empty collection", () => {
     topRecommendationAgreement: 0,
     averageConfidence: 0,
     averageTraceability: 0,
+    averageEvidenceCompleteness: 0,
     recommendationAvailability: 0,
   });
   assert.deepEqual(report.scenarioBreakdown, {});
@@ -45,6 +46,7 @@ test("buildRecommendationCalibrationReport aggregates one report", () => {
     topRecommendationAgreement: 1,
     averageConfidence: 0.8,
     averageTraceability: 1,
+    averageEvidenceCompleteness: 1,
     recommendationAvailability: 1,
   });
   assert.deepEqual(Object.keys(report.scenarioBreakdown), ["scenario:001:advisory:orc-decision:simulated:1"]);
@@ -70,6 +72,7 @@ test("buildRecommendationCalibrationReport aggregates multiple reports", () => {
     topRecommendationAgreement: 0.5,
     averageConfidence: 0.8,
     averageTraceability: 0.5,
+    averageEvidenceCompleteness: 0.5,
     recommendationAvailability: 0.5,
   });
 });

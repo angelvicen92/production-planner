@@ -45,6 +45,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 025 — 2026-05-31 02:05 — Optimización de scripts rápidos/completos de tests y benchmarks del Motor V3
 
 
+- ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
+
 ## Verificación básica
 
 ```bash
