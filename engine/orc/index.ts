@@ -13,3 +13,4 @@ export * from "./cognitive/cognitiveState";
 export * from "./cognitive/reasoningBudget";
 
 export * from "./cognitive/cognitiveFeedback";
+export * from "./cognitive/cognitivePruning";

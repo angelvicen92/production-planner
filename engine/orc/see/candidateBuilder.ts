@@ -1,5 +1,6 @@
 import type { Candidate, CognitiveState, Evidence, OperationalState, SearchSpace } from "../contracts";
 import { shouldSkipCandidate } from "../cognitive/cognitiveFeedback";
+import { pruneDiscardedCandidates, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 
 export interface CandidateBuilderOptions {
   maxCandidatesPerSearchSpace?: number;
@@ -16,6 +17,7 @@ export interface CandidateBuilderResult {
     candidateCount: number;
     duplicateCandidatesDiscarded: number;
     truncatedByBudget: boolean;
+    pruning: CognitivePruningStats;
   };
 }
 
@@ -179,5 +181,17 @@ export function buildCandidatesFromSearchSpaces(
     }
   }
 
-  return { candidates, evidence, summary: { searchSpaceCount: (searchSpaces ?? []).length, candidateCount: candidates.length, duplicateCandidatesDiscarded, truncatedByBudget } };
+  const pruningResult = options.cognitiveState ? pruneDiscardedCandidates(options.cognitiveState, candidates) : { items: candidates, stats: { generatedCount: candidates.length, keptCount: candidates.length, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } };
+  for (const item of pruningResult.stats.prunedItems) {
+    evidence.push({
+      id: `evidence:orc-see:candidate:pruned:${item.id}`,
+      source: "orc-see",
+      kind: "candidate-pruned",
+      subjectId: item.id,
+      createdAt,
+      data: { candidateId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true },
+    });
+  }
+
+  return { candidates: pruningResult.items, evidence, summary: { searchSpaceCount: (searchSpaces ?? []).length, candidateCount: pruningResult.items.length, duplicateCandidatesDiscarded, truncatedByBudget, pruning: pruningResult.stats } };
 }
