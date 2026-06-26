@@ -25,4 +25,5 @@ export * from "./benchmarks/orcBenchmarkHarness";
 export * from "./benchmarks/goldenBenchmarkSuite";
 export * from "./benchmarks/baselineReport";
 export * from "./benchmarks/calibrationFramework";
+export * from "./validation/realScenarioValidation";
 export { goldenBenchmarkScenarios } from "./benchmarks/fixtures/goldenScenarios";
