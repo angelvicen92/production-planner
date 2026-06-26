@@ -4,6 +4,7 @@ import type { EngineInput } from "../../types";
 import { generatePlanV4 } from "../../v4";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 import { stableStringify, structuralEquals } from "../structuralEquality";
+import { createInitialCognitiveState, recordExploredOpportunity } from "../cognitive/cognitiveState";
 import { runORCShadowMode } from "./runORCShadowMode";
 
 const minimalInput = (): EngineInput => ({
@@ -79,6 +80,7 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
+  assert.deepEqual(shadow.summary.pruning, { skippedOpportunities: 0, skippedSearchSpaces: 0, skippedCandidates: 0, estimatedBudgetSaved: 0 });
 });
 
 test("runORCShadowMode does not mutate EngineInput", () => {
@@ -223,4 +225,16 @@ test("runORCShadowMode exposes observational cognitive feedback summary", () => 
     potentialSavings: 0,
   });
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.cognitiveFeedback != null));
+});
+
+test("runORCShadowMode integrates cognitive pruning from temporal memory", () => {
+  const baseline = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(baseline, null);
+  const initial = recordExploredOpportunity(createInitialCognitiveState("2026-06-25T00:00:00.000Z"), baseline.opportunities[0]?.id ?? "missing");
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z", cognitiveState: initial });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.summary.pruning.skippedOpportunities, 1);
+  assert.equal(shadow.summary.pruning.estimatedBudgetSaved, 1);
+  assert.equal(shadow.opportunities.some((opportunity) => opportunity.id === baseline.opportunities[0]?.id), false);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "opportunity-pruned"));
 });

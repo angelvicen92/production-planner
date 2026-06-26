@@ -1,5 +1,6 @@
 import type { CognitiveState, Evidence, OperationalState, Opportunity, ORCRecord } from "../contracts";
 import { shouldSkipOpportunity } from "../cognitive/cognitiveFeedback";
+import { pruneRepeatedOpportunities, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 import type { OperationalMap } from "./operationalMap";
 import { prioritizeOpportunities } from "./opportunityPriority";
 
@@ -39,7 +40,11 @@ const makeOpportunity = (kind: ORCOpportunityKind, description: string, taskIds:
   },
 });
 
-export function detectOpportunitiesFromOperationalMap(state: OperationalState, map: OperationalMap): Opportunity[] {
+export interface OpportunityDetectionOptions {
+  cognitiveState?: CognitiveState;
+}
+
+export function detectOpportunitiesFromOperationalMap(state: OperationalState, map: OperationalMap, options: OpportunityDetectionOptions = {}): Opportunity[] {
   const opportunities: Opportunity[] = [];
   if (map.mainFlow?.configured && map.mainFlow.gapCount > 0) {
     opportunities.push(makeOpportunity("MAIN_FLOW_GAP", "Internal gaps were detected in the configured main flow.", map.mainFlow.plannedTaskIds, { impactExpected: "reduce_idle_time", gapCount: map.mainFlow.gapCount, internalGapMinutes: map.mainFlow.internalGapMinutes, affectedRegion: "main-flow" }));
@@ -62,7 +67,14 @@ export function detectOpportunitiesFromOperationalMap(state: OperationalState, m
   if (map.fragmentation.totalSpaceSwitches > 2) {
     opportunities.push(makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", state.planning.map((item) => item.taskId), { impactExpected: "reduce_space_switches", totalSpaceSwitches: map.fragmentation.totalSpaceSwitches }));
   }
-  return prioritizeOpportunities(opportunities);
+  const ordered = prioritizeOpportunities(opportunities);
+  return options.cognitiveState ? pruneRepeatedOpportunities(options.cognitiveState, ordered).items : ordered;
+}
+
+export function detectOpportunitiesWithPruning(state: OperationalState, map: OperationalMap, options: OpportunityDetectionOptions = {}): { opportunities: Opportunity[]; pruning: CognitivePruningStats } {
+  const unpruned = detectOpportunitiesFromOperationalMap(state, map);
+  const result = options.cognitiveState ? pruneRepeatedOpportunities(options.cognitiveState, unpruned) : { items: unpruned, stats: { generatedCount: unpruned.length, keptCount: unpruned.length, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } };
+  return { opportunities: result.items, pruning: result.stats };
 }
 
 export function buildOpportunityDetectionEvidence(state: OperationalState, map: OperationalMap, opportunities: Opportunity[], createdAt: string | null = null, cognitiveState?: CognitiveState): Evidence[] {

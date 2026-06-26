@@ -1,5 +1,6 @@
 import type { CognitiveState, Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
+import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 import type { OperationalMap } from "./operationalMap";
 import { prioritizeOpportunities } from "./opportunityPriority";
 
@@ -16,6 +17,7 @@ export interface SearchSpaceBuildResult {
     opportunityCount: number;
     searchSpaceCount: number;
     skippedOpportunityCount: number;
+    pruning: CognitivePruningStats;
     budget: {
       maxSearchSpaces: number;
       maxTransformationsPerSpace: number;
@@ -190,13 +192,26 @@ export function buildSearchSpacesForOpportunities(
     });
   }
 
+  const pruningResult = options.cognitiveState ? pruneExhaustedSearchSpaces(options.cognitiveState, searchSpaces) : { items: searchSpaces, stats: { generatedCount: searchSpaces.length, keptCount: searchSpaces.length, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } };
+  for (const item of pruningResult.stats.prunedItems) {
+    evidence.push({
+      id: `evidence:orc-see:search-space:pruned:${item.id}`,
+      source: "orc-see",
+      kind: "search-space-pruned",
+      subjectId: item.id,
+      createdAt,
+      data: { searchSpaceId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true },
+    });
+  }
+
   return {
-    searchSpaces,
+    searchSpaces: pruningResult.items,
     evidence,
     summary: {
       opportunityCount: orderedOpportunities.length,
-      searchSpaceCount: searchSpaces.length,
-      skippedOpportunityCount: orderedOpportunities.length - searchSpaces.length,
+      searchSpaceCount: pruningResult.items.length,
+      skippedOpportunityCount: orderedOpportunities.length - pruningResult.items.length,
+      pruning: pruningResult.stats,
       budget,
     },
   };

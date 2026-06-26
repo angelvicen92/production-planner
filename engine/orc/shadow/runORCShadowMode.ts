@@ -3,7 +3,7 @@ import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidenc
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
-import { buildOpportunityDetectionEvidence, detectOpportunitiesFromOperationalMap } from "../see/opportunityDetection";
+import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruning } from "../see/opportunityDetection";
 import { buildSearchSpacesForOpportunities } from "../see/searchSpaceBuilder";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { prioritizeOpportunities } from "../see/opportunityPriority";
@@ -13,7 +13,7 @@ import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 import { buildCommitDecisions } from "../commit/commitEngine";
 import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordObservedCommit, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
-import { createCognitiveFeedbackStats, shouldSkipCandidate, shouldSkipOpportunity, shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
+import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
 
 export interface ORCShadowModeResult {
@@ -59,6 +59,12 @@ export interface ORCShadowModeResult {
       consumedSimulations: number;
       remaining: ReturnType<typeof remainingBudget>;
     };
+    pruning: {
+      skippedOpportunities: number;
+      skippedSearchSpaces: number;
+      skippedCandidates: number;
+      estimatedBudgetSaved: number;
+    };
     cognitiveFeedback: {
       repeatedOpportunities: number;
       repeatedSearchSpaces: number;
@@ -71,6 +77,7 @@ export interface ORCShadowModeResult {
 export interface ORCShadowModeOptions {
   enabled?: boolean;
   createdAt?: string | null;
+  cognitiveState?: CognitiveState;
 }
 
 function buildShadowSummaryEvidence(
@@ -84,6 +91,7 @@ function buildShadowSummaryEvidence(
   createdAt: string | null,
   reasoningBudgetSummary: ORCShadowModeResult["summary"]["reasoningBudget"],
   cognitiveFeedbackSummary: ORCShadowModeResult["summary"]["cognitiveFeedback"],
+  pruningSummary: ORCShadowModeResult["summary"]["pruning"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -107,6 +115,7 @@ function buildShadowSummaryEvidence(
       readOnly: true,
       planningInfluence: "none",
       reasoningBudget: reasoningBudgetSummary,
+      pruning: pruningSummary,
       cognitiveFeedback: cognitiveFeedbackSummary,
     },
   };
@@ -151,18 +160,19 @@ export function runORCShadowMode(
 
   const createdAt = options.createdAt ?? null;
   const operationalState = buildOperationalStateFromEngineInput(input);
-  const cognitiveStateInitial = createInitialCognitiveState(createdAt);
+  const cognitiveStateInitial = options.cognitiveState ?? createInitialCognitiveState(createdAt);
   let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
-  const opportunities = prioritizeOpportunities(detectOpportunitiesFromOperationalMap(operationalState, operationalMap));
+  const opportunityResult = detectOpportunitiesWithPruning(operationalState, operationalMap, { cognitiveState });
+  const opportunities = prioritizeOpportunities(opportunityResult.opportunities);
   const topOpportunity = opportunities[0] ?? null;
-  const repeatedOpportunityIds = opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).map((opportunity) => opportunity.id);
+  const repeatedOpportunityIds = opportunityResult.pruning.prunedItems.map((item) => item.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
   const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt, cognitiveState });
-  const repeatedSearchSpaceIds = searchSpaceResult.searchSpaces.filter((searchSpace) => shouldSkipSearchSpace(cognitiveState, searchSpace)).map((searchSpace) => searchSpace.id);
+  const repeatedSearchSpaceIds = searchSpaceResult.summary.pruning.prunedItems.map((item) => item.id);
   cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
   const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt, cognitiveState });
-  const repeatedCandidateIds = candidateResult.candidates.filter((candidate) => shouldSkipCandidate(cognitiveState, candidate)).map((candidate) => candidate.id);
+  const repeatedCandidateIds = candidateResult.summary.pruning.prunedItems.map((item) => item.id);
   cognitiveState = candidateResult.candidates.reduce((state) => updateReasoningBudget(state, consumeCandidate(state.reasoningBudget)), cognitiveState);
   const transformationResult = buildCandidateStates(operationalState, candidateResult.candidates, { createdAt });
   const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
@@ -180,10 +190,17 @@ export function runORCShadowMode(
     consumedSimulations: cognitiveState.reasoningBudget.consumedSimulations,
     remaining: remainingBudget(cognitiveState.reasoningBudget),
   };
-  const cognitiveFeedbackSummary = createCognitiveFeedbackStats({ repeatedOpportunities: repeatedOpportunityIds.length, repeatedSearchSpaces: repeatedSearchSpaceIds.length, repeatedCandidates: repeatedCandidateIds.length });
+  const pruningSummary = {
+    skippedOpportunities: opportunityResult.pruning.prunedCount,
+    skippedSearchSpaces: searchSpaceResult.summary.pruning.prunedCount,
+    skippedCandidates: candidateResult.summary.pruning.prunedCount,
+    estimatedBudgetSaved: opportunityResult.pruning.estimatedBudgetSaved + searchSpaceResult.summary.pruning.estimatedBudgetSaved + candidateResult.summary.pruning.estimatedBudgetSaved,
+  };
+  const cognitiveFeedbackSummary = createCognitiveFeedbackStats({ repeatedOpportunities: repeatedOpportunityIds.length, repeatedSearchSpaces: repeatedSearchSpaceIds.length, repeatedCandidates: repeatedCandidateIds.length, potentialSavings: pruningSummary.estimatedBudgetSaved });
   const evidence = [
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
+    ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
     ...searchSpaceResult.evidence,
     ...candidateResult.evidence,
     ...transformationResult.evidence,
@@ -193,7 +210,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary),
   ];
 
   return {
@@ -228,6 +245,7 @@ export function runORCShadowMode(
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
       reasoningBudget: reasoningBudgetSummary,
+      pruning: pruningSummary,
       cognitiveFeedback: cognitiveFeedbackSummary,
     },
   };

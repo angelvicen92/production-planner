@@ -49,7 +49,7 @@ test("buildCandidatesFromSearchSpaces handles empty state and empty SearchSpace 
   const result = buildCandidatesFromSearchSpaces(state(), []);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } });
 });
 
 test("buildCandidatesFromSearchSpaces creates abstract candidates for one SearchSpace", () => {

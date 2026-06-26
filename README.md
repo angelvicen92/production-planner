@@ -18,14 +18,6 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 ## Historial de cambios Codex
 
-- ID 104 — 2026-06-25 22:27 — ORC SEE Cognitive Feedback Loop Baseline
-- ID 103 — 2026-06-25 19:45 — ORC Reasoning Budget Baseline
-- ID 102 — 2026-06-25 17:10 — ORC Cognitive State & Session Memory Baseline
-- ID 101 — 2026-06-25 16:24 — ORC Commit Engine Baseline (Shadow Mode)
-- ID 095 — 2026-06-25 15:28 — ORC SEE Read-Only Search Space Baseline
-- ID 094 — 2026-06-25 15:03 — ORC SEE Shadow Mode Evidence
-- ID 093 — 2026-06-25 13:57 — ORC SEE Read-Only Opportunity Detection Baseline
-- ID 092 — 2026-06-25 00:00 — ORC State Contracts Baseline
 - ID 001 — 2026-05-26 18:33 — Auditoría base, tests y trazabilidad del proyecto
 - ID 002 — 2026-05-26 18:46 — Auditoría y cierre integral de RLS en tablas públicas Supabase
 - ID 003 — 2026-05-30 16:21 — Auditoría profunda del motor V3, rutas reales y falsos negativos
@@ -161,6 +153,11 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 091 — 2026-06-24 20:49 — V4 AnyOf Resource Resolution for Gap Moves
 
+- ID 092 — 2026-06-25 00:00 — ORC State Contracts Baseline
+- ID 093 — 2026-06-25 13:57 — ORC SEE Read-Only Opportunity Detection Baseline
+- ID 094 — 2026-06-25 15:03 — ORC SEE Shadow Mode Evidence
+- ID 095 — 2026-06-25 15:28 — ORC SEE Read-Only Search Space Baseline
+
 - ID 096 — 2026-06-25 15:35 — ORC SEE Candidate Generation Baseline (Read-Only)
 
 - ID 097 — 2026-06-25 15:44 — ORC Transformation Engine Baseline (Read-Only)
@@ -169,3 +166,8 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 099 — 2026-06-25 16:06 — ORC Validation Engine Baseline (Read-Only)
 
 - ID 100 — 2026-06-25 16:16 — ORC Operational Evaluator Baseline (Read-Only)
+- ID 101 — 2026-06-25 16:24 — ORC Commit Engine Baseline (Shadow Mode)
+- ID 102 — 2026-06-25 17:10 — ORC Cognitive State & Session Memory Baseline
+- ID 103 — 2026-06-25 19:45 — ORC Reasoning Budget Baseline
+- ID 104 — 2026-06-25 22:27 — ORC SEE Cognitive Feedback Loop Baseline
+- ID 105 — 2026-06-25 06:38 — ORC Cognitive Pruning Baseline
