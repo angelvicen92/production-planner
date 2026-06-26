@@ -244,3 +244,15 @@ test("runORCShadowMode integrates cognitive pruning from temporal memory", () =>
   assert.equal(shadow.opportunities.some((opportunity) => opportunity.id === baseline.opportunities[0]?.id), false);
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "opportunity-pruned"));
 });
+
+
+test("runORCShadowMode exposes accumulated session learning in summary and evidence", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.ok(shadow.summary.sessionLearning.learnedPatterns.length > 0);
+  assert.deepEqual(shadow.summary.sessionLearning.exhaustedRegions, shadow.searchSpaces.map((searchSpace) => searchSpace.id).sort());
+  assert.ok(shadow.summary.sessionLearning.usefulCandidates.length > 0);
+  assert.deepEqual(shadow.summary.sessionLearning.discardedCandidates, shadow.cognitiveState.discardedCandidateIds);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.sessionLearning != null));
+  assert.equal(shadow.cognitiveStateInitial.temporaryKnowledge.sessionLearning, undefined);
+});

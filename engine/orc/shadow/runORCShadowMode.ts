@@ -13,8 +13,9 @@ import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 import { rankOperationalValues } from "../decision/rankingEngine";
 import { buildCommitDecisions } from "../commit/commitEngine";
-import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordObservedCommit, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
+import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
 import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
+import { getSessionKnowledge, learnFromCommit, learnFromEvaluation, learnFromRanking } from "../cognitive/sessionLearning";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
 
 export interface ORCShadowModeResult {
@@ -82,6 +83,12 @@ export interface ORCShadowModeResult {
       repeatedCandidates: number;
       potentialSavings: number;
     };
+    sessionLearning: {
+      learnedPatterns: string[];
+      exhaustedRegions: string[];
+      usefulCandidates: string[];
+      discardedCandidates: string[];
+    };
   };
 }
 
@@ -105,6 +112,7 @@ function buildShadowSummaryEvidence(
   pruningSummary: ORCShadowModeResult["summary"]["pruning"],
   rankingSummary: ORCShadowModeResult["summary"]["ranking"],
   evaluationSummary: ORCShadowModeResult["summary"]["evaluation"],
+  sessionLearningSummary: ORCShadowModeResult["summary"]["sessionLearning"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -132,6 +140,7 @@ function buildShadowSummaryEvidence(
       cognitiveFeedback: cognitiveFeedbackSummary,
       ranking: rankingSummary,
       evaluation: evaluationSummary,
+      sessionLearning: sessionLearningSummary,
     },
   };
 }
@@ -164,6 +173,8 @@ function diffCognitiveStates(initial: CognitiveState, final: CognitiveState): Re
     reasoningBudgetRemaining: remainingBudget(final.reasoningBudget),
     confidenceBefore: initial.confidence,
     confidenceAfter: final.confidence,
+    temporaryKnowledgeInitial: initial.temporaryKnowledge,
+    temporaryKnowledgeFinal: final.temporaryKnowledge,
   };
 }
 
@@ -194,10 +205,18 @@ export function runORCShadowMode(
   cognitiveState = simulationResult.simulatedStates.reduce((state, simulatedState) => updateReasoningBudget(recordSimulatedCandidate(state, simulatedState.candidateStateId), consumeSimulation(state.reasoningBudget)), cognitiveState);
   const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
   const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
+  cognitiveState = learnFromEvaluation(cognitiveState, { operationalValues: evaluatorResult.operationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, candidates: candidateResult.candidates, searchSpaces: searchSpaceResult.searchSpaces });
   const rankingResult = rankOperationalValues(evaluatorResult.operationalValues, { createdAt });
+  cognitiveState = learnFromRanking(cognitiveState, { rankedOperationalValues: rankingResult.rankedOperationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates });
   const commitResult = buildCommitDecisions(rankingResult.rankedOperationalValues, { createdAt });
-  const simulatedCandidateIdByOperationalValueId = new Map(simulationResult.simulatedStates.map((simulatedState) => [simulatedState.id, simulatedState.candidateStateId]));
-  cognitiveState = commitResult.commitDecisions.filter((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null).reduce((state, decision) => recordObservedCommit(state, simulatedCandidateIdByOperationalValueId.get(String(decision.operationalValueId)) ?? String(decision.operationalValueId)), cognitiveState);
+  cognitiveState = learnFromCommit(cognitiveState, { commitDecisions: commitResult.commitDecisions, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, searchSpaces: searchSpaceResult.searchSpaces });
+  const sessionKnowledge = getSessionKnowledge(cognitiveState);
+  const sessionLearningSummary = {
+    learnedPatterns: sessionKnowledge.learnedPatterns,
+    exhaustedRegions: sessionKnowledge.exhaustedRegions,
+    usefulCandidates: sessionKnowledge.usefulCandidates,
+    discardedCandidates: sessionKnowledge.discardedCandidates,
+  };
   const cognitiveStateDiff = diffCognitiveStates(cognitiveStateInitial, cognitiveState);
   const reasoningBudgetSummary = {
     consumedOpportunities: cognitiveState.reasoningBudget.consumedOpportunities,
@@ -238,7 +257,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary),
   ];
 
   return {
@@ -269,6 +288,7 @@ export function runORCShadowMode(
       evaluatedCount: evaluatorResult.summary.evaluatedCount,
       ranking: rankingSummary,
       evaluation: evaluationSummary,
+      sessionLearning: sessionLearningSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,
