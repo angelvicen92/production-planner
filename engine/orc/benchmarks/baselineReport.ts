@@ -14,8 +14,11 @@ export interface BaselineReport {
     searchSpaces: number;
     candidates: number;
     simulations: number;
+    validSimulations: number;
+    invalidSimulations: number;
     validations: number;
     operationalValues: number;
+    averageOperationalScore: number;
     commits: number;
     reasoningBudgetConsumed: ReasoningBudget;
   };
@@ -34,8 +37,11 @@ const metricKeys = [
   "searchSpaces",
   "candidates",
   "simulations",
+  "validSimulations",
+  "invalidSimulations",
   "validations",
   "operationalValues",
+  "averageOperationalScore",
   "commits",
   "reasoningBudgetConsumed",
 ] as const satisfies readonly BaselineMetricKey[];
@@ -68,6 +74,16 @@ const sumReasoningBudget = (report: GoldenBenchmarkReport): ReasoningBudget => r
 const sumReportMetric = (report: GoldenBenchmarkReport, metric: (report: GoldenBenchmarkReport["reports"][number]) => number): number => (
   roundBenchmarkMetric(report.reports.reduce((sum, benchmark) => sum + metric(benchmark), 0))
 );
+
+const summaryMetric = (benchmark: GoldenBenchmarkReport["reports"][number], key: string): number => {
+  const value = (benchmark.summary.metrics as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+};
+
+const averageReportMetric = (report: GoldenBenchmarkReport, metric: (report: GoldenBenchmarkReport["reports"][number]) => number): number => {
+  if (report.reports.length === 0) return 0;
+  return roundBenchmarkMetric(report.reports.reduce((sum, benchmark) => sum + metric(benchmark), 0) / report.reports.length);
+};
 
 const compareValues = (before: unknown, after: unknown): unknown => {
   if (JSON.stringify(before) === JSON.stringify(after)) return undefined;
@@ -105,8 +121,11 @@ export function buildBaselineReport(
       searchSpaces: sumReportMetric(report, (benchmark) => benchmark.searchSpacesGenerated),
       candidates: sumReportMetric(report, (benchmark) => benchmark.candidatesGenerated),
       simulations: sumReportMetric(report, (benchmark) => benchmark.simulatedStatesGenerated),
+      validSimulations: sumReportMetric(report, (benchmark) => summaryMetric(benchmark, "validCount")),
+      invalidSimulations: sumReportMetric(report, (benchmark) => summaryMetric(benchmark, "invalidCount")),
       validations: sumReportMetric(report, (benchmark) => benchmark.validationResultsGenerated),
       operationalValues: sumReportMetric(report, (benchmark) => benchmark.operationalValuesGenerated),
+      averageOperationalScore: averageReportMetric(report, (benchmark) => summaryMetric(benchmark, "averageOverallScore")),
       commits: sumReportMetric(report, (benchmark) => benchmark.commitDecisionsGenerated),
       reasoningBudgetConsumed: sumReasoningBudget(report),
     },
