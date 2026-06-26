@@ -11,6 +11,7 @@ export interface RecommendationCalibrationReport {
     topRecommendationAgreement: number;
     averageConfidence: number;
     averageTraceability: number;
+    averageEvidenceCompleteness: number;
     recommendationAvailability: number;
   };
 
@@ -73,6 +74,7 @@ export function buildRecommendationCalibrationReport(
     topRecommendationAgreement: average(evaluations.map((evaluation) => evaluation.metrics.topRankAgreement)),
     averageConfidence: average(availableEvaluations.map((evaluation) => evaluation.metrics.recommendationConfidence)),
     averageTraceability: average(evaluations.map((evaluation) => evaluation.metrics.traceabilityScore)),
+    averageEvidenceCompleteness: average(evaluations.map((evaluation) => evaluation.metrics.evidenceCompleteness)),
     recommendationAvailability: roundMetric(evaluatedScenarios === 0 ? 0 : availableEvaluations.length / evaluatedScenarios),
   };
 
