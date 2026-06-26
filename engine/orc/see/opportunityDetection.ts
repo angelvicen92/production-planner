@@ -1,4 +1,5 @@
-import type { Evidence, OperationalState, Opportunity, ORCRecord } from "../contracts";
+import type { CognitiveState, Evidence, OperationalState, Opportunity, ORCRecord } from "../contracts";
+import { shouldSkipOpportunity } from "../cognitive/cognitiveFeedback";
 import type { OperationalMap } from "./operationalMap";
 import { prioritizeOpportunities } from "./opportunityPriority";
 
@@ -64,7 +65,7 @@ export function detectOpportunitiesFromOperationalMap(state: OperationalState, m
   return prioritizeOpportunities(opportunities);
 }
 
-export function buildOpportunityDetectionEvidence(state: OperationalState, map: OperationalMap, opportunities: Opportunity[], createdAt: string | null = null): Evidence[] {
+export function buildOpportunityDetectionEvidence(state: OperationalState, map: OperationalMap, opportunities: Opportunity[], createdAt: string | null = null, cognitiveState?: CognitiveState): Evidence[] {
   return [{
     id: `evidence:orc-see:opportunity-detection:${state.id}`,
     source: "orc-see",
@@ -77,6 +78,11 @@ export function buildOpportunityDetectionEvidence(state: OperationalState, map: 
       opportunityIds: opportunities.map((opportunity) => opportunity.id),
       opportunityKinds: opportunities.map((opportunity) => opportunity.kind),
       priority: opportunities.map((opportunity) => ({ id: opportunity.id, priority: opportunity.metadata.priority ?? null })),
+      cognitiveFeedback: {
+        repeatedOpportunityIds: cognitiveState ? opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).map((opportunity) => opportunity.id) : [],
+        potentialOmittableCount: cognitiveState ? opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).length : 0,
+        observationalOnly: true,
+      },
     },
   }];
 }

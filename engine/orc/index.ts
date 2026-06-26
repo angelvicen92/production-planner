@@ -11,3 +11,5 @@ export * from "./commit/commitEngine";
 export * from "./shadow/runORCShadowMode";
 export * from "./cognitive/cognitiveState";
 export * from "./cognitive/reasoningBudget";
+
+export * from "./cognitive/cognitiveFeedback";
