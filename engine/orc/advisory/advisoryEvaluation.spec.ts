@@ -49,6 +49,7 @@ test("evaluateAdvisoryDecision handles null recommendation", () => {
     reasoningCoverage: 0,
     evidenceCompleteness: 0,
     traceabilityScore: 0,
+    recommendationConfidence: 0,
   });
   assert.equal(report.observations.length, 2);
 });
@@ -63,6 +64,7 @@ test("evaluateAdvisoryDecision scores a valid recommendation", () => {
     reasoningCoverage: 1,
     evidenceCompleteness: 1,
     traceabilityScore: 1,
+    recommendationConfidence: 0.7,
   });
   assert.match(report.summary, /ORC-ADVISORY-EVALUATION-V1/);
 });
