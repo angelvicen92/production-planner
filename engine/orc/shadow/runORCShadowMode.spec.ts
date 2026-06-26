@@ -77,6 +77,8 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.evaluatedCount, shadow.operationalValues.length);
   assert.equal(shadow.summary.ranking.rankedCandidates, shadow.operationalValues.length);
   assert.equal(shadow.summary.ranking.topCandidateId, shadow.operationalValues[0]?.simulatedStateId ?? null);
+  assert.equal(typeof shadow.summary.evaluation.averageOverallScore, "number");
+  assert.equal(shadow.summary.evaluation.bestOverallScore! >= shadow.summary.evaluation.worstOverallScore!, true);
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "operational-value-ranked"));
   assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
   assert.equal(shadow.summary.rejectCount, 0);
