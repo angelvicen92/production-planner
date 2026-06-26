@@ -1,5 +1,6 @@
 import type { Evidence, OperationalValue, SimulatedState, ValidationResult } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { calculateOverallScore, evaluateOperationalMetrics } from "./metrics";
 
 export interface OperationalEvaluatorOptions {
   createdAt?: string | null;
@@ -15,7 +16,6 @@ export interface OperationalEvaluatorResult {
 }
 
 const EVALUATOR_SOURCE = "orc-operational-evaluator";
-const BASELINE_SCORE = 0;
 
 function validationBySimulatedStateId(validationResults: ValidationResult[]): Map<string, ValidationResult> {
   const byId = new Map<string, ValidationResult>();
@@ -26,23 +26,34 @@ function validationBySimulatedStateId(validationResults: ValidationResult[]): Ma
 }
 
 function buildOperationalValue(simulatedState: SimulatedState, validationResult: ValidationResult, evidenceId: string, evaluatedAt: string | null): OperationalValue {
+  const metrics = evaluateOperationalMetrics(simulatedState);
+  const overallScore = calculateOverallScore(metrics);
+  const breakdown = Object.fromEntries(Object.entries(metrics).map(([dimension, evaluation]) => [dimension, {
+    score: evaluation.score,
+    explanation: evaluation.explanation,
+    metrics: evaluation.metrics,
+  }]));
+
   return deepFreeze({
     simulatedStateId: simulatedState.id,
-    continuity: BASELINE_SCORE,
-    makespan: BASELINE_SCORE,
-    permanence: BASELINE_SCORE,
-    compaction: BASELINE_SCORE,
-    resourcePressure: BASELINE_SCORE,
-    robustness: BASELINE_SCORE,
-    stability: BASELINE_SCORE,
-    futureFreedom: BASELINE_SCORE,
-    overallScore: BASELINE_SCORE,
+    continuity: metrics.continuity.score,
+    makespan: metrics.makespan.score,
+    permanence: metrics.permanence.score,
+    compaction: metrics.compaction.score,
+    resourcePressure: metrics.resourcePressure.score,
+    robustness: metrics.robustness.score,
+    stability: metrics.stability.score,
+    futureFreedom: metrics.futureFreedom.score,
+    overallScore,
+    breakdown,
     evaluatedAt,
     evidenceIds: [evidenceId],
     metadata: {
-      evaluationMode: "STRUCTURAL_BASELINE",
+      evaluationMode: "OPERATIONAL_MULTI_CRITERIA_V1",
       validationResultId: validationResult.id,
       validationResult: validationResult.result,
+      dimensionCount: Object.keys(metrics).length,
+      scoreAggregation: "unweighted-arithmetic-mean",
       generatesCandidates: false,
       detectsOpportunities: false,
       mutatesOperationalState: false,
@@ -83,7 +94,10 @@ export function evaluateSimulatedStates(
         validationResultId: validationResult.id,
         validationResult: validationResult.result,
         operationalValue,
-        evaluationMode: "STRUCTURAL_BASELINE",
+        dimensions: operationalValue.breakdown,
+        overallScore: operationalValue.overallScore,
+        scoreAggregation: "unweighted-arithmetic-mean",
+        evaluationMode: "OPERATIONAL_MULTI_CRITERIA_V1",
         readOnly: true,
         generatesCandidates: false,
         detectsOpportunities: false,

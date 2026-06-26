@@ -16,6 +16,7 @@ function value(id: string, overrides: Partial<OperationalValue> = {}): Operation
     stability: 0,
     futureFreedom: 0,
     overallScore: 0,
+    breakdown: {},
     evaluatedAt: null,
     evidenceIds: [`evidence:${id}`],
     metadata: {},

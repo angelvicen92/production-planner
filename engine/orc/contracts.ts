@@ -25,6 +25,7 @@ export interface OperationalValue {
   readonly stability: number;
   readonly futureFreedom: number;
   readonly overallScore: number;
+  readonly breakdown: ORCRecord;
   readonly evaluatedAt: string | null;
   readonly evidenceIds: ReadonlyArray<string>;
   readonly metadata: ORCRecord;

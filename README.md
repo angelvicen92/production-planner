@@ -172,3 +172,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 104 — 2026-06-25 22:27 — ORC SEE Cognitive Feedback Loop Baseline
 - ID 105 — 2026-06-25 06:38 — ORC Cognitive Pruning Baseline
 - ID 106 — 2026-06-26 06:46 — ORC Decision Engine Ranking Baseline
+
+- ID 107 — 2026-06-26 06:58 — ORC Operational Evaluator v1 (Real Multi-Criteria Evaluation)

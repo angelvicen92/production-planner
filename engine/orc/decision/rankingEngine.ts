@@ -99,7 +99,7 @@ export function rankOperationalValues(
         isTopCandidate: position === 1,
         scoreVector: Object.fromEntries(SCORE_FIELDS.map((field) => [field, operationalValue[field]])),
         tieBreakReason: tieBreakReason(operationalValue, previous),
-        rankingPolicy: "score-vector-desc-then-stable-contained-fields",
+        rankingPolicy: "operational-value-overall-score-vector-desc-then-stable-contained-fields",
         readOnly: true,
         mutatesOperationalState: false,
         commitsPlanning: false,
