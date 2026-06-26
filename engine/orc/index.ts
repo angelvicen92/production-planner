@@ -19,3 +19,4 @@ export * from "./cognitive/sessionLearning";
 export * from "./see/adaptivePriority";
 
 export * from "./see/adaptiveSearchSpaceBuilder";
+export * from "./see/strategyCandidateBuilder";
