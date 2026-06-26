@@ -20,3 +20,5 @@ export * from "./see/adaptivePriority";
 
 export * from "./see/adaptiveSearchSpaceBuilder";
 export * from "./see/strategyCandidateBuilder";
+
+export * from "./benchmarks/orcBenchmarkHarness";
