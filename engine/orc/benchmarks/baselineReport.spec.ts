@@ -21,8 +21,11 @@ test("buildBaselineReport summarizes the Golden Benchmark Suite without a previo
   assert.equal(baseline.metrics.searchSpaces, goldenReport.reports[0].searchSpacesGenerated);
   assert.equal(baseline.metrics.candidates, goldenReport.reports[0].candidatesGenerated);
   assert.equal(baseline.metrics.simulations, goldenReport.reports[0].simulatedStatesGenerated);
+  assert.equal(baseline.metrics.validSimulations, goldenReport.reports[0].summary.metrics.validCount);
+  assert.equal(baseline.metrics.invalidSimulations, goldenReport.reports[0].summary.metrics.invalidCount);
   assert.equal(baseline.metrics.validations, goldenReport.reports[0].validationResultsGenerated);
   assert.equal(baseline.metrics.operationalValues, goldenReport.reports[0].operationalValuesGenerated);
+  assert.equal(baseline.metrics.averageOperationalScore, goldenReport.reports[0].summary.metrics.averageOverallScore);
   assert.equal(baseline.metrics.commits, goldenReport.reports[0].commitDecisionsGenerated);
   assert.deepEqual(baseline.metrics.reasoningBudgetConsumed, goldenReport.reports[0].reasoningBudgetConsumed);
   assert.equal(baseline.comparison, undefined);
@@ -39,8 +42,11 @@ test("buildBaselineReport compares every consolidated metric with a previous bas
   changedGoldenReport.reports[0].searchSpacesGenerated += 1;
   changedGoldenReport.reports[0].candidatesGenerated += 1;
   changedGoldenReport.reports[0].simulatedStatesGenerated += 1;
+  changedGoldenReport.reports[0].summary.metrics.validCount += 1;
+  changedGoldenReport.reports[0].summary.metrics.invalidCount += 1;
   changedGoldenReport.reports[0].validationResultsGenerated += 1;
   changedGoldenReport.reports[0].operationalValuesGenerated += 1;
+  changedGoldenReport.reports[0].summary.metrics.averageOverallScore += 1;
   changedGoldenReport.reports[0].commitDecisionsGenerated += 1;
   changedGoldenReport.reports[0].reasoningBudgetConsumed.consumedCandidates += 1;
 
@@ -54,8 +60,11 @@ test("buildBaselineReport compares every consolidated metric with a previous bas
     "metrics.searchSpaces",
     "metrics.candidates",
     "metrics.simulations",
+    "metrics.validSimulations",
+    "metrics.invalidSimulations",
     "metrics.validations",
     "metrics.operationalValues",
+    "metrics.averageOperationalScore",
     "metrics.commits",
     "metrics.reasoningBudgetConsumed",
   ]);
