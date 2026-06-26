@@ -14,3 +14,6 @@ export type { AdaptiveSearchSpaceResult } from "./adaptiveSearchSpaceBuilder";
 export { buildAdaptiveSearchSpaces } from "./adaptiveSearchSpaceBuilder";
 export type { StrategyCandidateResult } from "./strategyCandidateBuilder";
 export { buildStrategyCandidates } from "./strategyCandidateBuilder";
+
+export type { OpportunityDiagnosis, OpportunityDiagnosisResult } from "./opportunityDiagnosis";
+export { diagnoseOpportunities } from "./opportunityDiagnosis";

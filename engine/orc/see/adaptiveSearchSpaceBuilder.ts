@@ -1,4 +1,5 @@
 import type { CognitiveState, Evidence, Opportunity, SearchSpace } from "../contracts";
+import type { OpportunityDiagnosis } from "./opportunityDiagnosis";
 import { remainingBudget, type ReasoningBudget } from "../cognitive/reasoningBudget";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 
@@ -11,6 +12,10 @@ export interface AdaptiveSearchSpaceResult {
     averageSearchSpaceSize: number;
     exhaustedRegionsSkipped: number;
   };
+}
+
+export interface AdaptiveSearchSpaceOptions {
+  diagnoses?: OpportunityDiagnosis[];
 }
 
 const TRANSFORMATIONS_BY_KIND: Record<string, string[]> = {
@@ -61,8 +66,8 @@ const taskWindowFor = (taskIds: number[], strategy: Strategy, maxSize: number): 
   return taskIds.slice(0, Math.max(1, maxSize));
 };
 
-const equivalenceKey = (opportunity: Opportunity, strategy: Strategy, taskIds: number[], transformations: string[]): string =>
-  `${opportunity.kind}|${REGION_BY_KIND[opportunity.kind] ?? "unknown-opportunity-region"}|${strategy}|${taskIds.join(",")}|${transformations.join(",")}`;
+const equivalenceKey = (opportunity: Opportunity, strategy: Strategy, taskIds: number[], transformations: string[], region: string, diagnosisCause: string | null): string =>
+  `${opportunity.kind}|${region}|${diagnosisCause ?? "undiagnosed"}|${strategy}|${taskIds.join(",")}|${transformations.join(",")}`;
 
 function evidence(id: string, kind: string, subjectId: string, data: Record<string, unknown>): Evidence {
   return { id, source: "orc-see", kind, subjectId, createdAt: null, data: data as Record<string, never> };
@@ -72,6 +77,7 @@ export function buildAdaptiveSearchSpaces(
   opportunities: Opportunity[],
   cognitiveState: CognitiveState,
   reasoningBudget: ReasoningBudget,
+  options: AdaptiveSearchSpaceOptions = {},
 ): AdaptiveSearchSpaceResult {
   const remaining = remainingBudget(reasoningBudget);
   const maxSpaces = remaining.searchSpaces;
@@ -81,15 +87,17 @@ export function buildAdaptiveSearchSpaces(
   const seen = new Set<string>();
   let discardedSearchSpaces = 0;
   let exhaustedRegionsSkipped = 0;
+  const diagnosisByOpportunityId = new Map((options.diagnoses ?? []).map((diagnosis) => [diagnosis.opportunityId, diagnosis]));
 
   for (const opportunity of [...(opportunities ?? [])]) {
     for (const strategy of strategiesFor(opportunity)) {
-      const region = REGION_BY_KIND[opportunity.kind] ?? "unknown-opportunity-region";
+      const diagnosis = diagnosisByOpportunityId.get(opportunity.id) ?? null;
+      const region = diagnosis?.affectedRegion ?? REGION_BY_KIND[opportunity.kind] ?? "unknown-opportunity-region";
       const transformations = [...(TRANSFORMATIONS_BY_KIND[opportunity.kind] ?? [])];
       const allowedTransformations = strategy === "diversity-focus" ? transformations.slice().reverse().slice(0, 1) : transformations.slice(0, Math.max(1, Math.min(2, transformations.length)));
       const taskIds = taskWindowFor(uniqueSortedTaskIds(opportunity.taskIds), strategy, maxSize);
       const id = `orc-see:adaptive-search-space:${opportunity.id}:${strategy}`;
-      const key = equivalenceKey(opportunity, strategy, taskIds, allowedTransformations);
+      const key = equivalenceKey(opportunity, strategy, taskIds, allowedTransformations, region, diagnosis?.primaryCause ?? null);
       const baseData = { opportunityId: opportunity.id, opportunityKind: opportunity.kind, searchSpaceId: id, region, strategy, searchSpaceSize: taskIds.length, budgetConsumed: searchSpaces.length, diversityKey: key, readOnly: true };
 
       if (searchSpaces.length >= maxSpaces) {
@@ -122,7 +130,8 @@ export function buildAdaptiveSearchSpaces(
           sourceOpportunityId: opportunity.id,
           sourceOpportunityKind: opportunity.kind,
           affectedRegion: region,
-          regionDetails: { opportunityTaskCount: uniqueSortedTaskIds(opportunity.taskIds).length, strategy },
+          diagnosis: diagnosis == null ? null : { opportunityId: diagnosis.opportunityId, primaryCause: diagnosis.primaryCause, contributingFactors: diagnosis.contributingFactors, confidence: diagnosis.confidence, explanation: diagnosis.explanation },
+          regionDetails: { opportunityTaskCount: uniqueSortedTaskIds(opportunity.taskIds).length, strategy, diagnosedCause: diagnosis?.primaryCause ?? null },
           allowedTransformations,
           localRestrictions: RESTRICTIONS_BY_KIND[opportunity.kind] ?? ["read-only"],
           budget: { remainingSearchSpaces: maxSpaces, maxTasksPerSpace: maxSize },
@@ -134,7 +143,7 @@ export function buildAdaptiveSearchSpaces(
           cognitiveFeedback: { repeatedByCognitiveMemory: false, potentialOmittable: false, observationalOnly: true },
         },
       });
-      emittedEvidence.push(evidence(evidenceId, "adaptive-search-space-built", id, { ...baseData, allowedTransformations, budgetConsumed: searchSpaces.length, diversityAchieved: seen.size }));
+      emittedEvidence.push(evidence(evidenceId, "adaptive-search-space-built", id, { ...baseData, diagnosis, primaryCause: diagnosis?.primaryCause ?? null, contributingFactors: diagnosis?.contributingFactors ?? [], allowedTransformations, budgetConsumed: searchSpaces.length, diversityAchieved: seen.size }));
     }
   }
 
