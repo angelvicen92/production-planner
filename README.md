@@ -178,3 +178,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 108 — 2026-06-26 14:38 — ORC Session Learning Baseline
 
 - ID 109 — 2026-06-26 14:48 — ORC Adaptive Opportunity Prioritization v1
+- ID 110 — 2026-06-26 14:55 — ORC Adaptive Search Space Builder v1

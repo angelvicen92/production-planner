@@ -216,3 +216,6 @@ export function buildSearchSpacesForOpportunities(
     },
   };
 }
+
+export type { AdaptiveSearchSpaceResult } from "./adaptiveSearchSpaceBuilder";
+export { buildAdaptiveSearchSpaces } from "./adaptiveSearchSpaceBuilder";

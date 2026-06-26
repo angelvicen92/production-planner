@@ -90,3 +90,7 @@ export function remainingBudget(budget: ReasoningBudget): RemainingReasoningBudg
     simulations: Math.max(0, budget.maxSimulations - budget.consumedSimulations),
   });
 }
+
+export function remainingSearchSpaceBudget(budget: ReasoningBudget): number {
+  return remainingBudget(budget).searchSpaces;
+}

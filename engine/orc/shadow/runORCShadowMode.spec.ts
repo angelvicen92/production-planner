@@ -87,6 +87,8 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
   assert.deepEqual(shadow.summary.pruning, { skippedOpportunities: 0, skippedSearchSpaces: 0, skippedCandidates: 0, estimatedBudgetSaved: 0 });
   assert.deepEqual(shadow.summary.adaptivePriority, { promoted: 0, demoted: 0, unchanged: shadow.opportunities.length });
+  assert.equal(shadow.summary.adaptiveSearchSpace.generated, shadow.searchSpaces.length);
+  assert.equal(shadow.summary.adaptiveSearchSpace.exhaustedRegionsSkipped, 0);
 });
 
 test("runORCShadowMode does not mutate EngineInput", () => {
@@ -269,4 +271,14 @@ test("runORCShadowMode exposes adaptive priority in summary and evidence", () =>
   assert.ok(shadow.summary.adaptivePriority.unchanged >= 0);
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "adaptive-priority-adjustment"));
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.adaptivePriority != null));
+});
+
+
+test("runORCShadowMode exposes adaptive search-space summary and evidence", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.summary.adaptiveSearchSpace.generated, shadow.searchSpaces.length);
+  assert.equal(typeof shadow.summary.adaptiveSearchSpace.averageSize, "number");
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "adaptive-search-space-built"));
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.adaptiveSearchSpace != null));
 });
