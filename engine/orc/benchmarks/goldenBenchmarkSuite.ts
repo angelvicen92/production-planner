@@ -1,6 +1,8 @@
 import type { EngineInput } from "../../types";
 import type { ORCBenchmarkResult } from "./orcBenchmarkHarness";
-import { roundBenchmarkMetric, runORCBenchmark } from "./orcBenchmarkHarness";
+import { ORC_BENCHMARK_VERSION, roundBenchmarkMetric, runORCBenchmark } from "./orcBenchmarkHarness";
+
+export const GOLDEN_BENCHMARK_VERSION = `${ORC_BENCHMARK_VERSION}:GOLDEN-SUITE-V1`;
 
 export interface GoldenBenchmarkScenario {
   id: string;
