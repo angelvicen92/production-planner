@@ -87,6 +87,9 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
   assert.deepEqual(shadow.summary.pruning, { skippedOpportunities: 0, skippedSearchSpaces: 0, skippedCandidates: 0, estimatedBudgetSaved: 0 });
   assert.deepEqual(shadow.summary.adaptivePriority, { promoted: 0, demoted: 0, unchanged: shadow.opportunities.length });
+  assert.equal(shadow.diagnoses.length, shadow.opportunities.length);
+  assert.equal(shadow.summary.diagnosis.diagnosed, shadow.opportunities.length);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "opportunity-diagnosis-generated"));
   assert.equal(shadow.summary.adaptiveSearchSpace.generated, shadow.searchSpaces.length);
   assert.equal(shadow.summary.adaptiveSearchSpace.exhaustedRegionsSkipped, 0);
 });
@@ -138,6 +141,7 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.deepEqual(shadow?.operationalValues, []);
   assert.deepEqual(shadow?.commitDecisions, []);
   assert.equal(shadow?.summary.searchSpaceCount, 0);
+  assert.deepEqual(shadow?.summary.diagnosis, { diagnosed: 0, averageConfidence: 0, primaryCauseDistribution: {} });
   assert.equal(shadow?.candidateSummary.candidateCount, 0);
   assert.equal(shadow?.summary.candidateStateCount, 0);
   assert.equal(shadow?.summary.simulatedStateCount, 0);

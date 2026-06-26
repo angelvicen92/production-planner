@@ -180,4 +180,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 109 — 2026-06-26 14:48 — ORC Adaptive Opportunity Prioritization v1
 - ID 110 — 2026-06-26 14:55 — ORC Adaptive Search Space Builder v1
 - ID 111 — 2026-06-26 15:34 — ORC Strategy-Based Candidate Builder v1
+- ID 112 — 2026-06-26 16:17 — ORC Opportunity Diagnosis Engine v1
 
