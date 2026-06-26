@@ -2,6 +2,7 @@ import type { EngineOutput as EngineResult } from "../../types";
 import { roundBenchmarkMetric, type ORCBenchmarkResult } from "../benchmarks/orcBenchmarkHarness";
 import type { CalibrationReport } from "../benchmarks/calibrationFramework";
 import type { AdvisoryDecision } from "../advisory/advisoryDecision";
+import { evaluateAdvisoryDecision, type AdvisoryEvaluationReport } from "../advisory/advisoryEvaluation";
 
 export const REAL_SCENARIO_VALIDATION_VERSION = "ORC-REAL-SCENARIO-VALIDATION-V1";
 
@@ -25,6 +26,8 @@ export interface RealScenarioValidationReport {
   };
 
   advisoryDecision: AdvisoryDecision | null;
+
+  advisoryEvaluation: AdvisoryEvaluationReport;
 
   summary: string;
 }
@@ -135,7 +138,7 @@ export function validateRealScenario(
   const planningDifferences = onlyORC.length + onlyV4.length;
   const advisoryDecision = extractAdvisoryDecision(benchmark);
 
-  return {
+  const reportWithoutEvaluation: Omit<RealScenarioValidationReport, "advisoryEvaluation"> = {
     scenarioId: evidence.scenarioId,
     comparedAt: evidence.benchmarkCreatedAt,
     metrics: {
@@ -152,5 +155,10 @@ export function validateRealScenario(
     },
     advisoryDecision,
     summary: `${REAL_SCENARIO_VALIDATION_VERSION}: scenario ${evidence.scenarioId} compared ORC benchmark ${evidence.benchmarkVersion} against V4 output using baseline ${evidence.baselineVersion}; structural differences=${planningDifferences}.`,
+  };
+
+  return {
+    ...reportWithoutEvaluation,
+    advisoryEvaluation: evaluateAdvisoryDecision(advisoryDecision, reportWithoutEvaluation as RealScenarioValidationReport),
   };
 }
