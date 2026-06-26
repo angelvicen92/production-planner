@@ -1,6 +1,8 @@
 import type { BaselineReport } from "./baselineReport";
 import { roundBenchmarkMetric } from "./orcBenchmarkHarness";
 
+export const CALIBRATION_REPORT_VERSION = "CALIBRATION-V1";
+
 export interface CalibrationReport {
   generatedAt: string | null;
 
@@ -77,7 +79,7 @@ export function buildCalibrationReport(
 
   const calibrationReport: CalibrationReport = {
     generatedAt: baseline.generatedAt,
-    benchmarkVersion: `${baseline.benchmarkVersion}:CALIBRATION-V1`,
+    benchmarkVersion: `${baseline.benchmarkVersion}:${CALIBRATION_REPORT_VERSION}`,
     quality,
     recommendations: buildRecommendations(quality),
   };

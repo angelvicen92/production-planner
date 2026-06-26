@@ -44,6 +44,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 024 — 2026-05-31 01:45 — Guía de validación real del motor y checklist de prueba en app
 - ID 025 — 2026-05-31 02:05 — Optimización de scripts rápidos/completos de tests y benchmarks del Motor V3
 
+- ID 117 — 2026-06-26 22:35 — ORC Real-Scenario Validation Framework v1
+
 ## Verificación básica
 
 ```bash
