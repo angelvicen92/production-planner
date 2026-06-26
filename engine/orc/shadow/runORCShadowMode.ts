@@ -4,7 +4,7 @@ import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
 import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruning } from "../see/opportunityDetection";
-import { buildSearchSpacesForOpportunities } from "../see/searchSpaceBuilder";
+import { buildAdaptiveSearchSpaces } from "../see/adaptiveSearchSpaceBuilder";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { reprioritizeOpportunities } from "../see/adaptivePriority";
 import { buildCandidateStates } from "../transformation/transformationEngine";
@@ -94,6 +94,12 @@ export interface ORCShadowModeResult {
       demoted: number;
       unchanged: number;
     };
+    adaptiveSearchSpace: {
+      generated: number;
+      discarded: number;
+      averageSize: number;
+      exhaustedRegionsSkipped: number;
+    };
   };
 }
 
@@ -119,6 +125,7 @@ function buildShadowSummaryEvidence(
   evaluationSummary: ORCShadowModeResult["summary"]["evaluation"],
   sessionLearningSummary: ORCShadowModeResult["summary"]["sessionLearning"],
   adaptivePrioritySummary: ORCShadowModeResult["summary"]["adaptivePriority"],
+  adaptiveSearchSpaceSummary: ORCShadowModeResult["summary"]["adaptiveSearchSpace"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -148,6 +155,7 @@ function buildShadowSummaryEvidence(
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
       adaptivePriority: adaptivePrioritySummary,
+      adaptiveSearchSpace: adaptiveSearchSpaceSummary,
     },
   };
 }
@@ -207,8 +215,8 @@ export function runORCShadowMode(
   const topOpportunity = opportunities[0] ?? null;
   const repeatedOpportunityIds = opportunityResult.pruning.prunedItems.map((item) => item.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
-  const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt, cognitiveState });
-  const repeatedSearchSpaceIds = searchSpaceResult.summary.pruning.prunedItems.map((item) => item.id);
+  const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget);
+  const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
   cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
   const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt, cognitiveState });
   const repeatedCandidateIds = candidateResult.summary.pruning.prunedItems.map((item) => item.id);
@@ -240,11 +248,17 @@ export function runORCShadowMode(
   };
   const pruningSummary = {
     skippedOpportunities: opportunityResult.pruning.prunedCount,
-    skippedSearchSpaces: searchSpaceResult.summary.pruning.prunedCount,
+    skippedSearchSpaces: searchSpaceResult.summary.exhaustedRegionsSkipped,
     skippedCandidates: candidateResult.summary.pruning.prunedCount,
-    estimatedBudgetSaved: opportunityResult.pruning.estimatedBudgetSaved + searchSpaceResult.summary.pruning.estimatedBudgetSaved + candidateResult.summary.pruning.estimatedBudgetSaved,
+    estimatedBudgetSaved: opportunityResult.pruning.estimatedBudgetSaved + searchSpaceResult.summary.exhaustedRegionsSkipped + candidateResult.summary.pruning.estimatedBudgetSaved,
   };
   const cognitiveFeedbackSummary = createCognitiveFeedbackStats({ repeatedOpportunities: repeatedOpportunityIds.length, repeatedSearchSpaces: repeatedSearchSpaceIds.length, repeatedCandidates: repeatedCandidateIds.length, potentialSavings: pruningSummary.estimatedBudgetSaved });
+  const adaptiveSearchSpaceSummary = {
+    generated: searchSpaceResult.summary.generatedSearchSpaces,
+    discarded: searchSpaceResult.summary.discardedSearchSpaces,
+    averageSize: searchSpaceResult.summary.averageSearchSpaceSize,
+    exhaustedRegionsSkipped: searchSpaceResult.summary.exhaustedRegionsSkipped,
+  };
   const rankingSummary = {
     rankedCandidates: rankingResult.summary.rankedCount,
     tiesResolved: rankingResult.summary.tieCount,
@@ -271,7 +285,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, adaptiveSearchSpaceSummary),
   ];
 
   return {
@@ -304,6 +318,7 @@ export function runORCShadowMode(
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
       adaptivePriority: adaptivePrioritySummary,
+      adaptiveSearchSpace: adaptiveSearchSpaceSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,
