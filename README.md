@@ -184,3 +184,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 
 - ID 113 — 2026-06-26 16:52 — ORC Benchmark Harness v1 (SPEC-05)
+- ID 114 — 2026-06-26 17:09 — ORC Golden Benchmark Suite v1

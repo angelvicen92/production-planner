@@ -22,3 +22,5 @@ export * from "./see/adaptiveSearchSpaceBuilder";
 export * from "./see/strategyCandidateBuilder";
 
 export * from "./benchmarks/orcBenchmarkHarness";
+export * from "./benchmarks/goldenBenchmarkSuite";
+export { goldenBenchmarkScenarios } from "./benchmarks/fixtures/goldenScenarios";
