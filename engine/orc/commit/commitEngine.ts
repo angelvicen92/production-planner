@@ -1,5 +1,6 @@
 import type { CommitDecision, Evidence, OperationalValue } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { rankOperationalValues } from "../decision/rankingEngine";
 
 export interface CommitEngineOptions {
   createdAt?: string | null;
@@ -78,7 +79,9 @@ export function buildCommitDecisions(
   let commitCount = 0;
   let rejectCount = 0;
 
-  for (const [index, operationalValue] of (operationalValues ?? []).entries()) {
+  const rankingResult = rankOperationalValues(operationalValues ?? [], { createdAt });
+
+  for (const [index, operationalValue] of rankingResult.rankedOperationalValues.entries()) {
     const valueId = operationalValueId(operationalValue, index);
     const evidenceId = `evidence:orc-commit-engine:operational-value:${valueId}`;
     const decision = buildDecision(operationalValue, index, evidenceId, createdAt);
