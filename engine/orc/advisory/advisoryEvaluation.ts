@@ -13,6 +13,7 @@ export interface AdvisoryEvaluationReport {
     reasoningCoverage: number;
     evidenceCompleteness: number;
     traceabilityScore: number;
+    recommendationConfidence: number;
   };
 
   observations: string[];
@@ -98,6 +99,7 @@ export function evaluateAdvisoryDecision(
     reasoningCoverage: computeReasoningCoverage(advisoryDecision),
     evidenceCompleteness: computeEvidenceCompleteness(advisoryDecision),
     traceabilityScore: computeTraceabilityScore(advisoryDecision, validationReport),
+    recommendationConfidence: recommendationAvailable ? roundMetric(advisoryDecision.confidence) : 0,
   };
 
   const advisoryDecisionId = advisoryDecision?.decisionId ?? "advisory:none";
