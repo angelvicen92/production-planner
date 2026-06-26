@@ -109,6 +109,7 @@ export function runORCBenchmark(
         },
       },
       shadowSummary: shadow.summary,
+      advisoryDecision: shadow.advisoryDecision,
     },
   };
 }
