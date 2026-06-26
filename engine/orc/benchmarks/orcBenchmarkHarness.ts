@@ -24,11 +24,11 @@ export interface ORCBenchmarkResult {
   summary: Record<string, unknown>;
 }
 
-const roundMetric = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
+export const roundBenchmarkMetric = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
 
 const deterministicExecutionTime = (value: number | undefined): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-  return Math.max(0, roundMetric(value));
+  return Math.max(0, roundBenchmarkMetric(value));
 };
 
 export function runORCBenchmark(
@@ -45,11 +45,11 @@ export function runORCBenchmark(
   const searchSpacesGenerated = shadow.searchSpaces.length;
   const candidatesGenerated = shadow.candidates.length;
   const searchSpaceTaskCount = shadow.searchSpaces.reduce((sum, searchSpace) => sum + searchSpace.taskIds.length, 0);
-  const averageSearchSpaceSize = searchSpacesGenerated === 0 ? 0 : roundMetric(searchSpaceTaskCount / searchSpacesGenerated);
-  const candidatesPerSearchSpace = searchSpacesGenerated === 0 ? 0 : roundMetric(candidatesGenerated / searchSpacesGenerated);
+  const averageSearchSpaceSize = searchSpacesGenerated === 0 ? 0 : roundBenchmarkMetric(searchSpaceTaskCount / searchSpacesGenerated);
+  const candidatesPerSearchSpace = searchSpacesGenerated === 0 ? 0 : roundBenchmarkMetric(candidatesGenerated / searchSpacesGenerated);
   const prunedItems = shadow.summary.pruning.skippedOpportunities + shadow.summary.pruning.skippedSearchSpaces + shadow.summary.pruning.skippedCandidates;
   const exploredItems = shadow.opportunities.length + shadow.searchSpaces.length + shadow.candidates.length;
-  const pruningPercentage = prunedItems + exploredItems === 0 ? 0 : roundMetric((prunedItems / (prunedItems + exploredItems)) * 100);
+  const pruningPercentage = prunedItems + exploredItems === 0 ? 0 : roundBenchmarkMetric((prunedItems / (prunedItems + exploredItems)) * 100);
   const executionTimeMs = deterministicExecutionTime(options.executionTimeMs);
 
   return {
