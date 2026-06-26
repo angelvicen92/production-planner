@@ -6,7 +6,7 @@ import { buildOperationalMap } from "../see/operationalMap";
 import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruning } from "../see/opportunityDetection";
 import { buildSearchSpacesForOpportunities } from "../see/searchSpaceBuilder";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
-import { prioritizeOpportunities } from "../see/opportunityPriority";
+import { reprioritizeOpportunities } from "../see/adaptivePriority";
 import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
@@ -89,6 +89,11 @@ export interface ORCShadowModeResult {
       usefulCandidates: string[];
       discardedCandidates: string[];
     };
+    adaptivePriority: {
+      promoted: number;
+      demoted: number;
+      unchanged: number;
+    };
   };
 }
 
@@ -113,6 +118,7 @@ function buildShadowSummaryEvidence(
   rankingSummary: ORCShadowModeResult["summary"]["ranking"],
   evaluationSummary: ORCShadowModeResult["summary"]["evaluation"],
   sessionLearningSummary: ORCShadowModeResult["summary"]["sessionLearning"],
+  adaptivePrioritySummary: ORCShadowModeResult["summary"]["adaptivePriority"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -141,6 +147,7 @@ function buildShadowSummaryEvidence(
       ranking: rankingSummary,
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
+      adaptivePriority: adaptivePrioritySummary,
     },
   };
 }
@@ -190,7 +197,13 @@ export function runORCShadowMode(
   let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
   const opportunityResult = detectOpportunitiesWithPruning(operationalState, operationalMap, { cognitiveState });
-  const opportunities = prioritizeOpportunities(opportunityResult.opportunities);
+  const adaptivePriorityResult = reprioritizeOpportunities(opportunityResult.opportunities, cognitiveState);
+  const opportunities = adaptivePriorityResult.opportunities;
+  const adaptivePrioritySummary = {
+    promoted: adaptivePriorityResult.summary.promotedCount,
+    demoted: adaptivePriorityResult.summary.demotedCount,
+    unchanged: opportunities.length - adaptivePriorityResult.summary.promotedCount - adaptivePriorityResult.summary.demotedCount,
+  };
   const topOpportunity = opportunities[0] ?? null;
   const repeatedOpportunityIds = opportunityResult.pruning.prunedItems.map((item) => item.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
@@ -246,6 +259,7 @@ export function runORCShadowMode(
   const evidence = [
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
+    ...adaptivePriorityResult.evidence.map((item) => ({ ...item, createdAt })),
     ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
     ...searchSpaceResult.evidence,
     ...candidateResult.evidence,
@@ -257,7 +271,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary),
   ];
 
   return {
@@ -289,6 +303,7 @@ export function runORCShadowMode(
       ranking: rankingSummary,
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
+      adaptivePriority: adaptivePrioritySummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,

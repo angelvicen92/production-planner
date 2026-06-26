@@ -86,6 +86,7 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
   assert.deepEqual(shadow.summary.pruning, { skippedOpportunities: 0, skippedSearchSpaces: 0, skippedCandidates: 0, estimatedBudgetSaved: 0 });
+  assert.deepEqual(shadow.summary.adaptivePriority, { promoted: 0, demoted: 0, unchanged: shadow.opportunities.length });
 });
 
 test("runORCShadowMode does not mutate EngineInput", () => {
@@ -255,4 +256,17 @@ test("runORCShadowMode exposes accumulated session learning in summary and evide
   assert.deepEqual(shadow.summary.sessionLearning.discardedCandidates, shadow.cognitiveState.discardedCandidateIds);
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.sessionLearning != null));
   assert.equal(shadow.cognitiveStateInitial.temporaryKnowledge.sessionLearning, undefined);
+});
+
+
+test("runORCShadowMode exposes adaptive priority in summary and evidence", () => {
+  const baseline = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(baseline, null);
+  const initial = recordExploredOpportunity(createInitialCognitiveState("2026-06-25T00:00:00.000Z"), baseline.opportunities[0]?.id ?? "missing");
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z", cognitiveState: initial });
+  assert.notEqual(shadow, null);
+  assert.equal(shadow.summary.adaptivePriority.promoted, 0);
+  assert.ok(shadow.summary.adaptivePriority.unchanged >= 0);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "adaptive-priority-adjustment"));
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.adaptivePriority != null));
 });

@@ -15,11 +15,14 @@ export function opportunityPriorityValue(opportunity: Opportunity): number {
   return numeric(opportunity.metadata?.priority, KIND_PRIORITY[opportunity.kind] ?? 0);
 }
 
+export function compareOpportunityPriority(a: Opportunity, b: Opportunity): number {
+  return opportunityPriorityValue(b) - opportunityPriorityValue(a)
+    || String(a.id).localeCompare(String(b.id));
+}
+
 export function prioritizeOpportunities(opportunities: Opportunity[]): Opportunity[] {
   return opportunities
     .map((opportunity, index) => ({ opportunity, index }))
-    .sort((a, b) => opportunityPriorityValue(b.opportunity) - opportunityPriorityValue(a.opportunity)
-      || String(a.opportunity.id).localeCompare(String(b.opportunity.id))
-      || a.index - b.index)
+    .sort((a, b) => compareOpportunityPriority(a.opportunity, b.opportunity) || a.index - b.index)
     .map(({ opportunity }) => opportunity);
 }
