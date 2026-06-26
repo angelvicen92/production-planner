@@ -55,6 +55,16 @@ export function getSessionKnowledge(state: CognitiveState): SessionKnowledge {
   return cloneKnowledge(state.temporaryKnowledge.sessionLearning);
 }
 
+export function getAdaptivePrioritySessionSignals(state: CognitiveState): Pick<SessionKnowledge, "learnedPatterns" | "exhaustedRegions" | "resolvedOpportunities" | "unproductiveOpportunities"> {
+  const knowledge = getSessionKnowledge(state);
+  return {
+    learnedPatterns: knowledge.learnedPatterns,
+    exhaustedRegions: knowledge.exhaustedRegions,
+    resolvedOpportunities: knowledge.resolvedOpportunities,
+    unproductiveOpportunities: knowledge.unproductiveOpportunities,
+  };
+}
+
 function freezeState(state: CognitiveState): CognitiveState {
   Object.freeze(state.exploredOpportunityIds);
   Object.freeze(state.exhaustedSearchSpaceIds);

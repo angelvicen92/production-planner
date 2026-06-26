@@ -7,3 +7,5 @@ export type { SearchSpaceBuildOptions, SearchSpaceBuildResult } from "./searchSp
 export { buildSearchSpacesForOpportunities } from "./searchSpaceBuilder";
 export type { CandidateBuilderOptions, CandidateBuilderResult } from "./candidateBuilder";
 export { buildCandidatesFromSearchSpaces } from "./candidateBuilder";
+export type { AdaptivePriorityResult } from "./adaptivePriority";
+export { reprioritizeOpportunities } from "./adaptivePriority";
