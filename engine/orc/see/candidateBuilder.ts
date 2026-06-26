@@ -1,9 +1,11 @@
-import type { Candidate, Evidence, OperationalState, SearchSpace } from "../contracts";
+import type { Candidate, CognitiveState, Evidence, OperationalState, SearchSpace } from "../contracts";
+import { shouldSkipCandidate } from "../cognitive/cognitiveFeedback";
 
 export interface CandidateBuilderOptions {
   maxCandidatesPerSearchSpace?: number;
   maxCandidatesTotal?: number;
   createdAt?: string | null;
+  cognitiveState?: CognitiveState;
 }
 
 export interface CandidateBuilderResult {
@@ -141,6 +143,7 @@ export function buildCandidatesFromSearchSpaces(
       const confidence = confidenceFor(strategy, searchSpace.taskIds.length);
       const expectedImpact = expectedImpactFor(strategy, sourceOpportunityKind);
       const estimatedCost = estimatedCostFor(strategy, searchSpace.taskIds.length);
+      const repeatedByCognitiveMemory = options.cognitiveState ? shouldSkipCandidate(options.cognitiveState, candidateId) : false;
       candidates.push({
         id: candidateId,
         state: { status: "draft", reason: "read-only abstract ORC SEE candidate", evidenceIds: [evidenceId], metadata: { readOnly: true } },
@@ -161,6 +164,7 @@ export function buildCandidatesFromSearchSpaces(
           expectedImpact,
           estimatedCost,
           generationReason: `Abstract candidate generated from ${sourceOpportunityKind} search space using ${strategy}`,
+          cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
         },
       });
       evidence.push({
@@ -169,7 +173,7 @@ export function buildCandidatesFromSearchSpaces(
         kind: "candidate-generated",
         subjectId: candidateId,
         createdAt,
-        data: { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, opportunityKind: sourceOpportunityKind, strategy, region, confidence, expectedImpact, estimatedCost, generationReason: `Abstract candidate generated from ${sourceOpportunityKind} search space using ${strategy}`, readOnly: true },
+        data: { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, opportunityKind: sourceOpportunityKind, strategy, region, confidence, expectedImpact, estimatedCost, generationReason: `Abstract candidate generated from ${sourceOpportunityKind} search space using ${strategy}`, readOnly: true, cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true } },
       });
       producedForSpace += 1;
     }

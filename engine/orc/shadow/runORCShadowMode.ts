@@ -13,6 +13,7 @@ import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 import { buildCommitDecisions } from "../commit/commitEngine";
 import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordObservedCommit, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
+import { createCognitiveFeedbackStats, shouldSkipCandidate, shouldSkipOpportunity, shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
 
 export interface ORCShadowModeResult {
@@ -58,6 +59,12 @@ export interface ORCShadowModeResult {
       consumedSimulations: number;
       remaining: ReturnType<typeof remainingBudget>;
     };
+    cognitiveFeedback: {
+      repeatedOpportunities: number;
+      repeatedSearchSpaces: number;
+      repeatedCandidates: number;
+      potentialSavings: number;
+    };
   };
 }
 
@@ -76,6 +83,7 @@ function buildShadowSummaryEvidence(
   rejectCount: number,
   createdAt: string | null,
   reasoningBudgetSummary: ORCShadowModeResult["summary"]["reasoningBudget"],
+  cognitiveFeedbackSummary: ORCShadowModeResult["summary"]["cognitiveFeedback"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -99,6 +107,7 @@ function buildShadowSummaryEvidence(
       readOnly: true,
       planningInfluence: "none",
       reasoningBudget: reasoningBudgetSummary,
+      cognitiveFeedback: cognitiveFeedbackSummary,
     },
   };
 }
@@ -147,10 +156,13 @@ export function runORCShadowMode(
   const operationalMap = buildOperationalMap(operationalState);
   const opportunities = prioritizeOpportunities(detectOpportunitiesFromOperationalMap(operationalState, operationalMap));
   const topOpportunity = opportunities[0] ?? null;
+  const repeatedOpportunityIds = opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).map((opportunity) => opportunity.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
-  const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt });
+  const searchSpaceResult = buildSearchSpacesForOpportunities(operationalState, operationalMap, opportunities, { createdAt, cognitiveState });
+  const repeatedSearchSpaceIds = searchSpaceResult.searchSpaces.filter((searchSpace) => shouldSkipSearchSpace(cognitiveState, searchSpace)).map((searchSpace) => searchSpace.id);
   cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
-  const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt });
+  const candidateResult = buildCandidatesFromSearchSpaces(operationalState, searchSpaceResult.searchSpaces, { createdAt, cognitiveState });
+  const repeatedCandidateIds = candidateResult.candidates.filter((candidate) => shouldSkipCandidate(cognitiveState, candidate)).map((candidate) => candidate.id);
   cognitiveState = candidateResult.candidates.reduce((state) => updateReasoningBudget(state, consumeCandidate(state.reasoningBudget)), cognitiveState);
   const transformationResult = buildCandidateStates(operationalState, candidateResult.candidates, { createdAt });
   const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
@@ -168,9 +180,10 @@ export function runORCShadowMode(
     consumedSimulations: cognitiveState.reasoningBudget.consumedSimulations,
     remaining: remainingBudget(cognitiveState.reasoningBudget),
   };
+  const cognitiveFeedbackSummary = createCognitiveFeedbackStats({ repeatedOpportunities: repeatedOpportunityIds.length, repeatedSearchSpaces: repeatedSearchSpaceIds.length, repeatedCandidates: repeatedCandidateIds.length });
   const evidence = [
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
-    ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt),
+    ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
     ...searchSpaceResult.evidence,
     ...candidateResult.evidence,
     ...transformationResult.evidence,
@@ -180,7 +193,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary),
   ];
 
   return {
@@ -215,6 +228,7 @@ export function runORCShadowMode(
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
       reasoningBudget: reasoningBudgetSummary,
+      cognitiveFeedback: cognitiveFeedbackSummary,
     },
   };
 }

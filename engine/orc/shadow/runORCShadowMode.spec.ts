@@ -212,3 +212,15 @@ test("runORCShadowMode starts with a fresh cognitive memory for each execution",
   assert.deepEqual(first.cognitiveStateInitial, second.cognitiveStateInitial);
   assert.equal(structuralEquals(first.cognitiveState, second.cognitiveState), true);
 });
+
+test("runORCShadowMode exposes observational cognitive feedback summary", () => {
+  const shadow = runORCShadowMode(minimalInput(), { enabled: true, createdAt: "2026-06-25T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  assert.deepEqual(shadow.summary.cognitiveFeedback, {
+    repeatedOpportunities: 0,
+    repeatedSearchSpaces: 0,
+    repeatedCandidates: 0,
+    potentialSavings: 0,
+  });
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.cognitiveFeedback != null));
+});

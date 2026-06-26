@@ -18,6 +18,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 ## Historial de cambios Codex
 
+- ID 104 — 2026-06-25 22:27 — ORC SEE Cognitive Feedback Loop Baseline
 - ID 103 — 2026-06-25 19:45 — ORC Reasoning Budget Baseline
 - ID 102 — 2026-06-25 17:10 — ORC Cognitive State & Session Memory Baseline
 - ID 101 — 2026-06-25 16:24 — ORC Commit Engine Baseline (Shadow Mode)

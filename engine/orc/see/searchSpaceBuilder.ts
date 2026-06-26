@@ -1,4 +1,5 @@
-import type { Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
+import type { CognitiveState, Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
+import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import type { OperationalMap } from "./operationalMap";
 import { prioritizeOpportunities } from "./opportunityPriority";
 
@@ -23,7 +24,7 @@ export interface SearchSpaceBuildResult {
   };
 }
 
-type BuildOptions = SearchSpaceBuildOptions & { createdAt?: string | null };
+type BuildOptions = SearchSpaceBuildOptions & { createdAt?: string | null; cognitiveState?: CognitiveState };
 
 const DEFAULT_BUDGET = {
   maxSearchSpaces: 10,
@@ -144,6 +145,7 @@ export function buildSearchSpacesForOpportunities(
     const transformations = template.transformations.slice(0, budget.maxTransformationsPerSpace);
     const id = `orc-see:search-space:${opportunity.id}`;
     const evidenceId = `evidence:orc-see:search-space:${opportunity.id}`;
+    const repeatedByCognitiveMemory = options.cognitiveState ? shouldSkipSearchSpace(options.cognitiveState, id) : false;
 
     searchSpaces.push({
       id,
@@ -164,6 +166,7 @@ export function buildSearchSpacesForOpportunities(
         truncatedAffectedTasks: fullTaskIds.length > taskIds.length,
         generatesCandidates: false,
         executesTransformations: false,
+        cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
       },
     });
 
@@ -182,6 +185,7 @@ export function buildSearchSpacesForOpportunities(
         localRestrictions: template.restrictions,
         taskIds,
         readOnly: true,
+        cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
       },
     });
   }
