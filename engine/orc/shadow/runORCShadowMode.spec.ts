@@ -75,6 +75,9 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.validCount, shadow.validationResults.length);
   assert.equal(shadow.summary.invalidCount, 0);
   assert.equal(shadow.summary.evaluatedCount, shadow.operationalValues.length);
+  assert.equal(shadow.summary.ranking.rankedCandidates, shadow.operationalValues.length);
+  assert.equal(shadow.summary.ranking.topCandidateId, shadow.operationalValues[0]?.simulatedStateId ?? null);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "operational-value-ranked"));
   assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
   assert.equal(shadow.summary.rejectCount, 0);
   assert.equal(shadow.summary.topOpportunityId, shadow.opportunities[0]?.id ?? null);
@@ -136,6 +139,7 @@ test("runORCShadowMode tolerates minimal incomplete input", () => {
   assert.equal(shadow?.summary.validCount, 0);
   assert.equal(shadow?.summary.invalidCount, 0);
   assert.equal(shadow?.summary.evaluatedCount, 0);
+  assert.deepEqual(shadow?.summary.ranking, { rankedCandidates: 0, tiesResolved: 0, topCandidateId: null });
   assert.equal(shadow?.summary.commitCount, 0);
   assert.equal(shadow?.summary.rejectCount, 0);
   assert.ok((shadow?.evidence.length ?? 0) > 0);

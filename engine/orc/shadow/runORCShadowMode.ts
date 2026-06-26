@@ -11,6 +11,7 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
+import { rankOperationalValues } from "../decision/rankingEngine";
 import { buildCommitDecisions } from "../commit/commitEngine";
 import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordObservedCommit, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
 import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
@@ -47,6 +48,11 @@ export interface ORCShadowModeResult {
     validCount: number;
     invalidCount: number;
     evaluatedCount: number;
+    ranking: {
+      rankedCandidates: number;
+      tiesResolved: number;
+      topCandidateId: string | null;
+    };
     commitCount: number;
     rejectCount: number;
     topOpportunityId: string | null;
@@ -92,6 +98,7 @@ function buildShadowSummaryEvidence(
   reasoningBudgetSummary: ORCShadowModeResult["summary"]["reasoningBudget"],
   cognitiveFeedbackSummary: ORCShadowModeResult["summary"]["cognitiveFeedback"],
   pruningSummary: ORCShadowModeResult["summary"]["pruning"],
+  rankingSummary: ORCShadowModeResult["summary"]["ranking"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -117,6 +124,7 @@ function buildShadowSummaryEvidence(
       reasoningBudget: reasoningBudgetSummary,
       pruning: pruningSummary,
       cognitiveFeedback: cognitiveFeedbackSummary,
+      ranking: rankingSummary,
     },
   };
 }
@@ -179,7 +187,8 @@ export function runORCShadowMode(
   cognitiveState = simulationResult.simulatedStates.reduce((state, simulatedState) => updateReasoningBudget(recordSimulatedCandidate(state, simulatedState.candidateStateId), consumeSimulation(state.reasoningBudget)), cognitiveState);
   const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
   const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
-  const commitResult = buildCommitDecisions(evaluatorResult.operationalValues, { createdAt });
+  const rankingResult = rankOperationalValues(evaluatorResult.operationalValues, { createdAt });
+  const commitResult = buildCommitDecisions(rankingResult.rankedOperationalValues, { createdAt });
   const simulatedCandidateIdByOperationalValueId = new Map(simulationResult.simulatedStates.map((simulatedState) => [simulatedState.id, simulatedState.candidateStateId]));
   cognitiveState = commitResult.commitDecisions.filter((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null).reduce((state, decision) => recordObservedCommit(state, simulatedCandidateIdByOperationalValueId.get(String(decision.operationalValueId)) ?? String(decision.operationalValueId)), cognitiveState);
   const cognitiveStateDiff = diffCognitiveStates(cognitiveStateInitial, cognitiveState);
@@ -197,6 +206,11 @@ export function runORCShadowMode(
     estimatedBudgetSaved: opportunityResult.pruning.estimatedBudgetSaved + searchSpaceResult.summary.pruning.estimatedBudgetSaved + candidateResult.summary.pruning.estimatedBudgetSaved,
   };
   const cognitiveFeedbackSummary = createCognitiveFeedbackStats({ repeatedOpportunities: repeatedOpportunityIds.length, repeatedSearchSpaces: repeatedSearchSpaceIds.length, repeatedCandidates: repeatedCandidateIds.length, potentialSavings: pruningSummary.estimatedBudgetSaved });
+  const rankingSummary = {
+    rankedCandidates: rankingResult.summary.rankedCount,
+    tiesResolved: rankingResult.summary.tieCount,
+    topCandidateId: rankingResult.rankedOperationalValues[0]?.simulatedStateId ?? null,
+  };
   const evidence = [
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
@@ -207,10 +221,11 @@ export function runORCShadowMode(
     ...simulationResult.evidence,
     ...validationResult.evidence,
     ...evaluatorResult.evidence,
+    ...rankingResult.evidence,
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary),
   ];
 
   return {
@@ -222,7 +237,7 @@ export function runORCShadowMode(
     candidateStates: transformationResult.candidateStates,
     simulatedStates: simulationResult.simulatedStates,
     validationResults: validationResult.validationResults,
-    operationalValues: evaluatorResult.operationalValues,
+    operationalValues: rankingResult.rankedOperationalValues,
     commitDecisions: commitResult.commitDecisions,
     evidence,
     cognitiveState,
@@ -239,6 +254,7 @@ export function runORCShadowMode(
       validCount: validationResult.summary.validCount,
       invalidCount: validationResult.summary.invalidCount,
       evaluatedCount: evaluatorResult.summary.evaluatedCount,
+      ranking: rankingSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,
