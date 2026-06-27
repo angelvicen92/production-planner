@@ -1,11 +1,14 @@
 import type { Evidence, ORCRecord, SearchSpace } from "../contracts";
 import type { ExplorationValueAnalysis, ExplorationValue } from "./explorationValueEstimator";
+import { propagateFutureConstraints } from "./futureConstraintPropagationEngine";
+import type { FutureConstraintEffect } from "./futureConstraintPropagationEngine";
 import type { OperationalPriority, OperationalPriorityMap } from "./operationalPriorityAnalyzer";
 
 export interface SelectedSearchSpace {
   searchSpace: SearchSpace;
   selected: boolean;
   selectionReason: string;
+  futureConstraintEffect?: FutureConstraintEffect;
 }
 
 export interface SearchSpaceSelectionResult {
@@ -48,11 +51,20 @@ export function selectSearchSpaces(
   priorities: OperationalPriorityMap,
   explorationValues: ExplorationValueAnalysis,
 ): SearchSpaceSelectionResult {
-  return {
+  const baseResult: SearchSpaceSelectionResult = {
     selected: [...(searchSpaces ?? [])].map((searchSpace) => ({
       searchSpace,
       selected: true,
       selectionReason: selectionReasonFor(searchSpace, priorityForSearchSpace(searchSpace, priorities ?? { priorities: [] }), explorationValueForSearchSpace(searchSpace, explorationValues ?? { values: [] })),
+    })),
+  };
+  const futureConstraintAnalysis = propagateFutureConstraints(baseResult);
+  const effectBySearchSpaceId = new Map(futureConstraintAnalysis.effects.map((effect) => [effect.searchSpaceId, effect]));
+
+  return {
+    selected: baseResult.selected.map((item) => ({
+      ...item,
+      futureConstraintEffect: effectBySearchSpaceId.get(item.searchSpace.id),
     })),
   };
 }
@@ -78,6 +90,7 @@ export function buildSearchSpaceSelectionEvidence(
         selectionReason: item.selectionReason,
         operationalPriority: priority == null ? null : { id: priority.id, priorityScore: priority.priorityScore, explanation: priority.explanation },
         explorationValue: explorationValue == null ? null : { searchSpaceId: explorationValue.searchSpaceId, expectedValue: explorationValue.expectedValue, confidence: explorationValue.confidence, explanation: explorationValue.explanation },
+        futureConstraintPropagation: item.futureConstraintEffect == null ? null : { searchSpaceId: item.futureConstraintEffect.searchSpaceId, propagatedConstraints: [...item.futureConstraintEffect.propagatedConstraints], propagationScore: item.futureConstraintEffect.propagationScore, explanation: item.futureConstraintEffect.explanation },
         readOnly: true,
       } as ORCRecord,
     };
