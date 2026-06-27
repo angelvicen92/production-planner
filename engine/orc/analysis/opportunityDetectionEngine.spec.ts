@@ -9,6 +9,7 @@ const emptyAnalysis = (): OperationalAnalysis => ({
   fragmentation: { spaceSwitchesByContestantId: {}, totalSpaceSwitches: 0 },
   dependencySummary: { dependencyCount: 0, lockCount: 0, lockedTaskIds: [], taskIdsWithDependencies: [] },
   operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
+  criticalBottleneckAnalysis: { bottlenecks: [] },
 });
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;

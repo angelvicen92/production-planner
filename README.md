@@ -208,3 +208,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 129 — 2026-06-27 10:11 — ORC Decision Pipeline Orchestrator v1
 - ID 130 — 2026-06-27 10:25 — ORC Decision Trace Builder v1
+- ID 131 — 2026-06-27 10:37 — ORC Critical Bottleneck Analyzer v1
