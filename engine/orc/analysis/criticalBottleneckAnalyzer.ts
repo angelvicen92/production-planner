@@ -55,6 +55,15 @@ export function analyzeCriticalBottlenecks(analysis: Omit<OperationalAnalysis, "
     ));
   }
 
+  if (analysis.operationalMargin.maxStayContestantId != null && analysis.operationalMargin.maxStayMinutes > 240) {
+    bottlenecks.push(bottleneck(
+      `talent:${analysis.operationalMargin.maxStayContestantId}:extended-stay`,
+      "EXCESSIVE_TALENT_STAY",
+      Math.ceil(analysis.operationalMargin.maxStayMinutes / 60),
+      `Contestant ${analysis.operationalMargin.maxStayContestantId} has an extended planned stay of ${analysis.operationalMargin.maxStayMinutes} minute(s). Elements analyzed: maxStayContestantId, maxStayMinutes.`,
+    ));
+  }
+
   if (analysis.dependencySummary.lockCount > 0) {
     const lockedTaskIds = uniqueSortedNumbers(analysis.dependencySummary.lockedTaskIds);
     bottlenecks.push(bottleneck(

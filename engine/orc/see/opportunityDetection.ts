@@ -13,7 +13,7 @@ export interface OpportunityDetectionOptions {
 }
 
 export function detectOpportunitiesFromOperationalAnalysis(_state: OperationalState, analysis: OperationalAnalysis, options: OpportunityDetectionOptions = {}): Opportunity[] {
-  const opportunities = detectOpportunities(analysis).opportunities;
+  const opportunities = detectOpportunities(analysis, analysis.criticalBottleneckAnalysis).opportunities;
   return options.cognitiveState ? pruneRepeatedOpportunities(options.cognitiveState, opportunities).items : opportunities;
 }
 
@@ -43,6 +43,12 @@ export function buildOpportunityDetectionEvidence(state: OperationalState, map: 
       mapSummary: { taskCount: map.taskCount, plannedTaskCount: map.plannedTaskCount, pendingTaskCount: map.pendingTaskCount, lockCount: map.lockCount, mainFlowGapCount: map.mainFlow?.gapCount ?? 0, totalSpaceSwitches: map.fragmentation.totalSpaceSwitches },
       opportunityIds: opportunities.map((opportunity) => opportunity.id),
       opportunityKinds: opportunities.map((opportunity) => opportunity.kind),
+      bottleneckOpportunityLinks: opportunities.map((opportunity) => ({
+        opportunityId: opportunity.id,
+        opportunityKind: opportunity.kind,
+        bottleneckIds: opportunity.metadata.bottleneckIds ?? [],
+        derivedFromCriticalBottleneck: opportunity.metadata.derivedFromCriticalBottleneck ?? false,
+      })),
       priority: opportunities.map((opportunity) => ({ id: opportunity.id, priority: opportunity.metadata.priority ?? null })),
       cognitiveFeedback: {
         repeatedOpportunityIds: cognitiveState ? opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).map((opportunity) => opportunity.id) : [],

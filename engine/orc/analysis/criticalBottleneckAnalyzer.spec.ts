@@ -41,7 +41,7 @@ test("Critical Bottleneck Analyzer detects multiple bottlenecks deterministicall
     operationalMargin: { contestantIds: [7], stayByContestantId: { 7: 300 }, maxStayContestantId: 7, maxStayMinutes: 300 },
     criticalBottleneckAnalysis: { bottlenecks: [] },
   });
-  assert.deepEqual(result.bottlenecks.map((item) => item.id), ["main-flow:5:gaps", "resource:20:overlap", "flow:space-switches", "resource:10:overlap", "constraints:locks", "continuity:pending-tasks"]);
+  assert.deepEqual(result.bottlenecks.map((item) => item.id), ["talent:7:extended-stay", "main-flow:5:gaps", "resource:20:overlap", "flow:space-switches", "resource:10:overlap", "constraints:locks", "continuity:pending-tasks"]);
 });
 
 test("Critical Bottleneck Analyzer is deterministic, structurally equal and serializable", () => {
