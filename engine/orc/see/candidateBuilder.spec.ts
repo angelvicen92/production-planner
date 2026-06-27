@@ -25,7 +25,7 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } });
 });
 
 test("buildCandidates creates abstract candidates for one SearchSpace", () => {
@@ -35,10 +35,11 @@ test("buildCandidates creates abstract candidates for one SearchSpace", () => {
   assert.equal(result.candidates.every((candidate) => candidate.assignments.length === 0), true);
   assert.equal(result.candidates.every((candidate) => candidate.metadata.readOnly === true && candidate.metadata.executesTransformations === false), true);
   assert.equal(result.evidence.filter((item) => item.kind === "candidate-generated").length, 3);
-  assert.equal(result.evidence[0].kind, "candidate-generated");
-  assert.equal(result.evidence[0].createdAt, null);
-  assert.equal(typeof result.evidence[0].data.originSearchSpace, "object");
-  assert.equal(typeof result.evidence[0].data.generatedCandidate, "object");
+  const generatedEvidence = result.evidence.find((item) => item.kind === "candidate-generated");
+  assert.equal(generatedEvidence?.createdAt, null);
+  assert.equal(typeof generatedEvidence?.data.originSearchSpace, "object");
+  assert.equal(typeof result.evidence[0].data.allocatedBudget, "number");
+  assert.equal(typeof generatedEvidence?.data.generatedCandidate, "object");
 });
 
 test("buildCandidates creates candidates for multiple SearchSpaces in stable order", () => {
@@ -70,4 +71,34 @@ test("buildCandidates is deterministic, structurally equal, and does not mutate 
   assert.equal(structuralEquals(first, second), true);
   assert.deepEqual(first, second);
   assert.equal(stableStringify(searchSpaces), beforeSpaces);
+});
+
+
+test("buildCandidates allocates candidate budget by SearchSpace priority", () => {
+  const result = buildCandidates([
+    space("low", { metadata: { ...space("low").metadata, sourceOpportunityPriority: 1 } }),
+    space("high", { metadata: { ...space("high").metadata, sourceOpportunityPriority: 100 } }),
+  ]);
+  const low = result.summary.candidateBudget.allocations.find((item) => item.searchSpaceId === "low");
+  const high = result.summary.candidateBudget.allocations.find((item) => item.searchSpaceId === "high");
+  assert.ok(low != null && high != null);
+  assert.equal(result.summary.candidateBudget.globalBudget, 20);
+  assert.equal(result.summary.candidateBudget.allocatedBudget, 20);
+  assert.ok(high.allocatedBudget > low.allocatedBudget);
+  assert.equal(result.evidence.filter((item) => item.kind === "candidate-budget-allocated").length, 2);
+});
+
+test("buildCandidates preserves stable tie allocation order", () => {
+  const result = buildCandidates([space("a", { metadata: { ...space("a").metadata, sourceOpportunityPriority: 10 } }), space("b", { metadata: { ...space("b").metadata, sourceOpportunityPriority: 10 } }), space("c", { metadata: { ...space("c").metadata, sourceOpportunityPriority: 10 } })]);
+  assert.deepEqual(result.summary.candidateBudget.allocations.map((item) => [item.searchSpaceId, item.allocatedBudget]), [["a", 7], ["b", 7], ["c", 6]]);
+});
+
+test("buildCandidates uses sourceOperationalPriority before opportunity priority", () => {
+  const result = buildCandidates([
+    space("operational", { metadata: { ...space("operational").metadata, sourceOpportunityPriority: 1, sourceOperationalPriority: { id: "resource:1", priorityScore: 200, explanation: "critical" } } }),
+    space("opportunity", { metadata: { ...space("opportunity").metadata, sourceOpportunityPriority: 100 } }),
+  ]);
+  const [operational, opportunity] = result.summary.candidateBudget.allocations;
+  assert.equal(operational.priority, 200);
+  assert.ok(operational.allocatedBudget > opportunity.allocatedBudget);
 });

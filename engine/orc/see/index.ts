@@ -13,7 +13,7 @@ export { reprioritizeOpportunities } from "./adaptivePriority";
 
 export type { AdaptiveSearchSpaceResult } from "./adaptiveSearchSpaceBuilder";
 export { buildAdaptiveSearchSpaces } from "./adaptiveSearchSpaceBuilder";
-export type { StrategyCandidateResult } from "./strategyCandidateBuilder";
+export type { StrategyCandidateBuildOptions, StrategyCandidateResult } from "./strategyCandidateBuilder";
 export { buildStrategyCandidates } from "./strategyCandidateBuilder";
 
 export type { OpportunityDiagnosis, OpportunityDiagnosisResult } from "./opportunityDiagnosis";

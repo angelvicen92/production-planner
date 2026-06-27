@@ -218,3 +218,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 135 — 2026-06-27 12:34 — ORC Operational Priority Analyzer v1
 
 - ID 136 — 2026-06-27 12:39 — ORC Priority-Guided Search Space Builder v1
+- ID 137 — 2026-06-27 12:49 — ORC Priority-Aware Candidate Budget v1
