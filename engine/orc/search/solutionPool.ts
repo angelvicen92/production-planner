@@ -10,6 +10,15 @@ export interface SolutionPool {
   bestSolutionId: string | null;
 }
 
+export interface SolutionComparison {
+  candidateSolutionId: string;
+  previousBestSolutionId: string | null;
+  winnerSolutionId: string | null;
+  candidateScore: number | null;
+  previousBestScore: number | null;
+  bestChanged: boolean;
+}
+
 const cloneSolution = (solution: SolutionSnapshot): SolutionSnapshot => ({
   solutionId: solution.solutionId,
   originatingBranchId: solution.originatingBranchId,
@@ -41,6 +50,24 @@ export function selectBestSolution(pool: SolutionPool): SolutionSnapshot | null 
   }
 
   return best == null ? null : cloneSolution(best);
+}
+
+export function compareSolutions(
+  pool: SolutionPool,
+  candidate: SolutionSnapshot,
+): SolutionComparison {
+  const previousBest = selectBestSolution(pool);
+  const candidateSnapshot = cloneSolution(candidate);
+  const winner = isBetterSolution(candidateSnapshot, previousBest) ? candidateSnapshot : previousBest;
+
+  return {
+    candidateSolutionId: candidateSnapshot.solutionId,
+    previousBestSolutionId: previousBest?.solutionId ?? null,
+    winnerSolutionId: winner?.solutionId ?? null,
+    candidateScore: candidateSnapshot.score,
+    previousBestScore: previousBest?.score ?? null,
+    bestChanged: winner?.solutionId !== (previousBest?.solutionId ?? null),
+  };
 }
 
 export function addSolution(
