@@ -1,5 +1,6 @@
 import type { EngineInput } from "../../types";
 import type { AdvisoryDecision } from "../advisory/advisoryDecision";
+import type { ExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
@@ -22,6 +23,7 @@ import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimula
 import { buildAdvisoryDecision } from "../advisory/advisoryDecision";
 import { DEFAULT_ORC_CONFIGURATION, ORCIntegrationMode, type ORCConfiguration, normalizeORCConfiguration } from "../config/orcIntegrationMode";
 import { consultORCAdvisory } from "../integration/advisoryIntegration";
+import { buildExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -37,6 +39,7 @@ export interface ORCShadowModeResult {
   commitDecisions: CommitDecision[];
   evidence: Evidence[];
   advisoryDecision: AdvisoryDecision | null;
+  executionEvidence: ExecutionEvidenceRecord;
   cognitiveState: CognitiveState;
   cognitiveStateInitial: CognitiveState;
   cognitiveStateDiff: Record<string, unknown>;
@@ -399,7 +402,7 @@ export function runORCShadowMode(
         evidenceReferences: [],
       },
     },
-  } as ORCShadowModeResult;
+  } as unknown as ORCShadowModeResult;
 
   const advisoryDecision = buildAdvisoryDecision(preliminaryResult);
   const resultWithAdvisory = {
@@ -413,7 +416,7 @@ export function runORCShadowMode(
         evidenceCount: advisoryDecision?.evidenceIds.length ?? 0,
       },
     },
-  } as ORCShadowModeResult;
+  } as unknown as ORCShadowModeResult;
   const advisoryIntegration = consultORCAdvisory(resultWithAdvisory);
   const advisoryIntegrationSummary = {
     consulted: advisoryIntegration.consulted,
@@ -423,12 +426,17 @@ export function runORCShadowMode(
 
   const evidenceWithIntegrationSummary = resultWithAdvisory.evidence.map((item) => item.kind === "shadow-mode-summary" ? { ...item, data: { ...item.data, advisoryIntegration: advisoryIntegrationSummary } } : item);
 
-  return {
+  const finalResult = {
     ...resultWithAdvisory,
     evidence: [...evidenceWithIntegrationSummary, ...advisoryIntegration.evidence],
     summary: {
       ...resultWithAdvisory.summary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
+  } as unknown as ORCShadowModeResult;
+
+  return {
+    ...finalResult,
+    executionEvidence: buildExecutionEvidenceRecord(finalResult),
   };
 }
