@@ -14,6 +14,7 @@ export * from "./analysis/explorationValueEstimator";
 export * from "./analysis/searchSpaceSelectionEngine";
 export * from "./analysis/futureConstraintPropagationEngine";
 export * from "./analysis/branchOrderingEngine";
+export * from "./search/searchBacktrackingFramework";
 export * from "./analysis/opportunityImpactEstimator";
 export * from "./see";
 export type { SearchSpaceBuildOptions, SearchSpaceBuildResult, SearchSpaceBuilderResult } from "./see/searchSpaceBuilder";
