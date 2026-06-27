@@ -27,6 +27,15 @@ export interface OnlineSearchMemory {
   patterns: LearnedSearchPattern[];
 }
 
+export interface TranspositionEvidenceData extends ORCRecord {
+  branchId: string;
+  signature: string;
+  equivalenceDetected: boolean;
+  originalBranchId: string;
+  knownScore: number | null;
+  visits: number;
+}
+
 export interface ProductionObjectiveScore {
   readonly overallScore: number;
   readonly continuityScore: number;
