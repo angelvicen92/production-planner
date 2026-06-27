@@ -9,6 +9,8 @@ export interface StrategyCandidateResult {
     generatedCandidates: number;
     discardedEquivalentCandidates: number;
     strategyTypes: number;
+    generatedVariants: number;
+    discardedVariants: number;
   };
 }
 
@@ -33,6 +35,13 @@ const DEFAULT_COGNITIVE_STATE: CognitiveState = {
     consumedCandidates: 0,
     consumedSimulations: 0,
   },
+};
+
+type StrategyVariant = {
+  variantId: string;
+  variantIndex: number;
+  variantReason: string;
+  assignmentMode: "base" | "advance" | "delay" | "alternate-resource" | "alternate-space";
 };
 
 type StrategyDefinition = {
@@ -81,11 +90,17 @@ function strategiesFor(searchSpace: SearchSpace): StrategyDefinition[] {
   return FALLBACK_FAMILIES.map((family) => STRATEGIES.find((definition) => definition.family === family)).filter((definition): definition is StrategyDefinition => definition != null).slice(0, MAX_CANDIDATES_PER_SEARCH_SPACE);
 }
 
-function candidateKey(searchSpace: SearchSpace, definition: StrategyDefinition): string {
+function candidateKey(searchSpace: SearchSpace, definition: StrategyDefinition, variant: StrategyVariant, assignments: readonly CandidateAssignment[]): string {
   const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
   const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
   const tasks = [...new Set(searchSpace.taskIds)].sort((a, b) => a - b).join(",");
-  return `${sourceOpportunityId}|${region}|${definition.family}|${definition.strategy}|${tasks}`;
+  const assignmentSignature = assignments.length > 0
+    ? assignments
+      .map((assignment) => `${assignment.taskId}:${assignment.startPlanned ?? ""}:${assignment.endPlanned ?? ""}:${assignment.spaceId ?? ""}:${[...assignment.resourceIds].sort((a, b) => a - b).join("+")}`)
+      .sort()
+      .join("|")
+    : `abstract:${tasks}`;
+  return `${sourceOpportunityId}|${region}|${definition.family}|${definition.strategy}|${assignmentSignature}`;
 }
 
 const round = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
@@ -102,6 +117,13 @@ interface AssignmentSynthesisResult {
   readonly assignments: CandidateAssignment[];
   readonly discardedTasks: Array<{ taskId: number; reason: string }>;
   readonly synthesisReason: string;
+}
+
+interface StrategyVariantBuildResult {
+  readonly variant: StrategyVariant;
+  readonly assignments: CandidateAssignment[];
+  readonly discarded: boolean;
+  readonly discardReason: string | null;
 }
 
 const sortedUniqueTaskIds = (taskIds: readonly number[]): number[] => [...new Set(taskIds)].sort((a, b) => a - b);
@@ -150,7 +172,74 @@ function synthesizeAssignments(searchSpace: SearchSpace, definition: StrategyDef
   return { assignments, discardedTasks, synthesisReason: assignments.length > 0 ? `Synthesized ${assignments.length} ${definition.strategyType} assignment(s) from OperationalState/SearchSpace task data.` : `No safe ${definition.strategyType} assignment could be synthesized from the available task data.` };
 }
 
-function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, evidenceId: string, candidateId: string, cognitiveState: CognitiveState, context: StrategyContext): Candidate {
+
+const BASE_VARIANT: StrategyVariant = { variantId: "base", variantIndex: 0, variantReason: "Base deterministic realization of the strategy.", assignmentMode: "base" };
+
+const minutesFromTime = (value: string | null | undefined): number | null => {
+  if (typeof value !== "string") return null;
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (match == null) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return Number.isInteger(hours) && Number.isInteger(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60 ? hours * 60 + minutes : null;
+};
+
+const timeFromMinutes = (value: number): string => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+
+const shiftAssignments = (assignments: readonly CandidateAssignment[], deltaMinutes: number, state: OperationalState): CandidateAssignment[] | null => {
+  const dayStart = minutesFromTime(state.workDay?.start) ?? 0;
+  const dayEnd = minutesFromTime(state.workDay?.end) ?? 24 * 60;
+  const shifted: CandidateAssignment[] = [];
+  for (const assignment of assignments) {
+    const start = minutesFromTime(assignment.startPlanned);
+    const end = minutesFromTime(assignment.endPlanned);
+    if (start == null || end == null) return null;
+    const nextStart = start + deltaMinutes;
+    const nextEnd = end + deltaMinutes;
+    if (nextStart < dayStart || nextEnd > dayEnd || nextStart >= nextEnd) return null;
+    shifted.push({ ...assignment, startPlanned: timeFromMinutes(nextStart), endPlanned: timeFromMinutes(nextEnd), resourceIds: [...assignment.resourceIds] });
+  }
+  return shifted;
+};
+
+const withAlternateResource = (assignments: readonly CandidateAssignment[], state: OperationalState): CandidateAssignment[] | null => {
+  const available = [...state.resources].filter((resource) => resource.isAvailable !== false).map((resource) => resource.id).sort((a, b) => a - b);
+  const mapped = assignments.map((assignment) => {
+    const alternative = available.find((resourceId) => !assignment.resourceIds.includes(resourceId));
+    return alternative == null ? null : { ...assignment, resourceIds: [alternative] };
+  });
+  return mapped.every((assignment): assignment is CandidateAssignment => assignment != null) ? mapped : null;
+};
+
+const withAlternateSpace = (assignments: readonly CandidateAssignment[], state: OperationalState): CandidateAssignment[] | null => {
+  const spaces = Object.keys(state.spaces.nameById ?? {}).map(Number).filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  const mapped: Array<CandidateAssignment | null> = assignments.map((assignment) => {
+    const alternative = spaces.find((spaceId) => spaceId !== assignment.spaceId);
+    return alternative == null ? null : { ...assignment, spaceId: alternative, resourceIds: [...assignment.resourceIds] };
+  });
+  return mapped.every((assignment): assignment is CandidateAssignment => assignment != null) ? mapped : null;
+};
+
+function variantsFor(searchSpace: SearchSpace, synthesis: AssignmentSynthesisResult, context: StrategyContext): StrategyVariantBuildResult[] {
+  const baseAssignments = synthesis.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] }));
+  const results: StrategyVariantBuildResult[] = [{ variant: BASE_VARIANT, assignments: baseAssignments, discarded: false, discardReason: null }];
+  const state = context.operationalState;
+  if (state == null || baseAssignments.length === 0) return results;
+  const candidates: Array<{ variant: StrategyVariant; assignments: CandidateAssignment[] | null }> = [
+    { variant: { variantId: "advance-15", variantIndex: 1, variantReason: "Advance all synthesized assignments by 15 minutes within the work day.", assignmentMode: "advance" }, assignments: shiftAssignments(baseAssignments, -15, state) },
+    { variant: { variantId: "delay-15", variantIndex: 2, variantReason: "Delay all synthesized assignments by 15 minutes within the work day.", assignmentMode: "delay" }, assignments: shiftAssignments(baseAssignments, 15, state) },
+    { variant: { variantId: "alternate-resource", variantIndex: 3, variantReason: "Use the first deterministic available alternative resource.", assignmentMode: "alternate-resource" }, assignments: withAlternateResource(baseAssignments, state) },
+    { variant: { variantId: "alternate-space", variantIndex: 4, variantReason: "Use the first deterministic alternative space.", assignmentMode: "alternate-space" }, assignments: withAlternateSpace(baseAssignments, state) },
+  ];
+  for (const candidate of candidates) {
+    results.push(candidate.assignments == null
+      ? { variant: candidate.variant, assignments: [], discarded: true, discardReason: "variant-not-valid-for-search-space" }
+      : { variant: candidate.variant, assignments: candidate.assignments, discarded: false, discardReason: null });
+  }
+  return results;
+}
+
+function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, variant: StrategyVariant, synthesis: AssignmentSynthesisResult, evidenceId: string, candidateId: string, cognitiveState: CognitiveState, context: StrategyContext): Candidate {
   const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
   const sourceOpportunityKind = metadataString(searchSpace.metadata.sourceOpportunityKind, "UNKNOWN");
   const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
@@ -160,7 +249,6 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
   const transformations = buildTransformations(searchSpace, definition);
   const confidence = Math.max(0.1, Math.min(0.95, Number((definition.baseConfidence + Math.min(searchSpace.taskIds.length, 5) * 0.02 + Math.min(expectedOperationalImpact, 10) * 0.005).toFixed(2))));
   const repeatedByCognitiveMemory = shouldSkipCandidate(cognitiveState, candidateId);
-  const synthesis = synthesizeAssignments(searchSpace, definition, context);
   const executable = synthesis.assignments.length > 0;
   return {
     id: candidateId,
@@ -177,6 +265,11 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
       sourceOpportunityId,
       sourceOpportunityKind,
       strategy: definition.strategy,
+      strategyId: definition.strategy,
+      variantId: variant.variantId,
+      variantIndex: variant.variantIndex,
+      variantReason: variant.variantReason,
+      parentStrategy: definition.strategy,
       strategyType: definition.strategyType,
       originOpportunity: sourceOpportunityId,
       synthesisReason: synthesis.synthesisReason,
@@ -188,9 +281,9 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
       expectedImpact: definition.impact,
       expectedOperationalImpact,
       transformations,
-      candidateStrategy: { strategyId: candidateId, strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact, transformations, generationReason: `Generated ${definition.strategyType} strategy from ${searchSpace.id} using OCM/OPA/adaptive profile context.` },
+      candidateStrategy: { strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact, transformations, generationReason: `Generated ${definition.strategyType} strategy variant ${variant.variantId} from ${searchSpace.id} using OCM/OPA/adaptive profile context.` },
       estimatedCost: searchSpace.taskIds.length > 8 && definition.cost === "low" ? "medium" : definition.cost,
-      generationReason: `Strategy candidate generated for ${definition.family} from search space ${searchSpace.id} with ${transformations.length} coordinated transformations`,
+      generationReason: `Strategy candidate variant ${variant.variantId} generated for ${definition.family} from search space ${searchSpace.id} with ${transformations.length} coordinated transformations`,
       cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
     },
   };
@@ -231,6 +324,8 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
   const seen = new Set<string>();
   const families = new Set<string>();
   let discardedEquivalentCandidates = 0;
+  let generatedVariants = 0;
+  let discardedVariants = 0;
   const maxCandidates = remainingBudget(cognitiveState.reasoningBudget).candidates;
   const budgetBySearchSpaceId = options.candidateBudgetBySearchSpaceId ?? null;
   const context = contextFrom(options);
@@ -243,33 +338,48 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
     let producedForSpace = 0;
     const allocatedForSpace = budgetForSearchSpace(budgetBySearchSpaceId, searchSpace.id) ?? MAX_CANDIDATES_PER_SEARCH_SPACE;
     for (const definition of strategiesFor(searchSpace)) {
-      const key = candidateKey(searchSpace, definition);
       const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
       const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
-      if (candidates.length >= maxCandidates || producedForSpace >= allocatedForSpace || producedForSpace >= MAX_CANDIDATES_PER_SEARCH_SPACE) {
-        emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:budget:${searchSpace.id}:${definition.strategy}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyFamily: definition.family, reason: "insufficient-candidate-budget", readOnly: true }));
-        break;
+      const baseSynthesis = synthesizeAssignments(searchSpace, definition, context);
+      const variants = variantsFor(searchSpace, baseSynthesis, context);
+      emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:variants:${searchSpace.id}:${definition.strategy}`, "strategy-variants-generated", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyId: definition.strategy, parentStrategy: definition.strategy, variantsGenerated: variants.length, variants: variants.map((item) => ({ variantId: item.variant.variantId, variantIndex: item.variant.variantIndex, variantReason: item.variant.variantReason, discarded: item.discarded, discardReason: item.discardReason })), readOnly: true }));
+      for (const variantResult of variants) {
+        const variant = variantResult.variant;
+        const variantSuffix = variant.variantId === "base" ? "base" : sanitize(variant.variantId);
+        if (variantResult.discarded) {
+          emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:variant:${searchSpace.id}:${definition.strategy}:${variantSuffix}`, "strategy-variant-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, reason: variantResult.discardReason ?? "invalid-variant", readOnly: true }));
+          discardedVariants += 1;
+          continue;
+        }
+        if (candidates.length >= maxCandidates || producedForSpace >= allocatedForSpace || producedForSpace >= MAX_CANDIDATES_PER_SEARCH_SPACE) {
+          emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:budget:${searchSpace.id}:${definition.strategy}:${variantSuffix}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyFamily: definition.family, reason: "insufficient-candidate-budget", readOnly: true }));
+          break;
+        }
+        const synthesis: AssignmentSynthesisResult = { ...baseSynthesis, assignments: variantResult.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: `${baseSynthesis.synthesisReason} Variant ${variant.variantId}: ${variant.variantReason}` };
+        const key = candidateKey(searchSpace, definition, variant, synthesis.assignments);
+        if (seen.has(key)) {
+          discardedEquivalentCandidates += 1;
+          discardedVariants += 1;
+          emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:equivalent:${searchSpace.id}:${definition.strategy}:${variantSuffix}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyFamily: definition.family, reason: "equivalent-candidate", equivalenceKey: key, readOnly: true }));
+          continue;
+        }
+        seen.add(key);
+        families.add(definition.family);
+        const candidateId = `orc-see:strategy-candidate:${sanitize(sourceOpportunityId)}:${sanitize(region)}:${definition.strategy}:${variantSuffix}`;
+        if (shouldSkipCandidate(cognitiveState, candidateId)) {
+          emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:cognitive:${searchSpace.id}:${definition.strategy}:${variantSuffix}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, candidateId, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyFamily: definition.family, reason: "discarded-candidate-memory", readOnly: true }));
+          continue;
+        }
+        const evidenceId = `evidence:orc-see:strategy-candidate:${sanitize(sourceOpportunityId)}:${sanitize(region)}:${definition.strategy}:${variantSuffix}`;
+        const candidate = candidateFor(searchSpace, definition, variant, synthesis, evidenceId, candidateId, cognitiveState, context);
+        candidates.push(candidate);
+        producedForSpace += 1;
+        generatedVariants += 1;
+        emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, assignmentSynthesis: candidate.metadata.assignmentSynthesis, assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: candidate.metadata.synthesisReason, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, acceptedVariant: { variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy }, readOnly: true }));
       }
-      if (seen.has(key)) {
-        discardedEquivalentCandidates += 1;
-        emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:equivalent:${searchSpace.id}:${definition.strategy}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyFamily: definition.family, reason: "equivalent-candidate", equivalenceKey: key, readOnly: true }));
-        continue;
-      }
-      seen.add(key);
-      families.add(definition.family);
-      const candidateId = `orc-see:strategy-candidate:${sanitize(sourceOpportunityId)}:${sanitize(region)}:${definition.strategy}`;
-      if (shouldSkipCandidate(cognitiveState, candidateId)) {
-        emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:cognitive:${searchSpace.id}:${definition.strategy}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, candidateId, strategy: definition.strategy, strategyFamily: definition.family, reason: "discarded-candidate-memory", readOnly: true }));
-        continue;
-      }
-      const evidenceId = `evidence:orc-see:strategy-candidate:${sanitize(sourceOpportunityId)}:${sanitize(region)}:${definition.strategy}`;
-      const candidate = candidateFor(searchSpace, definition, evidenceId, candidateId, cognitiveState, context);
-      candidates.push(candidate);
-      producedForSpace += 1;
-      emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, assignmentSynthesis: candidate.metadata.assignmentSynthesis, assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: candidate.metadata.synthesisReason, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, readOnly: true }));
     }
   }
 
-  emittedEvidence.push(evidence("evidence:orc-see:strategy-candidate:diversity-summary", "strategy-candidate-diversity", "orc-see:strategy-candidates", { generatedCandidates: candidates.length, discardedEquivalentCandidates, strategyFamilies: families.size, candidateIds: candidates.map((candidate) => candidate.id), readOnly: true }));
-  return { candidates, evidence: emittedEvidence, summary: { generatedCandidates: candidates.length, discardedEquivalentCandidates, strategyTypes: families.size } };
+  emittedEvidence.push(evidence("evidence:orc-see:strategy-candidate:diversity-summary", "strategy-candidate-diversity", "orc-see:strategy-candidates", { generatedCandidates: candidates.length, discardedEquivalentCandidates, strategyFamilies: families.size, candidateIds: candidates.map((candidate) => candidate.id), generatedVariants, discardedVariants, readOnly: true }));
+  return { candidates, evidence: emittedEvidence, summary: { generatedCandidates: candidates.length, discardedEquivalentCandidates, strategyTypes: families.size, generatedVariants, discardedVariants } };
 }

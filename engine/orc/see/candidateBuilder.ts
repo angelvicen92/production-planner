@@ -140,6 +140,17 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
       evidence.push({ ...item, createdAt: null, data: traceableData });
       continue;
     }
+    if (item.kind === "strategy-variants-generated" || item.kind === "strategy-variant-discarded") {
+      evidence.push({
+        ...item,
+        createdAt: null,
+        data: {
+          ...item.data,
+          originSearchSpace: searchSpacesById.has(String(item.subjectId)) ? searchSpaceEvidencePayload(searchSpacesById.get(String(item.subjectId)) as SearchSpace) : { id: item.subjectId },
+        },
+      });
+      continue;
+    }
     if (item.kind === "strategy-candidate-discarded" && item.data.reason === "equivalent-candidate") {
       evidence.push({
         ...item,

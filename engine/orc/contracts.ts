@@ -116,6 +116,10 @@ export type CandidateStrategyType =
 
 export interface CandidateStrategy {
   readonly strategyId: string;
+  readonly variantId?: string;
+  readonly variantIndex?: number;
+  readonly variantReason?: string;
+  readonly parentStrategy?: string;
   readonly strategyType: CandidateStrategyType;
   readonly originOpportunity: string;
   readonly expectedOperationalImpact: number;

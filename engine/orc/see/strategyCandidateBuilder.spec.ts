@@ -29,17 +29,33 @@ const space = (id: string, overrides: Partial<SearchSpace> = {}): SearchSpace =>
 test("buildStrategyCandidates handles empty SearchSpace input", () => {
   const result = buildStrategyCandidates([], cognitive());
   assert.deepEqual(result.candidates, []);
-  assert.deepEqual(result.summary, { generatedCandidates: 0, discardedEquivalentCandidates: 0, strategyTypes: 0 });
+  assert.deepEqual(result.summary, { generatedCandidates: 0, discardedEquivalentCandidates: 0, strategyTypes: 0, generatedVariants: 0, discardedVariants: 0 });
   assert.equal(result.evidence.at(-1)?.kind, "strategy-candidate-diversity");
 });
 
-test("buildStrategyCandidates creates strategy-oriented candidates for one SearchSpace", () => {
+test("buildStrategyCandidates creates base strategy candidates when variants cannot be materialized", () => {
   const result = buildStrategyCandidates([space("one")], cognitive());
   assert.equal(result.candidates.length, 3);
   assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.strategyFamily), ["continuity", "chain-advance", "compaction"]);
   assert.equal(result.candidates.every((candidate) => Array.isArray(candidate.metadata.transformations) && (candidate.metadata.transformations as unknown[]).length > 1), true);
   assert.equal(result.candidates.every((candidate) => candidate.metadata.strategyCandidate === true && candidate.metadata.executesTransformations === false), true);
   assert.equal(result.summary.strategyTypes, 3);
+});
+
+
+test("buildStrategyCandidates materializes several deterministic variants for one strategy", () => {
+  const result = buildStrategyCandidates([space("variants", { taskIds: [1] })], cognitive(), { operationalState: operationalState() });
+  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.variantId), ["base", "advance-15", "delay-15"]);
+  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.parentStrategy), ["CLOSE_MAIN_FLOW_GAP", "CLOSE_MAIN_FLOW_GAP", "CLOSE_MAIN_FLOW_GAP"]);
+  assert.equal(result.evidence.some((item) => item.kind === "strategy-variants-generated" && item.data.strategy === "CLOSE_MAIN_FLOW_GAP"), true);
+  assert.equal(result.evidence.filter((item) => item.kind === "strategy-candidate-generated").length, 3);
+});
+
+test("buildStrategyCandidates serializes variant metadata and accepted evidence", () => {
+  const result = buildStrategyCandidates([space("serial", { taskIds: [1] })], cognitive(), { operationalState: operationalState() });
+  const serialized = JSON.parse(JSON.stringify(result));
+  assert.equal(serialized.candidates[1].metadata.variantId, "advance-15");
+  assert.equal(serialized.evidence.some((item: any) => item.data.acceptedVariant?.variantId === "advance-15"), true);
 });
 
 test("buildStrategyCandidates handles multiple SearchSpaces deterministically", () => {
