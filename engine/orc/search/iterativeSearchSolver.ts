@@ -1,4 +1,4 @@
-import type { Evidence, ProductionObjectiveScore } from "../contracts";
+import type { Evidence, LearnedSearchPattern, OnlineSearchMemory, ProductionObjectiveScore } from "../contracts";
 import type { BacktrackingExecutionResult } from "./backtrackingSearchExecutor";
 import { executeIncrementalReplanning, type IncrementalReplanningResult } from "./incrementalReplanningEngine";
 import {
@@ -9,6 +9,7 @@ import {
   type SolutionPool,
   type SolutionSnapshot,
 } from "./solutionPool";
+import { initializeOnlineSearchMemory, queryLearnedPattern, registerSearchObservation } from "./onlineSearchLearning";
 
 export interface SearchIteration {
   branchId: string;
@@ -25,6 +26,7 @@ export interface IterativeSearchResult {
   evidence: Evidence[];
   solutionPool: SolutionPool;
   incrementalReplanningResults: IncrementalReplanningResult[];
+  onlineSearchMemory: OnlineSearchMemory;
 }
 
 const finiteScore = (value: unknown): number | null =>
@@ -169,6 +171,51 @@ const buildIterationEvidence = (
 });
 
 
+const buildLearnedPattern = (iteration: SearchIteration): LearnedSearchPattern => ({
+  patternId: iteration.branchId,
+  observations: 1,
+  averageScore: iteration.score ?? 0,
+  lastScore: iteration.score ?? 0,
+  explanation: iteration.score == null
+    ? `Branch ${iteration.branchId} produced no comparable score during shadow-mode search.`
+    : `Branch ${iteration.branchId} produced score ${iteration.score} during shadow-mode search.`,
+});
+
+const buildLearningEvidence = (pattern: LearnedSearchPattern, index: number): Evidence => ({
+  id: `evidence:orc-search:online-learning:observation:${index + 1}:${pattern.patternId}`,
+  source: "orc-search",
+  kind: "iterative-search-online-learning-observation",
+  subjectId: pattern.patternId,
+  data: {
+    learnedPattern: pattern.patternId,
+    observations: pattern.observations,
+    averageScore: pattern.averageScore,
+    lastScore: pattern.lastScore,
+    explanation: pattern.explanation,
+    readOnly: true,
+    shadowModeOnly: true,
+  },
+});
+
+const buildLearningConsultedEvidence = (sourceBranchId: string, pattern: LearnedSearchPattern, index: number): Evidence => ({
+  id: `evidence:orc-search:online-learning:consulted:${index + 1}:${sourceBranchId}:${pattern.patternId}`,
+  source: "orc-search",
+  kind: "iterative-search-online-learning-consulted",
+  subjectId: pattern.patternId,
+  data: {
+    sourceBranchId,
+    learnedPattern: pattern.patternId,
+    observations: pattern.observations,
+    averageScore: pattern.averageScore,
+    lastScore: pattern.lastScore,
+    usedForScoring: false,
+    usedForPruning: false,
+    reason: "Online search memory was consulted before branch prioritization; scoring and pruning remain unchanged in shadow mode.",
+    readOnly: true,
+    shadowModeOnly: true,
+  },
+});
+
 const buildIncrementalReplanningEvidence = (
   branchId: string,
   result: IncrementalReplanningResult,
@@ -266,6 +313,8 @@ const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">
     bestSolutionId: result.solutionPool.bestSolutionId,
     solutionCount: result.solutionPool.solutions.length,
     incrementalReplanningCount: result.incrementalReplanningResults.length,
+    onlineSearchPatternCount: result.onlineSearchMemory.patterns.length,
+    onlineSearchMemory: result.onlineSearchMemory,
     completed: result.completed,
     readOnly: true,
     shadowModeOnly: true,
@@ -281,6 +330,7 @@ export function executeIterativeSearch(
   let bestScore: number | null = null;
   let solutionPool = initializeSolutionPool();
   const incrementalReplanningResults: IncrementalReplanningResult[] = [];
+  let onlineSearchMemory = initializeOnlineSearchMemory();
 
   let pendingBranches: PendingBranch[] = (execution.explorationOrder ?? []).map((branchId, originalIndex) => ({ branchId, originalIndex }));
 
@@ -314,11 +364,23 @@ export function executeIterativeSearch(
     const comparison = compareSolutions(solutionPool, solution);
     solutionPool = addSolution(solutionPool, solution);
 
+    const observedPattern = buildLearnedPattern(iteration);
+    onlineSearchMemory = registerSearchObservation(onlineSearchMemory, observedPattern);
+    const learnedPattern = queryLearnedPattern(onlineSearchMemory, observedPattern.patternId) ?? observedPattern;
+    evidence.push(buildLearningEvidence(learnedPattern, iterations.length));
+
     iterations.push(iteration);
     evidence.push(buildIterationEvidence(iteration, bestBranchId, previousBestBranchId, reason, iterations.length - 1));
     evidence.push(buildComparisonEvidence(comparison, iterations.length - 1));
     if (comparison.bestChanged) {
       evidence.push(buildBestChangedEvidence(comparison, iterations.length - 1));
+    }
+
+    for (const pending of pendingBranches) {
+      const learnedPattern = queryLearnedPattern(onlineSearchMemory, pending.branchId);
+      if (learnedPattern != null) {
+        evidence.push(buildLearningConsultedEvidence(iteration.branchId, learnedPattern, iterations.length - 1));
+      }
     }
 
     const reorder = reorderPendingBranches(pendingBranches, execution);
@@ -341,6 +403,7 @@ export function executeIterativeSearch(
     completed: true,
     solutionPool,
     incrementalReplanningResults,
+    onlineSearchMemory,
   };
 
   return {

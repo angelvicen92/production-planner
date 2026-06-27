@@ -1,4 +1,4 @@
-import type { ProductionObjectiveScore } from "../contracts";
+import type { OnlineSearchMemory, ProductionObjectiveScore } from "../contracts";
 
 export interface SolutionSnapshot {
   solutionId: string;
@@ -11,6 +11,7 @@ export interface SolutionSnapshot {
 export interface SolutionPool {
   solutions: SolutionSnapshot[];
   bestSolutionId: string | null;
+  onlineSearchMemory?: OnlineSearchMemory;
 }
 
 export interface SolutionComparison {

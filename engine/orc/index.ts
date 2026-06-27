@@ -20,6 +20,7 @@ export * from "./search/backtrackingSearchExecutor";
 export * from "./search/iterativeSearchSolver";
 export * from "./search/incrementalReplanningEngine";
 export * from "./search/solutionPool";
+export * from "./search/onlineSearchLearning";
 export * from "./analysis/opportunityImpactEstimator";
 export * from "./see";
 export type { SearchSpaceBuildOptions, SearchSpaceBuildResult, SearchSpaceBuilderResult } from "./see/searchSpaceBuilder";

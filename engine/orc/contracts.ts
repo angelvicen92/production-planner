@@ -14,6 +14,19 @@ export interface Evidence {
   createdAt?: string | null;
 }
 
+
+export interface LearnedSearchPattern {
+  patternId: string;
+  observations: number;
+  averageScore: number;
+  lastScore: number;
+  explanation: string;
+}
+
+export interface OnlineSearchMemory {
+  patterns: LearnedSearchPattern[];
+}
+
 export interface ProductionObjectiveScore {
   readonly overallScore: number;
   readonly continuityScore: number;
