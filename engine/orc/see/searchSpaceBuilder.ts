@@ -1,8 +1,7 @@
-import type { CognitiveState, Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
+import type { CognitiveState, Evidence, ORCRecord, SearchSpace } from "../contracts";
 import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
-import type { OperationalMap } from "./operationalMap";
 
 export interface SearchSpaceBuildOptions {
   maxSearchSpaces?: number;
@@ -26,6 +25,9 @@ export interface SearchSpaceBuildResult {
   };
 }
 
+
+export type SearchSpaceBuilderResult = SearchSpaceBuildResult;
+
 type BuildOptions = SearchSpaceBuildOptions & { createdAt?: string | null; cognitiveState?: CognitiveState };
 
 const DEFAULT_BUDGET = {
@@ -48,73 +50,71 @@ const normalizeBudgetValue = (value: number | undefined, fallback: number): numb
   return Math.max(0, Math.floor(value));
 };
 
-const uniqueSortedTaskIds = (taskIds: number[] | undefined): number[] =>
+const uniqueSortedTaskIds = (taskIds: readonly number[] | undefined): number[] =>
   [...new Set((taskIds ?? []).filter((id) => Number.isFinite(Number(id))).map(Number))].sort((a, b) => a - b);
 
-function opportunityTemplate(opportunity: Opportunity, state: OperationalState, map: OperationalMap): {
+const numberMetadata = (metadata: ORCRecord, key: string, fallback = 0): number =>
+  typeof metadata[key] === "number" && Number.isFinite(metadata[key]) ? metadata[key] : fallback;
+
+const numberArrayMetadata = (metadata: ORCRecord, key: string): number[] =>
+  Array.isArray(metadata[key]) ? uniqueSortedTaskIds(metadata[key] as number[]) : [];
+
+function opportunityTemplate(opportunity: PrioritizedOpportunity): {
   region: string;
   regionDetails: Record<string, string | number | boolean | null | number[]>;
   transformations: string[];
   restrictions: string[];
-  fallbackTaskIds: number[];
 } {
+  const metadata = opportunity.metadata ?? {};
   switch (opportunity.kind) {
     case "MAIN_FLOW_GAP":
       return {
         region: "configured-main-flow",
-        regionDetails: { spaceOrZoneId: map.mainFlow?.spaceOrZoneId ?? null, gapCount: map.mainFlow?.gapCount ?? 0 },
+        regionDetails: { spaceOrZoneId: typeof metadata.spaceOrZoneId === "number" ? metadata.spaceOrZoneId : null, gapCount: numberMetadata(metadata, "gapCount") },
         transformations: [TRANSFORMATIONS.MOVE_CHAIN_POSSIBLE, TRANSFORMATIONS.REORDER_REGION_POSSIBLE, TRANSFORMATIONS.COMPACT_REGION_POSSIBLE],
         restrictions: ["do-not-touch-locks", "do-not-touch-in-progress-or-done", "respect-configured-space-or-zone"],
-        fallbackTaskIds: map.mainFlow?.plannedTaskIds ?? [],
       };
     case "UNPLANNED_PENDING_TASKS":
       return {
         region: "unplanned-pending-tasks",
-        regionDetails: { pendingTaskCount: map.pendingTaskCount },
+        regionDetails: { pendingTaskCount: numberMetadata(metadata, "pendingTaskCount") },
         transformations: [TRANSFORMATIONS.SCHEDULE_PENDING_TASKS_POSSIBLE],
         restrictions: ["respect-availability", "respect-meal", "respect-locks", "respect-resources"],
-        fallbackTaskIds: (state.tasks ?? []).filter((task) => task.status === "pending" && !(state.planning ?? []).some((item) => item.taskId === task.id)).map((task) => task.id),
       };
     case "RESOURCE_PRESSURE":
       return {
         region: "resource-pressure",
-        regionDetails: { overloadedResourceIds: map.resources.overloadedResourceIds },
+        regionDetails: { overloadedResourceIds: numberArrayMetadata(metadata, "overloadedResourceIds") },
         transformations: [TRANSFORMATIONS.RESOURCE_REASSIGNMENT_POSSIBLE],
         restrictions: ["respect-availability", "respect-resource-type", "respect-locks"],
-        fallbackTaskIds: [],
       };
     case "EXCESSIVE_TALENT_STAY":
       return {
         region: "affected-contestant-schedule",
-        regionDetails: { contestantId: typeof opportunity.metadata.maxStayContestantId === "number" ? opportunity.metadata.maxStayContestantId : map.talents.maxStayContestantId, maxStayMinutes: typeof opportunity.metadata.maxStayMinutes === "number" ? opportunity.metadata.maxStayMinutes : map.talents.maxStayMinutes },
+        regionDetails: { contestantId: typeof metadata.maxStayContestantId === "number" ? metadata.maxStayContestantId : null, maxStayMinutes: numberMetadata(metadata, "maxStayMinutes") },
         transformations: [TRANSFORMATIONS.COMPACT_REGION_POSSIBLE, TRANSFORMATIONS.REORDER_REGION_POSSIBLE],
         restrictions: ["respect-dependencies", "respect-locks", "prevent-overlaps"],
-        fallbackTaskIds: [],
       };
     case "LOCK_PRESSURE":
       return {
         region: "active-locks",
-        regionDetails: { lockCount: map.lockCount },
+        regionDetails: { lockCount: numberMetadata(metadata, "lockCount") },
         transformations: [TRANSFORMATIONS.LOCK_CONSTRAINED_EXPLORATION],
         restrictions: ["do-not-break-locks"],
-        fallbackTaskIds: (state.locks ?? []).map((lock) => lock.taskId),
       };
     case "FRAGMENTATION":
       return {
         region: "fragmented-talent-or-space-region",
-        regionDetails: { totalSpaceSwitches: map.fragmentation.totalSpaceSwitches },
+        regionDetails: { totalSpaceSwitches: numberMetadata(metadata, "totalSpaceSwitches") },
         transformations: [TRANSFORMATIONS.COMPACT_REGION_POSSIBLE, TRANSFORMATIONS.REORDER_REGION_POSSIBLE],
         restrictions: ["respect-zones", "respect-availability", "respect-locks"],
-        fallbackTaskIds: (state.planning ?? []).map((item) => item.taskId),
       };
     default:
-      return { region: "unknown-opportunity-region", regionDetails: {}, transformations: [], restrictions: ["read-only"], fallbackTaskIds: [] };
+      return { region: opportunity.classification?.affectedRegion ?? "unknown-opportunity-region", regionDetails: {}, transformations: [], restrictions: ["read-only"] };
   }
 }
 
-export function buildSearchSpacesForOpportunities(
-  state: OperationalState,
-  map: OperationalMap,
+export function buildSearchSpaces(
   opportunities: PrioritizedOpportunity[],
   options: BuildOptions = {},
 ): SearchSpaceBuildResult {
@@ -141,15 +141,15 @@ export function buildSearchSpacesForOpportunities(
       continue;
     }
 
-    const template = opportunityTemplate(opportunity, state, map);
-    const fullTaskIds = uniqueSortedTaskIds(opportunity.taskIds?.length ? opportunity.taskIds : template.fallbackTaskIds);
+    const template = opportunityTemplate(opportunity);
+    const fullTaskIds = uniqueSortedTaskIds(opportunity.taskIds);
     const taskIds = fullTaskIds.slice(0, budget.maxAffectedTasksPerSpace);
     const transformations = template.transformations.slice(0, budget.maxTransformationsPerSpace);
     const id = `orc-see:search-space:${opportunity.id}`;
     const evidenceId = `evidence:orc-see:search-space:${opportunity.id}`;
     const repeatedByCognitiveMemory = options.cognitiveState ? shouldSkipSearchSpace(options.cognitiveState, id) : false;
 
-    searchSpaces.push({
+    const builtSearchSpace: SearchSpace = {
       id,
       description: `Read-only search space for ${opportunity.kind}`,
       taskIds,
@@ -172,8 +172,9 @@ export function buildSearchSpacesForOpportunities(
         executesTransformations: false,
         cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
       },
-    });
+    };
 
+    searchSpaces.push(builtSearchSpace);
     evidence.push({
       id: evidenceId,
       source: "orc-see",
@@ -181,10 +182,17 @@ export function buildSearchSpacesForOpportunities(
       subjectId: id,
       createdAt,
       data: {
+        opportunity: {
+          id: opportunity.id,
+          kind: opportunity.kind,
+          taskIds: [...opportunity.taskIds],
+          classification: { ...opportunity.classification, constraints: [...opportunity.classification.constraints] },
+        },
         opportunityId: opportunity.id,
         opportunityKind: opportunity.kind,
         priority: opportunity.priority,
         prioritizationRationale: [...opportunity.rationale],
+        searchSpace: { id: builtSearchSpace.id, taskIds: [...builtSearchSpace.taskIds], metadata: builtSearchSpace.metadata },
         affectedRegion: template.region,
         budget,
         allowedTransformations: transformations,
@@ -220,6 +228,8 @@ export function buildSearchSpacesForOpportunities(
     },
   };
 }
+
+export const buildSearchSpacesForOpportunities = buildSearchSpaces;
 
 export type { AdaptiveSearchSpaceResult } from "./adaptiveSearchSpaceBuilder";
 export { buildAdaptiveSearchSpaces } from "./adaptiveSearchSpaceBuilder";

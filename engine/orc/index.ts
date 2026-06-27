@@ -7,6 +7,8 @@ export * from "./analysis/opportunityDetectionEngine";
 export * from "./analysis/opportunityClassificationEngine";
 export * from "./analysis/opportunityPrioritizationEngine";
 export * from "./see";
+export type { SearchSpaceBuildOptions, SearchSpaceBuildResult, SearchSpaceBuilderResult } from "./see/searchSpaceBuilder";
+export { buildSearchSpaces, buildSearchSpacesForOpportunities } from "./see/searchSpaceBuilder";
 export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";
 export * from "./validation/validationEngine";

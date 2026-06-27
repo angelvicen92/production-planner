@@ -50,6 +50,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 124 — 2026-06-27 02:54 — ORC Opportunity Detection Engine v2
 - ID 124 — 2026-06-27 03:01 — ORC Opportunity Classification Engine v1
 - ID 125 — 2026-06-27 03:40 — ORC Opportunity Prioritization Engine v2
+- ID 126 — 2026-06-27 03:47 — ORC Search Space Builder Decoupling v2
 
 - ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
 - ID 121 — 2026-06-26 23:55 — ORC Advisory Integration Layer v1
