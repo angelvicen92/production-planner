@@ -1,4 +1,5 @@
 import type { OperationalCriticality } from "../understanding/operationalCriticality";
+import type { OpportunityPropagation } from "../contracts";
 import type { ReasoningBudget } from "./reasoningBudget";
 import { createReasoningBudget, remainingBudget } from "./reasoningBudget";
 
@@ -11,6 +12,7 @@ export interface CognitiveState {
   reasoningBudget: ReasoningBudget;
   temporaryKnowledge: Record<string, unknown>;
   operationalCriticality?: OperationalCriticality;
+  opportunityPropagation?: readonly OpportunityPropagation[];
   confidence: number;
   createdAt: string | null;
 }

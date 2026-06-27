@@ -15,6 +15,7 @@ export * from "./analysis/searchSpaceSelectionEngine";
 export * from "./analysis/futureConstraintPropagationEngine";
 export * from "./analysis/branchOrderingEngine";
 export * from "./understanding/operationalCriticality";
+export * from "./understanding/opportunityPropagation";
 export * from "./search/searchBacktrackingFramework";
 export * from "./search/branchPruningEngine";
 export * from "./search/backtrackingSearchExecutor";
