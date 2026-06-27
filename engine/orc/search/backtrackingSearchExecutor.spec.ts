@@ -60,6 +60,14 @@ test("executeBacktrackingSearch explores multiple branches in branch ordering or
   assert.deepEqual(result.explorationOrder, ["high", "mid", "low"]);
 });
 
+
+test("executeBacktrackingSearch consumes only non-pruned branches", () => {
+  const result = executeBacktrackingSearch(ordering("a", "b", "a"), initializeBacktrackingState());
+
+  assert.deepEqual(result.explorationOrder, ["a", "b"]);
+  assert.equal(result.evidence.some((item) => item.kind === "branch-pruning" && item.data.pruned === true), true);
+});
+
 test("executeBacktrackingSearch skips branches exhausted before selection", () => {
   const state = withBranches(branch("a", true, true), branch("b"));
   const result = executeBacktrackingSearch(ordering("a", "b"), state);

@@ -1,5 +1,6 @@
 import type { Evidence } from "../contracts";
 import type { BranchOrderingResult } from "../analysis/branchOrderingEngine";
+import { buildBranchPruningEvidence, pruneBranches } from "./branchPruningEngine";
 import {
   buildSearchBacktrackingEvidence,
   markBranchExplored,
@@ -29,19 +30,6 @@ const branchFromOrdering = (branchId: string, existing: SearchBranchState | unde
   ? { branchId, parentBranchId: null, depth: 0, explored: false, exhausted: false }
   : cloneBranch(existing);
 
-const uniqueOrderedBranchIds = (ordering: BranchOrderingResult): string[] => {
-  const seen = new Set<string>();
-  const branchIds: string[] = [];
-  for (const item of ordering?.orderedSearchSpaces ?? []) {
-    const branchId = item.searchSpace.id;
-    if (!seen.has(branchId)) {
-      seen.add(branchId);
-      branchIds.push(branchId);
-    }
-  }
-  return branchIds;
-};
-
 export function executeBacktrackingSearch(
   ordering: BranchOrderingResult,
   state: SearchBacktrackingState,
@@ -51,8 +39,9 @@ export function executeBacktrackingSearch(
     activeBranchId: state?.activeBranchId ?? null,
     branches: (state?.branches ?? []).map(cloneBranch),
   };
-  const evidence: Evidence[] = [];
-  const branchIds = uniqueOrderedBranchIds(ordering);
+  const pruning = pruneBranches(ordering);
+  const evidence: Evidence[] = buildBranchPruningEvidence(ordering, pruning);
+  const branchIds = pruning.branches.filter((branch) => !branch.pruned).map((branch) => branch.branchId);
 
   for (const branchId of branchIds) {
     currentState = registerBranch(currentState, branchFromOrdering(branchId, initialBranches.get(branchId)));
