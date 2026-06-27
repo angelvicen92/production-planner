@@ -1,5 +1,6 @@
 import type { Evidence } from "../contracts";
 import type { BacktrackingExecutionResult } from "./backtrackingSearchExecutor";
+import { addSolution, initializeSolutionPool, type SolutionPool, type SolutionSnapshot } from "./solutionPool";
 
 export interface SearchIteration {
   branchId: string;
@@ -12,6 +13,7 @@ export interface IterativeSearchResult {
   bestBranchId: string | null;
   completed: boolean;
   evidence: Evidence[];
+  solutionPool: SolutionPool;
 }
 
 const scoreForBranch = (execution: BacktrackingExecutionResult, branchId: string): number | null => {
@@ -42,6 +44,39 @@ const buildIterationEvidence = (
   },
 });
 
+const buildSolutionId = (branchId: string, index: number): string => `solution:${index + 1}:${branchId}`;
+
+const buildSolutionSnapshot = (iteration: SearchIteration, index: number): SolutionSnapshot => ({
+  solutionId: buildSolutionId(iteration.branchId, index),
+  originatingBranchId: iteration.branchId,
+  score: iteration.score,
+  metadata: {
+    explored: iteration.explored,
+    readOnly: true,
+  },
+});
+
+const buildSolutionPoolEvidence = (
+  solution: SolutionSnapshot,
+  bestSolutionId: string | null,
+  previousBestSolutionId: string | null,
+  index: number,
+): Evidence => ({
+  id: `evidence:orc-search:solution-pool:${index + 1}:${solution.solutionId}`,
+  source: "orc-search",
+  kind: "solution-pool-solution-added",
+  subjectId: solution.solutionId,
+  data: {
+    solutionId: solution.solutionId,
+    originatingBranchId: solution.originatingBranchId,
+    score: solution.score,
+    bestSolutionId,
+    previousBestSolutionId,
+    bestChanged: bestSolutionId !== previousBestSolutionId,
+    readOnly: true,
+  },
+});
+
 const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">): Evidence => ({
   id: "evidence:orc-search:iterative-solver:completed",
   source: "orc-search",
@@ -50,6 +85,8 @@ const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">
   data: {
     exploredBranchCount: result.exploredBranches.length,
     bestBranchId: result.bestBranchId,
+    bestSolutionId: result.solutionPool.bestSolutionId,
+    solutionCount: result.solutionPool.solutions.length,
     completed: result.completed,
     readOnly: true,
   },
@@ -62,6 +99,7 @@ export function executeIterativeSearch(
   const evidence: Evidence[] = [];
   let bestBranchId: string | null = null;
   let bestScore: number | null = null;
+  let solutionPool = initializeSolutionPool();
 
   for (const branchId of execution.explorationOrder ?? []) {
     const score = scoreForBranch(execution, branchId);
@@ -83,12 +121,18 @@ export function executeIterativeSearch(
 
     iterations.push(iteration);
     evidence.push(buildIterationEvidence(iteration, bestBranchId, previousBestBranchId, reason, iterations.length - 1));
+
+    const solution = buildSolutionSnapshot(iteration, iterations.length - 1);
+    const previousBestSolutionId = solutionPool.bestSolutionId;
+    solutionPool = addSolution(solutionPool, solution);
+    evidence.push(buildSolutionPoolEvidence(solution, solutionPool.bestSolutionId, previousBestSolutionId, iterations.length - 1));
   }
 
   const result = {
     exploredBranches: iterations,
     bestBranchId,
     completed: true,
+    solutionPool,
   };
 
   return {
