@@ -24,7 +24,7 @@ const bottleneck = (id: string, category: string, severity: number, explanation:
   explanation,
 });
 
-export function analyzeCriticalBottlenecks(analysis: Omit<OperationalAnalysis, "criticalBottleneckAnalysis"> | OperationalAnalysis): CriticalBottleneckAnalysis {
+export function analyzeCriticalBottlenecks(analysis: Omit<OperationalAnalysis, "criticalBottleneckAnalysis" | "resourceCriticalityAnalysis"> | OperationalAnalysis): CriticalBottleneckAnalysis {
   const bottlenecks: CriticalBottleneck[] = [];
 
   for (const resourceId of uniqueSortedNumbers(analysis.resourcePressure.overloadedResourceIds)) {

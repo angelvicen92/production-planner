@@ -5,12 +5,13 @@ import { analyzeCriticalBottlenecks } from "./criticalBottleneckAnalyzer";
 import type { OperationalAnalysis } from "./operationalStateAnalyzer";
 
 const emptyAnalysis = (): OperationalAnalysis => ({
-  resourcePressure: { totalResourceCount: 0, assignedResourceIds: [], overloadedResourceIds: [], plannedTaskIdsByResourceId: {} },
+  resourcePressure: { totalResourceCount: 0, resourceIds: [], assignedResourceIds: [], overloadedResourceIds: [], plannedTaskIdsByResourceId: {} },
   continuity: { taskCount: 0, plannedTaskCount: 0, pendingTaskCount: 0, protectedTaskCount: 0, mainFlow: { configured: false, spaceOrZoneId: null, plannedTaskIds: [], firstStart: null, lastEnd: null, internalGapMinutes: 0, gapCount: 0 } },
   fragmentation: { spaceSwitchesByContestantId: {}, totalSpaceSwitches: 0 },
   dependencySummary: { dependencyCount: 0, lockCount: 0, lockedTaskIds: [], taskIdsWithDependencies: [] },
   operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
   criticalBottleneckAnalysis: { bottlenecks: [] },
+  resourceCriticalityAnalysis: { resources: [] },
 });
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -22,7 +23,7 @@ test("Critical Bottleneck Analyzer supports an empty analysis", () => {
 test("Critical Bottleneck Analyzer detects one resource bottleneck", () => {
   const result = analyzeCriticalBottlenecks({
     ...emptyAnalysis(),
-    resourcePressure: { totalResourceCount: 1, assignedResourceIds: [3], overloadedResourceIds: [3], plannedTaskIdsByResourceId: { 3: [2, 1] } },
+    resourcePressure: { totalResourceCount: 1, resourceIds: [3], assignedResourceIds: [3], overloadedResourceIds: [3], plannedTaskIdsByResourceId: { 3: [2, 1] } },
   });
   assert.deepEqual(result.bottlenecks, [{
     id: "resource:3:overlap",
@@ -34,7 +35,7 @@ test("Critical Bottleneck Analyzer detects one resource bottleneck", () => {
 
 test("Critical Bottleneck Analyzer detects multiple bottlenecks deterministically ordered", () => {
   const result = analyzeCriticalBottlenecks({
-    resourcePressure: { totalResourceCount: 2, assignedResourceIds: [20, 10], overloadedResourceIds: [20, 10], plannedTaskIdsByResourceId: { 10: [3], 20: [2, 1] } },
+    resourcePressure: { totalResourceCount: 2, resourceIds: [10, 20], assignedResourceIds: [20, 10], overloadedResourceIds: [20, 10], plannedTaskIdsByResourceId: { 10: [3], 20: [2, 1] } },
     continuity: { taskCount: 4, plannedTaskCount: 3, pendingTaskCount: 1, protectedTaskCount: 0, mainFlow: { configured: true, spaceOrZoneId: 5, plannedTaskIds: [3, 1], firstStart: "08:00", lastEnd: "09:30", internalGapMinutes: 45, gapCount: 2 } },
     fragmentation: { spaceSwitchesByContestantId: { 7: 3 }, totalSpaceSwitches: 3 },
     dependencySummary: { dependencyCount: 2, lockCount: 2, lockedTaskIds: [4, 2], taskIdsWithDependencies: [3] },
@@ -53,7 +54,7 @@ test("Critical Bottleneck Analyzer is deterministic, structurally equal and seri
 });
 
 test("Critical Bottleneck Analyzer does not mutate its input", () => {
-  const analysis = { ...emptyAnalysis(), resourcePressure: { totalResourceCount: 1, assignedResourceIds: [1], overloadedResourceIds: [1], plannedTaskIdsByResourceId: { 1: [2, 1] } } };
+  const analysis = { ...emptyAnalysis(), resourcePressure: { totalResourceCount: 1, resourceIds: [1], assignedResourceIds: [1], overloadedResourceIds: [1], plannedTaskIdsByResourceId: { 1: [2, 1] } } };
   const before = clone(analysis);
   analyzeCriticalBottlenecks(analysis);
   assert.deepEqual(analysis, before);
