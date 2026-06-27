@@ -18,3 +18,6 @@ export { buildStrategyCandidates } from "./strategyCandidateBuilder";
 
 export type { OpportunityDiagnosis, OpportunityDiagnosisResult } from "./opportunityDiagnosis";
 export { diagnoseOpportunities } from "./opportunityDiagnosis";
+
+export type { ClassifiedOpportunity, OpportunityClassification, OpportunityClassificationResult } from "../analysis/opportunityClassificationEngine";
+export { classifyOpportunities } from "../analysis/opportunityClassificationEngine";

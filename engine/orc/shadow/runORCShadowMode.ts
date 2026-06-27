@@ -9,6 +9,7 @@ import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInpu
 import { buildOperationalMap } from "../see/operationalMap";
 import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruningFromOperationalAnalysis } from "../see/opportunityDetection";
 import { buildAdaptiveSearchSpaces } from "../see/adaptiveSearchSpaceBuilder";
+import { classifyOpportunities } from "../analysis/opportunityClassificationEngine";
 import { diagnoseOpportunities, type OpportunityDiagnosis } from "../see/opportunityDiagnosis";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { reprioritizeOpportunities } from "../see/adaptivePriority";
@@ -253,7 +254,8 @@ export function runORCShadowMode(
   const operationalMap = buildOperationalMap(operationalState);
   const operationalAnalysis = analyzeOperationalState(operationalState);
   const opportunityResult = detectOpportunitiesWithPruningFromOperationalAnalysis(operationalState, operationalAnalysis, { cognitiveState });
-  const adaptivePriorityResult = reprioritizeOpportunities(opportunityResult.opportunities, cognitiveState);
+  const classificationResult = classifyOpportunities(opportunityResult.opportunities);
+  const adaptivePriorityResult = reprioritizeOpportunities(classificationResult.opportunities, cognitiveState);
   const opportunities = adaptivePriorityResult.opportunities;
   const adaptivePrioritySummary = {
     promoted: adaptivePriorityResult.summary.promotedCount,
