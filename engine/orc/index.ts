@@ -3,6 +3,7 @@ export { deepFreeze } from "./immutability";
 export { stableStringify, structuralEquals } from "./structuralEquality";
 export { buildOperationalStateFromEngineInput } from "./adapters/fromEngineInput";
 export * from "./analysis/operationalStateAnalyzer";
+export * from "./analysis/opportunityDetectionEngine";
 export * from "./see";
 export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";
