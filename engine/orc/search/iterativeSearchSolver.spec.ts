@@ -196,3 +196,43 @@ test("executeIterativeSearch keeps branch ordering stable when evaluation scores
 
   assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["seed", "a", "b", "c"]);
 });
+
+
+test("executeIterativeSearch records temporary online search learning memory", () => {
+  const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 3 }));
+
+  assert.deepEqual(result.onlineSearchMemory, {
+    patterns: [
+      {
+        patternId: "a",
+        observations: 1,
+        averageScore: 1,
+        lastScore: 1,
+        explanation: "Branch a produced score 1 during shadow-mode search.",
+      },
+      {
+        patternId: "b",
+        observations: 1,
+        averageScore: 3,
+        lastScore: 3,
+        explanation: "Branch b produced score 3 during shadow-mode search.",
+      },
+    ],
+  });
+  assert.equal(result.evidence.filter((item) => item.kind === "iterative-search-online-learning-observation").length, 2);
+  assert.equal(result.evidence.at(-1)?.data.onlineSearchPatternCount, 2);
+});
+
+test("executeIterativeSearch consults learned patterns without changing deterministic order", () => {
+  const result = executeIterativeSearch(execution(["a", "a"], { a: 2 }));
+
+  assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["a", "a"]);
+  assert.deepEqual(result.onlineSearchMemory.patterns, [{
+    patternId: "a",
+    observations: 2,
+    averageScore: 2,
+    lastScore: 2,
+    explanation: "Branch a produced score 2 during shadow-mode search.",
+  }]);
+  assert.equal(result.evidence.some((item) => item.kind === "iterative-search-online-learning-consulted" && item.data.usedForScoring === false && item.data.usedForPruning === false), true);
+});

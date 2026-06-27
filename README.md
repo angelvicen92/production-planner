@@ -49,6 +49,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 139 — 2026-06-27 14:52 — ORC Search Space Selection Engine v1
 - ID 151 — 2026-06-27 18:54 — ORC Production Objective Evaluator v1
 - ID 152 — 2026-06-27 19:05 — ORC Evaluation-Guided Search v1
+- ID 153 — 2026-06-27 19:50 — ORC Online Search Learning v1
 
 ## Verificación básica
 
@@ -239,3 +240,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 150 — 2026-06-27 18:46 — ORC Concrete Simulation v1 — Apply Candidate Assignments in Shadow Mode
 - ID 151 — 2026-06-27 18:54 — ORC Production Objective Evaluator v1
 - ID 152 — 2026-06-27 19:05 — ORC Evaluation-Guided Search v1
+- ID 153 — 2026-06-27 19:50 — ORC Online Search Learning v1
