@@ -31,11 +31,13 @@ import { buildAdvisoryDecision } from "../advisory/advisoryDecision";
 import { DEFAULT_ORC_CONFIGURATION, ORCIntegrationMode, type ORCConfiguration, normalizeORCConfiguration } from "../config/orcIntegrationMode";
 import { consultORCAdvisory } from "../integration/advisoryIntegration";
 import { buildExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
+import { understandOperationalCriticality, type OperationalCriticality } from "../understanding/operationalCriticality";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
   operationalMap: OperationalMap;
   operationalAnalysis: OperationalAnalysis;
+  operationalCriticality: OperationalCriticality;
   opportunities: Opportunity[];
   diagnoses: OpportunityDiagnosis[];
   searchSpaces: SearchSpace[];
@@ -257,6 +259,8 @@ export function runORCShadowMode(
   let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
   const operationalAnalysis = analyzeOperationalState(operationalState);
+  const operationalCriticalityResult = understandOperationalCriticality(operationalState, cognitiveState, createdAt);
+  cognitiveState = operationalCriticalityResult.cognitiveState ?? cognitiveState;
   const opportunityResult = detectOpportunitiesWithPruningFromOperationalAnalysis(operationalState, operationalAnalysis, { cognitiveState });
   const classificationResult = classifyOpportunities(opportunityResult.opportunities);
   const prioritizationResult = prioritizeOpportunities(classificationResult.opportunities);
@@ -360,6 +364,7 @@ export function runORCShadowMode(
   };
   const evidence = [
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
+    ...operationalCriticalityResult.evidence,
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
     ...adaptivePriorityResult.evidence.map((item) => ({ ...item, createdAt })),
     ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
@@ -386,6 +391,7 @@ export function runORCShadowMode(
     operationalState,
     operationalMap,
     operationalAnalysis,
+    operationalCriticality: operationalCriticalityResult.operationalCriticality,
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
     searchSpaces: selectedSearchSpaces,
