@@ -4,6 +4,8 @@ import type { EngineInput } from "../../types";
 import type { Opportunity } from "../contracts";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { stableStringify, structuralEquals } from "../structuralEquality";
+import { classifyOpportunities } from "../analysis/opportunityClassificationEngine";
+import { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEngine";
 import { buildOperationalMap } from "./operationalMap";
 import { buildSearchSpacesForOpportunities } from "./searchSpaceBuilder";
 
@@ -43,6 +45,8 @@ const opportunity = (kind: string, taskIds = [1, 2, 3], priority = 50): Opportun
   metadata: { priority },
 });
 
+const prioritize = (opportunities: Opportunity[]) => prioritizeOpportunities(classifyOpportunities(opportunities).opportunities).opportunities;
+
 const fixture = () => {
   const state = buildOperationalStateFromEngineInput(input());
   const map = buildOperationalMap(state);
@@ -51,7 +55,7 @@ const fixture = () => {
 
 const one = (kind: string, taskIds?: number[]) => {
   const { state, map } = fixture();
-  return buildSearchSpacesForOpportunities(state, map, [opportunity(kind, taskIds)], { createdAt: "2026-06-25T00:00:00.000Z" });
+  return buildSearchSpacesForOpportunities(state, map, prioritize([opportunity(kind, taskIds)]), { createdAt: "2026-06-25T00:00:00.000Z" });
 };
 
 test("buildSearchSpacesForOpportunities returns empty arrays and valid summary without opportunities", () => {
@@ -86,7 +90,7 @@ for (const [kind, region, transformations] of [
 
 test("buildSearchSpacesForOpportunities applies maxSearchSpaces budget and emits skipped evidence", () => {
   const { state, map } = fixture();
-  const result = buildSearchSpacesForOpportunities(state, map, [opportunity("MAIN_FLOW_GAP", [1], 100), opportunity("RESOURCE_PRESSURE", [2], 90)], { maxSearchSpaces: 1 });
+  const result = buildSearchSpacesForOpportunities(state, map, prioritize([opportunity("MAIN_FLOW_GAP", [1], 100), opportunity("RESOURCE_PRESSURE", [2], 90)]), { maxSearchSpaces: 1 });
   assert.equal(result.searchSpaces.length, 1);
   assert.equal(result.summary.skippedOpportunityCount, 1);
   assert.equal(result.evidence.at(-1)?.kind, "search-space-skipped");
@@ -94,14 +98,14 @@ test("buildSearchSpacesForOpportunities applies maxSearchSpaces budget and emits
 
 test("buildSearchSpacesForOpportunities applies maxTransformationsPerSpace budget", () => {
   const result = one("MAIN_FLOW_GAP");
-  const limited = buildSearchSpacesForOpportunities(fixture().state, fixture().map, [opportunity("MAIN_FLOW_GAP")], { maxTransformationsPerSpace: 2 });
+  const limited = buildSearchSpacesForOpportunities(fixture().state, fixture().map, prioritize([opportunity("MAIN_FLOW_GAP")]), { maxTransformationsPerSpace: 2 });
   assert.equal((result.searchSpaces[0].metadata.allowedTransformations as unknown[]).length, 3);
   assert.deepEqual(limited.searchSpaces[0].metadata.allowedTransformations, ["MOVE_CHAIN_POSSIBLE", "REORDER_REGION_POSSIBLE"]);
 });
 
 test("buildSearchSpacesForOpportunities applies maxAffectedTasksPerSpace budget", () => {
   const result = one("FRAGMENTATION", [3, 1, 2]);
-  const limited = buildSearchSpacesForOpportunities(fixture().state, fixture().map, [opportunity("FRAGMENTATION", [3, 1, 2])], { maxAffectedTasksPerSpace: 2 });
+  const limited = buildSearchSpacesForOpportunities(fixture().state, fixture().map, prioritize([opportunity("FRAGMENTATION", [3, 1, 2])]), { maxAffectedTasksPerSpace: 2 });
   assert.deepEqual(result.searchSpaces[0].taskIds, [1, 2, 3]);
   assert.deepEqual(limited.searchSpaces[0].taskIds, [1, 2]);
   assert.equal(limited.searchSpaces[0].metadata.truncatedAffectedTasks, true);
@@ -112,8 +116,8 @@ test("buildSearchSpacesForOpportunities is deterministic and does not mutate inp
   const opportunities = [opportunity("RESOURCE_PRESSURE", [2], 80), opportunity("MAIN_FLOW_GAP", [1], 100)];
   const beforeState = stableStringify(state);
   const beforeOps = stableStringify(opportunities);
-  const first = buildSearchSpacesForOpportunities(state, map, opportunities, { createdAt: null });
-  const second = buildSearchSpacesForOpportunities(state, map, opportunities, { createdAt: null });
+  const first = buildSearchSpacesForOpportunities(state, map, prioritize(opportunities), { createdAt: null });
+  const second = buildSearchSpacesForOpportunities(state, map, prioritize(opportunities), { createdAt: null });
   assert.equal(structuralEquals(first, second), true);
   assert.equal(stableStringify(state), beforeState);
   assert.equal(stableStringify(opportunities), beforeOps);
