@@ -1,4 +1,5 @@
 import type { OperationalState } from "../contracts";
+import { analyzeCriticalBottlenecks, type CriticalBottleneckAnalysis } from "./criticalBottleneckAnalyzer";
 
 export interface ResourcePressureSummary {
   readonly totalResourceCount: number;
@@ -48,6 +49,7 @@ export interface OperationalAnalysis {
   readonly fragmentation: FragmentationSummary;
   readonly dependencySummary: DependencySummary;
   readonly operationalMargin: OperationalMarginSummary;
+  readonly criticalBottleneckAnalysis: CriticalBottleneckAnalysis;
 }
 
 const toMinutes = (value: string | null | undefined): number | null => {
@@ -128,11 +130,16 @@ export function analyzeOperationalState(state: OperationalState): OperationalAna
     totalSpaceSwitches += switches;
   }
 
-  return {
+  const analysisWithoutBottlenecks = {
     resourcePressure: { totalResourceCount: state.resources?.length ?? 0, assignedResourceIds, overloadedResourceIds: [...overloaded].sort((a, b) => a - b), plannedTaskIdsByResourceId },
     continuity: { taskCount: state.tasks?.length ?? 0, plannedTaskCount: planning.length, pendingTaskCount, protectedTaskCount, mainFlow: { configured: mainZoneId != null, spaceOrZoneId: mainZoneId, plannedTaskIds: mainFlowTasks.map((item) => item.taskId), firstStart: mainFlowTasks[0]?.startPlanned ?? null, lastEnd: mainFlowTasks.at(-1)?.endPlanned ?? null, internalGapMinutes, gapCount } },
     fragmentation: { spaceSwitchesByContestantId, totalSpaceSwitches },
     dependencySummary: { dependencyCount: (state.dependencies ?? []).reduce((sum, dependency) => sum + (dependency.dependsOnTaskIds?.length ?? 0) + (dependency.dependsOnTemplateIds?.length ?? 0), 0), lockCount: state.locks?.length ?? 0, lockedTaskIds: [...new Set((state.locks ?? []).map((lock) => Number(lock.taskId)).filter(Number.isFinite))].sort((a, b) => a - b), taskIdsWithDependencies: [...new Set((state.dependencies ?? []).filter((dependency) => (dependency.dependsOnTaskIds?.length ?? 0) > 0 || (dependency.dependsOnTemplateIds?.length ?? 0) > 0).map((dependency) => Number(dependency.taskId)).filter(Number.isFinite))].sort((a, b) => a - b) },
     operationalMargin: { contestantIds, stayByContestantId, maxStayContestantId, maxStayMinutes },
+  };
+
+  return {
+    ...analysisWithoutBottlenecks,
+    criticalBottleneckAnalysis: analyzeCriticalBottlenecks(analysisWithoutBottlenecks),
   };
 }

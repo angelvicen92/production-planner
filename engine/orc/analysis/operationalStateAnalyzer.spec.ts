@@ -21,6 +21,7 @@ test("OperationalAnalysis supports an empty OperationalState", () => {
     fragmentation: { spaceSwitchesByContestantId: {}, totalSpaceSwitches: 0 },
     dependencySummary: { dependencyCount: 0, lockCount: 0, lockedTaskIds: [], taskIdsWithDependencies: [] },
     operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
+    criticalBottleneckAnalysis: { bottlenecks: [] },
   });
 });
 
