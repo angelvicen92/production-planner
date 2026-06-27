@@ -59,6 +59,7 @@ export interface CandidateState {
   readonly estimatedImpact: ORCJsonValue;
   readonly estimatedCost: ORCJsonValue;
   readonly confidence: number;
+  readonly sourceAssignments: ReadonlyArray<Candidate["assignments"][number]>;
 }
 
 export interface Candidate {
@@ -117,7 +118,7 @@ export interface SimulatedState {
   readonly baseStateId: string;
   readonly operationalStateSnapshot: Readonly<OperationalState>;
   readonly appliedTransformations: ReadonlyArray<PlannedTransformation>;
-  readonly simulationMode: "READ_ONLY_BASELINE";
+  readonly simulationMode: "READ_ONLY_BASELINE" | "ASSIGNMENT_APPLICATION_SHADOW";
   readonly readOnly: true;
   readonly createdAt: string | null;
 }

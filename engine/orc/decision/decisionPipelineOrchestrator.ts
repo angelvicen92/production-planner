@@ -113,7 +113,7 @@ export function executeDecisionPipeline(
 
   evidence.push(buildStageEvidence("simulation", "start", stateId, createdAt, { input: "TransformationResult", output: "SimulationResult" }, { candidateStates: transformation.candidateStates.length }));
   const simulation = simulateCandidateStates(input.operationalState, transformation.candidateStates, { createdAt });
-  evidence.push(buildStageEvidence("simulation", "end", stateId, createdAt, { input: "TransformationResult", output: "SimulationResult" }, { candidateStates: transformation.candidateStates.length, simulatedStates: simulation.simulatedStates.length, evidence: simulation.evidence.length }));
+  evidence.push(buildStageEvidence("simulation", "end", stateId, createdAt, { input: "TransformationResult", output: "SimulationResult" }, { candidateStates: transformation.candidateStates.length, simulatedStates: simulation.simulatedStates.length, evidence: simulation.evidence.length, realChanges: simulation.simulatedStates.reduce((total, simulated) => total + simulated.appliedTransformations.length, 0) }));
 
   evidence.push(buildStageEvidence("validation", "start", stateId, createdAt, { input: "SimulationResult", output: "ValidationResult" }, { simulatedStates: simulation.simulatedStates.length }));
   const validation = validateSimulatedStates(simulation.simulatedStates, { createdAt });

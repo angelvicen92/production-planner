@@ -90,6 +90,7 @@ export function buildCandidateStates(
       estimatedImpact,
       estimatedCost,
       confidence,
+      sourceAssignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })),
     }) as CandidateState;
     candidateStates.push(candidateState);
     evidence.push({
@@ -107,6 +108,8 @@ export function buildCandidateStates(
         estimatedImpact,
         estimatedCost,
         confidence,
+        sourceAssignmentCount: candidate.assignments.length,
+        sourceAssignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })),
         readOnly: true,
         executesTransformations: false,
       },

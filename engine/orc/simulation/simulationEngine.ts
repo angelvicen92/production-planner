@@ -1,5 +1,6 @@
 import type { CandidateState, Evidence, OperationalState, SimulatedState } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { applyCandidateAssignments } from "./applyCandidateAssignments";
 
 export interface SimulationEngineOptions {
   maxSimulations?: number;
@@ -17,7 +18,8 @@ export interface SimulationEngineResult {
 }
 
 const DEFAULT_MAX_SIMULATIONS = 20;
-const SIMULATION_MODE = "READ_ONLY_BASELINE";
+const READ_ONLY_SIMULATION_MODE = "READ_ONLY_BASELINE";
+const ASSIGNMENT_SIMULATION_MODE = "ASSIGNMENT_APPLICATION_SHADOW";
 
 function normalizeBudget(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULT_MAX_SIMULATIONS;
@@ -54,14 +56,19 @@ export function simulateCandidateStates(
     }
 
     const simulatedStateId = `orc-simulation:simulated-state:${candidateState.id}`;
-    const snapshot = deepFreeze(cloneOperationalState(state)) as OperationalState;
+    const officialStateBefore = JSON.stringify(state);
+    const mutableSnapshot = cloneOperationalState(state);
+    const application = applyCandidateAssignments(mutableSnapshot, candidateState.sourceAssignments ?? []);
+    const officialStateUnchanged = JSON.stringify(state) === officialStateBefore;
+    const simulationMode = (candidateState.sourceAssignments?.length ?? 0) > 0 ? ASSIGNMENT_SIMULATION_MODE : READ_ONLY_SIMULATION_MODE;
+    const snapshot = deepFreeze(mutableSnapshot) as OperationalState;
     const simulatedState: SimulatedState = deepFreeze({
       id: simulatedStateId,
       candidateStateId: candidateState.id,
       baseStateId: state.id,
       operationalStateSnapshot: snapshot,
-      appliedTransformations: [],
-      simulationMode: SIMULATION_MODE,
+      appliedTransformations: application.appliedTransformations,
+      simulationMode,
       readOnly: true,
       createdAt,
     }) as SimulatedState;
@@ -77,12 +84,16 @@ export function simulateCandidateStates(
         candidateStateId: candidateState.id,
         simulatedStateId,
         baseStateId: state.id,
-        simulationMode: SIMULATION_MODE,
+        simulationMode,
         readOnly: true,
-        appliedTransformationCount: 0,
-        appliedTransformations: [],
+        appliedTransformationCount: application.appliedTransformations.length,
+        appliedTransformations: application.appliedTransformations,
+        assignmentsReceived: candidateState.sourceAssignments?.length ?? 0,
+        assignmentApplication: application.evidenceData,
+        realChangeCount: application.realChangeCount,
+        officialStateUnchanged,
         mutatesOperationalState: false,
-        executesTransformations: false,
+        executesTransformations: application.realChangeCount > 0,
       },
     });
   }
