@@ -229,3 +229,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 142 — 2026-06-27 16:58 — ORC Search Backtracking Framework v1
 - ID 143 — 2026-06-27 17:06 — ORC Backtracking Search Executor v1
 - ID 144 — 2026-06-27 17:28 — ORC Branch Pruning Engine v1
+- ID 145 — 2026-06-27 17:36 — ORC Iterative Search Solver v1
