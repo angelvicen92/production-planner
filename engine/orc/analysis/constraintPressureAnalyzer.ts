@@ -1,6 +1,6 @@
 import type { OperationalAnalysis } from "./operationalStateAnalyzer";
 
-type ConstraintPressureInput = Omit<OperationalAnalysis, "constraintPressureAnalysis"> | OperationalAnalysis;
+type ConstraintPressureInput = Omit<OperationalAnalysis, "constraintPressureAnalysis" | "operationalPriorityMap"> | OperationalAnalysis;
 
 export interface ConstraintPressure {
   readonly constraintId: string;
