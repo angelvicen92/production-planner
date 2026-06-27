@@ -1,3 +1,5 @@
+import type { OperationalAnalysis } from "../analysis/operationalStateAnalyzer";
+import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
 import type { CognitiveState, Evidence, OperationalState, Opportunity, ORCRecord } from "../contracts";
 import { shouldSkipOpportunity } from "../cognitive/cognitiveFeedback";
 import { pruneRepeatedOpportunities, type CognitivePruningStats } from "../cognitive/cognitivePruning";
@@ -44,37 +46,46 @@ export interface OpportunityDetectionOptions {
   cognitiveState?: CognitiveState;
 }
 
-export function detectOpportunitiesFromOperationalMap(state: OperationalState, map: OperationalMap, options: OpportunityDetectionOptions = {}): Opportunity[] {
+export function detectOpportunitiesFromOperationalAnalysis(state: OperationalState, analysis: OperationalAnalysis, options: OpportunityDetectionOptions = {}): Opportunity[] {
   const opportunities: Opportunity[] = [];
-  if (map.mainFlow?.configured && map.mainFlow.gapCount > 0) {
-    opportunities.push(makeOpportunity("MAIN_FLOW_GAP", "Internal gaps were detected in the configured main flow.", map.mainFlow.plannedTaskIds, { impactExpected: "reduce_idle_time", gapCount: map.mainFlow.gapCount, internalGapMinutes: map.mainFlow.internalGapMinutes, affectedRegion: "main-flow" }));
+  if (analysis.continuity.mainFlow.configured && analysis.continuity.mainFlow.gapCount > 0) {
+    opportunities.push(makeOpportunity("MAIN_FLOW_GAP", "Internal gaps were detected in the configured main flow.", [...analysis.continuity.mainFlow.plannedTaskIds], { impactExpected: "reduce_idle_time", gapCount: analysis.continuity.mainFlow.gapCount, internalGapMinutes: analysis.continuity.mainFlow.internalGapMinutes, affectedRegion: "main-flow" }));
   }
-  if (map.pendingTaskCount > 0) {
+  if (analysis.continuity.pendingTaskCount > 0) {
     const pendingTaskIds = (state.tasks ?? []).filter((task) => task.status === "pending" && !(state.planning ?? []).some((item) => item.taskId === task.id)).map((task) => task.id);
-    opportunities.push(makeOpportunity("UNPLANNED_PENDING_TASKS", "Pending tasks without planned placement were detected.", pendingTaskIds, { impactExpected: "increase_completion", pendingTaskCount: map.pendingTaskCount, urgency: "high" }));
+    opportunities.push(makeOpportunity("UNPLANNED_PENDING_TASKS", "Pending tasks without planned placement were detected.", pendingTaskIds, { impactExpected: "increase_completion", pendingTaskCount: analysis.continuity.pendingTaskCount, urgency: "high" }));
   }
-  if (map.resources.overloadedResourceIds.length > 0) {
-    const taskIds = (state.planning ?? []).filter((item) => (item.assignedResourceIds ?? []).some((id) => map.resources.overloadedResourceIds.includes(id))).map((item) => item.taskId);
-    opportunities.push(makeOpportunity("RESOURCE_PRESSURE", "Assigned resources appear in overlapping planned intervals.", taskIds, { impactExpected: "reduce_resource_conflicts", overloadedResourceIds: map.resources.overloadedResourceIds, criticality: "high" }));
+  if (analysis.resourcePressure.overloadedResourceIds.length > 0) {
+    const overloadedResourceIds = [...analysis.resourcePressure.overloadedResourceIds];
+    const taskIds = (state.planning ?? []).filter((item) => (item.assignedResourceIds ?? []).some((id) => overloadedResourceIds.includes(id))).map((item) => item.taskId);
+    opportunities.push(makeOpportunity("RESOURCE_PRESSURE", "Assigned resources appear in overlapping planned intervals.", taskIds, { impactExpected: "reduce_resource_conflicts", overloadedResourceIds, criticality: "high" }));
   }
-  if (map.talents.maxStayContestantId != null && map.talents.maxStayMinutes > 240) {
-    const taskIds = (state.planning ?? []).filter((item) => state.tasks.find((task) => task.id === item.taskId)?.contestantId === map.talents.maxStayContestantId).map((item) => item.taskId);
-    opportunities.push(makeOpportunity("EXCESSIVE_TALENT_STAY", "A contestant has an extended planned stay window.", taskIds, { impactExpected: "reduce_talent_stay", maxStayContestantId: map.talents.maxStayContestantId, maxStayMinutes: map.talents.maxStayMinutes }));
+  if (analysis.operationalMargin.maxStayContestantId != null && analysis.operationalMargin.maxStayMinutes > 240) {
+    const taskIds = (state.planning ?? []).filter((item) => state.tasks.find((task) => task.id === item.taskId)?.contestantId === analysis.operationalMargin.maxStayContestantId).map((item) => item.taskId);
+    opportunities.push(makeOpportunity("EXCESSIVE_TALENT_STAY", "A contestant has an extended planned stay window.", taskIds, { impactExpected: "reduce_talent_stay", maxStayContestantId: analysis.operationalMargin.maxStayContestantId, maxStayMinutes: analysis.operationalMargin.maxStayMinutes }));
   }
-  if (map.lockCount > 0 && map.lockCount >= Math.max(2, Math.ceil(map.taskCount * 0.25))) {
-    opportunities.push(makeOpportunity("LOCK_PRESSURE", "Locks constrain a significant part of the operational state.", (state.locks ?? []).map((lock) => lock.taskId), { impactExpected: "improve_locked_region_awareness", lockCount: map.lockCount }));
+  if (analysis.dependencySummary.lockCount > 0 && analysis.dependencySummary.lockCount >= Math.max(2, Math.ceil(analysis.continuity.taskCount * 0.25))) {
+    opportunities.push(makeOpportunity("LOCK_PRESSURE", "Locks constrain a significant part of the operational state.", [...analysis.dependencySummary.lockedTaskIds], { impactExpected: "improve_locked_region_awareness", lockCount: analysis.dependencySummary.lockCount }));
   }
-  if (map.fragmentation.totalSpaceSwitches > 2) {
-    opportunities.push(makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", state.planning.map((item) => item.taskId), { impactExpected: "reduce_space_switches", totalSpaceSwitches: map.fragmentation.totalSpaceSwitches }));
+  if (analysis.fragmentation.totalSpaceSwitches > 2) {
+    opportunities.push(makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", state.planning.map((item) => item.taskId), { impactExpected: "reduce_space_switches", totalSpaceSwitches: analysis.fragmentation.totalSpaceSwitches }));
   }
   const ordered = prioritizeOpportunities(opportunities);
   return options.cognitiveState ? pruneRepeatedOpportunities(options.cognitiveState, ordered).items : ordered;
 }
 
-export function detectOpportunitiesWithPruning(state: OperationalState, map: OperationalMap, options: OpportunityDetectionOptions = {}): { opportunities: Opportunity[]; pruning: CognitivePruningStats } {
-  const unpruned = detectOpportunitiesFromOperationalMap(state, map);
+export function detectOpportunitiesFromOperationalMap(state: OperationalState, _map: OperationalMap, options: OpportunityDetectionOptions = {}): Opportunity[] {
+  return detectOpportunitiesFromOperationalAnalysis(state, analyzeOperationalState(state), options);
+}
+
+export function detectOpportunitiesWithPruningFromOperationalAnalysis(state: OperationalState, analysis: OperationalAnalysis, options: OpportunityDetectionOptions = {}): { opportunities: Opportunity[]; pruning: CognitivePruningStats } {
+  const unpruned = detectOpportunitiesFromOperationalAnalysis(state, analysis);
   const result = options.cognitiveState ? pruneRepeatedOpportunities(options.cognitiveState, unpruned) : { items: unpruned, stats: { generatedCount: unpruned.length, keptCount: unpruned.length, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } };
   return { opportunities: result.items, pruning: result.stats };
+}
+
+export function detectOpportunitiesWithPruning(state: OperationalState, _map: OperationalMap, options: OpportunityDetectionOptions = {}): { opportunities: Opportunity[]; pruning: CognitivePruningStats } {
+  return detectOpportunitiesWithPruningFromOperationalAnalysis(state, analyzeOperationalState(state), options);
 }
 
 export function buildOpportunityDetectionEvidence(state: OperationalState, map: OperationalMap, opportunities: Opportunity[], createdAt: string | null = null, cognitiveState?: CognitiveState): Evidence[] {
