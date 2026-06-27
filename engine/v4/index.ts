@@ -11,6 +11,8 @@ import type { V4CandidateRunnerDiagnostics, V4CandidateStrategyId } from "./cand
 import type { MainFlowSequenceSearchDiagnostics } from "./mainFlowSequenceSearch";
 import type { V3V4QualityComparison } from "./comparison";
 import { runV4ProOrchestrator } from "./orchestrator";
+import { consultORCAdvisory, type AdvisoryIntegrationResult } from "../orc/integration/advisoryIntegration";
+import type { ORCShadowModeResult } from "../orc/shadow/runORCShadowMode";
 
 export const ENGINE_V4_VERSION = "v4" as const;
 
@@ -39,7 +41,15 @@ export interface EngineV4Diagnostics {
   executiveSummary?: { verdict: string; headline: string; wins: string[]; losses: string[]; risks: string[]; selectedStrategy: V4CandidateStrategyId };
   complexityAssessment?: import("./orchestrator/complexity").V4ScenarioComplexityAssessment;
   earlyExit?: { applied: boolean; fallbackToV3Baseline: boolean; reason: string };
+  orcAdvisoryIntegration?: AdvisoryIntegrationResult;
 }
+
+type EngineV4ORCAdvisoryOptions = EngineV3Options & {
+  orcAdvisoryIntegration?: {
+    enabled?: boolean;
+    shadowResult?: ORCShadowModeResult | null;
+  };
+};
 
 export interface EngineV4Result {
   output: EngineOutput;
@@ -47,7 +57,18 @@ export interface EngineV4Result {
 }
 
 export function generatePlanV4(input: EngineInput, options?: EngineV3Options): EngineV4Result {
-  return runV4ProOrchestrator(input, options as any);
+  const result = runV4ProOrchestrator(input, options as any);
+  const advisoryOptions = (options as EngineV4ORCAdvisoryOptions | undefined)?.orcAdvisoryIntegration;
+  if (advisoryOptions?.enabled === true) {
+    return {
+      ...result,
+      diagnostics: {
+        ...result.diagnostics,
+        orcAdvisoryIntegration: consultORCAdvisory(advisoryOptions.shadowResult ?? null),
+      },
+    };
+  }
+  return result;
 }
 
 export type * from "../orc/contracts";
