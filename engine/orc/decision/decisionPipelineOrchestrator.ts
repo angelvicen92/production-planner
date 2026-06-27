@@ -11,6 +11,8 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import type { ValidationEngineResult } from "../validation/validationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import type { DecisionInput } from "./decisionInput";
+import type { DecisionTrace } from "./decisionTraceBuilder";
+import { buildDecisionTrace } from "./decisionTraceBuilder";
 import type { RankingEngineResult } from "./rankingEngine";
 import { rankDecisionInput } from "./rankingEngine";
 
@@ -29,6 +31,7 @@ export interface DecisionPipelineResult {
   ranking: RankingResult;
   commit: CommitResult;
   evidence: Evidence[];
+  decisionTrace: DecisionTrace;
 }
 
 export interface DecisionPipelineInput extends DecisionInput {
@@ -129,5 +132,8 @@ export function executeDecisionPipeline(
   const commit = buildCommitDecisions(ranking.rankedOperationalValues, { createdAt });
   evidence.push(buildStageEvidence("commit", "end", stateId, createdAt, { input: "RankingResult", output: "CommitResult" }, { commitDecisions: commit.commitDecisions.length, commits: commit.summary.commitCount, rejects: commit.summary.rejectCount, evidence: commit.evidence.length }));
 
-  return deepFreeze({ transformation, simulation, validation, evaluation, ranking, commit, evidence }) as DecisionPipelineResult;
+  const pipelineResult = { transformation, simulation, validation, evaluation, ranking, commit, evidence } as DecisionPipelineResult;
+  const decisionTrace = buildDecisionTrace(pipelineResult);
+
+  return deepFreeze({ ...pipelineResult, decisionTrace }) as DecisionPipelineResult;
 }
