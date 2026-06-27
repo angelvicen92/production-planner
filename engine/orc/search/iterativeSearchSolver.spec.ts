@@ -25,7 +25,7 @@ test("executeIterativeSearch supports an empty tree", () => {
 test("executeIterativeSearch explores one branch and keeps it as best when scored", () => {
   const result = executeIterativeSearch(execution(["a"], { a: 10 }));
 
-  assert.deepEqual(result.exploredBranches, [{ branchId: "a", explored: true, score: 10, solutionId: "solution:1:a" }]);
+  assert.deepEqual(result.exploredBranches, [{ branchId: "a", explored: true, score: 10, productionObjectiveScore: null, solutionId: "solution:1:a" }]);
   assert.equal(result.bestBranchId, "a");
 });
 
@@ -39,8 +39,8 @@ test("executeIterativeSearch represents retroceso by continuing after exhausted 
   const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 2 }));
 
   assert.deepEqual(result.exploredBranches, [
-    { branchId: "a", explored: true, score: 1, solutionId: "solution:1:a" },
-    { branchId: "b", explored: true, score: 2, solutionId: "solution:2:b" },
+    { branchId: "a", explored: true, score: 1, productionObjectiveScore: null, solutionId: "solution:1:a" },
+    { branchId: "b", explored: true, score: 2, productionObjectiveScore: null, solutionId: "solution:2:b" },
   ]);
   assert.equal(result.completed, true);
 });
@@ -132,6 +132,7 @@ test("executeIterativeSearch prepares incremental replanning for every discarded
     explored: true,
     previousBestBranchId: null,
     score: 1,
+    productionObjectiveScore: null,
     solutionId: "solution:1:a",
   });
 });
@@ -149,12 +150,49 @@ test("executeIterativeSearch records reconstructible incremental replanning evid
         explored: true,
         previousBestBranchId: null,
         score: 1,
+        productionObjectiveScore: null,
         solutionId: "solution:1:a",
       },
-      replannedElements: ["bestBranchId", "branchId", "explored", "previousBestBranchId", "score", "solutionId"],
+      replannedElements: ["bestBranchId", "branchId", "explored", "previousBestBranchId", "productionObjectiveScore", "score", "solutionId"],
       reason: "Branch a was discarded; reusable partial state was preserved for deterministic shadow-mode incremental replanning.",
       readOnly: true,
       shadowModeOnly: true,
     },
   ]);
+});
+
+
+const objectiveScore = (overallScore: number) => ({
+  overallScore,
+  continuityScore: overallScore,
+  availabilityScore: overallScore,
+  criticalResourceScore: overallScore,
+  waitingTimeScore: overallScore,
+  replanningImpactScore: overallScore,
+  operationalFeasibilityScore: overallScore,
+});
+
+test("executeIterativeSearch reorders pending branches by evaluated ProductionObjectiveScore", () => {
+  const input = execution(["seed", "low", "high", "mid"], { seed: 1, low: 1, high: 9, mid: 5 });
+  input.branchProductionObjectiveScores = {
+    seed: objectiveScore(1),
+    low: objectiveScore(1),
+    high: objectiveScore(9),
+    mid: objectiveScore(5),
+  };
+
+  const result = executeIterativeSearch(input);
+
+  assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["seed", "high", "mid", "low"]);
+  assert.equal(result.bestBranchId, "high");
+  assert.deepEqual(result.exploredBranches[1]?.productionObjectiveScore, objectiveScore(9));
+  assert.equal(result.evidence.some((item) => item.kind === "iterative-search-evaluation-guided-reorder" && item.data.branchId === "high" && item.data.scoreUsedForDecision === 9), true);
+});
+
+test("executeIterativeSearch keeps branch ordering stable when evaluation scores tie", () => {
+  const input = execution(["seed", "a", "b", "c"], { seed: 1, a: 5, b: 5, c: 4 });
+
+  const result = executeIterativeSearch(input);
+
+  assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["seed", "a", "b", "c"]);
 });

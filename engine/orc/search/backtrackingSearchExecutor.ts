@@ -1,4 +1,4 @@
-import type { Evidence } from "../contracts";
+import type { Evidence, ProductionObjectiveScore } from "../contracts";
 import type { BranchOrderingResult } from "../analysis/branchOrderingEngine";
 import { buildBranchPruningEvidence, pruneBranches } from "./branchPruningEngine";
 import {
@@ -16,6 +16,7 @@ export interface BacktrackingExecutionResult {
   skippedBranches: string[];
   exhaustedBranches: string[];
   branchScores: Record<string, number>;
+  branchProductionObjectiveScores?: Record<string, ProductionObjectiveScore>;
   evidence: Evidence[];
 }
 
