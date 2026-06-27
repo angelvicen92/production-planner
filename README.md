@@ -48,6 +48,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 122 — 2026-06-27 02:20 — ORC Execution Evidence Recorder v1
 - ID 122 — 2026-06-27 02:27 — ORC Production Replay Engine v1
 - ID 124 — 2026-06-27 02:54 — ORC Opportunity Detection Engine v2
+- ID 124 — 2026-06-27 03:01 — ORC Opportunity Classification Engine v1
 
 - ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
 - ID 121 — 2026-06-26 23:55 — ORC Advisory Integration Layer v1
