@@ -1,11 +1,13 @@
 import type { EngineInput } from "../../types";
 import type { AdvisoryDecision } from "../advisory/advisoryDecision";
+import type { OperationalAnalysis } from "../analysis/operationalStateAnalyzer";
+import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
 import type { ExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildOperationalMap } from "../see/operationalMap";
-import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruning } from "../see/opportunityDetection";
+import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruningFromOperationalAnalysis } from "../see/opportunityDetection";
 import { buildAdaptiveSearchSpaces } from "../see/adaptiveSearchSpaceBuilder";
 import { diagnoseOpportunities, type OpportunityDiagnosis } from "../see/opportunityDiagnosis";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
@@ -28,6 +30,7 @@ import { buildExecutionEvidenceRecord } from "../evidence/executionEvidenceRecor
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
   operationalMap: OperationalMap;
+  operationalAnalysis: OperationalAnalysis;
   opportunities: Opportunity[];
   diagnoses: OpportunityDiagnosis[];
   searchSpaces: SearchSpace[];
@@ -248,7 +251,8 @@ export function runORCShadowMode(
   const cognitiveStateInitial = options.cognitiveState ?? createInitialCognitiveState(createdAt);
   let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
-  const opportunityResult = detectOpportunitiesWithPruning(operationalState, operationalMap, { cognitiveState });
+  const operationalAnalysis = analyzeOperationalState(operationalState);
+  const opportunityResult = detectOpportunitiesWithPruningFromOperationalAnalysis(operationalState, operationalAnalysis, { cognitiveState });
   const adaptivePriorityResult = reprioritizeOpportunities(opportunityResult.opportunities, cognitiveState);
   const opportunities = adaptivePriorityResult.opportunities;
   const adaptivePrioritySummary = {
@@ -349,6 +353,7 @@ export function runORCShadowMode(
   const preliminaryResult = {
     operationalState,
     operationalMap,
+    operationalAnalysis,
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
     searchSpaces: searchSpaceResult.searchSpaces,
