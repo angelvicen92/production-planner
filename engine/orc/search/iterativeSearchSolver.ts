@@ -10,7 +10,7 @@ import {
   type SolutionSnapshot,
 } from "./solutionPool";
 import { initializeOnlineSearchMemory, queryLearnedPattern, registerSearchObservation } from "./onlineSearchLearning";
-import { buildStateSignature, lookupTransposition, registerTransposition, type TranspositionTable } from "./transpositionTable";
+import { buildStateSignature, decideDominancePruning, lookupTransposition, registerTransposition, type DominancePruningDecision, type TranspositionTable } from "./transpositionTable";
 
 export interface SearchIteration {
   branchId: string;
@@ -28,7 +28,7 @@ export interface IterativeSearchResult {
   solutionPool: SolutionPool;
   incrementalReplanningResults: IncrementalReplanningResult[];
   onlineSearchMemory: OnlineSearchMemory;
-  transpositionEntries: Array<{ signature: string; bestScore: number; branchId: string; visits: number }>;
+  transpositionEntries: Array<{ signature: string; bestScore: number; branchId: string; visits: number; hasCompleteSolution: boolean; dominanceExact: boolean }>;
 }
 
 const finiteScore = (value: unknown): number | null =>
@@ -335,6 +335,32 @@ const buildTranspositionEvidence = (
   };
 };
 
+const buildDominancePruningEvidence = (
+  branchId: string,
+  decision: DominancePruningDecision,
+  visits: number,
+  index: number,
+): Evidence => ({
+  id: `evidence:orc-search:dominance-pruning:${index + 1}:${branchId}`,
+  source: "orc-search",
+  kind: "iterative-search-dominance-pruning",
+  subjectId: branchId,
+  data: {
+    branchId,
+    signature: decision.signature,
+    dominantBranchId: decision.dominantBranchId,
+    dominantScore: decision.dominantScore,
+    candidateScore: decision.candidateScore,
+    pruned: decision.shouldPrune,
+    visits,
+    reason: decision.reason,
+    evidenceComplete: decision.evidenceComplete,
+    exactDominance: decision.exactDominance,
+    readOnly: true,
+    shadowModeOnly: true,
+  },
+});
+
 const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">): Evidence => ({
   id: "evidence:orc-search:iterative-solver:completed",
   source: "orc-search",
@@ -350,6 +376,7 @@ const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">
     onlineSearchMemory: result.onlineSearchMemory,
     transpositionEntryCount: result.transpositionEntries.length,
     transpositionEntries: result.transpositionEntries,
+    dominancePrunedBranchCount: result.exploredBranches.filter((branch) => !branch.explored).length,
     completed: result.completed,
     readOnly: true,
     shadowModeOnly: true,
@@ -378,8 +405,17 @@ export function executeIterativeSearch(
     if (simulatedState != null) {
       const signature = buildStateSignature(simulatedState);
       const equivalent = lookupTransposition(transpositionTable, signature);
+      const dominance = decideDominancePruning(transpositionTable, signature, score);
       transpositionTable = registerTransposition(transpositionTable, signature, score ?? Number.NEGATIVE_INFINITY, branchId);
       evidence.push(buildTranspositionEvidence(branchId, signature.signature, equivalent, transpositionTable, iterations.length));
+      if (dominance.dominantBranchId != null) {
+        evidence.push(buildDominancePruningEvidence(branchId, dominance, transpositionTable.entries.get(signature.signature)?.visits ?? 1, iterations.length));
+      }
+      if (dominance.shouldPrune) {
+        const solutionId = buildSolutionId(branchId, iterations.length);
+        iterations.push({ branchId, explored: false, score, productionObjectiveScore: productionObjectiveScoreForBranch(execution, branchId), solutionId });
+        continue;
+      }
     }
     const productionObjectiveScore = productionObjectiveScoreForBranch(execution, branchId);
     const solutionId = buildSolutionId(branchId, iterations.length);
