@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { structuralEquals } from "../structuralEquality";
 import {
   addSolution,
+  compareSolutions,
   initializeSolutionPool,
   selectBestSolution,
   type SolutionPool,
@@ -83,4 +84,23 @@ test("solution pool operations do not mutate inputs", () => {
   assert.deepEqual(next, beforeSolution);
   assert.notEqual(updated, pool);
   assert.notEqual(updated.solutions, pool.solutions);
+});
+
+test("compareSolutions reports deterministic winner without mutating the pool", () => {
+  const pool = [solution("solution:a", 2, "a")]
+    .reduce<SolutionPool>(addSolution, initializeSolutionPool());
+  const candidate = solution("solution:b", 3, "b");
+  const beforePool = JSON.parse(JSON.stringify(pool));
+  const beforeCandidate = JSON.parse(JSON.stringify(candidate));
+
+  assert.deepEqual(compareSolutions(pool, candidate), {
+    candidateSolutionId: "solution:b",
+    previousBestSolutionId: "solution:a",
+    winnerSolutionId: "solution:b",
+    candidateScore: 3,
+    previousBestScore: 2,
+    bestChanged: true,
+  });
+  assert.deepEqual(pool, beforePool);
+  assert.deepEqual(candidate, beforeCandidate);
 });

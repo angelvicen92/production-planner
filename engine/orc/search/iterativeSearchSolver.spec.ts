@@ -25,7 +25,7 @@ test("executeIterativeSearch supports an empty tree", () => {
 test("executeIterativeSearch explores one branch and keeps it as best when scored", () => {
   const result = executeIterativeSearch(execution(["a"], { a: 10 }));
 
-  assert.deepEqual(result.exploredBranches, [{ branchId: "a", explored: true, score: 10 }]);
+  assert.deepEqual(result.exploredBranches, [{ branchId: "a", explored: true, score: 10, solutionId: "solution:1:a" }]);
   assert.equal(result.bestBranchId, "a");
 });
 
@@ -39,8 +39,8 @@ test("executeIterativeSearch represents retroceso by continuing after exhausted 
   const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 2 }));
 
   assert.deepEqual(result.exploredBranches, [
-    { branchId: "a", explored: true, score: 1 },
-    { branchId: "b", explored: true, score: 2 },
+    { branchId: "a", explored: true, score: 1, solutionId: "solution:1:a" },
+    { branchId: "b", explored: true, score: 2, solutionId: "solution:2:b" },
   ]);
   assert.equal(result.completed, true);
 });
@@ -92,26 +92,30 @@ test("executeIterativeSearch records every explored branch in the solution pool"
 
 test("executeIterativeSearch emits reconstructible solution pool evidence", () => {
   const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 2 }));
-  const solutionEvidence = result.evidence.filter((item) => item.kind === "solution-pool-solution-added");
+  const solutionEvidence = result.evidence.filter((item) => item.kind === "iterative-search-solution-comparison");
 
   assert.deepEqual(solutionEvidence.map((item) => item.data), [
     {
-      solutionId: "solution:1:a",
-      originatingBranchId: "a",
-      score: 1,
-      bestSolutionId: "solution:1:a",
+      candidateSolutionId: "solution:1:a",
       previousBestSolutionId: null,
+      winnerSolutionId: "solution:1:a",
+      candidateScore: 1,
+      previousBestScore: null,
       bestChanged: true,
+      reason: "First complete solution becomes the current best solution.",
       readOnly: true,
+      shadowModeOnly: true,
     },
     {
-      solutionId: "solution:2:b",
-      originatingBranchId: "b",
-      score: 2,
-      bestSolutionId: "solution:2:b",
+      candidateSolutionId: "solution:2:b",
       previousBestSolutionId: "solution:1:a",
+      winnerSolutionId: "solution:2:b",
+      candidateScore: 2,
+      previousBestScore: 1,
       bestChanged: true,
+      reason: "Candidate solution score is greater than the previous best solution score.",
       readOnly: true,
+      shadowModeOnly: true,
     },
   ]);
   assert.equal(result.evidence.at(-1)?.data.bestSolutionId, "solution:2:b");
