@@ -79,7 +79,10 @@ const candidateEvidencePayload = (candidate: Candidate): Record<string, unknown>
 });
 
 export function buildCandidates(searchSpaces: SearchSpace[]): CandidateBuilderResult {
-  const sourceSearchSpaces = [...(searchSpaces ?? [])];
+  const sourceSearchSpaces = [...(searchSpaces ?? [])].filter((searchSpace) => {
+    const selection = searchSpace.metadata?.searchSpaceSelection;
+    return !(selection != null && typeof selection === "object" && (selection as Record<string, unknown>).selected === false);
+  });
   if (sourceSearchSpaces.length === 0) {
     return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } } };
   }

@@ -2,6 +2,8 @@ import type { EngineInput } from "../../types";
 import type { AdvisoryDecision } from "../advisory/advisoryDecision";
 import type { OperationalAnalysis } from "../analysis/operationalStateAnalyzer";
 import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
+import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
+import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
 import type { ExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
 import type { OperationalMap } from "../see/operationalMap";
@@ -265,10 +267,19 @@ export function runORCShadowMode(
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
   const diagnosisResult = diagnoseOpportunities(opportunities, operationalState, cognitiveState);
   const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses });
+  const explorationValueAnalysis = estimateExplorationValue(searchSpaceResult.searchSpaces);
+  const searchSpaceSelectionResult = selectSearchSpaces(searchSpaceResult.searchSpaces, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis);
+  const selectedSearchSpaces = searchSpaceSelectionResult.selected.filter((item) => item.selected).map((item) => ({
+    ...item.searchSpace,
+    explorationValue: explorationValueAnalysis.values.find((value) => value.searchSpaceId === item.searchSpace.id) ?? item.searchSpace.explorationValue,
+    evidenceIds: [...item.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${item.searchSpace.id}`],
+    metadata: { ...item.searchSpace.metadata, searchSpaceSelection: { selected: item.selected, selectionReason: item.selectionReason } },
+  }));
+  const searchSpaceSelectionEvidence = buildSearchSpaceSelectionEvidence(searchSpaceSelectionResult, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis, createdAt);
   const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
-  const candidateResult = buildCandidatesFromSearchSpaces(searchSpaceResult.searchSpaces);
+  const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces);
   const decisionInput = buildDecisionInput(candidateResult);
-  cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
+  cognitiveState = selectedSearchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
   const repeatedCandidateIds = candidateResult.summary.pruning.prunedItems.map((item) => item.id);
   cognitiveState = candidateResult.candidates.reduce((state) => updateReasoningBudget(state, consumeCandidate(state.reasoningBudget)), cognitiveState);
   const decisionPipelineResult = executeDecisionPipeline({ ...decisionInput, operationalState, createdAt });
@@ -277,11 +288,11 @@ export function runORCShadowMode(
   cognitiveState = simulationResult.simulatedStates.reduce((state, simulatedState) => updateReasoningBudget(recordSimulatedCandidate(state, simulatedState.candidateStateId), consumeSimulation(state.reasoningBudget)), cognitiveState);
   const validationResult = decisionPipelineResult.validation;
   const evaluatorResult = decisionPipelineResult.evaluation;
-  cognitiveState = learnFromEvaluation(cognitiveState, { operationalValues: evaluatorResult.operationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, candidates: decisionInput.candidates, searchSpaces: searchSpaceResult.searchSpaces });
+  cognitiveState = learnFromEvaluation(cognitiveState, { operationalValues: evaluatorResult.operationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, candidates: decisionInput.candidates, searchSpaces: selectedSearchSpaces });
   const rankingResult = decisionPipelineResult.ranking;
   cognitiveState = learnFromRanking(cognitiveState, { rankedOperationalValues: rankingResult.rankedOperationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates });
   const commitResult = decisionPipelineResult.commit;
-  cognitiveState = learnFromCommit(cognitiveState, { commitDecisions: commitResult.commitDecisions, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, searchSpaces: searchSpaceResult.searchSpaces });
+  cognitiveState = learnFromCommit(cognitiveState, { commitDecisions: commitResult.commitDecisions, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, searchSpaces: selectedSearchSpaces });
   const sessionKnowledge = getSessionKnowledge(cognitiveState);
   const sessionLearningSummary = {
     learnedPatterns: sessionKnowledge.learnedPatterns,
@@ -319,7 +330,7 @@ export function runORCShadowMode(
     generated: candidateResult.summary.candidateCount,
     discardedEquivalent: candidateResult.summary.duplicateCandidatesDiscarded,
     strategyFamilies: new Set(candidateResult.candidates.map((candidate) => typeof candidate.metadata.strategyFamily === "string" ? candidate.metadata.strategyFamily : String(candidate.metadata.strategy ?? "unknown"))).size,
-    averageCandidatesPerSearchSpace: searchSpaceResult.searchSpaces.length === 0 ? 0 : Math.round((candidateResult.summary.candidateCount / searchSpaceResult.searchSpaces.length) * 1_000_000) / 1_000_000,
+    averageCandidatesPerSearchSpace: selectedSearchSpaces.length === 0 ? 0 : Math.round((candidateResult.summary.candidateCount / selectedSearchSpaces.length) * 1_000_000) / 1_000_000,
   };
   const rankingSummary = {
     rankedCandidates: rankingResult.summary.rankedCount,
@@ -339,6 +350,7 @@ export function runORCShadowMode(
     ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
     ...diagnosisResult.evidence.map((item) => ({ ...item, createdAt })),
     ...searchSpaceResult.evidence,
+    ...searchSpaceSelectionEvidence,
     ...decisionInput.evidence,
     ...transformationResult.evidence,
     ...simulationResult.evidence,
@@ -349,7 +361,7 @@ export function runORCShadowMode(
     ...decisionPipelineResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),
   ];
 
   const preliminaryResult = {
@@ -358,7 +370,7 @@ export function runORCShadowMode(
     operationalAnalysis,
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
-    searchSpaces: searchSpaceResult.searchSpaces,
+    searchSpaces: selectedSearchSpaces,
     candidates: decisionInput.candidates,
     candidateStates: transformationResult.candidateStates,
     simulatedStates: simulationResult.simulatedStates,
@@ -376,7 +388,7 @@ export function runORCShadowMode(
       integrationMode: configuration.integrationMode,
       configuration,
       opportunityCount: opportunities.length,
-      searchSpaceCount: searchSpaceResult.searchSpaces.length,
+      searchSpaceCount: selectedSearchSpaces.length,
       candidateCount: candidateResult.candidates.length,
       candidateStateCount: transformationResult.candidateStates.length,
       simulatedStateCount: simulationResult.simulatedStates.length,

@@ -46,7 +46,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 
 
-- ID 139 — 2026-06-27 14:40 — ORC Opportunity Impact Estimator v1
+- ID 139 — 2026-06-27 14:52 — ORC Search Space Selection Engine v1
 
 ## Verificación básica
 

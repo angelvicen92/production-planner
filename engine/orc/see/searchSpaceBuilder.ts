@@ -2,6 +2,7 @@ import type { CognitiveState, Evidence, ORCRecord, SearchSpace } from "../contra
 import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 import type { OperationalPriority, OperationalPriorityMap } from "../analysis/operationalPriorityAnalyzer";
 import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
+import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 
@@ -338,13 +339,21 @@ export function buildSearchSpaces(
     };
   });
 
+  const selectionResult = selectSearchSpaces(searchSpacesWithExplorationValue, options.operationalPriorityMap ?? { priorities: [] }, { values: explorationValues });
+  evidence.push(...buildSearchSpaceSelectionEvidence(selectionResult, options.operationalPriorityMap ?? { priorities: [] }, { values: explorationValues }, createdAt));
+  const selectedSearchSpaces = selectionResult.selected.filter((item) => item.selected).map((item) => ({
+    ...item.searchSpace,
+    evidenceIds: [...item.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${item.searchSpace.id}`],
+    metadata: { ...item.searchSpace.metadata, searchSpaceSelection: { selected: item.selected, selectionReason: item.selectionReason } },
+  }));
+
   return {
-    searchSpaces: searchSpacesWithExplorationValue,
+    searchSpaces: selectedSearchSpaces,
     evidence,
     summary: {
       opportunityCount: orderedOpportunities.length,
-      searchSpaceCount: searchSpacesWithExplorationValue.length,
-      skippedOpportunityCount: orderedOpportunities.length - searchSpacesWithExplorationValue.length,
+      searchSpaceCount: selectedSearchSpaces.length,
+      skippedOpportunityCount: orderedOpportunities.length - selectedSearchSpaces.length,
       operationalPriorityCount: options.operationalPriorityMap?.priorities.length ?? 0,
       discardedPriorityCount: discardedPriorities.length,
       pruning: pruningResult.stats,
