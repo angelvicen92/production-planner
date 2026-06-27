@@ -95,3 +95,31 @@ test("creates reconstructable evidence and stores the model in CognitiveState fo
   assert.equal(see.informationalOnly, true);
   assert.deepEqual(see.operationalCriticality, result.operationalCriticality);
 });
+
+test("buildSearchAndExplorationUnderstanding allocates larger deterministic budgets to critical opportunities", () => {
+  const operationalState = state({
+    cognitive: { ...state().cognitive, opportunities: [
+      { id: "op:low", kind: "UNPLANNED_PENDING_TASKS", taskIds: [99], searchSpaceIds: [], evidenceIds: [], metadata: {}, description: null },
+      { id: "op:medium", kind: "FRAGMENTATION", taskIds: [2], searchSpaceIds: [], evidenceIds: [], metadata: { priority: 1 }, description: null },
+      { id: "op:high", kind: "RESOURCE_PRESSURE", taskIds: [1], searchSpaceIds: [], evidenceIds: [], metadata: { priority: 3 }, description: null },
+    ] },
+  });
+  const first = buildSearchAndExplorationUnderstanding(operationalState, createInitialCognitiveState(null), "t");
+  const second = buildSearchAndExplorationUnderstanding(operationalState, createInitialCognitiveState(null), "t");
+  assert.deepEqual(first.reasoningBudgetProfiles, second.reasoningBudgetProfiles);
+  const byId = new Map(first.reasoningBudgetProfiles.map((profile) => [profile.opportunityId, profile]));
+  assert.equal(byId.get("op:low")?.criticalityLevel, 1);
+  assert.equal(byId.get("op:medium")?.criticalityLevel, 2);
+  assert.equal(byId.get("op:high")?.criticalityLevel, 3);
+  assert.ok((byId.get("op:high")?.maxCandidates ?? 0) > (byId.get("op:low")?.maxCandidates ?? 0));
+  assert.ok(first.evidence.some((item) => item.kind === "criticality-reasoning-budget" && item.data.consumedBudget != null));
+});
+
+test("criticality-driven budget is immutable and does not mutate operational state", () => {
+  const operationalState = state();
+  operationalState.cognitive.opportunities = [{ id: "op:1", kind: "RESOURCE_PRESSURE", taskIds: [1], searchSpaceIds: [], evidenceIds: [], metadata: {}, description: null }];
+  const before = JSON.stringify(operationalState);
+  const result = buildSearchAndExplorationUnderstanding(operationalState, null, "t");
+  assert.equal(Object.isFrozen(result.reasoningBudgetProfiles), true);
+  assert.equal(JSON.stringify(operationalState), before);
+});
