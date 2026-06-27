@@ -14,6 +14,27 @@ export interface StrategyCandidateResult {
 
 const MAX_CANDIDATES_PER_SEARCH_SPACE = 3;
 
+const DEFAULT_COGNITIVE_STATE: CognitiveState = {
+  exploredOpportunityIds: [],
+  exhaustedSearchSpaceIds: [],
+  discardedCandidateIds: [],
+  simulatedCandidateIds: [],
+  committedCandidateIds: [],
+  temporaryKnowledge: {},
+  confidence: 1,
+  createdAt: null,
+  reasoningBudget: {
+    maxOpportunities: 20,
+    maxSearchSpaces: 10,
+    maxCandidates: 20,
+    maxSimulations: 20,
+    consumedOpportunities: 0,
+    consumedSearchSpaces: 0,
+    consumedCandidates: 0,
+    consumedSimulations: 0,
+  },
+};
+
 type StrategyDefinition = {
   strategy: string;
   family: string;
@@ -102,7 +123,7 @@ function evidence(id: string, kind: string, subjectId: string, data: Record<stri
   return { id, source: "orc-see", kind, subjectId, createdAt: null, data: data as Record<string, never> };
 }
 
-export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveState: CognitiveState): StrategyCandidateResult {
+export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveState: CognitiveState = DEFAULT_COGNITIVE_STATE): StrategyCandidateResult {
   const candidates: Candidate[] = [];
   const emittedEvidence: Evidence[] = [];
   const seen = new Set<string>();
