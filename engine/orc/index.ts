@@ -57,6 +57,7 @@ export * from "./benchmarks/realProductionScenarioSuite";
 export * from "./benchmarks/baselineReport";
 export * from "./benchmarks/calibrationFramework";
 export * from "./benchmarks/readinessIndex";
+export * from "./benchmarks/shadowSearchBenchmark";
 export * from "./validation/realScenarioValidation";
 export { goldenBenchmarkScenarios } from "./benchmarks/fixtures/goldenScenarios";
 export { realProductionScenarios } from "./benchmarks/fixtures/real-scenarios/realProductionScenarios";

@@ -232,3 +232,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 145 — 2026-06-27 17:36 — ORC Iterative Search Solver v1
 - ID 146 — 2026-06-27 17:51 — ORC Solution Pool Framework v1
 - ID 147 — 2026-06-27 18:04 — ORC Shadow Multi-Solution Search v1
+- ID 148 — 2026-06-27 18:21 — ORC Shadow Search Benchmark Harness v1
