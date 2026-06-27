@@ -20,6 +20,7 @@ import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
 import { getSessionKnowledge, learnFromCommit, learnFromEvaluation, learnFromRanking } from "../cognitive/sessionLearning";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
 import { buildAdvisoryDecision } from "../advisory/advisoryDecision";
+import { DEFAULT_ORC_CONFIGURATION, ORCIntegrationMode, type ORCConfiguration, normalizeORCConfiguration } from "../config/orcIntegrationMode";
 import { consultORCAdvisory } from "../integration/advisoryIntegration";
 
 export interface ORCShadowModeResult {
@@ -47,6 +48,8 @@ export interface ORCShadowModeResult {
   };
   summary: {
     enabled: boolean;
+    integrationMode: ORCIntegrationMode;
+    configuration: Readonly<ORCConfiguration>;
     opportunityCount: number;
     searchSpaceCount: number;
     candidateCount: number;
@@ -134,9 +137,11 @@ export interface ORCShadowModeOptions {
   enabled?: boolean;
   createdAt?: string | null;
   cognitiveState?: CognitiveState;
+  configuration?: Partial<ORCConfiguration>;
 }
 
 function buildShadowSummaryEvidence(
+  configuration: Readonly<ORCConfiguration>,
   operationalState: OperationalState,
   operationalMap: OperationalMap,
   opportunities: Opportunity[],
@@ -166,6 +171,8 @@ function buildShadowSummaryEvidence(
     createdAt,
     data: {
       enabled: true,
+      integrationMode: configuration.integrationMode,
+      configuration,
       stateId: operationalState.id,
       mapStateId: operationalMap.stateId,
       opportunityCount: opportunities.length,
@@ -230,7 +237,8 @@ export function runORCShadowMode(
   input: EngineInput,
   options: ORCShadowModeOptions = {},
 ): ORCShadowModeResult | null {
-  if (options.enabled === false) return null;
+  const configuration = normalizeORCConfiguration(options.enabled === false ? { integrationMode: ORCIntegrationMode.Disabled } : options.configuration ?? DEFAULT_ORC_CONFIGURATION);
+  if (configuration.integrationMode === ORCIntegrationMode.Disabled) return null;
 
   const createdAt = options.createdAt ?? null;
   const operationalState = buildOperationalStateFromEngineInput(input);
@@ -332,7 +340,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),
   ];
 
   const preliminaryResult = {
@@ -355,6 +363,8 @@ export function runORCShadowMode(
     candidateSummary: candidateResult.summary,
     summary: {
       enabled: true,
+      integrationMode: configuration.integrationMode,
+      configuration,
       opportunityCount: opportunities.length,
       searchSpaceCount: searchSpaceResult.searchSpaces.length,
       candidateCount: candidateResult.candidates.length,
