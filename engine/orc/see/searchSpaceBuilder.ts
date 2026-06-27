@@ -1,5 +1,6 @@
 import type { CognitiveState, Evidence, ORCRecord, SearchSpace } from "../contracts";
 import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
+import type { OperationalPriority, OperationalPriorityMap } from "../analysis/operationalPriorityAnalyzer";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 
@@ -7,6 +8,7 @@ export interface SearchSpaceBuildOptions {
   maxSearchSpaces?: number;
   maxTransformationsPerSpace?: number;
   maxAffectedTasksPerSpace?: number;
+  operationalPriorityMap?: OperationalPriorityMap | null;
 }
 
 export interface SearchSpaceBuildResult {
@@ -17,6 +19,8 @@ export interface SearchSpaceBuildResult {
     searchSpaceCount: number;
     skippedOpportunityCount: number;
     pruning: CognitivePruningStats;
+    operationalPriorityCount: number;
+    discardedPriorityCount: number;
     budget: {
       maxSearchSpaces: number;
       maxTransformationsPerSpace: number;
@@ -58,6 +62,82 @@ const numberMetadata = (metadata: ORCRecord, key: string, fallback = 0): number 
 
 const numberArrayMetadata = (metadata: ORCRecord, key: string): number[] =>
   Array.isArray(metadata[key]) ? uniqueSortedTaskIds(metadata[key] as number[]) : [];
+
+
+const normalizedPriorityIds = (priority: OperationalPriority): string[] =>
+  [...new Set([priority.id, ...(priority.bottlenecks ?? []), ...(priority.criticalResources ?? []).map((id) => `resource:${id}`), ...(priority.activeConstraints ?? [])])].sort((a, b) => a.localeCompare(b));
+
+const stringMetadata = (metadata: ORCRecord, key: string): string | null =>
+  typeof metadata[key] === "string" && metadata[key].length > 0 ? metadata[key] : null;
+
+const priorityMatchesOpportunity = (priority: OperationalPriority, opportunity: PrioritizedOpportunity): boolean => {
+  const metadata = opportunity.metadata ?? {};
+  const ids = normalizedPriorityIds(priority);
+  const hasId = (id: string): boolean => ids.includes(id) || ids.some((value) => value.startsWith(`${id}:`));
+
+  switch (opportunity.kind) {
+    case "MAIN_FLOW_GAP": {
+      const spaceOrZoneId = typeof metadata.spaceOrZoneId === "number" ? String(metadata.spaceOrZoneId) : null;
+      return spaceOrZoneId != null ? hasId(`constraints:main-flow:${spaceOrZoneId}`) || hasId(`main-flow:${spaceOrZoneId}`) : ids.some((id) => id.startsWith("constraints:main-flow:") || id.startsWith("main-flow:"));
+    }
+    case "UNPLANNED_PENDING_TASKS":
+      return hasId("continuity:pending-tasks");
+    case "RESOURCE_PRESSURE": {
+      const resourceIds = numberArrayMetadata(metadata, "overloadedResourceIds").map(String);
+      return resourceIds.length > 0 ? resourceIds.some((id) => hasId(`resource:${id}`)) : ids.some((id) => id.startsWith("resource:"));
+    }
+    case "EXCESSIVE_TALENT_STAY": {
+      const contestantId = typeof metadata.maxStayContestantId === "number" ? String(metadata.maxStayContestantId) : null;
+      return contestantId != null ? hasId(`talent:${contestantId}`) : ids.some((id) => id.startsWith("talent:"));
+    }
+    case "LOCK_PRESSURE":
+      return hasId("constraints:locks");
+    case "FRAGMENTATION":
+      return hasId("flow:space-switches");
+    default: {
+      const affectedRegion = stringMetadata(metadata, "affectedRegion") ?? opportunity.classification?.affectedRegion ?? null;
+      return affectedRegion != null && hasId(affectedRegion);
+    }
+  }
+};
+
+const orderOpportunitiesByOperationalPriority = (
+  opportunities: readonly PrioritizedOpportunity[],
+  operationalPriorityMap: OperationalPriorityMap | null | undefined,
+): { orderedOpportunities: PrioritizedOpportunity[]; discardedPriorities: OperationalPriority[]; opportunityPriorityById: Map<string, OperationalPriority | null> } => {
+  const input = [...(opportunities ?? [])];
+  const priorities = [...(operationalPriorityMap?.priorities ?? [])].sort((a, b) => b.priorityScore - a.priorityScore || a.id.localeCompare(b.id));
+  if (priorities.length === 0) {
+    return { orderedOpportunities: input, discardedPriorities: [], opportunityPriorityById: new Map(input.map((opportunity) => [opportunity.id, null])) };
+  }
+
+  const used = new Set<string>();
+  const orderedOpportunities: PrioritizedOpportunity[] = [];
+  const discardedPriorities: OperationalPriority[] = [];
+  const opportunityPriorityById = new Map<string, OperationalPriority | null>();
+
+  for (const priority of priorities) {
+    const matches = input.filter((opportunity) => !used.has(opportunity.id) && priorityMatchesOpportunity(priority, opportunity));
+    if (matches.length === 0) {
+      discardedPriorities.push(priority);
+      continue;
+    }
+    for (const opportunity of matches) {
+      used.add(opportunity.id);
+      orderedOpportunities.push(opportunity);
+      opportunityPriorityById.set(opportunity.id, priority);
+    }
+  }
+
+  for (const opportunity of input) {
+    if (!used.has(opportunity.id)) {
+      orderedOpportunities.push(opportunity);
+      opportunityPriorityById.set(opportunity.id, null);
+    }
+  }
+
+  return { orderedOpportunities, discardedPriorities, opportunityPriorityById };
+};
 
 function opportunityTemplate(opportunity: PrioritizedOpportunity): {
   region: string;
@@ -124,9 +204,20 @@ export function buildSearchSpaces(
     maxAffectedTasksPerSpace: normalizeBudgetValue(options.maxAffectedTasksPerSpace, DEFAULT_BUDGET.maxAffectedTasksPerSpace),
   };
   const createdAt = options.createdAt ?? null;
-  const orderedOpportunities = [...(opportunities ?? [])];
+  const { orderedOpportunities, discardedPriorities, opportunityPriorityById } = orderOpportunitiesByOperationalPriority(opportunities ?? [], options.operationalPriorityMap);
   const searchSpaces: SearchSpace[] = [];
   const evidence: Evidence[] = [];
+
+  for (const priority of discardedPriorities) {
+    evidence.push({
+      id: `evidence:orc-see:operational-priority:discarded:${priority.id}`,
+      source: "orc-see",
+      kind: "operational-priority-discarded",
+      subjectId: priority.id,
+      createdAt,
+      data: { priority: { id: priority.id, priorityScore: priority.priorityScore, bottlenecks: [...priority.bottlenecks], criticalResources: [...priority.criticalResources], activeConstraints: [...priority.activeConstraints], explanation: priority.explanation }, reason: "no-associated-opportunity", explanation: "Operational priority was considered but did not match any available prioritized opportunity.", readOnly: true },
+    });
+  }
 
   for (const opportunity of orderedOpportunities) {
     if (searchSpaces.length >= budget.maxSearchSpaces) {
@@ -141,6 +232,7 @@ export function buildSearchSpaces(
       continue;
     }
 
+    const sourceOperationalPriority = opportunityPriorityById.get(opportunity.id) ?? null;
     const template = opportunityTemplate(opportunity);
     const fullTaskIds = uniqueSortedTaskIds(opportunity.taskIds);
     const taskIds = fullTaskIds.slice(0, budget.maxAffectedTasksPerSpace);
@@ -161,6 +253,7 @@ export function buildSearchSpaces(
         sourceOpportunityKind: opportunity.kind,
         sourceOpportunityPriority: opportunity.priority,
         sourceOpportunityRationale: [...opportunity.rationale],
+        sourceOperationalPriority: sourceOperationalPriority == null ? null : { id: sourceOperationalPriority.id, priorityScore: sourceOperationalPriority.priorityScore, explanation: sourceOperationalPriority.explanation },
         affectedRegion: template.region,
         regionDetails: template.regionDetails,
         allowedTransformations: transformations,
@@ -191,6 +284,7 @@ export function buildSearchSpaces(
         opportunityId: opportunity.id,
         opportunityKind: opportunity.kind,
         priority: opportunity.priority,
+        sourceOperationalPriority: sourceOperationalPriority == null ? null : { id: sourceOperationalPriority.id, priorityScore: sourceOperationalPriority.priorityScore, bottlenecks: [...sourceOperationalPriority.bottlenecks], criticalResources: [...sourceOperationalPriority.criticalResources], activeConstraints: [...sourceOperationalPriority.activeConstraints], explanation: sourceOperationalPriority.explanation },
         prioritizationRationale: [...opportunity.rationale],
         searchSpace: { id: builtSearchSpace.id, taskIds: [...builtSearchSpace.taskIds], metadata: builtSearchSpace.metadata },
         affectedRegion: template.region,
@@ -223,6 +317,8 @@ export function buildSearchSpaces(
       opportunityCount: orderedOpportunities.length,
       searchSpaceCount: pruningResult.items.length,
       skippedOpportunityCount: orderedOpportunities.length - pruningResult.items.length,
+      operationalPriorityCount: options.operationalPriorityMap?.priorities.length ?? 0,
+      discardedPriorityCount: discardedPriorities.length,
       pruning: pruningResult.stats,
       budget,
     },
