@@ -1,5 +1,6 @@
 import type { Evidence } from "../contracts";
 import type { BacktrackingExecutionResult } from "./backtrackingSearchExecutor";
+import { executeIncrementalReplanning, type IncrementalReplanningResult } from "./incrementalReplanningEngine";
 import {
   addSolution,
   compareSolutions,
@@ -22,6 +23,7 @@ export interface IterativeSearchResult {
   completed: boolean;
   evidence: Evidence[];
   solutionPool: SolutionPool;
+  incrementalReplanningResults: IncrementalReplanningResult[];
 }
 
 const scoreForBranch = (execution: BacktrackingExecutionResult, branchId: string): number | null => {
@@ -151,6 +153,39 @@ const buildIterationEvidence = (
   },
 });
 
+
+const buildIncrementalReplanningEvidence = (
+  branchId: string,
+  result: IncrementalReplanningResult,
+  index: number,
+): Evidence => ({
+  id: `evidence:orc-search:incremental-replanning:${index + 1}:${branchId}`,
+  source: "orc-search",
+  kind: "iterative-search-incremental-replanning",
+  subjectId: branchId,
+  data: {
+    discardedBranchId: branchId,
+    reusedState: result.reusedState,
+    replannedElements: result.replannedElements,
+    reason: result.explanation,
+    readOnly: true,
+    shadowModeOnly: true,
+  },
+});
+
+const buildPreservedState = (
+  iteration: SearchIteration,
+  bestBranchId: string | null,
+  previousBestBranchId: string | null,
+): Record<string, unknown> => ({
+  branchId: iteration.branchId,
+  solutionId: iteration.solutionId,
+  explored: iteration.explored,
+  score: iteration.score,
+  bestBranchId,
+  previousBestBranchId,
+});
+
 const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">): Evidence => ({
   id: "evidence:orc-search:iterative-solver:completed",
   source: "orc-search",
@@ -161,6 +196,7 @@ const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">
     bestBranchId: result.bestBranchId,
     bestSolutionId: result.solutionPool.bestSolutionId,
     solutionCount: result.solutionPool.solutions.length,
+    incrementalReplanningCount: result.incrementalReplanningResults.length,
     completed: result.completed,
     readOnly: true,
     shadowModeOnly: true,
@@ -175,6 +211,7 @@ export function executeIterativeSearch(
   let bestBranchId: string | null = null;
   let bestScore: number | null = null;
   let solutionPool = initializeSolutionPool();
+  const incrementalReplanningResults: IncrementalReplanningResult[] = [];
 
   for (const branchId of execution.explorationOrder ?? []) {
     const score = scoreForBranch(execution, branchId);
@@ -209,6 +246,13 @@ export function executeIterativeSearch(
     if (comparison.bestChanged) {
       evidence.push(buildBestChangedEvidence(comparison, iterations.length - 1));
     }
+
+    const incrementalReplanning = executeIncrementalReplanning({
+      branchId: iteration.branchId,
+      preservedState: buildPreservedState(iteration, bestBranchId, previousBestBranchId),
+    });
+    incrementalReplanningResults.push(incrementalReplanning);
+    evidence.push(buildIncrementalReplanningEvidence(iteration.branchId, incrementalReplanning, iterations.length - 1));
   }
 
   const result = {
@@ -216,6 +260,7 @@ export function executeIterativeSearch(
     bestBranchId,
     completed: true,
     solutionPool,
+    incrementalReplanningResults,
   };
 
   return {

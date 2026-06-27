@@ -121,3 +121,40 @@ test("executeIterativeSearch emits reconstructible solution pool evidence", () =
   assert.equal(result.evidence.at(-1)?.data.bestSolutionId, "solution:2:b");
   assert.equal(result.evidence.at(-1)?.data.solutionCount, 2);
 });
+
+test("executeIterativeSearch prepares incremental replanning for every discarded branch", () => {
+  const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 2 }));
+
+  assert.deepEqual(result.incrementalReplanningResults.map((item) => item.reusedState.branchId), ["a", "b"]);
+  assert.deepEqual(result.incrementalReplanningResults[0]?.reusedState, {
+    bestBranchId: "a",
+    branchId: "a",
+    explored: true,
+    previousBestBranchId: null,
+    score: 1,
+    solutionId: "solution:1:a",
+  });
+});
+
+test("executeIterativeSearch records reconstructible incremental replanning evidence", () => {
+  const result = executeIterativeSearch(execution(["a"], { a: 1 }));
+  const replanningEvidence = result.evidence.filter((item) => item.kind === "iterative-search-incremental-replanning");
+
+  assert.deepEqual(replanningEvidence.map((item) => item.data), [
+    {
+      discardedBranchId: "a",
+      reusedState: {
+        bestBranchId: "a",
+        branchId: "a",
+        explored: true,
+        previousBestBranchId: null,
+        score: 1,
+        solutionId: "solution:1:a",
+      },
+      replannedElements: ["bestBranchId", "branchId", "explored", "previousBestBranchId", "score", "solutionId"],
+      reason: "Branch a was discarded; reusable partial state was preserved for deterministic shadow-mode incremental replanning.",
+      readOnly: true,
+      shadowModeOnly: true,
+    },
+  ]);
+});
