@@ -59,16 +59,17 @@ test("evaluateSimulatedStates creates a structural OperationalValue for a VALID 
   const result = evaluateSimulatedStates([simulated], validate([simulated]), { createdAt: "2026-06-25T00:00:00.000Z" });
   assert.equal(result.operationalValues.length, 1);
   assert.equal(result.operationalValues[0].simulatedStateId, simulated.id);
-  assert.equal(result.operationalValues[0].continuity, 1);
-  assert.equal(result.operationalValues[0].makespan, 1);
-  assert.equal(result.operationalValues[0].permanence, 1);
-  assert.equal(result.operationalValues[0].compaction, 1);
-  assert.equal(result.operationalValues[0].resourcePressure, 1);
-  assert.equal(result.operationalValues[0].robustness, 1);
-  assert.equal(result.operationalValues[0].stability, 1);
-  assert.equal(result.operationalValues[0].futureFreedom, 1);
+  assert.deepEqual(result.operationalValues[0].productionObjectiveScore, {
+    overallScore: 1,
+    continuityScore: 1,
+    availabilityScore: 1,
+    criticalResourceScore: 1,
+    waitingTimeScore: 1,
+    replanningImpactScore: 1,
+    operationalFeasibilityScore: 1,
+  });
   assert.equal(result.operationalValues[0].overallScore, 1);
-  assert.equal(typeof result.operationalValues[0].breakdown.continuity, "object");
+  assert.equal(typeof result.operationalValues[0].breakdown.continuityScore, "object");
   assert.equal(result.operationalValues[0].evaluatedAt, "2026-06-25T00:00:00.000Z");
   assert.equal(result.summary.evaluatedCount, 1);
   assert.equal(result.summary.skippedInvalid, 0);
@@ -104,6 +105,8 @@ test("evaluateSimulatedStates emits explanatory immutable evidence", () => {
   assert.equal(result.evidence[0].data.validationResult, "VALID");
   assert.equal(result.evidence[0].data.mutatesOperationalState, false);
   assert.equal(result.evidence[0].data.overallScore, result.operationalValues[0].overallScore);
+  assert.deepEqual(result.evidence[0].data.productionObjectiveScore, result.operationalValues[0].productionObjectiveScore);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.operationalValues[0].productionObjectiveScore)), result.operationalValues[0].productionObjectiveScore);
   assert.equal(Object.isFrozen(result.evidence[0]), true);
 });
 

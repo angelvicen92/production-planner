@@ -14,6 +14,16 @@ export interface Evidence {
   createdAt?: string | null;
 }
 
+export interface ProductionObjectiveScore {
+  readonly overallScore: number;
+  readonly continuityScore: number;
+  readonly availabilityScore: number;
+  readonly criticalResourceScore: number;
+  readonly waitingTimeScore: number;
+  readonly replanningImpactScore: number;
+  readonly operationalFeasibilityScore: number;
+}
+
 export interface OperationalValue {
   readonly simulatedStateId: string;
   readonly continuity: number;
@@ -25,6 +35,7 @@ export interface OperationalValue {
   readonly stability: number;
   readonly futureFreedom: number;
   readonly overallScore: number;
+  readonly productionObjectiveScore?: ProductionObjectiveScore;
   readonly breakdown: ORCRecord;
   readonly evaluatedAt: string | null;
   readonly evidenceIds: ReadonlyArray<string>;

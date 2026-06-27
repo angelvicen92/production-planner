@@ -28,6 +28,7 @@ export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";
 export * from "./validation/validationEngine";
 export * from "./evaluator/operationalEvaluator";
+export * from "./evaluation/evaluationEngine";
 export * from "./decision/decisionInput";
 export * from "./decision/rankingEngine";
 export * from "./decision/decisionPipelineOrchestrator";
