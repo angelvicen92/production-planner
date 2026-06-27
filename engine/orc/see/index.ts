@@ -1,6 +1,7 @@
 export type { OperationalMap } from "./operationalMap";
 export { buildOperationalMap } from "./operationalMap";
-export type { ORCOpportunityKind, OpportunityDetectionOptions } from "./opportunityDetection";
+export type { OpportunityDetectionOptions } from "./opportunityDetection";
+export type { ORCOpportunityKind, OpportunityDetectionResult } from "../analysis/opportunityDetectionEngine";
 export { buildOpportunityDetectionEvidence, detectOpportunitiesFromOperationalAnalysis, detectOpportunitiesFromOperationalMap, detectOpportunitiesWithPruning, detectOpportunitiesWithPruningFromOperationalAnalysis } from "./opportunityDetection";
 export { opportunityPriorityValue, prioritizeOpportunities } from "./opportunityPriority";
 export type { SearchSpaceBuildOptions, SearchSpaceBuildResult } from "./searchSpaceBuilder";

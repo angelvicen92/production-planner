@@ -71,7 +71,7 @@ test("buildOpportunityDetectionEvidence uses injectable stable timestamps", () =
   const opportunities = detectOpportunitiesFromOperationalMap(input, map);
   const evidence = buildOpportunityDetectionEvidence(input, map, opportunities, "2026-06-25T00:00:00.000Z");
   assert.equal(evidence[0].createdAt, "2026-06-25T00:00:00.000Z");
-  assert.deepEqual(evidence[0].data.opportunityIds, ["orc-see:unplanned_pending_tasks:1"]);
+  assert.deepEqual(evidence[0].data.opportunityIds, ["orc-see:unplanned_pending_tasks:state"]);
 });
 
 test("SEE read-only pass does not change V4 output", () => {
