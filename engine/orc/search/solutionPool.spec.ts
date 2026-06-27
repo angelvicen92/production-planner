@@ -15,6 +15,7 @@ const solution = (solutionId: string, score: number | null, branchId = solutionI
   solutionId,
   originatingBranchId: branchId,
   score,
+  productionObjectiveScore: null,
   metadata: { branchId, readOnly: true },
 });
 

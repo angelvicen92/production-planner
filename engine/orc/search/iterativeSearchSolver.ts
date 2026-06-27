@@ -1,4 +1,4 @@
-import type { Evidence } from "../contracts";
+import type { Evidence, ProductionObjectiveScore } from "../contracts";
 import type { BacktrackingExecutionResult } from "./backtrackingSearchExecutor";
 import { executeIncrementalReplanning, type IncrementalReplanningResult } from "./incrementalReplanningEngine";
 import {
@@ -14,6 +14,7 @@ export interface SearchIteration {
   branchId: string;
   explored: boolean;
   score: number | null;
+  productionObjectiveScore: ProductionObjectiveScore | null;
   solutionId: string;
 }
 
@@ -26,9 +27,20 @@ export interface IterativeSearchResult {
   incrementalReplanningResults: IncrementalReplanningResult[];
 }
 
+const finiteScore = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
 const scoreForBranch = (execution: BacktrackingExecutionResult, branchId: string): number | null => {
-  const score = execution.branchScores?.[branchId];
-  return typeof score === "number" && Number.isFinite(score) ? score : null;
+  const objectiveScore = execution.branchProductionObjectiveScores?.[branchId]?.overallScore;
+  return finiteScore(objectiveScore) ?? finiteScore(execution.branchScores?.[branchId]);
+};
+
+const productionObjectiveScoreForBranch = (
+  execution: BacktrackingExecutionResult,
+  branchId: string,
+): ProductionObjectiveScore | null => {
+  const score = execution.branchProductionObjectiveScores?.[branchId];
+  return score == null ? null : { ...score };
 };
 
 const buildSolutionId = (branchId: string, index: number): string => `solution:${index + 1}:${branchId}`;
@@ -37,6 +49,7 @@ const buildSolutionSnapshot = (iteration: SearchIteration, index: number): Solut
   solutionId: iteration.solutionId,
   originatingBranchId: iteration.branchId,
   score: iteration.score,
+  productionObjectiveScore: iteration.productionObjectiveScore,
   metadata: {
     explored: iteration.explored,
     solutionOrdinal: index + 1,
@@ -94,6 +107,7 @@ const buildSolutionCompletedEvidence = (solution: SolutionSnapshot, index: numbe
     originatingBranchId: solution.originatingBranchId,
     solutionOrdinal: index + 1,
     score: solution.score,
+    productionObjectiveScore: solution.productionObjectiveScore,
     complete: true,
     readOnly: true,
     shadowModeOnly: true,
@@ -144,6 +158,7 @@ const buildIterationEvidence = (
     solutionId: iteration.solutionId,
     explored: iteration.explored,
     score: iteration.score,
+    productionObjectiveScore: iteration.productionObjectiveScore,
     bestBranchId,
     previousBestBranchId,
     bestChanged: bestBranchId !== previousBestBranchId,
@@ -182,8 +197,62 @@ const buildPreservedState = (
   solutionId: iteration.solutionId,
   explored: iteration.explored,
   score: iteration.score,
+  productionObjectiveScore: iteration.productionObjectiveScore,
   bestBranchId,
   previousBestBranchId,
+});
+
+interface PendingBranch {
+  branchId: string;
+  originalIndex: number;
+}
+
+const reorderPendingBranches = (
+  pending: PendingBranch[],
+  execution: BacktrackingExecutionResult,
+): { nextPending: PendingBranch[]; changes: Array<{ branchId: string; previousPriority: number; nextPriority: number; score: number | null }> } => {
+  const before = pending.map((branch) => branch.branchId);
+  const nextPending = [...pending].sort((a, b) => {
+    const scoreA = scoreForBranch(execution, a.branchId);
+    const scoreB = scoreForBranch(execution, b.branchId);
+    if (scoreA != null && scoreB != null && scoreA !== scoreB) return scoreB - scoreA;
+    if (scoreA != null && scoreB == null) return -1;
+    if (scoreA == null && scoreB != null) return 1;
+    return a.originalIndex - b.originalIndex;
+  });
+  const changes = nextPending.flatMap((branch, index) => {
+    const previousIndex = before.indexOf(branch.branchId);
+    return previousIndex === index ? [] : [{
+      branchId: branch.branchId,
+      previousPriority: previousIndex + 1,
+      nextPriority: index + 1,
+      score: scoreForBranch(execution, branch.branchId),
+    }];
+  });
+  return { nextPending, changes };
+};
+
+const buildBranchReorderedEvidence = (
+  sourceBranchId: string,
+  change: { branchId: string; previousPriority: number; nextPriority: number; score: number | null },
+  bestBranchId: string | null,
+  index: number,
+): Evidence => ({
+  id: `evidence:orc-search:evaluation-guided-reorder:${index + 1}:${sourceBranchId}:${change.branchId}`,
+  source: "orc-search",
+  kind: "iterative-search-evaluation-guided-reorder",
+  subjectId: change.branchId,
+  data: {
+    sourceBranchId,
+    branchId: change.branchId,
+    previousPriority: change.previousPriority,
+    nextPriority: change.nextPriority,
+    scoreUsedForDecision: change.score,
+    bestBranchId,
+    reason: "Pending branch priority changed by deterministic ProductionObjectiveScore-guided ordering after evaluating a simulated solution.",
+    readOnly: true,
+    shadowModeOnly: true,
+  },
 });
 
 const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">): Evidence => ({
@@ -213,10 +282,15 @@ export function executeIterativeSearch(
   let solutionPool = initializeSolutionPool();
   const incrementalReplanningResults: IncrementalReplanningResult[] = [];
 
-  for (const branchId of execution.explorationOrder ?? []) {
+  let pendingBranches: PendingBranch[] = (execution.explorationOrder ?? []).map((branchId, originalIndex) => ({ branchId, originalIndex }));
+
+  while (pendingBranches.length > 0) {
+    const [{ branchId }, ...remaining] = pendingBranches;
+    pendingBranches = remaining;
     const score = scoreForBranch(execution, branchId);
+    const productionObjectiveScore = productionObjectiveScoreForBranch(execution, branchId);
     const solutionId = buildSolutionId(branchId, iterations.length);
-    const iteration: SearchIteration = { branchId, explored: true, score, solutionId };
+    const iteration: SearchIteration = { branchId, explored: true, score, productionObjectiveScore, solutionId };
     const previousBestBranchId = bestBranchId;
     let reason = "Best branch unchanged because the explored branch has no comparable score.";
 
@@ -245,6 +319,12 @@ export function executeIterativeSearch(
     evidence.push(buildComparisonEvidence(comparison, iterations.length - 1));
     if (comparison.bestChanged) {
       evidence.push(buildBestChangedEvidence(comparison, iterations.length - 1));
+    }
+
+    const reorder = reorderPendingBranches(pendingBranches, execution);
+    pendingBranches = reorder.nextPending;
+    for (const change of reorder.changes) {
+      evidence.push(buildBranchReorderedEvidence(iteration.branchId, change, bestBranchId, iterations.length - 1));
     }
 
     const incrementalReplanning = executeIncrementalReplanning({

@@ -1,7 +1,10 @@
+import type { ProductionObjectiveScore } from "../contracts";
+
 export interface SolutionSnapshot {
   solutionId: string;
   originatingBranchId: string;
   score: number | null;
+  productionObjectiveScore: ProductionObjectiveScore | null;
   metadata: Record<string, unknown>;
 }
 
@@ -23,6 +26,7 @@ const cloneSolution = (solution: SolutionSnapshot): SolutionSnapshot => ({
   solutionId: solution.solutionId,
   originatingBranchId: solution.originatingBranchId,
   score: solution.score,
+  productionObjectiveScore: solution.productionObjectiveScore == null ? null : { ...solution.productionObjectiveScore },
   metadata: { ...solution.metadata },
 });
 
