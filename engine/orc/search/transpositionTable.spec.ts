@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { OperationalState, SimulatedState } from "../contracts";
-import { buildStateSignature, lookupTransposition, registerTransposition, type TranspositionTable } from "./transpositionTable";
+import { buildStateSignature, decideDominancePruning, lookupTransposition, registerTransposition, type TranspositionTable } from "./transpositionTable";
 
 const state = (planning: OperationalState["planning"]): OperationalState => ({
   id: "state:temp",
@@ -59,7 +59,7 @@ test("registerTransposition registers one state without mutating the original ta
   const next = registerTransposition(table, signature, 5, "branch:a");
 
   assert.equal(table.entries.size, 0);
-  assert.deepEqual(lookupTransposition(next, signature), { signature: signature.signature, bestScore: 5, branchId: "branch:a", visits: 1 });
+  assert.deepEqual(lookupTransposition(next, signature), { signature: signature.signature, bestScore: 5, branchId: "branch:a", visits: 1, hasCompleteSolution: true, dominanceExact: true });
 });
 
 test("registerTransposition stores multiple distinct states", () => {
@@ -77,7 +77,7 @@ test("equivalent states produce the same signature and increment visits", () => 
   const table = registerTransposition(registerTransposition({ entries: new Map() }, first, 4, "first"), second, 9, "second");
 
   assert.equal(first.signature, second.signature);
-  assert.deepEqual(lookupTransposition(table, second), { signature: first.signature, bestScore: 9, branchId: "second", visits: 2 });
+  assert.deepEqual(lookupTransposition(table, second), { signature: first.signature, bestScore: 9, branchId: "second", visits: 2, hasCompleteSolution: true, dominanceExact: true });
 });
 
 test("distinct states produce different signatures", () => {
@@ -100,4 +100,50 @@ test("buildStateSignature is structurally equal for cloned input and does not mu
 
   assert.deepEqual(buildStateSignature(input), buildStateSignature(cloned));
   assert.deepEqual(JSON.parse(JSON.stringify(input)), before);
+});
+
+
+test("decideDominancePruning does not prune without equivalence", () => {
+  const signature = buildStateSignature(simulated("a", planningA));
+
+  assert.deepEqual(decideDominancePruning({ entries: new Map() }, signature, 1), {
+    shouldPrune: false,
+    signature: signature.signature,
+    dominantBranchId: null,
+    dominantScore: null,
+    candidateScore: 1,
+    reason: "No equivalent simulated state exists in the transposition table.",
+    evidenceComplete: true,
+    exactDominance: true,
+  });
+});
+
+test("decideDominancePruning does not prune equivalent states without dominance", () => {
+  const signature = buildStateSignature(simulated("a", planningA));
+  const table = registerTransposition({ entries: new Map() }, signature, 1, "weaker");
+  const decision = decideDominancePruning(table, signature, 2);
+
+  assert.equal(decision.shouldPrune, false);
+  assert.equal(decision.dominantBranchId, "weaker");
+  assert.equal(decision.dominantScore, 1);
+});
+
+test("decideDominancePruning prunes exact equivalent dominated states", () => {
+  const signature = buildStateSignature(simulated("a", planningA));
+  const table = registerTransposition({ entries: new Map() }, signature, 5, "dominant");
+  const decision = decideDominancePruning(table, signature, 5);
+
+  assert.equal(decision.shouldPrune, true);
+  assert.equal(decision.dominantBranchId, "dominant");
+  assert.equal(decision.dominantScore, 5);
+  assert.equal(decision.candidateScore, 5);
+});
+
+test("decideDominancePruning is pure and deterministic", () => {
+  const signature = buildStateSignature(simulated("a", planningA));
+  const table = registerTransposition({ entries: new Map() }, signature, 5, "dominant");
+  const before = Array.from(table.entries);
+
+  assert.deepEqual(decideDominancePruning(table, signature, 4), decideDominancePruning(table, signature, 4));
+  assert.deepEqual(Array.from(table.entries), before);
 });

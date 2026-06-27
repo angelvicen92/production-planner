@@ -271,9 +271,42 @@ test("executeIterativeSearch records transposition evidence without changing exp
   const transpositionEvidence = result.evidence.filter((item) => item.kind === "iterative-search-transposition");
 
   assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["a", "b"]);
+  assert.deepEqual(result.exploredBranches.map((item) => item.explored), [true, true]);
   assert.equal(result.transpositionEntries.length, 1);
   assert.deepEqual(transpositionEvidence.map((item) => ({ branchId: item.data.branchId, equivalenceDetected: item.data.equivalenceDetected, originalBranchId: item.data.originalBranchId, knownScore: item.data.knownScore, visits: item.data.visits })), [
     { branchId: "a", equivalenceDetected: false, originalBranchId: "a", knownScore: null, visits: 1 },
     { branchId: "b", equivalenceDetected: true, originalBranchId: "a", knownScore: 1, visits: 2 },
   ]);
+});
+
+
+test("executeIterativeSearch prunes dominated equivalent branches", () => {
+  const simulatedState = {
+    id: "sim:1",
+    candidateStateId: "candidate:1",
+    baseStateId: "base",
+    operationalStateSnapshot: {
+      id: "state", planId: 1, workDay: null,
+      planning: [{ taskId: 1, startPlanned: "08:00", endPlanned: "09:00", assignedResourceIds: [1], spaceId: 1 }],
+      tasks: [], resources: [],
+      spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },
+      availability: { workDay: null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: [], contestantAvailabilityById: {} },
+      dependencies: [], locks: [], constraints: {}, operationalMetrics: {},
+      cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} },
+      source: "EngineInput", schemaVersion: "ORC-SPEC-01",
+    },
+    appliedTransformations: [], simulationMode: "READ_ONLY_BASELINE", readOnly: true, createdAt: null,
+  } as never;
+  const result = executeIterativeSearch({
+    ...execution(["a", "b", "c"], { a: 3, b: 2, c: 1 }),
+    branchSimulatedStates: { a: simulatedState, b: { ...simulatedState, id: "sim:2" }, c: { ...simulatedState, id: "sim:3" } },
+  });
+
+  assert.deepEqual(result.exploredBranches.map((item) => ({ branchId: item.branchId, explored: item.explored })), [
+    { branchId: "a", explored: true },
+    { branchId: "b", explored: false },
+    { branchId: "c", explored: false },
+  ]);
+  assert.equal(result.bestBranchId, "a");
+  assert.equal(result.evidence.filter((item) => item.kind === "iterative-search-dominance-pruning" && item.data.pruned === true).length, 2);
 });

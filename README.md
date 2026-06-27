@@ -51,6 +51,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 152 — 2026-06-27 19:05 — ORC Evaluation-Guided Search v1
 - ID 153 — 2026-06-27 19:50 — ORC Online Search Learning v1
 - ID 154 — 2026-06-27 20:03 — ORC State Equivalence & Transposition Table v1
+- ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1
 
 ## Verificación básica
 
@@ -243,3 +244,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 152 — 2026-06-27 19:05 — ORC Evaluation-Guided Search v1
 - ID 153 — 2026-06-27 19:50 — ORC Online Search Learning v1
 - ID 154 — 2026-06-27 20:03 — ORC State Equivalence & Transposition Table v1
+- ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1

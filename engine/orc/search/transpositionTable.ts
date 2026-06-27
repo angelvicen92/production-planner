@@ -10,6 +10,19 @@ export interface TranspositionEntry {
   bestScore: number;
   branchId: string;
   visits: number;
+  hasCompleteSolution: boolean;
+  dominanceExact: boolean;
+}
+
+export interface DominancePruningDecision {
+  shouldPrune: boolean;
+  signature: string;
+  dominantBranchId: string | null;
+  dominantScore: number | null;
+  candidateScore: number | null;
+  reason: string;
+  evidenceComplete: boolean;
+  exactDominance: boolean;
 }
 
 export interface TranspositionTable {
@@ -81,14 +94,77 @@ export function registerTransposition(
 ): TranspositionTable {
   const existing = table.entries.get(signature.signature) ?? null;
   const nextEntry: TranspositionEntry = existing == null
-    ? { signature: signature.signature, bestScore: score, branchId, visits: 1 }
+    ? { signature: signature.signature, bestScore: score, branchId, visits: 1, hasCompleteSolution: Number.isFinite(score), dominanceExact: true }
     : {
       signature: existing.signature,
       bestScore: score > existing.bestScore ? score : existing.bestScore,
       branchId: score > existing.bestScore ? branchId : existing.branchId,
       visits: existing.visits + 1,
+      hasCompleteSolution: existing.hasCompleteSolution || Number.isFinite(score),
+      dominanceExact: existing.dominanceExact,
     };
   const entries = new Map(Array.from(table.entries.entries()).map(([key, entry]) => [key, cloneEntry(entry)]));
   entries.set(signature.signature, nextEntry);
   return { entries };
+}
+
+
+export function decideDominancePruning(
+  table: TranspositionTable,
+  signature: StateSignature,
+  candidateScore: number | null,
+): DominancePruningDecision {
+  const existing = lookupTransposition(table, signature);
+  if (existing == null) {
+    return {
+      shouldPrune: false,
+      signature: signature.signature,
+      dominantBranchId: null,
+      dominantScore: null,
+      candidateScore,
+      reason: "No equivalent simulated state exists in the transposition table.",
+      evidenceComplete: true,
+      exactDominance: true,
+    };
+  }
+
+  if (!existing.hasCompleteSolution || !existing.dominanceExact) {
+    return {
+      shouldPrune: false,
+      signature: signature.signature,
+      dominantBranchId: existing.branchId,
+      dominantScore: existing.bestScore,
+      candidateScore,
+      reason: "Equivalent state found, but dominance evidence is incomplete or not exact.",
+      evidenceComplete: false,
+      exactDominance: false,
+    };
+  }
+
+  if (candidateScore == null || !Number.isFinite(candidateScore)) {
+    return {
+      shouldPrune: false,
+      signature: signature.signature,
+      dominantBranchId: existing.branchId,
+      dominantScore: existing.bestScore,
+      candidateScore,
+      reason: "Equivalent state found, but the candidate has no finite comparable score.",
+      evidenceComplete: true,
+      exactDominance: true,
+    };
+  }
+
+  const shouldPrune = existing.bestScore >= candidateScore;
+  return {
+    shouldPrune,
+    signature: signature.signature,
+    dominantBranchId: existing.branchId,
+    dominantScore: existing.bestScore,
+    candidateScore,
+    reason: shouldPrune
+      ? "Exact equivalent state already has an equal or better complete solution score; candidate branch is dominated."
+      : "Exact equivalent state exists, but its complete solution score is lower than the candidate score.",
+    evidenceComplete: true,
+    exactDominance: true,
+  };
 }

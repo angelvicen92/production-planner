@@ -34,6 +34,21 @@ export interface TranspositionEvidenceData extends ORCRecord {
   originalBranchId: string;
   knownScore: number | null;
   visits: number;
+  registeredBestScore?: number | null;
+  registeredBestBranchId?: string | null;
+}
+
+export interface DominancePruningEvidenceData extends ORCRecord {
+  branchId: string;
+  signature: string;
+  dominantBranchId: string | null;
+  dominantScore: number | null;
+  candidateScore: number | null;
+  pruned: boolean;
+  visits: number;
+  reason: string;
+  evidenceComplete: boolean;
+  exactDominance: boolean;
 }
 
 export interface ProductionObjectiveScore {
