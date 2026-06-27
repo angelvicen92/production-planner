@@ -2,6 +2,8 @@ import type { CognitiveState, Evidence, ORCRecord, SearchSpace } from "../contra
 import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 import type { OperationalPriority, OperationalPriorityMap } from "../analysis/operationalPriorityAnalyzer";
 import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
+import { buildBranchOrderingEvidence, orderSearchSpaces } from "../analysis/branchOrderingEngine";
+import { propagateFutureConstraints } from "../analysis/futureConstraintPropagationEngine";
 import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
@@ -340,12 +342,19 @@ export function buildSearchSpaces(
   });
 
   const selectionResult = selectSearchSpaces(searchSpacesWithExplorationValue, options.operationalPriorityMap ?? { priorities: [] }, { values: explorationValues });
+  const futureConstraintPropagation = propagateFutureConstraints(selectionResult);
+  const branchOrderingResult = orderSearchSpaces(selectionResult, futureConstraintPropagation);
   evidence.push(...buildSearchSpaceSelectionEvidence(selectionResult, options.operationalPriorityMap ?? { priorities: [] }, { values: explorationValues }, createdAt));
-  const selectedSearchSpaces = selectionResult.selected.filter((item) => item.selected).map((item) => ({
-    ...item.searchSpace,
-    evidenceIds: [...item.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${item.searchSpace.id}`],
-    metadata: { ...item.searchSpace.metadata, searchSpaceSelection: { selected: item.selected, selectionReason: item.selectionReason } },
-  }));
+  evidence.push(...buildBranchOrderingEvidence(branchOrderingResult, createdAt));
+  const selectionBySearchSpaceId = new Map(selectionResult.selected.map((item) => [item.searchSpace.id, item]));
+  const selectedSearchSpaces = branchOrderingResult.orderedSearchSpaces.map((ordered) => {
+    const item = selectionBySearchSpaceId.get(ordered.searchSpace.id);
+    return {
+      ...ordered.searchSpace,
+      evidenceIds: [...ordered.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${ordered.searchSpace.id}`, `evidence:orc-see:branch-ordering:${ordered.searchSpace.id}`],
+      metadata: { ...ordered.searchSpace.metadata, searchSpaceSelection: { selected: item?.selected ?? true, selectionReason: item?.selectionReason ?? "Selected for branch ordering." }, branchOrdering: { explorationOrder: ordered.explorationOrder, orderingScore: ordered.orderingScore, explanation: ordered.explanation } },
+    };
+  });
 
   return {
     searchSpaces: selectedSearchSpaces,

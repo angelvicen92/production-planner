@@ -3,6 +3,8 @@ import type { AdvisoryDecision } from "../advisory/advisoryDecision";
 import type { OperationalAnalysis } from "../analysis/operationalStateAnalyzer";
 import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
 import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
+import { buildBranchOrderingEvidence, orderSearchSpaces } from "../analysis/branchOrderingEngine";
+import { propagateFutureConstraints } from "../analysis/futureConstraintPropagationEngine";
 import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
 import type { ExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import type { Candidate, CandidateState, CognitiveState, CommitDecision, Evidence, OperationalState, OperationalValue, Opportunity, SearchSpace, SimulatedState, ValidationResult } from "../contracts";
@@ -269,13 +271,20 @@ export function runORCShadowMode(
   const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses });
   const explorationValueAnalysis = estimateExplorationValue(searchSpaceResult.searchSpaces);
   const searchSpaceSelectionResult = selectSearchSpaces(searchSpaceResult.searchSpaces, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis);
-  const selectedSearchSpaces = searchSpaceSelectionResult.selected.filter((item) => item.selected).map((item) => ({
-    ...item.searchSpace,
-    explorationValue: explorationValueAnalysis.values.find((value) => value.searchSpaceId === item.searchSpace.id) ?? item.searchSpace.explorationValue,
-    evidenceIds: [...item.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${item.searchSpace.id}`],
-    metadata: { ...item.searchSpace.metadata, searchSpaceSelection: { selected: item.selected, selectionReason: item.selectionReason } },
-  }));
+  const futureConstraintPropagation = propagateFutureConstraints(searchSpaceSelectionResult);
+  const branchOrderingResult = orderSearchSpaces(searchSpaceSelectionResult, futureConstraintPropagation);
+  const selectionBySearchSpaceId = new Map(searchSpaceSelectionResult.selected.map((item) => [item.searchSpace.id, item]));
+  const selectedSearchSpaces = branchOrderingResult.orderedSearchSpaces.map((ordered) => {
+    const item = selectionBySearchSpaceId.get(ordered.searchSpace.id);
+    return {
+      ...ordered.searchSpace,
+      explorationValue: explorationValueAnalysis.values.find((value) => value.searchSpaceId === ordered.searchSpace.id) ?? ordered.searchSpace.explorationValue,
+      evidenceIds: [...ordered.searchSpace.evidenceIds, `evidence:orc-see:search-space-selection:${ordered.searchSpace.id}`, `evidence:orc-see:branch-ordering:${ordered.searchSpace.id}`],
+      metadata: { ...ordered.searchSpace.metadata, searchSpaceSelection: { selected: item?.selected ?? true, selectionReason: item?.selectionReason ?? "Selected for branch ordering." }, branchOrdering: { explorationOrder: ordered.explorationOrder, orderingScore: ordered.orderingScore, explanation: ordered.explanation } },
+    };
+  });
   const searchSpaceSelectionEvidence = buildSearchSpaceSelectionEvidence(searchSpaceSelectionResult, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis, createdAt);
+  const branchOrderingEvidence = buildBranchOrderingEvidence(branchOrderingResult, createdAt);
   const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
   const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces);
   const decisionInput = buildDecisionInput(candidateResult);
@@ -351,6 +360,7 @@ export function runORCShadowMode(
     ...diagnosisResult.evidence.map((item) => ({ ...item, createdAt })),
     ...searchSpaceResult.evidence,
     ...searchSpaceSelectionEvidence,
+    ...branchOrderingEvidence,
     ...decisionInput.evidence,
     ...transformationResult.evidence,
     ...simulationResult.evidence,
