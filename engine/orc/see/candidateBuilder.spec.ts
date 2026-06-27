@@ -25,7 +25,7 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0 } });
 });
 
 test("buildCandidates creates abstract candidates for one SearchSpace", () => {

@@ -7,7 +7,9 @@ export { opportunityPriorityValue } from "./opportunityPriority";
 export type { SearchSpaceBuildOptions, SearchSpaceBuildResult, SearchSpaceBuilderResult } from "./searchSpaceBuilder";
 export { buildSearchSpaces, buildSearchSpacesForOpportunities } from "./searchSpaceBuilder";
 export type { CandidateBuilderResult } from "./candidateBuilder";
+export type { CandidatePreselectionOptions, CandidatePreselectionResult, PreselectedCandidate } from "./candidatePreselectionEngine";
 export { buildCandidates, buildCandidatesFromSearchSpaces } from "./candidateBuilder";
+export { preselectCandidates } from "./candidatePreselectionEngine";
 export type { AdaptivePriorityResult } from "./adaptivePriority";
 export { reprioritizeOpportunities } from "./adaptivePriority";
 
