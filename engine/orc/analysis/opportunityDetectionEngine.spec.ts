@@ -31,6 +31,9 @@ test("Opportunity Detection Engine detects one opportunity", () => {
   assert.deepEqual(result.opportunities[0].taskIds, [1, 2]);
   assert.deepEqual(result.opportunities[0].metadata.bottleneckIds, ["resource:10:overlap"]);
   assert.equal(result.opportunities[0].metadata.derivedFromCriticalBottleneck, true);
+  assert.equal(result.opportunities[0].opportunityImpact?.opportunityId, result.opportunities[0].id);
+  assert.equal(typeof result.opportunities[0].opportunityImpact?.expectedImpact, "number");
+  assert.match(result.opportunities[0].opportunityImpact?.explanation ?? "", /kind=RESOURCE_PRESSURE/);
 });
 
 test("Opportunity Detection Engine detects multiple opportunity classes deterministically ordered", () => {

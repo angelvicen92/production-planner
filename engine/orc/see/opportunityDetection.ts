@@ -50,6 +50,12 @@ export function buildOpportunityDetectionEvidence(state: OperationalState, map: 
         derivedFromCriticalBottleneck: opportunity.metadata.derivedFromCriticalBottleneck ?? false,
       })),
       priority: opportunities.map((opportunity) => ({ id: opportunity.id, priority: opportunity.metadata.priority ?? null })),
+      opportunityImpacts: opportunities.map((opportunity) => ({
+        opportunityId: opportunity.id,
+        expectedImpact: opportunity.opportunityImpact?.expectedImpact ?? null,
+        confidence: opportunity.opportunityImpact?.confidence ?? null,
+        explanation: opportunity.opportunityImpact?.explanation ?? null,
+      })),
       cognitiveFeedback: {
         repeatedOpportunityIds: cognitiveState ? opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).map((opportunity) => opportunity.id) : [],
         potentialOmittableCount: cognitiveState ? opportunities.filter((opportunity) => shouldSkipOpportunity(cognitiveState, opportunity)).length : 0,

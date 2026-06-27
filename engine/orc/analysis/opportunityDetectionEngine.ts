@@ -2,6 +2,7 @@ import type { CriticalBottleneck, CriticalBottleneckAnalysis } from "./criticalB
 import type { OperationalAnalysis } from "./operationalStateAnalyzer";
 import type { Opportunity, ORCRecord } from "../contracts";
 import { prioritizeOpportunities } from "../see/opportunityPriority";
+import { estimateOpportunityImpact } from "./opportunityImpactEstimator";
 
 export type ORCOpportunityKind =
   | "MAIN_FLOW_GAP"
@@ -106,5 +107,27 @@ export function detectOpportunities(analysis: OperationalAnalysis, bottleneckAna
     pushUnique(opportunitiesById, makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", allPlannedResourceTaskIds(analysis), { impactExpected: "reduce_space_switches", totalSpaceSwitches: analysis.fragmentation.totalSpaceSwitches, derivedOpportunityKind: "FRAGMENTATION" }, origins));
   }
 
-  return { opportunities: prioritizeOpportunities([...opportunitiesById.values()]) };
+  const prioritized = prioritizeOpportunities([...opportunitiesById.values()]);
+  const impactsByOpportunityId = new Map(estimateOpportunityImpact(prioritized).impacts.map((impact) => [impact.opportunityId, impact]));
+  const opportunities = prioritized.map((opportunity) => {
+    const opportunityImpact = impactsByOpportunityId.get(opportunity.id);
+    if (!opportunityImpact) return opportunity;
+    return {
+      ...opportunity,
+      evidenceIds: uniqueStrings([...opportunity.evidenceIds, `evidence:orc-see:opportunity-impact:${opportunity.id}`]),
+      metadata: {
+        ...opportunity.metadata,
+        opportunityImpactEvidence: {
+          opportunityId: opportunity.id,
+          expectedImpact: opportunityImpact.expectedImpact,
+          confidence: opportunityImpact.confidence,
+          explanation: opportunityImpact.explanation,
+          readOnly: true,
+        },
+      },
+      opportunityImpact,
+    };
+  });
+
+  return { opportunities };
 }
