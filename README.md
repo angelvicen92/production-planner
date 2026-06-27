@@ -205,3 +205,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 126 — 2026-06-27 03:47 — ORC Search Space Builder Decoupling v2
 - ID 127 — 2026-06-27 03:57 — ORC Candidate Builder Decoupling v2
 - ID 128 — 2026-06-27 04:08 — ORC Decision Engine Input Contract v1
+
+- ID 129 — 2026-06-27 10:11 — ORC Decision Pipeline Orchestrator v1

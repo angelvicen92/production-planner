@@ -14,13 +14,8 @@ import { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEn
 import { diagnoseOpportunities, type OpportunityDiagnosis } from "../see/opportunityDiagnosis";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { reprioritizeOpportunities } from "../see/adaptivePriority";
-import { buildCandidateStates } from "../transformation/transformationEngine";
-import { simulateCandidateStates } from "../simulation/simulationEngine";
-import { validateSimulatedStates } from "../validation/validationEngine";
-import { evaluateSimulatedStates } from "../evaluator/operationalEvaluator";
 import { buildDecisionInput } from "../decision/decisionInput";
-import { rankDecisionInput } from "../decision/rankingEngine";
-import { buildCommitDecisions } from "../commit/commitEngine";
+import { executeDecisionPipeline } from "../decision/decisionPipelineOrchestrator";
 import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
 import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
 import { getSessionKnowledge, learnFromCommit, learnFromEvaluation, learnFromRanking } from "../cognitive/sessionLearning";
@@ -276,29 +271,16 @@ export function runORCShadowMode(
   cognitiveState = searchSpaceResult.searchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
   const repeatedCandidateIds = candidateResult.summary.pruning.prunedItems.map((item) => item.id);
   cognitiveState = candidateResult.candidates.reduce((state) => updateReasoningBudget(state, consumeCandidate(state.reasoningBudget)), cognitiveState);
-  const transformationResult = buildCandidateStates(operationalState, decisionInput.candidates, { createdAt });
-  const simulationResult = simulateCandidateStates(operationalState, transformationResult.candidateStates, { createdAt });
+  const decisionPipelineResult = executeDecisionPipeline({ ...decisionInput, operationalState, createdAt });
+  const transformationResult = decisionPipelineResult.transformation;
+  const simulationResult = decisionPipelineResult.simulation;
   cognitiveState = simulationResult.simulatedStates.reduce((state, simulatedState) => updateReasoningBudget(recordSimulatedCandidate(state, simulatedState.candidateStateId), consumeSimulation(state.reasoningBudget)), cognitiveState);
-  const validationResult = validateSimulatedStates(simulationResult.simulatedStates, { createdAt });
-  const evaluatorResult = evaluateSimulatedStates(simulationResult.simulatedStates, validationResult.validationResults, { createdAt });
+  const validationResult = decisionPipelineResult.validation;
+  const evaluatorResult = decisionPipelineResult.evaluation;
   cognitiveState = learnFromEvaluation(cognitiveState, { operationalValues: evaluatorResult.operationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, candidates: decisionInput.candidates, searchSpaces: searchSpaceResult.searchSpaces });
-  const operationalValuesByCandidateId = new Map<string, typeof evaluatorResult.operationalValues>();
-  for (const operationalValue of evaluatorResult.operationalValues) {
-    const simulatedState = simulationResult.simulatedStates.find((item) => item.id === operationalValue.simulatedStateId);
-    const candidateState = transformationResult.candidateStates.find((item) => item.id === simulatedState?.candidateStateId);
-    if (candidateState === undefined) continue;
-    operationalValuesByCandidateId.set(candidateState.candidateId, [...(operationalValuesByCandidateId.get(candidateState.candidateId) ?? []), operationalValue]);
-  }
-  const evaluatedDecisionInput = {
-    ...decisionInput,
-    candidates: decisionInput.candidates.map((candidate) => ({
-      ...candidate,
-      operationalValues: operationalValuesByCandidateId.get(candidate.id) ?? [],
-    })),
-  };
-  const rankingResult = rankDecisionInput(evaluatedDecisionInput, { createdAt });
+  const rankingResult = decisionPipelineResult.ranking;
   cognitiveState = learnFromRanking(cognitiveState, { rankedOperationalValues: rankingResult.rankedOperationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates });
-  const commitResult = buildCommitDecisions(rankingResult.rankedOperationalValues, { createdAt });
+  const commitResult = decisionPipelineResult.commit;
   cognitiveState = learnFromCommit(cognitiveState, { commitDecisions: commitResult.commitDecisions, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, searchSpaces: searchSpaceResult.searchSpaces });
   const sessionKnowledge = getSessionKnowledge(cognitiveState);
   const sessionLearningSummary = {
@@ -364,6 +346,7 @@ export function runORCShadowMode(
     ...evaluatorResult.evidence,
     ...rankingResult.evidence,
     ...commitResult.evidence,
+    ...decisionPipelineResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
     buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),

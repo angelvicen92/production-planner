@@ -15,6 +15,7 @@ export * from "./validation/validationEngine";
 export * from "./evaluator/operationalEvaluator";
 export * from "./decision/decisionInput";
 export * from "./decision/rankingEngine";
+export * from "./decision/decisionPipelineOrchestrator";
 export * from "./commit/commitEngine";
 export * from "./advisory/advisoryDecision";
 export * from "./advisory/advisoryEvaluation";
