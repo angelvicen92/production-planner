@@ -123,13 +123,24 @@ function evidence(id: string, kind: string, subjectId: string, data: Record<stri
   return { id, source: "orc-see", kind, subjectId, createdAt: null, data: data as Record<string, never> };
 }
 
-export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveState: CognitiveState = DEFAULT_COGNITIVE_STATE): StrategyCandidateResult {
+export interface StrategyCandidateBuildOptions {
+  readonly candidateBudgetBySearchSpaceId?: Readonly<Record<string, number>> | ReadonlyMap<string, number> | null;
+}
+
+const budgetForSearchSpace = (budgetBySearchSpaceId: StrategyCandidateBuildOptions["candidateBudgetBySearchSpaceId"], searchSpaceId: string): number | null => {
+  if (budgetBySearchSpaceId == null) return null;
+  const raw = budgetBySearchSpaceId instanceof Map ? budgetBySearchSpaceId.get(searchSpaceId) : (budgetBySearchSpaceId as Readonly<Record<string, number>>)[searchSpaceId];
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+};
+
+export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveState: CognitiveState = DEFAULT_COGNITIVE_STATE, options: StrategyCandidateBuildOptions = {}): StrategyCandidateResult {
   const candidates: Candidate[] = [];
   const emittedEvidence: Evidence[] = [];
   const seen = new Set<string>();
   const families = new Set<string>();
   let discardedEquivalentCandidates = 0;
   const maxCandidates = remainingBudget(cognitiveState.reasoningBudget).candidates;
+  const budgetBySearchSpaceId = options.candidateBudgetBySearchSpaceId ?? null;
 
   for (const searchSpace of [...(searchSpaces ?? [])]) {
     if (shouldSkipSearchSpace(cognitiveState, searchSpace.id)) {
@@ -137,11 +148,12 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
       continue;
     }
     let producedForSpace = 0;
+    const allocatedForSpace = budgetForSearchSpace(budgetBySearchSpaceId, searchSpace.id) ?? MAX_CANDIDATES_PER_SEARCH_SPACE;
     for (const definition of strategiesFor(searchSpace)) {
       const key = candidateKey(searchSpace, definition);
       const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
       const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
-      if (candidates.length >= maxCandidates || producedForSpace >= MAX_CANDIDATES_PER_SEARCH_SPACE) {
+      if (candidates.length >= maxCandidates || producedForSpace >= allocatedForSpace || producedForSpace >= MAX_CANDIDATES_PER_SEARCH_SPACE) {
         emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:budget:${searchSpace.id}:${definition.strategy}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, strategy: definition.strategy, strategyFamily: definition.family, reason: "insufficient-candidate-budget", readOnly: true }));
         break;
       }
