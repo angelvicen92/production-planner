@@ -65,3 +65,13 @@ test("buildCandidateStates does not mutate OperationalState or candidates", () =
   assert.equal(stableStringify(operationalState), beforeState);
   assert.equal(stableStringify(candidates), beforeCandidates);
 });
+
+
+test("buildCandidateStates preserves candidate source assignments immutably", () => {
+  const input = candidate("candidate:assignments");
+  input.assignments.push({ taskId: 1, startPlanned: "10:00", endPlanned: "10:30", spaceId: 99, resourceIds: [7] });
+  const result = buildCandidateStates(state(), [input], { createdAt: null });
+  assert.deepEqual(result.candidateStates[0].sourceAssignments, input.assignments);
+  assert.notEqual(result.candidateStates[0].sourceAssignments, input.assignments);
+  assert.equal(Object.isFrozen(result.candidateStates[0].sourceAssignments), true);
+});
