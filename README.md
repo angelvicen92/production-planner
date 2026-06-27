@@ -227,3 +227,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 140 — 2026-06-27 15:46 — ORC Future Constraint Propagation Engine v1
 - ID 141 — 2026-06-27 16:46 — ORC Branch Ordering Engine v1
 - ID 142 — 2026-06-27 16:58 — ORC Search Backtracking Framework v1
+- ID 143 — 2026-06-27 17:06 — ORC Backtracking Search Executor v1

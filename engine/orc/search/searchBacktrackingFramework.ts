@@ -17,7 +17,7 @@ export interface SearchBacktrackingState {
   branches: SearchBranchState[];
 }
 
-export type SearchBacktrackingEvidenceEvent = "branch-created" | "branch-explored" | "branch-exhausted" | "next-branch";
+export type SearchBacktrackingEvidenceEvent = "branch-created" | "branch-explored" | "branch-exhausted" | "branch-skipped" | "next-branch";
 
 const cloneBranch = (branch: SearchBranchState): SearchBranchState => ({
   branchId: branch.branchId,
@@ -78,6 +78,7 @@ export function buildSearchBacktrackingEvidence(
   branch: SearchBranchState | null,
   state: SearchBacktrackingState,
   createdAt: string | null = null,
+  reason: string | null = null,
 ): Evidence {
   const branchId = branch?.branchId ?? null;
   return {
@@ -92,6 +93,7 @@ export function buildSearchBacktrackingEvidence(
       activeBranchId: state.activeBranchId,
       branches: state.branches.map(cloneBranch),
       branchCount: state.branches.length,
+      backtrackingReason: reason,
       readOnly: true,
       shadowModeOnly: true,
     },
