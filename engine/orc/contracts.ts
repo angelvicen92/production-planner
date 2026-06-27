@@ -1,5 +1,6 @@
 import type { EngineInput, LockInput, PlanResourceItemInput, TaskInput, TimeWindow } from "../types";
 export type { CognitiveState } from "./cognitive/cognitiveState";
+export type { OperationalCriticality } from "./understanding/operationalCriticality";
 
 export type ORCJsonPrimitive = string | number | boolean | null;
 export type ORCJsonValue = ORCJsonPrimitive | ReadonlyArray<ORCJsonValue> | { readonly [key: string]: ORCJsonValue };

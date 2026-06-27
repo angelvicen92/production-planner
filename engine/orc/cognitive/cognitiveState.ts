@@ -1,3 +1,4 @@
+import type { OperationalCriticality } from "../understanding/operationalCriticality";
 import type { ReasoningBudget } from "./reasoningBudget";
 import { createReasoningBudget, remainingBudget } from "./reasoningBudget";
 
@@ -9,6 +10,7 @@ export interface CognitiveState {
   committedCandidateIds: string[];
   reasoningBudget: ReasoningBudget;
   temporaryKnowledge: Record<string, unknown>;
+  operationalCriticality?: OperationalCriticality;
   confidence: number;
   createdAt: string | null;
 }
