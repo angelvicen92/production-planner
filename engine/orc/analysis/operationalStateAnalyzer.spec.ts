@@ -24,17 +24,19 @@ test("OperationalAnalysis supports an empty OperationalState", () => {
     criticalBottleneckAnalysis: { bottlenecks: [] },
     resourceCriticalityAnalysis: { resources: [] },
     constraintPressureAnalysis: { constraints: [] },
+    operationalPriorityMap: { priorities: [] },
   });
 });
 
 test("OperationalAnalysis supports a simple planned state", () => {
-  const analysis = analyzeOperationalState(state({ tasks: [task(1, { contestantId: 10 })], planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResourceIds: [3], spaceId: 1 }] }));
+  const analysis = analyzeOperationalState(state({ tasks: [task(1, { contestantId: 10 })], resources: [{ id: 3, resourceItemId: 30, typeId: 1, name: "R3", isAvailable: true }], planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResourceIds: [3], spaceId: 1 }] }));
   assert.equal(analysis.continuity.taskCount, 1);
   assert.equal(analysis.continuity.plannedTaskCount, 1);
   assert.equal(analysis.continuity.pendingTaskCount, 0);
   assert.deepEqual(analysis.resourcePressure.assignedResourceIds, [3]);
   assert.deepEqual(analysis.resourcePressure.plannedTaskIdsByResourceId, { 3: [1] });
   assert.equal(analysis.operationalMargin.maxStayMinutes, 10);
+  assert.deepEqual(analysis.operationalPriorityMap.priorities.map((priority) => priority.id), ["resource:3"]);
 });
 
 test("OperationalAnalysis summarizes multiple resources deterministically", () => {

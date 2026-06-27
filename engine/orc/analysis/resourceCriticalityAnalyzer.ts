@@ -1,6 +1,6 @@
 import type { OperationalAnalysis } from "./operationalStateAnalyzer";
 
-type ResourceCriticalityInput = Omit<OperationalAnalysis, "resourceCriticalityAnalysis" | "constraintPressureAnalysis"> | OperationalAnalysis;
+type ResourceCriticalityInput = Omit<OperationalAnalysis, "resourceCriticalityAnalysis" | "constraintPressureAnalysis" | "operationalPriorityMap"> | OperationalAnalysis;
 
 export interface ResourceCriticality {
   readonly resourceId: string;
