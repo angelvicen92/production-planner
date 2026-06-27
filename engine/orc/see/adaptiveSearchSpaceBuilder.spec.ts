@@ -76,3 +76,20 @@ test("buildAdaptiveSearchSpaces preserves structural equality and does not mutat
   assert.equal(structuralEquals(first, second), true);
   assert.equal(stableStringify({ opportunities, state, reasoningBudget }), before);
 });
+
+
+test("buildAdaptiveSearchSpaces uses adaptive profiles for depth, breadth and evidence", () => {
+  const opportunities = [opportunity("op:low", "MAIN_FLOW_GAP", [1, 2, 3, 4]), opportunity("op:high", "MAIN_FLOW_GAP", [1, 2, 3, 4])];
+  const profiles = [
+    { opportunityId: "op:low", criticalityLevel: 1, propagationScore: 0, reasoningBudget: 1, maxDepth: 1, maxBreadth: 1, expectedExplorationValue: 1 },
+    { opportunityId: "op:high", criticalityLevel: 3, propagationScore: 1, reasoningBudget: 4, maxDepth: 3, maxBreadth: 4, expectedExplorationValue: 13 },
+  ];
+  const result = buildAdaptiveSearchSpaces(opportunities, cognitive(), budget(), { profiles, createdAt: "t" });
+  const low = result.searchSpaces.find((space) => space.metadata.sourceOpportunityId === "op:low" && space.metadata.diversity && (space.metadata.diversity as { strategy: string }).strategy === "region-focus");
+  const high = result.searchSpaces.find((space) => space.metadata.sourceOpportunityId === "op:high" && space.metadata.diversity && (space.metadata.diversity as { strategy: string }).strategy === "region-focus");
+  assert.equal(low?.taskIds.length, 1);
+  assert.equal(high?.taskIds.length, 4);
+  assert.equal((low?.metadata.allowedTransformations as string[]).length, 1);
+  assert.equal((high?.metadata.allowedTransformations as string[]).length, 2);
+  assert.equal(result.evidence.some((item) => item.kind === "adaptive-search-space-built" && item.data.adaptiveProfile === profiles[1] && item.data.generatedBreadth === 4 && item.data.generatedDepth === 2 && item.createdAt === "t"), true);
+});

@@ -251,3 +251,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
 
 - ID 158 — 2026-06-27 22:20 — ORC Opportunity Propagation Analyzer v1
+
+- ID 159 — 2026-06-27 22:34 — ORC Adaptive Search Space Builder v1
