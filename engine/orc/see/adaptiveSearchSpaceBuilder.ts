@@ -1,4 +1,4 @@
-import type { CognitiveState, Evidence, Opportunity, SearchSpace } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, CognitiveState, Evidence, Opportunity, SearchSpace } from "../contracts";
 import type { OpportunityDiagnosis } from "./opportunityDiagnosis";
 import { remainingBudget, type ReasoningBudget } from "../cognitive/reasoningBudget";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
@@ -16,6 +16,8 @@ export interface AdaptiveSearchSpaceResult {
 
 export interface AdaptiveSearchSpaceOptions {
   diagnoses?: OpportunityDiagnosis[];
+  profiles?: readonly AdaptiveSearchSpaceProfile[];
+  createdAt?: string | null;
 }
 
 const TRANSFORMATIONS_BY_KIND: Record<string, string[]> = {
@@ -69,8 +71,8 @@ const taskWindowFor = (taskIds: number[], strategy: Strategy, maxSize: number): 
 const equivalenceKey = (opportunity: Opportunity, strategy: Strategy, taskIds: number[], transformations: string[], region: string, diagnosisCause: string | null): string =>
   `${opportunity.kind}|${region}|${diagnosisCause ?? "undiagnosed"}|${strategy}|${taskIds.join(",")}|${transformations.join(",")}`;
 
-function evidence(id: string, kind: string, subjectId: string, data: Record<string, unknown>): Evidence {
-  return { id, source: "orc-see", kind, subjectId, createdAt: null, data: data as Record<string, never> };
+function evidence(id: string, kind: string, subjectId: string, data: Record<string, unknown>, createdAt: string | null = null): Evidence {
+  return { id, source: "orc-see", kind, subjectId, createdAt, data: data as Record<string, never> };
 }
 
 export function buildAdaptiveSearchSpaces(
@@ -81,7 +83,9 @@ export function buildAdaptiveSearchSpaces(
 ): AdaptiveSearchSpaceResult {
   const remaining = remainingBudget(reasoningBudget);
   const maxSpaces = remaining.searchSpaces;
-  const maxSize = sizeLimitFor(reasoningBudget);
+  const fallbackMaxSize = sizeLimitFor(reasoningBudget);
+  const profileByOpportunityId = new Map((options.profiles ?? []).map((profile) => [profile.opportunityId, profile]));
+  const createdAt = options.createdAt ?? null;
   const searchSpaces: SearchSpace[] = [];
   const emittedEvidence: Evidence[] = [];
   const seen = new Set<string>();
@@ -93,27 +97,31 @@ export function buildAdaptiveSearchSpaces(
     for (const strategy of strategiesFor(opportunity)) {
       const diagnosis = diagnosisByOpportunityId.get(opportunity.id) ?? null;
       const region = diagnosis?.affectedRegion ?? REGION_BY_KIND[opportunity.kind] ?? "unknown-opportunity-region";
+      const profile = profileByOpportunityId.get(opportunity.id) ?? null;
+      const maxSize = profile?.maxBreadth ?? fallbackMaxSize;
+      const maxDepth = profile?.maxDepth ?? 1;
       const transformations = [...(TRANSFORMATIONS_BY_KIND[opportunity.kind] ?? [])];
-      const allowedTransformations = strategy === "diversity-focus" ? transformations.slice().reverse().slice(0, 1) : transformations.slice(0, Math.max(1, Math.min(2, transformations.length)));
+      const transformationLimit = Math.max(1, Math.min(2, transformations.length || 1, maxDepth));
+      const allowedTransformations = strategy === "diversity-focus" ? transformations.slice().reverse().slice(0, 1) : transformations.slice(0, transformationLimit);
       const taskIds = taskWindowFor(uniqueSortedTaskIds(opportunity.taskIds), strategy, maxSize);
       const id = `orc-see:adaptive-search-space:${opportunity.id}:${strategy}`;
       const key = equivalenceKey(opportunity, strategy, taskIds, allowedTransformations, region, diagnosis?.primaryCause ?? null);
-      const baseData = { opportunityId: opportunity.id, opportunityKind: opportunity.kind, searchSpaceId: id, region, strategy, searchSpaceSize: taskIds.length, budgetConsumed: searchSpaces.length, diversityKey: key, readOnly: true };
+      const baseData = { opportunityId: opportunity.id, opportunityKind: opportunity.kind, searchSpaceId: id, region, strategy, adaptiveProfile: profile, generatedDepth: allowedTransformations.length, generatedBreadth: taskIds.length, decisionReason: profile == null ? "fallback-reasoning-budget-only" : `criticality-${profile.criticalityLevel}-propagation-${profile.propagationScore}-budget-${profile.reasoningBudget}`, searchSpaceSize: taskIds.length, budgetConsumed: searchSpaces.length, diversityKey: key, readOnly: true };
 
       if (searchSpaces.length >= maxSpaces) {
         discardedSearchSpaces += 1;
-        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:budget:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", opportunity.id, { ...baseData, reason: "insufficient-search-space-budget" }));
+        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:budget:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", opportunity.id, { ...baseData, reason: "insufficient-search-space-budget" }, createdAt));
         continue;
       }
       if (shouldSkipSearchSpace(cognitiveState, id)) {
         discardedSearchSpaces += 1;
         exhaustedRegionsSkipped += 1;
-        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:exhausted:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", id, { ...baseData, reason: "exhausted-region" }));
+        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:exhausted:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", id, { ...baseData, reason: "exhausted-region" }, createdAt));
         continue;
       }
       if (seen.has(key)) {
         discardedSearchSpaces += 1;
-        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:duplicate:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", id, { ...baseData, reason: "structural-duplicate" }));
+        emittedEvidence.push(evidence(`evidence:orc-see:adaptive-search-space:discarded:duplicate:${opportunity.id}:${strategy}`, "adaptive-search-space-discarded", id, { ...baseData, reason: "structural-duplicate" }, createdAt));
         continue;
       }
       seen.add(key);
@@ -134,7 +142,11 @@ export function buildAdaptiveSearchSpaces(
           regionDetails: { opportunityTaskCount: uniqueSortedTaskIds(opportunity.taskIds).length, strategy, diagnosedCause: diagnosis?.primaryCause ?? null },
           allowedTransformations,
           localRestrictions: RESTRICTIONS_BY_KIND[opportunity.kind] ?? ["read-only"],
-          budget: { remainingSearchSpaces: maxSpaces, maxTasksPerSpace: maxSize },
+          adaptiveProfile: profile,
+          generatedDepth: allowedTransformations.length,
+          generatedBreadth: taskIds.length,
+          decisionReason: baseData.decisionReason,
+          budget: { remainingSearchSpaces: maxSpaces, maxTasksPerSpace: maxSize, maxDepth },
           originalAffectedTaskCount: uniqueSortedTaskIds(opportunity.taskIds).length,
           truncatedAffectedTasks: uniqueSortedTaskIds(opportunity.taskIds).length > taskIds.length,
           diversity: { strategy, key, achieved: seen.size },
@@ -143,7 +155,7 @@ export function buildAdaptiveSearchSpaces(
           cognitiveFeedback: { repeatedByCognitiveMemory: false, potentialOmittable: false, observationalOnly: true },
         },
       });
-      emittedEvidence.push(evidence(evidenceId, "adaptive-search-space-built", id, { ...baseData, diagnosis, primaryCause: diagnosis?.primaryCause ?? null, contributingFactors: diagnosis?.contributingFactors ?? [], allowedTransformations, budgetConsumed: searchSpaces.length, diversityAchieved: seen.size }));
+      emittedEvidence.push(evidence(evidenceId, "adaptive-search-space-built", id, { ...baseData, diagnosis, primaryCause: diagnosis?.primaryCause ?? null, contributingFactors: diagnosis?.contributingFactors ?? [], allowedTransformations, budgetConsumed: searchSpaces.length, diversityAchieved: seen.size }, createdAt));
     }
   }
 

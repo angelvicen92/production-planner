@@ -133,6 +133,16 @@ export interface ExplorationValue {
   explanation: string;
 }
 
+export interface AdaptiveSearchSpaceProfile {
+  readonly opportunityId: string;
+  readonly criticalityLevel: number;
+  readonly propagationScore: number;
+  readonly reasoningBudget: number;
+  readonly maxDepth: number;
+  readonly maxBreadth: number;
+  readonly expectedExplorationValue: number;
+}
+
 export interface ReasoningBudgetProfile {
   readonly opportunityId: string;
   readonly criticalityLevel: number;

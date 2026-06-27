@@ -32,6 +32,7 @@ import { DEFAULT_ORC_CONFIGURATION, ORCIntegrationMode, type ORCConfiguration, n
 import { consultORCAdvisory } from "../integration/advisoryIntegration";
 import { buildExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import { understandOperationalCriticality, type OperationalCriticality } from "../understanding/operationalCriticality";
+import { buildSearchAndExplorationUnderstanding } from "../search/searchAndExplorationEngine";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -275,7 +276,9 @@ export function runORCShadowMode(
   const repeatedOpportunityIds = opportunityResult.pruning.prunedItems.map((item) => item.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
   const diagnosisResult = diagnoseOpportunities(opportunities, operationalState, cognitiveState);
-  const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses });
+  const searchAndExplorationUnderstanding = buildSearchAndExplorationUnderstanding(operationalState, cognitiveState, createdAt, { opportunities, reasoningBudget: cognitiveState.reasoningBudget });
+  cognitiveState = searchAndExplorationUnderstanding.cognitiveState ?? cognitiveState;
+  const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses, profiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, createdAt });
   const explorationValueAnalysis = estimateExplorationValue(searchSpaceResult.searchSpaces);
   const searchSpaceSelectionResult = selectSearchSpaces(searchSpaceResult.searchSpaces, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis);
   const futureConstraintPropagation = propagateFutureConstraints(searchSpaceSelectionResult);
@@ -369,6 +372,7 @@ export function runORCShadowMode(
     ...adaptivePriorityResult.evidence.map((item) => ({ ...item, createdAt })),
     ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
     ...diagnosisResult.evidence.map((item) => ({ ...item, createdAt })),
+    ...searchAndExplorationUnderstanding.evidence.filter((item) => item.kind !== "operational-criticality"),
     ...searchSpaceResult.evidence,
     ...searchSpaceSelectionEvidence,
     ...branchOrderingEvidence,
