@@ -23,6 +23,7 @@ test("OperationalAnalysis supports an empty OperationalState", () => {
     operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
     criticalBottleneckAnalysis: { bottlenecks: [] },
     resourceCriticalityAnalysis: { resources: [] },
+    constraintPressureAnalysis: { constraints: [] },
   });
 });
 

@@ -1,6 +1,7 @@
 import type { OperationalState } from "../contracts";
 import { analyzeCriticalBottlenecks, type CriticalBottleneckAnalysis } from "./criticalBottleneckAnalyzer";
 import { analyzeResourceCriticality, type ResourceCriticalityAnalysis } from "./resourceCriticalityAnalyzer";
+import { analyzeConstraintPressure, type ConstraintPressureAnalysis } from "./constraintPressureAnalyzer";
 
 export interface ResourcePressureSummary {
   readonly totalResourceCount: number;
@@ -53,6 +54,7 @@ export interface OperationalAnalysis {
   readonly operationalMargin: OperationalMarginSummary;
   readonly criticalBottleneckAnalysis: CriticalBottleneckAnalysis;
   readonly resourceCriticalityAnalysis: ResourceCriticalityAnalysis;
+  readonly constraintPressureAnalysis: ConstraintPressureAnalysis;
 }
 
 const toMinutes = (value: string | null | undefined): number | null => {
@@ -147,8 +149,13 @@ export function analyzeOperationalState(state: OperationalState): OperationalAna
     criticalBottleneckAnalysis: analyzeCriticalBottlenecks(analysisWithoutBottlenecks),
   };
 
-  return {
+  const analysisWithResourceCriticality = {
     ...analysisWithBottlenecks,
     resourceCriticalityAnalysis: analyzeResourceCriticality(analysisWithBottlenecks),
+  };
+
+  return {
+    ...analysisWithResourceCriticality,
+    constraintPressureAnalysis: analyzeConstraintPressure(analysisWithResourceCriticality),
   };
 }
