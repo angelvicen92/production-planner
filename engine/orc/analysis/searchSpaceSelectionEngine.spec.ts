@@ -34,6 +34,7 @@ test("selectSearchSpaces selects one SearchSpace with traceable reason", () => {
   assert.equal(result.selected.length, 1);
   assert.equal(result.selected[0]?.selected, true);
   assert.match(result.selected[0]?.selectionReason ?? "", /exploration value 0.5/);
+  assert.equal(result.selected[0]?.futureConstraintEffect?.searchSpaceId, "space:a");
 });
 
 test("selectSearchSpaces preserves multiple SearchSpaces in input order", () => {
@@ -66,4 +67,5 @@ test("buildSearchSpaceSelectionEvidence records priority and ExplorationValue", 
   assert.equal(evidence[0]?.kind, "search-space-selection");
   assert.equal(evidence[0]?.data.selected, true);
   assert.deepEqual((evidence[0]?.data.explorationValue as { searchSpaceId: string }).searchSpaceId, "space:a");
+  assert.deepEqual((evidence[0]?.data.futureConstraintPropagation as { searchSpaceId: string }).searchSpaceId, "space:a");
 });
