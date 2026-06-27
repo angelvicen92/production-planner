@@ -200,3 +200,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 120 — 2026-06-26 23:19 — ORC Recommendation Calibration Suite v1
 
 - ID 121 — 2026-06-27 02:05 — ORC Feature Flag & Integration Modes
+- ID 122 — 2026-06-27 02:33 — ORC Real Production Scenario Suite v1

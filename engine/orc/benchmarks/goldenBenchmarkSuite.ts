@@ -1,5 +1,6 @@
 import type { EngineInput } from "../../types";
 import type { ORCBenchmarkResult } from "./orcBenchmarkHarness";
+import { buildRealProductionScenarioSuite, type RealProductionScenario } from "./realProductionScenarioSuite";
 import { ORC_BENCHMARK_VERSION, roundBenchmarkMetric, runORCBenchmark } from "./orcBenchmarkHarness";
 
 export const GOLDEN_BENCHMARK_VERSION = `${ORC_BENCHMARK_VERSION}:GOLDEN-SUITE-V1`;
@@ -42,13 +43,31 @@ const average = (reports: ORCBenchmarkResult[], metric: (report: ORCBenchmarkRes
   return roundBenchmarkMetric(reports.reduce((sum, report) => sum + metric(report), 0) / reports.length);
 };
 
+export interface GoldenBenchmarkSuiteOptions {
+  includeRealProductionScenarios?: boolean;
+  realProductionScenarios?: RealProductionScenario[];
+}
+
+const scenariosForSuite = (
+  scenarios: GoldenBenchmarkScenario[],
+  options: GoldenBenchmarkSuiteOptions = {},
+): Array<GoldenBenchmarkScenario | RealProductionScenario> => {
+  if (!options.includeRealProductionScenarios) return scenarios;
+  return [
+    ...scenarios,
+    ...buildRealProductionScenarioSuite(options.realProductionScenarios).scenarios,
+  ];
+};
+
 export function runGoldenBenchmarkSuite(
   scenarios: GoldenBenchmarkScenario[],
+  options: GoldenBenchmarkSuiteOptions = {},
 ): GoldenBenchmarkReport {
-  const reports = scenarios.map((scenario) => runORCBenchmark(scenario.input, { createdAt: null, executionTimeMs: 0 }));
+  const executableScenarios = scenariosForSuite(scenarios, options);
+  const reports = executableScenarios.map((scenario) => runORCBenchmark(scenario.input, { createdAt: null, executionTimeMs: 0 }));
 
   return {
-    scenariosExecuted: scenarios.length,
+    scenariosExecuted: executableScenarios.length,
     reports,
     summary: {
       averageExecutionTimeMs: average(reports, (report) => report.executionTimeMs),

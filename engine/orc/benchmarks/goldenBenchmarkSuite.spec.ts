@@ -68,3 +68,13 @@ test("runGoldenBenchmarkSuite does not mutate scenarios", () => {
   runGoldenBenchmarkSuite(scenarios);
   assert.equal(stableStringify(scenarios), before);
 });
+
+
+test("runGoldenBenchmarkSuite includes real production scenarios only when requested", () => {
+  const goldenOnly = runGoldenBenchmarkSuite(goldenBenchmarkScenarios);
+  const withReal = runGoldenBenchmarkSuite(goldenBenchmarkScenarios, { includeRealProductionScenarios: true });
+
+  assert.equal(goldenOnly.scenariosExecuted, goldenBenchmarkScenarios.length);
+  assert.ok(withReal.scenariosExecuted > goldenOnly.scenariosExecuted);
+  assert.equal(withReal.reports.length, withReal.scenariosExecuted);
+});
