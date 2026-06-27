@@ -49,6 +49,9 @@ for (const [kind, region, transformations] of [
     assert.deepEqual(space.metadata.allowedTransformations, transformations);
     assert.deepEqual(space.candidates, []);
     assert.equal(space.metadata.readOnly, true);
+    assert.equal(space.explorationValue?.searchSpaceId, space.id);
+    assert.equal(typeof space.explorationValue?.expectedValue, "number");
+    assert.equal(result.evidence.some((item) => item.kind === "exploration-value-estimated" && item.subjectId === space.id), true);
     assert.equal(result.evidence[0].createdAt, "2026-06-25T00:00:00.000Z");
   });
 }
@@ -57,7 +60,7 @@ test("buildSearchSpaces applies maxSearchSpaces budget and emits skipped evidenc
   const result = buildSearchSpaces(prioritize([opportunity("MAIN_FLOW_GAP", [1], 100), opportunity("RESOURCE_PRESSURE", [2], 90)]), { maxSearchSpaces: 1 });
   assert.equal(result.searchSpaces.length, 1);
   assert.equal(result.summary.skippedOpportunityCount, 1);
-  assert.equal(result.evidence.at(-1)?.kind, "search-space-skipped");
+  assert.equal(result.evidence.some((item) => item.kind === "search-space-skipped"), true);
 });
 
 test("buildSearchSpaces applies maxTransformationsPerSpace budget", () => {

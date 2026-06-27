@@ -1,6 +1,7 @@
 import type { CognitiveState, Evidence, ORCRecord, SearchSpace } from "../contracts";
 import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 import type { OperationalPriority, OperationalPriorityMap } from "../analysis/operationalPriorityAnalyzer";
+import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 
@@ -310,13 +311,40 @@ export function buildSearchSpaces(
     });
   }
 
+  const explorationValues = estimateExplorationValue(pruningResult.items).values;
+  const explorationValueBySearchSpaceId = new Map(explorationValues.map((value) => [value.searchSpaceId, value]));
+  const searchSpacesWithExplorationValue = pruningResult.items.map((searchSpace) => {
+    const explorationValue = explorationValueBySearchSpaceId.get(searchSpace.id);
+    if (explorationValue == null) return searchSpace;
+    const evidenceId = `evidence:orc-see:exploration-value:${searchSpace.id}`;
+    evidence.push({
+      id: evidenceId,
+      source: "orc-see",
+      kind: "exploration-value-estimated",
+      subjectId: searchSpace.id,
+      createdAt,
+      data: {
+        searchSpace: { id: searchSpace.id, taskIds: [...searchSpace.taskIds], metadata: searchSpace.metadata },
+        expectedValue: explorationValue.expectedValue,
+        confidence: explorationValue.confidence,
+        explanation: explorationValue.explanation,
+        readOnly: true,
+      },
+    });
+    return {
+      ...searchSpace,
+      explorationValue,
+      evidenceIds: [...searchSpace.evidenceIds, evidenceId],
+    };
+  });
+
   return {
-    searchSpaces: pruningResult.items,
+    searchSpaces: searchSpacesWithExplorationValue,
     evidence,
     summary: {
       opportunityCount: orderedOpportunities.length,
-      searchSpaceCount: pruningResult.items.length,
-      skippedOpportunityCount: orderedOpportunities.length - pruningResult.items.length,
+      searchSpaceCount: searchSpacesWithExplorationValue.length,
+      skippedOpportunityCount: orderedOpportunities.length - searchSpacesWithExplorationValue.length,
       operationalPriorityCount: options.operationalPriorityMap?.priorities.length ?? 0,
       discardedPriorityCount: discardedPriorities.length,
       pruning: pruningResult.stats,

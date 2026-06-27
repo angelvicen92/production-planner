@@ -76,11 +76,19 @@ export interface Candidate {
   metadata: ORCRecord;
 }
 
+export interface ExplorationValue {
+  searchSpaceId: string;
+  expectedValue: number;
+  confidence: number;
+  explanation: string;
+}
+
 export interface SearchSpace {
   id: string;
   description?: string | null;
   taskIds: number[];
   candidates: Candidate[];
+  explorationValue?: ExplorationValue;
   evidenceIds: string[];
   metadata: ORCRecord;
 }
