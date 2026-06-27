@@ -14,6 +14,7 @@ export * from "./advisory/advisoryEvaluation";
 export * from "./advisory/recommendationCalibration";
 export * from "./integration/advisoryIntegration";
 export * from "./evidence/executionEvidenceRecorder";
+export * from "./replay/replayEngine";
 export * from "./config/orcIntegrationMode";
 export * from "./shadow/runORCShadowMode";
 export * from "./cognitive/cognitiveState";
