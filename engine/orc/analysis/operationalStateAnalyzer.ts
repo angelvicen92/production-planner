@@ -1,8 +1,10 @@
 import type { OperationalState } from "../contracts";
 import { analyzeCriticalBottlenecks, type CriticalBottleneckAnalysis } from "./criticalBottleneckAnalyzer";
+import { analyzeResourceCriticality, type ResourceCriticalityAnalysis } from "./resourceCriticalityAnalyzer";
 
 export interface ResourcePressureSummary {
   readonly totalResourceCount: number;
+  readonly resourceIds: readonly number[];
   readonly assignedResourceIds: readonly number[];
   readonly overloadedResourceIds: readonly number[];
   readonly plannedTaskIdsByResourceId: Readonly<Record<number, readonly number[]>>;
@@ -50,6 +52,7 @@ export interface OperationalAnalysis {
   readonly dependencySummary: DependencySummary;
   readonly operationalMargin: OperationalMarginSummary;
   readonly criticalBottleneckAnalysis: CriticalBottleneckAnalysis;
+  readonly resourceCriticalityAnalysis: ResourceCriticalityAnalysis;
 }
 
 const toMinutes = (value: string | null | undefined): number | null => {
@@ -90,6 +93,7 @@ export function analyzeOperationalState(state: OperationalState): OperationalAna
     }
   }
 
+  const resourceIds = [...new Set((state.resources ?? []).map((resource) => Number(resource.id)).filter(Number.isFinite))].sort((a, b) => a - b);
   const assignedResourceIds = [...new Set(planning.flatMap((item) => item.assignedResourceIds ?? []).filter((id) => Number.isFinite(Number(id))).map(Number))].sort((a, b) => a - b);
   const overloaded = new Set<number>();
   const plannedTaskIdsByResourceId: Record<number, number[]> = {};
@@ -131,15 +135,20 @@ export function analyzeOperationalState(state: OperationalState): OperationalAna
   }
 
   const analysisWithoutBottlenecks = {
-    resourcePressure: { totalResourceCount: state.resources?.length ?? 0, assignedResourceIds, overloadedResourceIds: [...overloaded].sort((a, b) => a - b), plannedTaskIdsByResourceId },
+    resourcePressure: { totalResourceCount: state.resources?.length ?? 0, resourceIds, assignedResourceIds, overloadedResourceIds: [...overloaded].sort((a, b) => a - b), plannedTaskIdsByResourceId },
     continuity: { taskCount: state.tasks?.length ?? 0, plannedTaskCount: planning.length, pendingTaskCount, protectedTaskCount, mainFlow: { configured: mainZoneId != null, spaceOrZoneId: mainZoneId, plannedTaskIds: mainFlowTasks.map((item) => item.taskId), firstStart: mainFlowTasks[0]?.startPlanned ?? null, lastEnd: mainFlowTasks.at(-1)?.endPlanned ?? null, internalGapMinutes, gapCount } },
     fragmentation: { spaceSwitchesByContestantId, totalSpaceSwitches },
     dependencySummary: { dependencyCount: (state.dependencies ?? []).reduce((sum, dependency) => sum + (dependency.dependsOnTaskIds?.length ?? 0) + (dependency.dependsOnTemplateIds?.length ?? 0), 0), lockCount: state.locks?.length ?? 0, lockedTaskIds: [...new Set((state.locks ?? []).map((lock) => Number(lock.taskId)).filter(Number.isFinite))].sort((a, b) => a - b), taskIdsWithDependencies: [...new Set((state.dependencies ?? []).filter((dependency) => (dependency.dependsOnTaskIds?.length ?? 0) > 0 || (dependency.dependsOnTemplateIds?.length ?? 0) > 0).map((dependency) => Number(dependency.taskId)).filter(Number.isFinite))].sort((a, b) => a - b) },
     operationalMargin: { contestantIds, stayByContestantId, maxStayContestantId, maxStayMinutes },
   };
 
-  return {
+  const analysisWithBottlenecks = {
     ...analysisWithoutBottlenecks,
     criticalBottleneckAnalysis: analyzeCriticalBottlenecks(analysisWithoutBottlenecks),
+  };
+
+  return {
+    ...analysisWithBottlenecks,
+    resourceCriticalityAnalysis: analyzeResourceCriticality(analysisWithBottlenecks),
   };
 }

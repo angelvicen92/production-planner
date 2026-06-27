@@ -4,6 +4,7 @@ export { stableStringify, structuralEquals } from "./structuralEquality";
 export { buildOperationalStateFromEngineInput } from "./adapters/fromEngineInput";
 export * from "./analysis/operationalStateAnalyzer";
 export * from "./analysis/criticalBottleneckAnalyzer";
+export * from "./analysis/resourceCriticalityAnalyzer";
 export * from "./analysis/opportunityDetectionEngine";
 export * from "./analysis/opportunityClassificationEngine";
 export * from "./analysis/opportunityPrioritizationEngine";

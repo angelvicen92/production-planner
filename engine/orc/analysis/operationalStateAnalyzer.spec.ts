@@ -16,12 +16,13 @@ const task = (id: number, extra = {}) => ({ id, planId: 1, templateId: id, statu
 test("OperationalAnalysis supports an empty OperationalState", () => {
   const analysis = analyzeOperationalState(state());
   assert.deepEqual(analysis, {
-    resourcePressure: { totalResourceCount: 0, assignedResourceIds: [], overloadedResourceIds: [], plannedTaskIdsByResourceId: {} },
+    resourcePressure: { totalResourceCount: 0, resourceIds: [], assignedResourceIds: [], overloadedResourceIds: [], plannedTaskIdsByResourceId: {} },
     continuity: { taskCount: 0, plannedTaskCount: 0, pendingTaskCount: 0, protectedTaskCount: 0, mainFlow: { configured: false, spaceOrZoneId: null, plannedTaskIds: [], firstStart: null, lastEnd: null, internalGapMinutes: 0, gapCount: 0 } },
     fragmentation: { spaceSwitchesByContestantId: {}, totalSpaceSwitches: 0 },
     dependencySummary: { dependencyCount: 0, lockCount: 0, lockedTaskIds: [], taskIdsWithDependencies: [] },
     operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
     criticalBottleneckAnalysis: { bottlenecks: [] },
+    resourceCriticalityAnalysis: { resources: [] },
   });
 });
 
