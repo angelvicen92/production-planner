@@ -242,6 +242,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 148 — 2026-06-27 18:21 — ORC Shadow Search Benchmark Harness v1
 - ID 149 — 2026-06-27 18:36 — ORC Incremental Replanning Engine v1
 - ID 150 — 2026-06-27 18:46 — ORC Concrete Simulation v1 — Apply Candidate Assignments in Shadow Mode
+- ID 160 — 2026-06-27 22:56 — ORC Strategy-Based Candidate Builder v1
 - ID 151 — 2026-06-27 18:54 — ORC Production Objective Evaluator v1
 - ID 152 — 2026-06-27 19:05 — ORC Evaluation-Guided Search v1
 - ID 153 — 2026-06-27 19:50 — ORC Online Search Learning v1

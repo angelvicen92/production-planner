@@ -34,7 +34,8 @@ test("buildStrategyCandidates handles empty SearchSpace input", () => {
 test("buildStrategyCandidates creates strategy-oriented candidates for one SearchSpace", () => {
   const result = buildStrategyCandidates([space("one")], cognitive());
   assert.equal(result.candidates.length, 3);
-  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.strategyFamily), ["continuity", "local-reorganization", "compaction"]);
+  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.strategyFamily), ["continuity", "chain-advance", "compaction"]);
+  assert.equal(result.candidates.every((candidate) => Array.isArray(candidate.metadata.transformations) && (candidate.metadata.transformations as unknown[]).length > 1), true);
   assert.equal(result.candidates.every((candidate) => candidate.metadata.strategyCandidate === true && candidate.metadata.executesTransformations === false), true);
   assert.equal(result.summary.strategyTypes, 3);
 });
@@ -44,7 +45,7 @@ test("buildStrategyCandidates handles multiple SearchSpaces deterministically", 
   const first = buildStrategyCandidates(spaces, cognitive());
   const second = buildStrategyCandidates(spaces, cognitive());
   assert.equal(structuralEquals(first, second), true);
-  assert.deepEqual(first.candidates.map((candidate) => candidate.metadata.sourceOpportunityId), ["op:one", "op:one", "op:one", "op:two"]);
+  assert.deepEqual(first.candidates.map((candidate) => candidate.metadata.sourceOpportunityId), ["op:one", "op:one", "op:one", "op:two", "op:two"]);
 });
 
 test("buildStrategyCandidates discards equivalent candidates", () => {
