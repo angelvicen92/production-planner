@@ -53,6 +53,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 154 — 2026-06-27 20:03 — ORC State Equivalence & Transposition Table v1
 - ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1
 - ID 156 — 2026-06-27 20:41 — ORC Operational Criticality Model v1
+- ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
 
 ## Verificación básica
 
@@ -247,3 +248,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 154 — 2026-06-27 20:03 — ORC State Equivalence & Transposition Table v1
 - ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1
 - ID 156 — 2026-06-27 20:41 — ORC Operational Criticality Model v1
+- ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
