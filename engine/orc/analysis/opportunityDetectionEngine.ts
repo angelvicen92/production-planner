@@ -1,3 +1,4 @@
+import type { CriticalBottleneck, CriticalBottleneckAnalysis } from "./criticalBottleneckAnalyzer";
 import type { OperationalAnalysis } from "./operationalStateAnalyzer";
 import type { Opportunity, ORCRecord } from "../contracts";
 import { prioritizeOpportunities } from "../see/opportunityPriority";
@@ -32,13 +33,15 @@ const taskIdsForResources = (analysis: OperationalAnalysis, resourceIds: readonl
 const allPlannedResourceTaskIds = (analysis: OperationalAnalysis): number[] =>
   taskIdsForResources(analysis, analysis.resourcePressure.assignedResourceIds);
 
-const makeOpportunity = (kind: ORCOpportunityKind, description: string, taskIds: readonly number[], metadata: ORCRecord): Opportunity => ({
+const bottleneckEvidenceId = (bottleneckId: string): string => `evidence:orc-see:bottleneck:${bottleneckId}`;
+
+const makeOpportunity = (kind: ORCOpportunityKind, description: string, taskIds: readonly number[], metadata: ORCRecord, bottlenecks: readonly CriticalBottleneck[] = []): Opportunity => ({
   id: `orc-see:${kind.toLowerCase()}:${taskIds.length ? uniqueSortedNumbers(taskIds).join("-") : "state"}`,
   kind,
   description,
   taskIds: uniqueSortedNumbers(taskIds),
   searchSpaceIds: [],
-  evidenceIds: [`evidence:orc-see:${kind.toLowerCase()}`],
+  evidenceIds: uniqueStrings([`evidence:orc-see:${kind.toLowerCase()}`, ...bottlenecks.map((item) => bottleneckEvidenceId(item.id))]),
   metadata: {
     priority: PRIORITY[kind],
     impactExpected: "unknown",
@@ -48,38 +51,60 @@ const makeOpportunity = (kind: ORCOpportunityKind, description: string, taskIds:
     cause: kind,
     affectedRegion: "operational-state",
     ...metadata,
+    bottleneckOrigins: bottlenecks.map((item) => ({ id: item.id, category: item.category, severity: item.severity })),
+    bottleneckIds: bottlenecks.map((item) => item.id),
+    derivedFromCriticalBottleneck: bottlenecks.length > 0,
   },
 });
 
-export function detectOpportunities(analysis: OperationalAnalysis): OpportunityDetectionResult {
-  const opportunities: Opportunity[] = [];
+const uniqueStrings = (values: readonly string[]): string[] => [...new Set(values)];
 
-  if (analysis.continuity.mainFlow.configured && analysis.continuity.mainFlow.gapCount > 0) {
-    opportunities.push(makeOpportunity("MAIN_FLOW_GAP", "Internal gaps were detected in the configured main flow.", analysis.continuity.mainFlow.plannedTaskIds, { impactExpected: "reduce_idle_time", gapCount: analysis.continuity.mainFlow.gapCount, internalGapMinutes: analysis.continuity.mainFlow.internalGapMinutes, affectedRegion: "main-flow" }));
+const bottlenecksByCategory = (bottleneckAnalysis: CriticalBottleneckAnalysis, category: ORCOpportunityKind): CriticalBottleneck[] =>
+  bottleneckAnalysis.bottlenecks.filter((item) => item.category === category).sort((a, b) => b.severity - a.severity || a.id.localeCompare(b.id));
+
+const shouldEvaluate = (bottleneckAnalysis: CriticalBottleneckAnalysis, kind: ORCOpportunityKind): boolean =>
+  bottleneckAnalysis.bottlenecks.length === 0 || bottlenecksByCategory(bottleneckAnalysis, kind).length > 0;
+
+const pushUnique = (opportunitiesById: Map<string, Opportunity>, opportunity: Opportunity): void => {
+  if (!opportunitiesById.has(opportunity.id)) opportunitiesById.set(opportunity.id, opportunity);
+};
+
+export function detectOpportunities(analysis: OperationalAnalysis, bottleneckAnalysis: CriticalBottleneckAnalysis = analysis.criticalBottleneckAnalysis): OpportunityDetectionResult {
+  const opportunitiesById = new Map<string, Opportunity>();
+
+  if (shouldEvaluate(bottleneckAnalysis, "MAIN_FLOW_GAP") && analysis.continuity.mainFlow.configured && analysis.continuity.mainFlow.gapCount > 0) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "MAIN_FLOW_GAP");
+    pushUnique(opportunitiesById, makeOpportunity("MAIN_FLOW_GAP", "Internal gaps were detected in the configured main flow.", analysis.continuity.mainFlow.plannedTaskIds, { impactExpected: "reduce_idle_time", gapCount: analysis.continuity.mainFlow.gapCount, internalGapMinutes: analysis.continuity.mainFlow.internalGapMinutes, affectedRegion: "main-flow", derivedOpportunityKind: "MAIN_FLOW_GAP" }, origins));
   }
 
-  if (analysis.continuity.pendingTaskCount > 0) {
-    opportunities.push(makeOpportunity("UNPLANNED_PENDING_TASKS", "Pending tasks without planned placement were detected.", [], { impactExpected: "increase_completion", pendingTaskCount: analysis.continuity.pendingTaskCount, urgency: "high" }));
+  if (shouldEvaluate(bottleneckAnalysis, "UNPLANNED_PENDING_TASKS") && analysis.continuity.pendingTaskCount > 0) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "UNPLANNED_PENDING_TASKS");
+    pushUnique(opportunitiesById, makeOpportunity("UNPLANNED_PENDING_TASKS", "Pending tasks without planned placement were detected.", [], { impactExpected: "increase_completion", pendingTaskCount: analysis.continuity.pendingTaskCount, urgency: "high", derivedOpportunityKind: "UNPLANNED_PENDING_TASKS" }, origins));
   }
 
-  if (analysis.resourcePressure.overloadedResourceIds.length > 0) {
+  if (shouldEvaluate(bottleneckAnalysis, "RESOURCE_PRESSURE") && analysis.resourcePressure.overloadedResourceIds.length > 0) {
     const overloadedResourceIds = uniqueSortedNumbers(analysis.resourcePressure.overloadedResourceIds);
-    opportunities.push(makeOpportunity("RESOURCE_PRESSURE", "Assigned resources appear in overlapping planned intervals.", taskIdsForResources(analysis, overloadedResourceIds), { impactExpected: "reduce_resource_conflicts", overloadedResourceIds, criticality: "high" }));
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "RESOURCE_PRESSURE");
+    pushUnique(opportunitiesById, makeOpportunity("RESOURCE_PRESSURE", "Assigned resources appear in overlapping planned intervals.", taskIdsForResources(analysis, overloadedResourceIds), { impactExpected: "reduce_resource_conflicts", overloadedResourceIds, criticality: "high", derivedOpportunityKind: "RESOURCE_PRESSURE" }, origins));
   }
 
-  if (analysis.operationalMargin.maxStayContestantId != null && analysis.operationalMargin.maxStayMinutes > 240) {
-    opportunities.push(makeOpportunity("EXCESSIVE_TALENT_STAY", "A contestant has an extended planned stay window.", [], { impactExpected: "reduce_talent_stay", maxStayContestantId: analysis.operationalMargin.maxStayContestantId, maxStayMinutes: analysis.operationalMargin.maxStayMinutes }));
+  if (shouldEvaluate(bottleneckAnalysis, "EXCESSIVE_TALENT_STAY") && analysis.operationalMargin.maxStayContestantId != null && analysis.operationalMargin.maxStayMinutes > 240) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "EXCESSIVE_TALENT_STAY");
+    pushUnique(opportunitiesById, makeOpportunity("EXCESSIVE_TALENT_STAY", "A contestant has an extended planned stay window.", [], { impactExpected: "reduce_talent_stay", maxStayContestantId: analysis.operationalMargin.maxStayContestantId, maxStayMinutes: analysis.operationalMargin.maxStayMinutes, derivedOpportunityKind: "EXCESSIVE_TALENT_STAY" }, origins));
   }
 
-  if (analysis.dependencySummary.lockCount > 0 && analysis.dependencySummary.lockCount >= Math.max(2, Math.ceil(analysis.continuity.taskCount * 0.25))) {
-    opportunities.push(makeOpportunity("LOCK_PRESSURE", "Locks constrain a significant part of the operational state.", analysis.dependencySummary.lockedTaskIds, { impactExpected: "improve_locked_region_awareness", lockCount: analysis.dependencySummary.lockCount, dependencyCount: analysis.dependencySummary.dependencyCount }));
-  } else if (analysis.dependencySummary.dependencyCount > 0 && analysis.dependencySummary.taskIdsWithDependencies.length > 0) {
-    opportunities.push(makeOpportunity("LOCK_PRESSURE", "Critical dependencies constrain the operational sequence.", analysis.dependencySummary.taskIdsWithDependencies, { impactExpected: "improve_dependency_awareness", lockCount: analysis.dependencySummary.lockCount, dependencyCount: analysis.dependencySummary.dependencyCount, cause: "CRITICAL_DEPENDENCIES" }));
+  if (shouldEvaluate(bottleneckAnalysis, "LOCK_PRESSURE") && analysis.dependencySummary.lockCount > 0 && analysis.dependencySummary.lockCount >= Math.max(2, Math.ceil(analysis.continuity.taskCount * 0.25))) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "LOCK_PRESSURE");
+    pushUnique(opportunitiesById, makeOpportunity("LOCK_PRESSURE", "Locks constrain a significant part of the operational state.", analysis.dependencySummary.lockedTaskIds, { impactExpected: "improve_locked_region_awareness", lockCount: analysis.dependencySummary.lockCount, dependencyCount: analysis.dependencySummary.dependencyCount, derivedOpportunityKind: "LOCK_PRESSURE" }, origins));
+  } else if (shouldEvaluate(bottleneckAnalysis, "LOCK_PRESSURE") && analysis.dependencySummary.dependencyCount > 0 && analysis.dependencySummary.taskIdsWithDependencies.length > 0) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "LOCK_PRESSURE");
+    pushUnique(opportunitiesById, makeOpportunity("LOCK_PRESSURE", "Critical dependencies constrain the operational sequence.", analysis.dependencySummary.taskIdsWithDependencies, { impactExpected: "improve_dependency_awareness", lockCount: analysis.dependencySummary.lockCount, dependencyCount: analysis.dependencySummary.dependencyCount, cause: "CRITICAL_DEPENDENCIES", derivedOpportunityKind: "LOCK_PRESSURE" }, origins));
   }
 
-  if (analysis.fragmentation.totalSpaceSwitches > 2) {
-    opportunities.push(makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", allPlannedResourceTaskIds(analysis), { impactExpected: "reduce_space_switches", totalSpaceSwitches: analysis.fragmentation.totalSpaceSwitches }));
+  if (shouldEvaluate(bottleneckAnalysis, "FRAGMENTATION") && analysis.fragmentation.totalSpaceSwitches > 2) {
+    const origins = bottlenecksByCategory(bottleneckAnalysis, "FRAGMENTATION");
+    pushUnique(opportunitiesById, makeOpportunity("FRAGMENTATION", "Talent flow includes repeated space switches.", allPlannedResourceTaskIds(analysis), { impactExpected: "reduce_space_switches", totalSpaceSwitches: analysis.fragmentation.totalSpaceSwitches, derivedOpportunityKind: "FRAGMENTATION" }, origins));
   }
 
-  return { opportunities: prioritizeOpportunities(opportunities) };
+  return { opportunities: prioritizeOpportunities([...opportunitiesById.values()]) };
 }
