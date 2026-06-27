@@ -1,4 +1,5 @@
 import type { Evidence, OperationalValue } from "../contracts";
+import type { DecisionInput } from "./decisionInput";
 import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
 
@@ -75,7 +76,7 @@ function countTies(rankedOperationalValues: OperationalValue[]): number {
   return tieCount;
 }
 
-export function rankOperationalValues(
+function rankDecisionOperationalValues(
   operationalValues: OperationalValue[],
   options: RankingEngineOptions = {},
 ): RankingEngineResult {
@@ -115,4 +116,19 @@ export function rankOperationalValues(
       tieCount,
     },
   }) as RankingEngineResult;
+}
+
+export function rankDecisionInput(
+  decisionInput: DecisionInput,
+  options: RankingEngineOptions = {},
+): RankingEngineResult {
+  const operationalValues = (decisionInput.candidates ?? []).flatMap((candidate) => candidate.operationalValues ?? []);
+  return rankDecisionOperationalValues(operationalValues, options);
+}
+
+export function rankOperationalValues(
+  operationalValues: OperationalValue[],
+  options: RankingEngineOptions = {},
+): RankingEngineResult {
+  return rankDecisionOperationalValues(operationalValues, options);
 }

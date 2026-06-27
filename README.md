@@ -45,16 +45,6 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 025 — 2026-05-31 02:05 — Optimización de scripts rápidos/completos de tests y benchmarks del Motor V3
 
 
-- ID 122 — 2026-06-27 02:20 — ORC Execution Evidence Recorder v1
-- ID 122 — 2026-06-27 02:27 — ORC Production Replay Engine v1
-- ID 124 — 2026-06-27 02:54 — ORC Opportunity Detection Engine v2
-- ID 124 — 2026-06-27 03:01 — ORC Opportunity Classification Engine v1
-- ID 125 — 2026-06-27 03:40 — ORC Opportunity Prioritization Engine v2
-- ID 126 — 2026-06-27 03:47 — ORC Search Space Builder Decoupling v2
-- ID 127 — 2026-06-27 03:57 — ORC Candidate Builder Decoupling v2
-
-- ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
-- ID 121 — 2026-06-26 23:55 — ORC Advisory Integration Layer v1
 
 ## Verificación básica
 
@@ -203,8 +193,15 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 118 — 2026-06-26 22:59 — ORC Advisory Decision Interface v1
 - ID 119 — 2026-06-26 23:11 — ORC Advisory Evaluation Framework v1
 - ID 120 — 2026-06-26 23:19 — ORC Recommendation Calibration Suite v1
-
+- ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
+- ID 121 — 2026-06-26 23:55 — ORC Advisory Integration Layer v1
 - ID 121 — 2026-06-27 02:05 — ORC Feature Flag & Integration Modes
+- ID 122 — 2026-06-27 02:20 — ORC Execution Evidence Recorder v1
+- ID 122 — 2026-06-27 02:27 — ORC Production Replay Engine v1
 - ID 122 — 2026-06-27 02:33 — ORC Real Production Scenario Suite v1
-
 - ID 123 — 2026-06-27 02:44 — ORC Operational State Analyzer v1
+- ID 124 — 2026-06-27 03:01 — ORC Opportunity Classification Engine v1
+- ID 125 — 2026-06-27 03:40 — ORC Opportunity Prioritization Engine v2
+- ID 126 — 2026-06-27 03:47 — ORC Search Space Builder Decoupling v2
+- ID 127 — 2026-06-27 03:57 — ORC Candidate Builder Decoupling v2
+- ID 128 — 2026-06-27 04:08 — ORC Decision Engine Input Contract v1
