@@ -161,6 +161,16 @@ export interface OpportunityImpact {
   explanation: string;
 }
 
+export interface OpportunityPropagation {
+  readonly opportunityId: string;
+  readonly propagationScore: number;
+  readonly affectedResources: readonly string[];
+  readonly affectedChains: readonly string[];
+  readonly estimatedConflictReduction: number;
+  readonly estimatedFreedomGain: number;
+  readonly explanation: string;
+}
+
 export interface Opportunity {
   id: string;
   kind: string;
