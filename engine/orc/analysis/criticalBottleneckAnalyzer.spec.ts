@@ -12,6 +12,7 @@ const emptyAnalysis = (): OperationalAnalysis => ({
   operationalMargin: { contestantIds: [], stayByContestantId: {}, maxStayContestantId: null, maxStayMinutes: 0 },
   criticalBottleneckAnalysis: { bottlenecks: [] },
   resourceCriticalityAnalysis: { resources: [] },
+  constraintPressureAnalysis: { constraints: [] },
 });
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;

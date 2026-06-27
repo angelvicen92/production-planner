@@ -213,3 +213,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 132 — 2026-06-27 10:46 — ORC Bottleneck-Driven Opportunity Detection v1
 
 - ID 133 — 2026-06-27 11:34 — ORC Resource Criticality Analyzer v1
+
+- ID 134 — 2026-06-27 11:40 — ORC Constraint Pressure Analyzer v1
