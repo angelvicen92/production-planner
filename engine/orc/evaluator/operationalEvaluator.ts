@@ -1,4 +1,4 @@
-import type { Evidence, OperationalValue, SimulatedState, ValidationResult } from "../contracts";
+import type { Evidence, OperationalValue, ProductionObjectiveScore, SimulatedState, ValidationResult } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { calculateOverallScore, evaluateOperationalMetrics } from "./metrics";
 
@@ -28,32 +28,44 @@ function validationBySimulatedStateId(validationResults: ValidationResult[]): Ma
 function buildOperationalValue(simulatedState: SimulatedState, validationResult: ValidationResult, evidenceId: string, evaluatedAt: string | null): OperationalValue {
   const metrics = evaluateOperationalMetrics(simulatedState);
   const overallScore = calculateOverallScore(metrics);
+  const productionObjectiveScore: ProductionObjectiveScore = {
+    overallScore,
+    continuityScore: metrics.continuityScore.score,
+    availabilityScore: metrics.availabilityScore.score,
+    criticalResourceScore: metrics.criticalResourceScore.score,
+    waitingTimeScore: metrics.waitingTimeScore.score,
+    replanningImpactScore: metrics.replanningImpactScore.score,
+    operationalFeasibilityScore: metrics.operationalFeasibilityScore.score,
+  };
   const breakdown = Object.fromEntries(Object.entries(metrics).map(([dimension, evaluation]) => [dimension, {
     score: evaluation.score,
     explanation: evaluation.explanation,
     metrics: evaluation.metrics,
+    penalties: evaluation.penalties,
+    improvements: evaluation.improvements,
   }]));
 
   return deepFreeze({
     simulatedStateId: simulatedState.id,
-    continuity: metrics.continuity.score,
-    makespan: metrics.makespan.score,
-    permanence: metrics.permanence.score,
-    compaction: metrics.compaction.score,
-    resourcePressure: metrics.resourcePressure.score,
-    robustness: metrics.robustness.score,
-    stability: metrics.stability.score,
-    futureFreedom: metrics.futureFreedom.score,
+    continuity: metrics.continuityScore.score,
+    makespan: metrics.availabilityScore.score,
+    permanence: metrics.replanningImpactScore.score,
+    compaction: metrics.waitingTimeScore.score,
+    resourcePressure: metrics.criticalResourceScore.score,
+    robustness: metrics.operationalFeasibilityScore.score,
+    stability: metrics.replanningImpactScore.score,
+    futureFreedom: metrics.operationalFeasibilityScore.score,
     overallScore,
+    productionObjectiveScore,
     breakdown,
     evaluatedAt,
     evidenceIds: [evidenceId],
     metadata: {
-      evaluationMode: "OPERATIONAL_MULTI_CRITERIA_V1",
+      evaluationMode: "PRODUCTION_OBJECTIVE_SCORE_V1",
       validationResultId: validationResult.id,
       validationResult: validationResult.result,
       dimensionCount: Object.keys(metrics).length,
-      scoreAggregation: "unweighted-arithmetic-mean",
+      scoreAggregation: "configurable-weighted-arithmetic-mean",
       generatesCandidates: false,
       detectsOpportunities: false,
       mutatesOperationalState: false,
@@ -94,10 +106,13 @@ export function evaluateSimulatedStates(
         validationResultId: validationResult.id,
         validationResult: validationResult.result,
         operationalValue,
+        productionObjectiveScore: operationalValue.productionObjectiveScore,
         dimensions: operationalValue.breakdown,
         overallScore: operationalValue.overallScore,
-        scoreAggregation: "unweighted-arithmetic-mean",
-        evaluationMode: "OPERATIONAL_MULTI_CRITERIA_V1",
+        penalties: Object.values(operationalValue.breakdown).flatMap((dimension: any) => dimension.penalties ?? []),
+        improvements: Object.values(operationalValue.breakdown).flatMap((dimension: any) => dimension.improvements ?? []),
+        scoreAggregation: "configurable-weighted-arithmetic-mean",
+        evaluationMode: "PRODUCTION_OBJECTIVE_SCORE_V1",
         readOnly: true,
         generatesCandidates: false,
         detectsOpportunities: false,

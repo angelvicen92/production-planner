@@ -49,14 +49,12 @@ test("metric functions are deterministic, normalized and do not mutate Simulated
 test("dimensions are independently calculated and overallScore is their unweighted mean", () => {
   const input = simulated();
   const breakdown = evaluateOperationalMetrics(input);
-  assert.equal(breakdown.continuity.score, evaluateContinuity(input).score);
-  assert.equal(breakdown.makespan.score, evaluateMakespan(input).score);
-  assert.equal(breakdown.permanence.score, evaluatePermanence(input).score);
-  assert.equal(breakdown.compaction.score, evaluateCompaction(input).score);
-  assert.equal(breakdown.resourcePressure.score, evaluateResourcePressure(input).score);
-  assert.equal(breakdown.robustness.score, evaluateRobustness(input).score);
-  assert.equal(breakdown.stability.score, evaluateStability(input).score);
-  assert.equal(breakdown.futureFreedom.score, evaluateFutureFreedom(input).score);
+  assert.equal(breakdown.continuityScore.score, evaluateContinuity(input).score);
+  assert.equal(breakdown.availabilityScore.score, evaluateMakespan(input).score);
+  assert.equal(breakdown.replanningImpactScore.score, evaluatePermanence(input).score);
+  assert.equal(breakdown.waitingTimeScore.score, evaluateCompaction(input).score);
+  assert.equal(breakdown.criticalResourceScore.score, evaluateResourcePressure(input).score);
+  assert.equal(breakdown.operationalFeasibilityScore.score, evaluateRobustness(input).score);
   const expected = Math.round((Object.values(breakdown).reduce((sum, item) => sum + item.score, 0) / Object.values(breakdown).length) * 1_000_000) / 1_000_000;
   assert.equal(calculateOverallScore(breakdown), expected);
 });
