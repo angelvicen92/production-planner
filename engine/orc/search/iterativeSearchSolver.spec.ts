@@ -74,3 +74,46 @@ test("executeIterativeSearch does not mutate inputs", () => {
 
   assert.deepEqual(JSON.parse(JSON.stringify(input)), before);
 });
+
+test("executeIterativeSearch records every explored branch in the solution pool", () => {
+  const result = executeIterativeSearch(execution(["a", "b", "c"], { a: 1, b: 3, c: 2 }));
+
+  assert.deepEqual(result.solutionPool.solutions.map((item) => ({
+    solutionId: item.solutionId,
+    originatingBranchId: item.originatingBranchId,
+    score: item.score,
+  })), [
+    { solutionId: "solution:1:a", originatingBranchId: "a", score: 1 },
+    { solutionId: "solution:2:b", originatingBranchId: "b", score: 3 },
+    { solutionId: "solution:3:c", originatingBranchId: "c", score: 2 },
+  ]);
+  assert.equal(result.solutionPool.bestSolutionId, "solution:2:b");
+});
+
+test("executeIterativeSearch emits reconstructible solution pool evidence", () => {
+  const result = executeIterativeSearch(execution(["a", "b"], { a: 1, b: 2 }));
+  const solutionEvidence = result.evidence.filter((item) => item.kind === "solution-pool-solution-added");
+
+  assert.deepEqual(solutionEvidence.map((item) => item.data), [
+    {
+      solutionId: "solution:1:a",
+      originatingBranchId: "a",
+      score: 1,
+      bestSolutionId: "solution:1:a",
+      previousBestSolutionId: null,
+      bestChanged: true,
+      readOnly: true,
+    },
+    {
+      solutionId: "solution:2:b",
+      originatingBranchId: "b",
+      score: 2,
+      bestSolutionId: "solution:2:b",
+      previousBestSolutionId: "solution:1:a",
+      bestChanged: true,
+      readOnly: true,
+    },
+  ]);
+  assert.equal(result.evidence.at(-1)?.data.bestSolutionId, "solution:2:b");
+  assert.equal(result.evidence.at(-1)?.data.solutionCount, 2);
+});
