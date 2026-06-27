@@ -1,4 +1,4 @@
-import type { AdaptiveSearchSpaceProfile, Candidate, CandidateStrategyType, CandidateTransformation, CognitiveState, Evidence, OpportunityPropagation, SearchSpace } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, Candidate, CandidateStrategyType, CandidateTransformation, CognitiveState, Evidence, OperationalState, OpportunityPropagation, SearchSpace } from "../contracts";
 import { shouldSkipCandidate, shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { remainingBudget } from "../cognitive/reasoningBudget";
 
@@ -95,6 +95,61 @@ function buildTransformations(searchSpace: SearchSpace, definition: StrategyDefi
   return definition.transformationPlan.map((step) => ({ kind: step.kind, reason: step.reason, taskIds, coordinationRole: step.role }));
 }
 
+
+type CandidateAssignment = Candidate["assignments"][number];
+
+interface AssignmentSynthesisResult {
+  readonly assignments: CandidateAssignment[];
+  readonly discardedTasks: Array<{ taskId: number; reason: string }>;
+  readonly synthesisReason: string;
+}
+
+const sortedUniqueTaskIds = (taskIds: readonly number[]): number[] => [...new Set(taskIds)].sort((a, b) => a - b);
+const sameResources = (left: readonly number[], right: readonly number[]): boolean => left.length === right.length && left.every((value, index) => value === right[index]);
+const hasLock = (state: OperationalState, taskId: number, lockType: OperationalState["locks"][number]["lockType"]): boolean => state.locks.some((lock) => lock.taskId === taskId && lock.lockType === lockType);
+
+function changedFieldsFor(planningEntry: OperationalState["planning"][number] | undefined, assignment: CandidateAssignment): string[] {
+  const changed: string[] = [];
+  if (assignment.startPlanned != null && planningEntry?.startPlanned !== assignment.startPlanned) changed.push("startPlanned");
+  if (assignment.endPlanned != null && planningEntry?.endPlanned !== assignment.endPlanned) changed.push("endPlanned");
+  if (assignment.spaceId !== undefined && planningEntry?.spaceId !== assignment.spaceId) changed.push("spaceId");
+  if (!sameResources(planningEntry?.assignedResourceIds ?? [], assignment.resourceIds)) changed.push("resourceIds");
+  return changed;
+}
+
+function synthesizeAssignments(searchSpace: SearchSpace, definition: StrategyDefinition, context: StrategyContext): AssignmentSynthesisResult {
+  const state = context.operationalState;
+  const discardedTasks: AssignmentSynthesisResult["discardedTasks"] = [];
+  if (state == null) {
+    return { assignments: [], discardedTasks: sortedUniqueTaskIds(searchSpace.taskIds).map((taskId) => ({ taskId, reason: "operational-state-unavailable" })), synthesisReason: "No OperationalState was supplied, so the strategy remains abstract." };
+  }
+
+  const assignments: CandidateAssignment[] = [];
+  for (const taskId of sortedUniqueTaskIds(searchSpace.taskIds)) {
+    const task = state.tasks.find((item) => item.id === taskId);
+    const planningEntry = state.planning.find((item) => item.taskId === taskId);
+    if (task == null) { discardedTasks.push({ taskId, reason: "task-not-found" }); continue; }
+    if (task.status === "done" || task.status === "in_progress") { discardedTasks.push({ taskId, reason: `task-status-protected:${task.status}` }); continue; }
+    if (hasLock(state, taskId, "full")) { discardedTasks.push({ taskId, reason: "lock-protected:full" }); continue; }
+
+    const assignment: CandidateAssignment = {
+      taskId,
+      startPlanned: task.startPlanned ?? planningEntry?.startPlanned ?? null,
+      endPlanned: task.endPlanned ?? planningEntry?.endPlanned ?? null,
+      spaceId: task.spaceId ?? planningEntry?.spaceId ?? null,
+      resourceIds: [...(task.assignedResourceIds ?? planningEntry?.assignedResourceIds ?? [])].sort((a, b) => a - b),
+    };
+    const changedFields = changedFieldsFor(planningEntry, assignment);
+    if (changedFields.length === 0) { discardedTasks.push({ taskId, reason: "assignment-matches-existing-planning" }); continue; }
+    if ((changedFields.includes("startPlanned") || changedFields.includes("endPlanned")) && hasLock(state, taskId, "time")) { discardedTasks.push({ taskId, reason: "lock-protected:time" }); continue; }
+    if (changedFields.includes("spaceId") && hasLock(state, taskId, "space")) { discardedTasks.push({ taskId, reason: "lock-protected:space" }); continue; }
+    if (changedFields.includes("resourceIds") && hasLock(state, taskId, "resource")) { discardedTasks.push({ taskId, reason: "lock-protected:resource" }); continue; }
+    assignments.push(assignment);
+  }
+
+  return { assignments, discardedTasks, synthesisReason: assignments.length > 0 ? `Synthesized ${assignments.length} ${definition.strategyType} assignment(s) from OperationalState/SearchSpace task data.` : `No safe ${definition.strategyType} assignment could be synthesized from the available task data.` };
+}
+
 function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, evidenceId: string, candidateId: string, cognitiveState: CognitiveState, context: StrategyContext): Candidate {
   const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
   const sourceOpportunityKind = metadataString(searchSpace.metadata.sourceOpportunityKind, "UNKNOWN");
@@ -105,22 +160,27 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
   const transformations = buildTransformations(searchSpace, definition);
   const confidence = Math.max(0.1, Math.min(0.95, Number((definition.baseConfidence + Math.min(searchSpace.taskIds.length, 5) * 0.02 + Math.min(expectedOperationalImpact, 10) * 0.005).toFixed(2))));
   const repeatedByCognitiveMemory = shouldSkipCandidate(cognitiveState, candidateId);
+  const synthesis = synthesizeAssignments(searchSpace, definition, context);
+  const executable = synthesis.assignments.length > 0;
   return {
     id: candidateId,
     state: { status: "draft", reason: "read-only strategy ORC SEE candidate", evidenceIds: [evidenceId], metadata: { readOnly: true } },
-    assignments: [],
+    assignments: synthesis.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })),
     operationalValues: [],
     evidenceIds: [evidenceId],
     metadata: {
       readOnly: true,
-      abstract: true,
+      abstract: !executable,
       strategyCandidate: true,
-      executesTransformations: false,
+      executesTransformations: executable,
       searchSpaceId: searchSpace.id,
       sourceOpportunityId,
       sourceOpportunityKind,
       strategy: definition.strategy,
       strategyType: definition.strategyType,
+      originOpportunity: sourceOpportunityId,
+      synthesisReason: synthesis.synthesisReason,
+      assignmentSynthesis: { strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, abstract: !executable, executable, generatedAssignmentCount: synthesis.assignments.length, discardedTaskCount: synthesis.discardedTasks.length, discardedTasks: synthesis.discardedTasks, assignments: synthesis.assignments },
       strategyFamily: definition.family,
       affectedRegion: region,
       taskIds: [...searchSpace.taskIds],
@@ -144,16 +204,19 @@ export interface StrategyCandidateBuildOptions {
   readonly candidateBudgetBySearchSpaceId?: Readonly<Record<string, number>> | ReadonlyMap<string, number> | null;
   readonly adaptiveSearchSpaceProfiles?: readonly AdaptiveSearchSpaceProfile[];
   readonly opportunityPropagation?: readonly OpportunityPropagation[];
+  readonly operationalState?: OperationalState | null;
 }
 
 interface StrategyContext {
   readonly adaptiveSearchSpaceProfiles: ReadonlyMap<string, AdaptiveSearchSpaceProfile>;
   readonly opportunityPropagation: ReadonlyMap<string, OpportunityPropagation>;
+  readonly operationalState: OperationalState | null;
 }
 
 const contextFrom = (options: StrategyCandidateBuildOptions): StrategyContext => ({
   adaptiveSearchSpaceProfiles: new Map((options.adaptiveSearchSpaceProfiles ?? []).map((profile) => [profile.opportunityId, profile])),
   opportunityPropagation: new Map((options.opportunityPropagation ?? []).map((propagation) => [propagation.opportunityId, propagation])),
+  operationalState: options.operationalState ?? null,
 });
 
 const budgetForSearchSpace = (budgetBySearchSpaceId: StrategyCandidateBuildOptions["candidateBudgetBySearchSpaceId"], searchSpaceId: string): number | null => {
@@ -203,7 +266,7 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
       const candidate = candidateFor(searchSpace, definition, evidenceId, candidateId, cognitiveState, context);
       candidates.push(candidate);
       producedForSpace += 1;
-      emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, readOnly: true }));
+      emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, assignmentSynthesis: candidate.metadata.assignmentSynthesis, assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: candidate.metadata.synthesisReason, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, readOnly: true }));
     }
   }
 

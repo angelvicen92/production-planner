@@ -135,16 +135,18 @@ export interface CandidateState {
   readonly sourceAssignments: ReadonlyArray<Candidate["assignments"][number]>;
 }
 
+export interface CandidateAssignment {
+  taskId: number;
+  startPlanned?: string | null;
+  endPlanned?: string | null;
+  spaceId?: number | null;
+  resourceIds: number[];
+}
+
 export interface Candidate {
   id: string;
   state: CandidateLifecycleState;
-  assignments: Array<{
-    taskId: number;
-    startPlanned?: string | null;
-    endPlanned?: string | null;
-    spaceId?: number | null;
-    resourceIds: number[];
-  }>;
+  assignments: CandidateAssignment[];
   operationalValues: OperationalValue[];
   evidenceIds: string[];
   metadata: ORCRecord;
