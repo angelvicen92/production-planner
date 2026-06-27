@@ -1,4 +1,4 @@
-import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OpportunityPropagation, SearchSpace } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OperationalState, OpportunityPropagation, SearchSpace } from "../contracts";
 import { buildStrategyCandidates } from "./strategyCandidateBuilder";
 
 export interface CandidateBuilderResult {
@@ -61,7 +61,7 @@ const cloneCandidate = (candidate: Candidate): Candidate => ({
   evidenceIds: [...candidate.evidenceIds],
   state: { ...candidate.state, evidenceIds: [...candidate.state.evidenceIds], metadata: { ...candidate.state.metadata } },
   metadata: { ...candidate.metadata },
-  assignments: [],
+  assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })),
   operationalValues: [],
 });
 
@@ -81,6 +81,7 @@ const candidateEvidencePayload = (candidate: Candidate): Record<string, unknown>
 export interface CandidateBuilderOptions {
   readonly adaptiveSearchSpaceProfiles?: readonly AdaptiveSearchSpaceProfile[];
   readonly opportunityPropagation?: readonly OpportunityPropagation[];
+  readonly operationalState?: OperationalState | null;
 }
 
 export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateBuilderOptions = {}): CandidateBuilderResult {
@@ -93,7 +94,7 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
   }
 
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
-  const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation });
+  const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState });
   const candidates = result.candidates.map(cloneCandidate);
   const candidatesById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
   const searchSpacesById = new Map(sourceSearchSpaces.map((searchSpace) => [searchSpace.id, searchSpace]));
