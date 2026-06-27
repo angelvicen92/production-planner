@@ -46,6 +46,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 
 
+- ID 139 — 2026-06-27 14:40 — ORC Opportunity Impact Estimator v1
+
 ## Verificación básica
 
 ```bash

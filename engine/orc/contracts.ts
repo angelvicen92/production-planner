@@ -93,6 +93,13 @@ export interface SearchSpace {
   metadata: ORCRecord;
 }
 
+export interface OpportunityImpact {
+  opportunityId: string;
+  expectedImpact: number;
+  confidence: number;
+  explanation: string;
+}
+
 export interface Opportunity {
   id: string;
   kind: string;
@@ -101,6 +108,7 @@ export interface Opportunity {
   searchSpaceIds: string[];
   evidenceIds: string[];
   metadata: ORCRecord;
+  opportunityImpact?: OpportunityImpact;
 }
 
 export interface SimulatedState {
