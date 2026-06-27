@@ -1,4 +1,5 @@
 import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OperationalState, OpportunityPropagation, SearchSpace } from "../contracts";
+import { preselectCandidates } from "./candidatePreselectionEngine";
 import { buildStrategyCandidates } from "./strategyCandidateBuilder";
 
 export interface CandidateBuilderResult {
@@ -21,6 +22,12 @@ export interface CandidateBuilderResult {
       prunedCount: number;
       estimatedBudgetSaved: number;
       prunedItems: Candidate[];
+    };
+    preselection: {
+      generatedCandidates: number;
+      acceptedCandidates: number;
+      discardedCandidates: number;
+      limit: number;
     };
   };
 }
@@ -82,6 +89,8 @@ export interface CandidateBuilderOptions {
   readonly adaptiveSearchSpaceProfiles?: readonly AdaptiveSearchSpaceProfile[];
   readonly opportunityPropagation?: readonly OpportunityPropagation[];
   readonly operationalState?: OperationalState | null;
+  readonly maxPreselectedCandidates?: number | null;
+  readonly createdAt?: string | null;
 }
 
 export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateBuilderOptions = {}): CandidateBuilderResult {
@@ -90,17 +99,19 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     return !(selection != null && typeof selection === "object" && (selection as Record<string, unknown>).selected === false);
   });
   if (sourceSearchSpaces.length === 0) {
-    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] } } };
+    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0 } } };
   }
 
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
   const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState });
-  const candidates = result.candidates.map(cloneCandidate);
-  const candidatesById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const generatedCandidates = result.candidates.map(cloneCandidate);
+  const preselectionResult = preselectCandidates(generatedCandidates, { adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null });
+  const candidates = preselectionResult.candidates.map(cloneCandidate);
+  const candidatesById = new Map(generatedCandidates.map((candidate) => [candidate.id, candidate]));
   const searchSpacesById = new Map(sourceSearchSpaces.map((searchSpace) => [searchSpace.id, searchSpace]));
   const evidence: Evidence[] = [];
   const generatedBySearchSpaceId = new Map<string, number>();
-  for (const candidate of candidates) {
+  for (const candidate of generatedCandidates) {
     const searchSpaceId = typeof candidate.metadata.searchSpaceId === "string" ? candidate.metadata.searchSpaceId : "";
     generatedBySearchSpaceId.set(searchSpaceId, (generatedBySearchSpaceId.get(searchSpaceId) ?? 0) + 1);
   }
@@ -165,16 +176,19 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     }
   }
 
+  const prunedItems = generatedCandidates.filter((candidate) => !preselectionResult.candidates.some((selected) => selected.id === candidate.id)).map(cloneCandidate);
+
   return {
     candidates,
-    evidence,
+    evidence: [...evidence, ...preselectionResult.evidence],
     summary: {
       searchSpaceCount: sourceSearchSpaces.length,
       candidateCount: candidates.length,
       duplicateCandidatesDiscarded: result.summary.discardedEquivalentCandidates,
       truncatedByBudget: false,
       candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: budgetAllocations.reduce((sum, allocation) => sum + allocation.allocatedBudget, 0), unusedBudget: budgetAllocations.reduce((sum, allocation) => sum + allocation.unusedBudget, 0), allocations: budgetAllocations },
-      pruning: { generatedCount: candidates.length, keptCount: candidates.length, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] },
+      pruning: { generatedCount: generatedCandidates.length, keptCount: candidates.length, prunedCount: prunedItems.length, estimatedBudgetSaved: prunedItems.length, prunedItems },
+      preselection: preselectionResult.summary,
     },
   };
 }

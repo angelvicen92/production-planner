@@ -147,6 +147,13 @@ export interface CandidateAssignment {
   resourceIds: number[];
 }
 
+export interface PreselectedCandidate {
+  candidateId: string;
+  preselectionScore: number;
+  accepted: boolean;
+  rejectionReason?: string;
+}
+
 export interface Candidate {
   id: string;
   state: CandidateLifecycleState;
