@@ -5,6 +5,7 @@ export { buildOperationalStateFromEngineInput } from "./adapters/fromEngineInput
 export * from "./analysis/operationalStateAnalyzer";
 export * from "./analysis/opportunityDetectionEngine";
 export * from "./analysis/opportunityClassificationEngine";
+export * from "./analysis/opportunityPrioritizationEngine";
 export * from "./see";
 export * from "./transformation/transformationEngine";
 export * from "./simulation/simulationEngine";

@@ -1,8 +1,8 @@
 import type { CognitiveState, Evidence, OperationalState, Opportunity, SearchSpace } from "../contracts";
+import type { PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 import { shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { pruneExhaustedSearchSpaces, type CognitivePruningStats } from "../cognitive/cognitivePruning";
 import type { OperationalMap } from "./operationalMap";
-import { prioritizeOpportunities } from "./opportunityPriority";
 
 export interface SearchSpaceBuildOptions {
   maxSearchSpaces?: number;
@@ -115,7 +115,7 @@ function opportunityTemplate(opportunity: Opportunity, state: OperationalState, 
 export function buildSearchSpacesForOpportunities(
   state: OperationalState,
   map: OperationalMap,
-  opportunities: Opportunity[],
+  opportunities: PrioritizedOpportunity[],
   options: BuildOptions = {},
 ): SearchSpaceBuildResult {
   const budget = {
@@ -124,7 +124,7 @@ export function buildSearchSpacesForOpportunities(
     maxAffectedTasksPerSpace: normalizeBudgetValue(options.maxAffectedTasksPerSpace, DEFAULT_BUDGET.maxAffectedTasksPerSpace),
   };
   const createdAt = options.createdAt ?? null;
-  const orderedOpportunities = prioritizeOpportunities([...(opportunities ?? [])]);
+  const orderedOpportunities = [...(opportunities ?? [])];
   const searchSpaces: SearchSpace[] = [];
   const evidence: Evidence[] = [];
 
@@ -136,7 +136,7 @@ export function buildSearchSpacesForOpportunities(
         kind: "search-space-skipped",
         subjectId: opportunity.id,
         createdAt,
-        data: { opportunityId: opportunity.id, opportunityKind: opportunity.kind, reason: "max-search-spaces-budget-exhausted", budget },
+        data: { opportunityId: opportunity.id, opportunityKind: opportunity.kind, priority: opportunity.priority, prioritizationRationale: [...opportunity.rationale], reason: "max-search-spaces-budget-exhausted", budget },
       });
       continue;
     }
@@ -159,6 +159,8 @@ export function buildSearchSpacesForOpportunities(
         readOnly: true,
         sourceOpportunityId: opportunity.id,
         sourceOpportunityKind: opportunity.kind,
+        sourceOpportunityPriority: opportunity.priority,
+        sourceOpportunityRationale: [...opportunity.rationale],
         affectedRegion: template.region,
         regionDetails: template.regionDetails,
         allowedTransformations: transformations,
@@ -181,6 +183,8 @@ export function buildSearchSpacesForOpportunities(
       data: {
         opportunityId: opportunity.id,
         opportunityKind: opportunity.kind,
+        priority: opportunity.priority,
+        prioritizationRationale: [...opportunity.rationale],
         affectedRegion: template.region,
         budget,
         allowedTransformations: transformations,
