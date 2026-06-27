@@ -1,4 +1,4 @@
-import type { Candidate, CognitiveState, Evidence, SearchSpace } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, Candidate, CandidateStrategyType, CandidateTransformation, CognitiveState, Evidence, OpportunityPropagation, SearchSpace } from "../contracts";
 import { shouldSkipCandidate, shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { remainingBudget } from "../cognitive/reasoningBudget";
 
@@ -37,23 +37,25 @@ const DEFAULT_COGNITIVE_STATE: CognitiveState = {
 
 type StrategyDefinition = {
   strategy: string;
+  strategyType: CandidateStrategyType;
   family: string;
   transformationHints: string[];
   impact: string;
   baseConfidence: number;
   cost: "low" | "medium" | "high";
+  transformationPlan: Array<{ kind: CandidateTransformation["kind"]; role: CandidateTransformation["coordinationRole"]; reason: string }>;
 };
 
 const STRATEGIES: StrategyDefinition[] = [
-  { strategy: "COMPACT_REGION", family: "compaction", transformationHints: ["COMPACT", "PACK", "DENS"], impact: "compact-affected-region", baseConfidence: 0.66, cost: "low" },
-  { strategy: "CLOSE_MAIN_FLOW_GAP", family: "continuity", transformationHints: ["MOVE", "FLOW", "CHAIN"], impact: "improve-operational-continuity", baseConfidence: 0.64, cost: "low" },
-  { strategy: "REDUCE_RESOURCE_PRESSURE", family: "pressure-relief", transformationHints: ["RESOURCE", "REASSIGN", "PRESSURE"], impact: "relieve-local-pressure", baseConfidence: 0.64, cost: "low" },
-  { strategy: "SCHEDULE_PENDING_TASKS", family: "wait-reduction", transformationHints: ["PENDING", "SCHEDULE", "WAIT"], impact: "reduce-unplanned-waiting", baseConfidence: 0.72, cost: "medium" },
-  { strategy: "REORDER_LOCAL_SEQUENCE", family: "local-reorganization", transformationHints: ["REORDER", "SEQUENCE", "LOCAL"], impact: "reorganize-local-ordering", baseConfidence: 0.64, cost: "low" },
-  { strategy: "REDUCE_LOCK_PRESSURE", family: "pressure-relief", transformationHints: ["LOCK", "CONSTRAIN"], impact: "relieve-locked-region-pressure", baseConfidence: 0.58, cost: "high" },
+  { strategy: "CLOSE_MAIN_FLOW_GAP", strategyType: "close_gap", family: "continuity", transformationHints: ["GAP", "MOVE", "FLOW"], impact: "improve-operational-continuity", baseConfidence: 0.64, cost: "low", transformationPlan: [{ kind: "MOVE_CHAIN", role: "primary", reason: "Close the visible flow gap." }, { kind: "REORDER_REGION", role: "supporting", reason: "Keep the local sequence coherent after the gap closure." }] },
+  { strategy: "COMPACT_REGION", strategyType: "compact_resource", family: "compaction", transformationHints: ["COMPACT", "PACK", "DENS", "RESOURCE"], impact: "compact-affected-resource-agenda", baseConfidence: 0.66, cost: "low", transformationPlan: [{ kind: "COMPACT_REGION", role: "primary", reason: "Compact idle intervals in the affected region." }, { kind: "REORDER_REGION", role: "supporting", reason: "Preserve feasible local ordering while compacting." }] },
+  { strategy: "REORDER_LOCAL_SEQUENCE", strategyType: "advance_chain", family: "chain-advance", transformationHints: ["CHAIN", "DEPEND", "MOVE"], impact: "advance-dependent-chain", baseConfidence: 0.63, cost: "medium", transformationPlan: [{ kind: "MOVE_CHAIN", role: "primary", reason: "Advance the dependent chain as a coordinated block." }, { kind: "REORDER_REGION", role: "supporting", reason: "Protect predecessor/successor sequence around the chain." }] },
+  { strategy: "SCHEDULE_PENDING_TASKS", strategyType: "reduce_wait", family: "wait-reduction", transformationHints: ["PENDING", "SCHEDULE", "WAIT"], impact: "reduce-unplanned-waiting", baseConfidence: 0.72, cost: "medium", transformationPlan: [{ kind: "SCHEDULE_PENDING", role: "primary", reason: "Insert pending work into the feasible window." }, { kind: "COMPACT_REGION", role: "supporting", reason: "Recover slack created around inserted work." }] },
+  { strategy: "REDUCE_RESOURCE_PRESSURE", strategyType: "relieve_pressure", family: "pressure-relief", transformationHints: ["RESOURCE", "REASSIGN", "PRESSURE", "LOCK"], impact: "relieve-local-pressure", baseConfidence: 0.64, cost: "medium", transformationPlan: [{ kind: "REASSIGN_RESOURCE", role: "primary", reason: "Move load away from the pressured resource." }, { kind: "MOVE_CHAIN", role: "supporting", reason: "Move the affected chain consistently with the reassignment." }] },
+  { strategy: "REDUCE_LOCK_PRESSURE", strategyType: "protect_main_flow", family: "flow-protection", transformationHints: ["FLOW", "LOCK", "CONSTRAIN", "MAIN"], impact: "protect-main-flow", baseConfidence: 0.61, cost: "high", transformationPlan: [{ kind: "REORDER_REGION", role: "protective", reason: "Keep critical main-flow tasks stable." }, { kind: "COMPACT_REGION", role: "supporting", reason: "Use local slack before disrupting the main flow." }] },
 ];
 
-const FALLBACK_FAMILIES = ["continuity", "compaction", "local-reorganization"];
+const FALLBACK_FAMILIES = ["continuity", "compaction", "chain-advance", "wait-reduction", "pressure-relief", "flow-protection"];
 
 const metadataString = (value: unknown, fallback: string): string => (typeof value === "string" && value.length > 0 ? value : fallback);
 const metadataStrings = (value: unknown): string[] => (Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
@@ -86,11 +88,22 @@ function candidateKey(searchSpace: SearchSpace, definition: StrategyDefinition):
   return `${sourceOpportunityId}|${region}|${definition.family}|${definition.strategy}|${tasks}`;
 }
 
-function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, evidenceId: string, candidateId: string, cognitiveState: CognitiveState): Candidate {
+const round = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
+
+function buildTransformations(searchSpace: SearchSpace, definition: StrategyDefinition): CandidateTransformation[] {
+  const taskIds = [...new Set(searchSpace.taskIds)].sort((a, b) => a - b);
+  return definition.transformationPlan.map((step) => ({ kind: step.kind, reason: step.reason, taskIds, coordinationRole: step.role }));
+}
+
+function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, evidenceId: string, candidateId: string, cognitiveState: CognitiveState, context: StrategyContext): Candidate {
   const sourceOpportunityId = metadataString(searchSpace.metadata.sourceOpportunityId, searchSpace.id);
   const sourceOpportunityKind = metadataString(searchSpace.metadata.sourceOpportunityKind, "UNKNOWN");
   const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
-  const confidence = Math.max(0.1, Math.min(0.95, Number((definition.baseConfidence + Math.min(searchSpace.taskIds.length, 5) * 0.02).toFixed(2))));
+  const profile = context.adaptiveSearchSpaceProfiles.get(sourceOpportunityId);
+  const propagation = context.opportunityPropagation.get(sourceOpportunityId);
+  const expectedOperationalImpact = round((profile?.expectedExplorationValue ?? 1) + (propagation?.estimatedConflictReduction ?? 0) + (propagation?.estimatedFreedomGain ?? 0));
+  const transformations = buildTransformations(searchSpace, definition);
+  const confidence = Math.max(0.1, Math.min(0.95, Number((definition.baseConfidence + Math.min(searchSpace.taskIds.length, 5) * 0.02 + Math.min(expectedOperationalImpact, 10) * 0.005).toFixed(2))));
   const repeatedByCognitiveMemory = shouldSkipCandidate(cognitiveState, candidateId);
   return {
     id: candidateId,
@@ -107,13 +120,17 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
       sourceOpportunityId,
       sourceOpportunityKind,
       strategy: definition.strategy,
+      strategyType: definition.strategyType,
       strategyFamily: definition.family,
       affectedRegion: region,
       taskIds: [...searchSpace.taskIds],
       confidence,
       expectedImpact: definition.impact,
+      expectedOperationalImpact,
+      transformations,
+      candidateStrategy: { strategyId: candidateId, strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact, transformations, generationReason: `Generated ${definition.strategyType} strategy from ${searchSpace.id} using OCM/OPA/adaptive profile context.` },
       estimatedCost: searchSpace.taskIds.length > 8 && definition.cost === "low" ? "medium" : definition.cost,
-      generationReason: `Strategy candidate generated for ${definition.family} from search space ${searchSpace.id}`,
+      generationReason: `Strategy candidate generated for ${definition.family} from search space ${searchSpace.id} with ${transformations.length} coordinated transformations`,
       cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
     },
   };
@@ -125,7 +142,19 @@ function evidence(id: string, kind: string, subjectId: string, data: Record<stri
 
 export interface StrategyCandidateBuildOptions {
   readonly candidateBudgetBySearchSpaceId?: Readonly<Record<string, number>> | ReadonlyMap<string, number> | null;
+  readonly adaptiveSearchSpaceProfiles?: readonly AdaptiveSearchSpaceProfile[];
+  readonly opportunityPropagation?: readonly OpportunityPropagation[];
 }
+
+interface StrategyContext {
+  readonly adaptiveSearchSpaceProfiles: ReadonlyMap<string, AdaptiveSearchSpaceProfile>;
+  readonly opportunityPropagation: ReadonlyMap<string, OpportunityPropagation>;
+}
+
+const contextFrom = (options: StrategyCandidateBuildOptions): StrategyContext => ({
+  adaptiveSearchSpaceProfiles: new Map((options.adaptiveSearchSpaceProfiles ?? []).map((profile) => [profile.opportunityId, profile])),
+  opportunityPropagation: new Map((options.opportunityPropagation ?? []).map((propagation) => [propagation.opportunityId, propagation])),
+});
 
 const budgetForSearchSpace = (budgetBySearchSpaceId: StrategyCandidateBuildOptions["candidateBudgetBySearchSpaceId"], searchSpaceId: string): number | null => {
   if (budgetBySearchSpaceId == null) return null;
@@ -141,6 +170,7 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
   let discardedEquivalentCandidates = 0;
   const maxCandidates = remainingBudget(cognitiveState.reasoningBudget).candidates;
   const budgetBySearchSpaceId = options.candidateBudgetBySearchSpaceId ?? null;
+  const context = contextFrom(options);
 
   for (const searchSpace of [...(searchSpaces ?? [])]) {
     if (shouldSkipSearchSpace(cognitiveState, searchSpace.id)) {
@@ -170,10 +200,10 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
         continue;
       }
       const evidenceId = `evidence:orc-see:strategy-candidate:${sanitize(sourceOpportunityId)}:${sanitize(region)}:${definition.strategy}`;
-      const candidate = candidateFor(searchSpace, definition, evidenceId, candidateId, cognitiveState);
+      const candidate = candidateFor(searchSpace, definition, evidenceId, candidateId, cognitiveState, context);
       candidates.push(candidate);
       producedForSpace += 1;
-      emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyFamily: definition.family, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, readOnly: true }));
+      emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, readOnly: true }));
     }
   }
 

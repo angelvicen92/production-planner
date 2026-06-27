@@ -33,6 +33,7 @@ test("buildCandidates creates abstract candidates for one SearchSpace", () => {
   assert.equal(result.candidates.length, 3);
   assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.strategy), ["CLOSE_MAIN_FLOW_GAP", "REORDER_LOCAL_SEQUENCE", "COMPACT_REGION"]);
   assert.equal(result.candidates.every((candidate) => candidate.assignments.length === 0), true);
+  assert.equal(result.candidates.every((candidate) => Array.isArray(candidate.metadata.transformations) && (candidate.metadata.transformations as unknown[]).length > 1), true);
   assert.equal(result.candidates.every((candidate) => candidate.metadata.readOnly === true && candidate.metadata.executesTransformations === false), true);
   assert.equal(result.evidence.filter((item) => item.kind === "candidate-generated").length, 3);
   const generatedEvidence = result.evidence.find((item) => item.kind === "candidate-generated");
@@ -44,8 +45,8 @@ test("buildCandidates creates abstract candidates for one SearchSpace", () => {
 
 test("buildCandidates creates candidates for multiple SearchSpaces in stable order", () => {
   const result = buildCandidates([space("one"), space("two", { metadata: { ...space("two").metadata, sourceOpportunityKind: "RESOURCE_PRESSURE", affectedRegion: "resource-pressure", allowedTransformations: ["RESOURCE_REASSIGNMENT_POSSIBLE"] } })]);
-  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.sourceOpportunityId), ["op:one", "op:one", "op:one", "op:two"]);
-  assert.equal(result.summary.candidateCount, 4);
+  assert.deepEqual(result.candidates.map((candidate) => candidate.metadata.sourceOpportunityId), ["op:one", "op:one", "op:one", "op:two", "op:two"]);
+  assert.equal(result.summary.candidateCount, 5);
 });
 
 test("buildCandidates discards duplicate equivalent candidates", () => {

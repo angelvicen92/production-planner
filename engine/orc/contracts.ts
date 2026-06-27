@@ -99,6 +99,30 @@ export interface PlannedTransformation {
   readonly reason: string;
 }
 
+export interface CandidateTransformation {
+  readonly kind: PlannedTransformationKind;
+  readonly reason: string;
+  readonly taskIds: ReadonlyArray<number>;
+  readonly coordinationRole: "primary" | "supporting" | "protective";
+}
+
+export type CandidateStrategyType =
+  | "close_gap"
+  | "compact_resource"
+  | "advance_chain"
+  | "reduce_wait"
+  | "relieve_pressure"
+  | "protect_main_flow";
+
+export interface CandidateStrategy {
+  readonly strategyId: string;
+  readonly strategyType: CandidateStrategyType;
+  readonly originOpportunity: string;
+  readonly expectedOperationalImpact: number;
+  readonly transformations: ReadonlyArray<CandidateTransformation>;
+  readonly generationReason: string;
+}
+
 export interface CandidateState {
   readonly id: string;
   readonly candidateId: string;
