@@ -10,6 +10,7 @@ import {
   type SolutionSnapshot,
 } from "./solutionPool";
 import { initializeOnlineSearchMemory, queryLearnedPattern, registerSearchObservation } from "./onlineSearchLearning";
+import { buildStateSignature, lookupTransposition, registerTransposition, type TranspositionTable } from "./transpositionTable";
 
 export interface SearchIteration {
   branchId: string;
@@ -27,6 +28,7 @@ export interface IterativeSearchResult {
   solutionPool: SolutionPool;
   incrementalReplanningResults: IncrementalReplanningResult[];
   onlineSearchMemory: OnlineSearchMemory;
+  transpositionEntries: Array<{ signature: string; bestScore: number; branchId: string; visits: number }>;
 }
 
 const finiteScore = (value: unknown): number | null =>
@@ -302,6 +304,37 @@ const buildBranchReorderedEvidence = (
   },
 });
 
+const buildTranspositionEvidence = (
+  branchId: string,
+  signature: string,
+  equivalent: ReturnType<typeof lookupTransposition>,
+  registered: ReturnType<typeof registerTransposition>,
+  index: number,
+): Evidence => {
+  const entry = registered.entries.get(signature) ?? null;
+  return {
+    id: `evidence:orc-search:transposition:${index + 1}:${branchId}`,
+    source: "orc-search",
+    kind: "iterative-search-transposition",
+    subjectId: branchId,
+    data: {
+      branchId,
+      signature,
+      equivalenceDetected: equivalent != null,
+      originalBranchId: equivalent?.branchId ?? branchId,
+      knownScore: equivalent?.bestScore ?? null,
+      visits: entry?.visits ?? 1,
+      registeredBestScore: entry?.bestScore ?? null,
+      registeredBestBranchId: entry?.branchId ?? null,
+      reason: equivalent == null
+        ? "No equivalent simulated state was known before exploring this branch."
+        : "An equivalent simulated state was already registered; branch exploration remains unchanged in shadow mode.",
+      readOnly: true,
+      shadowModeOnly: true,
+    },
+  };
+};
+
 const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">): Evidence => ({
   id: "evidence:orc-search:iterative-solver:completed",
   source: "orc-search",
@@ -315,6 +348,8 @@ const buildCompletionEvidence = (result: Omit<IterativeSearchResult, "evidence">
     incrementalReplanningCount: result.incrementalReplanningResults.length,
     onlineSearchPatternCount: result.onlineSearchMemory.patterns.length,
     onlineSearchMemory: result.onlineSearchMemory,
+    transpositionEntryCount: result.transpositionEntries.length,
+    transpositionEntries: result.transpositionEntries,
     completed: result.completed,
     readOnly: true,
     shadowModeOnly: true,
@@ -331,6 +366,7 @@ export function executeIterativeSearch(
   let solutionPool = initializeSolutionPool();
   const incrementalReplanningResults: IncrementalReplanningResult[] = [];
   let onlineSearchMemory = initializeOnlineSearchMemory();
+  let transpositionTable: TranspositionTable = { entries: new Map() };
 
   let pendingBranches: PendingBranch[] = (execution.explorationOrder ?? []).map((branchId, originalIndex) => ({ branchId, originalIndex }));
 
@@ -338,6 +374,13 @@ export function executeIterativeSearch(
     const [{ branchId }, ...remaining] = pendingBranches;
     pendingBranches = remaining;
     const score = scoreForBranch(execution, branchId);
+    const simulatedState = execution.branchSimulatedStates?.[branchId] ?? null;
+    if (simulatedState != null) {
+      const signature = buildStateSignature(simulatedState);
+      const equivalent = lookupTransposition(transpositionTable, signature);
+      transpositionTable = registerTransposition(transpositionTable, signature, score ?? Number.NEGATIVE_INFINITY, branchId);
+      evidence.push(buildTranspositionEvidence(branchId, signature.signature, equivalent, transpositionTable, iterations.length));
+    }
     const productionObjectiveScore = productionObjectiveScoreForBranch(execution, branchId);
     const solutionId = buildSolutionId(branchId, iterations.length);
     const iteration: SearchIteration = { branchId, explored: true, score, productionObjectiveScore, solutionId };
@@ -404,6 +447,7 @@ export function executeIterativeSearch(
     solutionPool,
     incrementalReplanningResults,
     onlineSearchMemory,
+    transpositionEntries: Array.from(transpositionTable.entries.values()),
   };
 
   return {

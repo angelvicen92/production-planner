@@ -236,3 +236,44 @@ test("executeIterativeSearch consults learned patterns without changing determin
   }]);
   assert.equal(result.evidence.some((item) => item.kind === "iterative-search-online-learning-consulted" && item.data.usedForScoring === false && item.data.usedForPruning === false), true);
 });
+
+test("executeIterativeSearch records transposition evidence without changing exploration", () => {
+  const simulatedState = {
+    id: "sim:1",
+    candidateStateId: "candidate:1",
+    baseStateId: "base",
+    operationalStateSnapshot: {
+      id: "state",
+      planId: 1,
+      workDay: null,
+      planning: [{ taskId: 1, startPlanned: "08:00", endPlanned: "09:00", assignedResourceIds: [1], spaceId: 1 }],
+      tasks: [],
+      resources: [],
+      spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },
+      availability: { workDay: null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: [], contestantAvailabilityById: {} },
+      dependencies: [],
+      locks: [],
+      constraints: {},
+      operationalMetrics: {},
+      cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} },
+      source: "EngineInput",
+      schemaVersion: "ORC-SPEC-01",
+    },
+    appliedTransformations: [],
+    simulationMode: "READ_ONLY_BASELINE",
+    readOnly: true,
+    createdAt: null,
+  } as never;
+  const result = executeIterativeSearch({
+    ...execution(["a", "b"], { a: 1, b: 2 }),
+    branchSimulatedStates: { a: simulatedState, b: { ...simulatedState, id: "sim:2", candidateStateId: "candidate:2", createdAt: "2026-06-27T00:00:00.000Z" } },
+  });
+  const transpositionEvidence = result.evidence.filter((item) => item.kind === "iterative-search-transposition");
+
+  assert.deepEqual(result.exploredBranches.map((item) => item.branchId), ["a", "b"]);
+  assert.equal(result.transpositionEntries.length, 1);
+  assert.deepEqual(transpositionEvidence.map((item) => ({ branchId: item.data.branchId, equivalenceDetected: item.data.equivalenceDetected, originalBranchId: item.data.originalBranchId, knownScore: item.data.knownScore, visits: item.data.visits })), [
+    { branchId: "a", equivalenceDetected: false, originalBranchId: "a", knownScore: null, visits: 1 },
+    { branchId: "b", equivalenceDetected: true, originalBranchId: "a", knownScore: 1, visits: 2 },
+  ]);
+});

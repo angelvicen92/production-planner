@@ -2,7 +2,7 @@ import type { LearnedSearchPattern, OnlineSearchMemory } from "../contracts";
 
 export type { LearnedSearchPattern, OnlineSearchMemory } from "../contracts";
 
-const clonePattern = (pattern: LearnedSearchPattern): LearnedSearchPattern => ({
+export const cloneLearnedSearchPattern = (pattern: LearnedSearchPattern): LearnedSearchPattern => ({
   patternId: pattern.patternId,
   observations: pattern.observations,
   averageScore: pattern.averageScore,
@@ -18,12 +18,12 @@ export function registerSearchObservation(
   memory: OnlineSearchMemory,
   pattern: LearnedSearchPattern,
 ): OnlineSearchMemory {
-  const incoming = clonePattern(pattern);
+  const incoming = cloneLearnedSearchPattern(pattern);
   const existing = memory.patterns.find((item) => item.patternId === incoming.patternId) ?? null;
 
   if (existing == null) {
     return {
-      patterns: [...memory.patterns.map(clonePattern), incoming],
+      patterns: [...memory.patterns.map(cloneLearnedSearchPattern), incoming],
     };
   }
 
@@ -41,7 +41,7 @@ export function registerSearchObservation(
         lastScore: incoming.lastScore,
         explanation: incoming.explanation,
       }
-      : clonePattern(item)),
+      : cloneLearnedSearchPattern(item)),
   };
 }
 
@@ -50,5 +50,5 @@ export function queryLearnedPattern(
   patternId: string,
 ): LearnedSearchPattern | null {
   const pattern = memory.patterns.find((item) => item.patternId === patternId) ?? null;
-  return pattern == null ? null : clonePattern(pattern);
+  return pattern == null ? null : cloneLearnedSearchPattern(pattern);
 }
