@@ -4,6 +4,8 @@ import type { OperationalAnalysis } from "../analysis/operationalStateAnalyzer";
 import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
 import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
 import { buildBranchOrderingEvidence, orderSearchSpaces } from "../analysis/branchOrderingEngine";
+import { executeBacktrackingSearch } from "../search/backtrackingSearchExecutor";
+import { initializeBacktrackingState } from "../search/searchBacktrackingFramework";
 import { propagateFutureConstraints } from "../analysis/futureConstraintPropagationEngine";
 import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
 import type { ExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
@@ -273,8 +275,10 @@ export function runORCShadowMode(
   const searchSpaceSelectionResult = selectSearchSpaces(searchSpaceResult.searchSpaces, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis);
   const futureConstraintPropagation = propagateFutureConstraints(searchSpaceSelectionResult);
   const branchOrderingResult = orderSearchSpaces(searchSpaceSelectionResult, futureConstraintPropagation);
+  const backtrackingExecution = executeBacktrackingSearch(branchOrderingResult, initializeBacktrackingState());
+  const orderedBranchById = new Map(branchOrderingResult.orderedSearchSpaces.map((item) => [item.searchSpace.id, item]));
   const selectionBySearchSpaceId = new Map(searchSpaceSelectionResult.selected.map((item) => [item.searchSpace.id, item]));
-  const selectedSearchSpaces = branchOrderingResult.orderedSearchSpaces.map((ordered) => {
+  const selectedSearchSpaces = backtrackingExecution.explorationOrder.map((searchSpaceId) => orderedBranchById.get(searchSpaceId)).filter((ordered): ordered is NonNullable<typeof ordered> => ordered != null).map((ordered) => {
     const item = selectionBySearchSpaceId.get(ordered.searchSpace.id);
     return {
       ...ordered.searchSpace,
@@ -361,6 +365,7 @@ export function runORCShadowMode(
     ...searchSpaceResult.evidence,
     ...searchSpaceSelectionEvidence,
     ...branchOrderingEvidence,
+    ...backtrackingExecution.evidence.map((item) => ({ ...item, createdAt })),
     ...decisionInput.evidence,
     ...transformationResult.evidence,
     ...simulationResult.evidence,
