@@ -2,8 +2,8 @@ import type { EngineInput, LockInput, PlanResourceItemInput, TaskInput, TimeWind
 export type { CognitiveState } from "./cognitive/cognitiveState";
 
 export type ORCJsonPrimitive = string | number | boolean | null;
-export type ORCJsonValue = ORCJsonPrimitive | ORCJsonValue[] | { [key: string]: ORCJsonValue };
-export type ORCRecord = Record<string, ORCJsonValue>;
+export type ORCJsonValue = ORCJsonPrimitive | ReadonlyArray<ORCJsonValue> | { readonly [key: string]: ORCJsonValue };
+export type ORCRecord = Record<string, unknown>;
 
 export interface Evidence {
   id: string;

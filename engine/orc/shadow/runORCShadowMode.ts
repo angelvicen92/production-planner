@@ -20,6 +20,7 @@ import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
 import { getSessionKnowledge, learnFromCommit, learnFromEvaluation, learnFromRanking } from "../cognitive/sessionLearning";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
 import { buildAdvisoryDecision } from "../advisory/advisoryDecision";
+import { consultORCAdvisory } from "../integration/advisoryIntegration";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -93,6 +94,11 @@ export interface ORCShadowModeResult {
       confidence: number;
       evidenceCount: number;
     };
+    advisoryIntegration: {
+      consulted: boolean;
+      recommendationAvailable: boolean;
+      evidenceReferences: string[];
+    };
     sessionLearning: {
       learnedPatterns: string[];
       exhaustedRegions: string[];
@@ -149,6 +155,7 @@ function buildShadowSummaryEvidence(
   diagnosisSummary: ORCShadowModeResult["summary"]["diagnosis"],
   adaptiveSearchSpaceSummary: ORCShadowModeResult["summary"]["adaptiveSearchSpace"],
   strategyCandidateSummary: ORCShadowModeResult["summary"]["strategyCandidates"],
+  advisoryIntegrationSummary: ORCShadowModeResult["summary"]["advisoryIntegration"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -181,6 +188,7 @@ function buildShadowSummaryEvidence(
       diagnosis: diagnosisSummary,
       adaptiveSearchSpace: adaptiveSearchSpaceSummary,
       strategyCandidates: strategyCandidateSummary,
+      advisoryIntegration: advisoryIntegrationSummary,
     },
   };
 }
@@ -324,7 +332,7 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary),
+    buildShadowSummaryEvidence(operationalState, operationalMap, opportunities, searchSpaceResult.searchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }),
   ];
 
   const preliminaryResult = {
@@ -375,12 +383,16 @@ export function runORCShadowMode(
         confidence: 0,
         evidenceCount: 0,
       },
+      advisoryIntegration: {
+        consulted: false,
+        recommendationAvailable: false,
+        evidenceReferences: [],
+      },
     },
   } as ORCShadowModeResult;
 
   const advisoryDecision = buildAdvisoryDecision(preliminaryResult);
-
-  return {
+  const resultWithAdvisory = {
     ...preliminaryResult,
     advisoryDecision,
     summary: {
@@ -390,6 +402,23 @@ export function runORCShadowMode(
         confidence: advisoryDecision?.confidence ?? 0,
         evidenceCount: advisoryDecision?.evidenceIds.length ?? 0,
       },
+    },
+  } as ORCShadowModeResult;
+  const advisoryIntegration = consultORCAdvisory(resultWithAdvisory);
+  const advisoryIntegrationSummary = {
+    consulted: advisoryIntegration.consulted,
+    recommendationAvailable: advisoryIntegration.advisoryDecision !== null,
+    evidenceReferences: advisoryIntegration.evidence.flatMap((item) => (Array.isArray(item.data.evidenceReferences) ? item.data.evidenceReferences.map(String) : [])),
+  };
+
+  const evidenceWithIntegrationSummary = resultWithAdvisory.evidence.map((item) => item.kind === "shadow-mode-summary" ? { ...item, data: { ...item.data, advisoryIntegration: advisoryIntegrationSummary } } : item);
+
+  return {
+    ...resultWithAdvisory,
+    evidence: [...evidenceWithIntegrationSummary, ...advisoryIntegration.evidence],
+    summary: {
+      ...resultWithAdvisory.summary,
+      advisoryIntegration: advisoryIntegrationSummary,
     },
   };
 }

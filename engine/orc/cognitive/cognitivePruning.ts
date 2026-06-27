@@ -16,7 +16,7 @@ export interface CognitivePruningStats {
   keptCount: number;
   prunedCount: number;
   estimatedBudgetSaved: number;
-  prunedItems: CognitivePrunedItem[];
+  prunedItems: ReadonlyArray<CognitivePrunedItem>;
 }
 
 export interface CognitivePruningResult<T> {
@@ -29,7 +29,7 @@ const emptyStats = (generatedCount: number): CognitivePruningStats => Object.fre
   keptCount: generatedCount,
   prunedCount: 0,
   estimatedBudgetSaved: 0,
-  prunedItems: Object.freeze([]) as CognitivePrunedItem[],
+  prunedItems: Object.freeze([]),
 });
 
 function pruneKnownItems<T extends { id: string }>(

@@ -12,6 +12,7 @@ export * from "./commit/commitEngine";
 export * from "./advisory/advisoryDecision";
 export * from "./advisory/advisoryEvaluation";
 export * from "./advisory/recommendationCalibration";
+export * from "./integration/advisoryIntegration";
 export * from "./shadow/runORCShadowMode";
 export * from "./cognitive/cognitiveState";
 export * from "./cognitive/reasoningBudget";

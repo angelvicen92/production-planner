@@ -46,6 +46,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 
 - ID 121 — 2026-06-26 23:40 — ORC Readiness Index Framework v1
+- ID 121 — 2026-06-26 23:55 — ORC Advisory Integration Layer v1
 
 ## Verificación básica
 
