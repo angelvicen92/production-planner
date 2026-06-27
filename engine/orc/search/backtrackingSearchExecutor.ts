@@ -15,6 +15,7 @@ export interface BacktrackingExecutionResult {
   exploredBranches: string[];
   skippedBranches: string[];
   exhaustedBranches: string[];
+  branchScores: Record<string, number>;
   evidence: Evidence[];
 }
 
@@ -25,6 +26,10 @@ const cloneBranch = (branch: SearchBranchState): SearchBranchState => ({
   explored: branch.explored,
   exhausted: branch.exhausted,
 });
+
+const scoreFromOrdering = (ordering: BranchOrderingResult): Record<string, number> => Object.fromEntries(
+  ordering.orderedSearchSpaces.map((item) => [item.searchSpace.id, item.orderingScore]),
+);
 
 const branchFromOrdering = (branchId: string, existing: SearchBranchState | undefined): SearchBranchState => existing == null
   ? { branchId, parentBranchId: null, depth: 0, explored: false, exhausted: false }
@@ -39,6 +44,7 @@ export function executeBacktrackingSearch(
     activeBranchId: state?.activeBranchId ?? null,
     branches: (state?.branches ?? []).map(cloneBranch),
   };
+  const branchScores = scoreFromOrdering(ordering);
   const pruning = pruneBranches(ordering);
   const evidence: Evidence[] = buildBranchPruningEvidence(ordering, pruning);
   const branchIds = pruning.branches.filter((branch) => !branch.pruned).map((branch) => branch.branchId);
@@ -93,6 +99,7 @@ export function executeBacktrackingSearch(
     exploredBranches,
     skippedBranches,
     exhaustedBranches,
+    branchScores,
     evidence,
   };
 }

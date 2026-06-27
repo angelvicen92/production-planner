@@ -5,6 +5,7 @@ import { analyzeOperationalState } from "../analysis/operationalStateAnalyzer";
 import { estimateExplorationValue } from "../analysis/explorationValueEstimator";
 import { buildBranchOrderingEvidence, orderSearchSpaces } from "../analysis/branchOrderingEngine";
 import { executeBacktrackingSearch } from "../search/backtrackingSearchExecutor";
+import { executeIterativeSearch } from "../search/iterativeSearchSolver";
 import { initializeBacktrackingState } from "../search/searchBacktrackingFramework";
 import { propagateFutureConstraints } from "../analysis/futureConstraintPropagationEngine";
 import { buildSearchSpaceSelectionEvidence, selectSearchSpaces } from "../analysis/searchSpaceSelectionEngine";
@@ -276,6 +277,7 @@ export function runORCShadowMode(
   const futureConstraintPropagation = propagateFutureConstraints(searchSpaceSelectionResult);
   const branchOrderingResult = orderSearchSpaces(searchSpaceSelectionResult, futureConstraintPropagation);
   const backtrackingExecution = executeBacktrackingSearch(branchOrderingResult, initializeBacktrackingState());
+  const iterativeSearchResult = executeIterativeSearch(backtrackingExecution);
   const orderedBranchById = new Map(branchOrderingResult.orderedSearchSpaces.map((item) => [item.searchSpace.id, item]));
   const selectionBySearchSpaceId = new Map(searchSpaceSelectionResult.selected.map((item) => [item.searchSpace.id, item]));
   const selectedSearchSpaces = backtrackingExecution.explorationOrder.map((searchSpaceId) => orderedBranchById.get(searchSpaceId)).filter((ordered): ordered is NonNullable<typeof ordered> => ordered != null).map((ordered) => {
@@ -366,6 +368,7 @@ export function runORCShadowMode(
     ...searchSpaceSelectionEvidence,
     ...branchOrderingEvidence,
     ...backtrackingExecution.evidence.map((item) => ({ ...item, createdAt })),
+    ...iterativeSearchResult.evidence.map((item) => ({ ...item, createdAt })),
     ...decisionInput.evidence,
     ...transformationResult.evidence,
     ...simulationResult.evidence,
