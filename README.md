@@ -62,6 +62,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1
 - ID 179 — 2026-06-28 15:18 CEST — ORC Recovery Potential Estimator v1
 - ID 180 — 2026-06-28 15:27 CEST — ORC Operational Reasoning Score v1
+- ID 183 — 2026-06-28 17:15 CEST — ORC Operational Trade-off Analyzer v1
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
 
@@ -80,6 +81,10 @@ The ORC SEE now computes deterministic Progressive Commitment Scores from existi
 ### ORC Goal-Oriented Search (ID 181)
 
 The ORC SEE now builds deterministic Operational Goals from existing ORS and Dependency Chain Flow signals, associates opportunities with coherent goal groups, and records generated goals, associated opportunities, aggregate ORS, and prioritization explanations as Evidence. Strategy candidate generation can order search spaces by goal coherence and annotates candidates with goal metadata without changing the Decision Engine, official planning, persistence, API, UI, or V4 behavior. The operational benchmark report exposes tracking flags for goal count, strategy coherence, useful diversity, Operational Value correlation, order stability, and computational cost while keeping `planningInfluence: "none"`.
+
+### ORC Operational Trade-off Analyzer (ID 183)
+
+The ORC SEE now detects deterministic operational trade-offs for candidates by comparing existing Operational Reasoning Score, Opportunity Cost, and Recovery Potential signals. Trade-off Evidence records favored dimensions, penalized dimensions, intensity, and a full explanation for reconstruction; this information is informational/read-only, supports explanations and near-tie context only, and does not change the Decision Engine, Commit Engine, official planning, persistence, API, UI, or V4 behavior. The operational benchmark report exposes tracking flags for detected trade-offs, final-solution correlation, explanation stability, and Operational Value correlation while keeping `planningInfluence: "none"`.
 
 ### ORC Operational Reasoning Score (ID 180)
 
