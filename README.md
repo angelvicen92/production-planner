@@ -258,3 +258,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 164 — 2026-06-28 00:20 — ORC Partial Plan Composer v1
 
 - ID 165 — 2026-06-28 07:55 — ORC Partial Plan Decision Engine v1
+- ID 166 — 2026-06-28 08:18 — ORC Global Solution Assembler v1
