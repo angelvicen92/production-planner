@@ -1,9 +1,10 @@
-import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OpportunityPropagation, ORCRecord, PartialPlan } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OpportunityPropagation, PartialPlan } from "../contracts";
 import type { DiscardedPartialPlanComposition } from "./partialPlanComposer";
 import { composePartialPlans } from "./partialPlanComposer";
 import { deepFreeze } from "../immutability";
-import { estimateOpportunityCosts, opportunityCostByCandidateId, type OpportunityCostEstimate } from "../search/opportunityCostEstimator";
-import { estimateRecoveryPotential, recoveryPotentialByCandidateId, type RecoveryPotentialEstimate } from "../search/recoveryPotentialEstimator";
+import { estimateOpportunityCosts, opportunityCostByCandidateId } from "../search/opportunityCostEstimator";
+import { estimateRecoveryPotential, recoveryPotentialByCandidateId } from "../search/recoveryPotentialEstimator";
+import { calculateOperationalReasoningScores, operationalReasoningScoreBySubjectId, type OperationalReasoningScore } from "../search/operationalReasoningScore";
 
 export interface PreselectedCandidate {
   candidateId: string;
@@ -58,44 +59,22 @@ function limitFrom(options: CandidatePreselectionOptions, candidateCount: number
   return Math.max(0, Math.min(candidateCount, Math.floor(explicit)));
 }
 
-function scoreCandidate(candidate: Candidate, profiles: ReadonlyMap<string, AdaptiveSearchSpaceProfile>, propagations: ReadonlyMap<string, OpportunityPropagation>, opportunityCost?: OpportunityCostEstimate, recoveryPotential?: RecoveryPotentialEstimate): number {
-  const opportunityId = stringValue(candidate.metadata.sourceOpportunityId) ?? stringValue(candidate.metadata.originOpportunity) ?? "";
-  const profile = profiles.get(opportunityId);
-  const propagation = propagations.get(opportunityId);
-  const strategy = candidate.metadata.candidateStrategy as ORCRecord | undefined;
-  const impact = finite(candidate.metadata.expectedOperationalImpact, finite(strategy?.expectedOperationalImpact, 0));
-  const confidence = finite(candidate.metadata.confidence, 0);
-  const executable = candidate.metadata.executesTransformations === true ? 1 : 0;
-  const assignmentCoverage = candidate.assignments.length === 0 ? 0 : Math.min(1, candidate.assignments.length / Math.max(1, Array.isArray(candidate.metadata.taskIds) ? candidate.metadata.taskIds.length : candidate.assignments.length));
-  const costPenalty = candidate.metadata.estimatedCost === "high" ? 0.3 : candidate.metadata.estimatedCost === "medium" ? 0.15 : 0;
-  const score =
-    finite(profile?.criticalityLevel) * 3 +
-    finite(profile?.expectedExplorationValue) * 0.5 +
-    finite(profile?.propagationScore) * 2 +
-    finite(propagation?.estimatedConflictReduction) +
-    finite(propagation?.estimatedFreedomGain) +
-    impact +
-    confidence +
-    executable +
-    assignmentCoverage -
-    costPenalty -
-    finite(opportunityCost?.estimatedCost) +
-    finite(recoveryPotential?.estimatedPotential) * 0.75 +
-    finite(candidate.metadata.variantIndex) * 0.001;
+function scoreCandidate(candidate: Candidate, operationalReasoningScore?: OperationalReasoningScore): number {
+  const score = finite(operationalReasoningScore?.score) * 10 + finite(candidate.metadata.variantIndex) * 0.001;
   return round(score);
 }
 
 export function preselectCandidates(candidates: readonly Candidate[], options: CandidatePreselectionOptions = {}): CandidatePreselectionResult {
   const sourceCandidates = [...(candidates ?? [])];
   const limit = limitFrom(options, sourceCandidates.length);
-  const profiles = new Map((options.adaptiveSearchSpaceProfiles ?? []).map((profile) => [profile.opportunityId, profile]));
-  const propagations = new Map((options.opportunityPropagation ?? []).map((propagation) => [propagation.opportunityId, propagation]));
   const opportunityCostResult = estimateOpportunityCosts(sourceCandidates, options.operationalState ?? null, options.createdAt ?? null);
   const opportunityCosts = opportunityCostByCandidateId(opportunityCostResult.estimates);
   const recoveryPotentialResult = estimateRecoveryPotential(sourceCandidates, options.operationalState ?? null, options.createdAt ?? null);
   const recoveryPotentials = recoveryPotentialByCandidateId(recoveryPotentialResult.estimates);
+  const operationalReasoningResult = calculateOperationalReasoningScores({ candidates: sourceCandidates, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles ?? [], opportunityPropagation: options.opportunityPropagation ?? [], opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, createdAt: options.createdAt ?? null });
+  const operationalReasoningByCandidateId = operationalReasoningScoreBySubjectId(operationalReasoningResult.scores);
   const ranked = sourceCandidates
-    .map((candidate, index) => ({ candidate, index, opportunityCost: opportunityCosts.get(candidate.id), recoveryPotential: recoveryPotentials.get(candidate.id), score: scoreCandidate(candidate, profiles, propagations, opportunityCosts.get(candidate.id), recoveryPotentials.get(candidate.id)) }))
+    .map((candidate, index) => ({ candidate, index, opportunityCost: opportunityCosts.get(candidate.id), recoveryPotential: recoveryPotentials.get(candidate.id), operationalReasoningScore: operationalReasoningByCandidateId.get(candidate.id), score: scoreCandidate(candidate, operationalReasoningByCandidateId.get(candidate.id)) }))
     .sort((a, b) => b.score - a.score || a.candidate.id.localeCompare(b.candidate.id) || a.index - b.index);
   const acceptedIds = new Set(ranked.slice(0, limit).map((item) => item.candidate.id));
   const rankByCandidateId = new Map(ranked.map((item, index) => [item.candidate.id, index + 1]));
@@ -112,7 +91,7 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       ...candidate,
       evidenceIds: [...candidate.evidenceIds, `evidence:orc-see:candidate-preselection:${candidate.id}`],
       state: { ...candidate.state, evidenceIds: [...candidate.state.evidenceIds, `evidence:orc-see:candidate-preselection:${candidate.id}`] },
-      metadata: { ...candidate.metadata, opportunityCost: opportunityCosts.get(candidate.id) ?? null, recoveryPotential: recoveryPotentials.get(candidate.id) ?? null, preselection: { preselectionScore: scoreByCandidateId.get(candidate.id) ?? 0, position: rankByCandidateId.get(candidate.id) ?? null, accepted: true, deterministic: true, opportunityCost: opportunityCosts.get(candidate.id)?.estimatedCost ?? 0, recoveryPotential: recoveryPotentials.get(candidate.id)?.estimatedPotential ?? 0 } },
+      metadata: { ...candidate.metadata, operationalReasoningScore: operationalReasoningByCandidateId.get(candidate.id) ?? null, opportunityCost: opportunityCosts.get(candidate.id) ?? null, recoveryPotential: recoveryPotentials.get(candidate.id) ?? null, preselection: { preselectionScore: scoreByCandidateId.get(candidate.id) ?? 0, position: rankByCandidateId.get(candidate.id) ?? null, accepted: true, deterministic: true, opportunityCost: opportunityCosts.get(candidate.id)?.estimatedCost ?? 0, recoveryPotential: recoveryPotentials.get(candidate.id)?.estimatedPotential ?? 0 } },
     };
   });
   const partialPlanResult = composePartialPlans(selected, { createdAt: options.createdAt ?? null });
@@ -127,7 +106,8 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       preselectionScore: decision.preselectionScore,
       opportunityCost: opportunityCosts.get(decision.candidateId) ?? null,
       recoveryPotential: recoveryPotentials.get(decision.candidateId) ?? null,
-      explorationInfluence: "opportunity-cost-subtracted-and-recovery-potential-added-to-preselection-score",
+      operationalReasoningScore: operationalReasoningByCandidateId.get(decision.candidateId) ?? null,
+      explorationInfluence: "single-operational-reasoning-score-drives-preselection-order",
       position: index + 1,
       accepted: decision.accepted,
       rejectionReason: decision.rejectionReason ?? null,
@@ -136,6 +116,6 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       readOnly: true,
     },
   }) as Evidence);
-  evidence.push(deepFreeze({ id: "evidence:orc-see:candidate-preselection:summary", source: "orc-see", kind: "candidate-preselection-summary", subjectId: "orc-see:candidate-preselection", createdAt: options.createdAt ?? null, data: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, decisions, opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, explorationInfluence: "lower opportunity cost and higher recovery potential improve deterministic exploration order during preselection", acceptedCandidateIds: selected.map((candidate) => candidate.id), discardedCandidateIds: decisions.filter((decision) => !decision.accepted).map((decision) => decision.candidateId), deterministic: true, readOnly: true } }) as Evidence);
-  return deepFreeze({ candidates: selected, decisions, evidence: [...opportunityCostResult.evidence, ...recoveryPotentialResult.evidence, ...evidence, ...partialPlanResult.evidence], partialPlans: partialPlanResult.partialPlans, discardedPartialPlanCompositions: partialPlanResult.discardedCompositions, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, partialPlans: { partialPlanCount: partialPlanResult.summary.partialPlanCount, discardedCompositionCount: partialPlanResult.summary.discardedCompositionCount, averageCompatibilityScore: partialPlanResult.summary.averageCompatibilityScore } } }) as CandidatePreselectionResult;
+  evidence.push(deepFreeze({ id: "evidence:orc-see:candidate-preselection:summary", source: "orc-see", kind: "candidate-preselection-summary", subjectId: "orc-see:candidate-preselection", createdAt: options.createdAt ?? null, data: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, decisions, opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, explorationInfluence: "single Operational Reasoning Score consolidates existing SEE signals for deterministic preselection", acceptedCandidateIds: selected.map((candidate) => candidate.id), discardedCandidateIds: decisions.filter((decision) => !decision.accepted).map((decision) => decision.candidateId), deterministic: true, readOnly: true } }) as Evidence);
+  return deepFreeze({ candidates: selected, decisions, evidence: [...opportunityCostResult.evidence, ...recoveryPotentialResult.evidence, ...operationalReasoningResult.evidence, ...evidence, ...partialPlanResult.evidence], partialPlans: partialPlanResult.partialPlans, discardedPartialPlanCompositions: partialPlanResult.discardedCompositions, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, partialPlans: { partialPlanCount: partialPlanResult.summary.partialPlanCount, discardedCompositionCount: partialPlanResult.summary.discardedCompositionCount, averageCompatibilityScore: partialPlanResult.summary.averageCompatibilityScore } } }) as CandidatePreselectionResult;
 }

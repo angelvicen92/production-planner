@@ -5,6 +5,7 @@ import { calibrateReasoningBudgetProfilesFromImprovementReport, type Improvement
 import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAnalyzer";
 import { deepFreeze } from "../immutability";
 import { applyDependencyChainFlowToReasoningBudgets, optimizeDependencyChainFlow, type DependencyChainFlowOptimizationResult } from "./dependencyChainFlowOptimizer";
+import { calculateOperationalReasoningScores, operationalReasoningScoreBySubjectId, type OperationalReasoningScore } from "./operationalReasoningScore";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
 import {
   buildCriticalityDrivenReasoningBudgetEvidence,
@@ -20,6 +21,7 @@ export interface SearchAndExplorationUnderstanding {
   readonly improvementDrivenCalibration: ImprovementDrivenCalibrationResult | null;
   readonly opportunityPropagation: readonly OpportunityPropagation[];
   readonly dependencyChainFlow: DependencyChainFlowOptimizationResult;
+  readonly operationalReasoningScores: readonly OperationalReasoningScore[];
   readonly adaptiveSearchSpaceProfiles: readonly AdaptiveSearchSpaceProfile[];
   readonly cognitiveState: CognitiveState | null;
   readonly evidence: readonly Evidence[];
@@ -88,7 +90,24 @@ export function buildSearchAndExplorationUnderstanding(
   const improvementDrivenCalibration = options.improvementReport === undefined ? null : calibrateReasoningBudgetProfilesFromImprovementReport(reasoningBudgetProfiles, options.improvementReport, reasoningBudget, createdAt);
   const dependencyChainFlow = optimizeDependencyChainFlow(state, options.opportunities ?? state.cognitive?.opportunities ?? [], createdAt);
   const calibratedReasoningBudgetProfiles = improvementDrivenCalibration?.calibratedProfiles ?? reasoningBudgetProfiles;
-  const effectiveReasoningBudgetProfiles = applyDependencyChainFlowToReasoningBudgets(calibratedReasoningBudgetProfiles, dependencyChainFlow.opportunityInfluences);
+  const chainAdjustedReasoningBudgetProfiles = applyDependencyChainFlowToReasoningBudgets(calibratedReasoningBudgetProfiles, dependencyChainFlow.opportunityInfluences);
+  const ors = calculateOperationalReasoningScores({
+    opportunities: options.opportunities ?? state.cognitive?.opportunities ?? [],
+    reasoningBudgetProfiles: chainAdjustedReasoningBudgetProfiles,
+    opportunityPropagation: propagation.opportunityPropagation,
+    dependencyChainInfluences: dependencyChainFlow.opportunityInfluences,
+    dynamicBottleneckImpacts: options.dynamicBottleneckAnalysis?.opportunityImpacts ?? [],
+    createdAt,
+  });
+  const orsByOpportunityId = operationalReasoningScoreBySubjectId(ors.scores);
+  const effectiveReasoningBudgetProfiles = deepFreeze([...chainAdjustedReasoningBudgetProfiles].sort((a, b) => {
+    const scoreDelta = (orsByOpportunityId.get(b.opportunityId)?.score ?? 0) - (orsByOpportunityId.get(a.opportunityId)?.score ?? 0);
+    return scoreDelta || a.opportunityId.localeCompare(b.opportunityId);
+  }).map((profile) => {
+    const score = orsByOpportunityId.get(profile.opportunityId)?.score ?? 0;
+    const extra = Math.ceil(score * 2);
+    return { ...profile, explorationBudget: profile.explorationBudget + extra, maxCandidates: profile.maxCandidates + extra, maxSearchSpaceSize: profile.maxSearchSpaceSize + extra, simulationBudget: profile.simulationBudget + extra, reason: `${profile.reason} ORS ${score} consolidates existing SEE reasoning signals.` };
+  })) as readonly ReasoningBudgetProfile[];
   const adaptiveSearchSpaceProfiles = buildAdaptiveSearchSpaceProfiles(effectiveReasoningBudgetProfiles, propagation.opportunityPropagation);
   const budgetEvidence = buildCriticalityDrivenReasoningBudgetEvidence(state, effectiveReasoningBudgetProfiles, createdAt);
   const profileEvidence = buildAdaptiveSearchSpaceProfileEvidence(adaptiveSearchSpaceProfiles, createdAt);
@@ -98,9 +117,10 @@ export function buildSearchAndExplorationUnderstanding(
     improvementDrivenCalibration,
     opportunityPropagation: propagation.opportunityPropagation,
     dependencyChainFlow,
+    operationalReasoningScores: ors.scores,
     adaptiveSearchSpaceProfiles,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...ors.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }
