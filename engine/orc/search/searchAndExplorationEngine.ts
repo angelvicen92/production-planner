@@ -4,6 +4,7 @@ import type { ImprovementOpportunityReport } from "../benchmark/improvementOppor
 import { calibrateReasoningBudgetProfilesFromImprovementReport, type ImprovementDrivenCalibrationResult } from "./improvementDrivenCalibration";
 import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAnalyzer";
 import { deepFreeze } from "../immutability";
+import { applyDependencyChainFlowToReasoningBudgets, optimizeDependencyChainFlow, type DependencyChainFlowOptimizationResult } from "./dependencyChainFlowOptimizer";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
 import {
   buildCriticalityDrivenReasoningBudgetEvidence,
@@ -18,6 +19,7 @@ export interface SearchAndExplorationUnderstanding {
   readonly reasoningBudgetProfiles: readonly ReasoningBudgetProfile[];
   readonly improvementDrivenCalibration: ImprovementDrivenCalibrationResult | null;
   readonly opportunityPropagation: readonly OpportunityPropagation[];
+  readonly dependencyChainFlow: DependencyChainFlowOptimizationResult;
   readonly adaptiveSearchSpaceProfiles: readonly AdaptiveSearchSpaceProfile[];
   readonly cognitiveState: CognitiveState | null;
   readonly evidence: readonly Evidence[];
@@ -84,7 +86,9 @@ export function buildSearchAndExplorationUnderstanding(
     { ...options, reasoningBudget },
   );
   const improvementDrivenCalibration = options.improvementReport === undefined ? null : calibrateReasoningBudgetProfilesFromImprovementReport(reasoningBudgetProfiles, options.improvementReport, reasoningBudget, createdAt);
-  const effectiveReasoningBudgetProfiles = improvementDrivenCalibration?.calibratedProfiles ?? reasoningBudgetProfiles;
+  const dependencyChainFlow = optimizeDependencyChainFlow(state, options.opportunities ?? state.cognitive?.opportunities ?? [], createdAt);
+  const calibratedReasoningBudgetProfiles = improvementDrivenCalibration?.calibratedProfiles ?? reasoningBudgetProfiles;
+  const effectiveReasoningBudgetProfiles = applyDependencyChainFlowToReasoningBudgets(calibratedReasoningBudgetProfiles, dependencyChainFlow.opportunityInfluences);
   const adaptiveSearchSpaceProfiles = buildAdaptiveSearchSpaceProfiles(effectiveReasoningBudgetProfiles, propagation.opportunityPropagation);
   const budgetEvidence = buildCriticalityDrivenReasoningBudgetEvidence(state, effectiveReasoningBudgetProfiles, createdAt);
   const profileEvidence = buildAdaptiveSearchSpaceProfileEvidence(adaptiveSearchSpaceProfiles, createdAt);
@@ -93,9 +97,10 @@ export function buildSearchAndExplorationUnderstanding(
     reasoningBudgetProfiles: effectiveReasoningBudgetProfiles,
     improvementDrivenCalibration,
     opportunityPropagation: propagation.opportunityPropagation,
+    dependencyChainFlow,
     adaptiveSearchSpaceProfiles,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }

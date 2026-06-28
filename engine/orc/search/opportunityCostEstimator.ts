@@ -1,8 +1,9 @@
 import type { Candidate, CandidateAssignment, Evidence, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { candidateDependencyChainFlowRisk, optimizeDependencyChainFlow } from "./dependencyChainFlowOptimizer";
 
 export interface OpportunityCostFactor extends ORCRecord {
-  readonly name: "scarce-window-consumption" | "future-alternative-reduction" | "resource-pressure" | "reassignment-flexibility-loss";
+  readonly name: "scarce-window-consumption" | "future-alternative-reduction" | "resource-pressure" | "reassignment-flexibility-loss" | "dependency-chain-flow-risk";
   readonly value: number;
   readonly weight: number;
   readonly contribution: number;
@@ -47,7 +48,7 @@ function assignmentSignature(assignment: CandidateAssignment): string {
   return [assignment.taskId, assignment.startPlanned ?? "", assignment.endPlanned ?? "", assignment.spaceId ?? "", [...assignment.resourceIds].sort((a, b) => a - b).join(",")].join(":");
 }
 
-function estimateCandidate(candidate: Candidate, state?: OperationalState | null): OpportunityCostEstimate {
+function estimateCandidate(candidate: Candidate, state?: OperationalState | null, dependencyChainFlowRisk = 0): OpportunityCostEstimate {
   const assignments = [...candidate.assignments].sort((a, b) => assignmentSignature(a).localeCompare(assignmentSignature(b)));
   const totalDuration = assignments.reduce((sum, assignment) => sum + durationMinutes(assignment), 0);
   const workStart = parseMinutes(state?.workDay?.start ?? null);
@@ -70,14 +71,16 @@ function estimateCandidate(candidate: Candidate, state?: OperationalState | null
     ["scarce-window-consumption", scarceWindow, 0.3, "Share of known operating window consumed by the candidate assignments."],
     ["future-alternative-reduction", alternativeReduction, 0.25, "Share of assignments with fixed start/end information before simulation."],
     ["resource-pressure", resourcePressure, 0.25, "Maximum deterministic pressure introduced on resources or spaces."],
-    ["reassignment-flexibility-loss", reassignmentFlexibilityLoss, 0.2, "Assignments requiring specific resources or spaces reduce later reassignment freedom."],
+    ["reassignment-flexibility-loss", reassignmentFlexibilityLoss, 0.17, "Assignments requiring specific resources or spaces reduce later reassignment freedom."],
+    ["dependency-chain-flow-risk", dependencyChainFlowRisk, 0.03, "Candidate touches dependency chains where flow protection has operational value; this is read-only and never invalidates candidates."],
   ];
   const factors = rawFactors.map(([name, value, weight, explanation]) => deepFreeze({ name, value: round(value), weight, contribution: round(value * weight), explanation }) as OpportunityCostFactor);
   return deepFreeze({ candidateId: candidate.id, estimatedCost: round(factors.reduce((sum, factor) => sum + factor.contribution, 0)), factors, deterministic: true, readOnly: true }) as OpportunityCostEstimate;
 }
 
 export function estimateOpportunityCosts(candidates: readonly Candidate[], state?: OperationalState | null, createdAt: string | null = null): OpportunityCostEstimationResult {
-  const estimates = [...(candidates ?? [])].map((candidate) => estimateCandidate(candidate, state));
+  const chainFlow = state ? optimizeDependencyChainFlow(state, state.cognitive?.opportunities ?? [], createdAt) : null;
+  const estimates = [...(candidates ?? [])].map((candidate) => estimateCandidate(candidate, state, chainFlow ? candidateDependencyChainFlowRisk(candidate, chainFlow.chains) : 0));
   const evidence = estimates.map((estimate) => deepFreeze({
     id: `evidence:${SOURCE}:${estimate.candidateId}`,
     source: SOURCE,

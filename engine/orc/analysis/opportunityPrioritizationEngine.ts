@@ -1,4 +1,5 @@
 import type { ORCRecord } from "../contracts";
+import type { DependencyChainOpportunityInfluence } from "../search/dependencyChainFlowOptimizer";
 import type { DynamicBottleneckAnalysis } from "./dynamicBottleneckAnalyzer";
 import type { ClassifiedOpportunity } from "./opportunityClassificationEngine";
 
@@ -14,6 +15,7 @@ export interface OpportunityPrioritizationResult {
 export interface OpportunityPrioritizationOptions {
   readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
   readonly futureImpactByOpportunityId?: Readonly<Record<string, { readonly impactScore: number; readonly explanation?: string }>> | null;
+  readonly dependencyChainInfluenceByOpportunityId?: Readonly<Record<string, DependencyChainOpportunityInfluence>> | null;
 }
 
 const FAMILY_PRIORITY: Record<string, number> = {
@@ -40,11 +42,12 @@ function basePriority(opportunity: ClassifiedOpportunity): { priority: number; c
   return { priority: 0, criterion: "classification.family:fallback" };
 }
 
-function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost = 0, dynamicBottleneckIds: readonly string[] = [], futureImpactScore: number | null = null): PrioritizedOpportunity {
+function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost = 0, dynamicBottleneckIds: readonly string[] = [], futureImpactScore: number | null = null, dependencyChainInfluence: DependencyChainOpportunityInfluence | null = null): PrioritizedOpportunity {
   const base = basePriority(opportunity);
   const futureBoost = futureImpactScore === null ? 0 : Math.max(-5, Math.min(5, (futureImpactScore - 0.5) * 10));
-  const priority = Number((base.priority + dynamicBoost + futureBoost).toFixed(6));
-  const criterion = [base.criterion, dynamicBoost > 0 ? "dynamic-bottleneck" : null, futureImpactScore !== null ? "future-impact" : null].filter(Boolean).join("+");
+  const dependencyChainBoost = dependencyChainInfluence === null ? 0 : Math.max(0, Math.min(7, dependencyChainInfluence.influenceScore * 7));
+  const priority = Number((base.priority + dynamicBoost + futureBoost + dependencyChainBoost).toFixed(6));
+  const criterion = [base.criterion, dynamicBoost > 0 ? "dynamic-bottleneck" : null, futureImpactScore !== null ? "future-impact" : null, dependencyChainInfluence !== null ? "dependency-chain-flow" : null].filter(Boolean).join("+");
   const rationale = [
     `priority=${priority}`,
     `criterion=${criterion}`,
@@ -66,6 +69,11 @@ function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost 
   if (futureImpactScore !== null) {
     rationale.push(`futureImpactScore=${futureImpactScore}`);
     rationale.push(`futureImpactBoost=${futureBoost}`);
+  }
+  if (dependencyChainInfluence !== null) {
+    rationale.push(`dependencyChainInfluenceScore=${dependencyChainInfluence.influenceScore}`);
+    rationale.push(`dependencyChainBoost=${dependencyChainBoost}`);
+    rationale.push(`dependencyChainIds=${dependencyChainInfluence.touchedChainIds.join(",")}`);
   }
 
   return {
@@ -91,7 +99,7 @@ export function prioritizeOpportunities(
   const prioritized = [...(opportunities ?? [])].map((opportunity, index) => {
     const impact = impactByOpportunity.get(opportunity.id);
     return {
-      opportunity: prioritizeOpportunity(opportunity, impact?.priorityBoost ?? 0, impact?.bottleneckIds ?? [], options.futureImpactByOpportunityId?.[opportunity.id]?.impactScore ?? null),
+      opportunity: prioritizeOpportunity(opportunity, impact?.priorityBoost ?? 0, impact?.bottleneckIds ?? [], options.futureImpactByOpportunityId?.[opportunity.id]?.impactScore ?? null, options.dependencyChainInfluenceByOpportunityId?.[opportunity.id] ?? null),
       index,
     };
   });

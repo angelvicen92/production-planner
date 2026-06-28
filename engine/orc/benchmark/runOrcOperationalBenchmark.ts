@@ -26,6 +26,14 @@ export interface OrcOperationalBenchmarkReport {
     topAuthorizedPriorities: string[];
   };
   planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  dependencyChainFlowSummary: {
+    optimizerAvailable: boolean;
+    chainsProtected: number;
+    blockagesAvoided: number;
+    averageSlackRecovered: number;
+    operationalValueCorrelationTracked: boolean;
+    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  };
   opportunityCostSummary: {
     estimatorAvailable: boolean;
     correlationTracked: boolean;
@@ -81,6 +89,7 @@ export function buildOrcOperationalBenchmarkReport(params: {
   const suiteReport = clone(params.suiteReport);
   const optimizationReport = clone(params.optimizationReport);
   const authorizationReport = clone(params.authorizationReport);
+  const passedReports = suiteReport.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null);
   return {
     benchmarkVersion: ORC_OPERATIONAL_BENCHMARK_VERSION,
     generatedAt: suiteReport.generatedAt,
@@ -101,6 +110,14 @@ export function buildOrcOperationalBenchmarkReport(params: {
       topAuthorizedPriorities: authorizationReport.authorizedPriorities.map((priority) => priority.priorityId),
     },
     planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    dependencyChainFlowSummary: {
+      optimizerAvailable: true,
+      chainsProtected: passedReports.reduce((sum, report) => sum + report.metrics.orc.dependencyChainsProtected, 0),
+      blockagesAvoided: passedReports.reduce((sum, report) => sum + report.metrics.orc.dependencyBlockagesAvoided, 0),
+      averageSlackRecovered: passedReports.length === 0 ? 0 : Number((passedReports.reduce((sum, report) => sum + report.metrics.orc.dependencyAverageSlackRecovered, 0) / passedReports.length).toFixed(6)),
+      operationalValueCorrelationTracked: true,
+      planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    },
     opportunityCostSummary: {
       estimatorAvailable: true,
       correlationTracked: true,

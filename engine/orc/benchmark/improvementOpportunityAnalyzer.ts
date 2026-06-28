@@ -74,6 +74,10 @@ const METRICS: OfficialOperationalMetric[] = [
   "candidatesConsolidated",
   "totalTime",
   "timeByIteration",
+  "dependencyChainsProtected",
+  "dependencyBlockagesAvoided",
+  "dependencyAverageSlackRecovered",
+  "dependencyCriticalityOperationalValueCorrelation",
 ];
 
 const CATEGORY_BY_METRIC: Record<OfficialOperationalMetric, ImprovementCategory> = {
@@ -89,6 +93,10 @@ const CATEGORY_BY_METRIC: Record<OfficialOperationalMetric, ImprovementCategory>
   candidatesConsolidated: "robustness",
   totalTime: "computationalCost",
   timeByIteration: "computationalCost",
+  dependencyChainsProtected: "robustness",
+  dependencyBlockagesAvoided: "robustness",
+  dependencyAverageSlackRecovered: "continuity",
+  dependencyCriticalityOperationalValueCorrelation: "continuity",
 };
 
 const LOWER_IS_BETTER = new Set<OfficialOperationalMetric>([

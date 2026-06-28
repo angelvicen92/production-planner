@@ -19,6 +19,10 @@ const metrics = (overrides: Partial<OperationalDeltaMetrics> = {}): OperationalD
   candidatesConsolidated: 1,
   totalTime: 10,
   timeByIteration: [10],
+  dependencyChainsProtected: 0,
+  dependencyBlockagesAvoided: 0,
+  dependencyAverageSlackRecovered: 0,
+  dependencyCriticalityOperationalValueCorrelation: 0,
   ...overrides,
 });
 
@@ -35,6 +39,10 @@ const delta = (orc: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): Opera
   candidatesConsolidated: orc.candidatesConsolidated - v4.candidatesConsolidated,
   totalTime: orc.totalTime - v4.totalTime,
   timeByIteration: orc.timeByIteration.map((value, index) => value - (v4.timeByIteration[index] ?? 0)),
+  dependencyChainsProtected: orc.dependencyChainsProtected - v4.dependencyChainsProtected,
+  dependencyBlockagesAvoided: orc.dependencyBlockagesAvoided - v4.dependencyBlockagesAvoided,
+  dependencyAverageSlackRecovered: orc.dependencyAverageSlackRecovered - v4.dependencyAverageSlackRecovered,
+  dependencyCriticalityOperationalValueCorrelation: orc.dependencyCriticalityOperationalValueCorrelation - v4.dependencyCriticalityOperationalValueCorrelation,
 });
 
 const pct = (absolute: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): OperationalDeltaMetrics => ({
@@ -50,6 +58,10 @@ const pct = (absolute: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): Op
   candidatesConsolidated: (absolute.candidatesConsolidated / v4.candidatesConsolidated) * 100,
   totalTime: (absolute.totalTime / v4.totalTime) * 100,
   timeByIteration: absolute.timeByIteration.map((value, index) => value / (v4.timeByIteration[index] ?? 1) * 100),
+  dependencyChainsProtected: v4.dependencyChainsProtected === 0 ? 0 : (absolute.dependencyChainsProtected / v4.dependencyChainsProtected) * 100,
+  dependencyBlockagesAvoided: v4.dependencyBlockagesAvoided === 0 ? 0 : (absolute.dependencyBlockagesAvoided / v4.dependencyBlockagesAvoided) * 100,
+  dependencyAverageSlackRecovered: v4.dependencyAverageSlackRecovered === 0 ? 0 : (absolute.dependencyAverageSlackRecovered / v4.dependencyAverageSlackRecovered) * 100,
+  dependencyCriticalityOperationalValueCorrelation: v4.dependencyCriticalityOperationalValueCorrelation === 0 ? 0 : (absolute.dependencyCriticalityOperationalValueCorrelation / v4.dependencyCriticalityOperationalValueCorrelation) * 100,
 });
 
 function report(planId: number, orc: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): OperationalDeltaReport {
