@@ -56,7 +56,7 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.ok(Array.isArray(shadow.validationResults));
   assert.ok(Array.isArray(shadow.operationalValues));
   assert.ok(Array.isArray(shadow.commitDecisions));
-  assert.equal(shadow.candidateStates.length, shadow.candidates.length);
+  assert.ok(shadow.candidateStates.length >= shadow.candidates.length);
   assert.equal(shadow.simulatedStates.length, shadow.candidateStates.length);
   assert.equal(shadow.validationResults.length, shadow.simulatedStates.length);
   assert.equal(shadow.operationalValues.length, shadow.validationResults.length);

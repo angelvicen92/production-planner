@@ -11,6 +11,7 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import type { ValidationEngineResult } from "../validation/validationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import type { DecisionInput } from "./decisionInput";
+import { preparePartialPlanDecisionUnits } from "./decisionEngine";
 import type { DecisionTrace } from "./decisionTraceBuilder";
 import { buildDecisionTrace } from "./decisionTraceBuilder";
 import type { RankingEngineResult } from "./rankingEngine";
@@ -79,14 +80,24 @@ function attachOperationalValues(input: DecisionPipelineInput, evaluation: Evalu
   const simulatedById = new Map(simulation.simulatedStates.map((simulatedState) => [simulatedState.id, simulatedState]));
   const candidateStateById = new Map(transformation.candidateStates.map((candidateState) => [candidateState.id, candidateState]));
   const operationalValuesByCandidateId = new Map<string, EvaluationResult["operationalValues"]>();
+  const candidateById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
 
   for (const operationalValue of evaluation.operationalValues) {
     const simulatedState = simulatedById.get(operationalValue.simulatedStateId);
     const candidateState = simulatedState == null ? undefined : candidateStateById.get(simulatedState.candidateStateId);
     if (candidateState == null) continue;
+    const candidate = candidateById.get(candidateState.candidateId);
     operationalValuesByCandidateId.set(candidateState.candidateId, [
       ...(operationalValuesByCandidateId.get(candidateState.candidateId) ?? []),
-      operationalValue,
+      deepFreeze({
+        ...operationalValue,
+        metadata: {
+          ...operationalValue.metadata,
+          partialPlanId: candidate?.metadata.partialPlanId ?? null,
+          partialPlanCandidateIds: candidate?.metadata.partialPlanCandidateIds ?? [],
+          partialPlanCompatibilityScore: candidate?.metadata.partialPlanCompatibilityScore ?? null,
+        },
+      }) as EvaluationResult["operationalValues"][number],
     ]);
   }
 
@@ -107,9 +118,12 @@ export function executeDecisionPipeline(
   const stateId = input.operationalState.id;
   const evidence: Evidence[] = [];
 
-  evidence.push(buildStageEvidence("transformation", "start", stateId, createdAt, { input: "DecisionInput", output: "TransformationResult" }, { candidates: input.candidates.length }));
-  const transformation = buildCandidateStates(input.operationalState, input.candidates, { createdAt });
-  evidence.push(buildStageEvidence("transformation", "end", stateId, createdAt, { input: "DecisionInput", output: "TransformationResult" }, { candidates: input.candidates.length, candidateStates: transformation.candidateStates.length, evidence: transformation.evidence.length }));
+  const planPreparation = preparePartialPlanDecisionUnits(input.candidates, input.partialPlans, { createdAt });
+  evidence.push(...planPreparation.evidence);
+
+  evidence.push(buildStageEvidence("transformation", "start", stateId, createdAt, { input: "DecisionInput<PartialPlans>", output: "TransformationResult" }, { candidates: input.candidates.length, partialPlans: planPreparation.summary.partialPlanCount }));
+  const transformation = buildCandidateStates(input.operationalState, planPreparation.candidates, { createdAt });
+  evidence.push(buildStageEvidence("transformation", "end", stateId, createdAt, { input: "DecisionInput<PartialPlans>", output: "TransformationResult" }, { candidates: input.candidates.length, partialPlans: planPreparation.summary.partialPlanCount, candidateStates: transformation.candidateStates.length, evidence: transformation.evidence.length }));
 
   evidence.push(buildStageEvidence("simulation", "start", stateId, createdAt, { input: "TransformationResult", output: "SimulationResult" }, { candidateStates: transformation.candidateStates.length }));
   const simulation = simulateCandidateStates(input.operationalState, transformation.candidateStates, { createdAt });
@@ -123,7 +137,7 @@ export function executeDecisionPipeline(
   const evaluation = evaluateSimulatedStates(simulation.simulatedStates, validation.validationResults, { createdAt });
   evidence.push(buildStageEvidence("evaluation", "end", stateId, createdAt, { input: "SimulationResult+ValidationResult", output: "EvaluationResult" }, { operationalValues: evaluation.operationalValues.length, skippedInvalid: evaluation.summary.skippedInvalid, evidence: evaluation.evidence.length }));
 
-  const evaluatedDecisionInput = attachOperationalValues(input, evaluation, simulation, transformation);
+  const evaluatedDecisionInput = attachOperationalValues({ ...input, candidates: planPreparation.candidates }, evaluation, simulation, transformation);
   evidence.push(buildStageEvidence("ranking", "start", stateId, createdAt, { input: "DecisionInput<EvaluatedCandidates>", output: "RankingResult" }, { operationalValues: evaluation.operationalValues.length }));
   const ranking = rankDecisionInput(evaluatedDecisionInput, { createdAt });
   evidence.push(buildStageEvidence("ranking", "end", stateId, createdAt, { input: "DecisionInput<EvaluatedCandidates>", output: "RankingResult" }, { rankedOperationalValues: ranking.rankedOperationalValues.length, ties: ranking.summary.tieCount, evidence: ranking.evidence.length }));

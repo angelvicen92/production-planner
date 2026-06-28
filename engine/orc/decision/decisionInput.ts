@@ -1,13 +1,15 @@
-import type { Candidate, Evidence } from "../contracts";
+import type { Candidate, Evidence, PartialPlan } from "../contracts";
 import { deepFreeze } from "../immutability";
 import type { CandidateBuilderResult } from "../see/candidateBuilder";
 
 export interface DecisionInput {
   candidates: Candidate[];
+  partialPlans?: PartialPlan[];
   evidence: Evidence[];
   metadata: {
     searchSpaces: number;
     opportunities: number;
+    partialPlans?: number;
   };
 }
 
@@ -55,6 +57,7 @@ export function buildDecisionInput(candidateResult: CandidateBuilderResult): Dec
   const sourceEvidence = cloneSerializable(candidateResult.evidence ?? []);
   const searchSpaces = candidateResult.summary?.searchSpaceCount ?? 0;
   const opportunities = countOriginOpportunities(candidates);
+  const partialPlans = cloneSerializable((candidateResult as { partialPlans?: PartialPlan[] }).partialPlans ?? []);
   const evidence = [
     ...sourceEvidence,
     buildInputEvidence(candidates, candidateResult, searchSpaces, opportunities),
@@ -62,10 +65,12 @@ export function buildDecisionInput(candidateResult: CandidateBuilderResult): Dec
 
   return deepFreeze({
     candidates,
+    partialPlans,
     evidence,
     metadata: {
       searchSpaces,
       opportunities,
+      ...(partialPlans.length > 0 ? { partialPlans: partialPlans.length } : {}),
     },
   }) as DecisionInput;
 }
