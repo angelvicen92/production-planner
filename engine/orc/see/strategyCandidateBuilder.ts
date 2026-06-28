@@ -1,4 +1,5 @@
 import type { AdaptiveSearchSpaceProfile, Candidate, CandidateStrategyType, CandidateTransformation, CognitiveState, Evidence, OperationalState, OpportunityPropagation, SearchSpace } from "../contracts";
+import type { OperationalGoal } from "../search/operationalGoalBuilder";
 import { shouldSkipCandidate, shouldSkipSearchSpace } from "../cognitive/cognitiveFeedback";
 import { remainingBudget } from "../cognitive/reasoningBudget";
 
@@ -245,6 +246,7 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
   const region = metadataString(searchSpace.metadata.affectedRegion, "unknown-region");
   const profile = context.adaptiveSearchSpaceProfiles.get(sourceOpportunityId);
   const propagation = context.opportunityPropagation.get(sourceOpportunityId);
+  const goal = context.operationalGoalByOpportunityId.get(sourceOpportunityId);
   const expectedOperationalImpact = round((profile?.expectedExplorationValue ?? 1) + (propagation?.estimatedConflictReduction ?? 0) + (propagation?.estimatedFreedomGain ?? 0));
   const transformations = buildTransformations(searchSpace, definition);
   const confidence = Math.max(0.1, Math.min(0.95, Number((definition.baseConfidence + Math.min(searchSpace.taskIds.length, 5) * 0.02 + Math.min(expectedOperationalImpact, 10) * 0.005).toFixed(2))));
@@ -275,13 +277,16 @@ function candidateFor(searchSpace: SearchSpace, definition: StrategyDefinition, 
       synthesisReason: synthesis.synthesisReason,
       assignmentSynthesis: { strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, abstract: !executable, executable, generatedAssignmentCount: synthesis.assignments.length, discardedTaskCount: synthesis.discardedTasks.length, discardedTasks: synthesis.discardedTasks, assignments: synthesis.assignments },
       strategyFamily: definition.family,
+      operationalGoalId: goal?.id ?? null,
+      operationalGoalSignature: goal?.signature ?? [],
+      operationalGoalAggregateOperationalReasoningScore: goal?.aggregateOperationalReasoningScore ?? null,
       affectedRegion: region,
       taskIds: [...searchSpace.taskIds],
       confidence,
       expectedImpact: definition.impact,
       expectedOperationalImpact,
       transformations,
-      candidateStrategy: { strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact, transformations, generationReason: `Generated ${definition.strategyType} strategy variant ${variant.variantId} from ${searchSpace.id} using OCM/OPA/adaptive profile context.` },
+      candidateStrategy: { strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact, transformations, generationReason: `Generated ${definition.strategyType} strategy variant ${variant.variantId} from ${searchSpace.id} using OCM/OPA/adaptive profile and operational-goal context.` },
       estimatedCost: searchSpace.taskIds.length > 8 && definition.cost === "low" ? "medium" : definition.cost,
       generationReason: `Strategy candidate variant ${variant.variantId} generated for ${definition.family} from search space ${searchSpace.id} with ${transformations.length} coordinated transformations`,
       cognitiveFeedback: { repeatedByCognitiveMemory, potentialOmittable: repeatedByCognitiveMemory, observationalOnly: true },
@@ -298,18 +303,21 @@ export interface StrategyCandidateBuildOptions {
   readonly adaptiveSearchSpaceProfiles?: readonly AdaptiveSearchSpaceProfile[];
   readonly opportunityPropagation?: readonly OpportunityPropagation[];
   readonly operationalState?: OperationalState | null;
+  readonly operationalGoals?: readonly OperationalGoal[];
 }
 
 interface StrategyContext {
   readonly adaptiveSearchSpaceProfiles: ReadonlyMap<string, AdaptiveSearchSpaceProfile>;
   readonly opportunityPropagation: ReadonlyMap<string, OpportunityPropagation>;
   readonly operationalState: OperationalState | null;
+  readonly operationalGoalByOpportunityId: ReadonlyMap<string, OperationalGoal>;
 }
 
 const contextFrom = (options: StrategyCandidateBuildOptions): StrategyContext => ({
   adaptiveSearchSpaceProfiles: new Map((options.adaptiveSearchSpaceProfiles ?? []).map((profile) => [profile.opportunityId, profile])),
   opportunityPropagation: new Map((options.opportunityPropagation ?? []).map((propagation) => [propagation.opportunityId, propagation])),
   operationalState: options.operationalState ?? null,
+  operationalGoalByOpportunityId: new Map((options.operationalGoals ?? []).flatMap((goal) => goal.opportunityIds.map((opportunityId) => [opportunityId, goal] as const))),
 });
 
 const budgetForSearchSpace = (budgetBySearchSpaceId: StrategyCandidateBuildOptions["candidateBudgetBySearchSpaceId"], searchSpaceId: string): number | null => {
@@ -330,7 +338,14 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
   const budgetBySearchSpaceId = options.candidateBudgetBySearchSpaceId ?? null;
   const context = contextFrom(options);
 
-  for (const searchSpace of [...(searchSpaces ?? [])]) {
+  const orderedSearchSpaces = [...(searchSpaces ?? [])].sort((a, b) => {
+    const leftGoal = context.operationalGoalByOpportunityId.get(metadataString(a.metadata.sourceOpportunityId, a.id));
+    const rightGoal = context.operationalGoalByOpportunityId.get(metadataString(b.metadata.sourceOpportunityId, b.id));
+    const goalDelta = (rightGoal?.aggregateOperationalReasoningScore ?? -1) - (leftGoal?.aggregateOperationalReasoningScore ?? -1);
+    return goalDelta || (leftGoal?.id ?? "").localeCompare(rightGoal?.id ?? "") || a.id.localeCompare(b.id);
+  });
+
+  for (const searchSpace of orderedSearchSpaces) {
     if (shouldSkipSearchSpace(cognitiveState, searchSpace.id)) {
       emittedEvidence.push(evidence(`evidence:orc-see:strategy-candidate:discarded:exhausted:${searchSpace.id}`, "strategy-candidate-discarded", searchSpace.id, { searchSpaceId: searchSpace.id, reason: "exhausted-region", readOnly: true }));
       continue;
@@ -375,7 +390,7 @@ export function buildStrategyCandidates(searchSpaces: SearchSpace[], cognitiveSt
         candidates.push(candidate);
         producedForSpace += 1;
         generatedVariants += 1;
-        emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, plannedTransformations: candidate.metadata.transformations, assignmentSynthesis: candidate.metadata.assignmentSynthesis, assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: candidate.metadata.synthesisReason, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, acceptedVariant: { variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy }, readOnly: true }));
+        emittedEvidence.push(evidence(evidenceId, "strategy-candidate-generated", candidateId, { candidateId, searchSpaceId: searchSpace.id, opportunityId: sourceOpportunityId, strategy: definition.strategy, strategyId: definition.strategy, variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy, strategyType: definition.strategyType, strategyFamily: definition.family, selectedStrategy: definition.strategyType, originOpportunity: sourceOpportunityId, expectedOperationalImpact: candidate.metadata.expectedOperationalImpact, operationalGoalId: candidate.metadata.operationalGoalId, operationalGoalSignature: candidate.metadata.operationalGoalSignature, plannedTransformations: candidate.metadata.transformations, assignmentSynthesis: candidate.metadata.assignmentSynthesis, assignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })), synthesisReason: candidate.metadata.synthesisReason, generationReason: candidate.metadata.generationReason, diversity: { achievedFamilies: families.size, equivalenceKey: key }, discardedEquivalentCandidates, acceptedVariant: { variantId: variant.variantId, variantIndex: variant.variantIndex, variantReason: variant.variantReason, parentStrategy: definition.strategy }, readOnly: true }));
       }
     }
   }

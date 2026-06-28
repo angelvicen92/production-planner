@@ -51,6 +51,16 @@ export interface OrcOperationalBenchmarkReport {
     contradictoryDecisionReductionTracked: boolean;
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
+  operationalGoalSummary: {
+    builderAvailable: boolean;
+    goalCountTracked: boolean;
+    strategyCoherenceTracked: boolean;
+    usefulDiversityTracked: boolean;
+    operationalValueCorrelationTracked: boolean;
+    explorationOrderStabilityTracked: boolean;
+    computationalCostTracked: boolean;
+    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  };
   opportunityCostSummary: {
     estimatorAvailable: boolean;
     correlationTracked: boolean;
@@ -150,6 +160,16 @@ export function buildOrcOperationalBenchmarkReport(params: {
       computationalCostTracked: true,
       simulationsAvoidedTracked: true,
       contradictoryDecisionReductionTracked: true,
+      planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    },
+    operationalGoalSummary: {
+      builderAvailable: true,
+      goalCountTracked: true,
+      strategyCoherenceTracked: true,
+      usefulDiversityTracked: true,
+      operationalValueCorrelationTracked: true,
+      explorationOrderStabilityTracked: true,
+      computationalCostTracked: true,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
     },
     opportunityCostSummary: {

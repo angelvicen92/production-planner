@@ -325,7 +325,7 @@ export function runORCShadowMode(
   const searchSpaceSelectionEvidence = buildSearchSpaceSelectionEvidence(searchSpaceSelectionResult, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis, createdAt);
   const branchOrderingEvidence = buildBranchOrderingEvidence(branchOrderingResult, createdAt);
   const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
-  const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces, { adaptiveSearchSpaceProfiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, opportunityPropagation: searchAndExplorationUnderstanding.opportunityPropagation, operationalState, createdAt });
+  const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces, { adaptiveSearchSpaceProfiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, opportunityPropagation: searchAndExplorationUnderstanding.opportunityPropagation, operationalGoals: searchAndExplorationUnderstanding.operationalGoals, operationalState, createdAt });
   const partialPlanResult = composePartialPlans(candidateResult.candidates, { createdAt });
   const decisionInput = buildDecisionInput({ ...candidateResult, partialPlans: partialPlanResult.partialPlans } as Parameters<typeof buildDecisionInput>[0] & { partialPlans: typeof partialPlanResult.partialPlans });
   cognitiveState = selectedSearchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);

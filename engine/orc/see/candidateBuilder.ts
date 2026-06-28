@@ -1,4 +1,5 @@
 import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OperationalState, OpportunityPropagation, SearchSpace } from "../contracts";
+import type { OperationalGoal } from "../search/operationalGoalBuilder";
 import { preselectCandidates } from "./candidatePreselectionEngine";
 import { buildStrategyCandidates } from "./strategyCandidateBuilder";
 
@@ -96,6 +97,7 @@ export interface CandidateBuilderOptions {
   readonly operationalState?: OperationalState | null;
   readonly maxPreselectedCandidates?: number | null;
   readonly createdAt?: string | null;
+  readonly operationalGoals?: readonly OperationalGoal[];
 }
 
 export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateBuilderOptions = {}): CandidateBuilderResult {
@@ -108,7 +110,7 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
   }
 
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
-  const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState });
+  const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState, operationalGoals: options.operationalGoals });
   const generatedCandidates = result.candidates.map(cloneCandidate);
   const preselectionResult = preselectCandidates(generatedCandidates, { adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null, operationalState: options.operationalState ?? null });
   const candidates = preselectionResult.candidates.map(cloneCandidate);
