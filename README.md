@@ -57,6 +57,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 
 - ID 174 — 2026-06-28 11:42 — ORC Production Scenario Benchmark Suite v1
 - ID 174 — 2026-06-28 12:05 CEST — ORC Evidence-Driven Optimization Cycle v1
+- ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
 
 ## Verificación básica
 
@@ -272,3 +273,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 172 — 2026-06-28 10:43 CEST — ORC Improvement Opportunity Analyzer v1
 - ID 173 — 2026-06-28 11:14 CEST — ORC Improvement-Driven Search Calibration v1
 - ID 174 — 2026-06-28 12:05 CEST — ORC Evidence-Driven Optimization Cycle v1
+- ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
