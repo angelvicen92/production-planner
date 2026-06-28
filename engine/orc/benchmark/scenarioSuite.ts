@@ -69,11 +69,12 @@ export function runProductionScenarioBenchmarkSuite(options: ProductionScenarioB
   const scenarios = selectScenarios(options.scenarioIds);
   const results: ProductionScenarioResult[] = [];
   const runner = options.runner ?? runOperationalDeltaBenchmark;
+  const createdAt = Object.prototype.hasOwnProperty.call(options, "createdAt") ? options.createdAt : PRODUCTION_SCENARIO_BENCHMARK_CREATED_AT;
   for (const scenario of scenarios) {
     const safeInput = cloneInput(scenario.input);
     const before = stableStringify(safeInput);
     try {
-      const report = runner(cloneInput(safeInput), { ...options, createdAt: options.createdAt ?? PRODUCTION_SCENARIO_BENCHMARK_CREATED_AT }, scenario);
+      const report = runner(cloneInput(safeInput), { ...options, createdAt }, scenario);
       results.push({
         scenario: { id: scenario.id, name: scenario.name, category: scenario.category, description: scenario.description, expectation: scenario.expectation, taskCount: safeInput.tasks.length },
         status: "passed",
@@ -94,7 +95,7 @@ export function runProductionScenarioBenchmarkSuite(options: ProductionScenarioB
   }
   return {
     suiteVersion: PRODUCTION_SCENARIO_BENCHMARK_SUITE_VERSION,
-    generatedAt: options.createdAt ?? PRODUCTION_SCENARIO_BENCHMARK_CREATED_AT,
+    generatedAt: createdAt,
     scenarioCount: results.length,
     passedCount: results.filter((result) => result.status === "passed").length,
     failedCount: results.filter((result) => result.status === "failed").length,
