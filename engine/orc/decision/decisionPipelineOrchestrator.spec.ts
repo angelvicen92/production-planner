@@ -81,9 +81,12 @@ test("executeDecisionPipeline does not mutate input", () => {
 
 test("executeDecisionPipeline records stage start and end evidence with contracts and counts", () => {
   const result = executeDecisionPipeline(input([candidate("candidate:1")]));
-  assert.equal(result.evidence.length, 12);
-  assert.deepEqual(result.evidence.map((item) => item.data.boundary), ["start", "end", "start", "end", "start", "end", "start", "end", "start", "end", "start", "end"]);
-  assert.equal(result.evidence.every((item) => item.source === "orc-decision-pipeline-orchestrator"), true);
-  assert.equal(result.evidence.every((item) => typeof item.data.contracts === "object" && typeof item.data.counts === "object"), true);
+  const stageEvidence = result.evidence.filter((item) => item.source === "orc-decision-pipeline-orchestrator");
+  const decisionEvidence = result.evidence.filter((item) => item.source === "orc-decision-engine");
+  assert.equal(stageEvidence.length, 12);
+  assert.equal(decisionEvidence.length, 1);
+  assert.deepEqual(stageEvidence.map((item) => item.data.boundary), ["start", "end", "start", "end", "start", "end", "start", "end", "start", "end", "start", "end"]);
+  assert.equal(stageEvidence.every((item) => typeof item.data.contracts === "object" && typeof item.data.counts === "object"), true);
+  assert.equal(decisionEvidence[0].data.explanation, "Decision Engine evaluates the complete Partial Plan as one operational proposal in shadow mode.");
 });
 

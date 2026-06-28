@@ -43,7 +43,7 @@ test("runORCBenchmark produces minimum deterministic benchmark metrics", () => {
   assert.equal(result.executionTimeMs, 0);
   assert.ok(result.opportunitiesDetected > 0);
   assert.equal(result.diagnosesGenerated, result.opportunitiesDetected);
-  assert.equal(result.candidateStatesGenerated, result.candidatesGenerated);
+  assert.ok(result.candidateStatesGenerated >= result.candidatesGenerated);
   assert.equal(result.simulatedStatesGenerated, result.candidateStatesGenerated);
   assert.equal(result.validationResultsGenerated, result.simulatedStatesGenerated);
   assert.equal(result.operationalValuesGenerated, result.validationResultsGenerated);

@@ -20,6 +20,7 @@ import { classifyOpportunities } from "../analysis/opportunityClassificationEngi
 import { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEngine";
 import { diagnoseOpportunities, type OpportunityDiagnosis } from "../see/opportunityDiagnosis";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
+import { composePartialPlans } from "../see/partialPlanComposer";
 import { reprioritizeOpportunities } from "../see/adaptivePriority";
 import { buildDecisionInput } from "../decision/decisionInput";
 import { executeDecisionPipeline } from "../decision/decisionPipelineOrchestrator";
@@ -308,7 +309,8 @@ export function runORCShadowMode(
   const branchOrderingEvidence = buildBranchOrderingEvidence(branchOrderingResult, createdAt);
   const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
   const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces, { adaptiveSearchSpaceProfiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, opportunityPropagation: searchAndExplorationUnderstanding.opportunityPropagation, operationalState, createdAt });
-  const decisionInput = buildDecisionInput(candidateResult);
+  const partialPlanResult = composePartialPlans(candidateResult.candidates, { createdAt });
+  const decisionInput = buildDecisionInput({ ...candidateResult, partialPlans: partialPlanResult.partialPlans } as Parameters<typeof buildDecisionInput>[0] & { partialPlans: typeof partialPlanResult.partialPlans });
   cognitiveState = selectedSearchSpaces.reduce((state, searchSpace) => updateReasoningBudget(recordExhaustedSearchSpace(state, searchSpace.id), consumeSearchSpace(state.reasoningBudget)), cognitiveState);
   const repeatedCandidateIds = candidateResult.summary.pruning.prunedItems.map((item) => item.id);
   cognitiveState = candidateResult.candidates.reduce((state) => updateReasoningBudget(state, consumeCandidate(state.reasoningBudget)), cognitiveState);
@@ -387,6 +389,7 @@ export function runORCShadowMode(
     ...branchOrderingEvidence,
     ...backtrackingExecution.evidence.map((item) => ({ ...item, createdAt })),
     ...iterativeSearchResult.evidence.map((item) => ({ ...item, createdAt })),
+    ...partialPlanResult.evidence,
     ...decisionInput.evidence,
     ...transformationResult.evidence,
     ...simulationResult.evidence,

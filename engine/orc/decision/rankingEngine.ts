@@ -96,6 +96,8 @@ function rankDecisionOperationalValues(
       data: {
         position,
         operationalValueId: operationalValue.simulatedStateId,
+        partialPlanId: typeof operationalValue.metadata.partialPlanId === "string" ? operationalValue.metadata.partialPlanId : null,
+        candidateIds: Array.isArray(operationalValue.metadata.partialPlanCandidateIds) ? operationalValue.metadata.partialPlanCandidateIds : [],
         topCandidateId,
         isTopCandidate: position === 1,
         scoreVector: Object.fromEntries(SCORE_FIELDS.map((field) => [field, operationalValue[field]])),
