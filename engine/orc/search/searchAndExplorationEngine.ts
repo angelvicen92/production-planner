@@ -1,5 +1,6 @@
 import type { AdaptiveSearchSpaceProfile, CognitiveState, Evidence, OperationalState, Opportunity, OpportunityPropagation, ReasoningBudgetProfile } from "../contracts";
 import { createReasoningBudget, type ReasoningBudget } from "../cognitive/reasoningBudget";
+import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAnalyzer";
 import { deepFreeze } from "../immutability";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
 import {
@@ -60,6 +61,7 @@ export function buildAdaptiveSearchSpaceProfileEvidence(profiles: readonly Adapt
 export interface SearchAndExplorationBudgetOptions extends ReasoningBudgetProfileConfig {
   readonly opportunities?: readonly Opportunity[];
   readonly reasoningBudget?: ReasoningBudget;
+  readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
 }
 
 export function buildSearchAndExplorationUnderstanding(
@@ -86,7 +88,7 @@ export function buildSearchAndExplorationUnderstanding(
     opportunityPropagation: propagation.opportunityPropagation,
     adaptiveSearchSpaceProfiles,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...budgetEvidence, ...propagation.evidence, ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }

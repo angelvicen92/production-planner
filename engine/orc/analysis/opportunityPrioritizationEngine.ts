@@ -1,4 +1,5 @@
 import type { ORCRecord } from "../contracts";
+import type { DynamicBottleneckAnalysis } from "./dynamicBottleneckAnalyzer";
 import type { ClassifiedOpportunity } from "./opportunityClassificationEngine";
 
 export interface PrioritizedOpportunity extends ClassifiedOpportunity {
@@ -8,6 +9,10 @@ export interface PrioritizedOpportunity extends ClassifiedOpportunity {
 
 export interface OpportunityPrioritizationResult {
   opportunities: PrioritizedOpportunity[];
+}
+
+export interface OpportunityPrioritizationOptions {
+  readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
 }
 
 const FAMILY_PRIORITY: Record<string, number> = {
@@ -34,8 +39,10 @@ function basePriority(opportunity: ClassifiedOpportunity): { priority: number; c
   return { priority: 0, criterion: "classification.family:fallback" };
 }
 
-function prioritizeOpportunity(opportunity: ClassifiedOpportunity): PrioritizedOpportunity {
-  const { priority, criterion } = basePriority(opportunity);
+function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost = 0, dynamicBottleneckIds: readonly string[] = []): PrioritizedOpportunity {
+  const base = basePriority(opportunity);
+  const priority = base.priority + dynamicBoost;
+  const criterion = dynamicBoost > 0 ? `${base.criterion}+dynamic-bottleneck` : base.criterion;
   const rationale = [
     `priority=${priority}`,
     `criterion=${criterion}`,
@@ -49,6 +56,10 @@ function prioritizeOpportunity(opportunity: ClassifiedOpportunity): PrioritizedO
   }
   if (opportunity.classification.constraints.length > 0) {
     rationale.push(`constraints=${opportunity.classification.constraints.join(",")}`);
+  }
+  if (dynamicBoost > 0) {
+    rationale.push(`dynamicBottleneckBoost=${dynamicBoost}`);
+    rationale.push(`dynamicBottleneckIds=${dynamicBottleneckIds.join(",")}`);
   }
 
   return {
@@ -68,11 +79,16 @@ function prioritizeOpportunity(opportunity: ClassifiedOpportunity): PrioritizedO
 
 export function prioritizeOpportunities(
   opportunities: ClassifiedOpportunity[],
+  options: OpportunityPrioritizationOptions = {},
 ): OpportunityPrioritizationResult {
-  const prioritized = [...(opportunities ?? [])].map((opportunity, index) => ({
-    opportunity: prioritizeOpportunity(opportunity),
-    index,
-  }));
+  const impactByOpportunity = new Map((options.dynamicBottleneckAnalysis?.opportunityImpacts ?? []).map((impact) => [impact.opportunityId, impact]));
+  const prioritized = [...(opportunities ?? [])].map((opportunity, index) => {
+    const impact = impactByOpportunity.get(opportunity.id);
+    return {
+      opportunity: prioritizeOpportunity(opportunity, impact?.priorityBoost ?? 0, impact?.bottleneckIds ?? []),
+      index,
+    };
+  });
 
   prioritized.sort((a, b) => b.opportunity.priority - a.opportunity.priority || a.index - b.index);
 

@@ -10,6 +10,7 @@ export * from "./analysis/operationalPriorityAnalyzer";
 export * from "./analysis/opportunityDetectionEngine";
 export * from "./analysis/opportunityClassificationEngine";
 export * from "./analysis/opportunityPrioritizationEngine";
+export * from "./analysis/dynamicBottleneckAnalyzer";
 export * from "./analysis/explorationValueEstimator";
 export * from "./analysis/searchSpaceSelectionEngine";
 export * from "./analysis/futureConstraintPropagationEngine";

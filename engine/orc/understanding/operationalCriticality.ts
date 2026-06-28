@@ -1,5 +1,6 @@
 import type { CognitiveState, Evidence, OperationalState, Opportunity, ORCRecord, ReasoningBudgetProfile } from "../contracts";
 import { createReasoningBudget, type ReasoningBudget } from "../cognitive/reasoningBudget";
+import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAnalyzer";
 import { deepFreeze } from "../immutability";
 
 export interface CriticalResource { readonly resourceId: number; readonly assignedTaskCount: number; readonly occupiedMinutes: number; readonly overlapCount: number; readonly lockCount: number; readonly metrics: ORCRecord; readonly explanation: string; }
@@ -79,6 +80,7 @@ export interface ReasoningBudgetProfileConfig {
   readonly lowCriticalityShare?: number;
   readonly mediumCriticalityShare?: number;
   readonly highCriticalityShare?: number;
+  readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
 }
 
 const clampShare = (value: number | undefined, fallback: number): number =>
@@ -129,8 +131,9 @@ export function buildReasoningBudgetProfiles(
     3: clampShare(config.highCriticalityShare, 1.5),
   } as const;
   const planned = buildPlanned(state);
+  const dynamicImpactByOpportunity = new Map((config.dynamicBottleneckAnalysis?.opportunityImpacts ?? []).map((impact) => [impact.opportunityId, impact]));
   const scored = [...(opportunities ?? [])]
-    .map((opportunity) => ({ opportunity, score: criticalityScoreForOpportunity(state, planned, opportunity, model) }))
+    .map((opportunity) => ({ opportunity, score: criticalityScoreForOpportunity(state, planned, opportunity, model) + ((dynamicImpactByOpportunity.get(opportunity.id)?.priorityBoost ?? 0) / 10) }))
     .sort((a, b) => a.opportunity.id.localeCompare(b.opportunity.id));
   const maxScore = Math.max(0, ...scored.map((item) => item.score));
   return deepFreeze(scored.map(({ opportunity, score }) => {
@@ -150,7 +153,7 @@ export function buildReasoningBudgetProfiles(
       maxDepth,
       maxSearchSpaceSize,
       simulationBudget,
-      reason: `criticality-level-${criticalityLevel}-from-ocm-score-${score}`,
+      reason: `criticality-level-${criticalityLevel}-from-ocm-score-${score}${dynamicImpactByOpportunity.has(opportunity.id) ? "-with-dynamic-bottleneck" : ""}`,
     };
   })) as readonly ReasoningBudgetProfile[];
 }
