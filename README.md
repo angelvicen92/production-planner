@@ -65,6 +65,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 183 — 2026-06-28 17:15 CEST — ORC Operational Trade-off Analyzer v1
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
+- ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -320,6 +321,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 180 — 2026-06-28 15:27 CEST — ORC Operational Reasoning Score v1
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
+- ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 
 ### Operational Planning Quality Metrics (ID 183)
 
@@ -328,3 +330,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as read-only evidence for resource active span, effective work, idle time, fragmentation, talent active span, talent idle time, operational compactness, main-flow continuity quality, and dynamically detected critical-resource spread. These metrics are compared in Operational Delta Benchmark reports for ORC vs V4 and can be consumed by the Improvement Opportunity Analyzer without changing ORC, V4, the official planning, persistence, API, or UI behavior.
 - ID 184 — 2026-06-28 18:28 CEST — Real Production Benchmark Scenario v1
 - ID 185 — 2026-06-28 18:57 CEST — Operational Quality Root Cause Analyzer v1
+
+### ORC Active V4 Bridge v1 (ID 186)
+
+El botón Generar V4 ejecuta ahora un puente activo ORC controlado: primero calcula V4 como baseline seguro, después evalúa ORC, convierte sólo simulaciones válidas a `EngineOutput`, aplica gates de seguridad y cae automáticamente a V4 cuando ORC no es aplicable. Los diagnostics incluyen `orcActiveBridge`, `usedEngine`, `fallbackReason`, gates y comparación OPQM sin modificar schema ni aplicar tareas al plan oficial.
