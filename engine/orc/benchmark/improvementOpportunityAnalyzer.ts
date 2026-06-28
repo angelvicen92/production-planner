@@ -56,6 +56,7 @@ export interface ImprovementOpportunityReport {
     differencesDetected: string[];
     priorityExplanations: string[];
     objectiveJustification: string[];
+    evidenceGateReadiness: string[];
   };
   planningInfluence: typeof IMPROVEMENT_REPORT_PLANNING_INFLUENCE;
 }
@@ -186,6 +187,7 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
       differencesDetected,
       priorityExplanations: opportunities.map((item) => item.priorityExplanation),
       objectiveJustification: opportunities.map((item) => item.objectiveJustification),
+      evidenceGateReadiness: opportunities.map((item) => `${item.metric}: benchmark ${item.benchmarkVersion} / plan ${item.scenario.planId} provides reproducible absolute and percentage delta metrics.`),
     },
     planningInfluence: IMPROVEMENT_REPORT_PLANNING_INFLUENCE,
   };
