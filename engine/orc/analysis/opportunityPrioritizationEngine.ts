@@ -13,6 +13,7 @@ export interface OpportunityPrioritizationResult {
 
 export interface OpportunityPrioritizationOptions {
   readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
+  readonly futureImpactByOpportunityId?: Readonly<Record<string, { readonly impactScore: number; readonly explanation?: string }>> | null;
 }
 
 const FAMILY_PRIORITY: Record<string, number> = {
@@ -39,10 +40,11 @@ function basePriority(opportunity: ClassifiedOpportunity): { priority: number; c
   return { priority: 0, criterion: "classification.family:fallback" };
 }
 
-function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost = 0, dynamicBottleneckIds: readonly string[] = []): PrioritizedOpportunity {
+function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost = 0, dynamicBottleneckIds: readonly string[] = [], futureImpactScore: number | null = null): PrioritizedOpportunity {
   const base = basePriority(opportunity);
-  const priority = base.priority + dynamicBoost;
-  const criterion = dynamicBoost > 0 ? `${base.criterion}+dynamic-bottleneck` : base.criterion;
+  const futureBoost = futureImpactScore === null ? 0 : Math.max(-5, Math.min(5, (futureImpactScore - 0.5) * 10));
+  const priority = Number((base.priority + dynamicBoost + futureBoost).toFixed(6));
+  const criterion = [base.criterion, dynamicBoost > 0 ? "dynamic-bottleneck" : null, futureImpactScore !== null ? "future-impact" : null].filter(Boolean).join("+");
   const rationale = [
     `priority=${priority}`,
     `criterion=${criterion}`,
@@ -60,6 +62,10 @@ function prioritizeOpportunity(opportunity: ClassifiedOpportunity, dynamicBoost 
   if (dynamicBoost > 0) {
     rationale.push(`dynamicBottleneckBoost=${dynamicBoost}`);
     rationale.push(`dynamicBottleneckIds=${dynamicBottleneckIds.join(",")}`);
+  }
+  if (futureImpactScore !== null) {
+    rationale.push(`futureImpactScore=${futureImpactScore}`);
+    rationale.push(`futureImpactBoost=${futureBoost}`);
   }
 
   return {
@@ -85,7 +91,7 @@ export function prioritizeOpportunities(
   const prioritized = [...(opportunities ?? [])].map((opportunity, index) => {
     const impact = impactByOpportunity.get(opportunity.id);
     return {
-      opportunity: prioritizeOpportunity(opportunity, impact?.priorityBoost ?? 0, impact?.bottleneckIds ?? []),
+      opportunity: prioritizeOpportunity(opportunity, impact?.priorityBoost ?? 0, impact?.bottleneckIds ?? [], options.futureImpactByOpportunityId?.[opportunity.id]?.impactScore ?? null),
       index,
     };
   });

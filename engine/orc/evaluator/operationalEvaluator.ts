@@ -1,9 +1,11 @@
 import type { Evidence, OperationalValue, ProductionObjectiveScore, SimulatedState, ValidationResult } from "../contracts";
+import type { FutureImpactAssessment } from "../analysis/futureImpactAnalyzer";
 import { deepFreeze } from "../immutability";
 import { calculateOverallScore, evaluateOperationalMetrics } from "./metrics";
 
 export interface OperationalEvaluatorOptions {
   createdAt?: string | null;
+  futureImpactAssessments?: readonly FutureImpactAssessment[] | null;
 }
 
 export interface OperationalEvaluatorResult {
@@ -25,9 +27,12 @@ function validationBySimulatedStateId(validationResults: ValidationResult[]): Ma
   return byId;
 }
 
-function buildOperationalValue(simulatedState: SimulatedState, validationResult: ValidationResult, evidenceId: string, evaluatedAt: string | null): OperationalValue {
+function buildOperationalValue(simulatedState: SimulatedState, validationResult: ValidationResult, evidenceId: string, evaluatedAt: string | null, futureImpact: FutureImpactAssessment | null): OperationalValue {
   const metrics = evaluateOperationalMetrics(simulatedState);
   const overallScore = calculateOverallScore(metrics);
+  const futureImpactScore = futureImpact?.impactScore ?? metrics.operationalFeasibilityScore.score;
+  const adjustedRobustness = Number(Math.max(0, Math.min(1, metrics.operationalFeasibilityScore.score + (futureImpact?.robustnessContribution ?? 0))).toFixed(6));
+  const adjustedFutureFreedom = Number((metrics.operationalFeasibilityScore.score * 0.9 + futureImpactScore * 0.1).toFixed(6));
   const productionObjectiveScore: ProductionObjectiveScore = {
     overallScore,
     continuityScore: metrics.continuityScore.score,
@@ -52,9 +57,9 @@ function buildOperationalValue(simulatedState: SimulatedState, validationResult:
     permanence: metrics.replanningImpactScore.score,
     compaction: metrics.waitingTimeScore.score,
     resourcePressure: metrics.criticalResourceScore.score,
-    robustness: metrics.operationalFeasibilityScore.score,
+    robustness: adjustedRobustness,
     stability: metrics.replanningImpactScore.score,
-    futureFreedom: metrics.operationalFeasibilityScore.score,
+    futureFreedom: adjustedFutureFreedom,
     overallScore,
     productionObjectiveScore,
     breakdown,
@@ -65,6 +70,14 @@ function buildOperationalValue(simulatedState: SimulatedState, validationResult:
       validationResultId: validationResult.id,
       validationResult: validationResult.result,
       dimensionCount: Object.keys(metrics).length,
+      futureImpactSignal: futureImpact ? {
+        impactScore: futureImpact.impactScore,
+        freedomDelta: futureImpact.freedomDelta,
+        robustnessContribution: futureImpact.robustnessContribution,
+        indicators: futureImpact.indicators,
+        explanation: futureImpact.explanation,
+        contribution: "additional-non-dominant-signal",
+      } : null,
       scoreAggregation: "configurable-weighted-arithmetic-mean",
       generatesCandidates: false,
       detectsOpportunities: false,
@@ -81,6 +94,7 @@ export function evaluateSimulatedStates(
 ): OperationalEvaluatorResult {
   const evaluatedAt = options.createdAt ?? null;
   const bySimulatedStateId = validationBySimulatedStateId(validationResults);
+  const futureImpactByStateId = new Map((options.futureImpactAssessments ?? []).map((impact) => [impact.simulatedStateId, impact]));
   const operationalValues: OperationalValue[] = [];
   const evidence: Evidence[] = [];
   let skippedInvalid = 0;
@@ -93,7 +107,8 @@ export function evaluateSimulatedStates(
     }
 
     const evidenceId = `evidence:orc-operational-evaluator:simulated-state:${simulatedState.id}`;
-    const operationalValue = buildOperationalValue(simulatedState, validationResult, evidenceId, evaluatedAt);
+    const futureImpact = futureImpactByStateId.get(simulatedState.id) ?? null;
+    const operationalValue = buildOperationalValue(simulatedState, validationResult, evidenceId, evaluatedAt, futureImpact);
     operationalValues.push(operationalValue);
     evidence.push(deepFreeze({
       id: evidenceId,
@@ -113,6 +128,7 @@ export function evaluateSimulatedStates(
         improvements: Object.values(operationalValue.breakdown).flatMap((dimension: any) => dimension.improvements ?? []),
         scoreAggregation: "configurable-weighted-arithmetic-mean",
         evaluationMode: "PRODUCTION_OBJECTIVE_SCORE_V1",
+        futureImpactSignal: futureImpact ? operationalValue.metadata.futureImpactSignal : null,
         readOnly: true,
         generatesCandidates: false,
         detectsOpportunities: false,
