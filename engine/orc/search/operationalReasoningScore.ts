@@ -3,6 +3,7 @@ import { deepFreeze } from "../immutability";
 import type { DependencyChainOpportunityInfluence } from "./dependencyChainFlowOptimizer";
 import type { OpportunityCostEstimate } from "./opportunityCostEstimator";
 import type { RecoveryPotentialEstimate } from "./recoveryPotentialEstimator";
+import type { OperationalTradeoff } from "./operationalTradeoffAnalyzer";
 
 export type OperationalReasoningComponentName =
   | "operational-criticality"
@@ -47,6 +48,7 @@ export interface OperationalReasoningScoreOptions {
   readonly dependencyChainInfluences?: readonly DependencyChainOpportunityInfluence[];
   readonly opportunityCosts?: readonly OpportunityCostEstimate[];
   readonly recoveryPotentials?: readonly RecoveryPotentialEstimate[];
+  readonly operationalTradeoffs?: readonly OperationalTradeoff[];
   readonly dynamicBottleneckImpacts?: readonly { readonly opportunityId: string; readonly priorityBoost?: number }[];
   readonly weights?: OperationalReasoningWeightConfig;
   readonly createdAt?: string | null;
@@ -74,10 +76,10 @@ function component(name: OperationalReasoningComponentName, value: number, weigh
   return deepFreeze({ name, value: round(normalized), weight: round(weight), contribution: round(normalized * weight), explanation }) as OperationalReasoningScoreComponent;
 }
 
-function compose(subjectId: string, subjectType: OperationalReasoningScore["subjectType"], components: readonly OperationalReasoningScoreComponent[]): OperationalReasoningScore {
+function compose(subjectId: string, subjectType: OperationalReasoningScore["subjectType"], components: readonly OperationalReasoningScoreComponent[], extraExplanation = ""): OperationalReasoningScore {
   const totalWeight = components.reduce((sum, item) => sum + Math.max(0, item.weight), 0);
   const score = totalWeight <= 0 ? 0 : round(components.reduce((sum, item) => sum + item.contribution, 0) / totalWeight);
-  const explanation = `${subjectType} ${subjectId} ORS ${score} from ${components.map((item) => `${item.name}=${item.value}`).join(", ")}.`;
+  const explanation = `${subjectType} ${subjectId} ORS ${score} from ${components.map((item) => `${item.name}=${item.value}`).join(", ")}.${extraExplanation}`;
   return deepFreeze({ subjectId, subjectType, score, components, explanation, deterministic: true, readOnly: true }) as OperationalReasoningScore;
 }
 
@@ -109,13 +111,15 @@ function candidateScore(candidate: Candidate, options: OperationalReasoningScore
   const base = opportunityScores.get(opportunityId)?.score;
   const cost = maps.cost.get(candidate.id)?.estimatedCost ?? 0;
   const recovery = maps.recovery.get(candidate.id)?.estimatedPotential ?? 0;
+  const tradeoff = maps.tradeoff.get(candidate.id);
+  const extraExplanation = tradeoff ? ` Existing trade-off explanation favors ${(tradeoff.favoredDimensions ?? []).join(", ")} while penalizing ${(tradeoff.penalizedDimensions ?? []).join(", ")} with intensity ${tradeoff.intensity}; this enriches explanation only.` : "";
   return compose(candidate.id, "candidate", [
     component("operational-criticality", base ?? (finite(profile?.criticalityLevel, finite(adaptive?.criticalityLevel)) / 3), options.weights ?? {}, `Inherited ORS context from source opportunity ${opportunityId || "unknown"}.`),
     component("opportunity-propagation", finite(propagation?.propagationScore, finite(adaptive?.propagationScore)), options.weights ?? {}, "Existing source-opportunity propagation context."),
     component("future-impact", (finite(candidate.metadata.expectedOperationalImpact, finite((candidate.metadata.candidateStrategy as ORCRecord | undefined)?.expectedOperationalImpact)) / 5) + (finite(candidate.metadata.confidence) / 5), options.weights ?? {}, "Existing candidate expected impact and confidence metadata."),
     component("opportunity-cost", 1 - finite(cost), options.weights ?? {}, "Inverse of existing opportunity-cost estimate."),
     component("recovery-potential", finite(recovery), options.weights ?? {}, "Existing recovery-potential estimate."),
-  ]);
+  ], extraExplanation);
 }
 
 function buildMaps(options: OperationalReasoningScoreOptions) {
@@ -126,6 +130,7 @@ function buildMaps(options: OperationalReasoningScoreOptions) {
     chain: byId(options.dependencyChainInfluences ?? [], "opportunityId"),
     cost: byId(options.opportunityCosts ?? [], "candidateId"),
     recovery: byId(options.recoveryPotentials ?? [], "candidateId"),
+    tradeoff: byId(options.operationalTradeoffs ?? [], "candidateId"),
     bottleneck: byId(options.dynamicBottleneckImpacts ?? [], "opportunityId"),
   };
 }

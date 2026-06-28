@@ -5,6 +5,7 @@ import { deepFreeze } from "../immutability";
 import { estimateOpportunityCosts, opportunityCostByCandidateId } from "../search/opportunityCostEstimator";
 import { estimateRecoveryPotential, recoveryPotentialByCandidateId } from "../search/recoveryPotentialEstimator";
 import { calculateOperationalReasoningScores, operationalReasoningScoreBySubjectId, type OperationalReasoningScore } from "../search/operationalReasoningScore";
+import { analyzeOperationalTradeoffs } from "../search/operationalTradeoffAnalyzer";
 
 export interface PreselectedCandidate {
   candidateId: string;
@@ -72,6 +73,7 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
   const recoveryPotentialResult = estimateRecoveryPotential(sourceCandidates, options.operationalState ?? null, options.createdAt ?? null);
   const recoveryPotentials = recoveryPotentialByCandidateId(recoveryPotentialResult.estimates);
   const operationalReasoningResult = calculateOperationalReasoningScores({ candidates: sourceCandidates, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles ?? [], opportunityPropagation: options.opportunityPropagation ?? [], opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, createdAt: options.createdAt ?? null });
+  const tradeoffResult = analyzeOperationalTradeoffs({ candidates: sourceCandidates, operationalReasoningScores: operationalReasoningResult.scores, opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, createdAt: options.createdAt ?? null });
   const operationalReasoningByCandidateId = operationalReasoningScoreBySubjectId(operationalReasoningResult.scores);
   const ranked = sourceCandidates
     .map((candidate, index) => ({ candidate, index, opportunityCost: opportunityCosts.get(candidate.id), recoveryPotential: recoveryPotentials.get(candidate.id), operationalReasoningScore: operationalReasoningByCandidateId.get(candidate.id), score: scoreCandidate(candidate, operationalReasoningByCandidateId.get(candidate.id)) }))
@@ -107,7 +109,8 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       opportunityCost: opportunityCosts.get(decision.candidateId) ?? null,
       recoveryPotential: recoveryPotentials.get(decision.candidateId) ?? null,
       operationalReasoningScore: operationalReasoningByCandidateId.get(decision.candidateId) ?? null,
-      explorationInfluence: "single-operational-reasoning-score-drives-preselection-order",
+      operationalTradeoffs: tradeoffResult.tradeoffsByCandidateId.get(decision.candidateId) ?? [],
+      explorationInfluence: "single-operational-reasoning-score-drives-preselection-order; operational trade-offs explain candidates and may support near-tie ordering only",
       position: index + 1,
       accepted: decision.accepted,
       rejectionReason: decision.rejectionReason ?? null,
@@ -116,6 +119,6 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       readOnly: true,
     },
   }) as Evidence);
-  evidence.push(deepFreeze({ id: "evidence:orc-see:candidate-preselection:summary", source: "orc-see", kind: "candidate-preselection-summary", subjectId: "orc-see:candidate-preselection", createdAt: options.createdAt ?? null, data: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, decisions, opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, explorationInfluence: "single Operational Reasoning Score consolidates existing SEE signals for deterministic preselection", acceptedCandidateIds: selected.map((candidate) => candidate.id), discardedCandidateIds: decisions.filter((decision) => !decision.accepted).map((decision) => decision.candidateId), deterministic: true, readOnly: true } }) as Evidence);
-  return deepFreeze({ candidates: selected, decisions, evidence: [...opportunityCostResult.evidence, ...recoveryPotentialResult.evidence, ...operationalReasoningResult.evidence, ...evidence, ...partialPlanResult.evidence], partialPlans: partialPlanResult.partialPlans, discardedPartialPlanCompositions: partialPlanResult.discardedCompositions, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, partialPlans: { partialPlanCount: partialPlanResult.summary.partialPlanCount, discardedCompositionCount: partialPlanResult.summary.discardedCompositionCount, averageCompatibilityScore: partialPlanResult.summary.averageCompatibilityScore } } }) as CandidatePreselectionResult;
+  evidence.push(deepFreeze({ id: "evidence:orc-see:candidate-preselection:summary", source: "orc-see", kind: "candidate-preselection-summary", subjectId: "orc-see:candidate-preselection", createdAt: options.createdAt ?? null, data: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, decisions, opportunityCosts: opportunityCostResult.estimates, recoveryPotentials: recoveryPotentialResult.estimates, operationalTradeoffs: tradeoffResult.tradeoffs, tradeoffCount: tradeoffResult.tradeoffs.length, explorationInfluence: "single Operational Reasoning Score consolidates existing SEE signals for deterministic preselection", acceptedCandidateIds: selected.map((candidate) => candidate.id), discardedCandidateIds: decisions.filter((decision) => !decision.accepted).map((decision) => decision.candidateId), deterministic: true, readOnly: true } }) as Evidence);
+  return deepFreeze({ candidates: selected, decisions, evidence: [...opportunityCostResult.evidence, ...recoveryPotentialResult.evidence, ...operationalReasoningResult.evidence, ...tradeoffResult.evidence, ...evidence, ...partialPlanResult.evidence], partialPlans: partialPlanResult.partialPlans, discardedPartialPlanCompositions: partialPlanResult.discardedCompositions, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, partialPlans: { partialPlanCount: partialPlanResult.summary.partialPlanCount, discardedCompositionCount: partialPlanResult.summary.discardedCompositionCount, averageCompatibilityScore: partialPlanResult.summary.averageCompatibilityScore } } }) as CandidatePreselectionResult;
 }
