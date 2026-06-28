@@ -1,4 +1,5 @@
 import type { EngineInput, TaskInput } from "../../types";
+import { analyzeOperationalQualityRootCauses, type OperationalQualityRootCauseAnalysis } from "./operationalQualityRootCauseAnalyzer";
 
 export const OPERATIONAL_PLANNING_QUALITY_METRICS_VERSION = "ORC-OPQM-V1";
 
@@ -51,6 +52,7 @@ export interface OperationalPlanningQualityMetrics {
     talentIdleTime: Array<{ id: string; value: number }>;
     talentFragmentation: Array<{ id: string; value: number }>;
   };
+  rootCauseAnalysis: OperationalQualityRootCauseAnalysis;
 }
 
 type Window = { start: number; end: number };
@@ -164,8 +166,10 @@ export function calculateOperationalPlanningQualityMetrics(input: EngineInput, a
       "Idle time is active span minus effective work; fragmentation counts merged continuous work blocks.",
       "Operational compactness is the configurable mean of enabled normalized idle-time, fragmentation, and spread components.",
       "Critical resource spread is calculated from dynamically high-utilization resources, not fixed categories.",
+      "Operational Quality Root Cause Analyzer ranks the most affected resources, talents, chains, spaces, and time gaps as read-only evidence.",
     ],
     affectedResources: uniqueSorted([...Object.keys(resource.idleTime), ...Object.keys(resource.fragmentation)]),
     worstCases: { resourceIdleTime: worst(resource.idleTime), resourceFragmentation: worst(resource.fragmentation), talentIdleTime: worst(talent.idleTime), talentFragmentation: worst(talent.fragmentation) },
+    rootCauseAnalysis: analyzeOperationalQualityRootCauses(input, assignments),
   };
 }

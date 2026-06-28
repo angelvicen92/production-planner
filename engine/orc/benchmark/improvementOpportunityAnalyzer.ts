@@ -30,6 +30,7 @@ export interface ImprovementOpportunity {
   priority: ImprovementPriority;
   priorityExplanation: string;
   objectiveJustification: string;
+  rootCauseReferences: string[];
   benchmarkVersion: OperationalDeltaReport["benchmarkVersion"];
   scenario: OperationalDeltaReport["scenario"];
   operationalImpact: number;
@@ -121,16 +122,22 @@ const asRecord = (value: unknown): Record<string, number> => value && typeof val
 const numericMagnitude = (value: unknown): number => {
   if (typeof value === "number") return Math.abs(value);
   if (Array.isArray(value)) return value.reduce<number>((sum, item) => sum + numericMagnitude(item), 0);
-  if (value && typeof value === "object") return Object.values(value as Record<string, unknown>).reduce<number>((sum, item) => sum + numericMagnitude(item), 0);
+  if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).reduce<number>((sum, [key, item]) => key === "rootCauseAnalysis" ? sum : sum + numericMagnitude(item), 0);
   return 0;
 };
 const signedMagnitude = (value: unknown): number => {
   if (typeof value === "number") return value;
   if (Array.isArray(value)) return value.reduce<number>((sum, item) => sum + signedMagnitude(item), 0);
-  if (value && typeof value === "object") return Object.values(value as Record<string, unknown>).reduce<number>((sum, item) => sum + signedMagnitude(item), 0);
+  if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).reduce<number>((sum, [key, item]) => key === "rootCauseAnalysis" ? sum : sum + signedMagnitude(item), 0);
   return 0;
 };
 const metricValue = (metrics: OperationalDeltaMetrics, metric: OfficialOperationalMetric) => metrics[metric];
+const opportunityMetricValue = (metrics: OperationalDeltaMetrics, metric: OfficialOperationalMetric): unknown => {
+  const value = metricValue(metrics, metric);
+  if (metric !== "operationalPlanningQuality" || !value || typeof value !== "object") return value;
+  const opq = value as Record<string, unknown>;
+  return { ...opq, rootCauseAnalysis: null };
+};
 
 function compareMetric(metric: OfficialOperationalMetric, absoluteDelta: unknown): ImprovementComparison {
   const magnitude = numericMagnitude(absoluteDelta);
@@ -161,18 +168,22 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
     const impact = round(Math.max(numericMagnitude(abs), numericMagnitude(pct)));
     const priority = priorityFor(comparison, impact);
     const direction = LOWER_IS_BETTER.has(metric) ? "lower values are objectively better" : "higher values are objectively better";
+    const rootCauseReferences = metric === "operationalPlanningQuality"
+      ? (report.metrics.orc.operationalPlanningQuality?.rootCauseAnalysis?.diagnoses ?? []).filter((item) => item.severity !== "none").map((item) => `${item.metric} -> ${item.entities.join(" -> ") || "no entity"} -> ${item.explanation}`)
+      : [];
     return {
       metric,
       category: CATEGORY_BY_METRIC[metric],
       comparison,
-      orcValue: metricValue(report.metrics.orc, metric),
-      v4Value: metricValue(report.metrics.v4, metric),
-      absoluteDelta: abs,
-      percentageDelta: pct,
+      orcValue: opportunityMetricValue(report.metrics.orc, metric),
+      v4Value: opportunityMetricValue(report.metrics.v4, metric),
+      absoluteDelta: metric === "operationalPlanningQuality" ? opportunityMetricValue(report.absoluteDelta, metric) : abs,
+      percentageDelta: metric === "operationalPlanningQuality" ? opportunityMetricValue(report.percentageDelta, metric) : pct,
       estimatedImpact: impact,
       priority,
       priorityExplanation: priority === "none" ? `${metric}: no improvement priority because ORC is ${comparison}.` : `${metric}: ${priority} priority because ORC is worse and objective impact is ${impact}.`,
-      objectiveJustification: `${metric}: classified using official delta metrics only; ${direction}; absolute and percentage deltas are ORC minus V4.`,
+      objectiveJustification: `${metric}: classified using official delta metrics only; ${direction}; absolute and percentage deltas are ORC minus V4.${rootCauseReferences.length > 0 ? ` Root cause evidence: ${rootCauseReferences[0]}` : ""}`,
+      rootCauseReferences,
       benchmarkVersion: report.benchmarkVersion,
       scenario: report.scenario,
       operationalImpact: impact,
@@ -201,7 +212,7 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
     evidence: {
       metricsAnalyzed: [...METRICS],
       differencesDetected,
-      priorityExplanations: opportunities.map((item) => item.priorityExplanation),
+      priorityExplanations: opportunities.map((item) => item.rootCauseReferences.length === 0 ? item.priorityExplanation : `${item.priorityExplanation} Root causes: ${item.rootCauseReferences.join(" | ")}`),
       objectiveJustification: opportunities.map((item) => item.objectiveJustification),
       evidenceGateReadiness: opportunities.map((item) => `${item.metric}: benchmark ${item.benchmarkVersion} / plan ${item.scenario.planId} provides reproducible absolute and percentage delta metrics.`),
     },
