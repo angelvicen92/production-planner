@@ -6,6 +6,7 @@ import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAna
 import { deepFreeze } from "../immutability";
 import { applyDependencyChainFlowToReasoningBudgets, optimizeDependencyChainFlow, type DependencyChainFlowOptimizationResult } from "./dependencyChainFlowOptimizer";
 import { calculateOperationalReasoningScores, operationalReasoningScoreBySubjectId, type OperationalReasoningScore } from "./operationalReasoningScore";
+import { buildOperationalGoals, type OperationalGoal } from "./operationalGoalBuilder";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
 import {
   buildCriticalityDrivenReasoningBudgetEvidence,
@@ -23,6 +24,7 @@ export interface SearchAndExplorationUnderstanding {
   readonly dependencyChainFlow: DependencyChainFlowOptimizationResult;
   readonly operationalReasoningScores: readonly OperationalReasoningScore[];
   readonly adaptiveSearchSpaceProfiles: readonly AdaptiveSearchSpaceProfile[];
+  readonly operationalGoals: readonly OperationalGoal[];
   readonly cognitiveState: CognitiveState | null;
   readonly evidence: readonly Evidence[];
   readonly informationalOnly: true;
@@ -99,6 +101,12 @@ export function buildSearchAndExplorationUnderstanding(
     dynamicBottleneckImpacts: options.dynamicBottleneckAnalysis?.opportunityImpacts ?? [],
     createdAt,
   });
+  const operationalGoals = buildOperationalGoals({
+    opportunities: options.opportunities ?? state.cognitive?.opportunities ?? [],
+    operationalReasoningScores: ors.scores,
+    dependencyChainInfluences: dependencyChainFlow.opportunityInfluences,
+    createdAt,
+  });
   const orsByOpportunityId = operationalReasoningScoreBySubjectId(ors.scores);
   const effectiveReasoningBudgetProfiles = deepFreeze([...chainAdjustedReasoningBudgetProfiles].sort((a, b) => {
     const scoreDelta = (orsByOpportunityId.get(b.opportunityId)?.score ?? 0) - (orsByOpportunityId.get(a.opportunityId)?.score ?? 0);
@@ -119,8 +127,9 @@ export function buildSearchAndExplorationUnderstanding(
     dependencyChainFlow,
     operationalReasoningScores: ors.scores,
     adaptiveSearchSpaceProfiles,
+    operationalGoals: operationalGoals.goals,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...ors.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...ors.evidence, ...operationalGoals.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }
