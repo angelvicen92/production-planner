@@ -7,6 +7,7 @@ import { deepFreeze } from "../immutability";
 import { applyDependencyChainFlowToReasoningBudgets, optimizeDependencyChainFlow, type DependencyChainFlowOptimizationResult } from "./dependencyChainFlowOptimizer";
 import { calculateOperationalReasoningScores, operationalReasoningScoreBySubjectId, type OperationalReasoningScore } from "./operationalReasoningScore";
 import { buildOperationalGoals, type OperationalGoal } from "./operationalGoalBuilder";
+import { buildProgressiveCommitmentStrategy, type ProgressiveCommitmentDecision } from "./progressiveCommitmentStrategy";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
 import {
   buildCriticalityDrivenReasoningBudgetEvidence,
@@ -25,6 +26,7 @@ export interface SearchAndExplorationUnderstanding {
   readonly operationalReasoningScores: readonly OperationalReasoningScore[];
   readonly adaptiveSearchSpaceProfiles: readonly AdaptiveSearchSpaceProfile[];
   readonly operationalGoals: readonly OperationalGoal[];
+  readonly progressiveCommitments: readonly ProgressiveCommitmentDecision[];
   readonly cognitiveState: CognitiveState | null;
   readonly evidence: readonly Evidence[];
   readonly informationalOnly: true;
@@ -107,14 +109,24 @@ export function buildSearchAndExplorationUnderstanding(
     dependencyChainInfluences: dependencyChainFlow.opportunityInfluences,
     createdAt,
   });
+  const progressiveCommitment = buildProgressiveCommitmentStrategy({
+    operationalReasoningScores: ors.scores,
+    operationalGoals: operationalGoals.goals,
+    dependencyChainInfluences: dependencyChainFlow.opportunityInfluences,
+    createdAt,
+  });
+  const commitmentByOpportunityId = progressiveCommitment.decisionsBySubjectId;
   const orsByOpportunityId = operationalReasoningScoreBySubjectId(ors.scores);
   const effectiveReasoningBudgetProfiles = deepFreeze([...chainAdjustedReasoningBudgetProfiles].sort((a, b) => {
+    const commitmentDelta = (commitmentByOpportunityId.get(b.opportunityId)?.commitmentScore ?? 0) - (commitmentByOpportunityId.get(a.opportunityId)?.commitmentScore ?? 0);
     const scoreDelta = (orsByOpportunityId.get(b.opportunityId)?.score ?? 0) - (orsByOpportunityId.get(a.opportunityId)?.score ?? 0);
-    return scoreDelta || a.opportunityId.localeCompare(b.opportunityId);
+    return commitmentDelta || scoreDelta || a.opportunityId.localeCompare(b.opportunityId);
   }).map((profile) => {
     const score = orsByOpportunityId.get(profile.opportunityId)?.score ?? 0;
     const extra = Math.ceil(score * 2);
-    return { ...profile, explorationBudget: profile.explorationBudget + extra, maxCandidates: profile.maxCandidates + extra, maxSearchSpaceSize: profile.maxSearchSpaceSize + extra, simulationBudget: profile.simulationBudget + extra, reason: `${profile.reason} ORS ${score} consolidates existing SEE reasoning signals.` };
+    const commitment = commitmentByOpportunityId.get(profile.opportunityId);
+    const stableExtra = commitment?.stableDuringSearch ? 1 : 0;
+    return { ...profile, explorationBudget: profile.explorationBudget + extra + stableExtra, maxCandidates: profile.maxCandidates + extra, maxSearchSpaceSize: profile.maxSearchSpaceSize + extra, simulationBudget: profile.simulationBudget + extra, reason: `${profile.reason} ORS ${score} consolidates existing SEE reasoning signals.${commitment ? ` Progressive commitment ${commitment.commitmentScore} organizes exploration and remains reversible.` : ""}` };
   })) as readonly ReasoningBudgetProfile[];
   const adaptiveSearchSpaceProfiles = buildAdaptiveSearchSpaceProfiles(effectiveReasoningBudgetProfiles, propagation.opportunityPropagation);
   const budgetEvidence = buildCriticalityDrivenReasoningBudgetEvidence(state, effectiveReasoningBudgetProfiles, createdAt);
@@ -128,8 +140,9 @@ export function buildSearchAndExplorationUnderstanding(
     operationalReasoningScores: ors.scores,
     adaptiveSearchSpaceProfiles,
     operationalGoals: operationalGoals.goals,
+    progressiveCommitments: progressiveCommitment.decisions,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...ors.evidence, ...operationalGoals.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...dependencyChainFlow.evidence, ...ors.evidence, ...operationalGoals.evidence, ...progressiveCommitment.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }
