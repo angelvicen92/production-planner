@@ -36,7 +36,7 @@ test("buildDecisionTrace consolidates an empty pipeline into stage evidence arra
 
   assert.equal(trace.decisionId, "decision:state:trace");
   assert.equal(trace.generatedAt, "2026-06-27T00:00:00.000Z");
-  assert.equal(trace.summary.length, 12);
+  assert.equal(trace.summary.length, 14);
   assert.deepEqual(Object.values(trace.stages).map((evidence) => evidence.length), [0, 0, 0, 0, 0, 0]);
 });
 
