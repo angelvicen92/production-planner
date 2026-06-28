@@ -110,7 +110,7 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
   const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState });
   const generatedCandidates = result.candidates.map(cloneCandidate);
-  const preselectionResult = preselectCandidates(generatedCandidates, { adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null });
+  const preselectionResult = preselectCandidates(generatedCandidates, { adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null, operationalState: options.operationalState ?? null });
   const candidates = preselectionResult.candidates.map(cloneCandidate);
   const candidatesById = new Map(generatedCandidates.map((candidate) => [candidate.id, candidate]));
   const searchSpacesById = new Map(sourceSearchSpaces.map((searchSpace) => [searchSpace.id, searchSpace]));

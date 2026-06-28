@@ -59,6 +59,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 174 — 2026-06-28 12:05 CEST — ORC Evidence-Driven Optimization Cycle v1
 - ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
 - ID 176 — 2026-06-28 12:39 CEST — ORC Benchmark CLI Operational Evidence v1
+- ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -66,6 +67,10 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
 
 Use `npm run benchmark:orc:legacy` to execute the previous shadow search benchmark entry point. The operational benchmark is read-only and does not write files or persist results.
+
+### ORC Opportunity Cost Estimator (ID 177)
+
+The ORC SEE now computes a deterministic, read-only Opportunity Cost estimate before simulation. The estimate is recorded as Evidence and can influence only exploration ordering, candidate preselection, and budget reasoning; it does not change the Decision Engine, official planning, persistence, API, UI, or V4 behavior. The operational benchmark report exposes tracking flags for correlation, avoided simulations, correctly discarded candidates, and calculation-time evidence while keeping `planningInfluence: "none"`.
 
 ## Verificación básica
 
@@ -283,3 +288,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 174 — 2026-06-28 12:05 CEST — ORC Evidence-Driven Optimization Cycle v1
 - ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
 - ID 176 — 2026-06-28 12:39 CEST — ORC Benchmark CLI Operational Evidence v1
+- ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1

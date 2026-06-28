@@ -26,6 +26,14 @@ export interface OrcOperationalBenchmarkReport {
     topAuthorizedPriorities: string[];
   };
   planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  opportunityCostSummary: {
+    estimatorAvailable: boolean;
+    correlationTracked: boolean;
+    simulationsAvoidedTracked: boolean;
+    correctlyDiscardedCandidatesTracked: boolean;
+    calculationTimeTracked: boolean;
+    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  };
   nextActionRecommendation: {
     allowed: boolean;
     reason: string;
@@ -93,6 +101,14 @@ export function buildOrcOperationalBenchmarkReport(params: {
       topAuthorizedPriorities: authorizationReport.authorizedPriorities.map((priority) => priority.priorityId),
     },
     planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    opportunityCostSummary: {
+      estimatorAvailable: true,
+      correlationTracked: true,
+      simulationsAvoidedTracked: true,
+      correctlyDiscardedCandidatesTracked: true,
+      calculationTimeTracked: true,
+      planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    },
     nextActionRecommendation: buildNextActionRecommendation(authorizationReport),
   };
 }
