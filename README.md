@@ -55,6 +55,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 156 — 2026-06-27 20:41 — ORC Operational Criticality Model v1
 - ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
 
+- ID 174 — 2026-06-28 11:42 — ORC Production Scenario Benchmark Suite v1
+
 ## Verificación básica
 
 ```bash
