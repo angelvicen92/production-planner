@@ -263,3 +263,5 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 168 — 2026-06-28 09:01 — ORC Dynamic Bottleneck Reasoning v1
 - ID 169 — 2026-06-28 09:35 CEST — ORC Future Impact Analyzer v1
 - ID 170 — 2026-06-28 10:02 CEST — ORC Decision Feedback Loop v1
+
+- ID 171 — 2026-06-28 10:14 CEST — ORC Operational Delta Benchmark v1

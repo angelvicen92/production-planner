@@ -6,6 +6,7 @@ import { generatePlanV4 } from "../../v4";
 import { roundBenchmarkMetric } from "./orcBenchmarkHarness";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { stableStringify } from "../structuralEquality";
+import { runOperationalDeltaBenchmark, type OperationalDeltaReport } from "../benchmark";
 
 export interface ShadowBenchmarkMetrics {
   exploredSolutions: number;
@@ -23,6 +24,8 @@ export interface ShadowBenchmarkResult {
   orc: ShadowBenchmarkMetrics;
 
   differences: string[];
+
+  operationalDeltaReport?: OperationalDeltaReport;
 }
 
 export interface ShadowSearchBenchmarkOptions {
@@ -129,6 +132,7 @@ export function runShadowSearchBenchmark(options: ShadowSearchBenchmarkOptions =
     v4: { ...v4Metrics, matchesV4Output },
     orc: { ...orcMetrics, matchesV4Output },
     differences: nextDifferences,
+    ...(inputs[0] ? { operationalDeltaReport: runOperationalDeltaBenchmark(inputs[0], { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 }) } : {}),
   };
 }
 
