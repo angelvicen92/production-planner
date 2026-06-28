@@ -29,7 +29,7 @@ test("estimateOpportunityCosts returns null cost for candidate without constrain
 test("estimateOpportunityCosts returns higher cost for scarce windows and constrained resources", () => {
   const result = estimateOpportunityCosts([candidate("high", [{ taskId: 1, startPlanned: "09:00", endPlanned: "17:00", spaceId: 1, resourceIds: [1, 2, 3] }])], state, "t");
   assert.ok(result.estimates[0].estimatedCost > 0.7);
-  assert.equal(result.estimates[0].factors.length, 4);
+  assert.equal(result.estimates[0].factors.length, 5);
 });
 
 test("estimateOpportunityCosts preserves ties deterministically", () => {

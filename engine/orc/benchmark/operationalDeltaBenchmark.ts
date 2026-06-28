@@ -2,6 +2,7 @@ import type { EngineInput, EngineOutput } from "../../types";
 import { generatePlanV4 } from "../../v4";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
+import { optimizeDependencyChainFlow } from "../search/dependencyChainFlowOptimizer";
 import { stableStringify } from "../structuralEquality";
 import { analyzeImprovementOpportunities, type ImprovementOpportunityReport } from "./improvementOpportunityAnalyzer";
 
@@ -19,7 +20,11 @@ export type OfficialOperationalMetric =
   | "candidatesSimulated"
   | "candidatesConsolidated"
   | "totalTime"
-  | "timeByIteration";
+  | "timeByIteration"
+  | "dependencyChainsProtected"
+  | "dependencyBlockagesAvoided"
+  | "dependencyAverageSlackRecovered"
+  | "dependencyCriticalityOperationalValueCorrelation";
 
 export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
   "makespan",
@@ -34,6 +39,10 @@ export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
   "candidatesConsolidated",
   "totalTime",
   "timeByIteration",
+  "dependencyChainsProtected",
+  "dependencyBlockagesAvoided",
+  "dependencyAverageSlackRecovered",
+  "dependencyCriticalityOperationalValueCorrelation",
 ];
 
 export interface OperationalDeltaMetrics {
@@ -49,6 +58,10 @@ export interface OperationalDeltaMetrics {
   candidatesConsolidated: number;
   totalTime: number;
   timeByIteration: number[];
+  dependencyChainsProtected: number;
+  dependencyBlockagesAvoided: number;
+  dependencyAverageSlackRecovered: number;
+  dependencyCriticalityOperationalValueCorrelation: number;
 }
 
 export interface OperationalDeltaReport {
@@ -82,6 +95,14 @@ const duration = (assignment: Assignment): number => {
   return start === null || end === null ? 0 : Math.max(0, end - start);
 };
 const zeroPercentage = (template: OperationalDeltaMetrics): OperationalDeltaMetrics => ({ ...template, permanenceByTalent: Object.fromEntries(Object.keys(template.permanenceByTalent).map((key) => [key, 0])), timeByIteration: template.timeByIteration.map(() => 0) });
+
+function dependencyChainBenchmarkMetrics(input: EngineInput, operationalValue = 0) {
+  const state = { id: `benchmark:${input.planId}`, planId: input.planId, workDay: input.workDay ?? null, planning: (input.tasks ?? []).filter((task) => task.startPlanned && task.endPlanned).map((task) => ({ taskId: task.id, startPlanned: task.startPlanned!, endPlanned: task.endPlanned!, assignedResourceIds: [], spaceId: task.spaceId ?? null })), tasks: input.tasks ?? [], resources: input.planResourceItems ?? [], spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} }, availability: { workDay: input.workDay ?? null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: input.protectedBreaks ?? [], contestantAvailabilityById: {} }, dependencies: (input.tasks ?? []).filter((task) => (task.dependsOnTaskIds?.length ?? 0) > 0).map((task) => ({ taskId: task.id, dependsOnTaskIds: task.dependsOnTaskIds ?? [], dependsOnTemplateIds: task.dependsOnTemplateIds ?? [] })), locks: [], constraints: {}, operationalMetrics: {}, cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} }, source: "EngineInput" as const, schemaVersion: "ORC-SPEC-01" as const };
+  const chains = optimizeDependencyChainFlow(state).chains;
+  const averageSlack = chains.length === 0 ? 0 : round(chains.reduce((sum, chain) => sum + chain.metrics.accumulatedSlackMinutes, 0) / chains.length);
+  const averageCriticality = chains.length === 0 ? 0 : round(chains.reduce((sum, chain) => sum + chain.metrics.structuralCriticality, 0) / chains.length);
+  return { dependencyChainsProtected: chains.length, dependencyBlockagesAvoided: chains.filter((chain) => chain.metrics.blockingRisk >= 0.5).length, dependencyAverageSlackRecovered: averageSlack, dependencyCriticalityOperationalValueCorrelation: round(averageCriticality * operationalValue) };
+}
 
 function operationalAssignmentsFromShadow(shadow: ORCShadowModeResult): Assignment[] {
   const accepted = shadow.commitDecisions.find((decision) => decision.decision === "COMMIT");
@@ -118,6 +139,10 @@ function metricsFromAssignments(input: EngineInput, assignments: Assignment[], c
     mainFlowContinuity: round(gap),
     resourceUtilization: available === 0 ? 0 : round(totalAssigned / available),
     ...counts,
+    dependencyChainsProtected: 0,
+    dependencyBlockagesAvoided: 0,
+    dependencyAverageSlackRecovered: 0,
+    dependencyCriticalityOperationalValueCorrelation: 0,
   };
 }
 
@@ -161,6 +186,10 @@ function delta(a: OperationalDeltaMetrics, b: OperationalDeltaMetrics): Operatio
     candidatesConsolidated: round(a.candidatesConsolidated - b.candidatesConsolidated),
     totalTime: round(a.totalTime - b.totalTime),
     timeByIteration: a.timeByIteration.map((value, index) => round(value - (b.timeByIteration[index] ?? 0))),
+    dependencyChainsProtected: round(a.dependencyChainsProtected - b.dependencyChainsProtected),
+    dependencyBlockagesAvoided: round(a.dependencyBlockagesAvoided - b.dependencyBlockagesAvoided),
+    dependencyAverageSlackRecovered: round(a.dependencyAverageSlackRecovered - b.dependencyAverageSlackRecovered),
+    dependencyCriticalityOperationalValueCorrelation: round(a.dependencyCriticalityOperationalValueCorrelation - b.dependencyCriticalityOperationalValueCorrelation),
   };
 }
 function pct(abs: OperationalDeltaMetrics, base: OperationalDeltaMetrics): OperationalDeltaMetrics {
@@ -168,7 +197,7 @@ function pct(abs: OperationalDeltaMetrics, base: OperationalDeltaMetrics): Opera
   const pctOne = (value: number, denominator: number) => denominator === 0 ? 0 : round((value / denominator) * 100);
   out.makespan = abs.makespan === null || base.makespan === null ? null : pctOne(abs.makespan, base.makespan);
   for (const key of Object.keys(abs.permanenceByTalent)) out.permanenceByTalent[key] = pctOne(abs.permanenceByTalent[key] ?? 0, base.permanenceByTalent[key] ?? 0);
-  for (const key of ["totalPermanence", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime"] as const) out[key] = pctOne(abs[key], base[key]);
+  for (const key of ["totalPermanence", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime", "dependencyChainsProtected", "dependencyBlockagesAvoided", "dependencyAverageSlackRecovered", "dependencyCriticalityOperationalValueCorrelation"] as const) out[key] = pctOne(abs[key], base[key]);
   out.timeByIteration = abs.timeByIteration.map((value, index) => pctOne(value, base.timeByIteration[index] ?? 0));
   return out;
 }
@@ -179,8 +208,8 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const v4 = generatePlanV4(cloneInput(safeInput), { v4Profile: "balanced", maxRuntimeMs: 1000, maxStrategies: 1 } as any);
   const shadow = runORCShadowMode(cloneInput(safeInput), { enabled: true, createdAt: options.createdAt ?? null });
   if (shadow === null) throw new Error("Operational Delta Benchmark requires ORC Shadow Mode.");
-  const v4MetricSet = v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0);
-  const orcMetricSet = orcMetrics(safeInput, shadow, options.orcRuntimeMs ?? 0);
+  const v4MetricSet = { ...v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, 0) };
+  const orcMetricSet = { ...orcMetrics(safeInput, shadow, options.orcRuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, shadow.operationalValues[0]?.overallScore ?? 0) };
   const absoluteDelta = delta(orcMetricSet, v4MetricSet);
   const baseReport = {
     benchmarkVersion: OPERATIONAL_DELTA_BENCHMARK_VERSION,

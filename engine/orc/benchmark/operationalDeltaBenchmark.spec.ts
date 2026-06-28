@@ -27,7 +27,7 @@ const simpleInput = (): EngineInput => ({
   groupingZoneIds: [],
 });
 
-const officialMetricKeys = ["makespan", "totalPermanence", "permanenceByTalent", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime", "timeByIteration"].sort();
+const officialMetricKeys = ["makespan", "totalPermanence", "permanenceByTalent", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime", "timeByIteration", "dependencyChainsProtected", "dependencyBlockagesAvoided", "dependencyAverageSlackRecovered", "dependencyCriticalityOperationalValueCorrelation"].sort();
 
 test("Operational Delta Benchmark covers a simple scenario with official metrics only", () => {
   const report = runOperationalDeltaBenchmark(simpleInput(), { createdAt: "2026-06-28T08:14:34.000Z", v4RuntimeMs: 10, orcRuntimeMs: 20 });

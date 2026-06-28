@@ -289,3 +289,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
 - ID 176 — 2026-06-28 12:39 CEST — ORC Benchmark CLI Operational Evidence v1
 - ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1
+- ID 178 — 2026-06-28 14:52 CEST — ORC Dependency Chain Flow Optimizer v1
