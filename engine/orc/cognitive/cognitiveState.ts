@@ -1,6 +1,7 @@
 import type { OperationalCriticality } from "../understanding/operationalCriticality";
 import type { OpportunityPropagation } from "../contracts";
 import type { ReasoningBudget } from "./reasoningBudget";
+import type { DecisionFeedbackLoop } from "../analysis/decisionFeedbackLoop";
 import { createReasoningBudget, remainingBudget } from "./reasoningBudget";
 
 export interface CognitiveState {
@@ -10,6 +11,7 @@ export interface CognitiveState {
   simulatedCandidateIds: string[];
   committedCandidateIds: string[];
   reasoningBudget: ReasoningBudget;
+  decisionFeedbackLoop?: DecisionFeedbackLoop;
   temporaryKnowledge: Record<string, unknown>;
   operationalCriticality?: OperationalCriticality;
   opportunityPropagation?: readonly OpportunityPropagation[];
@@ -34,6 +36,7 @@ const freezeCognitiveState = (state: CognitiveState): CognitiveState => {
   Object.freeze(state.simulatedCandidateIds);
   Object.freeze(state.committedCandidateIds);
   Object.freeze(state.reasoningBudget);
+  if (state.decisionFeedbackLoop != null) Object.freeze(state.decisionFeedbackLoop);
   Object.freeze(state.temporaryKnowledge);
   return Object.freeze(state);
 };
@@ -98,6 +101,15 @@ export function recordObservedCommit(state: CognitiveState, candidateId: string)
     committedCandidateIds: uniqueAppend(state.committedCandidateIds, candidateId),
     temporaryKnowledge: cloneKnowledge(state.temporaryKnowledge),
     reasoningBudget: createReasoningBudget(state.reasoningBudget),
+  });
+}
+
+export function updateDecisionFeedbackLoop(state: CognitiveState, decisionFeedbackLoop: DecisionFeedbackLoop): CognitiveState {
+  return freezeCognitiveState({
+    ...state,
+    decisionFeedbackLoop,
+    reasoningBudget: createReasoningBudget(state.reasoningBudget),
+    temporaryKnowledge: cloneKnowledge(state.temporaryKnowledge),
   });
 }
 

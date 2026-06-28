@@ -25,7 +25,7 @@ import { composePartialPlans } from "../see/partialPlanComposer";
 import { reprioritizeOpportunities } from "../see/adaptivePriority";
 import { buildDecisionInput } from "../decision/decisionInput";
 import { executeDecisionPipeline } from "../decision/decisionPipelineOrchestrator";
-import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordSimulatedCandidate, updateReasoningBudget } from "../cognitive/cognitiveState";
+import { createInitialCognitiveState, recordExploredOpportunity, recordExhaustedSearchSpace, recordSimulatedCandidate, updateDecisionFeedbackLoop, updateReasoningBudget } from "../cognitive/cognitiveState";
 import { createCognitiveFeedbackStats } from "../cognitive/cognitiveFeedback";
 import { getSessionKnowledge, learnFromCommit, learnFromEvaluation, learnFromRanking } from "../cognitive/sessionLearning";
 import { consumeCandidate, consumeOpportunity, consumeSearchSpace, consumeSimulation, remainingBudget } from "../cognitive/reasoningBudget";
@@ -35,6 +35,7 @@ import { consultORCAdvisory } from "../integration/advisoryIntegration";
 import { buildExecutionEvidenceRecord } from "../evidence/executionEvidenceRecorder";
 import { understandOperationalCriticality, type OperationalCriticality } from "../understanding/operationalCriticality";
 import { buildSearchAndExplorationUnderstanding } from "../search/searchAndExplorationEngine";
+import { buildDecisionFeedbackEvidence, buildDecisionFeedbackFromDecisions, reuseDecisionFeedback } from "../analysis/decisionFeedbackLoop";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -152,6 +153,14 @@ export interface ORCShadowModeResult {
       discardedCandidates: number;
       limit: number;
     };
+    decisionFeedback: {
+      feedbackCount: number;
+      influencedDecisions: number;
+      promoted: number;
+      demoted: number;
+      adjustedCandidateBudget: number;
+      adjustedSimulationBudget: number;
+    };
   };
 }
 
@@ -184,6 +193,7 @@ function buildShadowSummaryEvidence(
   strategyCandidateSummary: ORCShadowModeResult["summary"]["strategyCandidates"],
   advisoryIntegrationSummary: ORCShadowModeResult["summary"]["advisoryIntegration"],
   candidatePreselectionSummary: ORCShadowModeResult["summary"]["candidatePreselection"],
+  decisionFeedbackSummary: ORCShadowModeResult["summary"]["decisionFeedback"],
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -219,6 +229,7 @@ function buildShadowSummaryEvidence(
       adaptiveSearchSpace: adaptiveSearchSpaceSummary,
       strategyCandidates: strategyCandidateSummary,
       candidatePreselection: candidatePreselectionSummary,
+      decisionFeedback: decisionFeedbackSummary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
   };
@@ -254,6 +265,8 @@ function diffCognitiveStates(initial: CognitiveState, final: CognitiveState): Re
     confidenceAfter: final.confidence,
     temporaryKnowledgeInitial: initial.temporaryKnowledge,
     temporaryKnowledgeFinal: final.temporaryKnowledge,
+    decisionFeedbackInitial: initial.decisionFeedbackLoop ?? null,
+    decisionFeedbackFinal: final.decisionFeedbackLoop ?? null,
   };
 }
 
@@ -289,7 +302,9 @@ export function runORCShadowMode(
   const diagnosisResult = diagnoseOpportunities(opportunities, operationalState, cognitiveState);
   const searchAndExplorationUnderstanding = buildSearchAndExplorationUnderstanding(operationalState, cognitiveState, createdAt, { opportunities, reasoningBudget: cognitiveState.reasoningBudget, dynamicBottleneckAnalysis });
   cognitiveState = searchAndExplorationUnderstanding.cognitiveState ?? cognitiveState;
-  const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses, profiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, createdAt });
+  const feedbackReuseBeforeSearch = reuseDecisionFeedback(cognitiveState.decisionFeedbackLoop ?? buildDecisionFeedbackFromDecisions({ opportunities: [], operationalValues: [], commitDecisions: [] }), opportunities, cognitiveState.reasoningBudget, createdAt);
+  cognitiveState = updateReasoningBudget(cognitiveState, feedbackReuseBeforeSearch.reasoningBudget);
+  const searchSpaceResult = buildAdaptiveSearchSpaces([...feedbackReuseBeforeSearch.opportunities], cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses, profiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, createdAt });
   const explorationValueAnalysis = estimateExplorationValue(searchSpaceResult.searchSpaces);
   const searchSpaceSelectionResult = selectSearchSpaces(searchSpaceResult.searchSpaces, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis);
   const futureConstraintPropagation = propagateFutureConstraints(searchSpaceSelectionResult);
@@ -327,6 +342,18 @@ export function runORCShadowMode(
   cognitiveState = learnFromRanking(cognitiveState, { rankedOperationalValues: rankingResult.rankedOperationalValues, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates });
   const commitResult = decisionPipelineResult.commit;
   cognitiveState = learnFromCommit(cognitiveState, { commitDecisions: commitResult.commitDecisions, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, searchSpaces: selectedSearchSpaces });
+  const decisionFeedbackLoop = buildDecisionFeedbackFromDecisions({ opportunities, operationalValues: rankingResult.rankedOperationalValues, commitDecisions: commitResult.commitDecisions });
+  cognitiveState = updateDecisionFeedbackLoop(cognitiveState, decisionFeedbackLoop);
+  const decisionFeedbackReuseAfterDecision = reuseDecisionFeedback(decisionFeedbackLoop, opportunities, cognitiveState.reasoningBudget, createdAt);
+  const decisionFeedbackEvidence = buildDecisionFeedbackEvidence(decisionFeedbackLoop, decisionFeedbackReuseAfterDecision.influences, createdAt);
+  const decisionFeedbackSummary = {
+    feedbackCount: decisionFeedbackLoop.entries.length,
+    influencedDecisions: decisionFeedbackReuseAfterDecision.influences.filter((influence) => influence.influence !== "unchanged").length,
+    promoted: decisionFeedbackReuseAfterDecision.influences.filter((influence) => influence.influence === "promote").length,
+    demoted: decisionFeedbackReuseAfterDecision.influences.filter((influence) => influence.influence === "demote").length,
+    adjustedCandidateBudget: decisionFeedbackReuseAfterDecision.reasoningBudget.maxCandidates,
+    adjustedSimulationBudget: decisionFeedbackReuseAfterDecision.reasoningBudget.maxSimulations,
+  };
   const sessionKnowledge = getSessionKnowledge(cognitiveState);
   const sessionLearningSummary = {
     learnedPatterns: sessionKnowledge.learnedPatterns,
@@ -401,9 +428,10 @@ export function runORCShadowMode(
     ...rankingResult.evidence,
     ...commitResult.evidence,
     ...decisionPipelineResult.evidence,
+    ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary),
   ];
 
   const preliminaryResult = {
@@ -447,6 +475,7 @@ export function runORCShadowMode(
       adaptiveSearchSpace: adaptiveSearchSpaceSummary,
       strategyCandidates: strategyCandidateSummary,
       candidatePreselection: candidatePreselectionSummary,
+      decisionFeedback: decisionFeedbackSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,

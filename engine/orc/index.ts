@@ -15,6 +15,7 @@ export * from "./analysis/explorationValueEstimator";
 export * from "./analysis/searchSpaceSelectionEngine";
 export * from "./analysis/futureConstraintPropagationEngine";
 export * from "./analysis/futureImpactAnalyzer";
+export * from "./analysis/decisionFeedbackLoop";
 export * from "./analysis/branchOrderingEngine";
 export * from "./understanding/operationalCriticality";
 export * from "./understanding/opportunityPropagation";

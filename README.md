@@ -54,8 +54,6 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1
 - ID 156 — 2026-06-27 20:41 — ORC Operational Criticality Model v1
 - ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
-- ID 167 — 2026-06-28 08:34 — ORC Iterative Global Optimizer v1
-- ID 169 — 2026-06-28 09:35 CEST — ORC Future Impact Analyzer v1
 
 ## Verificación básica
 
@@ -251,8 +249,6 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 155 — 2026-06-27 20:23 — ORC Dominance Pruning v1
 - ID 156 — 2026-06-27 20:41 — ORC Operational Criticality Model v1
 - ID 157 — 2026-06-27 20:54 — ORC Criticality-Driven Reasoning Budget v1
-- ID 167 — 2026-06-28 08:34 — ORC Iterative Global Optimizer v1
-- ID 169 — 2026-06-28 09:35 CEST — ORC Future Impact Analyzer v1
 - ID 158 — 2026-06-27 22:20 — ORC Opportunity Propagation Analyzer v1
 - ID 159 — 2026-06-27 22:34 — ORC Adaptive Search Space Builder v1
 - ID 160 — 2026-06-27 22:56 — ORC Strategy-Based Candidate Builder v1
@@ -263,4 +259,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 - ID 165 — 2026-06-28 07:55 — ORC Partial Plan Decision Engine v1
 - ID 166 — 2026-06-28 08:18 — ORC Global Solution Assembler v1
+- ID 167 — 2026-06-28 08:34 — ORC Iterative Global Optimizer v1
 - ID 168 — 2026-06-28 09:01 — ORC Dynamic Bottleneck Reasoning v1
+- ID 169 — 2026-06-28 09:35 CEST — ORC Future Impact Analyzer v1
+- ID 170 — 2026-06-28 10:02 CEST — ORC Decision Feedback Loop v1
