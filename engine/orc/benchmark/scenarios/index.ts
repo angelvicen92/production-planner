@@ -1,4 +1,5 @@
 import type { EngineInput, TaskInput } from "../../../types";
+import { realVoiceAuditionDayScenario } from "./realVoiceAuditionDay";
 
 export type ProductionScenarioId =
   | "initial-planning"
@@ -10,7 +11,8 @@ export type ProductionScenarioId =
   | "high-fragmentation"
   | "multiple-locks"
   | "simple-day"
-  | "complex-day";
+  | "complex-day"
+  | "real-voice-audition-day";
 
 export interface ProductionBenchmarkScenario {
   id: ProductionScenarioId;
@@ -64,6 +66,8 @@ const baseInput = (tasks: TaskInput[], overrides: Partial<EngineInput> = {}): En
   spaceNameById: { [MAIN_SPACE_ID]: "Main Stage", [AUX_SPACE_ID]: "Interview", [COACH_SPACE_ID]: "Coach Room" },
   ...overrides,
 });
+
+export { realVoiceAuditionDayScenario };
 
 export const productionBenchmarkScenarios: ProductionBenchmarkScenario[] = [
   {
@@ -146,4 +150,5 @@ export const productionBenchmarkScenarios: ProductionBenchmarkScenario[] = [
     expectation: "Consolidates representative production pressure into one deterministic report.",
     input: baseInput([task(91, { spaceId: AUX_SPACE_ID, durationOverrideMin: 20 }), task(92, { durationOverrideMin: 20, dependsOnTaskIds: [91], resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [501, 502] }] } }), task(93, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(94, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(95, { durationOverrideMin: 20, startPlanned: "11:00", endPlanned: "11:20" })], { locks: [{ id: 3, planId: PLAN_ID, taskId: 95, lockType: "time", lockedStart: "11:00", lockedEnd: "11:20" }] }),
   },
+  realVoiceAuditionDayScenario,
 ];
