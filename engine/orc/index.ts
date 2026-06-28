@@ -38,6 +38,7 @@ export * from "./evaluation/evaluationEngine";
 export * from "./decision/decisionInput";
 export * from "./decision/decisionEngine";
 export * from "./decision/globalSolutionAssembler";
+export * from "./optimization/iterativeGlobalOptimizer";
 export * from "./decision/rankingEngine";
 export * from "./decision/decisionPipelineOrchestrator";
 export * from "./decision/decisionTraceBuilder";

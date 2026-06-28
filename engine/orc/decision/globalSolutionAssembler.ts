@@ -1,4 +1,5 @@
-import type { Candidate, Evidence, GlobalSolution, ORCRecord, PartialPlan } from "../contracts";
+import type { Candidate, Evidence, GlobalSolution, OptimizedGlobalSolution, ORCRecord, PartialPlan } from "../contracts";
+import { optimizeGlobalSolution } from "../optimization/iterativeGlobalOptimizer";
 import { deepFreeze } from "../immutability";
 import type { PartialPlanDecisionUnit } from "./decisionEngine";
 
@@ -8,6 +9,7 @@ export interface GlobalSolutionAssemblerOptions {
 
 export interface GlobalSolutionAssemblerResult {
   readonly globalSolutions: readonly GlobalSolution[];
+  readonly optimizedGlobalSolutions: readonly OptimizedGlobalSolution[];
   readonly evidence: readonly Evidence[];
   readonly summary: {
     readonly partialPlanCount: number;
@@ -163,5 +165,8 @@ export function assembleGlobalSolutions(
   }
 
   accepted.sort((a, b) => b.aggregatedEvaluationScore - a.aggregatedEvaluationScore || b.compatibilityScore - a.compatibilityScore || a.solutionId.localeCompare(b.solutionId));
-  return deepFreeze({ globalSolutions: accepted, evidence, summary: { partialPlanCount: plans.length, globalSolutionCount: accepted.length, discardedCompositionCount, winningSolutionId: accepted[0]?.solutionId ?? null } }) as GlobalSolutionAssemblerResult;
+  const optimized = accepted.map((solution) => optimizeGlobalSolution(solution, decisionUnits, { createdAt }));
+  evidence.push(...optimized.flatMap((item) => [...item.evidence]));
+  const optimizedGlobalSolutions = optimized.map(({ solution, iterations }) => deepFreeze({ solution, iterations }) as OptimizedGlobalSolution);
+  return deepFreeze({ globalSolutions: accepted, optimizedGlobalSolutions, evidence, summary: { partialPlanCount: plans.length, globalSolutionCount: accepted.length, discardedCompositionCount, winningSolutionId: accepted[0]?.solutionId ?? null } }) as GlobalSolutionAssemblerResult;
 }
