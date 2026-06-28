@@ -21,6 +21,21 @@ export type OfficialOperationalMetric =
   | "totalTime"
   | "timeByIteration";
 
+export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
+  "makespan",
+  "totalPermanence",
+  "permanenceByTalent",
+  "mainFlowContinuity",
+  "resourceUtilization",
+  "conflicts",
+  "simulations",
+  "candidatesGenerated",
+  "candidatesSimulated",
+  "candidatesConsolidated",
+  "totalTime",
+  "timeByIteration",
+];
+
 export interface OperationalDeltaMetrics {
   makespan: number | null;
   totalPermanence: number;
