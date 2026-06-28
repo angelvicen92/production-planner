@@ -5,6 +5,7 @@ import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { optimizeDependencyChainFlow } from "../search/dependencyChainFlowOptimizer";
 import { stableStringify } from "../structuralEquality";
 import { analyzeImprovementOpportunities, type ImprovementOpportunityReport } from "./improvementOpportunityAnalyzer";
+import { calculateOperationalPlanningQualityMetrics, type OperationalPlanningQualityMetrics } from "./operationalPlanningQualityMetrics";
 
 export const OPERATIONAL_DELTA_BENCHMARK_VERSION = "ORC-OPERATIONAL-DELTA-BENCHMARK-V1";
 
@@ -24,7 +25,8 @@ export type OfficialOperationalMetric =
   | "dependencyChainsProtected"
   | "dependencyBlockagesAvoided"
   | "dependencyAverageSlackRecovered"
-  | "dependencyCriticalityOperationalValueCorrelation";
+  | "dependencyCriticalityOperationalValueCorrelation"
+  | "operationalPlanningQuality";
 
 export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
   "makespan",
@@ -43,6 +45,7 @@ export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
   "dependencyBlockagesAvoided",
   "dependencyAverageSlackRecovered",
   "dependencyCriticalityOperationalValueCorrelation",
+  "operationalPlanningQuality",
 ];
 
 export interface OperationalDeltaMetrics {
@@ -62,6 +65,7 @@ export interface OperationalDeltaMetrics {
   dependencyBlockagesAvoided: number;
   dependencyAverageSlackRecovered: number;
   dependencyCriticalityOperationalValueCorrelation: number;
+  operationalPlanningQuality: OperationalPlanningQualityMetrics;
 }
 
 export interface OperationalDeltaReport {
@@ -94,7 +98,7 @@ const duration = (assignment: Assignment): number => {
   const end = minutes(assignment.endPlanned);
   return start === null || end === null ? 0 : Math.max(0, end - start);
 };
-const zeroPercentage = (template: OperationalDeltaMetrics): OperationalDeltaMetrics => ({ ...template, permanenceByTalent: Object.fromEntries(Object.keys(template.permanenceByTalent).map((key) => [key, 0])), timeByIteration: template.timeByIteration.map(() => 0) });
+const zeroPercentage = (template: OperationalDeltaMetrics): OperationalDeltaMetrics => ({ ...template, permanenceByTalent: Object.fromEntries(Object.keys(template.permanenceByTalent).map((key) => [key, 0])), timeByIteration: template.timeByIteration.map(() => 0), operationalPlanningQuality: percentageOperationalPlanningQuality(template.operationalPlanningQuality, template.operationalPlanningQuality) });
 
 function dependencyChainBenchmarkMetrics(input: EngineInput, operationalValue = 0) {
   const state = { id: `benchmark:${input.planId}`, planId: input.planId, workDay: input.workDay ?? null, planning: (input.tasks ?? []).filter((task) => task.startPlanned && task.endPlanned).map((task) => ({ taskId: task.id, startPlanned: task.startPlanned!, endPlanned: task.endPlanned!, assignedResourceIds: [], spaceId: task.spaceId ?? null })), tasks: input.tasks ?? [], resources: input.planResourceItems ?? [], spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} }, availability: { workDay: input.workDay ?? null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: input.protectedBreaks ?? [], contestantAvailabilityById: {} }, dependencies: (input.tasks ?? []).filter((task) => (task.dependsOnTaskIds?.length ?? 0) > 0).map((task) => ({ taskId: task.id, dependsOnTaskIds: task.dependsOnTaskIds ?? [], dependsOnTemplateIds: task.dependsOnTemplateIds ?? [] })), locks: [], constraints: {}, operationalMetrics: {}, cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} }, source: "EngineInput" as const, schemaVersion: "ORC-SPEC-01" as const };
@@ -143,6 +147,7 @@ function metricsFromAssignments(input: EngineInput, assignments: Assignment[], c
     dependencyBlockagesAvoided: 0,
     dependencyAverageSlackRecovered: 0,
     dependencyCriticalityOperationalValueCorrelation: 0,
+    operationalPlanningQuality: calculateOperationalPlanningQualityMetrics(input, assignments),
   };
 }
 
@@ -171,6 +176,47 @@ function orcMetrics(input: EngineInput, shadow: ORCShadowModeResult, runtime: nu
   });
 }
 
+function mapNumericRecord(a: Record<string, number>, b: Record<string, number>, fn: (x: number, y: number) => number): Record<string, number> {
+  const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+  return Object.fromEntries(keys.map((key) => [key, round(fn(a[key] ?? 0, b[key] ?? 0))]));
+}
+
+function deltaOperationalPlanningQuality(a: OperationalPlanningQualityMetrics, b: OperationalPlanningQualityMetrics): OperationalPlanningQualityMetrics {
+  const resourceIds = [...new Set([...a.criticalResourceSpread.resourceIds, ...b.criticalResourceSpread.resourceIds])].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+  return {
+    ...a,
+    resourceActiveSpan: mapNumericRecord(a.resourceActiveSpan, b.resourceActiveSpan, (x, y) => x - y),
+    resourceEffectiveWork: mapNumericRecord(a.resourceEffectiveWork, b.resourceEffectiveWork, (x, y) => x - y),
+    resourceIdleTime: mapNumericRecord(a.resourceIdleTime, b.resourceIdleTime, (x, y) => x - y),
+    resourceFragmentation: mapNumericRecord(a.resourceFragmentation, b.resourceFragmentation, (x, y) => x - y),
+    talentActiveSpan: mapNumericRecord(a.talentActiveSpan, b.talentActiveSpan, (x, y) => x - y),
+    talentEffectiveWork: mapNumericRecord(a.talentEffectiveWork, b.talentEffectiveWork, (x, y) => x - y),
+    talentIdleTime: mapNumericRecord(a.talentIdleTime, b.talentIdleTime, (x, y) => x - y),
+    talentFragmentation: mapNumericRecord(a.talentFragmentation, b.talentFragmentation, (x, y) => x - y),
+    operationalCompactness: round(a.operationalCompactness - b.operationalCompactness),
+    mainFlowContinuityQuality: { gaps: round(a.mainFlowContinuityQuality.gaps - b.mainFlowContinuityQuality.gaps), averageContinuousChainLength: round(a.mainFlowContinuityQuality.averageContinuousChainLength - b.mainFlowContinuityQuality.averageContinuousChainLength), interruptions: round(a.mainFlowContinuityQuality.interruptions - b.mainFlowContinuityQuality.interruptions) },
+    criticalResourceSpread: { resourceIds, thresholdUtilization: round(a.criticalResourceSpread.thresholdUtilization - b.criticalResourceSpread.thresholdUtilization), averageActiveSpan: round(a.criticalResourceSpread.averageActiveSpan - b.criticalResourceSpread.averageActiveSpan), averageIdleTime: round(a.criticalResourceSpread.averageIdleTime - b.criticalResourceSpread.averageIdleTime), averageFragmentation: round(a.criticalResourceSpread.averageFragmentation - b.criticalResourceSpread.averageFragmentation) },
+  };
+}
+
+function percentageOperationalPlanningQuality(abs: OperationalPlanningQualityMetrics, base: OperationalPlanningQualityMetrics): OperationalPlanningQualityMetrics {
+  const pctOne = (value: number, denominator: number) => denominator === 0 ? 0 : round((value / denominator) * 100);
+  return {
+    ...abs,
+    resourceActiveSpan: mapNumericRecord(abs.resourceActiveSpan, base.resourceActiveSpan, pctOne),
+    resourceEffectiveWork: mapNumericRecord(abs.resourceEffectiveWork, base.resourceEffectiveWork, pctOne),
+    resourceIdleTime: mapNumericRecord(abs.resourceIdleTime, base.resourceIdleTime, pctOne),
+    resourceFragmentation: mapNumericRecord(abs.resourceFragmentation, base.resourceFragmentation, pctOne),
+    talentActiveSpan: mapNumericRecord(abs.talentActiveSpan, base.talentActiveSpan, pctOne),
+    talentEffectiveWork: mapNumericRecord(abs.talentEffectiveWork, base.talentEffectiveWork, pctOne),
+    talentIdleTime: mapNumericRecord(abs.talentIdleTime, base.talentIdleTime, pctOne),
+    talentFragmentation: mapNumericRecord(abs.talentFragmentation, base.talentFragmentation, pctOne),
+    operationalCompactness: pctOne(abs.operationalCompactness, base.operationalCompactness),
+    mainFlowContinuityQuality: { gaps: pctOne(abs.mainFlowContinuityQuality.gaps, base.mainFlowContinuityQuality.gaps), averageContinuousChainLength: pctOne(abs.mainFlowContinuityQuality.averageContinuousChainLength, base.mainFlowContinuityQuality.averageContinuousChainLength), interruptions: pctOne(abs.mainFlowContinuityQuality.interruptions, base.mainFlowContinuityQuality.interruptions) },
+    criticalResourceSpread: { ...abs.criticalResourceSpread, thresholdUtilization: pctOne(abs.criticalResourceSpread.thresholdUtilization, base.criticalResourceSpread.thresholdUtilization), averageActiveSpan: pctOne(abs.criticalResourceSpread.averageActiveSpan, base.criticalResourceSpread.averageActiveSpan), averageIdleTime: pctOne(abs.criticalResourceSpread.averageIdleTime, base.criticalResourceSpread.averageIdleTime), averageFragmentation: pctOne(abs.criticalResourceSpread.averageFragmentation, base.criticalResourceSpread.averageFragmentation) },
+  };
+}
+
 function delta(a: OperationalDeltaMetrics, b: OperationalDeltaMetrics): OperationalDeltaMetrics {
   const keys = new Set([...Object.keys(a.permanenceByTalent), ...Object.keys(b.permanenceByTalent)]);
   return {
@@ -190,6 +236,7 @@ function delta(a: OperationalDeltaMetrics, b: OperationalDeltaMetrics): Operatio
     dependencyBlockagesAvoided: round(a.dependencyBlockagesAvoided - b.dependencyBlockagesAvoided),
     dependencyAverageSlackRecovered: round(a.dependencyAverageSlackRecovered - b.dependencyAverageSlackRecovered),
     dependencyCriticalityOperationalValueCorrelation: round(a.dependencyCriticalityOperationalValueCorrelation - b.dependencyCriticalityOperationalValueCorrelation),
+    operationalPlanningQuality: deltaOperationalPlanningQuality(a.operationalPlanningQuality, b.operationalPlanningQuality),
   };
 }
 function pct(abs: OperationalDeltaMetrics, base: OperationalDeltaMetrics): OperationalDeltaMetrics {
@@ -199,6 +246,7 @@ function pct(abs: OperationalDeltaMetrics, base: OperationalDeltaMetrics): Opera
   for (const key of Object.keys(abs.permanenceByTalent)) out.permanenceByTalent[key] = pctOne(abs.permanenceByTalent[key] ?? 0, base.permanenceByTalent[key] ?? 0);
   for (const key of ["totalPermanence", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime", "dependencyChainsProtected", "dependencyBlockagesAvoided", "dependencyAverageSlackRecovered", "dependencyCriticalityOperationalValueCorrelation"] as const) out[key] = pctOne(abs[key], base[key]);
   out.timeByIteration = abs.timeByIteration.map((value, index) => pctOne(value, base.timeByIteration[index] ?? 0));
+  out.operationalPlanningQuality = percentageOperationalPlanningQuality(abs.operationalPlanningQuality, base.operationalPlanningQuality);
   return out;
 }
 
@@ -222,6 +270,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `ORC Shadow Mode produced ${shadow.candidates.length} candidate(s), ${shadow.simulatedStates.length} simulation(s), and ${shadow.commitDecisions.length} decision(s).`,
       `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s).`,
       "Delta values are ORC minus V4 and do not decide which result is better.",
+      "Operational Planning Quality Metrics measure resource/talent idle time, fragmentation, compactness, main-flow continuity details, and critical-resource spread without changing planning behavior.",
     ],
     planningUnchanged: stableStringify(safeInput) === before,
   } satisfies Omit<OperationalDeltaReport, "improvementReport">;

@@ -4,6 +4,9 @@ import { stableStringify } from "../structuralEquality";
 import { buildOperationalDeltaEvidenceReport } from "../evidence/evidenceReport";
 import { OPERATIONAL_DELTA_BENCHMARK_VERSION, type OperationalDeltaMetrics, type OperationalDeltaReport } from "./operationalDeltaBenchmark";
 import { analyzeImprovementOpportunities, IMPROVEMENT_OPPORTUNITY_ANALYZER_VERSION } from "./improvementOpportunityAnalyzer";
+import { calculateOperationalPlanningQualityMetrics } from "./operationalPlanningQualityMetrics";
+
+const opqm = calculateOperationalPlanningQualityMetrics({ planId: 172, workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "14:00" }, camerasAvailable: 1, tasks: [{ id: 1, planId: 172, templateId: 1, status: "pending", contestantId: 1, assignedResourceIds: [7] }], locks: [], zoneResourceAssignments: {}, spaceResourceAssignments: {}, zoneResourceTypeRequirements: {}, spaceResourceTypeRequirements: {}, planResourceItems: [{ id: 7, resourceItemId: 70, typeId: 1, name: "Coach", isAvailable: true }], resourceItemComponents: {}, groupingZoneIds: [] }, [{ taskId: 1, startPlanned: "09:00", endPlanned: "10:00", assignedResources: [7] }]);
 
 const metrics = (overrides: Partial<OperationalDeltaMetrics> = {}): OperationalDeltaMetrics => ({
   makespan: 600,
@@ -22,6 +25,7 @@ const metrics = (overrides: Partial<OperationalDeltaMetrics> = {}): OperationalD
   dependencyBlockagesAvoided: 0,
   dependencyAverageSlackRecovered: 0,
   dependencyCriticalityOperationalValueCorrelation: 0,
+  operationalPlanningQuality: opqm,
   ...overrides,
 });
 
@@ -42,6 +46,7 @@ const delta = (orc: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): Opera
   dependencyBlockagesAvoided: orc.dependencyBlockagesAvoided - v4.dependencyBlockagesAvoided,
   dependencyAverageSlackRecovered: orc.dependencyAverageSlackRecovered - v4.dependencyAverageSlackRecovered,
   dependencyCriticalityOperationalValueCorrelation: orc.dependencyCriticalityOperationalValueCorrelation - v4.dependencyCriticalityOperationalValueCorrelation,
+  operationalPlanningQuality: stableStringify(orc.operationalPlanningQuality) === stableStringify(v4.operationalPlanningQuality) ? { ...orc.operationalPlanningQuality, resourceActiveSpan: {}, resourceEffectiveWork: {}, resourceIdleTime: {}, resourceFragmentation: {}, talentActiveSpan: {}, talentEffectiveWork: {}, talentIdleTime: {}, talentFragmentation: {}, operationalCompactness: 0, mainFlowContinuityQuality: { gaps: 0, averageContinuousChainLength: 0, interruptions: 0 }, criticalResourceSpread: { resourceIds: [], thresholdUtilization: 0, averageActiveSpan: 0, averageIdleTime: 0, averageFragmentation: 0 }, affectedResources: [], worstCases: { resourceIdleTime: [], resourceFragmentation: [], talentIdleTime: [], talentFragmentation: [] } } : orc.operationalPlanningQuality,
 });
 
 const pct = (absolute: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): OperationalDeltaMetrics => ({
@@ -61,6 +66,7 @@ const pct = (absolute: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): Op
   dependencyBlockagesAvoided: v4.dependencyBlockagesAvoided === 0 ? 0 : (absolute.dependencyBlockagesAvoided / v4.dependencyBlockagesAvoided) * 100,
   dependencyAverageSlackRecovered: v4.dependencyAverageSlackRecovered === 0 ? 0 : (absolute.dependencyAverageSlackRecovered / v4.dependencyAverageSlackRecovered) * 100,
   dependencyCriticalityOperationalValueCorrelation: v4.dependencyCriticalityOperationalValueCorrelation === 0 ? 0 : (absolute.dependencyCriticalityOperationalValueCorrelation / v4.dependencyCriticalityOperationalValueCorrelation) * 100,
+  operationalPlanningQuality: absolute.operationalPlanningQuality,
 });
 
 function report(orc: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): OperationalDeltaReport {
@@ -81,7 +87,7 @@ function report(orc: OperationalDeltaMetrics, v4: OperationalDeltaMetrics): Oper
 test("analyzer classifies equality with no improvement priorities", () => {
   const analyzed = analyzeImprovementOpportunities(report(metrics(), metrics()));
   assert.equal(analyzed.analyzerVersion, IMPROVEMENT_OPPORTUNITY_ANALYZER_VERSION);
-  assert.equal(analyzed.summary.equal.length, 16);
+  assert.equal(analyzed.summary.equal.length, 17);
   assert.deepEqual(analyzed.summary.highPriority, []);
   assert.equal(analyzed.planningInfluence, "none");
 });
