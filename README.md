@@ -327,3 +327,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 
 The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as read-only evidence for resource active span, effective work, idle time, fragmentation, talent active span, talent idle time, operational compactness, main-flow continuity quality, and dynamically detected critical-resource spread. These metrics are compared in Operational Delta Benchmark reports for ORC vs V4 and can be consumed by the Improvement Opportunity Analyzer without changing ORC, V4, the official planning, persistence, API, or UI behavior.
 - ID 184 — 2026-06-28 18:28 CEST — Real Production Benchmark Scenario v1
+- ID 185 — 2026-06-28 18:57 CEST — Operational Quality Root Cause Analyzer v1

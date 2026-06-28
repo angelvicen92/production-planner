@@ -13,6 +13,8 @@ export interface OperationalDeltaEvidenceReport {
   operationalPlanningQuality: OperationalDeltaReport["metrics"]["orc"]["operationalPlanningQuality"];
   operationalPlanningQualityExplanation: string[];
   operationalPlanningQualityWorstCases: OperationalDeltaReport["metrics"]["orc"]["operationalPlanningQuality"]["worstCases"];
+  operationalQualityRootCauseAnalysis: OperationalDeltaReport["metrics"]["orc"]["operationalPlanningQuality"]["rootCauseAnalysis"];
+  operationalQualityRootCauseEvidence: string[];
   planningInfluence: "none";
 }
 
@@ -30,6 +32,8 @@ export function buildOperationalDeltaEvidenceReport(report: OperationalDeltaRepo
     operationalPlanningQuality: report.metrics.orc.operationalPlanningQuality,
     operationalPlanningQualityExplanation: report.metrics.orc.operationalPlanningQuality.explanations,
     operationalPlanningQualityWorstCases: report.metrics.orc.operationalPlanningQuality.worstCases,
+    operationalQualityRootCauseAnalysis: report.metrics.orc.operationalPlanningQuality.rootCauseAnalysis,
+    operationalQualityRootCauseEvidence: report.metrics.orc.operationalPlanningQuality.rootCauseAnalysis.evidence,
     planningInfluence: "none",
   };
 }
