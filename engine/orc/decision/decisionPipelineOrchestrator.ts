@@ -11,9 +11,12 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import type { ValidationEngineResult } from "../validation/validationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import type { DecisionInput } from "./decisionInput";
+import type { PartialPlanDecisionUnit } from "./decisionEngine";
 import { preparePartialPlanDecisionUnits } from "./decisionEngine";
 import type { DecisionTrace } from "./decisionTraceBuilder";
 import { buildDecisionTrace } from "./decisionTraceBuilder";
+import type { GlobalSolutionAssemblerResult } from "./globalSolutionAssembler";
+import { assembleGlobalSolutions } from "./globalSolutionAssembler";
 import type { RankingEngineResult } from "./rankingEngine";
 import { rankDecisionInput } from "./rankingEngine";
 
@@ -22,6 +25,7 @@ export type SimulationResult = SimulationEngineResult;
 export type ValidationResult = ValidationEngineResult;
 export type EvaluationResult = OperationalEvaluatorResult;
 export type RankingResult = RankingEngineResult;
+export type GlobalSolutionsResult = GlobalSolutionAssemblerResult;
 export type CommitResult = CommitEngineResult;
 
 export interface DecisionPipelineResult {
@@ -30,6 +34,7 @@ export interface DecisionPipelineResult {
   validation: ValidationResult;
   evaluation: EvaluationResult;
   ranking: RankingResult;
+  globalSolutions: GlobalSolutionsResult;
   commit: CommitResult;
   evidence: Evidence[];
   decisionTrace: DecisionTrace;
@@ -111,6 +116,18 @@ function attachOperationalValues(input: DecisionPipelineInput, evaluation: Evalu
   }) as DecisionInput;
 }
 
+function attachEvaluatedSyntheticCandidates(
+  decisionUnits: readonly PartialPlanDecisionUnit[],
+  evaluatedDecisionInput: DecisionInput,
+): readonly PartialPlanDecisionUnit[] {
+  const evaluatedById = new Map(evaluatedDecisionInput.candidates.map((candidate) => [candidate.id, candidate]));
+  return deepFreeze(decisionUnits.map((unit) => deepFreeze({
+    partialPlan: unit.partialPlan,
+    candidates: unit.candidates,
+    syntheticCandidate: evaluatedById.get(unit.syntheticCandidate.id) ?? unit.syntheticCandidate,
+  }) as PartialPlanDecisionUnit)) as readonly PartialPlanDecisionUnit[];
+}
+
 export function executeDecisionPipeline(
   input: DecisionPipelineInput,
 ): DecisionPipelineResult {
@@ -142,11 +159,14 @@ export function executeDecisionPipeline(
   const ranking = rankDecisionInput(evaluatedDecisionInput, { createdAt });
   evidence.push(buildStageEvidence("ranking", "end", stateId, createdAt, { input: "DecisionInput<EvaluatedCandidates>", output: "RankingResult" }, { rankedOperationalValues: ranking.rankedOperationalValues.length, ties: ranking.summary.tieCount, evidence: ranking.evidence.length }));
 
+  const globalSolutions = assembleGlobalSolutions(attachEvaluatedSyntheticCandidates(planPreparation.decisionUnits, evaluatedDecisionInput), { createdAt });
+  evidence.push(...globalSolutions.evidence);
+
   evidence.push(buildStageEvidence("commit", "start", stateId, createdAt, { input: "RankingResult", output: "CommitResult" }, { rankedOperationalValues: ranking.rankedOperationalValues.length }));
   const commit = buildCommitDecisions(ranking.rankedOperationalValues, { createdAt });
   evidence.push(buildStageEvidence("commit", "end", stateId, createdAt, { input: "RankingResult", output: "CommitResult" }, { commitDecisions: commit.commitDecisions.length, commits: commit.summary.commitCount, rejects: commit.summary.rejectCount, evidence: commit.evidence.length }));
 
-  const pipelineResult = { transformation, simulation, validation, evaluation, ranking, commit, evidence } as DecisionPipelineResult;
+  const pipelineResult = { transformation, simulation, validation, evaluation, ranking, globalSolutions, commit, evidence } as DecisionPipelineResult;
   const decisionTrace = buildDecisionTrace(pipelineResult);
 
   return deepFreeze({ ...pipelineResult, decisionTrace }) as DecisionPipelineResult;

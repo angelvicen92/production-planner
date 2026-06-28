@@ -170,6 +170,14 @@ export interface PartialPlan {
   readonly expectedOperationalImpact: number;
 }
 
+export interface GlobalSolution {
+  readonly solutionId: string;
+  readonly partialPlanIds: ReadonlyArray<string>;
+  readonly compatibilityScore: number;
+  readonly aggregatedEvaluationScore: number;
+  readonly explanation: string;
+}
+
 export interface ExplorationValue {
   searchSpaceId: string;
   expectedValue: number;
