@@ -60,6 +60,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 175 — 2026-06-28 12:20 CEST — ORC Evidence-Gated Development Workflow v1
 - ID 176 — 2026-06-28 12:39 CEST — ORC Benchmark CLI Operational Evidence v1
 - ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1
+- ID 179 — 2026-06-28 15:18 CEST — ORC Recovery Potential Estimator v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -67,6 +68,10 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
 
 Use `npm run benchmark:orc:legacy` to execute the previous shadow search benchmark entry point. The operational benchmark is read-only and does not write files or persist results.
+
+### ORC Recovery Potential Estimator (ID 179)
+
+The ORC SEE now estimates deterministic, read-only Recovery Potential for each candidate before simulation. The estimate considers residual slack, remaining alternative diversity, future resource pressure, reordering capacity, and dependency-chain resilience. It is recorded as Evidence and can influence only exploration ordering, candidate preselection, and reasoning-budget allocation; it never invalidates candidates and does not change the Decision Engine, official planning, persistence, API, UI, or V4 behavior. The operational benchmark report exposes tracking flags for Recovery Potential correlation, avoided simulations, planning stability, and calculation-time evidence while keeping `planningInfluence: "none"`.
 
 ### ORC Opportunity Cost Estimator (ID 177)
 
@@ -290,3 +295,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 176 — 2026-06-28 12:39 CEST — ORC Benchmark CLI Operational Evidence v1
 - ID 177 — 2026-06-28 13:58 CEST — ORC Opportunity Cost Estimator v1
 - ID 178 — 2026-06-28 14:52 CEST — ORC Dependency Chain Flow Optimizer v1
+- ID 179 — 2026-06-28 15:18 CEST — ORC Recovery Potential Estimator v1

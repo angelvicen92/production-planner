@@ -34,6 +34,14 @@ export interface OrcOperationalBenchmarkReport {
     operationalValueCorrelationTracked: boolean;
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
+  recoveryPotentialSummary: {
+    estimatorAvailable: boolean;
+    correlationTracked: boolean;
+    simulationsAvoidedTracked: boolean;
+    stabilityTracked: boolean;
+    calculationTimeTracked: boolean;
+    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  };
   opportunityCostSummary: {
     estimatorAvailable: boolean;
     correlationTracked: boolean;
@@ -116,6 +124,14 @@ export function buildOrcOperationalBenchmarkReport(params: {
       blockagesAvoided: passedReports.reduce((sum, report) => sum + report.metrics.orc.dependencyBlockagesAvoided, 0),
       averageSlackRecovered: passedReports.length === 0 ? 0 : Number((passedReports.reduce((sum, report) => sum + report.metrics.orc.dependencyAverageSlackRecovered, 0) / passedReports.length).toFixed(6)),
       operationalValueCorrelationTracked: true,
+      planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    },
+    recoveryPotentialSummary: {
+      estimatorAvailable: true,
+      correlationTracked: true,
+      simulationsAvoidedTracked: true,
+      stabilityTracked: true,
+      calculationTimeTracked: true,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
     },
     opportunityCostSummary: {
