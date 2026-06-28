@@ -18,6 +18,7 @@ import { buildOpportunityDetectionEvidence, detectOpportunitiesWithPruningFromOp
 import { buildAdaptiveSearchSpaces } from "../see/adaptiveSearchSpaceBuilder";
 import { classifyOpportunities } from "../analysis/opportunityClassificationEngine";
 import { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEngine";
+import { analyzeDynamicBottlenecks } from "../analysis/dynamicBottleneckAnalyzer";
 import { diagnoseOpportunities, type OpportunityDiagnosis } from "../see/opportunityDiagnosis";
 import { buildCandidatesFromSearchSpaces } from "../see/candidateBuilder";
 import { composePartialPlans } from "../see/partialPlanComposer";
@@ -273,7 +274,8 @@ export function runORCShadowMode(
   cognitiveState = operationalCriticalityResult.cognitiveState ?? cognitiveState;
   const opportunityResult = detectOpportunitiesWithPruningFromOperationalAnalysis(operationalState, operationalAnalysis, { cognitiveState });
   const classificationResult = classifyOpportunities(opportunityResult.opportunities);
-  const prioritizationResult = prioritizeOpportunities(classificationResult.opportunities);
+  const dynamicBottleneckAnalysis = analyzeDynamicBottlenecks(operationalState, classificationResult.opportunities, createdAt);
+  const prioritizationResult = prioritizeOpportunities(classificationResult.opportunities, { dynamicBottleneckAnalysis });
   const adaptivePriorityResult = reprioritizeOpportunities(prioritizationResult.opportunities, cognitiveState);
   const opportunities = adaptivePriorityResult.opportunities;
   const adaptivePrioritySummary = {
@@ -285,7 +287,7 @@ export function runORCShadowMode(
   const repeatedOpportunityIds = opportunityResult.pruning.prunedItems.map((item) => item.id);
   cognitiveState = opportunities.reduce((state, opportunity) => updateReasoningBudget(recordExploredOpportunity(state, opportunity.id), consumeOpportunity(state.reasoningBudget)), cognitiveState);
   const diagnosisResult = diagnoseOpportunities(opportunities, operationalState, cognitiveState);
-  const searchAndExplorationUnderstanding = buildSearchAndExplorationUnderstanding(operationalState, cognitiveState, createdAt, { opportunities, reasoningBudget: cognitiveState.reasoningBudget });
+  const searchAndExplorationUnderstanding = buildSearchAndExplorationUnderstanding(operationalState, cognitiveState, createdAt, { opportunities, reasoningBudget: cognitiveState.reasoningBudget, dynamicBottleneckAnalysis });
   cognitiveState = searchAndExplorationUnderstanding.cognitiveState ?? cognitiveState;
   const searchSpaceResult = buildAdaptiveSearchSpaces(opportunities, cognitiveState, cognitiveState.reasoningBudget, { diagnoses: diagnosisResult.diagnoses, profiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, createdAt });
   const explorationValueAnalysis = estimateExplorationValue(searchSpaceResult.searchSpaces);
@@ -380,10 +382,11 @@ export function runORCShadowMode(
     buildCognitiveStateEvidence(operationalState, "cognitive-state-initial", cognitiveStateInitial, createdAt),
     ...operationalCriticalityResult.evidence,
     ...buildOpportunityDetectionEvidence(operationalState, operationalMap, opportunities, createdAt, cognitiveStateInitial),
+    ...dynamicBottleneckAnalysis.evidence,
     ...adaptivePriorityResult.evidence.map((item) => ({ ...item, createdAt })),
     ...opportunityResult.pruning.prunedItems.map((item): Evidence => ({ id: `evidence:orc-see:opportunity:pruned:${item.id}`, source: "orc-see", kind: "opportunity-pruned", subjectId: item.id, createdAt, data: { opportunityId: item.id, reason: item.reason, phase: item.phase, estimatedBudgetSaved: item.estimatedBudgetSaved, readOnly: true } })),
     ...diagnosisResult.evidence.map((item) => ({ ...item, createdAt })),
-    ...searchAndExplorationUnderstanding.evidence.filter((item) => item.kind !== "operational-criticality"),
+    ...searchAndExplorationUnderstanding.evidence.filter((item) => item.kind !== "operational-criticality" && item.kind !== "dynamic-bottleneck-analysis"),
     ...searchSpaceResult.evidence,
     ...searchSpaceSelectionEvidence,
     ...branchOrderingEvidence,
@@ -408,6 +411,7 @@ export function runORCShadowMode(
     operationalMap,
     operationalAnalysis,
     operationalCriticality: operationalCriticalityResult.operationalCriticality,
+    dynamicBottleneckAnalysis,
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
     searchSpaces: selectedSearchSpaces,
