@@ -1,6 +1,7 @@
 import type { OfficialOperationalMetric, OperationalDeltaMetrics, OperationalDeltaReport } from "./operationalDeltaBenchmark";
 
 export const IMPROVEMENT_OPPORTUNITY_ANALYZER_VERSION = "ORC-IMPROVEMENT-OPPORTUNITY-ANALYZER-V1";
+export const IMPROVEMENT_REPORT_PLANNING_INFLUENCE = "none" as const;
 
 export type ImprovementCategory =
   | "continuity"
@@ -50,7 +51,7 @@ export interface ImprovementOpportunityReport {
     priorityExplanations: string[];
     objectiveJustification: string[];
   };
-  planningInfluence: "none";
+  planningInfluence: typeof IMPROVEMENT_REPORT_PLANNING_INFLUENCE;
 }
 
 const METRICS: OfficialOperationalMetric[] = [
@@ -168,6 +169,6 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
       priorityExplanations: opportunities.map((item) => item.priorityExplanation),
       objectiveJustification: opportunities.map((item) => item.objectiveJustification),
     },
-    planningInfluence: "none",
+    planningInfluence: IMPROVEMENT_REPORT_PLANNING_INFLUENCE,
   };
 }

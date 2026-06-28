@@ -1,5 +1,7 @@
 import type { AdaptiveSearchSpaceProfile, CognitiveState, Evidence, OperationalState, Opportunity, OpportunityPropagation, ReasoningBudgetProfile } from "../contracts";
 import { createReasoningBudget, type ReasoningBudget } from "../cognitive/reasoningBudget";
+import type { ImprovementOpportunityReport } from "../benchmark/improvementOpportunityAnalyzer";
+import { calibrateReasoningBudgetProfilesFromImprovementReport, type ImprovementDrivenCalibrationResult } from "./improvementDrivenCalibration";
 import type { DynamicBottleneckAnalysis } from "../analysis/dynamicBottleneckAnalyzer";
 import { deepFreeze } from "../immutability";
 import { understandOpportunityPropagation } from "../understanding/opportunityPropagation";
@@ -14,6 +16,7 @@ import {
 export interface SearchAndExplorationUnderstanding {
   readonly operationalCriticality: OperationalCriticality;
   readonly reasoningBudgetProfiles: readonly ReasoningBudgetProfile[];
+  readonly improvementDrivenCalibration: ImprovementDrivenCalibrationResult | null;
   readonly opportunityPropagation: readonly OpportunityPropagation[];
   readonly adaptiveSearchSpaceProfiles: readonly AdaptiveSearchSpaceProfile[];
   readonly cognitiveState: CognitiveState | null;
@@ -62,6 +65,7 @@ export interface SearchAndExplorationBudgetOptions extends ReasoningBudgetProfil
   readonly opportunities?: readonly Opportunity[];
   readonly reasoningBudget?: ReasoningBudget;
   readonly dynamicBottleneckAnalysis?: DynamicBottleneckAnalysis | null;
+  readonly improvementReport?: ImprovementOpportunityReport | null;
 }
 
 export function buildSearchAndExplorationUnderstanding(
@@ -79,16 +83,19 @@ export function buildSearchAndExplorationUnderstanding(
     result.operationalCriticality,
     { ...options, reasoningBudget },
   );
-  const adaptiveSearchSpaceProfiles = buildAdaptiveSearchSpaceProfiles(reasoningBudgetProfiles, propagation.opportunityPropagation);
-  const budgetEvidence = buildCriticalityDrivenReasoningBudgetEvidence(state, reasoningBudgetProfiles, createdAt);
+  const improvementDrivenCalibration = options.improvementReport === undefined ? null : calibrateReasoningBudgetProfilesFromImprovementReport(reasoningBudgetProfiles, options.improvementReport, reasoningBudget, createdAt);
+  const effectiveReasoningBudgetProfiles = improvementDrivenCalibration?.calibratedProfiles ?? reasoningBudgetProfiles;
+  const adaptiveSearchSpaceProfiles = buildAdaptiveSearchSpaceProfiles(effectiveReasoningBudgetProfiles, propagation.opportunityPropagation);
+  const budgetEvidence = buildCriticalityDrivenReasoningBudgetEvidence(state, effectiveReasoningBudgetProfiles, createdAt);
   const profileEvidence = buildAdaptiveSearchSpaceProfileEvidence(adaptiveSearchSpaceProfiles, createdAt);
   return deepFreeze({
     operationalCriticality: result.operationalCriticality,
-    reasoningBudgetProfiles,
+    reasoningBudgetProfiles: effectiveReasoningBudgetProfiles,
+    improvementDrivenCalibration,
     opportunityPropagation: propagation.opportunityPropagation,
     adaptiveSearchSpaceProfiles,
     cognitiveState: propagation.cognitiveState,
-    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...profileEvidence],
+    evidence: [...result.evidence, ...(options.dynamicBottleneckAnalysis?.evidence ?? []), ...budgetEvidence, ...propagation.evidence, ...(improvementDrivenCalibration?.evidence ?? []), ...profileEvidence],
     informationalOnly: true,
   }) as SearchAndExplorationUnderstanding;
 }

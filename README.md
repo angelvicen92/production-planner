@@ -267,3 +267,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 171 — 2026-06-28 10:14 CEST — ORC Operational Delta Benchmark v1
 
 - ID 172 — 2026-06-28 10:43 CEST — ORC Improvement Opportunity Analyzer v1
+- ID 173 — 2026-06-28 11:14 CEST — ORC Improvement-Driven Search Calibration v1

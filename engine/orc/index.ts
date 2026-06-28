@@ -28,6 +28,7 @@ export * from "./search/solutionPool";
 export * from "./search/onlineSearchLearning";
 export * from "./search/transpositionTable";
 export * from "./search/searchAndExplorationEngine";
+export * from "./search/improvementDrivenCalibration";
 export * from "./search/candidateBuilder";
 export * from "./analysis/opportunityImpactEstimator";
 export * from "./see";
