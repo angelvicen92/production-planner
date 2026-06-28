@@ -25,3 +25,6 @@ export type { ClassifiedOpportunity, OpportunityClassification, OpportunityClass
 export { classifyOpportunities } from "../analysis/opportunityClassificationEngine";
 export type { OpportunityPrioritizationResult, PrioritizedOpportunity } from "../analysis/opportunityPrioritizationEngine";
 export { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEngine";
+
+export type { DiscardedPartialPlanComposition, PartialPlanComposerOptions, PartialPlanComposerResult } from "./partialPlanComposer";
+export { composePartialPlans } from "./partialPlanComposer";

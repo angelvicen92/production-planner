@@ -163,6 +163,13 @@ export interface Candidate {
   metadata: ORCRecord;
 }
 
+export interface PartialPlan {
+  readonly partialPlanId: string;
+  readonly candidateIds: ReadonlyArray<string>;
+  readonly compatibilityScore: number;
+  readonly expectedOperationalImpact: number;
+}
+
 export interface ExplorationValue {
   searchSpaceId: string;
   expectedValue: number;

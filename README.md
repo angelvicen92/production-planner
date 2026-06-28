@@ -255,3 +255,4 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 161 — 2026-06-27 23:10 — ORC Strategy Candidate Assignment Synthesis v1
 - ID 162 — 2026-06-27 23:51 — ORC Strategy Variant Generator v1
 - ID 163 — 2026-06-28 00:08 — ORC Candidate Preselection Engine v1
+- ID 164 — 2026-06-28 00:20 — ORC Partial Plan Composer v1

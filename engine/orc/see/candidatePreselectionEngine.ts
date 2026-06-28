@@ -1,4 +1,6 @@
-import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OpportunityPropagation, ORCRecord } from "../contracts";
+import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OpportunityPropagation, ORCRecord, PartialPlan } from "../contracts";
+import type { DiscardedPartialPlanComposition } from "./partialPlanComposer";
+import { composePartialPlans } from "./partialPlanComposer";
 import { deepFreeze } from "../immutability";
 
 export interface PreselectedCandidate {
@@ -12,11 +14,18 @@ export interface CandidatePreselectionResult {
   candidates: Candidate[];
   decisions: PreselectedCandidate[];
   evidence: Evidence[];
+  partialPlans: ReadonlyArray<PartialPlan>;
+  discardedPartialPlanCompositions: ReadonlyArray<DiscardedPartialPlanComposition>;
   summary: {
     generatedCandidates: number;
     acceptedCandidates: number;
     discardedCandidates: number;
     limit: number;
+    partialPlans: {
+      partialPlanCount: number;
+      discardedCompositionCount: number;
+      averageCompatibilityScore: number;
+    };
   };
 }
 
@@ -97,6 +106,7 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
       metadata: { ...candidate.metadata, preselection: { preselectionScore: scoreByCandidateId.get(candidate.id) ?? 0, position: rankByCandidateId.get(candidate.id) ?? null, accepted: true, deterministic: true } },
     };
   });
+  const partialPlanResult = composePartialPlans(selected, { createdAt: options.createdAt ?? null });
   const evidence: Evidence[] = decisions.map((decision, index) => deepFreeze({
     id: `evidence:orc-see:candidate-preselection:${decision.candidateId}`,
     source: "orc-see",
@@ -115,5 +125,5 @@ export function preselectCandidates(candidates: readonly Candidate[], options: C
     },
   }) as Evidence);
   evidence.push(deepFreeze({ id: "evidence:orc-see:candidate-preselection:summary", source: "orc-see", kind: "candidate-preselection-summary", subjectId: "orc-see:candidate-preselection", createdAt: options.createdAt ?? null, data: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, decisions, acceptedCandidateIds: selected.map((candidate) => candidate.id), discardedCandidateIds: decisions.filter((decision) => !decision.accepted).map((decision) => decision.candidateId), deterministic: true, readOnly: true } }) as Evidence);
-  return deepFreeze({ candidates: selected, decisions, evidence, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit } }) as CandidatePreselectionResult;
+  return deepFreeze({ candidates: selected, decisions, evidence: [...evidence, ...partialPlanResult.evidence], partialPlans: partialPlanResult.partialPlans, discardedPartialPlanCompositions: partialPlanResult.discardedCompositions, summary: { generatedCandidates: sourceCandidates.length, acceptedCandidates: selected.length, discardedCandidates: sourceCandidates.length - selected.length, limit, partialPlans: { partialPlanCount: partialPlanResult.summary.partialPlanCount, discardedCompositionCount: partialPlanResult.summary.discardedCompositionCount, averageCompatibilityScore: partialPlanResult.summary.averageCompatibilityScore } } }) as CandidatePreselectionResult;
 }

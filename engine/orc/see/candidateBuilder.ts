@@ -28,6 +28,11 @@ export interface CandidateBuilderResult {
       acceptedCandidates: number;
       discardedCandidates: number;
       limit: number;
+      partialPlans: {
+        partialPlanCount: number;
+        discardedCompositionCount: number;
+        averageCompatibilityScore: number;
+      };
     };
   };
 }
@@ -99,7 +104,7 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     return !(selection != null && typeof selection === "object" && (selection as Record<string, unknown>).selected === false);
   });
   if (sourceSearchSpaces.length === 0) {
-    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0 } } };
+    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } } };
   }
 
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
