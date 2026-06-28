@@ -22,7 +22,8 @@
     "benchmark:v4:quick": "tsx engine/v4/benchmarks/runV4Benchmark.ts --quick",
     "benchmark:v4:aggressive": "tsx engine/v4/benchmarks/runV4Benchmark.ts --aggressive",
     "benchmark:v4:smoke": "tsx engine/v4/benchmarks/runV4Benchmark.ts --smoke",
-    "benchmark:orc": "tsx engine/orc/benchmarks/shadowSearchBenchmark.ts"
+    "benchmark:orc": "tsx engine/orc/benchmark/runOrcOperationalBenchmark.ts",
+    "benchmark:orc:legacy": "tsx engine/orc/benchmarks/shadowSearchBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
