@@ -3,6 +3,7 @@ import { generatePlanV4 } from "../../v4";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { stableStringify } from "../structuralEquality";
+import { analyzeImprovementOpportunities, type ImprovementOpportunityReport } from "./improvementOpportunityAnalyzer";
 
 export const OPERATIONAL_DELTA_BENCHMARK_VERSION = "ORC-OPERATIONAL-DELTA-BENCHMARK-V1";
 
@@ -44,6 +45,7 @@ export interface OperationalDeltaReport {
   percentageDelta: OperationalDeltaMetrics;
   evidenceExplanation: string[];
   planningUnchanged: boolean;
+  improvementReport: ImprovementOpportunityReport;
 }
 
 export interface OperationalDeltaBenchmarkOptions {
@@ -165,7 +167,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const v4MetricSet = v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0);
   const orcMetricSet = orcMetrics(safeInput, shadow, options.orcRuntimeMs ?? 0);
   const absoluteDelta = delta(orcMetricSet, v4MetricSet);
-  return {
+  const baseReport = {
     benchmarkVersion: OPERATIONAL_DELTA_BENCHMARK_VERSION,
     generatedAt: options.createdAt ?? null,
     scenario: { planId: safeInput.planId, taskCount: safeInput.tasks.length },
@@ -178,5 +180,6 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       "Delta values are ORC minus V4 and do not decide which result is better.",
     ],
     planningUnchanged: stableStringify(safeInput) === before,
-  };
+  } satisfies Omit<OperationalDeltaReport, "improvementReport">;
+  return { ...baseReport, improvementReport: analyzeImprovementOpportunities(baseReport as OperationalDeltaReport) };
 }

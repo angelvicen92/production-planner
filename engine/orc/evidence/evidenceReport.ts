@@ -8,6 +8,8 @@ export interface OperationalDeltaEvidenceReport {
   absoluteDelta: OperationalDeltaReport["absoluteDelta"];
   percentageDelta: OperationalDeltaReport["percentageDelta"];
   explanation: string[];
+  improvementReport: OperationalDeltaReport["improvementReport"];
+  improvementEvidence: OperationalDeltaReport["improvementReport"]["evidence"];
   planningInfluence: "none";
 }
 
@@ -20,6 +22,8 @@ export function buildOperationalDeltaEvidenceReport(report: OperationalDeltaRepo
     absoluteDelta: report.absoluteDelta,
     percentageDelta: report.percentageDelta,
     explanation: report.evidenceExplanation,
+    improvementReport: report.improvementReport,
+    improvementEvidence: report.improvementReport.evidence,
     planningInfluence: "none",
   };
 }
