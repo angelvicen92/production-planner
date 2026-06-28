@@ -29,6 +29,12 @@ export interface ImprovementOpportunity {
   priority: ImprovementPriority;
   priorityExplanation: string;
   objectiveJustification: string;
+  benchmarkVersion: OperationalDeltaReport["benchmarkVersion"];
+  scenario: OperationalDeltaReport["scenario"];
+  operationalImpact: number;
+  frequency: number;
+  expectedCost: "low" | "medium" | "high";
+  optimizationPriority: ImprovementPriority;
 }
 
 export interface ImprovementOpportunityReport {
@@ -117,6 +123,12 @@ function compareMetric(metric: OfficialOperationalMetric, absoluteDelta: unknown
   return lowerIsBetter ? (signed < 0 ? "orcBetter" : "orcWorse") : (signed > 0 ? "orcBetter" : "orcWorse");
 }
 
+function expectedCostFor(metric: OfficialOperationalMetric): "low" | "medium" | "high" {
+  if (metric === "totalTime" || metric === "timeByIteration" || metric === "simulations") return "low";
+  if (metric === "candidatesGenerated" || metric === "candidatesSimulated" || metric === "candidatesConsolidated") return "medium";
+  return "high";
+}
+
 function priorityFor(comparison: ImprovementComparison, impact: number): ImprovementPriority {
   if (comparison !== "orcWorse") return "none";
   if (impact >= 25) return "high";
@@ -144,6 +156,12 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
       priority,
       priorityExplanation: priority === "none" ? `${metric}: no improvement priority because ORC is ${comparison}.` : `${metric}: ${priority} priority because ORC is worse and objective impact is ${impact}.`,
       objectiveJustification: `${metric}: classified using official delta metrics only; ${direction}; absolute and percentage deltas are ORC minus V4.`,
+      benchmarkVersion: report.benchmarkVersion,
+      scenario: report.scenario,
+      operationalImpact: impact,
+      frequency: comparison === "equal" ? 0 : 1,
+      expectedCost: expectedCostFor(metric),
+      optimizationPriority: priority,
     };
   });
   const byComparison = (comparison: ImprovementComparison) => opportunities.filter((item) => item.comparison === comparison).map((item) => item.metric);
