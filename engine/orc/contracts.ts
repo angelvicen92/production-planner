@@ -178,6 +178,19 @@ export interface GlobalSolution {
   readonly explanation: string;
 }
 
+export interface OptimizationIteration {
+  readonly iteration: number;
+  readonly appliedOperator: string;
+  readonly previousScore: number;
+  readonly newScore: number;
+  readonly accepted: boolean;
+}
+
+export interface OptimizedGlobalSolution {
+  readonly solution: GlobalSolution;
+  readonly iterations: ReadonlyArray<OptimizationIteration>;
+}
+
 export interface ExplorationValue {
   searchSpaceId: string;
   expectedValue: number;
