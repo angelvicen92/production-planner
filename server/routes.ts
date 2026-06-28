@@ -8,7 +8,7 @@ import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
-import { generatePlanV4 } from "../engine/v4";
+import { runORCActivePlanner } from "../engine/orc/active/orcActivePlanner";
 import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { persistPlanningRunUpdateBestEffort, queuePlanningRunUpdateBestEffort } from "./planning-run-progress";
 import { getUserRole, withPermissionDenied } from "./authz";
@@ -5059,7 +5059,7 @@ function normalizeHexColor(value: unknown): string | null {
         if (totalPending === 0) {
           const finishedAt = new Date().toISOString();
           const engineInput = await buildEngineInput(planId, storage);
-          const v4 = generatePlanV4({ ...engineInput, tasks: [] }, { requestId: requestId ?? undefined, timeLimitMs: 1 });
+          const v4 = runORCActivePlanner({ ...engineInput, tasks: [] }, { requestId: requestId ?? undefined, timeLimitMs: 1 });
           const diagnostics = {
             ...v4.diagnostics,
             generatedAt: finishedAt,
@@ -5098,7 +5098,7 @@ function normalizeHexColor(value: unknown): string | null {
         await supabaseAdmin.from("planning_runs").update({ phase: "loading_input", phase_progress_pct: 10, message: "Cargando entrada V4", updated_at: new Date().toISOString() }).eq("id", planningRunId);
         const engineInput = await buildEngineInput(planId, storage);
         const effectiveTimeLimitMs = requestedTimeLimitMs && requestedTimeLimitMs > 0 ? requestedTimeLimitMs : defaultV3Ms;
-        const v4 = generatePlanV4(engineInput, { requestId: requestId ?? undefined, timeLimitMs: effectiveTimeLimitMs });
+        const v4 = runORCActivePlanner(engineInput, { requestId: requestId ?? undefined, timeLimitMs: effectiveTimeLimitMs });
         const result = v4.output as any;
         const planned = Array.isArray(result?.plannedTasks) ? result.plannedTasks : [];
         const unplanned = Array.isArray(result?.unplanned) ? result.unplanned : [];
@@ -5111,7 +5111,7 @@ function normalizeHexColor(value: unknown): string | null {
           status: v4.diagnostics.status,
           planned_tasks: planned,
           unplanned_tasks: unplanned,
-          diagnostics: v4.diagnostics,
+          diagnostics: { ...v4.diagnostics, orcActiveBridge: true },
           updated_at: finishedAt,
         });
 
@@ -5125,7 +5125,7 @@ function normalizeHexColor(value: unknown): string | null {
             planned_tasks: planned.length,
             unplanned_tasks: unplanned.length,
             solution_source: "v4_delegates_to_v3",
-            engine_metadata: v4.diagnostics,
+            engine_metadata: { ...v4.diagnostics, orcActiveBridge: true },
             message: v4.diagnostics.warning,
             finished_at: finishedAt,
             updated_at: finishedAt,
