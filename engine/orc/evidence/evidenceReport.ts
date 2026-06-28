@@ -10,6 +10,9 @@ export interface OperationalDeltaEvidenceReport {
   explanation: string[];
   improvementReport: OperationalDeltaReport["improvementReport"];
   improvementEvidence: OperationalDeltaReport["improvementReport"]["evidence"];
+  operationalPlanningQuality: OperationalDeltaReport["metrics"]["orc"]["operationalPlanningQuality"];
+  operationalPlanningQualityExplanation: string[];
+  operationalPlanningQualityWorstCases: OperationalDeltaReport["metrics"]["orc"]["operationalPlanningQuality"]["worstCases"];
   planningInfluence: "none";
 }
 
@@ -24,6 +27,9 @@ export function buildOperationalDeltaEvidenceReport(report: OperationalDeltaRepo
     explanation: report.evidenceExplanation,
     improvementReport: report.improvementReport,
     improvementEvidence: report.improvementReport.evidence,
+    operationalPlanningQuality: report.metrics.orc.operationalPlanningQuality,
+    operationalPlanningQualityExplanation: report.metrics.orc.operationalPlanningQuality.explanations,
+    operationalPlanningQualityWorstCases: report.metrics.orc.operationalPlanningQuality.worstCases,
     planningInfluence: "none",
   };
 }

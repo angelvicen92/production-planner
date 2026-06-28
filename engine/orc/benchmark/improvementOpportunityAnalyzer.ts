@@ -12,7 +12,8 @@ export type ImprovementCategory =
   | "performance"
   | "computationalCost"
   | "robustness"
-  | "explainability";
+  | "explainability"
+  | "operationalQuality";
 
 export type ImprovementComparison = "orcBetter" | "equal" | "orcWorse";
 export type ImprovementPriority = "high" | "medium" | "low" | "none";
@@ -21,10 +22,10 @@ export interface ImprovementOpportunity {
   metric: OfficialOperationalMetric;
   category: ImprovementCategory;
   comparison: ImprovementComparison;
-  orcValue: number | null | Record<string, number> | number[];
-  v4Value: number | null | Record<string, number> | number[];
-  absoluteDelta: number | null | Record<string, number> | number[];
-  percentageDelta: number | null | Record<string, number> | number[];
+  orcValue: unknown;
+  v4Value: unknown;
+  absoluteDelta: unknown;
+  percentageDelta: unknown;
   estimatedImpact: number;
   priority: ImprovementPriority;
   priorityExplanation: string;
@@ -78,6 +79,7 @@ const METRICS: OfficialOperationalMetric[] = [
   "dependencyBlockagesAvoided",
   "dependencyAverageSlackRecovered",
   "dependencyCriticalityOperationalValueCorrelation",
+  "operationalPlanningQuality",
 ];
 
 const CATEGORY_BY_METRIC: Record<OfficialOperationalMetric, ImprovementCategory> = {
@@ -97,6 +99,7 @@ const CATEGORY_BY_METRIC: Record<OfficialOperationalMetric, ImprovementCategory>
   dependencyBlockagesAvoided: "robustness",
   dependencyAverageSlackRecovered: "continuity",
   dependencyCriticalityOperationalValueCorrelation: "continuity",
+  operationalPlanningQuality: "operationalQuality",
 };
 
 const LOWER_IS_BETTER = new Set<OfficialOperationalMetric>([
@@ -110,14 +113,21 @@ const LOWER_IS_BETTER = new Set<OfficialOperationalMetric>([
   "candidatesSimulated",
   "totalTime",
   "timeByIteration",
+  "operationalPlanningQuality",
 ]);
 
 const round = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
 const asRecord = (value: unknown): Record<string, number> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, number> : {};
 const numericMagnitude = (value: unknown): number => {
   if (typeof value === "number") return Math.abs(value);
-  if (Array.isArray(value)) return value.reduce((sum, item) => sum + Math.abs(Number(item) || 0), 0);
-  if (value && typeof value === "object") return Object.values(value as Record<string, number>).reduce((sum, item) => sum + Math.abs(Number(item) || 0), 0);
+  if (Array.isArray(value)) return value.reduce<number>((sum, item) => sum + numericMagnitude(item), 0);
+  if (value && typeof value === "object") return Object.values(value as Record<string, unknown>).reduce<number>((sum, item) => sum + numericMagnitude(item), 0);
+  return 0;
+};
+const signedMagnitude = (value: unknown): number => {
+  if (typeof value === "number") return value;
+  if (Array.isArray(value)) return value.reduce<number>((sum, item) => sum + signedMagnitude(item), 0);
+  if (value && typeof value === "object") return Object.values(value as Record<string, unknown>).reduce<number>((sum, item) => sum + signedMagnitude(item), 0);
   return 0;
 };
 const metricValue = (metrics: OperationalDeltaMetrics, metric: OfficialOperationalMetric) => metrics[metric];
@@ -125,9 +135,7 @@ const metricValue = (metrics: OperationalDeltaMetrics, metric: OfficialOperation
 function compareMetric(metric: OfficialOperationalMetric, absoluteDelta: unknown): ImprovementComparison {
   const magnitude = numericMagnitude(absoluteDelta);
   if (magnitude === 0) return "equal";
-  const signed = typeof absoluteDelta === "number" ? absoluteDelta : Array.isArray(absoluteDelta)
-    ? absoluteDelta.reduce((sum, item) => sum + (Number(item) || 0), 0)
-    : Object.values(asRecord(absoluteDelta)).reduce((sum, item) => sum + (Number(item) || 0), 0);
+  const signed = signedMagnitude(absoluteDelta);
   const lowerIsBetter = LOWER_IS_BETTER.has(metric);
   return lowerIsBetter ? (signed < 0 ? "orcBetter" : "orcWorse") : (signed > 0 ? "orcBetter" : "orcWorse");
 }

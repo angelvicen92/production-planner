@@ -320,3 +320,9 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 180 — 2026-06-28 15:27 CEST — ORC Operational Reasoning Score v1
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
+
+### Operational Planning Quality Metrics (ID 183)
+
+- ID 183 — 2026-06-28 17:52 CEST — Operational Planning Quality Metrics v1
+
+The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as read-only evidence for resource active span, effective work, idle time, fragmentation, talent active span, talent idle time, operational compactness, main-flow continuity quality, and dynamically detected critical-resource spread. These metrics are compared in Operational Delta Benchmark reports for ORC vs V4 and can be consumed by the Improvement Opportunity Analyzer without changing ORC, V4, the official planning, persistence, API, or UI behavior.
