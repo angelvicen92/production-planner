@@ -383,3 +383,9 @@ Limitaciones conocidas:
 ## ID 187 — Complete V3/V4 Diagnostics Separation
 
 Separates the selected V3/V4 result across diagnostics, JSON copy/download, visual result state, and reset actions. V3 diagnostics are read from `planning_runs`; V4 diagnostics and exports are read from `engine_plan_results`.
+
+## ID 191 — ORC Active Baseline-Seeded Planning v1
+
+- Fecha Europe/Madrid: 2026-06-29 20:28:19 CEST.
+- ORC Active ejecuta ORC sobre una semilla de planificación V4 completa para poder refinar una baseline segura sin relajar gates ni modificar V3/UI/schema.
+- Diagnostics incluye baselineSeed y traza si ORC reproduce baseline, cambia baseline o cae a V4 fallback.
