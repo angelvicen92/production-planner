@@ -396,3 +396,11 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - El baseline seed de ORC Active queda limitado a entradas mínimas de planificación (`taskId`, `startPlanned`, `endPlanned`, `assignedSpace`, `assignedResources`) y el input sembrado sanitiza tareas para evitar que entidades completas de DB/UI entren en `OperationalState`.
 - Antes de ejecutar ORC se valida que el seed sea serializable JSON, sin ciclos y por debajo del umbral documentado de 256 KiB; si falla, no se ejecuta ORC y se devuelve V4 fallback con `baseline_seed_not_serializable` o `baseline_seed_too_large`.
 - Diagnostics mantiene `baselineSeed` con `applied`, `seededPlanningCount`, `source`, `warnings` y `error` cuando aplica, sin relajar gates, sin cambiar V3, sin tocar schema y sin aplicar ORC si la semilla no es segura.
+
+## ID 193 — ORC Materialize Simulated Planning v1
+
+- Fecha Europe/Madrid: 2026-06-29 22:26:00 CEST.
+- ORC materializa explícitamente la planificación simulada con entradas mínimas derivadas de baseline seed o transformaciones de candidato, sin copiar objetos completos de tarea ni inventar tareas sin inicio/fin.
+- `SimulatedState` incluye `operationalStateSnapshot.planning` materializado y diagnostics `planningMaterialization` con source, plannedTaskCount, changedTaskCount y warnings serializables.
+- Si el candidato no aporta cambios aplicables, ORC preserva la planificación baseline (`baseline_seed_preserved`); si aplica cambios seguros, reporta `candidate_transformations` y el número de tareas modificadas.
+- El Active Planner refleja la materialización en `orcSummary`, `bestCandidateTrace` y `orcActivationReport` sin relajar gates, sin modificar V3, UI, schema, Commit Engine ni reglas hard.
