@@ -389,3 +389,10 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - Fecha Europe/Madrid: 2026-06-29 20:28:19 CEST.
 - ORC Active ejecuta ORC sobre una semilla de planificación V4 completa para poder refinar una baseline segura sin relajar gates ni modificar V3/UI/schema.
 - Diagnostics incluye baselineSeed y traza si ORC reproduce baseline, cambia baseline o cae a V4 fallback.
+
+## ID 192 — ORC Baseline Seed Crash Fix v1
+
+- Fecha Europe/Madrid: 2026-06-29 21:05:47 CEST.
+- El baseline seed de ORC Active queda limitado a entradas mínimas de planificación (`taskId`, `startPlanned`, `endPlanned`, `assignedSpace`, `assignedResources`) y el input sembrado sanitiza tareas para evitar que entidades completas de DB/UI entren en `OperationalState`.
+- Antes de ejecutar ORC se valida que el seed sea serializable JSON, sin ciclos y por debajo del umbral documentado de 256 KiB; si falla, no se ejecuta ORC y se devuelve V4 fallback con `baseline_seed_not_serializable` o `baseline_seed_too_large`.
+- Diagnostics mantiene `baselineSeed` con `applied`, `seededPlanningCount`, `source`, `warnings` y `error` cuando aplica, sin relajar gates, sin cambiar V3, sin tocar schema y sin aplicar ORC si la semilla no es segura.

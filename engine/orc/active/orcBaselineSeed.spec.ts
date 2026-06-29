@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { EngineInput, EngineOutput } from "../../types";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
-import { buildORCBaselineSeededInput } from "./orcBaselineSeed";
+import { assertSerializableORCSeed, buildORCBaselineSeededInput } from "./orcBaselineSeed";
 
 const input = (count = 3): EngineInput => ({
   planId: 191,
@@ -47,4 +47,32 @@ test("buildORCBaselineSeededInput preserves protected task planning when baselin
   assert.equal(done.startPlanned, "08:00");
   assert.equal(done.endPlanned, "08:10");
   assert.equal(seeded.baselineSeed.warnings.length, 0);
+});
+
+test("baseline seed remains planning-only and JSON serializable", () => {
+  const rich = input(1);
+  (rich.tasks![0] as any).comments = [{ body: "must not leak" }];
+  (rich.tasks![0] as any).template = { id: 1, name: "full template" };
+  (rich.tasks![0] as any).createdAt = "2026-06-29T00:00:00.000Z";
+  const result = buildORCBaselineSeededInput(rich, output(1));
+  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "endPlanned", "startPlanned", "taskId"]);
+  assert.equal(JSON.stringify(result.seedPlanning).includes("comments"), false);
+  assert.equal(JSON.stringify(result.seedPlanning).includes("template"), false);
+  assert.doesNotThrow(() => JSON.stringify(result.seedPlanning));
+});
+
+test("baseline seed keeps only required planning values for each task", () => {
+  const result = buildORCBaselineSeededInput(input(2), output(2));
+  assert.deepEqual(result.seedPlanning[1], { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedSpace: 201, assignedResources: [10] });
+  const taskJson = JSON.stringify(result.input.tasks![0]);
+  assert.equal(taskJson.includes("comments"), false);
+  assert.equal(taskJson.includes("createdAt"), false);
+});
+
+
+test("baseline seed safety rejects non-serializable and too-large payloads", () => {
+  const circular: any = { taskId: 1 };
+  circular.self = circular;
+  assert.throws(() => assertSerializableORCSeed(circular), /baseline_seed_not_serializable/);
+  assert.throws(() => assertSerializableORCSeed([{ taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [10], blob: "x".repeat(128) }], 64), /baseline_seed_too_large/);
 });

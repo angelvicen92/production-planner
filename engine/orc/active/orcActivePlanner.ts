@@ -7,7 +7,7 @@ import type { Candidate, CandidateState, Evidence, SimulatedState, ValidationRes
 import { calculateOperationalPlanningQualityMetrics, type OperationalPlanningQualityMetrics, type PlanningAssignment } from "../benchmark/operationalPlanningQualityMetrics";
 import { stableStringify } from "../structuralEquality";
 import { deepFreeze } from "../immutability";
-import { buildORCBaselineSeededInput, type ORCBaselineSeedDiagnostics } from "./orcBaselineSeed";
+import { assertSerializableORCSeed, buildORCBaselineSeededInput, type ORCBaselineSeedDiagnostics } from "./orcBaselineSeed";
 
 export type ORCActiveUsedEngine = "orc" | "v4_fallback";
 
@@ -200,6 +200,8 @@ function makespan(assignments: PlanningAssignment[]): number {
 
 function readableFallbackReason(reason: string | null, gates: Record<string, boolean>, planned: { needed: number; orc: number }): string | null {
   if (!reason) return null;
+  if (reason === "baseline_seed_not_serializable") return "No se utiliza ORC porque el baseline seed no superó la validación de serialización segura.";
+  if (reason === "baseline_seed_too_large") return "No se utiliza ORC porque el baseline seed excedió el umbral de tamaño documentado.";
   if (reason === "orc_execution_failed") return "No se utiliza ORC porque la ejecución del evaluador ORC falló antes de producir una simulación segura.";
   if (reason === "no_valid_orc_simulation") return "No se utiliza ORC porque no existe una simulación ORC válida sin hard violations.";
   if (reason === "orc_planning_extraction_empty") return "No se utiliza ORC porque la simulación seleccionada no expone ninguna planificación ORC convertible a tareas planificadas.";
@@ -299,8 +301,26 @@ function opqmNotWorse(v4: OperationalPlanningQualityMetrics, orc: OperationalPla
 
 export function runORCActivePlanner(input: EngineInput, options: ORCActivePlannerOptions = {}): ORCActivePlannerResult {
   const v4 = generatePlanV4(input, options);
-  const { input: seededInput, baselineSeed } = buildORCBaselineSeededInput(input, v4.output);
   const reportExecutionTimeMs = options.orcShadowResult !== undefined ? 0 : (v4.diagnostics.performance?.runtimeMs ?? 0);
+  let seededInput: EngineInput | null = null;
+  let baselineSeed: ORCBaselineSeedDiagnostics = { applied: false, seededPlanningCount: 0, source: "v4_baseline", warnings: [] };
+  try {
+    const seeded = buildORCBaselineSeededInput(input, v4.output);
+    assertSerializableORCSeed(seeded.seedPlanning);
+    seededInput = seeded.input;
+    baselineSeed = seeded.baselineSeed;
+  } catch (error) {
+    baselineSeed = { applied: false, seededPlanningCount: 0, source: "v4_baseline", warnings: ["ORC baseline seed disabled before execution."], error: error instanceof Error ? error.message : String(error) };
+    const gates = { v4BaselineAvailable: true, orcExecuted: false };
+    const v4Planned = (v4.output.plannedTasks ?? []).map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
+    const emptyMetrics = calculateOperationalPlanningQualityMetrics(input, []);
+    const v4Metrics = calculateOperationalPlanningQualityMetrics(input, v4Planned);
+    const fallbackReason = baselineSeed.error?.startsWith("baseline_seed_too_large") ? "baseline_seed_too_large" : "baseline_seed_not_serializable";
+    const report = buildActivationReport({ usedEngine: "v4_fallback", fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation: null, validation: null, score: null, v4Metrics, orcMetrics: emptyMetrics, v4Planned, orcPlanned: [], v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: neededTaskIds(input).length });
+    const trace = buildBestCandidateTrace({ baselineSeed, v4Planned, shadow: null, simulation: null, validation: null, candidateState: null, candidate: null, score: null, orcPlanned: [], pendingTasks: neededTaskIds(input), extractionSource: "none", extractionWarnings: ["ORC baseline seed failed safety validation before execution."], orcMetrics: emptyMetrics, gates, discardReason: fallbackReason });
+    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason, gates, orcSummary: { error: baselineSeed.error, baselineSeed }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, baselineSeed, orcActiveBridge: true };
+    return { output: v4.output, diagnostics };
+  }
   let shadow: ORCShadowModeResult | null = null;
   try {
     shadow = options.orcShadowResult !== undefined ? options.orcShadowResult : (options.runORC ? options.runORC(seededInput) : runORCShadowMode(seededInput, { enabled: true, createdAt: null }));
