@@ -266,6 +266,12 @@ export interface SimulatedState {
   readonly simulationMode: "READ_ONLY_BASELINE" | "ASSIGNMENT_APPLICATION_SHADOW";
   readonly readOnly: true;
   readonly createdAt: string | null;
+  readonly planningMaterialization?: {
+    readonly source: "baseline_seed_preserved" | "candidate_transformations" | "none";
+    readonly plannedTaskCount: number;
+    readonly changedTaskCount: number;
+    readonly warnings: readonly string[];
+  };
 }
 
 export interface ValidationResult {

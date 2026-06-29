@@ -13,6 +13,14 @@ export type ORCActiveUsedEngine = "orc" | "v4_fallback";
 
 export type ORCActivationGateStatus = "PASS" | "FAIL";
 
+
+export interface ORCPlanningMaterializationDiagnostics {
+  source: "baseline_seed_preserved" | "candidate_transformations" | "none";
+  plannedTaskCount: number;
+  changedTaskCount: number;
+  warnings: readonly string[];
+}
+
 export interface ORCBestCandidateTrace {
   version: "ORC-BEST-CANDIDATE-TRACE-V1";
   simulationCount: number;
@@ -33,6 +41,7 @@ export interface ORCBestCandidateTrace {
   evidence: Evidence;
   seededPlanningCount: number;
   planningRelationToBaseline: "unknown" | "baseline_reproduced" | "orc_changed_baseline" | "empty";
+  planningMaterialization: ORCPlanningMaterializationDiagnostics;
 }
 
 export interface ORCActivationReport {
@@ -44,6 +53,7 @@ export interface ORCActivationReport {
   fallback: { reason: string | null; explanation: string | null };
   recommendation: { type: "NEXT_IMPROVEMENT"; message: string };
   evidence: { selectedSimulatedStateId: string | null; validationResult: string | null; v4PlannedTasks: number; orcPlannedTasks: number; v4UnplannedTasks: number; orcUnplannedTasks: number };
+  planningMaterialization: ORCPlanningMaterializationDiagnostics;
 }
 
 export interface ORCActiveDiagnostics {
@@ -226,6 +236,13 @@ function recommendation(gates: Record<string, boolean>, comparison: ORCActivatio
   return "Mantener ORC activo y monitorizar regresiones.";
 }
 
+
+function planningMaterializationOf(simulation: SimulatedState | null): ORCPlanningMaterializationDiagnostics {
+  const raw = simulation?.planningMaterialization;
+  if (!raw) return { source: "none", plannedTaskCount: 0, changedTaskCount: 0, warnings: ["No planning materialization diagnostics available."] };
+  return { source: raw.source, plannedTaskCount: raw.plannedTaskCount, changedTaskCount: raw.changedTaskCount, warnings: [...raw.warnings] };
+}
+
 function buildActivationReport(args: { usedEngine: ORCActiveUsedEngine; fallbackReason: string | null; gates: Record<string, boolean>; executionTimeMs: number; simulation: SimulatedState | null; validation: ValidationResult | null; score: number | null; v4Metrics: OperationalPlanningQualityMetrics; orcMetrics: OperationalPlanningQualityMetrics; v4Planned: PlanningAssignment[]; orcPlanned: PlanningAssignment[]; v4UnplannedTasks: number; neededTasks: number }): ORCActivationReport {
   const comparison = {
     coachIdleTimeDelta: total(args.orcMetrics.resourceIdleTime) - total(args.v4Metrics.resourceIdleTime),
@@ -245,6 +262,7 @@ function buildActivationReport(args: { usedEngine: ORCActiveUsedEngine; fallback
     fallback: { reason: args.fallbackReason, explanation },
     recommendation: { type: "NEXT_IMPROVEMENT", message: recommendation(args.gates, comparison) },
     evidence: { selectedSimulatedStateId: args.simulation?.id ?? null, validationResult: args.validation?.result ?? null, v4PlannedTasks: args.v4Planned.length, orcPlannedTasks: args.orcPlanned.length, v4UnplannedTasks: args.v4UnplannedTasks, orcUnplannedTasks: Math.max(0, args.neededTasks - args.orcPlanned.length) },
+    planningMaterialization: planningMaterializationOf(args.simulation),
   };
 }
 
@@ -271,6 +289,7 @@ function buildBestCandidateTrace(args: { baselineSeed: ORCBaselineSeedDiagnostic
     plannedTaskCount: args.orcPlanned.length,
     seededPlanningCount: args.baselineSeed.seededPlanningCount,
     planningRelationToBaseline: args.orcPlanned.length === 0 ? "empty" : samePlanningFingerprint(args.orcPlanned, args.v4Planned) ? "baseline_reproduced" : "orc_changed_baseline",
+    planningMaterialization: planningMaterializationOf(args.simulation),
     pendingTaskCount: args.pendingTasks.length,
     plannedTasks: [...args.orcPlanned].sort((a, b) => a.taskId - b.taskId || a.startPlanned.localeCompare(b.startPlanned) || a.endPlanned.localeCompare(b.endPlanned)).slice(0, 10),
     pendingTasks: [...args.pendingTasks].sort((a, b) => a - b).slice(0, 10),
@@ -364,7 +383,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const fallbackReason = failedGate ? (simulation ? (orcPlanned.length === 0 && needed.length > 0 ? "orc_planning_extraction_empty" : `gate_failed:${failedGate}`) : "no_valid_orc_simulation") : null;
   const orcActivationReport = buildActivationReport({ usedEngine, fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation, validation, score: value, v4Metrics, orcMetrics, v4Planned, orcPlanned, v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: needed.length });
   const bestCandidateTrace = buildBestCandidateTrace({ baselineSeed, v4Planned, shadow, simulation, validation, candidateState, candidate, score: value, orcPlanned, pendingTasks: extraction.pendingTaskIds.length ? extraction.pendingTaskIds : needed.filter((id) => !plannedIds.has(id)), extractionSource: extraction.extractionSource, extractionWarnings: extraction.extractionWarnings, orcMetrics, gates, discardReason: fallbackReason });
-  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, gates, orcSummary: { ...(shadow?.summary ?? null), baselineSeed, selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value, planningExtraction: { source: extraction.extractionSource, plannedTaskCount: orcPlanned.length, pendingTaskCount: extraction.pendingTaskIds.length, warnings: extraction.extractionWarnings } }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, baselineSeed, orcActiveBridge: true };
+  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, gates, orcSummary: { ...(shadow?.summary ?? null), baselineSeed, selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value, planningExtraction: { source: extraction.extractionSource, plannedTaskCount: orcPlanned.length, pendingTaskCount: extraction.pendingTaskIds.length, warnings: extraction.extractionWarnings }, planningMaterialization: planningMaterializationOf(simulation) }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, baselineSeed, orcActiveBridge: true };
 
   if (failedGate) return { output: v4.output, diagnostics };
   return { output: { ...v4.output, feasible: true, complete: true, hardFeasible: true, plannedTasks: orcPlanned, unplanned: [], warnings: v4.output.warnings ?? [] }, diagnostics };

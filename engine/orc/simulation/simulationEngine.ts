@@ -1,6 +1,7 @@
 import type { CandidateState, Evidence, OperationalState, SimulatedState } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { applyCandidateAssignments } from "./applyCandidateAssignments";
+import { materializeSimulatedPlanning } from "./materializeSimulatedPlanning";
 
 export interface SimulationEngineOptions {
   maxSimulations?: number;
@@ -26,8 +27,14 @@ function normalizeBudget(value: number | undefined): number {
   return Math.max(0, Math.floor(value));
 }
 
+function emptyCognitive(): OperationalState["cognitive"] {
+  return { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} };
+}
+
 function cloneOperationalState(state: OperationalState): OperationalState {
-  return JSON.parse(JSON.stringify(state)) as OperationalState;
+  const cloned = JSON.parse(JSON.stringify(state)) as OperationalState;
+  cloned.cognitive = emptyCognitive();
+  return cloned;
 }
 
 export function simulateCandidateStates(
@@ -59,6 +66,14 @@ export function simulateCandidateStates(
     const officialStateBefore = JSON.stringify(state);
     const mutableSnapshot = cloneOperationalState(state);
     const application = applyCandidateAssignments(mutableSnapshot, candidateState.sourceAssignments ?? []);
+    const materialization = materializeSimulatedPlanning(candidateState, state);
+    mutableSnapshot.planning = materialization.planning.map((entry) => ({
+      taskId: entry.taskId,
+      startPlanned: entry.startPlanned,
+      endPlanned: entry.endPlanned,
+      assignedResourceIds: [...entry.assignedResourceIds],
+      spaceId: entry.spaceId ?? null,
+    } as OperationalState["planning"][number]));
     const officialStateUnchanged = JSON.stringify(state) === officialStateBefore;
     const simulationMode = (candidateState.sourceAssignments?.length ?? 0) > 0 ? ASSIGNMENT_SIMULATION_MODE : READ_ONLY_SIMULATION_MODE;
     const snapshot = deepFreeze(mutableSnapshot) as OperationalState;
@@ -71,6 +86,7 @@ export function simulateCandidateStates(
       simulationMode,
       readOnly: true,
       createdAt,
+      planningMaterialization: materialization.diagnostics,
     }) as SimulatedState;
 
     simulatedStates.push(simulatedState);
@@ -91,6 +107,7 @@ export function simulateCandidateStates(
         assignmentsReceived: candidateState.sourceAssignments?.length ?? 0,
         assignmentApplication: application.evidenceData,
         realChangeCount: application.realChangeCount,
+        planningMaterialization: materialization.diagnostics,
         officialStateUnchanged,
         mutatesOperationalState: false,
         executesTransformations: application.realChangeCount > 0,
