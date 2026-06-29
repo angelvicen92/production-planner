@@ -215,6 +215,8 @@ export type EngineDiagnosticsMetadata = {
 };
 
 export type EngineDiagnostics = {
+  resultSource?: "planning_runs" | "engine_plan_results" | null;
+  planningRunId?: number | null;
   id?: number | null;
   planId?: number | null;
   createdAt?: string | null;
@@ -239,9 +241,51 @@ export type EngineDiagnostics = {
   } | null;
 };
 
+export type EngineResult = {
+  id?: number | null;
+  planId?: number | null;
+  planningRunId?: number | null;
+  engineVersion?: "v3" | "v4" | string | null;
+  status?: string | null;
+  plannedTasks?: unknown[] | null;
+  unplannedTasks?: unknown[] | null;
+  diagnostics?: Record<string, unknown> | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
 type LatestEngineDiagnosticsResponse = {
   diagnostics?: EngineDiagnostics | null;
 };
+
+export function engineResultToDiagnostics(result: EngineResult | null | undefined): EngineDiagnostics | null {
+  if (!result || typeof result !== "object") return null;
+  const diagnostics = result.diagnostics && typeof result.diagnostics === "object" ? result.diagnostics as Record<string, any> : {};
+  const summary = diagnostics.summary && typeof diagnostics.summary === "object" ? diagnostics.summary as Record<string, any> : {};
+  const metadata = (diagnostics.engineMetadata && typeof diagnostics.engineMetadata === "object" ? diagnostics.engineMetadata : diagnostics) as Record<string, unknown>;
+  return {
+    ...diagnostics,
+    resultSource: "engine_plan_results",
+    id: Number.isFinite(Number(result.id)) ? Number(result.id) : null,
+    planningRunId: Number.isFinite(Number(result.planningRunId)) ? Number(result.planningRunId) : null,
+    planId: Number.isFinite(Number(result.planId)) ? Number(result.planId) : null,
+    createdAt: typeof result.createdAt === "string" ? result.createdAt : null,
+    engineVersion: String(result.engineVersion ?? diagnostics.engineVersion ?? "v4"),
+    status: String(result.status ?? diagnostics.status ?? "unknown"),
+    solutionSource: String(diagnostics.solutionSource ?? diagnostics.usedEngine ?? "engine_plan_results"),
+    plannedTasks: Number.isFinite(Number(diagnostics.plannedTasks)) ? Number(diagnostics.plannedTasks) : Array.isArray(result.plannedTasks) ? result.plannedTasks.length : Number.isFinite(Number(summary.plannedTasks)) ? Number(summary.plannedTasks) : null,
+    unplannedTasks: Number.isFinite(Number(diagnostics.unplannedTasks)) ? Number(diagnostics.unplannedTasks) : Array.isArray(result.unplannedTasks) ? result.unplannedTasks.length : Number.isFinite(Number(summary.unplannedTasks)) ? Number(summary.unplannedTasks) : null,
+    hardConstraintViolations: Number.isFinite(Number(diagnostics.hardConstraintViolations)) ? Number(diagnostics.hardConstraintViolations) : Number.isFinite(Number(summary.hardConstraintViolations)) ? Number(summary.hardConstraintViolations) : null,
+    mainStageGapMinutes: Number.isFinite(Number(diagnostics.mainStageGapMinutes)) ? Number(diagnostics.mainStageGapMinutes) : Number.isFinite(Number(summary.mainStageGapMinutes)) ? Number(summary.mainStageGapMinutes) : null,
+    mainStageGapCount: Number.isFinite(Number(diagnostics.mainStageGapCount)) ? Number(diagnostics.mainStageGapCount) : Number.isFinite(Number(summary.mainStageGapCount)) ? Number(summary.mainStageGapCount) : null,
+    coachSwitchCount: Number.isFinite(Number(diagnostics.coachSwitchCount)) ? Number(diagnostics.coachSwitchCount) : Number.isFinite(Number(summary.coachSwitchCount)) ? Number(summary.coachSwitchCount) : null,
+    selectedCandidateMetrics: (diagnostics.selectedCandidateMetrics ?? null) as any,
+    engineMetadata: metadata as EngineDiagnosticsMetadata,
+    diagnosticWarnings: (diagnostics.diagnosticWarnings ?? null) as any,
+  };
+}
+
+export const engineResultQueryKey = (planId: number | null, engineVersion: "v3" | "v4") => ["engine-result", planId, engineVersion] as const;
 
 export const engineDiagnosticsQueryKey = (planId: number | null, latestSuccessRunId?: number | null) => latestSuccessRunId === undefined
   ? ["engine-diagnostics", planId] as const
@@ -262,6 +306,23 @@ export function useEngineDiagnostics(planId: number | null, latestSuccessRunId: 
       return response?.diagnostics && typeof response.diagnostics === "object"
         ? response.diagnostics
         : null;
+    },
+  });
+}
+
+
+export function useLatestEngineResult(planId: number | null, engineVersion: "v3" | "v4") {
+  return useQuery<EngineResult | null>({
+    queryKey: engineResultQueryKey(planId, engineVersion),
+    enabled: Number.isFinite(planId) && Number(planId) > 0,
+    retry: false,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const response = await apiRequest<EngineResult | null>(
+        api.planningRuns.latestEngineResult.method,
+        buildUrl(api.planningRuns.latestEngineResult.path, { id: Number(planId), engineVersion }),
+      );
+      return response && typeof response === "object" ? response : null;
     },
   });
 }

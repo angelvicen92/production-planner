@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEngineDiagnostics, type EngineDiagnosticWarning } from "@/hooks/use-engine-diagnostics";
+import { engineResultToDiagnostics, useEngineDiagnostics, useLatestEngineResult, type EngineDiagnosticWarning } from "@/hooks/use-engine-diagnostics";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
 import {
@@ -116,6 +116,7 @@ type PlanEngineDiagnosticsProps = {
   resourceNamesById?: Record<number, string> | null;
   planningActive?: boolean;
   latestSuccessRunId?: number | null;
+  currentResult?: "v3" | "v4";
 };
 
 export function PlanEngineDiagnostics({
@@ -125,10 +126,13 @@ export function PlanEngineDiagnostics({
   resourceNamesById,
   planningActive = false,
   latestSuccessRunId = null,
+  currentResult = "v3",
 }: PlanEngineDiagnosticsProps) {
   const { role } = useUserRole();
   const { toast } = useToast();
-  const diagnosticsQuery = useEngineDiagnostics(planId, latestSuccessRunId);
+  const v3DiagnosticsQuery = useEngineDiagnostics(planId, latestSuccessRunId);
+  const v4ResultQuery = useLatestEngineResult(planId, "v4");
+  const diagnosticsQuery = currentResult === "v4" ? v4ResultQuery : v3DiagnosticsQuery;
   const optimizerSettingsQuery = useQuery<TransportOperationalSettings>({
     queryKey: [api.optimizerSettings.get.path],
     queryFn: () => apiRequest<TransportOperationalSettings>("GET", api.optimizerSettings.get.path),
@@ -182,18 +186,24 @@ export function PlanEngineDiagnostics({
     );
   }
 
-  const diagnostics = diagnosticsQuery.data;
+  const selectedV4Result = currentResult === "v4" ? v4ResultQuery.data : null;
+  const diagnostics = currentResult === "v4" ? engineResultToDiagnostics(selectedV4Result) : v3DiagnosticsQuery.data;
   if (!diagnostics) {
     return (
       <Alert>
         <Info className="h-4 w-4" />
         <AlertTitle>Aún no hay diagnóstico del motor para este plan.</AlertTitle>
-        <AlertDescription>Se mostrará aquí después de una ejecución V3 que persista su resumen.</AlertDescription>
+        <AlertDescription>Se mostrará aquí cuando exista un resultado persistido para el motor seleccionado.</AlertDescription>
       </Alert>
     );
   }
 
   const metadata = diagnostics.engineMetadata ?? {};
+  const usedEngine = (metadata as any)?.usedEngine ?? (diagnostics as any)?.usedEngine ?? null;
+  const fallbackReason = (metadata as any)?.fallbackReason ?? (diagnostics as any)?.fallbackReason ?? null;
+  const gates = (metadata as any)?.gates ?? (diagnostics as any)?.gates ?? null;
+  const opqm = (metadata as any)?.OPQM ?? (metadata as any)?.opqm ?? (diagnostics as any)?.OPQM ?? (diagnostics as any)?.opqm ?? null;
+  const operationalDelta = (metadata as any)?.operationalDelta ?? (metadata as any)?.operational_delta ?? (diagnostics as any)?.operationalDelta ?? null;
   const v4Quality = (metadata as any)?.quality ?? (diagnostics as any)?.quality ?? null;
   const candidateRunner = (metadata as any)?.candidateRunner ?? (diagnostics as any)?.candidateRunner ?? null;
   const productionWave = Array.isArray(candidateRunner?.candidates)
@@ -230,14 +240,16 @@ export function PlanEngineDiagnostics({
     : null;
   const exportAvailability = getDiagnosticsExportAvailability({
     planningActive,
-    latestSuccessRunId,
+    latestSuccessRunId: currentResult === "v4" ? null : latestSuccessRunId,
     diagnosticsRunId: Number.isFinite(Number(diagnostics.id)) ? Number(diagnostics.id) : null,
     isFetching: diagnosticsQuery.isFetching,
     isError: diagnosticsQuery.isError,
   });
 
   const serializeSnapshot = () => {
-    const snapshot = buildEngineDiagnosticsSnapshot(diagnostics, { planId, operationalQualityInput });
+    const snapshot = currentResult === "v4" && selectedV4Result
+      ? { exportVersion: "engine-result-v1", selectedResult: "V4", sourceTable: "engine_plan_results", result: selectedV4Result }
+      : buildEngineDiagnosticsSnapshot(diagnostics, { planId, operationalQualityInput });
     return { snapshot, json: JSON.stringify(snapshot, null, 2) };
   };
 
@@ -278,7 +290,9 @@ export function PlanEngineDiagnostics({
       const url = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = engineDiagnosticsFilename(snapshot);
+      anchor.download = currentResult === "v4"
+        ? `engine-result-plan-${planId}-v4-${diagnostics.id ?? "unknown"}.json`
+        : engineDiagnosticsFilename(snapshot as any);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -302,11 +316,13 @@ export function PlanEngineDiagnostics({
               <Cpu className="h-4 w-4" /> Diagnóstico del motor
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              JSON run #{diagnostics.id ?? "—"}{createdAt ? ` · generatedAt ${createdAt}` : ""}
+              Current Result: {currentResult.toUpperCase()} · {currentResult === "v4" ? "engine_plan_results" : "planning_runs"} #{diagnostics.id ?? "—"}{createdAt ? ` · generatedAt ${createdAt}` : ""}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">Motor: {currentResult.toUpperCase()}</Badge>
+              {currentResult === "v4" ? <Badge variant="outline">Engine: {usedEngine === "orc" || (metadata as any)?.orcActiveBridge ? "ORC Active" : "V4 Fallback"}</Badge> : null}
               <Badge variant="outline" className="capitalize">{label(diagnostics.solutionSource)}</Badge>
               <Badge
                 variant={isHealthy ? "default" : diagnostics.status === "infeasible" || diagnostics.status === "error" ? "destructive" : "secondary"}
@@ -361,6 +377,19 @@ export function PlanEngineDiagnostics({
           </ul>
         </details>
 
+
+        {currentResult === "v4" ? (
+          <section aria-labelledby="diagnostics-v4-engine-state">
+            <h3 id="diagnostics-v4-engine-state" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado V4 / ORC</h3>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              <MetricCell title="usedEngine" value={label(usedEngine)} />
+              <MetricCell title="fallbackReason" value={label(fallbackReason)} />
+              <MetricCell title="gates" value={gates ? JSON.stringify(gates) : "—"} />
+              <MetricCell title="OPQM" value={opqm ? JSON.stringify(opqm) : "—"} />
+              <MetricCell title="Operational Delta" value={operationalDelta ? JSON.stringify(operationalDelta) : "—"} />
+            </div>
+          </section>
+        ) : null}
         <section aria-labelledby="diagnostics-main-state">
           <h3 id="diagnostics-main-state" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Estado principal

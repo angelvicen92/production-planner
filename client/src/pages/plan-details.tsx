@@ -38,7 +38,7 @@ import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
 import { patchManualBlock } from "@/lib/api-hooks";
 import { planQueryKey } from "@/lib/plan-query-keys";
-import { engineDiagnosticsQueryKey } from "@/hooks/use-engine-diagnostics";
+import { engineDiagnosticsQueryKey, engineResultQueryKey } from "@/hooks/use-engine-diagnostics";
 import { countRenderedPlanningTasks, derivePlanningReadinessExpectation, evaluatePlanningReadyGate } from "@/lib/planning-ready-gate";
 import {
   hasActivePlanningContext,
@@ -1245,7 +1245,7 @@ export default function PlanDetailsPage() {
   const planningRunQ = usePlanningRun(id);
   const [selectedPlanningEngine, setSelectedPlanningEngine] = useState<"v3" | "v4">("v3");
   const v4ResultQ = useQuery({
-    queryKey: ["engine-result", id, "v4"],
+    queryKey: engineResultQueryKey(id, "v4"),
     queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestEngineResult.path, { id, engineVersion: "v4" })),
     enabled: Number.isFinite(id) && id > 0,
   });
@@ -2162,20 +2162,22 @@ ${reasonMessage}` : message,
     return map;
   }, [planningRunQ.data?.lastReasons, formatInfeasibleReason]);
 
-  const onResetPlan = async (mode: "partial" | "total") => {
+  const onResetPlan = async (mode: "partial" | "total" | "v4" | "complete") => {
     setResetPending(true);
     try {
-      const result = await apiRequest<any>("POST", `/api/plans/${id}/reset`, { mode });
+      const apiMode = mode === "complete" ? "total" : mode;
+      const result = await apiRequest<any>("POST", `/api/plans/${id}/reset`, { mode: apiMode });
       await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+      await queryClient.invalidateQueries({ queryKey: engineResultQueryKey(id, "v4") });
       await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-      if (mode === "total") {
+      if (mode === "total" || mode === "complete") {
         setManualDraftBlockIds([]);
         setManualEditsSnapshot({});
       }
       setResetDialogOpen(false);
       toast({
-        title: mode === "partial" ? "Reset parcial completado" : "Reset total completado",
-        description: mode === "total"
+        title: mode === "v4" ? "Resultado V4 eliminado" : mode === "partial" ? "Reset V3 completado" : "Reset completo completado",
+        description: mode === "v4" ? `Resultados V4 eliminados: ${Number(result?.deletedV4ResultsCount ?? 0)}` : (mode === "total" || mode === "complete")
           ? `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)} · Bloqueos manuales: ${Number(result?.clearedManualBlocks ?? 0)} · Locks de bloqueos: ${Number(result?.clearedManualBlockLocks ?? 0)}`
           : `Tareas limpiadas: ${Number(result?.clearedTasksCount ?? 0)} · Locks limpiados: ${Number(result?.clearedLocksCount ?? 0)}`,
       });
@@ -4221,12 +4223,9 @@ ${reasonMessage}` : message,
                 </div>
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={resetPending}>Cancelar</Button>
-                  <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>
-                    {resetPending ? "Procesando..." : "Reset parcial"}
-                  </Button>
-                  <Button variant="destructive" onClick={() => void onResetPlan("total")} disabled={resetPending}>
-                    {resetPending ? "Procesando..." : "Reset total"}
-                  </Button>
+                  <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>{resetPending ? "Procesando..." : "Reset V3"}</Button>
+                  <Button variant="secondary" onClick={() => void onResetPlan("v4")} disabled={resetPending}>{resetPending ? "Procesando..." : "Eliminar resultado V4"}</Button>
+                  <Button variant="destructive" onClick={() => void onResetPlan("complete")} disabled={resetPending}>{resetPending ? "Procesando..." : "Reset completo"}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -4257,6 +4256,7 @@ ${reasonMessage}` : message,
                 resourceNamesById={planResourceItemNameById}
                 planningActive={planningInProgress || getPlanningRunUiState(planningRunQ.data) === "active"}
                 latestSuccessRunId={planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null}
+                currentResult={selectedPlanningEngine}
               />
               {selectedPlanningEngine === "v4" ? (
                 <Card className="p-4">
@@ -4472,12 +4472,9 @@ ${reasonMessage}` : message,
                   </div>
                   <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={resetPending}>Cancelar</Button>
-                    <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>
-                      {resetPending ? "Procesando..." : "Reset parcial"}
-                    </Button>
-                    <Button variant="destructive" onClick={() => void onResetPlan("total")} disabled={resetPending}>
-                      {resetPending ? "Procesando..." : "Reset total"}
-                    </Button>
+                    <Button variant="secondary" onClick={() => void onResetPlan("partial")} disabled={resetPending}>{resetPending ? "Procesando..." : "Reset V3"}</Button>
+                    <Button variant="secondary" onClick={() => void onResetPlan("v4")} disabled={resetPending}>{resetPending ? "Procesando..." : "Eliminar resultado V4"}</Button>
+                    <Button variant="destructive" onClick={() => void onResetPlan("complete")} disabled={resetPending}>{resetPending ? "Procesando..." : "Reset completo"}</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
