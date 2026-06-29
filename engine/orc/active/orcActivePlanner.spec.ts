@@ -232,3 +232,10 @@ test("determinismo", () => {
   assert.deepEqual(a.diagnostics.orcActivationReport, b.diagnostics.orcActivationReport);
   assert.deepEqual(a.diagnostics.bestCandidateTrace, b.diagnostics.bestCandidateTrace);
 });
+
+test("ORC Active no lanza excepción si la ejecución con seed falla", () => {
+  assert.doesNotThrow(() => runORCActivePlanner(input(), { runORC: () => { throw new TypeError("seed rejected"); } }));
+  const result = runORCActivePlanner(input(), { runORC: () => { throw new TypeError("seed rejected"); } });
+  assert.equal(result.diagnostics.usedEngine, "v4_fallback");
+  assert.equal(result.diagnostics.baselineSeed.source, "v4_baseline");
+});
