@@ -67,6 +67,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 - ID 188 — 2026-06-29 UTC — ORC Activation Report v1
+- ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -324,6 +325,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 - ID 188 — 2026-06-29 UTC — ORC Activation Report v1
+- ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
 
 ### Operational Planning Quality Metrics (ID 183)
 
@@ -336,6 +338,10 @@ The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as rea
 ### ORC Active V4 Bridge v1 (ID 186)
 
 El botón Generar V4 ejecuta ahora un puente activo ORC controlado: primero calcula V4 como baseline seguro, después evalúa ORC, convierte sólo simulaciones válidas a `EngineOutput`, aplica gates de seguridad y cae automáticamente a V4 cuando ORC no es aplicable. Los diagnostics incluyen `orcActiveBridge`, `usedEngine`, `fallbackReason`, gates y comparación OPQM sin modificar schema ni aplicar tareas al plan oficial.
+
+### ORC Best Candidate Trace v1 (ID 189)
+
+Cada ejecución ORC mediante el puente activo registra `bestCandidateTrace` en diagnostics con número de simulaciones, mejor candidato, score, tareas planificadas y pendientes, hard violations, soft metrics, OPQM, gates superados/fallidos y motivo exacto de descarte aunque finalmente se use V4. La traza incluye evidence read-only y no modifica ORC, V4, Decision Engine, Planning ni UI.
 
 ### ORC Activation Report v1 (ID 188)
 

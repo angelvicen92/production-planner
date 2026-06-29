@@ -40,7 +40,7 @@ const shadow = (planning: OperationalState["planning"], violations: string[] = [
   const validation: ValidationResult = deepFreeze({ id: "val:1", simulatedStateId: sim.id, result: violations.length ? "INVALID" : "VALID", violatedConstraints: violations, explanation: "test", validatedAt: null, evidenceIds: [] }) as ValidationResult;
   return {
     operationalState: state([]), operationalMap: {} as any, operationalAnalysis: {} as any, operationalCriticality: {} as any,
-    opportunities: [], diagnoses: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [sim], validationResults: [validation],
+    opportunities: [], diagnoses: [], searchSpaces: [], candidates: [{ id: "candidate:1", state: { status: "valid", evidenceIds: [], metadata: {} }, assignments: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", spaceId: 1, resourceIds: [10] }], operationalValues: [], evidenceIds: [], metadata: { source: "test" } }], candidateStates: [{ id: "cand:1", candidateId: "candidate:1", strategy: "test", originOpportunity: null, plannedTransformations: [], estimatedImpact: {}, estimatedCost: {}, confidence: 1, sourceAssignments: [] }], simulatedStates: [sim], validationResults: [validation],
     operationalValues: [{ simulatedStateId: sim.id, continuity: 1, makespan: 1, permanence: 1, compaction: 1, resourcePressure: 1, robustness: 1, stability: 1, futureFreedom: 1, overallScore: 1, breakdown: {}, evaluatedAt: null, evidenceIds: [], metadata: {} }],
     commitDecisions: [], evidence: [], advisoryDecision: null, executionEvidence: {} as any, cognitiveState: {} as any, cognitiveStateInitial: {} as any, cognitiveStateDiff: {}, candidateSummary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false }, summary: { validCount: violations.length ? 0 : 1, invalidCount: violations.length ? 1 : 0 } as any,
   };
@@ -124,9 +124,57 @@ test("comparativa ORC vs V4 incluye todas las métricas requeridas", () => {
   ]);
 });
 
+test("bestCandidateTrace registra ORC seleccionado", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const trace = result.diagnostics.bestCandidateTrace;
+  assert.equal(trace.version, "ORC-BEST-CANDIDATE-TRACE-V1");
+  assert.equal(trace.simulationCount, 1);
+  assert.equal(trace.bestCandidate.candidateId, "candidate:1");
+  assert.equal(trace.bestCandidate.candidateStateId, "cand:1");
+  assert.equal(trace.bestCandidate.simulatedStateId, "sim:1");
+  assert.equal(trace.score, 1);
+  assert.equal(trace.plannedTasks.length, 3);
+  assert.deepEqual(trace.pendingTasks, []);
+  assert.deepEqual(trace.hardViolations, []);
+  assert.equal(trace.discardReason, null);
+  assert.equal(trace.gatesFailed.length, 0);
+  assert.equal(trace.evidence.kind, "best-candidate-trace");
+});
+
+test("bestCandidateTrace registra ORC descartado con motivo exacto", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, ["HARD"]) });
+  const trace = result.diagnostics.bestCandidateTrace;
+  assert.equal(trace.simulationCount, 1);
+  assert.deepEqual(trace.hardViolations, ["HARD"]);
+  assert.equal(trace.discardReason, "gate_failed:hardFeasible");
+  assert.ok(trace.gatesFailed.includes("hardFeasible"));
+  assert.equal(trace.evidence.data.discardReason, "gate_failed:hardFeasible");
+});
+
+test("bestCandidateTrace registra ausencia de simulaciones", () => {
+  const empty = { ...shadow([]), simulatedStates: [], validationResults: [], operationalValues: [], summary: { validCount: 0, invalidCount: 0 } as any };
+  const result = runORCActivePlanner(input(), { orcShadowResult: empty });
+  const trace = result.diagnostics.bestCandidateTrace;
+  assert.equal(result.diagnostics.fallbackReason, "no_valid_orc_simulation");
+  assert.equal(trace.simulationCount, 0);
+  assert.equal(trace.bestCandidate.simulatedStateId, null);
+  assert.equal(trace.score, null);
+  assert.deepEqual(trace.plannedTasks, []);
+  assert.deepEqual(trace.pendingTasks, [1]);
+  assert.equal(trace.opqm, null);
+});
+
+test("bestCandidateTrace serializa como JSON estable", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const parsed = JSON.parse(JSON.stringify(result.diagnostics.bestCandidateTrace));
+  assert.equal(parsed.version, "ORC-BEST-CANDIDATE-TRACE-V1");
+  assert.equal(parsed.evidence.source, "orc-best-candidate-trace");
+});
+
 test("determinismo", () => {
   const a = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   const b = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   assert.deepEqual(a.output.plannedTasks, b.output.plannedTasks);
   assert.deepEqual(a.diagnostics.orcActivationReport, b.diagnostics.orcActivationReport);
+  assert.deepEqual(a.diagnostics.bestCandidateTrace, b.diagnostics.bestCandidateTrace);
 });

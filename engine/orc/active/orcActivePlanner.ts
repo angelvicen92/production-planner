@@ -3,13 +3,30 @@ import type { EngineV3Options } from "../../v3/types";
 import { generatePlanV4, type EngineV4Diagnostics } from "../../v4";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
-import type { SimulatedState, ValidationResult } from "../contracts";
+import type { Candidate, CandidateState, Evidence, SimulatedState, ValidationResult } from "../contracts";
 import { calculateOperationalPlanningQualityMetrics, type OperationalPlanningQualityMetrics, type PlanningAssignment } from "../benchmark/operationalPlanningQualityMetrics";
 import { stableStringify } from "../structuralEquality";
+import { deepFreeze } from "../immutability";
 
 export type ORCActiveUsedEngine = "orc" | "v4_fallback";
 
 export type ORCActivationGateStatus = "PASS" | "FAIL";
+
+export interface ORCBestCandidateTrace {
+  version: "ORC-BEST-CANDIDATE-TRACE-V1";
+  simulationCount: number;
+  bestCandidate: { candidateId: string | null; candidateStateId: string | null; simulatedStateId: string | null; assignments: unknown[]; metadata: unknown };
+  score: number | null;
+  plannedTasks: PlanningAssignment[];
+  pendingTasks: number[];
+  hardViolations: string[];
+  softMetrics: unknown;
+  opqm: OperationalPlanningQualityMetrics | null;
+  gatesPassed: string[];
+  gatesFailed: string[];
+  discardReason: string | null;
+  evidence: Evidence;
+}
 
 export interface ORCActivationReport {
   version: "ORC-ACTIVATION-REPORT-V1";
@@ -36,6 +53,7 @@ export interface ORCActiveDiagnostics {
   v4Diagnostics: unknown;
   operationalDelta: unknown;
   orcActivationReport: ORCActivationReport;
+  bestCandidateTrace: ORCBestCandidateTrace;
   orcActiveBridge: true;
 }
 
@@ -67,13 +85,15 @@ function convertSimulationToPlannedTasks(simulatedState: SimulatedState): Conver
     .filter((item) => Number.isFinite(item.taskId)));
 }
 
-function findBestSimulation(shadow: ORCShadowModeResult | null): { simulation: SimulatedState | null; validation: ValidationResult | null; value: number | null } {
-  if (!shadow) return { simulation: null, validation: null, value: null };
+function findBestSimulation(shadow: ORCShadowModeResult | null): { simulation: SimulatedState | null; validation: ValidationResult | null; value: number | null; candidateState: CandidateState | null; candidate: Candidate | null } {
+  if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null };
   const valueById = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item.overallScore]));
   const candidates = [...(shadow.simulatedStates ?? [])];
   candidates.sort((a, b) => (valueById.get(b.id) ?? -Infinity) - (valueById.get(a.id) ?? -Infinity) || a.id.localeCompare(b.id));
   const simulation = candidates[0] ?? null;
-  return { simulation, validation: simulation ? (shadow.validationResults ?? []).find((item) => item.simulatedStateId === simulation.id) ?? null : null, value: simulation ? valueById.get(simulation.id) ?? null : null };
+  const candidateState = simulation ? (shadow.candidateStates ?? []).find((item) => item.id === simulation.candidateStateId) ?? null : null;
+  const candidate = candidateState ? (shadow.candidates ?? []).find((item) => item.id === candidateState.candidateId) ?? null : null;
+  return { simulation, validation: simulation ? (shadow.validationResults ?? []).find((item) => item.simulatedStateId === simulation.id) ?? null : null, value: simulation ? valueById.get(simulation.id) ?? null : null, candidateState, candidate };
 }
 
 function assignmentMap(assignments: PlanningAssignment[]): Map<number, PlanningAssignment> {
@@ -164,6 +184,39 @@ function buildActivationReport(args: { usedEngine: ORCActiveUsedEngine; fallback
   };
 }
 
+function buildBestCandidateTrace(args: { shadow: ORCShadowModeResult | null; simulation: SimulatedState | null; validation: ValidationResult | null; candidateState: CandidateState | null; candidate: Candidate | null; score: number | null; orcPlanned: PlanningAssignment[]; pendingTasks: number[]; orcMetrics: OperationalPlanningQualityMetrics; gates: Record<string, boolean>; discardReason: string | null }): ORCBestCandidateTrace {
+  const gatesPassed = Object.keys(args.gates).filter((name) => args.gates[name]).sort();
+  const gatesFailed = Object.keys(args.gates).filter((name) => !args.gates[name]).sort();
+  const traceCore = {
+    simulationCount: args.shadow?.simulatedStates?.length ?? 0,
+    bestCandidate: {
+      candidateId: args.candidate?.id ?? args.candidateState?.candidateId ?? null,
+      candidateStateId: args.candidateState?.id ?? args.simulation?.candidateStateId ?? null,
+      simulatedStateId: args.simulation?.id ?? null,
+      assignments: args.candidate?.assignments ? [...args.candidate.assignments] : [],
+      metadata: args.candidate?.metadata ?? {},
+    },
+    score: args.score,
+    plannedTasks: [...args.orcPlanned].sort((a, b) => a.taskId - b.taskId || a.startPlanned.localeCompare(b.startPlanned) || a.endPlanned.localeCompare(b.endPlanned)),
+    pendingTasks: [...args.pendingTasks].sort((a, b) => a - b),
+    hardViolations: [...(args.validation?.violatedConstraints ?? [])].sort(),
+    softMetrics: args.simulation?.operationalStateSnapshot.operationalMetrics ?? {},
+    opqm: args.simulation ? args.orcMetrics : null,
+    gatesPassed,
+    gatesFailed,
+    discardReason: args.discardReason,
+  };
+  const evidence: Evidence = deepFreeze({
+    id: `evidence:orc-best-candidate-trace:${traceCore.bestCandidate.simulatedStateId ?? "none"}`,
+    source: "orc-best-candidate-trace",
+    kind: "best-candidate-trace",
+    subjectId: traceCore.bestCandidate.simulatedStateId,
+    createdAt: null,
+    data: { ...traceCore, readOnly: true, mutatesOperationalState: false, commitsPlanning: false },
+  }) as Evidence;
+  return deepFreeze({ version: "ORC-BEST-CANDIDATE-TRACE-V1", ...traceCore, evidence }) as ORCBestCandidateTrace;
+}
+
 function opqmNotWorse(v4: OperationalPlanningQualityMetrics, orc: OperationalPlanningQualityMetrics): boolean {
   return orc.operationalCompactness >= v4.operationalCompactness
     && orc.mainFlowContinuityQuality.gaps <= v4.mainFlowContinuityQuality.gaps
@@ -183,11 +236,12 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
     const emptyMetrics = calculateOperationalPlanningQualityMetrics(input, []);
     const v4Metrics = calculateOperationalPlanningQualityMetrics(input, v4Planned);
     const report = buildActivationReport({ usedEngine: "v4_fallback", fallbackReason: "orc_execution_failed", gates, executionTimeMs: reportExecutionTimeMs, simulation: null, validation: null, score: null, v4Metrics, orcMetrics: emptyMetrics, v4Planned, orcPlanned: [], v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: neededTaskIds(input).length });
-    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason: "orc_execution_failed", gates, orcSummary: { error: error instanceof Error ? error.message : String(error) }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, orcActiveBridge: true };
+    const trace = buildBestCandidateTrace({ shadow: null, simulation: null, validation: null, candidateState: null, candidate: null, score: null, orcPlanned: [], pendingTasks: neededTaskIds(input), orcMetrics: emptyMetrics, gates, discardReason: "orc_execution_failed" });
+    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason: "orc_execution_failed", gates, orcSummary: { error: error instanceof Error ? error.message : String(error) }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, orcActiveBridge: true };
     return { output: v4.output, diagnostics };
   }
 
-  const { simulation, validation, value } = findBestSimulation(shadow);
+  const { simulation, validation, value, candidateState, candidate } = findBestSimulation(shadow);
   const orcPlanned = simulation ? convertSimulationToPlannedTasks(simulation) : [];
   const needed = neededTaskIds(input);
   const plannedIds = new Set(orcPlanned.map((item) => item.taskId));
@@ -214,7 +268,8 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const usedEngine: ORCActiveUsedEngine = failedGate ? "v4_fallback" : "orc";
   const fallbackReason = failedGate ? (simulation ? `gate_failed:${failedGate}` : "no_valid_orc_simulation") : null;
   const orcActivationReport = buildActivationReport({ usedEngine, fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation, validation, score: value, v4Metrics, orcMetrics, v4Planned, orcPlanned, v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: needed.length });
-  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, gates, orcSummary: { ...(shadow?.summary ?? null), selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, orcActiveBridge: true };
+  const bestCandidateTrace = buildBestCandidateTrace({ shadow, simulation, validation, candidateState, candidate, score: value, orcPlanned, pendingTasks: needed.filter((id) => !plannedIds.has(id)), orcMetrics, gates, discardReason: fallbackReason });
+  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, gates, orcSummary: { ...(shadow?.summary ?? null), selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, orcActiveBridge: true };
 
   if (failedGate) return { output: v4.output, diagnostics };
   return { output: { ...v4.output, feasible: true, complete: true, hardFeasible: true, plannedTasks: orcPlanned, unplanned: [], warnings: v4.output.warnings ?? [] }, diagnostics };
