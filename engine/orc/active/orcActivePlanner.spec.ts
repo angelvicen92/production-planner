@@ -56,19 +56,28 @@ test("ORC válido se usa y serializa diagnostics", () => {
   const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   assert.equal(result.diagnostics.usedEngine, "orc");
   assert.equal(result.output.plannedTasks.length, 3);
-  assert.doesNotThrow(() => JSON.stringify(result.diagnostics));
+  assert.equal(result.diagnostics.orcActivationReport.summary.selectedEngine, "orc");
+  assert.equal(result.diagnostics.orcActivationReport.summary.finalResult, "ORC aplicado");
+  assert.equal(result.diagnostics.orcActivationReport.fallback.reason, null);
+  assert.equal(result.diagnostics.orcActivationReport.recommendation.type, "NEXT_IMPROVEMENT");
+  assert.equal(result.diagnostics.orcActivationReport.bestORCSimulation.score, 1);
+  assert.doesNotThrow(() => JSON.stringify(result.diagnostics.orcActivationReport));
 });
 
 test("ORC incompleto cae a V4", () => {
   const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning.filter((item) => item.taskId !== 1)) });
   assert.equal(result.diagnostics.usedEngine, "v4_fallback");
   assert.match(result.diagnostics.fallbackReason ?? "", /complete|allPending/);
+  assert.equal(result.diagnostics.orcActivationReport.summary.selectedEngine, "v4_fallback");
+  assert.match(result.diagnostics.orcActivationReport.fallback.explanation ?? "", /tareas pendientes/);
 });
 
 test("ORC con hard violation cae a V4", () => {
   const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, ["HARD"]) });
   assert.equal(result.diagnostics.usedEngine, "v4_fallback");
-  assert.equal(result.diagnostics.fallbackReason, "no_valid_orc_simulation");
+  assert.equal(result.diagnostics.fallbackReason, "gate_failed:hardFeasible");
+  assert.deepEqual(result.diagnostics.orcActivationReport.bestORCSimulation.hardViolations, ["HARD"]);
+  assert.equal(result.diagnostics.orcActivationReport.recommendation.message, "Resolver hard feasibility.");
 });
 
 
@@ -97,8 +106,27 @@ test("no muta done ni in_progress", () => {
   assert.equal(result.diagnostics.usedEngine, "v4_fallback");
 });
 
+test("todos los gates aparecen como PASS o FAIL en el informe", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const gateNames = result.diagnostics.orcActivationReport.gates.map((gate) => gate.name);
+  assert.deepEqual(gateNames, Object.keys(result.diagnostics.gates).sort());
+  assert.ok(result.diagnostics.orcActivationReport.gates.every((gate) => gate.status === "PASS" || gate.status === "FAIL"));
+});
+
+test("comparativa ORC vs V4 incluye todas las métricas requeridas", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  assert.deepEqual(Object.keys(result.diagnostics.orcActivationReport.comparison).sort(), [
+    "coachIdleTimeDelta",
+    "mainFlowContinuityDelta",
+    "makespanDelta",
+    "operationalCompactnessDelta",
+    "talentIdleTimeDelta",
+  ]);
+});
+
 test("determinismo", () => {
   const a = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   const b = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   assert.deepEqual(a.output.plannedTasks, b.output.plannedTasks);
+  assert.deepEqual(a.diagnostics.orcActivationReport, b.diagnostics.orcActivationReport);
 });

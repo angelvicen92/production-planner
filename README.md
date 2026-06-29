@@ -66,6 +66,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
+- ID 188 — 2026-06-29 UTC — ORC Activation Report v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -322,6 +323,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 181 — 2026-06-28 15:56 CEST — ORC Goal-Oriented Search v1
 - ID 182 — 2026-06-28 16:19 CEST — ORC Progressive Commitment Strategy v1
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
+- ID 188 — 2026-06-29 UTC — ORC Activation Report v1
 
 ### Operational Planning Quality Metrics (ID 183)
 
@@ -334,6 +336,10 @@ The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as rea
 ### ORC Active V4 Bridge v1 (ID 186)
 
 El botón Generar V4 ejecuta ahora un puente activo ORC controlado: primero calcula V4 como baseline seguro, después evalúa ORC, convierte sólo simulaciones válidas a `EngineOutput`, aplica gates de seguridad y cae automáticamente a V4 cuando ORC no es aplicable. Los diagnostics incluyen `orcActiveBridge`, `usedEngine`, `fallbackReason`, gates y comparación OPQM sin modificar schema ni aplicar tareas al plan oficial.
+
+### ORC Activation Report v1 (ID 188)
+
+Cada ejecución de Generar V4 mediante el puente activo ORC añade `orcActivationReport` dentro de diagnostics. El informe consolida el engine seleccionado, motivo legible, tiempo de ejecución, resultado final, listado determinista de gates PASS/FAIL, evidencia de la mejor simulación ORC, comparativa ORC vs V4 (Coach Idle Time, Talent Idle Time, Operational Compactness, Main Flow Continuity y Makespan), explicación del fallback si aplica y una recomendación automática `NEXT_IMPROVEMENT`. Es sólo diagnóstico: no modifica ORC, V4, planificación, persistencia ni la UI principal.
 
 - ID 187 — 2026-06-29 UTC — P1.1 — Mi Día operativo
 
