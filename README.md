@@ -360,3 +360,7 @@ Limitaciones conocidas:
 - No implementa reset desde `interrupted` para evitar duplicar reglas de permisos en cliente.
 - Los avisos son derivados en cliente y no crean incidencias persistidas.
 - La detección de recurso cámara depende de la metadata existente de recurso/tipo devuelta por `/api/resource-types-with-items`.
+
+## ID 187 — Complete V3/V4 Diagnostics Separation
+
+Separates the selected V3/V4 result across diagnostics, JSON copy/download, visual result state, and reset actions. V3 diagnostics are read from `planning_runs`; V4 diagnostics and exports are read from `engine_plan_results`.

@@ -3973,7 +3973,7 @@ function normalizeHexColor(value: unknown): string | null {
         return res.status(400).json({ message: "Invalid plan id" });
       }
 
-      const input = z.object({ mode: z.enum(["partial", "total"]) }).parse(req.body ?? {});
+      const input = z.object({ mode: z.enum(["partial", "total", "v4"]) }).parse(req.body ?? {});
 
       const { data: planRow, error: planErr } = await supabaseAdmin
         .from("plans")
@@ -3982,6 +3982,17 @@ function normalizeHexColor(value: unknown): string | null {
         .maybeSingle();
       if (planErr) throw planErr;
       if (!planRow) return res.status(404).json({ message: "Plan not found" });
+
+      if (input.mode === "v4") {
+        const { data: deletedV4Results, error: deleteV4Err } = await supabaseAdmin
+          .from("engine_plan_results")
+          .delete()
+          .eq("plan_id", planId)
+          .eq("engine_version", "v4")
+          .select("id");
+        if (deleteV4Err) throw deleteV4Err;
+        return res.json({ ok: true, deletedV4ResultsCount: (deletedV4Results ?? []).length });
+      }
 
       const { data: taskRows, error: tasksErr } = await supabaseAdmin
         .from("daily_tasks")
@@ -4030,6 +4041,12 @@ function normalizeHexColor(value: unknown): string | null {
       }
       if (input.mode === "total") {
         await supabaseAdmin.from("plan_breaks").update({ planned_start: null, planned_end: null, locked_start: null, locked_end: null }).eq("plan_id", planId);
+        const { error: deleteV4Err } = await supabaseAdmin
+          .from("engine_plan_results")
+          .delete()
+          .eq("plan_id", planId)
+          .eq("engine_version", "v4");
+        if (deleteV4Err) throw deleteV4Err;
 
         const manualBlockIds = (taskRows ?? [])
           .map((task: any) => (task?.is_manual_block === true ? Number(task?.id) : Number.NaN))
