@@ -334,3 +334,29 @@ The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as rea
 ### ORC Active V4 Bridge v1 (ID 186)
 
 El botón Generar V4 ejecuta ahora un puente activo ORC controlado: primero calcula V4 como baseline seguro, después evalúa ORC, convierte sólo simulaciones válidas a `EngineOutput`, aplica gates de seguridad y cae automáticamente a V4 cuando ORC no es aplicable. Los diagnostics incluyen `orcActiveBridge`, `usedEngine`, `fallbackReason`, gates y comparación OPQM sin modificar schema ni aplicar tareas al plan oficial.
+
+- ID 187 — 2026-06-29 UTC — P1.1 — Mi Día operativo
+
+### P1.1 — Mi Día operativo (ID 187)
+
+Se añade la ruta protegida `/my-day` como primera iteración UI/operativa de “Mi Día”: una pantalla mobile-first para responder qué debe hacer ahora cada usuario operativo, dónde debe estar, qué viene después, y qué avisos requieren atención inmediata.
+
+- Nueva navegación “Mi Día” con acceso a `/my-day`.
+- Reutiliza datos existentes de planes, detalle operativo del plan, tareas, locks, asignaciones de staff, scopes de zona/espacio, vínculo operativo del usuario y reloj de producción (`usePlans`, `useDefaultPlanId`, `usePlanOpsData`, `useMeLinks`, `useProductionClock`).
+- Filtra el ámbito del usuario vinculado a staff por zona/espacio y el recurso de cámara por tareas que requieren cámaras; si no hay vínculo operativo, muestra una vista general marcada con aviso humano.
+- Incluye tarjetas “Ahora” y “Siguiente”, agenda agrupada, avisos operativos y acciones rápidas Start/Finish/Interrupt/Cancel contra el endpoint existente `PATCH /api/tasks/:id/status`.
+- No modifica base de datos, migraciones, RLS, modelos Drizzle, policies Supabase, motor V3, motor V4, ORC, locks, endpoints ni lógica backend de planificación.
+
+Validación manual recomendada:
+
+1. Abrir `/my-day` con sesión autenticada.
+2. Comprobar selector de plan cuando hay varios planes y estados vacíos cuando no hay planes/tareas.
+3. Validar usuario con staff vinculado y scopes por zona/espacio, recurso cámara vinculado y usuario sin vínculo operativo.
+4. Confirmar que “Ahora” prioriza tareas `in_progress` y que “Siguiente” muestra la próxima pendiente.
+5. Ejecutar Start/Finish/Interrupt/Cancel y verificar refresco de tareas/locks/detalle del plan.
+
+Limitaciones conocidas:
+
+- No implementa reset desde `interrupted` para evitar duplicar reglas de permisos en cliente.
+- Los avisos son derivados en cliente y no crean incidencias persistidas.
+- La detección de recurso cámara depende de la metadata existente de recurso/tipo devuelta por `/api/resource-types-with-items`.
