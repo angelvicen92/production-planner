@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { EngineInput } from "../../types";
-import { runORCActivePlanner } from "./orcActivePlanner";
+import { extractPlannedTasksFromORCSimulatedState, runORCActivePlanner } from "./orcActivePlanner";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import type { OperationalState, SimulatedState, ValidationResult } from "../contracts";
 import { deepFreeze } from "../immutability";
@@ -51,6 +51,43 @@ const validPlanning = [
   { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [10], spaceId: 1 },
   { taskId: 3, startPlanned: "10:00", endPlanned: "10:30", assignedResourceIds: [10], spaceId: 1 },
 ];
+
+test("extrae planning desde operationalStateSnapshot.planning", () => {
+  const sim = shadow(validPlanning).simulatedStates[0];
+  const extraction = extractPlannedTasksFromORCSimulatedState(sim, [1]);
+  assert.equal(extraction.extractionSource, "operationalStateSnapshot.planning");
+  assert.equal(extraction.plannedTasks.length, 3);
+  assert.deepEqual(extraction.pendingTaskIds, []);
+});
+
+test("extrae planning desde ruta alternativa operationalState.planning", () => {
+  const base = shadow([]).simulatedStates[0] as any;
+  const sim = deepFreeze({ ...base, operationalState: state(validPlanning) }) as any as SimulatedState;
+  const extraction = extractPlannedTasksFromORCSimulatedState(sim, [1]);
+  assert.equal(extraction.extractionSource, "operationalState.planning");
+  assert.equal(extraction.plannedTasks.length, 3);
+  assert.ok(extraction.extractionWarnings.some((warning) => warning.includes("operationalStateSnapshot.planning")));
+});
+
+test("planning vacío produce fallback explícito de extracción", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow([]) });
+  assert.equal(result.diagnostics.usedEngine, "v4_fallback");
+  assert.equal(result.diagnostics.fallbackReason, "orc_planning_extraction_empty");
+  assert.equal(result.diagnostics.bestCandidateTrace.extractionSource, "none");
+  assert.equal(result.diagnostics.bestCandidateTrace.plannedTaskCount, 0);
+  assert.equal(result.diagnostics.bestCandidateTrace.pendingTaskCount, 1);
+  assert.ok(result.diagnostics.bestCandidateTrace.extractionWarnings.length > 0);
+});
+
+test("ORC completo desde ruta alternativa supera complete", () => {
+  const baseShadow = shadow([]);
+  const sim = deepFreeze({ ...(baseShadow.simulatedStates[0] as any), operationalState: state(validPlanning) }) as any as SimulatedState;
+  const result = runORCActivePlanner(input(), { orcShadowResult: { ...baseShadow, simulatedStates: [sim] } });
+  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.diagnostics.gates.complete, true);
+  assert.equal(result.diagnostics.bestCandidateTrace.extractionSource, "operationalState.planning");
+  assert.equal(result.diagnostics.bestCandidateTrace.plannedTaskCount, 3);
+});
 
 test("ORC válido se usa y serializa diagnostics", () => {
   const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
@@ -133,6 +170,10 @@ test("bestCandidateTrace registra ORC seleccionado", () => {
   assert.equal(trace.bestCandidate.candidateStateId, "cand:1");
   assert.equal(trace.bestCandidate.simulatedStateId, "sim:1");
   assert.equal(trace.score, 1);
+  assert.equal(trace.plannedTaskCount, 3);
+  assert.equal(trace.pendingTaskCount, 0);
+  assert.equal(trace.extractionSource, "operationalStateSnapshot.planning");
+  assert.deepEqual(trace.extractionWarnings, []);
   assert.equal(trace.plannedTasks.length, 3);
   assert.deepEqual(trace.pendingTasks, []);
   assert.deepEqual(trace.hardViolations, []);
