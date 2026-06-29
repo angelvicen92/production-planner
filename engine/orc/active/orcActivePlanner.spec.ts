@@ -89,6 +89,19 @@ test("ORC completo desde ruta alternativa supera complete", () => {
   assert.equal(result.diagnostics.bestCandidateTrace.plannedTaskCount, 3);
 });
 
+test("ORC Active passes a baseline-seeded input to runORC", () => {
+  let received: EngineInput | null = null;
+  const result = runORCActivePlanner(input(), {
+    runORC: (seeded) => {
+      received = seeded;
+      return shadow(validPlanning);
+    },
+  });
+  assert.ok(received);
+  assert.equal(result.diagnostics.baselineSeed.source, "v4_baseline");
+  assert.equal(result.diagnostics.bestCandidateTrace.seededPlanningCount, result.diagnostics.baselineSeed.seededPlanningCount);
+});
+
 test("ORC válido se usa y serializa diagnostics", () => {
   const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
   assert.equal(result.diagnostics.usedEngine, "orc");
