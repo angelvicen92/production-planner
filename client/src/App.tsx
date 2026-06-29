@@ -20,6 +20,7 @@ import PlanDetailsPage from "@/pages/plan-details";
 import TimelinePage from "@/pages/timeline";
 import SettingsPage from "@/pages/settings";
 import CallSheetPage from "@/pages/call-sheet";
+import MyDayPage from "@/pages/my-day";
 import WarRoomPage from "@/pages/war-room";
 import ControlRoomPage from "@/pages/control-room";
 import NotFound from "@/pages/not-found";
@@ -142,6 +143,7 @@ function Router() {
 
       <Route path="/timeline">{() => <ProtectedRoute component={TimelinePage} />}</Route>
       <Route path="/call-sheet">{() => <ProtectedRoute component={CallSheetPage} />}</Route>
+      <Route path="/my-day">{() => <ProtectedRoute component={MyDayPage} />}</Route>
 
       <Route path="/war-room">{() => <ProtectedRoute component={WarRoomPage} />}</Route>
 
