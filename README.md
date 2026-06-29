@@ -68,6 +68,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 - ID 188 — 2026-06-29 UTC — ORC Activation Report v1
 - ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
+- ID 190 — 2026-06-29 UTC — ORC Active Candidate Planning Output v1
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
@@ -326,6 +327,7 @@ Los aliases históricos `npm run test:engine` y `npm run benchmark:engine` conse
 - ID 186 — 2026-06-28 20:11 CEST — ORC Active V4 Bridge v1
 - ID 188 — 2026-06-29 UTC — ORC Activation Report v1
 - ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
+- ID 190 — 2026-06-29 UTC — ORC Active Candidate Planning Output v1
 
 ### Operational Planning Quality Metrics (ID 183)
 
@@ -338,6 +340,11 @@ The ORC benchmark now records Operational Planning Quality Metrics (OPQM) as rea
 ### ORC Active V4 Bridge v1 (ID 186)
 
 El botón Generar V4 ejecuta ahora un puente activo ORC controlado: primero calcula V4 como baseline seguro, después evalúa ORC, convierte sólo simulaciones válidas a `EngineOutput`, aplica gates de seguridad y cae automáticamente a V4 cuando ORC no es aplicable. Los diagnostics incluyen `orcActiveBridge`, `usedEngine`, `fallbackReason`, gates y comparación OPQM sin modificar schema ni aplicar tareas al plan oficial.
+
+
+### ORC Active Candidate Planning Output v1 (ID 190)
+
+El puente activo ORC ahora extrae de forma robusta la planificación real generada por `SimulatedState` desde `operationalStateSnapshot.planning` y rutas compatibles alternativas (`operationalState.planning`, `scheduledTasks`, `assignments`) antes de convertirla a `EngineOutput`. Los gates `complete` y `allPendingNeededPlanned` se calculan sobre las tareas extraídas; si no existe planificación convertible, el fallback seguro a V4 informa `orc_planning_extraction_empty`. `bestCandidateTrace` y diagnostics reportan fuente de extracción, conteos completos, primeras tareas planificadas/pendientes y warnings sin relajar gates, sin modificar V3 y sin cambios de UI.
 
 ### ORC Best Candidate Trace v1 (ID 189)
 
