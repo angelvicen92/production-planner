@@ -29,24 +29,32 @@ export type OfficialOperationalMetric =
   | "dependencyCriticalityOperationalValueCorrelation"
   | "operationalPlanningQuality";
 
-export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
+export const FINAL_PLANNING_METRICS: OfficialOperationalMetric[] = [
   "makespan",
   "totalPermanence",
   "permanenceByTalent",
   "mainFlowContinuity",
   "resourceUtilization",
   "conflicts",
+  "dependencyChainsProtected",
+  "dependencyBlockagesAvoided",
+  "dependencyAverageSlackRecovered",
+  "dependencyCriticalityOperationalValueCorrelation",
+  "operationalPlanningQuality",
+];
+
+export const EXPLORATION_METRICS: OfficialOperationalMetric[] = [
   "simulations",
   "candidatesGenerated",
   "candidatesSimulated",
   "candidatesConsolidated",
   "totalTime",
   "timeByIteration",
-  "dependencyChainsProtected",
-  "dependencyBlockagesAvoided",
-  "dependencyAverageSlackRecovered",
-  "dependencyCriticalityOperationalValueCorrelation",
-  "operationalPlanningQuality",
+];
+
+export const OFFICIAL_OPERATIONAL_METRICS: OfficialOperationalMetric[] = [
+  ...FINAL_PLANNING_METRICS,
+  ...EXPLORATION_METRICS,
 ];
 
 export interface OperationalDeltaMetrics {
@@ -127,6 +135,16 @@ export interface ORCBaselineSeedReport {
   planningInfluence: "benchmark-input-seeding-only";
 }
 
+export interface ActiveEquivalentMetricNormalization {
+  applied: boolean;
+  reason: "baseline_preserved_final_metrics_equal_v4" | "fallback_final_metrics_equal_v4" | "orc_commit_final_metrics_from_valid_simulation";
+  normalizedFinalMetrics: string[];
+  preservedExplorationMetrics: string[];
+  sourceOutcomeKind: OfficialOrcOutcome["kind"];
+  readOnly: true;
+  planningInfluence: "benchmark-metric-normalization-only";
+}
+
 export interface OperationalDeltaReport {
   benchmarkVersion: typeof OPERATIONAL_DELTA_BENCHMARK_VERSION;
   generatedAt: string | null;
@@ -135,6 +153,7 @@ export interface OperationalDeltaReport {
   rawShadowDiagnostics: RawShadowDiagnostics;
   seededShadowDiagnostics: SeededShadowDiagnostics;
   officialOrcOutcome: OfficialOrcOutcome;
+  activeEquivalentMetricNormalization: ActiveEquivalentMetricNormalization;
   orcBaselineSeed: ORCBaselineSeedReport;
   absoluteDelta: OperationalDeltaMetrics;
   percentageDelta: OperationalDeltaMetrics;
@@ -282,9 +301,10 @@ function v4Metrics(input: EngineInput, output: EngineOutput, diagnostics: Return
   });
 }
 
-function orcMetrics(input: EngineInput, shadow: ORCShadowModeResult, outcome: OfficialOrcOutcome, v4MetricSet: OperationalDeltaMetrics, v4Assignments: Assignment[], runtime: number): OperationalDeltaMetrics {
-  if (outcome.kind === "v4_fallback") return { ...v4MetricSet, permanenceByTalent: { ...v4MetricSet.permanenceByTalent }, timeByIteration: [...v4MetricSet.timeByIteration], operationalPlanningQuality: JSON.parse(JSON.stringify(v4MetricSet.operationalPlanningQuality)) as OperationalPlanningQualityMetrics };
-  return metricsFromAssignments(input, operationalAssignmentsFromOfficialOutcome(shadow, outcome, v4Assignments), {
+const cloneMetricSet = (metrics: OperationalDeltaMetrics): OperationalDeltaMetrics => JSON.parse(JSON.stringify(metrics)) as OperationalDeltaMetrics;
+
+function explorationCounts(shadow: ORCShadowModeResult, runtime: number): Pick<OperationalDeltaMetrics, "conflicts" | "simulations" | "candidatesGenerated" | "candidatesSimulated" | "candidatesConsolidated" | "totalTime" | "timeByIteration"> {
+  return {
     conflicts: 0,
     simulations: shadow.simulatedStates.length,
     candidatesGenerated: shadow.candidates.length,
@@ -292,7 +312,41 @@ function orcMetrics(input: EngineInput, shadow: ORCShadowModeResult, outcome: Of
     candidatesConsolidated: shadow.commitDecisions.filter((decision) => decision.decision === "COMMIT").length,
     totalTime: round(runtime),
     timeByIteration: [round(runtime)],
-  });
+  };
+}
+
+function orcMetrics(input: EngineInput, shadow: ORCShadowModeResult, outcome: OfficialOrcOutcome, v4MetricSet: OperationalDeltaMetrics, v4Assignments: Assignment[], runtime: number): OperationalDeltaMetrics {
+  const counts = explorationCounts(shadow, runtime);
+  if (outcome.kind === "v4_fallback" || outcome.kind === "orc_baseline_preserved") {
+    const normalized = cloneMetricSet(v4MetricSet);
+    return {
+      ...normalized,
+      simulations: counts.simulations,
+      candidatesGenerated: counts.candidatesGenerated,
+      candidatesSimulated: counts.candidatesSimulated,
+      candidatesConsolidated: counts.candidatesConsolidated,
+      totalTime: counts.totalTime,
+      timeByIteration: counts.timeByIteration,
+    };
+  }
+  return metricsFromAssignments(input, operationalAssignmentsFromOfficialOutcome(shadow, outcome, v4Assignments), counts);
+}
+
+function activeEquivalentMetricNormalization(outcome: OfficialOrcOutcome): ActiveEquivalentMetricNormalization {
+  const applied = outcome.kind !== "orc";
+  return {
+    applied,
+    reason: outcome.kind === "orc_baseline_preserved"
+      ? "baseline_preserved_final_metrics_equal_v4"
+      : outcome.kind === "v4_fallback"
+        ? "fallback_final_metrics_equal_v4"
+        : "orc_commit_final_metrics_from_valid_simulation",
+    normalizedFinalMetrics: applied ? [...FINAL_PLANNING_METRICS] : [],
+    preservedExplorationMetrics: [...EXPLORATION_METRICS],
+    sourceOutcomeKind: outcome.kind,
+    readOnly: true,
+    planningInfluence: "benchmark-metric-normalization-only",
+  };
 }
 
 function validationViolationSummary(shadow: ORCShadowModeResult): Record<string, number> {
@@ -421,7 +475,11 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const v4MetricSet = { ...v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, 0) };
   const officialOrcOutcome = buildOfficialOrcOutcome(seededShadow);
   const v4Assignments = v4.output.plannedTasks.map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
-  const orcMetricSet = { ...orcMetrics(seeded.input, seededShadow, officialOrcOutcome, v4MetricSet, v4Assignments, options.orcRuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(seeded.input, officialOrcOutcome.fallbackToV4 ? 0 : seededShadow.operationalValues[0]?.overallScore ?? 0) };
+  const normalization = activeEquivalentMetricNormalization(officialOrcOutcome);
+  const orcBaseMetricSet = orcMetrics(safeInput, seededShadow, officialOrcOutcome, v4MetricSet, v4Assignments, options.orcRuntimeMs ?? 0);
+  const orcMetricSet = normalization.applied
+    ? orcBaseMetricSet
+    : { ...orcBaseMetricSet, ...dependencyChainBenchmarkMetrics(safeInput, seededShadow.operationalValues[0]?.overallScore ?? 0) };
   const absoluteDelta = delta(orcMetricSet, v4MetricSet);
   const baseReport = {
     benchmarkVersion: OPERATIONAL_DELTA_BENCHMARK_VERSION,
@@ -431,6 +489,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
     rawShadowDiagnostics: rawShadowDiagnostics(rawShadow),
     seededShadowDiagnostics: seededShadowDiagnostics(seededShadow, officialOrcOutcome),
     officialOrcOutcome,
+    activeEquivalentMetricNormalization: normalization,
     orcBaselineSeed: {
       seededPlanningCount: seeded.seedPlanning.length,
       sourcePlanningCount: v4.output.plannedTasks.length,
@@ -446,7 +505,9 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s) as the benchmark baseline.`,
       `ORC seeded shadow explores on top of that V4 baseline seed and produced ${seededShadow.candidates.length} candidate(s), ${seededShadow.simulatedStates.length} simulation(s), and ${seededShadow.commitDecisions.length} decision(s).`,
       `Only a COMMIT decision backed by a VALID seeded simulated state can feed official metrics.orc; selected outcome is ${officialOrcOutcome.kind} (${officialOrcOutcome.reason}).`,
-      officialOrcOutcome.fallbackToV4 ? "No valid seeded ORC commit was available, so the benchmark applies ORC Active-equivalent semantics and measures V4 fallback as the official ORC result." : "The valid seeded ORC commit is measured as the official active-equivalent ORC result.",
+      normalization.applied ? `The benchmark separates final planning metrics from exploration overhead; because production receives the V4-equivalent plan for ${officialOrcOutcome.kind}, final ORC metrics are normalized to V4 (${normalization.reason}).` : "The selected ORC commit changed the final plan, so final planning metrics are calculated from the validated simulated state using the original benchmark input as measurement context.",
+      "ORC exploration overhead remains visible in diagnostics and computational metrics, but it must not create false final-planning deltas when the active-equivalent plan is V4.",
+      "Only a real ORC commit with planning changes can produce official final-planning deltas; baseline preservation and fallback keep makespan, permanence, continuity, conflicts, resource utilization, dependency metrics, and OPQ equal to V4.",
       `Raw ORC Shadow diagnostics produced ${rawShadow.summary.invalidCount} invalid simulation(s), and seeded diagnostics produced ${seededShadow.summary.invalidCount} invalid simulation(s); diagnostics are preserved separately and do not substitute the official operational result.`,
       "Delta values are ORC minus V4 using active-equivalent official ORC outcome semantics, and do not modify official planning.",
       "Operational Planning Quality Metrics measure resource/talent idle time, fragmentation, compactness, main-flow continuity details, and critical-resource spread without changing planning behavior.",

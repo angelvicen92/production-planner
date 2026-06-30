@@ -75,6 +75,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 200 — 2026-06-30 UTC — ORC Candidate Hard Prefilter v1
 - ID 201 — 2026-06-30 UTC — ORC Benchmark V4-Seeded Shadow Alignment v1
 - ID 202 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Fallback Semantics v1
+- ID 203 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Final Metrics Normalization v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -128,6 +129,18 @@ Raw shadow y seeded shadow se conservan como evidencia separada mediante `rawSha
 Evidence Gate y las recomendaciones ya no deben autorizar optimizaciones por `candidatesConsolidated`, `conflicts`, makespan, permanencia, continuidad o planning quality cuando esos deltas sólo procedían de simulaciones inválidas no consolidadas. Si un fallo seeded shadow requiere análisis futuro, queda documentado como diagnóstico separado, no como señal automática de prioridad.
 
 No hay cambios DB, RLS, UI, V3, V4, endpoints, Validation Engine, CandidateHardPrefilter ni nuevas heurísticas SEE. No se relajan hard constraints, no hay movimientos post-pipeline y `real-voice-audition-day` sigue incluido en la suite oficial.
+
+### ORC Benchmark Active-Equivalent Final Metrics Normalization v1 (ID 203)
+
+El Operational Delta Benchmark separa explícitamente métricas de resultado final (`makespan`, permanencia, continuidad, utilización, conflictos, dependencias y `operationalPlanningQuality`) de métricas de exploración/coste (`simulations`, candidatos, commits y tiempos). Esta separación evita que el coste interno de razonamiento ORC parezca una degradación de planificación.
+
+Si `officialOrcOutcome.kind` es `orc_baseline_preserved` o `v4_fallback`, producción recibe el mismo plan active-equivalent que V4; por tanto, las métricas finales ORC se normalizan a V4 y sus deltas finales quedan a cero. El bloque `activeEquivalentMetricNormalization` documenta si la normalización se aplicó, el motivo, las métricas finales normalizadas y las métricas exploratorias preservadas.
+
+Raw shadow y seeded shadow siguen conservados como diagnostics separados: muestran candidates, simulated states, valid/invalid counts, overhead y violation summaries del trabajo interno ORC, pero esos diagnostics no contaminan las métricas oficiales de resultado final ni maquillan fallos seeded shadow.
+
+`operationalPlanningQuality` ya no puede generar una prioridad alta por diferencias de contexto entre input original y seed cuando ORC preserva baseline o cae a fallback; Evidence Gate sólo puede autorizar mejoras de planificación final si existe un commit ORC real con cambios validados. El overhead computacional puede seguir apareciendo como señal diagnóstica o prioridad baja sin desplazar mejoras de planificación reales.
+
+No hay cambios DB, RLS, UI, V3, V4, endpoints, Validation Engine ni CandidateHardPrefilter. No se relajan hard constraints, no se modifica el pipeline ORC, no se añaden heurísticas SEE ni movimientos post-pipeline, y `real-voice-audition-day` sigue incluido en la suite oficial.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
