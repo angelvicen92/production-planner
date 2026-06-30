@@ -113,6 +113,9 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "opportunity-diagnosis-generated"));
   assert.equal(shadow.summary.adaptiveSearchSpace.generated, shadow.searchSpaces.length);
   assert.equal(shadow.summary.adaptiveSearchSpace.exhaustedRegionsSkipped, 0);
+  assert.equal(typeof shadow.candidateSummary.hardPrefilter.receivedCandidateCount, "number");
+  assert.equal(shadow.candidateSummary.hardPrefilter.discardedCandidateCount >= 0, true);
+  assert.ok(shadow.evidence.some((evidence) => evidence.kind === "candidate-hard-prefilter-summary"));
 });
 
 test("runORCShadowMode generates a baseline preservation candidate through the official pipeline", () => {

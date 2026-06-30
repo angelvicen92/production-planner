@@ -29,3 +29,6 @@ export { prioritizeOpportunities } from "../analysis/opportunityPrioritizationEn
 
 export type { DiscardedPartialPlanComposition, PartialPlanComposerOptions, PartialPlanComposerResult } from "./partialPlanComposer";
 export { composePartialPlans } from "./partialPlanComposer";
+
+export type { CandidateHardPrefilterOptions, CandidateHardPrefilterResult, CandidateHardPrefilterSummary, CandidateHardPrefilterDiscard } from "./candidateHardPrefilter";
+export { prefilterCandidatesByHardConstraints } from "./candidateHardPrefilter";

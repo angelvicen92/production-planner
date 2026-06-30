@@ -25,7 +25,7 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } });
 });
 
 const operationalState = () => ({
@@ -124,4 +124,35 @@ test("buildCandidates uses sourceOperationalPriority before opportunity priority
   const [operational, opportunity] = result.summary.candidateBudget.allocations;
   assert.equal(operational.priority, 200);
   assert.ok(operational.allocatedBudget > opportunity.allocatedBudget);
+});
+
+
+test("buildCandidates exposes hard prefilter summary and preserves abstract/baseline candidates", () => {
+  const result = buildCandidates([space("one")]);
+  assert.equal(result.summary.hardPrefilter.receivedCandidateCount, 3);
+  assert.equal(result.summary.hardPrefilter.acceptedCandidateCount, 3);
+  assert.equal(result.summary.hardPrefilter.discardedCandidateCount, 0);
+  assert.equal(result.evidence.some((item) => item.kind === "candidate-hard-prefilter-summary"), true);
+
+  const baseline = buildCandidates([], { operationalState: operationalState() as any });
+  assert.equal(baseline.candidates[0].metadata.baselinePreservation, true);
+  assert.equal(baseline.summary.hardPrefilter.acceptedCandidateCount, 1);
+});
+
+test("buildCandidates runs hard prefilter before preselection and removes invalid assignments from DecisionInput candidates", () => {
+  const os = {
+    ...operationalState(),
+    planning: [
+      { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [10], spaceId: 1 },
+      { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [20], spaceId: 2 },
+    ],
+    tasks: [
+      { id: 1, status: "pending", contestantId: 7, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [10], spaceId: 1 },
+      { id: 2, status: "pending", contestantId: 7, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [20], spaceId: 2 },
+    ],
+  } as any;
+  const result = buildCandidates([space("invalid", { taskIds: [1], metadata: { ...space("invalid").metadata, allowedTransformations: ["PENDING"] } })], { operationalState: os });
+  assert.equal(result.summary.hardPrefilter.discardedCandidateCount > 0, true);
+  assert.equal(result.candidates.some((item) => item.assignments.some((assignment) => assignment.taskId === 1 && assignment.startPlanned === "09:30")), false);
+  assert.equal(result.summary.preselection.generatedCandidates, result.summary.hardPrefilter.acceptedCandidateCount);
 });

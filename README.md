@@ -70,7 +70,25 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
 - ID 190 — 2026-06-29 UTC — ORC Active Candidate Planning Output v1
 - ID 197 — 2026-06-30 UTC — ORC Hard Validation for Assignment Simulations v1
+- ID 198 — 2026-06-30 UTC — ORC Benchmark Memory Budget & Real Scenario Stabilization v1
 - ID 199 — 2026-06-30 UTC — ORC Baseline Preservation Candidate v1
+- ID 200 — 2026-06-30 UTC — ORC Candidate Hard Prefilter v1
+
+### ORC Hard Validation for Assignment Simulations v1 (ID 197)
+
+`ValidationEngine` now accepts `ASSIGNMENT_APPLICATION_SHADOW` simulations and validates them through deterministic hard constraints instead of rejecting them by mode. The first hard-validation scope covers structural integrity, time windows, hard meals/breaks, locks, protected `done`/`in_progress` tasks, resource overlaps, space capacity/exclusivity, contestant/team overlaps, and direct dependencies. Validation evidence is read-only, records `validationScope: "hard-constraints-v1"`, and does not introduce soft scoring.
+
+`runORCActivePlanner` no longer uses `applyLocalScheduleMove` as a post-pipeline activation path. A result marked `usedEngine: "orc"` must now come from a selected ORC `SimulatedState` with materialized planning changes, a `VALID` validation result, and all activation gates passing. If ORC produces a valid equivalent baseline it is reported as `orc_baseline_preserved`; otherwise V4 remains the safe fallback. This change does not modify DB, RLS, UI, V3, or V4.
+
+### ORC Benchmark Memory Budget & Real Scenario Stabilization v1 (ID 198)
+
+- Fecha UTC: 2026-06-30.
+- Causa encontrada: el OOM del benchmark ORC en `real-voice-audition-day` no nacía en DB, UI, RLS, V3 ni V4; el origen era combinatorio dentro del razonamiento ORC shadow. `PartialPlanComposer` generaba todas las combinaciones de candidatos (`2^n`) y después `GlobalSolutionAssembler` volvía a combinar todos los Partial Plans, multiplicando evidence y objetos intermedios hasta agotar heap en el escenario real.
+- Límites aplicados: la composición de Partial Plans queda acotada por defecto a 20 planes y 50 descartes detallados; el ensamblado de Global Solutions queda acotado por defecto a 20 soluciones y 50 descartes detallados. Estos límites son deterministas, no cambian la planificación oficial y respetan el presupuesto operativo recomendado para candidatos/simulaciones en escenarios grandes.
+- Evidence resumida/truncada: los descartes que superan presupuesto se agregan mediante evidence de presupuesto (`partial-plan-budget-applied` y `global-solution-budget-applied`) con conteos, límites, composiciones inspeccionadas y overflow de descartes, en lugar de emitir cada combinación completa.
+- Trazabilidad conservada: se mantienen ids de candidatos, ids de Partial Plans aceptados, conteos oficiales, métricas ORC/V4, explicaciones de delta, summaries de presupuesto y evidencia detallada para las primeras entradas ordenadas de forma determinista.
+- `real-voice-audition-day` sigue incluido en la suite oficial y ahora se valida con tests de presupuesto/determinismo y ejecución de benchmark del escenario completo.
+- Sin cambios DB, RLS, UI, V3 ni V4. El benchmark ORC vuelve a ser el juez obligatorio antes de añadir nuevas capacidades de planificación ORC.
 
 ### ORC Baseline Preservation Candidate v1 (ID 199)
 
@@ -80,11 +98,13 @@ The baseline preservation candidate traverses the official ORC pipeline: SEE / C
 
 `v4_fallback` is reserved for real extraction, execution, validation, or gate failures. This change does not modify DB, RLS, UI, V3, or V4.
 
-### ORC Hard Validation for Assignment Simulations v1 (ID 197)
+### ORC Candidate Hard Prefilter v1 (ID 200)
 
-`ValidationEngine` now accepts `ASSIGNMENT_APPLICATION_SHADOW` simulations and validates them through deterministic hard constraints instead of rejecting them by mode. The first hard-validation scope covers structural integrity, time windows, hard meals/breaks, locks, protected `done`/`in_progress` tasks, resource overlaps, space capacity/exclusivity, contestant/team overlaps, and direct dependencies. Validation evidence is read-only, records `validationScope: "hard-constraints-v1"`, and does not introduce soft scoring.
+SEE ahora descarta candidatos obviamente inviables antes de Simulation mediante `prefilterCandidatesByHardConstraints`. El prefiltro es determinista, read-only y cubre integridad básica de assignments, locks, tareas protegidas, tiempos, `workDay`, comidas/breaks hard, solapes simples de contestant/equipo itinerante/recurso/espacio y dependencias directas.
 
-`runORCActivePlanner` no longer uses `applyLocalScheduleMove` as a post-pipeline activation path. A result marked `usedEngine: "orc"` must now come from a selected ORC `SimulatedState` with materialized planning changes, a `VALID` validation result, and all activation gates passing. If ORC produces a valid equivalent baseline it is reported as `orc_baseline_preserved`; otherwise V4 remains the safe fallback. This change does not modify DB, RLS, UI, V3, or V4.
+Validation Engine sigue siendo la autoridad final: el prefiltro sólo evita gastar presupuesto de simulación en candidatos imposibles y ataca la prioridad benchmark `conflicts`, sin puntuar candidatos, sin consolidar planificación y sin relajar hard constraints. Su `planningInfluence` es `candidate-filtering-only`; no cambia la planificación oficial ni introduce nuevas estrategias de planificación.
+
+No hay cambios DB, RLS, UI, V3 ni V4. El candidato `PRESERVE_BASELINE` y los candidatos abstractos/read-only siguen pasando por el pipeline oficial sin ser descartados.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
@@ -442,12 +462,3 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
 
-## ID 198 — ORC Benchmark Memory Budget & Real Scenario Stabilization v1
-
-- Fecha UTC: 2026-06-30.
-- Causa encontrada: el OOM del benchmark ORC en `real-voice-audition-day` no nacía en DB, UI, RLS, V3 ni V4; el origen era combinatorio dentro del razonamiento ORC shadow. `PartialPlanComposer` generaba todas las combinaciones de candidatos (`2^n`) y después `GlobalSolutionAssembler` volvía a combinar todos los Partial Plans, multiplicando evidence y objetos intermedios hasta agotar heap en el escenario real.
-- Límites aplicados: la composición de Partial Plans queda acotada por defecto a 20 planes y 50 descartes detallados; el ensamblado de Global Solutions queda acotado por defecto a 20 soluciones y 50 descartes detallados. Estos límites son deterministas, no cambian la planificación oficial y respetan el presupuesto operativo recomendado para candidatos/simulaciones en escenarios grandes.
-- Evidence resumida/truncada: los descartes que superan presupuesto se agregan mediante evidence de presupuesto (`partial-plan-budget-applied` y `global-solution-budget-applied`) con conteos, límites, composiciones inspeccionadas y overflow de descartes, en lugar de emitir cada combinación completa.
-- Trazabilidad conservada: se mantienen ids de candidatos, ids de Partial Plans aceptados, conteos oficiales, métricas ORC/V4, explicaciones de delta, summaries de presupuesto y evidencia detallada para las primeras entradas ordenadas de forma determinista.
-- `real-voice-audition-day` sigue incluido en la suite oficial y ahora se valida con tests de presupuesto/determinismo y ejecución de benchmark del escenario completo.
-- Sin cambios DB, RLS, UI, V3 ni V4. El benchmark ORC vuelve a ser el juez obligatorio antes de añadir nuevas capacidades de planificación ORC.
