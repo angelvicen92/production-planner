@@ -48,6 +48,7 @@ const taskIds = (candidate: Candidate): number[] => {
   return fromMetadata.length > 0 ? fromMetadata : candidate.assignments.map((assignment) => assignment.taskId);
 };
 const expectedImpact = (candidate: Candidate): number => finite(candidate.metadata.expectedOperationalImpact, finite((candidate.metadata.candidateStrategy as ORCRecord | undefined)?.expectedOperationalImpact, 0));
+const isBaselineDecisionCandidate = (candidate: Candidate): boolean => candidate.metadata.baselineSafetyCandidate === true || candidate.metadata.baselinePreservation === true;
 
 function incompatibilityReason(a: Candidate, b: Candidate): string | null {
   const aSpace = searchSpaceId(a);
@@ -103,7 +104,10 @@ function planId(candidateIds: readonly string[]): string {
 
 export function composePartialPlans(candidates: readonly Candidate[], options: PartialPlanComposerOptions = {}): PartialPlanComposerResult {
   const ordered = [...(candidates ?? [])].sort((a, b) => a.id.localeCompare(b.id));
+  const baselineCandidates = ordered.filter(isBaselineDecisionCandidate);
+  const combinableCandidates = ordered.filter((candidate) => !isBaselineDecisionCandidate(candidate));
   const partialPlans: PartialPlan[] = [];
+  const emittedBaselinePlanIds = new Set<string>();
   const discardedCompositions: DiscardedPartialPlanComposition[] = [];
   const maxPartialPlans = Math.max(0, Math.floor(options.maxPartialPlans ?? DEFAULT_MAX_PARTIAL_PLANS));
   const maxDiscardedCompositions = Math.max(0, Math.floor(options.maxDiscardedCompositions ?? DEFAULT_MAX_DISCARDED_COMPOSITIONS));
@@ -125,7 +129,15 @@ export function composePartialPlans(candidates: readonly Candidate[], options: P
     }
     partialPlans.push(deepFreeze({ partialPlanId: planId(candidateIds), candidateIds, compatibilityScore: score, expectedOperationalImpact: round(group.reduce((sum, candidate) => sum + expectedImpact(candidate), 0)) }) as PartialPlan);
   };
-  for (let size = 1; size <= ordered.length && partialPlans.length < maxPartialPlans; size += 1) {
+  for (const baselineCandidate of baselineCandidates) {
+    if (partialPlans.length >= maxPartialPlans) break;
+    const candidateIds = [baselineCandidate.id];
+    const partialPlanId = planId(candidateIds);
+    if (emittedBaselinePlanIds.has(partialPlanId)) continue;
+    emittedBaselinePlanIds.add(partialPlanId);
+    partialPlans.push(deepFreeze({ partialPlanId, candidateIds, compatibilityScore: 1, expectedOperationalImpact: 0, metadata: { baselineSafetyPartialPlan: true, candidateIds, compatibilityScore: 1, expectedOperationalImpact: 0 } }) as unknown as PartialPlan);
+  }
+  for (let size = 1; size <= combinableCandidates.length && partialPlans.length < maxPartialPlans; size += 1) {
     const group: Candidate[] = [];
     const visit = (start: number): void => {
       if (partialPlans.length >= maxPartialPlans) return;
@@ -133,8 +145,8 @@ export function composePartialPlans(candidates: readonly Candidate[], options: P
         inspectGroup(group);
         return;
       }
-      for (let index = start; index < ordered.length && partialPlans.length < maxPartialPlans; index += 1) {
-        group.push(ordered[index]);
+      for (let index = start; index < combinableCandidates.length && partialPlans.length < maxPartialPlans; index += 1) {
+        group.push(combinableCandidates[index]);
         visit(index + 1);
         group.pop();
       }
@@ -144,6 +156,7 @@ export function composePartialPlans(candidates: readonly Candidate[], options: P
   partialPlans.sort((a, b) => b.candidateIds.length - a.candidateIds.length || b.compatibilityScore - a.compatibilityScore || a.partialPlanId.localeCompare(b.partialPlanId));
   const evidence: Evidence[] = [
     ...partialPlans.map((plan) => deepFreeze({ id: `evidence:orc-see:partial-plan:${plan.partialPlanId}`, source: "orc-see", kind: "partial-plan-composed", subjectId: plan.partialPlanId, createdAt: options.createdAt ?? null, data: { ...plan, deterministic: true, readOnly: true } }) as Evidence),
+    ...partialPlans.filter((plan) => (plan as unknown as { metadata?: ORCRecord }).metadata?.baselineSafetyPartialPlan === true).map((plan) => deepFreeze({ id: `evidence:orc-see:baseline-safety-partial-plan:${plan.partialPlanId}`, source: "orc-see", kind: "baseline-safety-partial-plan-composed", subjectId: plan.partialPlanId, createdAt: options.createdAt ?? null, data: { partialPlanId: plan.partialPlanId, candidateId: plan.candidateIds[0] ?? null, standalone: true, excludedFromCombination: true, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } }) as Evidence),
     ...discardedCompositions.map((discarded, index) => deepFreeze({ id: `evidence:orc-see:partial-plan:discarded:${index + 1}`, source: "orc-see", kind: "partial-plan-discarded", subjectId: discarded.candidateIds.join("+"), createdAt: options.createdAt ?? null, data: { candidateIds: [...discarded.candidateIds], reason: discarded.reason, compatibilityScore: discarded.compatibilityScore, deterministic: true, readOnly: true } }) as Evidence),
     ...(partialPlans.length >= maxPartialPlans || discardedOverflowCount > 0 ? [deepFreeze({ id: "evidence:orc-see:partial-plan:budget:v1", source: "orc-see", kind: "partial-plan-budget-applied", subjectId: "PartialPlanComposer", createdAt: options.createdAt ?? null, data: { candidateCount: ordered.length, inspectedCompositions, emittedPartialPlans: partialPlans.length, maxPartialPlans, recordedDiscardedCompositions: discardedCompositions.length, discardedOverflowCount, deterministic: true, readOnly: true } }) as Evidence] : []),
   ];

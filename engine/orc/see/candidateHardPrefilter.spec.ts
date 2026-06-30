@@ -22,6 +22,7 @@ const reason = (c: Candidate, s = state()) => prefilterCandidatesByHardConstrain
 
 test("accepts PRESERVE_BASELINE, abstract candidates, and missing OperationalState", () => {
   assert.equal(prefilterCandidatesByHardConstraints([candidate("PRESERVE_BASELINE", [])], state()).candidates.length, 1);
+  assert.equal(prefilterCandidatesByHardConstraints([candidate("PRESERVE_BASELINE_SAFETY", [], { baselinePreservation: true, baselineSafetyCandidate: true, readOnly: true })], state()).candidates.length, 1);
   assert.equal(prefilterCandidatesByHardConstraints([candidate("abstract", [], { readOnly: true })], state()).candidates.length, 1);
   const missing = prefilterCandidatesByHardConstraints([candidate("bad", [{ taskId: 999, resourceIds: [] }])], null);
   assert.equal(missing.candidates.length, 1);

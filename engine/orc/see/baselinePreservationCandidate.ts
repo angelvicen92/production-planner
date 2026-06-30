@@ -3,6 +3,7 @@ import { deepFreeze } from "../immutability";
 
 export const BASELINE_PRESERVATION_STRATEGY = "PRESERVE_BASELINE";
 export const BASELINE_PRESERVATION_REASON = "No improvement candidates were generated; preserve and validate the current baseline through the ORC pipeline.";
+export const BASELINE_SAFETY_REASON = "Baseline safety candidate generated alongside improvement candidates so ORC can preserve a valid V4 seed if no improvement candidate is accepted.";
 
 export interface BaselinePreservationCandidateResult {
   candidate: Candidate;
@@ -20,13 +21,16 @@ export interface BaselinePreservationCandidateResult {
 export function buildBaselinePreservationCandidate(
   operationalState: OperationalState | null | undefined,
   createdAt: string | null = null,
+  options: { readonly safetyCandidate?: boolean; readonly searchSpaceCount?: number } = {},
 ): BaselinePreservationCandidateResult | null {
   const planning = operationalState?.planning ?? [];
   const plannedTaskCount = planning.filter((entry) => Number.isFinite(entry.taskId) && Boolean(entry.startPlanned) && Boolean(entry.endPlanned)).length;
   if (!operationalState || plannedTaskCount === 0) return null;
 
-  const candidateId = `orc-see:baseline-preservation:${operationalState.id}`;
-  const evidenceId = `evidence:orc-see:baseline-preservation-candidate:${operationalState.id}`;
+  const isSafetyCandidate = options.safetyCandidate === true;
+  const reason = isSafetyCandidate ? BASELINE_SAFETY_REASON : BASELINE_PRESERVATION_REASON;
+  const candidateId = isSafetyCandidate ? `orc-see:baseline-preservation-safety:${operationalState.id}` : `orc-see:baseline-preservation:${operationalState.id}`;
+  const evidenceId = isSafetyCandidate ? `evidence:orc-see:baseline-safety-candidate:${operationalState.id}` : `evidence:orc-see:baseline-preservation-candidate:${operationalState.id}`;
   const metadata = {
     baselinePreservation: true,
     planningInfluence: "none",
@@ -35,14 +39,15 @@ export function buildBaselinePreservationCandidate(
     executesTransformations: false,
     strategy: BASELINE_PRESERVATION_STRATEGY,
     strategyFamily: "baseline-preservation",
-    generationReason: BASELINE_PRESERVATION_REASON,
+    ...(isSafetyCandidate ? { baselineSafetyCandidate: true, shouldComposeWithOtherCandidates: false } : {}),
+    generationReason: reason,
     operationalStateId: operationalState.id,
     plannedTaskCount,
   };
 
   const candidate: Candidate = deepFreeze({
     id: candidateId,
-    state: { status: "valid", reason: BASELINE_PRESERVATION_REASON, evidenceIds: [evidenceId], metadata: { ...metadata } },
+    state: { status: "valid", reason, evidenceIds: [evidenceId], metadata: { ...metadata } },
     assignments: [],
     operationalValues: [],
     evidenceIds: [evidenceId],
@@ -52,13 +57,16 @@ export function buildBaselinePreservationCandidate(
   const evidence: Evidence = deepFreeze({
     id: evidenceId,
     source: "orc-see",
-    kind: "baseline-preservation-candidate-generated",
+    kind: isSafetyCandidate ? "baseline-safety-candidate-generated" : "baseline-preservation-candidate-generated",
     subjectId: candidateId,
     createdAt,
     data: {
+      candidateId,
       operationalStateId: operationalState.id,
       plannedTaskCount,
-      reason: BASELINE_PRESERVATION_REASON,
+      planningCount: plannedTaskCount,
+      searchSpaceCount: options.searchSpaceCount ?? 0,
+      reason,
       readOnly: true,
       mutatesOperationalState: false,
       commitsPlanning: false,
@@ -71,7 +79,8 @@ export function buildBaselinePreservationCandidate(
     evidence,
     summary: {
       plannedTaskCount,
-      generationReason: BASELINE_PRESERVATION_REASON,
+      ...(isSafetyCandidate ? { baselineSafetyCandidate: true, shouldComposeWithOtherCandidates: false } : {}),
+      generationReason: reason,
       readOnly: true,
       mutatesOperationalState: false,
       commitsPlanning: false,

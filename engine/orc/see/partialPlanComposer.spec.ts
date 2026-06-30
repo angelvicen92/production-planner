@@ -61,3 +61,15 @@ test("composePartialPlans preserves structural equality and does not mutate inpu
   assert.deepEqual(first, second);
   assert.equal(stableStringify(input), before);
 });
+
+test("composePartialPlans keeps baseline safety standalone and out of improvement combinations", () => {
+  const baseline = candidate("baseline", { assignments: [], metadata: { baselinePreservation: true, baselineSafetyCandidate: true, readOnly: true, planningInfluence: "none", expectedOperationalImpact: 99 } });
+  const result = composePartialPlans([candidate("c1"), candidate("c2"), baseline], { createdAt: "2026-06-30T00:00:00.000Z" });
+  const baselinePlans = result.partialPlans.filter((plan) => plan.candidateIds.includes("baseline"));
+  assert.equal(baselinePlans.length, 1);
+  assert.deepEqual(baselinePlans[0].candidateIds, ["baseline"]);
+  assert.equal(baselinePlans[0].compatibilityScore, 1);
+  assert.equal(baselinePlans[0].expectedOperationalImpact, 0);
+  assert.equal(result.partialPlans.some((plan) => plan.candidateIds.includes("baseline") && plan.candidateIds.length > 1), false);
+  assert.equal(result.evidence.some((item) => item.kind === "baseline-safety-partial-plan-composed"), true);
+});
