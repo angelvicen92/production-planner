@@ -35,8 +35,8 @@ const state = (planning: OperationalState["planning"]): OperationalState => deep
   source: "EngineInput", schemaVersion: "ORC-SPEC-01",
 }) as OperationalState;
 
-const shadow = (planning: OperationalState["planning"], violations: string[] = []): ORCShadowModeResult => {
-  const sim: SimulatedState = deepFreeze({ id: "sim:1", candidateStateId: "cand:1", baseStateId: "state:1", operationalStateSnapshot: state(planning), appliedTransformations: [], simulationMode: "READ_ONLY_BASELINE", readOnly: true, createdAt: null }) as SimulatedState;
+const shadow = (planning: OperationalState["planning"], violations: string[] = [], changedTaskCount = 0): ORCShadowModeResult => {
+  const sim: SimulatedState = deepFreeze({ id: "sim:1", candidateStateId: "cand:1", baseStateId: "state:1", operationalStateSnapshot: state(planning), planningMaterialization: { source: changedTaskCount > 0 ? "candidate_transformations" : planning.length > 0 ? "baseline_seed_preserved" : "none", plannedTaskCount: planning.length, changedTaskCount, warnings: [] }, appliedTransformations: [], simulationMode: "READ_ONLY_BASELINE", readOnly: true, createdAt: null }) as SimulatedState;
   const validation: ValidationResult = deepFreeze({ id: "val:1", simulatedStateId: sim.id, result: violations.length ? "INVALID" : "VALID", violatedConstraints: violations, explanation: "test", validatedAt: null, evidenceIds: [] }) as ValidationResult;
   return {
     operationalState: state([]), operationalMap: {} as any, operationalAnalysis: {} as any, operationalCriticality: {} as any,
@@ -79,11 +79,12 @@ test("planning vacío produce fallback explícito de extracción", () => {
   assert.ok(result.diagnostics.bestCandidateTrace.extractionWarnings.length > 0);
 });
 
-test("ORC completo desde ruta alternativa supera complete", () => {
+test("ORC completo desde ruta alternativa sin cambios preserva baseline", () => {
   const baseShadow = shadow([]);
   const sim = deepFreeze({ ...(baseShadow.simulatedStates[0] as any), operationalState: state(validPlanning) }) as any as SimulatedState;
   const result = runORCActivePlanner(input(), { orcShadowResult: { ...baseShadow, simulatedStates: [sim] } });
-  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.diagnostics.usedEngine, "orc_baseline_preserved");
+  assert.equal(result.diagnostics.orcResultKind, "orc_baseline_preserved");
   assert.equal(result.diagnostics.gates.complete, true);
   assert.equal(result.diagnostics.bestCandidateTrace.extractionSource, "operationalState.planning");
   assert.equal(result.diagnostics.bestCandidateTrace.plannedTaskCount, 3);
@@ -94,7 +95,7 @@ test("ORC Active passes a baseline-seeded input to runORC", () => {
   const result = runORCActivePlanner(input(), {
     runORC: (seeded) => {
       received = seeded;
-      return shadow(validPlanning);
+      return shadow(validPlanning, [], 1);
     },
   });
   assert.ok(received);
@@ -102,9 +103,12 @@ test("ORC Active passes a baseline-seeded input to runORC", () => {
   assert.equal(result.diagnostics.bestCandidateTrace.seededPlanningCount, result.diagnostics.baselineSeed.seededPlanningCount);
 });
 
-test("ORC válido se usa y serializa diagnostics", () => {
-  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+test("ORC con changedTaskCount > 0 se usa como cambio real y serializa diagnostics", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.diagnostics.orcResultKind, "orc_changed_plan");
+  assert.equal(result.diagnostics.planningRelationToBaseline.changedTaskCount, 1);
+  assert.equal(result.diagnostics.planningRelationToBaseline.isEquivalentToBaseline, false);
   assert.equal(result.output.plannedTasks.length, 3);
   assert.equal(result.diagnostics.orcActivationReport.summary.selectedEngine, "orc");
   assert.equal(result.diagnostics.orcActivationReport.summary.finalResult, "ORC aplicado");
@@ -112,6 +116,18 @@ test("ORC válido se usa y serializa diagnostics", () => {
   assert.equal(result.diagnostics.orcActivationReport.recommendation.type, "NEXT_IMPROVEMENT");
   assert.equal(result.diagnostics.orcActivationReport.bestORCSimulation.score, 1);
   assert.doesNotThrow(() => JSON.stringify(result.diagnostics.orcActivationReport));
+});
+
+test("ORC con changedTaskCount = 0 se clasifica como baseline preservado", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 0) });
+  assert.equal(result.diagnostics.usedEngine, "orc_baseline_preserved");
+  assert.equal(result.diagnostics.orcResultKind, "orc_baseline_preserved");
+  assert.equal(result.diagnostics.fallbackReason, null);
+  assert.equal(result.diagnostics.planningRelationToBaseline.changedTaskCount, 0);
+  assert.equal(result.diagnostics.planningRelationToBaseline.unchangedTaskCount, 3);
+  assert.equal(result.diagnostics.planningRelationToBaseline.isEquivalentToBaseline, true);
+  assert.match(result.diagnostics.explanation, /no aplicó cambios sobre el baseline/);
+  assert.equal(result.diagnostics.orcActivationReport.summary.selectedEngine, "orc_baseline_preserved");
 });
 
 test("ORC incompleto cae a V4", () => {
@@ -157,14 +173,14 @@ test("no muta done ni in_progress", () => {
 });
 
 test("todos los gates aparecen como PASS o FAIL en el informe", () => {
-  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   const gateNames = result.diagnostics.orcActivationReport.gates.map((gate) => gate.name);
   assert.deepEqual(gateNames, Object.keys(result.diagnostics.gates).sort());
   assert.ok(result.diagnostics.orcActivationReport.gates.every((gate) => gate.status === "PASS" || gate.status === "FAIL"));
 });
 
 test("comparativa ORC vs V4 incluye todas las métricas requeridas", () => {
-  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   assert.deepEqual(Object.keys(result.diagnostics.orcActivationReport.comparison).sort(), [
     "coachIdleTimeDelta",
     "mainFlowContinuityDelta",
@@ -175,7 +191,7 @@ test("comparativa ORC vs V4 incluye todas las métricas requeridas", () => {
 });
 
 test("bestCandidateTrace registra ORC seleccionado", () => {
-  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   const trace = result.diagnostics.bestCandidateTrace;
   assert.equal(trace.version, "ORC-BEST-CANDIDATE-TRACE-V1");
   assert.equal(trace.simulationCount, 1);
@@ -219,15 +235,15 @@ test("bestCandidateTrace registra ausencia de simulaciones", () => {
 });
 
 test("bestCandidateTrace serializa como JSON estable", () => {
-  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   const parsed = JSON.parse(JSON.stringify(result.diagnostics.bestCandidateTrace));
   assert.equal(parsed.version, "ORC-BEST-CANDIDATE-TRACE-V1");
   assert.equal(parsed.evidence.source, "orc-best-candidate-trace");
 });
 
 test("determinismo", () => {
-  const a = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
-  const b = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning) });
+  const a = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
+  const b = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
   assert.deepEqual(a.output.plannedTasks, b.output.plannedTasks);
   assert.deepEqual(a.diagnostics.orcActivationReport, b.diagnostics.orcActivationReport);
   assert.deepEqual(a.diagnostics.bestCandidateTrace, b.diagnostics.bestCandidateTrace);

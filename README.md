@@ -404,3 +404,11 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - `SimulatedState` incluye `operationalStateSnapshot.planning` materializado y diagnostics `planningMaterialization` con source, plannedTaskCount, changedTaskCount y warnings serializables.
 - Si el candidato no aporta cambios aplicables, ORC preserva la planificación baseline (`baseline_seed_preserved`); si aplica cambios seguros, reporta `candidate_transformations` y el número de tareas modificadas.
 - El Active Planner refleja la materialización en `orcSummary`, `bestCandidateTrace` y `orcActivationReport` sin relajar gates, sin modificar V3, UI, schema, Commit Engine ni reglas hard.
+
+## ID 194 — ORC Active No-Op Classification & UI Crash Guard v1
+
+- Fecha Europe/Madrid: 2026-06-29 23:08.
+- ORC Active distingue ahora `orcResultKind` entre `orc_changed_plan`, `orc_baseline_preserved` y `v4_fallback` sin modificar V3, schema, gates ni reglas hard.
+- Un ORC completo con `planningMaterialization.changedTaskCount === 0` se etiqueta como `usedEngine: "orc_baseline_preserved"`, conserva `fallbackReason: null` y explica que se muestra una planificación completa equivalente al baseline.
+- Diagnostics y export JSON incluyen `planningRelationToBaseline` con `changedTaskCount`, `unchangedTaskCount` e `isEquivalentToBaseline`, manteniendo la evidencia completa (`gates`, `baselineSeed`, `planningMaterialization`, `bestCandidateTrace`, `operationalDelta`, `orcActivationReport`).
+- El panel de diagnóstico V4/ORC evita renderizar JSON gigante inline: muestra resúmenes compactos defensivos y mantiene Copiar JSON / Descargar JSON como exportación completa.
