@@ -42,6 +42,7 @@ function metadataNumber(value: unknown, fallback: number): number {
 }
 
 function plannedTransformationsFor(candidate: Candidate): PlannedTransformation[] {
+  if (candidate.metadata.baselinePreservation === true || candidate.metadata.executesTransformations === false && candidate.metadata.strategy === "PRESERVE_BASELINE") return [];
   const strategy = metadataString(candidate.metadata.strategy, "UNKNOWN_STRATEGY");
   const kind = KIND_BY_STRATEGY[strategy] ?? "REORDER_REGION";
   return [{ kind, reason: `Abstract read-only intent for ${strategy}` }];

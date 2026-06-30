@@ -44,8 +44,10 @@ function fallbackPartialPlan(candidate: Candidate): PartialPlan {
 function mergeCandidateMetadata(plan: PartialPlan, candidates: readonly Candidate[], fallback: boolean): ORCRecord {
   const strategies = candidates.map((candidate) => candidate.metadata.strategy).filter((value): value is string => typeof value === "string");
   const sourceOpportunityIds = candidates.map((candidate) => candidate.metadata.sourceOpportunityId).filter((value): value is string => typeof value === "string");
+  const baselinePreservation = candidates.length === 1 && candidates[0].metadata.baselinePreservation === true;
   return {
-    strategy: fallback && strategies.length === 1 ? strategies[0] : "PARTIAL_PLAN",
+    ...(baselinePreservation ? candidates[0].metadata : {}),
+    strategy: baselinePreservation ? "PRESERVE_BASELINE" : fallback && strategies.length === 1 ? strategies[0] : "PARTIAL_PLAN",
     sourceOpportunityId: sourceOpportunityIds.length === 1 ? sourceOpportunityIds[0] : null,
     partialPlanId: plan.partialPlanId,
     partialPlanCandidateIds: [...plan.candidateIds],

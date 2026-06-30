@@ -6,6 +6,27 @@ import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import type { OperationalState, SimulatedState, ValidationResult } from "../contracts";
 import { deepFreeze } from "../immutability";
 
+
+const fullyPlannedInput = (): EngineInput => ({
+  planId: 96,
+  workDay: { start: "09:00", end: "12:00" },
+  meal: { start: "13:00", end: "14:00" },
+  camerasAvailable: 1,
+  tasks: [
+    { id: 1, planId: 96, templateId: 10, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7] },
+    { id: 2, planId: 96, templateId: 11, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [7] },
+  ],
+  locks: [],
+  optimizerMainZoneId: 10,
+  zoneResourceAssignments: {},
+  spaceResourceAssignments: {},
+  zoneResourceTypeRequirements: {},
+  spaceResourceTypeRequirements: {},
+  planResourceItems: [{ id: 7, resourceItemId: 70, typeId: 1, name: "Camera 1", isAvailable: true }],
+  resourceItemComponents: {},
+  groupingZoneIds: [],
+});
+
 const input = (): EngineInput => ({
   planId: 1,
   workDay: { start: "09:00", end: "12:00" },
@@ -51,6 +72,20 @@ const validPlanning = [
   { taskId: 2, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [10], spaceId: 1 },
   { taskId: 3, startPlanned: "10:00", endPlanned: "10:30", assignedResourceIds: [10], spaceId: 1 },
 ];
+
+test("ORC Active preserva un baseline completo sin candidatos de mejora usando candidato interno", () => {
+  const result = runORCActivePlanner(fullyPlannedInput());
+  assert.equal(result.diagnostics.usedEngine, "orc_baseline_preserved");
+  assert.equal(result.diagnostics.orcResultKind, "orc_baseline_preserved");
+  assert.equal(result.diagnostics.fallbackReason, null);
+  assert.equal(result.output.plannedTasks.length, 2);
+  assert.deepEqual(result.output.plannedTasks.map((task) => task.taskId), [1, 2]);
+  assert.equal(result.diagnostics.planningRelationToBaseline.changedTaskCount, 0);
+  assert.equal(result.diagnostics.planningRelationToBaseline.isEquivalentToBaseline, true);
+  assert.equal(result.diagnostics.bestCandidateTrace.bestCandidate.metadata.baselinePreservation, true);
+  assert.equal(result.diagnostics.bestCandidateTrace.planningMaterialization.source, "baseline_seed_preserved");
+  assert.equal(result.diagnostics.effectiveMoves.accepted, 0);
+});
 
 test("extrae planning desde operationalStateSnapshot.planning", () => {
   const sim = shadow(validPlanning).simulatedStates[0];

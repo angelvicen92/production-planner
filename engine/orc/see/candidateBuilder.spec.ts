@@ -28,6 +28,28 @@ test("buildCandidates handles empty SearchSpace input", () => {
   assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } });
 });
 
+const operationalState = () => ({
+  id: "state:baseline", planId: 1, workDay: { start: "09:00", end: "10:00" },
+  planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [10], spaceId: 1 }],
+  tasks: [], resources: [], spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },
+  availability: { workDay: null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: [] },
+  dependencies: [], locks: [], constraints: {}, operationalMetrics: {},
+  cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} },
+  source: "EngineInput", schemaVersion: "ORC-SPEC-01",
+} as const);
+
+test("buildCandidates creates baseline preservation candidate when no search spaces but seeded planning exists", () => {
+  const result = buildCandidates([], { operationalState: operationalState() as any, createdAt: "2026-06-30T00:00:00.000Z" });
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].metadata.baselinePreservation, true);
+  assert.equal(result.candidates[0].metadata.strategy, "PRESERVE_BASELINE");
+  assert.equal(result.candidates[0].metadata.planningInfluence, "none");
+  assert.equal(result.candidates[0].assignments.length, 0);
+  assert.equal(result.evidence[0].kind, "baseline-preservation-candidate-generated");
+  assert.equal(result.evidence[0].data.plannedTaskCount, 1);
+  assert.equal(result.summary.candidateCount, 1);
+});
+
 test("buildCandidates creates abstract candidates for one SearchSpace", () => {
   const result = buildCandidates([space("one")]);
   assert.equal(result.candidates.length, 3);

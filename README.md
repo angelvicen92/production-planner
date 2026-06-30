@@ -70,6 +70,15 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
 - ID 190 — 2026-06-29 UTC — ORC Active Candidate Planning Output v1
 - ID 197 — 2026-06-30 UTC — ORC Hard Validation for Assignment Simulations v1
+- ID 199 — 2026-06-30 UTC — ORC Baseline Preservation Candidate v1
+
+### ORC Baseline Preservation Candidate v1 (ID 199)
+
+ORC now can preserve a complete V4-seeded baseline as its own explicit result when there are no improvement opportunities or search spaces. The internal `PRESERVE_BASELINE` candidate is read-only, carries `baselinePreservation: true`, does not include assignments, and does not alter schedules, resources, spaces, locks, or protected tasks.
+
+The baseline preservation candidate traverses the official ORC pipeline: SEE / Candidate Generation, Transformation, Simulation, Validation, Evaluation, Commit, and Evidence. Its simulation remains `READ_ONLY_BASELINE`; its planning materialization source is `baseline_seed_preserved`; and its changed task count is `0`. `usedEngine: "orc_baseline_preserved"` therefore no longer depends on artificial opportunities being present.
+
+`v4_fallback` is reserved for real extraction, execution, validation, or gate failures. This change does not modify DB, RLS, UI, V3, or V4.
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
