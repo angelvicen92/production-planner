@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { stableStringify } from "../../structuralEquality";
+import { runORCShadowMode } from "../../shadow/runORCShadowMode";
 import { runProductionScenarioBenchmark } from "../scenarioSuite";
 import { runOperationalDeltaBenchmark } from "../operationalDeltaBenchmark";
 import { productionBenchmarkScenarios, realVoiceAuditionDayScenario } from "./index";
@@ -52,4 +53,45 @@ test("real voice audition day benchmark does not mutate its input", () => {
   assert.equal(result.inputUnchanged, true);
   assert.equal(result.scenario.taskCount, input.tasks.length);
   assert.equal(stableStringify(input), before);
+});
+
+test("real voice audition day ORC shadow mode stays within operational memory budgets", () => {
+  const first = runORCShadowMode(input, { enabled: true, createdAt: null });
+  const second = runORCShadowMode(input, { enabled: true, createdAt: null });
+  assert.ok(first);
+  assert.ok(second);
+  assert.equal(stableStringify(first.summary), stableStringify(second.summary));
+  assert.ok(first.summary.opportunityCount <= 20);
+  assert.ok(first.summary.searchSpaceCount <= 20);
+  assert.ok(first.summary.candidateCount <= 20);
+  assert.ok(first.summary.simulatedStateCount <= 20);
+  assert.ok(first.candidateSummary.preselection.partialPlans.partialPlanCount <= 20);
+  assert.equal(first.evidence.some((item) => item.kind === "partial-plan-budget-applied"), true);
+  assert.equal(first.evidence.some((item) => item.kind === "global-solution-budget-applied"), true);
+});
+
+test("real voice audition day benchmark executes without full shadow snapshots in report", () => {
+  const result = runProductionScenarioBenchmark("real-voice-audition-day", { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(result.status, "passed");
+  assert.ok(result.report);
+  assert.deepEqual(Object.keys(result.report.metrics.orc).sort(), [
+    "candidatesConsolidated",
+    "candidatesGenerated",
+    "candidatesSimulated",
+    "conflicts",
+    "dependencyAverageSlackRecovered",
+    "dependencyBlockagesAvoided",
+    "dependencyChainsProtected",
+    "dependencyCriticalityOperationalValueCorrelation",
+    "mainFlowContinuity",
+    "makespan",
+    "operationalPlanningQuality",
+    "permanenceByTalent",
+    "resourceUtilization",
+    "simulations",
+    "timeByIteration",
+    "totalPermanence",
+    "totalTime",
+  ].sort());
+  assert.equal(stableStringify(result.report).includes("operationalStateSnapshot"), false);
 });

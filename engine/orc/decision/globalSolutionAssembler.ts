@@ -5,6 +5,8 @@ import type { PartialPlanDecisionUnit } from "./decisionEngine";
 
 export interface GlobalSolutionAssemblerOptions {
   readonly createdAt?: string | null;
+  readonly maxGlobalSolutions?: number | null;
+  readonly maxDiscardedCompositions?: number | null;
 }
 
 export interface GlobalSolutionAssemblerResult {
@@ -31,6 +33,8 @@ interface CompatibilityResult {
 }
 
 const SOURCE = "orc-global-solution-assembler";
+const DEFAULT_MAX_GLOBAL_SOLUTIONS = 20;
+const DEFAULT_MAX_DISCARDED_COMPOSITIONS = 50;
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -114,17 +118,6 @@ function compatibleGroup(plans: readonly AssemblyPlan[]): CompatibilityResult {
   return deepFreeze({ compatible: reasons.length === 0, reasons }) as CompatibilityResult;
 }
 
-function combinations<T>(items: readonly T[]): T[][] {
-  const result: T[][] = [];
-  const total = 2 ** items.length;
-  for (let mask = 1; mask < total; mask += 1) {
-    const group: T[] = [];
-    for (let index = 0; index < items.length; index += 1) if ((mask & (1 << index)) !== 0) group.push(items[index]);
-    result.push(group);
-  }
-  return result;
-}
-
 function solutionId(plans: readonly AssemblyPlan[]): string {
   return `global-solution:${plans.map((plan) => plan.partialPlan.partialPlanId).join("+")}`;
 }
@@ -144,15 +137,25 @@ export function assembleGlobalSolutions(
 
   const evidence: Evidence[] = [];
   const accepted: GlobalSolution[] = [];
+  const maxGlobalSolutions = Math.max(0, Math.floor(options.maxGlobalSolutions ?? DEFAULT_MAX_GLOBAL_SOLUTIONS));
+  const maxDiscardedCompositions = Math.max(0, Math.floor(options.maxDiscardedCompositions ?? DEFAULT_MAX_DISCARDED_COMPOSITIONS));
   let discardedCompositionCount = 0;
+  let inspectedCompositions = 0;
+  let discardedEvidenceOverflowCount = 0;
 
-  for (const group of combinations(plans)) {
+  const inspectGroup = (group: AssemblyPlan[]): void => {
+    if (accepted.length >= maxGlobalSolutions) return;
+    inspectedCompositions += 1;
     const compatibility = compatibleGroup(group);
     const id = solutionId(group);
     if (!compatibility.compatible) {
       discardedCompositionCount += 1;
-      evidence.push(deepFreeze({ id: `evidence:${SOURCE}:discarded:${id}`, source: SOURCE, kind: "global-solution-composition-discarded", subjectId: id, createdAt, data: { partialPlanIds: group.map((plan) => plan.partialPlan.partialPlanId), incompatibilities: compatibility.reasons, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } }) as Evidence);
-      continue;
+      if (discardedCompositionCount <= maxDiscardedCompositions) {
+        evidence.push(deepFreeze({ id: `evidence:${SOURCE}:discarded:${id}`, source: SOURCE, kind: "global-solution-composition-discarded", subjectId: id, createdAt, data: { partialPlanIds: group.map((plan) => plan.partialPlan.partialPlanId), incompatibilities: compatibility.reasons.slice(0, 10), incompatibilityCount: compatibility.reasons.length, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } }) as Evidence);
+      } else {
+        discardedEvidenceOverflowCount += 1;
+      }
+      return;
     }
 
     const partialPlanIds = group.map((plan) => plan.partialPlan.partialPlanId);
@@ -162,7 +165,24 @@ export function assembleGlobalSolutions(
     const solution = deepFreeze({ solutionId: id, partialPlanIds, compatibilityScore, aggregatedEvaluationScore, explanation }) as GlobalSolution;
     accepted.push(solution);
     evidence.push(deepFreeze({ id: `evidence:${SOURCE}:accepted:${id}`, source: SOURCE, kind: "global-solution-built", subjectId: id, createdAt, data: { solution, partialPlanIds, candidateIds: group.flatMap((plan) => [...plan.partialPlan.candidateIds]), compatibilityChecks: ["assignments", "temporal", "resources", "spaces"], score: aggregatedEvaluationScore, explanation, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } satisfies ORCRecord }) as Evidence);
+  };
+  for (let size = 1; size <= plans.length && accepted.length < maxGlobalSolutions; size += 1) {
+    const group: AssemblyPlan[] = [];
+    const visit = (start: number): void => {
+      if (accepted.length >= maxGlobalSolutions) return;
+      if (group.length === size) {
+        inspectGroup(group);
+        return;
+      }
+      for (let index = start; index < plans.length && accepted.length < maxGlobalSolutions; index += 1) {
+        group.push(plans[index]);
+        visit(index + 1);
+        group.pop();
+      }
+    };
+    visit(0);
   }
+  if (accepted.length >= maxGlobalSolutions || discardedEvidenceOverflowCount > 0) evidence.push(deepFreeze({ id: `evidence:${SOURCE}:budget:v1`, source: SOURCE, kind: "global-solution-budget-applied", subjectId: "GlobalSolutionAssembler", createdAt, data: { partialPlanCount: plans.length, inspectedCompositions, emittedGlobalSolutions: accepted.length, maxGlobalSolutions, discardedCompositionCount, recordedDiscardedEvidence: Math.min(discardedCompositionCount, maxDiscardedCompositions), discardedEvidenceOverflowCount, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } }) as Evidence);
 
   accepted.sort((a, b) => b.aggregatedEvaluationScore - a.aggregatedEvaluationScore || b.compatibilityScore - a.compatibilityScore || a.solutionId.localeCompare(b.solutionId));
   const optimized = accepted.map((solution) => optimizeGlobalSolution(solution, decisionUnits, { createdAt }));
