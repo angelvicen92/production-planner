@@ -80,3 +80,22 @@ test("ORC Operational Benchmark never influences official planning", () => {
   const { report } = runOrcOperationalBenchmark(options);
   assert.equal(report.planningInfluence, "none");
 });
+
+
+test("ORC Operational Benchmark conflict recommendations come from seeded ORC metrics, not raw shadow diagnostics", () => {
+  const suiteReport = runProductionScenarioBenchmarkSuite({ scenarioIds: ["real-voice-audition-day"], createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  const optimizationReport = runEvidenceOptimizationCycle({ suiteReport });
+  const authorizationReport = buildOptimizationAuthorizationReport({
+    priorities: optimizationReport.optimizationPriorities,
+    improvementReports: optimizationReport.improvementReports,
+    generatedAt: null,
+  });
+  const conflictAuthorization = authorizationReport.authorizedPriorities.find((priority) => priority.metric === "conflicts");
+  if (conflictAuthorization) {
+    assert.equal(conflictAuthorization.improvementReportsUsed.some((used) => {
+      const report = suiteReport.results.find((result) => result.report?.scenario.planId === used.scenario.planId)?.report;
+      return report != null && report.metrics.orc.conflicts > report.metrics.v4.conflicts;
+    }), true);
+  }
+  assert.equal(suiteReport.results.every((result) => result.report == null || result.report.rawShadowDiagnostics.planningInfluence === "none"), true);
+});

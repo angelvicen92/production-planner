@@ -1,5 +1,6 @@
 import type { EngineInput, EngineOutput } from "../../types";
 import { generatePlanV4 } from "../../v4";
+import { assertSerializableORCSeed, buildORCBaselineSeededInput } from "../active/orcBaselineSeed";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { optimizeDependencyChainFlow } from "../search/dependencyChainFlowOptimizer";
@@ -68,11 +69,34 @@ export interface OperationalDeltaMetrics {
   operationalPlanningQuality: OperationalPlanningQualityMetrics;
 }
 
+export interface RawShadowDiagnostics {
+  enabled: boolean;
+  candidateCount: number;
+  simulatedStateCount: number;
+  validCount: number;
+  invalidCount: number;
+  validationViolationSummary: Record<string, number>;
+  explanation: string;
+  planningInfluence: "none";
+}
+
+export interface ORCBaselineSeedReport {
+  seededPlanningCount: number;
+  sourcePlanningCount: number;
+  serializedSize: number;
+  serializable: boolean;
+  warnings: string[];
+  readOnly: true;
+  planningInfluence: "benchmark-input-seeding-only";
+}
+
 export interface OperationalDeltaReport {
   benchmarkVersion: typeof OPERATIONAL_DELTA_BENCHMARK_VERSION;
   generatedAt: string | null;
   scenario: { planId: number; taskCount: number };
   metrics: { orc: OperationalDeltaMetrics; v4: OperationalDeltaMetrics };
+  rawShadowDiagnostics: RawShadowDiagnostics;
+  orcBaselineSeed: ORCBaselineSeedReport;
   absoluteDelta: OperationalDeltaMetrics;
   percentageDelta: OperationalDeltaMetrics;
   evidenceExplanation: string[];
@@ -176,6 +200,27 @@ function orcMetrics(input: EngineInput, shadow: ORCShadowModeResult, runtime: nu
   });
 }
 
+function validationViolationSummary(shadow: ORCShadowModeResult): Record<string, number> {
+  const summary: Record<string, number> = {};
+  for (const result of shadow.validationResults) {
+    for (const violation of result.violatedConstraints ?? []) summary[violation] = (summary[violation] ?? 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(summary).sort(([a], [b]) => a.localeCompare(b)));
+}
+
+function rawShadowDiagnostics(shadow: ORCShadowModeResult): RawShadowDiagnostics {
+  return {
+    enabled: shadow.summary.enabled,
+    candidateCount: shadow.candidates.length,
+    simulatedStateCount: shadow.simulatedStates.length,
+    validCount: shadow.summary.validCount,
+    invalidCount: shadow.summary.invalidCount,
+    validationViolationSummary: validationViolationSummary(shadow),
+    explanation: "Raw ORC Shadow runs on the original scenario input for technical diagnostics only; it does not influence official ORC-vs-V4 delta metrics.",
+    planningInfluence: "none",
+  };
+}
+
 function mapNumericRecord(a: Record<string, number>, b: Record<string, number>, fn: (x: number, y: number) => number): Record<string, number> {
   const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
   return Object.fromEntries(keys.map((key) => [key, round(fn(a[key] ?? 0, b[key] ?? 0))]));
@@ -254,22 +299,37 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const safeInput = cloneInput(input);
   const before = stableStringify(safeInput);
   const v4 = generatePlanV4(cloneInput(safeInput), { v4Profile: "balanced", maxRuntimeMs: 1000, maxStrategies: 1 } as any);
-  const shadow = runORCShadowMode(cloneInput(safeInput), { enabled: true, createdAt: options.createdAt ?? null });
-  if (shadow === null) throw new Error("Operational Delta Benchmark requires ORC Shadow Mode.");
+  const seeded = buildORCBaselineSeededInput(cloneInput(safeInput), v4.output);
+  const serializedSeed = assertSerializableORCSeed(seeded.seedPlanning);
+  const seededShadow = runORCShadowMode(cloneInput(seeded.input), { enabled: true, createdAt: options.createdAt ?? null });
+  if (seededShadow === null) throw new Error("Operational Delta Benchmark requires V4-seeded ORC Shadow Mode.");
+  const rawShadow = runORCShadowMode(cloneInput(safeInput), { enabled: true, createdAt: options.createdAt ?? null });
+  if (rawShadow === null) throw new Error("Operational Delta Benchmark requires raw ORC Shadow diagnostics.");
   const v4MetricSet = { ...v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, 0) };
-  const orcMetricSet = { ...orcMetrics(safeInput, shadow, options.orcRuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, shadow.operationalValues[0]?.overallScore ?? 0) };
+  const orcMetricSet = { ...orcMetrics(seeded.input, seededShadow, options.orcRuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(seeded.input, seededShadow.operationalValues[0]?.overallScore ?? 0) };
   const absoluteDelta = delta(orcMetricSet, v4MetricSet);
   const baseReport = {
     benchmarkVersion: OPERATIONAL_DELTA_BENCHMARK_VERSION,
     generatedAt: options.createdAt ?? null,
     scenario: { planId: safeInput.planId, taskCount: safeInput.tasks.length },
     metrics: { orc: orcMetricSet, v4: v4MetricSet },
+    rawShadowDiagnostics: rawShadowDiagnostics(rawShadow),
+    orcBaselineSeed: {
+      seededPlanningCount: seeded.seedPlanning.length,
+      sourcePlanningCount: v4.output.plannedTasks.length,
+      serializedSize: Buffer.byteLength(serializedSeed, "utf8"),
+      serializable: true,
+      warnings: [...seeded.baselineSeed.warnings],
+      readOnly: true,
+      planningInfluence: "benchmark-input-seeding-only",
+    },
     absoluteDelta,
     percentageDelta: pct(absoluteDelta, v4MetricSet),
     evidenceExplanation: [
-      `ORC Shadow Mode produced ${shadow.candidates.length} candidate(s), ${shadow.simulatedStates.length} simulation(s), and ${shadow.commitDecisions.length} decision(s).`,
-      `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s).`,
-      "Delta values are ORC minus V4 and do not decide which result is better.",
+      `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s) as the benchmark baseline.`,
+      `The official ORC metric runs ORC Shadow Mode on the V4 baseline seed and produced ${seededShadow.candidates.length} candidate(s), ${seededShadow.simulatedStates.length} simulation(s), and ${seededShadow.commitDecisions.length} decision(s).`,
+      `Raw ORC Shadow diagnostics produced ${rawShadow.summary.invalidCount} invalid simulation(s) on the original scenario input; those diagnostics are preserved separately and do not decide the official delta.`,
+      "Delta values are ORC minus V4 using V4-seeded ORC Shadow for ORC metrics, and do not modify official planning.",
       "Operational Planning Quality Metrics measure resource/talent idle time, fragmentation, compactness, main-flow continuity details, and critical-resource spread without changing planning behavior.",
     ],
     planningUnchanged: stableStringify(safeInput) === before,
