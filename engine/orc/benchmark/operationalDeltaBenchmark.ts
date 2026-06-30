@@ -1,6 +1,7 @@
 import type { EngineInput, EngineOutput } from "../../types";
 import { generatePlanV4 } from "../../v4";
 import { assertSerializableORCSeed, buildORCBaselineSeededInput } from "../active/orcBaselineSeed";
+import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { optimizeDependencyChainFlow } from "../search/dependencyChainFlowOptimizer";
@@ -155,6 +156,7 @@ export interface OperationalDeltaReport {
   officialOrcOutcome: OfficialOrcOutcome;
   activeEquivalentMetricNormalization: ActiveEquivalentMetricNormalization;
   orcBaselineSeed: ORCBaselineSeedReport;
+  baselineSeedHardFeasibility: ORCBaselineSeedHardFeasibilityAudit;
   absoluteDelta: OperationalDeltaMetrics;
   percentageDelta: OperationalDeltaMetrics;
   evidenceExplanation: string[];
@@ -217,7 +219,7 @@ function noValidCommitReason(shadow: ORCShadowModeResult): string {
   return "seeded_shadow_no_valid_commit";
 }
 
-function buildOfficialOrcOutcome(shadow: ORCShadowModeResult): OfficialOrcOutcome {
+function buildOfficialOrcOutcome(shadow: ORCShadowModeResult, baselineSeedHardFeasibility?: ORCBaselineSeedHardFeasibilityAudit): OfficialOrcOutcome {
   const selected = resolveValidCommittedSimulation(shadow);
   if (selected) {
     const materialization = selected.simulated.planningMaterialization;
@@ -239,7 +241,7 @@ function buildOfficialOrcOutcome(shadow: ORCShadowModeResult): OfficialOrcOutcom
   return {
     kind: "v4_fallback",
     source: "v4_fallback_after_seeded_shadow_failure",
-    reason: noValidCommitReason(shadow),
+    reason: baselineSeedHardFeasibility?.available === true && baselineSeedHardFeasibility?.hardFeasible === false ? "baseline_seed_hard_infeasible" : noValidCommitReason(shadow),
     selectedSimulatedStateId: null,
     selectedCommitDecisionId: null,
     fallbackToV4: true,
@@ -357,7 +359,7 @@ function validationViolationSummary(shadow: ORCShadowModeResult): Record<string,
   return Object.fromEntries(Object.entries(summary).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialOrcOutcome): SeededShadowDiagnostics {
+function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialOrcOutcome, baselineSeedHardFeasibility?: ORCBaselineSeedHardFeasibilityAudit): SeededShadowDiagnostics {
   return {
     candidateCount: shadow.candidates.length,
     candidateStateCount: shadow.candidateStates.length,
@@ -369,7 +371,7 @@ function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialO
     explorationOverhead: { candidatesGenerated: shadow.candidates.length, candidateStates: shadow.candidateStates.length, simulatedStates: shadow.simulatedStates.length, validCount: shadow.summary.validCount, invalidCount: shadow.summary.invalidCount, commitCount: shadow.summary.commitCount },
     selectedOutcomeKind: outcome.kind,
     fallbackToV4: outcome.fallbackToV4,
-    explanation: outcome.fallbackToV4 ? `Seeded ORC Shadow did not produce a valid commit (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.` : `Seeded ORC Shadow selected ${outcome.kind} from validated commit ${outcome.selectedCommitDecisionId}.`,
+    explanation: outcome.fallbackToV4 ? (baselineSeedHardFeasibility?.available === true && baselineSeedHardFeasibility?.hardFeasible === false ? `Seeded ORC Shadow is blocked because the V4 baseline seed is hard-infeasible (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.` : `Seeded ORC Shadow did not produce a valid commit (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.`) : `Seeded ORC Shadow selected ${outcome.kind} from validated commit ${outcome.selectedCommitDecisionId}.`,
     readOnly: true,
     planningInfluence: "none",
   };
@@ -468,12 +470,13 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const v4 = generatePlanV4(cloneInput(safeInput), { v4Profile: "balanced", maxRuntimeMs: 1000, maxStrategies: 1 } as any);
   const seeded = buildORCBaselineSeededInput(cloneInput(safeInput), v4.output);
   const serializedSeed = assertSerializableORCSeed(seeded.seedPlanning);
+  const baselineSeedHardFeasibility = auditORCBaselineSeedHardFeasibility(cloneInput(seeded.input), { createdAt: options.createdAt ?? null });
   const seededShadow = runORCShadowMode(cloneInput(seeded.input), { enabled: true, createdAt: options.createdAt ?? null });
   if (seededShadow === null) throw new Error("Operational Delta Benchmark requires V4-seeded ORC Shadow Mode.");
   const rawShadow = runORCShadowMode(cloneInput(safeInput), { enabled: true, createdAt: options.createdAt ?? null });
   if (rawShadow === null) throw new Error("Operational Delta Benchmark requires raw ORC Shadow diagnostics.");
   const v4MetricSet = { ...v4Metrics(safeInput, v4.output, v4.diagnostics, options.v4RuntimeMs ?? 0), ...dependencyChainBenchmarkMetrics(safeInput, 0) };
-  const officialOrcOutcome = buildOfficialOrcOutcome(seededShadow);
+  const officialOrcOutcome = buildOfficialOrcOutcome(seededShadow, baselineSeedHardFeasibility);
   const v4Assignments = v4.output.plannedTasks.map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
   const normalization = activeEquivalentMetricNormalization(officialOrcOutcome);
   const orcBaseMetricSet = orcMetrics(safeInput, seededShadow, officialOrcOutcome, v4MetricSet, v4Assignments, options.orcRuntimeMs ?? 0);
@@ -487,9 +490,10 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
     scenario: { planId: safeInput.planId, taskCount: safeInput.tasks.length },
     metrics: { orc: orcMetricSet, v4: v4MetricSet },
     rawShadowDiagnostics: rawShadowDiagnostics(rawShadow),
-    seededShadowDiagnostics: seededShadowDiagnostics(seededShadow, officialOrcOutcome),
+    seededShadowDiagnostics: seededShadowDiagnostics(seededShadow, officialOrcOutcome, baselineSeedHardFeasibility),
     officialOrcOutcome,
     activeEquivalentMetricNormalization: normalization,
+    baselineSeedHardFeasibility,
     orcBaselineSeed: {
       seededPlanningCount: seeded.seedPlanning.length,
       sourcePlanningCount: v4.output.plannedTasks.length,
@@ -505,6 +509,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s) as the benchmark baseline.`,
       `ORC seeded shadow explores on top of that V4 baseline seed and produced ${seededShadow.candidates.length} candidate(s), ${seededShadow.simulatedStates.length} simulation(s), and ${seededShadow.commitDecisions.length} decision(s).`,
       `Only a COMMIT decision backed by a VALID seeded simulated state can feed official metrics.orc; selected outcome is ${officialOrcOutcome.kind} (${officialOrcOutcome.reason}).`,
+      baselineSeedHardFeasibility.hardFeasible === false ? "baseline_seed_hard_infeasible_blocks_candidate_optimization" : `Baseline seed hard-feasibility audit returned ${baselineSeedHardFeasibility.reason}.`,
       normalization.applied ? `The benchmark separates final planning metrics from exploration overhead; because production receives the V4-equivalent plan for ${officialOrcOutcome.kind}, final ORC metrics are normalized to V4 (${normalization.reason}).` : "The selected ORC commit changed the final plan, so final planning metrics are calculated from the validated simulated state using the original benchmark input as measurement context.",
       "ORC exploration overhead remains visible in diagnostics and computational metrics, but it must not create false final-planning deltas when the active-equivalent plan is V4.",
       "Only a real ORC commit with planning changes can produce official final-planning deltas; baseline preservation and fallback keep makespan, permanence, continuity, conflicts, resource utilization, dependency metrics, and OPQ equal to V4.",
@@ -514,5 +519,5 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
     ],
     planningUnchanged: stableStringify(safeInput) === before,
   } satisfies Omit<OperationalDeltaReport, "improvementReport">;
-  return { ...baseReport, improvementReport: analyzeImprovementOpportunities(baseReport as OperationalDeltaReport) };
+  return { ...baseReport, improvementReport: analyzeImprovementOpportunities(baseReport as unknown as OperationalDeltaReport) };
 }

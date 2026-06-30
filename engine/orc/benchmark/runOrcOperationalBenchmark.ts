@@ -106,7 +106,12 @@ export interface OrcOperationalBenchmarkOptions extends ProductionScenarioBenchm
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-function buildNextActionRecommendation(authorizationReport: OptimizationAuthorizationReport): OrcOperationalBenchmarkReport["nextActionRecommendation"] {
+function buildNextActionRecommendation(authorizationReport: OptimizationAuthorizationReport, suiteReport?: ProductionScenarioBenchmarkSuiteReport): OrcOperationalBenchmarkReport["nextActionRecommendation"] {
+  const reports = suiteReport?.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null) ?? [];
+  const fallbackReports = reports.filter((report) => report.officialOrcOutcome.kind === "v4_fallback");
+  if (fallbackReports.length > 0 && fallbackReports.every((report) => report.baselineSeedHardFeasibility?.available === true && report.baselineSeedHardFeasibility?.hardFeasible === false)) {
+    return { allowed: false, reason: "No candidate optimization is authorized because current failures are blocked by baseline seed hard-feasibility diagnostics. Resolve ORC/V4 hard-constraint alignment first.", priorityId: null, metric: null };
+  }
   const [top] = authorizationReport.authorizedPriorities;
   if (!top) {
     return {
@@ -212,7 +217,7 @@ export function buildOrcOperationalBenchmarkReport(params: {
       calculationTimeTracked: true,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
     },
-    nextActionRecommendation: buildNextActionRecommendation(authorizationReport),
+    nextActionRecommendation: buildNextActionRecommendation(authorizationReport, suiteReport),
   };
 }
 
