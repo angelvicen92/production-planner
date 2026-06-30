@@ -4,7 +4,7 @@ import type { EngineInput } from "../../types";
 import { benchmarkScenarios } from "../../v3/benchmarks/scenarios";
 import { stableStringify, structuralEquals } from "../structuralEquality";
 import { buildOperationalDeltaEvidenceReport } from "../evidence/evidenceReport";
-import { OPERATIONAL_DELTA_BENCHMARK_VERSION, runOperationalDeltaBenchmark } from "./operationalDeltaBenchmark";
+import { FINAL_PLANNING_METRICS, OPERATIONAL_DELTA_BENCHMARK_VERSION, runOperationalDeltaBenchmark } from "./operationalDeltaBenchmark";
 
 const simpleInput = (): EngineInput => ({
   planId: 171,
@@ -27,6 +27,25 @@ const simpleInput = (): EngineInput => ({
   groupingZoneIds: [],
 });
 
+
+const metricValue = (metrics: any, metric: string) => metrics[metric];
+const assertFinalMetricsEqualV4 = (report: ReturnType<typeof runOperationalDeltaBenchmark>) => {
+  for (const metric of FINAL_PLANNING_METRICS) {
+    assert.deepEqual(metricValue(report.metrics.orc, metric), metricValue(report.metrics.v4, metric), `${metric} should be normalized to V4`);
+  }
+  assert.equal(report.absoluteDelta.makespan, report.metrics.v4.makespan === null ? null : 0);
+  assert.equal(report.absoluteDelta.totalPermanence, 0);
+  assert.deepEqual(Object.values(report.absoluteDelta.permanenceByTalent).every((value) => value === 0), true);
+  assert.equal(report.absoluteDelta.mainFlowContinuity, 0);
+  assert.equal(report.absoluteDelta.resourceUtilization, 0);
+  assert.equal(report.absoluteDelta.conflicts, 0);
+  assert.equal(report.absoluteDelta.dependencyChainsProtected, 0);
+  assert.equal(report.absoluteDelta.dependencyBlockagesAvoided, 0);
+  assert.equal(report.absoluteDelta.dependencyAverageSlackRecovered, 0);
+  assert.equal(report.absoluteDelta.dependencyCriticalityOperationalValueCorrelation, 0);
+  assert.deepEqual(report.metrics.orc.operationalPlanningQuality, report.metrics.v4.operationalPlanningQuality);
+};
+
 const officialMetricKeys = ["makespan", "totalPermanence", "permanenceByTalent", "mainFlowContinuity", "resourceUtilization", "conflicts", "simulations", "candidatesGenerated", "candidatesSimulated", "candidatesConsolidated", "totalTime", "timeByIteration", "dependencyChainsProtected", "dependencyBlockagesAvoided", "dependencyAverageSlackRecovered", "dependencyCriticalityOperationalValueCorrelation", "operationalPlanningQuality"].sort();
 
 test("Operational Delta Benchmark covers a simple scenario with official metrics only", () => {
@@ -41,6 +60,8 @@ test("Operational Delta Benchmark covers a simple scenario with official metrics
   assert.equal(report.rawShadowDiagnostics.planningInfluence, "none");
   assert.equal(report.seededShadowDiagnostics.planningInfluence, "none");
   assert.equal(report.officialOrcOutcome.readOnly, true);
+  assert.equal(report.activeEquivalentMetricNormalization.readOnly, true);
+  assert.equal(report.activeEquivalentMetricNormalization.planningInfluence, "benchmark-metric-normalization-only");
 });
 
 test("Operational Delta Benchmark covers a complex benchmark scenario", () => {
@@ -107,9 +128,16 @@ test("Operational Delta Benchmark classifies valid seeded baseline preservation 
   assert.equal(report.officialOrcOutcome.source, "v4_seeded_shadow_baseline");
   assert.equal(report.officialOrcOutcome.fallbackToV4, false);
   assert.equal(report.officialOrcOutcome.selectedSimulatedStateId !== null, true);
-  assert.equal(report.metrics.orc.conflicts, 0);
-  assert.equal(report.absoluteDelta.totalPermanence, 0);
-  assert.equal(report.absoluteDelta.mainFlowContinuity, 0);
+  assertFinalMetricsEqualV4(report);
+  assert.equal(report.activeEquivalentMetricNormalization.applied, true);
+  assert.equal(report.activeEquivalentMetricNormalization.reason, "baseline_preserved_final_metrics_equal_v4");
+  assert.deepEqual(report.activeEquivalentMetricNormalization.normalizedFinalMetrics, FINAL_PLANNING_METRICS);
+  assert.equal(report.improvementReport.summary.highPriority.includes("operationalPlanningQuality"), false);
+  for (const metric of ["permanenceByTalent", "totalPermanence", "mainFlowContinuity", "makespan", "conflicts", "resourceUtilization"] as const) {
+    const opportunity = report.improvementReport.opportunities.find((item) => item.metric === metric);
+    assert.equal(opportunity?.comparison, "equal");
+    assert.equal(opportunity?.optimizationPriority, "none");
+  }
 });
 
 test("Operational Delta Benchmark applies V4 fallback when seeded shadow has no valid commit", () => {
@@ -118,16 +146,12 @@ test("Operational Delta Benchmark applies V4 fallback when seeded shadow has no 
   if (report.officialOrcOutcome.kind !== "v4_fallback") return;
   assert.equal(report.officialOrcOutcome.fallbackToV4, true);
   assert.equal(report.officialOrcOutcome.selectedSimulatedStateId, null);
-  assert.equal(report.metrics.orc.makespan, report.metrics.v4.makespan);
-  assert.equal(report.metrics.orc.totalPermanence, report.metrics.v4.totalPermanence);
-  assert.equal(report.metrics.orc.mainFlowContinuity, report.metrics.v4.mainFlowContinuity);
-  assert.equal(report.metrics.orc.conflicts, report.metrics.v4.conflicts);
-  assert.deepEqual(report.metrics.orc.operationalPlanningQuality, report.metrics.v4.operationalPlanningQuality);
-  assert.equal(report.absoluteDelta.makespan, 0);
-  assert.equal(report.absoluteDelta.totalPermanence, 0);
-  assert.equal(report.absoluteDelta.mainFlowContinuity, 0);
-  assert.equal(report.absoluteDelta.conflicts, 0);
+  assertFinalMetricsEqualV4(report);
   assert.equal(report.seededShadowDiagnostics.invalidCount, report.officialOrcOutcome.invalidSeededSimulationCount);
+  assert.equal(report.seededShadowDiagnostics.invalidCount >= 0, true);
+  assert.equal(report.activeEquivalentMetricNormalization.applied, true);
+  assert.equal(report.activeEquivalentMetricNormalization.reason, "fallback_final_metrics_equal_v4");
+  assert.equal(report.improvementReport.summary.highPriority.includes("operationalPlanningQuality"), false);
 });
 
 test("Operational Delta Benchmark applies V4 fallback when seeded shadow produces no simulations", () => {
@@ -137,8 +161,9 @@ test("Operational Delta Benchmark applies V4 fallback when seeded shadow produce
   assert.equal(report.officialOrcOutcome.reason, "seeded_shadow_no_simulations");
   assert.equal(report.seededShadowDiagnostics.simulatedStateCount, 0);
   assert.equal(report.seededShadowDiagnostics.explanation.includes("seeded_shadow_no_simulations"), true);
-  assert.deepEqual(report.metrics.orc, report.metrics.v4);
-  assert.equal(report.absoluteDelta.totalPermanence, 0);
+  assertFinalMetricsEqualV4(report);
+  assert.equal(report.metrics.orc.simulations, report.seededShadowDiagnostics.simulatedStateCount);
+  assert.equal(report.activeEquivalentMetricNormalization.reason, "fallback_final_metrics_equal_v4");
 });
 
 test("Operational Delta Benchmark active-equivalent report is deterministic, serializable, immutable-input, and diagnostic-complete", () => {
