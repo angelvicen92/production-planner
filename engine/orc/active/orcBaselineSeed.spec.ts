@@ -37,16 +37,56 @@ test("buildORCBaselineSeededInput converts complete V4 baseline into Operational
   assert.deepEqual(state.planning[0], { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResourceIds: [10], spaceId: 200 });
 });
 
-test("buildORCBaselineSeededInput preserves protected task planning when baseline contains it", () => {
+test("buildORCBaselineSeededInput preserves protected task planning when V4 did not plan it", () => {
   const base = input(2);
   base.tasks![0].status = "done";
   base.tasks![0].startPlanned = "08:00";
   base.tasks![0].endPlanned = "08:10";
-  const seeded = buildORCBaselineSeededInput(base, output(2));
+  const seeded = buildORCBaselineSeededInput(base, output(0));
   const done = seeded.input.tasks!.find((task) => task.id === 1)!;
   assert.equal(done.startPlanned, "08:00");
   assert.equal(done.endPlanned, "08:10");
-  assert.equal(seeded.baselineSeed.warnings.length, 0);
+  assert.ok(seeded.baselineSeed.warnings.includes("Preserved existing planning for 1 protected/locked task(s)."));
+});
+
+test("buildORCBaselineSeededInput clears raw pending planning not produced by V4 while preserving fixed windows", () => {
+  const base = input(1);
+  base.tasks![0].startPlanned = "08:00";
+  base.tasks![0].endPlanned = "08:10";
+  base.tasks![0].assignedResourceIds = [10];
+  base.tasks![0].fixedWindowStart = "10:00";
+  base.tasks![0].fixedWindowEnd = "11:00";
+  const before = JSON.stringify(base);
+  const seeded = buildORCBaselineSeededInput(base, { ...output(0), plannedTasks: [], schedule: [] });
+  assert.equal(seeded.seedPlanning.length, 0);
+  assert.equal(seeded.baselineSeed.seededPlanningCount, 0);
+  assert.equal(seeded.baselineSeed.clearedRawPlanningCount, 1);
+  assert.equal(seeded.baselineSeed.unseededPendingCount, 1);
+  assert.equal(seeded.input.tasks![0].startPlanned, undefined);
+  assert.equal(seeded.input.tasks![0].endPlanned, undefined);
+  assert.equal(seeded.input.tasks![0].assignedResourceIds, undefined);
+  assert.equal(seeded.input.tasks![0].fixedWindowStart, "10:00");
+  assert.equal(seeded.input.tasks![0].fixedWindowEnd, "11:00");
+  assert.equal(JSON.stringify(base), before);
+});
+
+test("buildORCBaselineSeededInput seeds V4 and protected existing planning with explicit sources", () => {
+  const base = input(4);
+  base.tasks![1].status = "done";
+  base.tasks![1].startPlanned = "08:10";
+  base.tasks![1].endPlanned = "08:20";
+  base.tasks![2].status = "in_progress";
+  base.tasks![2].startPlanned = "08:20";
+  base.tasks![2].endPlanned = "08:30";
+  base.tasks![3].startPlanned = "08:30";
+  base.tasks![3].endPlanned = "08:40";
+  base.locks = [{ id: 1, planId: 191, taskId: 4, lockType: "time", lockedStart: "08:30", lockedEnd: "08:40" }];
+  const seeded = buildORCBaselineSeededInput(base, output(1));
+  assert.deepEqual(seeded.seedPlanning.map((entry) => entry.source), ["v4_planned_task", "protected_existing_planning", "protected_existing_planning", "protected_existing_planning"]);
+  assert.equal(seeded.baselineSeed.protectedExistingPlanningCount, 3);
+  assert.equal(seeded.input.tasks![1].startPlanned, "08:10");
+  assert.equal(seeded.input.tasks![2].startPlanned, "08:20");
+  assert.equal(seeded.input.tasks![3].startPlanned, "08:30");
 });
 
 test("baseline seed remains planning-only and JSON serializable", () => {
@@ -55,7 +95,7 @@ test("baseline seed remains planning-only and JSON serializable", () => {
   (rich.tasks![0] as any).template = { id: 1, name: "full template" };
   (rich.tasks![0] as any).createdAt = "2026-06-29T00:00:00.000Z";
   const result = buildORCBaselineSeededInput(rich, output(1));
-  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "endPlanned", "startPlanned", "taskId"]);
+  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "endPlanned", "source", "startPlanned", "taskId"]);
   assert.equal(JSON.stringify(result.seedPlanning).includes("comments"), false);
   assert.equal(JSON.stringify(result.seedPlanning).includes("template"), false);
   assert.doesNotThrow(() => JSON.stringify(result.seedPlanning));
@@ -63,7 +103,7 @@ test("baseline seed remains planning-only and JSON serializable", () => {
 
 test("baseline seed keeps only required planning values for each task", () => {
   const result = buildORCBaselineSeededInput(input(2), output(2));
-  assert.deepEqual(result.seedPlanning[1], { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedSpace: 201, assignedResources: [10] });
+  assert.deepEqual(result.seedPlanning[1], { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedSpace: 201, assignedResources: [10], source: "v4_planned_task" });
   const taskJson = JSON.stringify(result.input.tasks![0]);
   assert.equal(taskJson.includes("comments"), false);
   assert.equal(taskJson.includes("createdAt"), false);

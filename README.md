@@ -80,6 +80,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 205 — 2026-06-30 UTC — ORC Baseline Seed Hard-Feasibility Audit v1
 - ID 206 — 2026-06-30 UTC — ORC Hard Violation Diagnostics & Constraint Alignment Report v1
 - ID 207 — 2026-06-30 UTC — ORC Scoped Protected Break Validation & Stratified Diagnostics v1
+- ID 208 — 2026-06-30 UTC — ORC Strict V4 Baseline Seed Isolation v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -180,6 +181,14 @@ ORC Validation y `CandidateHardPrefilter` ahora aplican `protectedBreaks` según
 Los detalles de `PLANNING_CROSSES_PROTECTED_HARD_BREAK` incluyen scope accionable, IDs relevantes y `diagnosticHint` para distinguir breaks scoped de globales sin incluir objetos completos. Además, la auditoría de baseline seed y el benchmark usan muestras estratificadas por código de `violationDetails` (`sampleStrategy: "stratified_by_violation_code"`) para que familias numerosas como `DIRECT_DEPENDENCY_BROKEN` no oculten `SPACE_OVERLAP`, protected breaks u otros blockers minoritarios; `dominantViolationCodes` se calcula por conteo real de detalles y excluye sentinels de truncamiento.
 
 No se relajan hard constraints, no se cambia V4, DB, RLS, UI, endpoints ni el pipeline ORC, no se modifica la planificación oficial y no se añaden estrategias SEE. `real-voice-audition-day` sigue incluido en la suite oficial; si permanece hard-infeasible, la evidencia ya no debe deberse a interpretar cierres de Croma u otros protected breaks scoped como globales.
+
+### ORC Strict V4 Baseline Seed Isolation v1 (ID 208)
+
+El ORC baseline seed ya no hereda planificación cruda de tareas `pending` que V4 no haya incluido en `v4Output.plannedTasks`. Sólo entran en el seed las tareas planificadas por V4 y las tareas `done`, `in_progress` o bloqueadas con planificación existente; las `pending` no seedadas pierden `startPlanned`, `endPlanned` y `assignedResourceIds`, conservando constraints y metadata mínima como fixed windows, dependencias, template, contestant, espacio y zona.
+
+Los diagnostics del seed distinguen planificación V4 (`v4_planned_task`) de planificación protegida heredada (`protected_existing_planning`) y reportan conteos serializables de tareas V4, protegidas, raw planning limpiado y pendientes no seedadas. El benchmark diferencia `baseline_seed_has_no_planning` de `baseline_seed_hard_infeasible`: si V4 no produce baseline suficiente, ORC Active y Operational Delta Benchmark caen a fallback V4 sin auditar horarios crudos como baseline V4 ni autorizar optimización de candidatos.
+
+Raw shadow diagnostics siguen existiendo para inspeccionar planificación cruda/manual y sus violaciones, pero ya no alimentan `baselineSeedHardFeasibility`, `officialOrcOutcome` ni métricas oficiales ORC. No hay cambios DB, RLS, UI, V3, V4 ni endpoints; no se relajan hard constraints, no se cambia el pipeline ORC, no se añaden estrategias SEE y `real-voice-audition-day` sigue incluido.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

@@ -70,7 +70,7 @@ test("Operational Delta Benchmark covers a complex benchmark scenario", () => {
   assert.equal(report.scenario.taskCount, scenario.input.tasks.length);
   assert.equal(typeof report.metrics.orc.candidatesGenerated, "number");
   assert.equal(typeof report.metrics.v4.candidatesGenerated, "number");
-  assert.ok(report.orcBaselineSeed.seededPlanningCount <= report.orcBaselineSeed.sourcePlanningCount);
+  assert.ok(report.orcBaselineSeed.seededPlanningCount <= report.orcBaselineSeed.sourcePlanningCount + report.orcBaselineSeed.protectedExistingPlanningCount);
   assert.equal(report.orcBaselineSeed.planningInfluence, "benchmark-input-seeding-only");
 });
 
@@ -158,9 +158,9 @@ test("Operational Delta Benchmark applies V4 fallback when seeded shadow produce
   const input: EngineInput = { ...simpleInput(), tasks: [], planResourceItems: [] };
   const report = runOperationalDeltaBenchmark(input, { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
   assert.equal(report.officialOrcOutcome.kind, "v4_fallback");
-  assert.equal(report.officialOrcOutcome.reason, "seeded_shadow_no_simulations");
+  assert.equal(report.officialOrcOutcome.reason, "baseline_seed_has_no_planning");
   assert.equal(report.seededShadowDiagnostics.simulatedStateCount, 0);
-  assert.equal(report.seededShadowDiagnostics.explanation.includes("seeded_shadow_no_simulations"), true);
+  assert.equal(report.seededShadowDiagnostics.explanation.includes("baseline_seed_has_no_planning"), true);
   assertFinalMetricsEqualV4(report);
   assert.equal(report.metrics.orc.simulations, report.seededShadowDiagnostics.simulatedStateCount);
   assert.equal(report.activeEquivalentMetricNormalization.reason, "fallback_final_metrics_equal_v4");

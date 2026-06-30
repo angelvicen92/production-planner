@@ -130,6 +130,11 @@ export interface SeededShadowDiagnostics {
 export interface ORCBaselineSeedReport {
   seededPlanningCount: number;
   sourcePlanningCount: number;
+  v4PlannedCount: number;
+  protectedExistingPlanningCount: number;
+  clearedRawPlanningCount: number;
+  unseededPendingCount: number;
+  seededPlanningSourcesSummary: Record<string, number>;
   serializedSize: number;
   serializable: boolean;
   warnings: string[];
@@ -258,7 +263,7 @@ function buildOfficialOrcOutcome(shadow: ORCShadowModeResult, baselineSeedHardFe
   return {
     kind: "v4_fallback",
     source: "v4_fallback_after_seeded_shadow_failure",
-    reason: baselineSeedHardFeasibility?.available === true && baselineSeedHardFeasibility?.hardFeasible === false ? "baseline_seed_hard_infeasible" : noValidCommitReason(shadow),
+    reason: baselineSeedHardFeasibility?.hardFeasible === false && baselineSeedHardFeasibility.reason !== "baseline_seed_not_available" ? baselineSeedHardFeasibility.reason : noValidCommitReason(shadow),
     selectedSimulatedStateId: null,
     selectedCommitDecisionId: null,
     fallbackToV4: true,
@@ -388,7 +393,7 @@ function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialO
     explorationOverhead: { candidatesGenerated: shadow.candidates.length, candidateStates: shadow.candidateStates.length, simulatedStates: shadow.simulatedStates.length, validCount: shadow.summary.validCount, invalidCount: shadow.summary.invalidCount, commitCount: shadow.summary.commitCount },
     selectedOutcomeKind: outcome.kind,
     fallbackToV4: outcome.fallbackToV4,
-    explanation: outcome.fallbackToV4 ? (baselineSeedHardFeasibility?.available === true && baselineSeedHardFeasibility?.hardFeasible === false ? `Seeded ORC Shadow is blocked because the V4 baseline seed is hard-infeasible (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.` : `Seeded ORC Shadow did not produce a valid commit (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.`) : `Seeded ORC Shadow selected ${outcome.kind} from validated commit ${outcome.selectedCommitDecisionId}.`,
+    explanation: outcome.fallbackToV4 ? (baselineSeedHardFeasibility?.hardFeasible === false ? `Seeded ORC Shadow is blocked because the V4 baseline seed audit returned ${baselineSeedHardFeasibility.reason} (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.` : `Seeded ORC Shadow did not produce a valid commit (${outcome.reason}); official metrics use V4 fallback and keep seeded failures as diagnostics only.`) : `Seeded ORC Shadow selected ${outcome.kind} from validated commit ${outcome.selectedCommitDecisionId}.`,
     readOnly: true,
     planningInfluence: "none",
   };
@@ -397,7 +402,7 @@ function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialO
 function buildBaselineSeedConstraintAlignment(audit: ORCBaselineSeedHardFeasibilityAudit): BaselineSeedConstraintAlignmentReport {
   const codes = audit.dominantViolationCodes ?? [];
   const categories = new Set<string>();
-  if (codes.length === 0 && audit.hardFeasible === false) categories.add("insufficient_diagnostic_detail");
+  if (codes.length === 0 && audit.hardFeasible === false && audit.reason === "baseline_seed_hard_infeasible") categories.add("insufficient_diagnostic_detail");
   if (codes.includes("DIRECT_DEPENDENCY_BROKEN")) {
     categories.add("v4_output_violates_orc_hard_constraints");
     categories.add("orc_seed_adapter_mapping_mismatch");
@@ -420,11 +425,12 @@ function buildBaselineSeedConstraintAlignment(audit: ORCBaselineSeedHardFeasibil
       ? "Inspect break window details, protected break scope, and whether matching tasks should avoid the scoped window."
       : top === "SPACE_OVERLAP"
         ? "Inspect overlapping task pair and space capacity/concurrency configuration."
-        : audit.hardFeasible ? "No hard-constraint alignment diagnostic is required for a hard-feasible baseline seed." : "Inspect baselineSeedHardFeasibility.violationDetailsSample before changing constraints or optimization logic.";
+        : audit.reason === "baseline_seed_has_no_planning" ? "Resolve V4 baseline generation or benchmark seed configuration before changing constraints or optimization logic."
+          : audit.hardFeasible ? "No hard-constraint alignment diagnostic is required for a hard-feasible baseline seed." : "Inspect baselineSeedHardFeasibility.violationDetailsSample before changing constraints or optimization logic.";
   return {
     available: audit.available,
-    blocked: audit.available && !audit.hardFeasible,
-    reason: audit.available && !audit.hardFeasible ? `baseline_seed_hard_infeasible; inspect baselineSeedConstraintAlignment (dominant: ${codes.join(", ") || "none"})` : audit.reason,
+    blocked: !audit.hardFeasible,
+    reason: audit.reason === "baseline_seed_hard_infeasible" ? `baseline_seed_hard_infeasible; inspect baselineSeedConstraintAlignment (dominant: ${codes.join(", ") || "none"})` : audit.reason,
     dominantViolationCodes: codes,
     violationDetailCount: audit.violationDetailCount ?? 0,
     violationDetailsSample: audit.violationDetailsSample ?? [],
@@ -559,6 +565,14 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
     orcBaselineSeed: {
       seededPlanningCount: seeded.seedPlanning.length,
       sourcePlanningCount: v4.output.plannedTasks.length,
+      v4PlannedCount: seeded.baselineSeed.v4PlannedCount,
+      protectedExistingPlanningCount: seeded.baselineSeed.protectedExistingPlanningCount,
+      clearedRawPlanningCount: seeded.baselineSeed.clearedRawPlanningCount,
+      unseededPendingCount: seeded.baselineSeed.unseededPendingCount,
+      seededPlanningSourcesSummary: seeded.seedPlanning.reduce<Record<string, number>>((summary, item) => {
+        summary[item.source] = (summary[item.source] ?? 0) + 1;
+        return summary;
+      }, {}),
       serializedSize: Buffer.byteLength(serializedSeed, "utf8"),
       serializable: true,
       warnings: [...seeded.baselineSeed.warnings],
@@ -571,7 +585,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s) as the benchmark baseline.`,
       `ORC seeded shadow explores on top of that V4 baseline seed and produced ${seededShadow.candidates.length} candidate(s), ${seededShadow.simulatedStates.length} simulation(s), and ${seededShadow.commitDecisions.length} decision(s).`,
       `Only a COMMIT decision backed by a VALID seeded simulated state can feed official metrics.orc; selected outcome is ${officialOrcOutcome.kind} (${officialOrcOutcome.reason}).`,
-      baselineSeedHardFeasibility.hardFeasible === false ? `baseline_seed_hard_infeasible_blocks_candidate_optimization; see baselineSeedConstraintAlignment dominant codes: ${baselineSeedConstraintAlignment.dominantViolationCodes.join(", ") || "none"}.` : `Baseline seed hard-feasibility audit returned ${baselineSeedHardFeasibility.reason}.`,
+      baselineSeedHardFeasibility.reason === "baseline_seed_hard_infeasible" ? `baseline_seed_hard_infeasible_blocks_candidate_optimization; see baselineSeedConstraintAlignment dominant codes: ${baselineSeedConstraintAlignment.dominantViolationCodes.join(", ") || "none"}.` : baselineSeedHardFeasibility.reason === "baseline_seed_has_no_planning" ? "No candidate optimization is authorized because ORC has no V4 baseline seed to evaluate. Resolve V4 baseline generation or benchmark seed configuration first." : `Baseline seed hard-feasibility audit returned ${baselineSeedHardFeasibility.reason}.`,
       normalization.applied ? `The benchmark separates final planning metrics from exploration overhead; because production receives the V4-equivalent plan for ${officialOrcOutcome.kind}, final ORC metrics are normalized to V4 (${normalization.reason}).` : "The selected ORC commit changed the final plan, so final planning metrics are calculated from the validated simulated state using the original benchmark input as measurement context.",
       "ORC exploration overhead remains visible in diagnostics and computational metrics, but it must not create false final-planning deltas when the active-equivalent plan is V4.",
       "Only a real ORC commit with planning changes can produce official final-planning deltas; baseline preservation and fallback keep makespan, permanence, continuity, conflicts, resource utilization, dependency metrics, and OPQ equal to V4.",
