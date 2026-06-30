@@ -3,6 +3,7 @@ import { generatePlanV4 } from "../../v4";
 import { assertSerializableORCSeed, buildORCBaselineSeededInput } from "../active/orcBaselineSeed";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
+import type { ValidationViolationDetail } from "../contracts";
 import { runORCShadowMode } from "../shadow/runORCShadowMode";
 import { optimizeDependencyChainFlow } from "../search/dependencyChainFlowOptimizer";
 import { stableStringify } from "../structuralEquality";
@@ -146,6 +147,19 @@ export interface ActiveEquivalentMetricNormalization {
   planningInfluence: "benchmark-metric-normalization-only";
 }
 
+export interface BaselineSeedConstraintAlignmentReport {
+  available: boolean;
+  blocked: boolean;
+  reason: string;
+  dominantViolationCodes: readonly string[];
+  violationDetailCount: number;
+  violationDetailsSample: readonly ValidationViolationDetail[];
+  likelyRootCauseCategories: readonly string[];
+  recommendedNextDiagnostic: string;
+  readOnly: true;
+  planningInfluence: "benchmark-diagnostics-only";
+}
+
 export interface OperationalDeltaReport {
   benchmarkVersion: typeof OPERATIONAL_DELTA_BENCHMARK_VERSION;
   generatedAt: string | null;
@@ -157,6 +171,7 @@ export interface OperationalDeltaReport {
   activeEquivalentMetricNormalization: ActiveEquivalentMetricNormalization;
   orcBaselineSeed: ORCBaselineSeedReport;
   baselineSeedHardFeasibility: ORCBaselineSeedHardFeasibilityAudit;
+  baselineSeedConstraintAlignment: BaselineSeedConstraintAlignmentReport;
   absoluteDelta: OperationalDeltaMetrics;
   percentageDelta: OperationalDeltaMetrics;
   evidenceExplanation: string[];
@@ -377,6 +392,47 @@ function seededShadowDiagnostics(shadow: ORCShadowModeResult, outcome: OfficialO
   };
 }
 
+function buildBaselineSeedConstraintAlignment(audit: ORCBaselineSeedHardFeasibilityAudit): BaselineSeedConstraintAlignmentReport {
+  const codes = audit.dominantViolationCodes ?? [];
+  const categories = new Set<string>();
+  if (codes.length === 0 && audit.hardFeasible === false) categories.add("insufficient_diagnostic_detail");
+  if (codes.includes("DIRECT_DEPENDENCY_BROKEN")) {
+    categories.add("v4_output_violates_orc_hard_constraints");
+    categories.add("orc_seed_adapter_mapping_mismatch");
+    categories.add("orc_validation_semantics_need_review");
+  }
+  if (codes.includes("SPACE_OVERLAP")) {
+    categories.add("v4_output_violates_orc_hard_constraints");
+    categories.add("fixture_contains_incompatible_constraints");
+    categories.add("orc_validation_semantics_need_review");
+  }
+  if (codes.includes("PLANNING_CROSSES_PROTECTED_HARD_BREAK")) {
+    categories.add("fixture_contains_incompatible_constraints");
+    categories.add("orc_seed_adapter_mapping_mismatch");
+    categories.add("orc_validation_semantics_need_review");
+  }
+  const top = codes[0] ?? null;
+  const recommendedNextDiagnostic = top === "DIRECT_DEPENDENCY_BROKEN"
+    ? "Inspect dependency pair details and verify whether V4 should enforce this precedence, whether the seed adapter mapped dependsOnTaskId correctly, or whether ORC dependency semantics are too strict."
+    : top === "PLANNING_CROSSES_PROTECTED_HARD_BREAK"
+      ? "Inspect break window details and verify whether this break is truly hard for all tasks or only informational."
+      : top === "SPACE_OVERLAP"
+        ? "Inspect overlapping task pair and space capacity/concurrency configuration."
+        : audit.hardFeasible ? "No hard-constraint alignment diagnostic is required for a hard-feasible baseline seed." : "Inspect baselineSeedHardFeasibility.violationDetailsSample before changing constraints or optimization logic.";
+  return {
+    available: audit.available,
+    blocked: audit.available && !audit.hardFeasible,
+    reason: audit.available && !audit.hardFeasible ? `baseline_seed_hard_infeasible; inspect baselineSeedConstraintAlignment (dominant: ${codes.join(", ") || "none"})` : audit.reason,
+    dominantViolationCodes: codes,
+    violationDetailCount: audit.violationDetailCount ?? 0,
+    violationDetailsSample: audit.violationDetailsSample ?? [],
+    likelyRootCauseCategories: [...categories].sort(),
+    recommendedNextDiagnostic,
+    readOnly: true,
+    planningInfluence: "benchmark-diagnostics-only",
+  };
+}
+
 function rawShadowDiagnostics(shadow: ORCShadowModeResult): RawShadowDiagnostics {
   return {
     enabled: shadow.summary.enabled,
@@ -471,6 +527,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
   const seeded = buildORCBaselineSeededInput(cloneInput(safeInput), v4.output);
   const serializedSeed = assertSerializableORCSeed(seeded.seedPlanning);
   const baselineSeedHardFeasibility = auditORCBaselineSeedHardFeasibility(cloneInput(seeded.input), { createdAt: options.createdAt ?? null });
+  const baselineSeedConstraintAlignment = buildBaselineSeedConstraintAlignment(baselineSeedHardFeasibility);
   const seededShadow = runORCShadowMode(cloneInput(seeded.input), { enabled: true, createdAt: options.createdAt ?? null });
   if (seededShadow === null) throw new Error("Operational Delta Benchmark requires V4-seeded ORC Shadow Mode.");
   const rawShadow = runORCShadowMode(cloneInput(safeInput), { enabled: true, createdAt: options.createdAt ?? null });
@@ -494,6 +551,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
     officialOrcOutcome,
     activeEquivalentMetricNormalization: normalization,
     baselineSeedHardFeasibility,
+    baselineSeedConstraintAlignment,
     orcBaselineSeed: {
       seededPlanningCount: seeded.seedPlanning.length,
       sourcePlanningCount: v4.output.plannedTasks.length,
@@ -509,7 +567,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `V4 produced ${v4.output.plannedTasks.length} planned task(s) and ${(v4.output.unplanned ?? []).length} unplanned task(s) as the benchmark baseline.`,
       `ORC seeded shadow explores on top of that V4 baseline seed and produced ${seededShadow.candidates.length} candidate(s), ${seededShadow.simulatedStates.length} simulation(s), and ${seededShadow.commitDecisions.length} decision(s).`,
       `Only a COMMIT decision backed by a VALID seeded simulated state can feed official metrics.orc; selected outcome is ${officialOrcOutcome.kind} (${officialOrcOutcome.reason}).`,
-      baselineSeedHardFeasibility.hardFeasible === false ? "baseline_seed_hard_infeasible_blocks_candidate_optimization" : `Baseline seed hard-feasibility audit returned ${baselineSeedHardFeasibility.reason}.`,
+      baselineSeedHardFeasibility.hardFeasible === false ? `baseline_seed_hard_infeasible_blocks_candidate_optimization; see baselineSeedConstraintAlignment dominant codes: ${baselineSeedConstraintAlignment.dominantViolationCodes.join(", ") || "none"}.` : `Baseline seed hard-feasibility audit returned ${baselineSeedHardFeasibility.reason}.`,
       normalization.applied ? `The benchmark separates final planning metrics from exploration overhead; because production receives the V4-equivalent plan for ${officialOrcOutcome.kind}, final ORC metrics are normalized to V4 (${normalization.reason}).` : "The selected ORC commit changed the final plan, so final planning metrics are calculated from the validated simulated state using the original benchmark input as measurement context.",
       "ORC exploration overhead remains visible in diagnostics and computational metrics, but it must not create false final-planning deltas when the active-equivalent plan is V4.",
       "Only a real ORC commit with planning changes can produce official final-planning deltas; baseline preservation and fallback keep makespan, permanence, continuity, conflicts, resource utilization, dependency metrics, and OPQ equal to V4.",

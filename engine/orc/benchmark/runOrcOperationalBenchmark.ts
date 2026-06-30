@@ -110,7 +110,8 @@ function buildNextActionRecommendation(authorizationReport: OptimizationAuthoriz
   const reports = suiteReport?.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null) ?? [];
   const fallbackReports = reports.filter((report) => report.officialOrcOutcome.kind === "v4_fallback");
   if (fallbackReports.length > 0 && fallbackReports.every((report) => report.baselineSeedHardFeasibility?.available === true && report.baselineSeedHardFeasibility?.hardFeasible === false)) {
-    return { allowed: false, reason: "No candidate optimization is authorized because current failures are blocked by baseline seed hard-feasibility diagnostics. Resolve ORC/V4 hard-constraint alignment first.", priorityId: null, metric: null };
+    const dominant = [...new Set(fallbackReports.flatMap((report) => report.baselineSeedConstraintAlignment?.dominantViolationCodes ?? report.baselineSeedHardFeasibility?.dominantViolationCodes ?? []))].sort();
+    return { allowed: false, reason: `No candidate optimization is authorized because current failures are blocked by baseline seed hard-feasibility diagnostics. Resolve ORC/V4 hard-constraint alignment first via baselineSeedConstraintAlignment${dominant.length > 0 ? ` (dominant: ${dominant.join(", ")})` : ""}.`, priorityId: null, metric: null };
   }
   const [top] = authorizationReport.authorizedPriorities;
   if (!top) {

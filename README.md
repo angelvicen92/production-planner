@@ -78,6 +78,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 203 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Final Metrics Normalization v1
 - ID 204 — 2026-06-30 UTC — ORC Baseline Safety Candidate for Active Search Spaces v1
 - ID 205 — 2026-06-30 UTC — ORC Baseline Seed Hard-Feasibility Audit v1
+- ID 206 — 2026-06-30 UTC — ORC Hard Violation Diagnostics & Constraint Alignment Report v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -162,6 +163,14 @@ ORC Active y el Operational Delta Benchmark ahora auditan explícitamente si el 
 Si el seed no valida, el fallback reason active-equivalent pasa a ser explícito: `baseline_seed_hard_infeasible`. El benchmark conserva invalids, violation summaries y overhead como diagnostics, pero no autoriza optimización de candidatos como siguiente paso principal si el bloqueo real es la hard-feasibility del seed base.
 
 No hay cambios DB, RLS, UI, V3 ni V4. No se relajan hard constraints, no se cambia el pipeline ORC, no se fuerza baseline preservation si el seed no valida y `real-voice-audition-day` sigue incluido en la suite oficial.
+
+### ORC Hard Violation Diagnostics & Constraint Alignment Report v1 (ID 206)
+
+`ValidationResult` ahora incluye `violationDetails`: detalles hard acotados, deterministas y serializables que exponen códigos, grupos de constraint, tareas, ventanas de tiempo, espacios, recursos, locks, dependencias y breaks afectados sin incluir snapshots completos ni objetos pesados. `violatedConstraints` se mantiene como resumen compatible, mientras la evidence `simulated-state-validated` publica sólo una muestra bounded de detalles con `validationScope: "hard-constraints-v2-diagnostics"`.
+
+La auditoría `auditORCBaselineSeedHardFeasibility` consume esos detalles para derivar `affectedTaskIds` desde violaciones reales, mostrar `violationDetailsSample`, contar truncamiento y ordenar `dominantViolationCodes` de forma determinista. El Operational Delta Benchmark añade `baselineSeedConstraintAlignment`, un informe read-only y de influencia diagnóstica que conserva categorías conservadoras de posible causa raíz —V4 output, adapter V4→ORC, fixture o semántica ORC Validation— sin afirmar una causa única ni autorizar optimización automática.
+
+No se relajan hard constraints, no se cambia V4, DB, RLS, UI, endpoints ni el pipeline ORC, y no se modifica la planificación oficial. El objetivo de ID 206 es diagnóstico y alineación de constraints, no optimización; `real-voice-audition-day` sigue incluido en la suite oficial para conservar evidencia sobre dependencias, protected breaks y solapes de espacio cuando aparezcan.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
@@ -518,4 +527,3 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
-
