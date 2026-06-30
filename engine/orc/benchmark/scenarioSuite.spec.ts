@@ -24,6 +24,8 @@ test("Production Scenario Benchmark Suite executes the complete official battery
     assert.deepEqual(Object.keys(result.report.metrics.orc).sort(), officialMetricKeys);
     assert.deepEqual(Object.keys(result.report.metrics.v4).sort(), officialMetricKeys);
     assert.equal(result.report.improvementReport.planningInfluence, "none");
+    assert.equal(result.report.officialOrcOutcome.readOnly, true);
+    assert.equal(result.report.seededShadowDiagnostics.planningInfluence, "none");
   }
 });
 

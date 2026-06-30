@@ -82,7 +82,7 @@ test("ORC Operational Benchmark never influences official planning", () => {
 });
 
 
-test("ORC Operational Benchmark conflict recommendations come from seeded ORC metrics, not raw shadow diagnostics", () => {
+test("ORC Operational Benchmark recommendations come from active-equivalent official metrics, not invalid shadow diagnostics", () => {
   const suiteReport = runProductionScenarioBenchmarkSuite({ scenarioIds: ["real-voice-audition-day"], createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
   const optimizationReport = runEvidenceOptimizationCycle({ suiteReport });
   const authorizationReport = buildOptimizationAuthorizationReport({
@@ -90,12 +90,14 @@ test("ORC Operational Benchmark conflict recommendations come from seeded ORC me
     improvementReports: optimizationReport.improvementReports,
     generatedAt: null,
   });
-  const conflictAuthorization = authorizationReport.authorizedPriorities.find((priority) => priority.metric === "conflicts");
-  if (conflictAuthorization) {
-    assert.equal(conflictAuthorization.improvementReportsUsed.some((used) => {
-      const report = suiteReport.results.find((result) => result.report?.scenario.planId === used.scenario.planId)?.report;
-      return report != null && report.metrics.orc.conflicts > report.metrics.v4.conflicts;
-    }), true);
-  }
+  const scenarioReport = suiteReport.results[0].report;
+  assert.ok(scenarioReport);
+  assert.equal(scenarioReport.officialOrcOutcome.kind, "v4_fallback");
+  assert.equal(scenarioReport.metrics.orc.conflicts, scenarioReport.metrics.v4.conflicts);
+  assert.equal(scenarioReport.metrics.orc.candidatesConsolidated, scenarioReport.metrics.v4.candidatesConsolidated);
+  assert.equal(scenarioReport.absoluteDelta.conflicts, 0);
+  assert.equal(scenarioReport.absoluteDelta.candidatesConsolidated, 0);
+  assert.equal(authorizationReport.authorizedPriorities.some((priority) => priority.metric === "conflicts" || priority.metric === "candidatesConsolidated"), false);
   assert.equal(suiteReport.results.every((result) => result.report == null || result.report.rawShadowDiagnostics.planningInfluence === "none"), true);
+  assert.equal(suiteReport.results.every((result) => result.report == null || result.report.seededShadowDiagnostics.planningInfluence === "none"), true);
 });

@@ -97,6 +97,15 @@ test("real voice audition day benchmark executes without full shadow snapshots i
   assert.equal(result.report.orcBaselineSeed.serializable, true);
   assert.equal(result.report.orcBaselineSeed.readOnly, true);
   assert.equal(result.report.rawShadowDiagnostics.planningInfluence, "none");
+  assert.equal(result.report.seededShadowDiagnostics.planningInfluence, "none");
+  assert.equal(result.report.officialOrcOutcome.kind, "v4_fallback");
+  assert.equal(result.report.officialOrcOutcome.fallbackToV4, true);
+  assert.equal(result.report.metrics.orc.makespan, result.report.metrics.v4.makespan);
+  assert.equal(result.report.metrics.orc.totalPermanence, result.report.metrics.v4.totalPermanence);
+  assert.equal(result.report.metrics.orc.mainFlowContinuity, result.report.metrics.v4.mainFlowContinuity);
+  assert.equal(result.report.metrics.orc.conflicts, result.report.metrics.v4.conflicts);
+  assert.equal(result.report.absoluteDelta.conflicts, 0);
+  assert.ok(result.report.seededShadowDiagnostics.invalidCount >= 0);
   if (result.report.rawShadowDiagnostics.invalidCount > 0 && result.report.metrics.orc.conflicts === 0) {
     assert.match(result.report.rawShadowDiagnostics.explanation, /diagnostics only/);
   }

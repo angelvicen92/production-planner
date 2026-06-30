@@ -39,6 +39,8 @@ test("Operational Delta Benchmark covers a simple scenario with official metrics
   assert.equal(report.orcBaselineSeed.serializable, true);
   assert.equal(report.orcBaselineSeed.readOnly, true);
   assert.equal(report.rawShadowDiagnostics.planningInfluence, "none");
+  assert.equal(report.seededShadowDiagnostics.planningInfluence, "none");
+  assert.equal(report.officialOrcOutcome.readOnly, true);
 });
 
 test("Operational Delta Benchmark covers a complex benchmark scenario", () => {
@@ -95,4 +97,59 @@ test("Operational Delta Benchmark keeps raw shadow diagnostics separate from V4-
   assert.equal(typeof report.rawShadowDiagnostics.invalidCount, "number");
   assert.equal(typeof report.metrics.orc.conflicts, "number");
   assert.deepEqual(JSON.parse(JSON.stringify(report)), report);
+});
+
+
+test("Operational Delta Benchmark classifies valid seeded baseline preservation as official ORC baseline", () => {
+  const scenario = benchmarkScenarios[0];
+  const report = runOperationalDeltaBenchmark(scenario.input as EngineInput, { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(report.officialOrcOutcome.kind, "orc_baseline_preserved");
+  assert.equal(report.officialOrcOutcome.source, "v4_seeded_shadow_baseline");
+  assert.equal(report.officialOrcOutcome.fallbackToV4, false);
+  assert.equal(report.officialOrcOutcome.selectedSimulatedStateId !== null, true);
+  assert.equal(report.metrics.orc.conflicts, 0);
+  assert.equal(report.absoluteDelta.totalPermanence, 0);
+  assert.equal(report.absoluteDelta.mainFlowContinuity, 0);
+});
+
+test("Operational Delta Benchmark applies V4 fallback when seeded shadow has no valid commit", () => {
+  const scenario = benchmarkScenarios.find((item) => item.id !== "A") ?? benchmarkScenarios[0];
+  const report = runOperationalDeltaBenchmark(scenario.input as EngineInput, { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  if (report.officialOrcOutcome.kind !== "v4_fallback") return;
+  assert.equal(report.officialOrcOutcome.fallbackToV4, true);
+  assert.equal(report.officialOrcOutcome.selectedSimulatedStateId, null);
+  assert.equal(report.metrics.orc.makespan, report.metrics.v4.makespan);
+  assert.equal(report.metrics.orc.totalPermanence, report.metrics.v4.totalPermanence);
+  assert.equal(report.metrics.orc.mainFlowContinuity, report.metrics.v4.mainFlowContinuity);
+  assert.equal(report.metrics.orc.conflicts, report.metrics.v4.conflicts);
+  assert.deepEqual(report.metrics.orc.operationalPlanningQuality, report.metrics.v4.operationalPlanningQuality);
+  assert.equal(report.absoluteDelta.makespan, 0);
+  assert.equal(report.absoluteDelta.totalPermanence, 0);
+  assert.equal(report.absoluteDelta.mainFlowContinuity, 0);
+  assert.equal(report.absoluteDelta.conflicts, 0);
+  assert.equal(report.seededShadowDiagnostics.invalidCount, report.officialOrcOutcome.invalidSeededSimulationCount);
+});
+
+test("Operational Delta Benchmark applies V4 fallback when seeded shadow produces no simulations", () => {
+  const input: EngineInput = { ...simpleInput(), tasks: [], planResourceItems: [] };
+  const report = runOperationalDeltaBenchmark(input, { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(report.officialOrcOutcome.kind, "v4_fallback");
+  assert.equal(report.officialOrcOutcome.reason, "seeded_shadow_no_simulations");
+  assert.equal(report.seededShadowDiagnostics.simulatedStateCount, 0);
+  assert.equal(report.seededShadowDiagnostics.explanation.includes("seeded_shadow_no_simulations"), true);
+  assert.deepEqual(report.metrics.orc, report.metrics.v4);
+  assert.equal(report.absoluteDelta.totalPermanence, 0);
+});
+
+test("Operational Delta Benchmark active-equivalent report is deterministic, serializable, immutable-input, and diagnostic-complete", () => {
+  const input = simpleInput();
+  const before = stableStringify(input);
+  const a = runOperationalDeltaBenchmark(input, { createdAt: "2026-06-28T08:14:34.000Z", v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  const b = runOperationalDeltaBenchmark(input, { createdAt: "2026-06-28T08:14:34.000Z", v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(stableStringify(input), before);
+  assert.equal(structuralEquals(a, b), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(a)), a);
+  assert.equal(a.rawShadowDiagnostics.planningInfluence, "none");
+  assert.equal(a.seededShadowDiagnostics.planningInfluence, "none");
+  assert.equal(a.officialOrcOutcome.planningInfluence, "benchmark-outcome-classification-only");
 });
