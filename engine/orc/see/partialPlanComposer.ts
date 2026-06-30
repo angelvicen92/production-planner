@@ -21,9 +21,13 @@ export interface PartialPlanComposerResult {
 
 export interface PartialPlanComposerOptions {
   readonly createdAt?: string | null;
+  readonly maxPartialPlans?: number | null;
+  readonly maxDiscardedCompositions?: number | null;
 }
 
 const round = (value: number): number => Math.round(value * 1_000_000) / 1_000_000;
+const DEFAULT_MAX_PARTIAL_PLANS = 20;
+const DEFAULT_MAX_DISCARDED_COMPOSITIONS = 50;
 const finite = (value: unknown, fallback = 0): number => (typeof value === "number" && Number.isFinite(value) ? value : fallback);
 const stringValue = (value: unknown): string | null => (typeof value === "string" && value.length > 0 ? value : null);
 const numberArray = (value: unknown): number[] => Array.isArray(value) ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item)) : [];
@@ -101,22 +105,47 @@ export function composePartialPlans(candidates: readonly Candidate[], options: P
   const ordered = [...(candidates ?? [])].sort((a, b) => a.id.localeCompare(b.id));
   const partialPlans: PartialPlan[] = [];
   const discardedCompositions: DiscardedPartialPlanComposition[] = [];
-  const total = 2 ** ordered.length;
-  for (let mask = 1; mask < total; mask += 1) {
-    const group = ordered.filter((_, index) => (mask & (1 << index)) !== 0);
+  const maxPartialPlans = Math.max(0, Math.floor(options.maxPartialPlans ?? DEFAULT_MAX_PARTIAL_PLANS));
+  const maxDiscardedCompositions = Math.max(0, Math.floor(options.maxDiscardedCompositions ?? DEFAULT_MAX_DISCARDED_COMPOSITIONS));
+  let inspectedCompositions = 0;
+  let discardedOverflowCount = 0;
+  const inspectGroup = (group: Candidate[]): void => {
+    if (partialPlans.length >= maxPartialPlans) return;
     const candidateIds = group.map((candidate) => candidate.id);
     const score = compatibilityScore(group);
     const reason = compositionReason(group);
+    inspectedCompositions += 1;
     if (reason != null) {
-      discardedCompositions.push(deepFreeze({ candidateIds, reason, compatibilityScore: score }) as DiscardedPartialPlanComposition);
-      continue;
+      if (discardedCompositions.length < maxDiscardedCompositions) {
+        discardedCompositions.push(deepFreeze({ candidateIds, reason, compatibilityScore: score }) as DiscardedPartialPlanComposition);
+      } else {
+        discardedOverflowCount += 1;
+      }
+      return;
     }
     partialPlans.push(deepFreeze({ partialPlanId: planId(candidateIds), candidateIds, compatibilityScore: score, expectedOperationalImpact: round(group.reduce((sum, candidate) => sum + expectedImpact(candidate), 0)) }) as PartialPlan);
+  };
+  for (let size = 1; size <= ordered.length && partialPlans.length < maxPartialPlans; size += 1) {
+    const group: Candidate[] = [];
+    const visit = (start: number): void => {
+      if (partialPlans.length >= maxPartialPlans) return;
+      if (group.length === size) {
+        inspectGroup(group);
+        return;
+      }
+      for (let index = start; index < ordered.length && partialPlans.length < maxPartialPlans; index += 1) {
+        group.push(ordered[index]);
+        visit(index + 1);
+        group.pop();
+      }
+    };
+    visit(0);
   }
   partialPlans.sort((a, b) => b.candidateIds.length - a.candidateIds.length || b.compatibilityScore - a.compatibilityScore || a.partialPlanId.localeCompare(b.partialPlanId));
   const evidence: Evidence[] = [
     ...partialPlans.map((plan) => deepFreeze({ id: `evidence:orc-see:partial-plan:${plan.partialPlanId}`, source: "orc-see", kind: "partial-plan-composed", subjectId: plan.partialPlanId, createdAt: options.createdAt ?? null, data: { ...plan, deterministic: true, readOnly: true } }) as Evidence),
     ...discardedCompositions.map((discarded, index) => deepFreeze({ id: `evidence:orc-see:partial-plan:discarded:${index + 1}`, source: "orc-see", kind: "partial-plan-discarded", subjectId: discarded.candidateIds.join("+"), createdAt: options.createdAt ?? null, data: { candidateIds: [...discarded.candidateIds], reason: discarded.reason, compatibilityScore: discarded.compatibilityScore, deterministic: true, readOnly: true } }) as Evidence),
+    ...(partialPlans.length >= maxPartialPlans || discardedOverflowCount > 0 ? [deepFreeze({ id: "evidence:orc-see:partial-plan:budget:v1", source: "orc-see", kind: "partial-plan-budget-applied", subjectId: "PartialPlanComposer", createdAt: options.createdAt ?? null, data: { candidateCount: ordered.length, inspectedCompositions, emittedPartialPlans: partialPlans.length, maxPartialPlans, recordedDiscardedCompositions: discardedCompositions.length, discardedOverflowCount, deterministic: true, readOnly: true } }) as Evidence] : []),
   ];
   const averageCompatibilityScore = partialPlans.length === 0 ? 0 : round(partialPlans.reduce((sum, plan) => sum + plan.compatibilityScore, 0) / partialPlans.length);
   return deepFreeze({ partialPlans, discardedCompositions, evidence, summary: { candidateCount: ordered.length, partialPlanCount: partialPlans.length, discardedCompositionCount: discardedCompositions.length, averageCompatibilityScore } }) as PartialPlanComposerResult;

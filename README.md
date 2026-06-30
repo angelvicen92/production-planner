@@ -432,3 +432,13 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
+
+## ID 198 — ORC Benchmark Memory Budget & Real Scenario Stabilization v1
+
+- Fecha UTC: 2026-06-30.
+- Causa encontrada: el OOM del benchmark ORC en `real-voice-audition-day` no nacía en DB, UI, RLS, V3 ni V4; el origen era combinatorio dentro del razonamiento ORC shadow. `PartialPlanComposer` generaba todas las combinaciones de candidatos (`2^n`) y después `GlobalSolutionAssembler` volvía a combinar todos los Partial Plans, multiplicando evidence y objetos intermedios hasta agotar heap en el escenario real.
+- Límites aplicados: la composición de Partial Plans queda acotada por defecto a 20 planes y 50 descartes detallados; el ensamblado de Global Solutions queda acotado por defecto a 20 soluciones y 50 descartes detallados. Estos límites son deterministas, no cambian la planificación oficial y respetan el presupuesto operativo recomendado para candidatos/simulaciones en escenarios grandes.
+- Evidence resumida/truncada: los descartes que superan presupuesto se agregan mediante evidence de presupuesto (`partial-plan-budget-applied` y `global-solution-budget-applied`) con conteos, límites, composiciones inspeccionadas y overflow de descartes, en lugar de emitir cada combinación completa.
+- Trazabilidad conservada: se mantienen ids de candidatos, ids de Partial Plans aceptados, conteos oficiales, métricas ORC/V4, explicaciones de delta, summaries de presupuesto y evidencia detallada para las primeras entradas ordenadas de forma determinista.
+- `real-voice-audition-day` sigue incluido en la suite oficial y ahora se valida con tests de presupuesto/determinismo y ejecución de benchmark del escenario completo.
+- Sin cambios DB, RLS, UI, V3 ni V4. El benchmark ORC vuelve a ser el juez obligatorio antes de añadir nuevas capacidades de planificación ORC.
