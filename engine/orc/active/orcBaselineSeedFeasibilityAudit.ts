@@ -143,6 +143,7 @@ export function auditORCBaselineSeedHardFeasibility(input: EngineInput | null | 
         pruning: { generatedCount: 1, keptCount: 1, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] },
         hardPrefilter: { receivedCandidateCount: 1, acceptedCandidateCount: 1, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 },
         preselection: { generatedCandidates: 1, acceptedCandidates: 1, discardedCandidates: 0, limit: 1, partialPlans: { partialPlanCount: composed.partialPlans.length, discardedCompositionCount: composed.discardedCompositions.length, averageCompatibilityScore: composed.summary.averageCompatibilityScore } },
+        mainFlowGapClosure: { generated: 0, acceptedBeforePrefilter: 0, discardedByPrefilter: 0, candidateIds: [], movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-only" },
         baselineSafety: { generated: true, candidateId: baseline.candidate.id, reason: baseline.summary.generationReason, planningCount: plannedTaskCount, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" },
       },
     };

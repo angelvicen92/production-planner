@@ -58,3 +58,29 @@ test("dimensions are independently calculated and overallScore is their unweight
   const expected = Math.round((Object.values(breakdown).reduce((sum, item) => sum + item.score, 0) / Object.values(breakdown).length) * 1_000_000) / 1_000_000;
   assert.equal(calculateOverallScore(breakdown), expected);
 });
+
+test("continuity uses optimizer.mainZoneId before name fallback", () => {
+  const input = simulated();
+  input.operationalStateSnapshot.spaces.nameById = { 7: "Estudio configurado", 8: "Plató fallback" } as any;
+  input.operationalStateSnapshot.constraints = { optimizer: { mainZoneId: 7 } } as any;
+  input.operationalStateSnapshot.planning = [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 7 },
+    { taskId: 2, startPlanned: "11:00", endPlanned: "11:30", assignedResourceIds: [], spaceId: 8 },
+  ];
+  const continuity = evaluateContinuity(input);
+  assert.equal(continuity.metrics.mainFlowDetectionSource, "optimizerMainZoneId");
+  assert.equal(continuity.metrics.intervalCount, 1);
+});
+
+test("continuity keeps name fallback when optimizer.mainZoneId is absent", () => {
+  const input = simulated();
+  input.operationalStateSnapshot.spaces.nameById = { 7: "Sala cualquiera", 8: "Plató fallback" } as any;
+  input.operationalStateSnapshot.constraints = {} as any;
+  input.operationalStateSnapshot.planning = [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 7 },
+    { taskId: 2, startPlanned: "11:00", endPlanned: "11:30", assignedResourceIds: [], spaceId: 8 },
+  ];
+  const continuity = evaluateContinuity(input);
+  assert.equal(continuity.metrics.mainFlowDetectionSource, "name-fallback");
+  assert.equal(continuity.metrics.intervalCount, 1);
+});
