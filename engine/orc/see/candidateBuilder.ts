@@ -2,6 +2,7 @@ import type { AdaptiveSearchSpaceProfile, Candidate, Evidence, OperationalState,
 import type { OperationalGoal } from "../search/operationalGoalBuilder";
 import { preselectCandidates } from "./candidatePreselectionEngine";
 import { buildStrategyCandidates } from "./strategyCandidateBuilder";
+import { buildBaselinePreservationCandidate } from "./baselinePreservationCandidate";
 
 export interface CandidateBuilderResult {
   candidates: Candidate[];
@@ -106,6 +107,10 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     return !(selection != null && typeof selection === "object" && (selection as Record<string, unknown>).selected === false);
   });
   if (sourceSearchSpaces.length === 0) {
+    const baselinePreservation = buildBaselinePreservationCandidate(options.operationalState, options.createdAt ?? null);
+    if (baselinePreservation) {
+      return { candidates: [baselinePreservation.candidate], evidence: [baselinePreservation.evidence], summary: { searchSpaceCount: 0, candidateCount: 1, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 1, unusedBudget: GLOBAL_CANDIDATE_BUDGET - 1, allocations: [] }, pruning: { generatedCount: 1, keptCount: 1, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 1, acceptedCandidates: 1, discardedCandidates: 0, limit: 1, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } } };
+    }
     return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } } };
   }
 

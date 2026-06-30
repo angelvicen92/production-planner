@@ -173,7 +173,11 @@ function findBestSimulation(shadow: ORCShadowModeResult | null): { simulation: S
   candidates.sort((a, b) => (valueById.get(b.id) ?? -Infinity) - (valueById.get(a.id) ?? -Infinity) || a.id.localeCompare(b.id));
   const simulation = candidates[0] ?? null;
   const candidateState = simulation ? (shadow.candidateStates ?? []).find((item) => item.id === simulation.candidateStateId) ?? null : null;
-  const candidate = candidateState ? (shadow.candidates ?? []).find((item) => item.id === candidateState.candidateId) ?? null : null;
+  let candidate = candidateState ? (shadow.candidates ?? []).find((item) => item.id === candidateState.candidateId) ?? null : null;
+  if (candidate == null && candidateState?.candidateId.startsWith("candidate:partial-plan:")) {
+    const sourceCandidateId = candidateState.candidateId.slice("candidate:partial-plan:".length).split("+")[0];
+    candidate = (shadow.candidates ?? []).find((item) => item.id === sourceCandidateId) ?? null;
+  }
   return { simulation, validation: simulation ? (shadow.validationResults ?? []).find((item) => item.simulatedStateId === simulation.id) ?? null : null, value: simulation ? valueById.get(simulation.id) ?? null : null, candidateState, candidate };
 }
 

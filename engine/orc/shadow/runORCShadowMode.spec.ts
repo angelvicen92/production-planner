@@ -28,6 +28,27 @@ const minimalInput = (): EngineInput => ({
   groupingZoneIds: [],
 });
 
+
+const fullyPlannedInput = (): EngineInput => ({
+  planId: 96,
+  workDay: { start: "09:00", end: "12:00" },
+  meal: { start: "13:00", end: "14:00" },
+  camerasAvailable: 1,
+  tasks: [
+    { id: 1, planId: 96, templateId: 10, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7] },
+    { id: 2, planId: 96, templateId: 11, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [7] },
+  ],
+  locks: [],
+  optimizerMainZoneId: 10,
+  zoneResourceAssignments: {},
+  spaceResourceAssignments: {},
+  zoneResourceTypeRequirements: {},
+  spaceResourceTypeRequirements: {},
+  planResourceItems: [{ id: 7, resourceItemId: 70, typeId: 1, name: "Camera 1", isAvailable: true }],
+  resourceItemComponents: {},
+  groupingZoneIds: [],
+});
+
 const v4Comparable = (result: ReturnType<typeof generatePlanV4>) => ({
   feasible: result.output.feasible,
   complete: result.output.complete,
@@ -92,6 +113,26 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "opportunity-diagnosis-generated"));
   assert.equal(shadow.summary.adaptiveSearchSpace.generated, shadow.searchSpaces.length);
   assert.equal(shadow.summary.adaptiveSearchSpace.exhaustedRegionsSkipped, 0);
+});
+
+test("runORCShadowMode generates a baseline preservation candidate through the official pipeline", () => {
+  const first = runORCShadowMode(fullyPlannedInput(), { enabled: true, createdAt: "2026-06-30T00:00:00.000Z" });
+  const second = runORCShadowMode(fullyPlannedInput(), { enabled: true, createdAt: "2026-06-30T00:00:00.000Z" });
+  assert.notEqual(first, null);
+  assert.notEqual(second, null);
+  assert.equal(first.opportunities.length, 0);
+  assert.equal(first.searchSpaces.length, 0);
+  assert.equal(first.candidates.length, 1);
+  assert.equal(first.candidates[0].metadata.baselinePreservation, true);
+  assert.equal(first.candidateStates.length, 1);
+  assert.deepEqual(first.candidateStates[0].plannedTransformations, []);
+  assert.equal(first.simulatedStates.length, 1);
+  assert.equal(first.simulatedStates[0].simulationMode, "READ_ONLY_BASELINE");
+  assert.equal(first.simulatedStates[0].planningMaterialization?.source, "baseline_seed_preserved");
+  assert.equal(first.simulatedStates[0].planningMaterialization?.changedTaskCount, 0);
+  assert.equal(first.validationResults[0].result, "VALID");
+  assert.ok(first.evidence.some((evidence) => evidence.kind === "baseline-preservation-candidate-generated"));
+  assert.equal(structuralEquals(first, second), true);
 });
 
 test("runORCShadowMode does not mutate EngineInput", () => {
