@@ -75,3 +75,13 @@ test("does not mutate inputs, is deterministic, serializable/read-only, and trun
   assert.equal(first.evidence.filter((e) => e.kind === "candidate-hard-prefilter-discarded").length, 2);
   assert.equal(first.evidence.every((e) => e.data.readOnly === true), true);
 });
+
+test("applies scoped protected breaks in hard prefilter", () => {
+  const otherSpace = prefilterCandidatesByHardConstraints([candidate("other-space", [{ taskId: 1, startPlanned: "09:05", endPlanned: "09:25", spaceId: 2, resourceIds: [10] }])], state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", kind: "protected", spaceId: 1 } as any] }, spaces: { ...state().spaces, concurrencyById: { 2: 2 } } }));
+  assert.equal(otherSpace.candidates.length, 1);
+  assert.equal(reason(candidate("matching-space"), state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", kind: "protected", spaceId: 1 } as any] } })), "hard-break-overlap");
+  assert.equal(reason(candidate("contestant"), state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", contestantId: 1 } as any] } })), "hard-break-overlap");
+  assert.equal(reason(candidate("resource"), state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", resourceItemId: 10 } as any] } })), "hard-break-overlap");
+  assert.equal(prefilterCandidatesByHardConstraints([candidate("unmatched-resource")], state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", resourceItemId: 999 } as any] } })).candidates.length, 1);
+  assert.equal(reason(candidate("global-hard"), state({ availability: { ...state().availability, globalHardBreaks: [{ start: "09:00", end: "09:30" }] } })), "hard-break-overlap");
+});

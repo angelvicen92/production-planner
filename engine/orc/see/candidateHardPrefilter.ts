@@ -1,5 +1,6 @@
 import type { Candidate, Evidence, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { configuredHardBreaks, hardBreakAppliesToPlanningEntry } from "../validation/protectedBreakScope";
 
 const SOURCE = "orc-see";
 const DEFAULT_MAX_DETAILED = 50;
@@ -42,7 +43,6 @@ export interface CandidateHardPrefilterOptions {
   readonly maxDetailedDiscardEvidence?: number;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 const timeToMinutes = (value: unknown): number | null => {
   if (typeof value !== "string" || !/^\d{2}:\d{2}$/.test(value)) return null;
   const [h, m] = value.split(":").map(Number);
@@ -73,19 +73,6 @@ function changedFields(current: PlanningEntry | undefined, assignment: Candidate
     space: assignment.spaceId !== undefined && assignment.spaceId !== (current?.spaceId ?? null),
     resource: assignment.resourceIds !== undefined && !sameNumbers(assignment.resourceIds, current?.assignedResourceIds ?? []),
   };
-}
-
-function hardBreaks(state: OperationalState): Array<{ start: string; end: string }> {
-  const availability = state.availability;
-  const breaks: Array<{ start: string; end: string }> = [];
-  for (const key of ["meal", "actualMeal", "mealWindow"] as const) if (availability?.[key]?.start && availability?.[key]?.end) breaks.push(availability[key] as { start: string; end: string });
-  for (const window of availability?.globalHardBreaks ?? []) breaks.push(window);
-  for (const window of availability?.protectedBreaks ?? []) {
-    const record = window as unknown as Record<string, unknown>;
-    const soft = record.hard === false || record.isHard === false || record.hardConstraint === false || record.kind === "soft";
-    if (!soft) breaks.push(window);
-  }
-  return breaks;
 }
 
 function preview(state: OperationalState, candidate: Candidate): PlanningEntry[] {
@@ -120,7 +107,11 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     const wd = state.workDay ?? state.availability?.workDay;
     const dayStart = timeToMinutes(wd?.start), dayEnd = timeToMinutes(wd?.end);
     if (startMin != null && endMin != null && dayStart != null && dayEnd != null && (startMin < dayStart || endMin > dayEnd)) return discard(candidate, "outside-work-day", "PLANNING_OUTSIDE_WORK_DAY", [assignment.taskId]);
-    for (const br of hardBreaks(state)) { const bs = timeToMinutes(br.start), be = timeToMinutes(br.end); if (startMin != null && endMin != null && bs != null && be != null && overlaps(startMin, endMin, bs, be)) return discard(candidate, "hard-break-overlap", "PLANNING_CROSSES_HARD_BREAK", [assignment.taskId]); }
+    for (const br of configuredHardBreaks(state)) {
+      const bs = timeToMinutes(br.start), be = timeToMinutes(br.end);
+      const previewEntry = { taskId: assignment.taskId, startPlanned: start ?? "", endPlanned: end ?? "", assignedResourceIds: [...(assignment.resourceIds ?? current?.assignedResourceIds ?? [])], spaceId: assignment.spaceId !== undefined ? assignment.spaceId : current?.spaceId ?? null };
+      if (startMin != null && endMin != null && bs != null && be != null && overlaps(startMin, endMin, bs, be) && hardBreakAppliesToPlanningEntry(br, previewEntry, task)) return discard(candidate, "hard-break-overlap", br.code, [assignment.taskId]);
+    }
   }
 
   const plan = preview(state, candidate);

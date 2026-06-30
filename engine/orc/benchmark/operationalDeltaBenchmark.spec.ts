@@ -178,3 +178,10 @@ test("Operational Delta Benchmark active-equivalent report is deterministic, ser
   assert.equal(a.seededShadowDiagnostics.planningInfluence, "none");
   assert.equal(a.officialOrcOutcome.planningInfluence, "benchmark-outcome-classification-only");
 });
+
+test("Operational Delta Benchmark exposes scoped protected break stratified alignment metadata", () => {
+  const report = runOperationalDeltaBenchmark(simpleInput(), { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(report.baselineSeedConstraintAlignment.sampleStrategy, "stratified_by_violation_code");
+  assert.equal(report.baselineSeedConstraintAlignment.scopedProtectedBreakValidation, true);
+  assert.ok(report.evidenceExplanation.some((line) => line.includes("scoped protected-break semantics")));
+});

@@ -1,5 +1,6 @@
 import type { Evidence, OperationalState, SimulatedState, ValidationResult, ValidationViolationDetail, ValidationConstraintGroup } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { configuredHardBreaks, hardBreakAppliesToPlanningEntry, protectedBreakDiagnostic, sampleViolationDetailsByCode } from "./protectedBreakScope";
 
 export interface ValidationEngineOptions {
   createdAt?: string | null;
@@ -106,21 +107,6 @@ function addDetail(violations: string[], details: ValidationViolationDetail[], i
   details.push(detail(input));
 }
 
-function configuredHardBreaks(snapshot: OperationalState): Array<{ start: string; end: string; code: string; kind: string }> {
-  const availability = snapshot.availability;
-  const breaks: Array<{ start: string; end: string; code: string; kind: string }> = [];
-  for (const key of ["meal", "actualMeal", "mealWindow"] as const) {
-    const window = availability?.[key];
-    if (window?.start && window?.end) breaks.push({ start: window.start, end: window.end, code: "PLANNING_CROSSES_HARD_MEAL_BREAK", kind: "meal" });
-  }
-  for (const window of availability?.globalHardBreaks ?? []) breaks.push({ start: window.start, end: window.end, code: "PLANNING_CROSSES_GLOBAL_HARD_BREAK", kind: ((window as unknown as Record<string, unknown>).kind as string | undefined) ?? "global" });
-  for (const window of availability?.protectedBreaks ?? []) {
-    const hard = (window as unknown as Record<string, unknown>).hard === true || (window as unknown as Record<string, unknown>).isHard === true || (window as unknown as Record<string, unknown>).hardConstraint === true || window.kind === "protected" || window.kind === "global";
-    if (hard) breaks.push({ start: window.start, end: window.end, code: "PLANNING_CROSSES_PROTECTED_HARD_BREAK", kind: window.kind ?? "protected" });
-  }
-  return breaks;
-}
-
 function validateStructure(simulatedState: SimulatedState, details: ValidationViolationDetail[]): string[] {
   const violations: string[] = [];
 
@@ -176,7 +162,23 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
   const breaks = configuredHardBreaks(snapshot).map((b) => ({ ...b, startMin: timeToMinutes(b.start), endMin: timeToMinutes(b.end) }));
   for (const { start, end, entry } of windows.values()) {
     if (dayStart != null && dayEnd != null && (start < dayStart || end > dayEnd)) addDetail(violations, details, { code: "PLANNING_OUTSIDE_WORK_DAY", constraintGroup: "time", taskIds: [entry.taskId], timeWindow: windowOf(entry), diagnosticHint: "Task is planned outside the configured work day. Check V4 output, seed adapter time mapping, or work day fixture constraints." });
-    for (const br of breaks) if (br.startMin != null && br.endMin != null && overlaps(start, end, br.startMin, br.endMin)) addDetail(violations, details, { code: br.code, constraintGroup: "time", taskIds: [entry.taskId], timeWindow: windowOf(entry), breakWindow: { start: br.start, end: br.end, kind: br.kind }, diagnosticHint: "Task overlaps a configured hard break. Check whether this break should be hard for ORC, whether V4 should avoid it, or whether the seed adapter mapped the break incorrectly." });
+    for (const br of breaks) {
+      if (br.startMin == null || br.endMin == null || !overlaps(start, end, br.startMin, br.endMin)) continue;
+      const task = tasks.get(entry.taskId);
+      if (!hardBreakAppliesToPlanningEntry(br, entry, task)) continue;
+      const protectedDiagnostic = br.code === "PLANNING_CROSSES_PROTECTED_HARD_BREAK" ? protectedBreakDiagnostic(br) : null;
+      addDetail(violations, details, {
+        code: br.code,
+        constraintGroup: "time",
+        taskIds: [entry.taskId],
+        resourceIds: br.scopeType === "resource" ? br.resourceIds : [],
+        spaceIds: br.scopeType === "space" && br.spaceId != null ? [br.spaceId] : [],
+        timeWindow: windowOf(entry),
+        breakWindow: { start: br.start, end: br.end, kind: br.kind },
+        message: protectedDiagnostic?.message,
+        diagnosticHint: protectedDiagnostic?.diagnosticHint ?? "Task overlaps a configured hard break. Check whether this break should be hard for ORC, whether V4 should avoid it, or whether the seed adapter mapped the break incorrectly.",
+      });
+    }
   }
 
   for (const task of snapshot.tasks ?? []) {
@@ -295,7 +297,8 @@ export function validateSimulatedStates(
         result,
         violatedConstraints,
         violationDetailCount: violationDetails.length,
-        violationDetailsSample: violationDetails.slice(0, EVIDENCE_DETAIL_SAMPLE_SIZE),
+        violationDetailsSample: sampleViolationDetailsByCode(violationDetails, { maxTotal: EVIDENCE_DETAIL_SAMPLE_SIZE }),
+        scopedProtectedBreakValidation: true,
         violationDetailsTruncated: hasTruncated(violationDetails),
         explanation,
         validationScope: "hard-constraints-v2-diagnostics",

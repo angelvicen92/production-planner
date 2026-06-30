@@ -79,6 +79,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 204 — 2026-06-30 UTC — ORC Baseline Safety Candidate for Active Search Spaces v1
 - ID 205 — 2026-06-30 UTC — ORC Baseline Seed Hard-Feasibility Audit v1
 - ID 206 — 2026-06-30 UTC — ORC Hard Violation Diagnostics & Constraint Alignment Report v1
+- ID 207 — 2026-06-30 UTC — ORC Scoped Protected Break Validation & Stratified Diagnostics v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -171,6 +172,14 @@ No hay cambios DB, RLS, UI, V3 ni V4. No se relajan hard constraints, no se camb
 La auditoría `auditORCBaselineSeedHardFeasibility` consume esos detalles para derivar `affectedTaskIds` desde violaciones reales, mostrar `violationDetailsSample`, contar truncamiento y ordenar `dominantViolationCodes` de forma determinista. El Operational Delta Benchmark añade `baselineSeedConstraintAlignment`, un informe read-only y de influencia diagnóstica que conserva categorías conservadoras de posible causa raíz —V4 output, adapter V4→ORC, fixture o semántica ORC Validation— sin afirmar una causa única ni autorizar optimización automática.
 
 No se relajan hard constraints, no se cambia V4, DB, RLS, UI, endpoints ni el pipeline ORC, y no se modifica la planificación oficial. El objetivo de ID 206 es diagnóstico y alineación de constraints, no optimización; `real-voice-audition-day` sigue incluido en la suite oficial para conservar evidencia sobre dependencias, protected breaks y solapes de espacio cuando aparezcan.
+
+### ORC Scoped Protected Break Validation & Stratified Diagnostics v1 (ID 207)
+
+ORC Validation y `CandidateHardPrefilter` ahora aplican `protectedBreaks` según su scope operativo real: `spaceId` sólo bloquea tareas planificadas en ese espacio, `contestantId` sólo bloquea tareas de ese concursante, `itinerantTeamId` sólo bloquea tareas de ese equipo itinerante y `resourceId`/`resourceItemId`/`resourceIds` sólo bloquean tareas que usan esos recursos asignados. Los `protectedBreaks` sin scope explícito sólo actúan como global hard breaks cuando están marcados como `hard`, `isHard`, `hardConstraint`, `kind: "protected"` o `kind: "global"`; los breaks globales, `meal`, `actualMeal`, `mealWindow` y `globalHardBreaks` siguen siendo hard globales.
+
+Los detalles de `PLANNING_CROSSES_PROTECTED_HARD_BREAK` incluyen scope accionable, IDs relevantes y `diagnosticHint` para distinguir breaks scoped de globales sin incluir objetos completos. Además, la auditoría de baseline seed y el benchmark usan muestras estratificadas por código de `violationDetails` (`sampleStrategy: "stratified_by_violation_code"`) para que familias numerosas como `DIRECT_DEPENDENCY_BROKEN` no oculten `SPACE_OVERLAP`, protected breaks u otros blockers minoritarios; `dominantViolationCodes` se calcula por conteo real de detalles y excluye sentinels de truncamiento.
+
+No se relajan hard constraints, no se cambia V4, DB, RLS, UI, endpoints ni el pipeline ORC, no se modifica la planificación oficial y no se añaden estrategias SEE. `real-voice-audition-day` sigue incluido en la suite oficial; si permanece hard-infeasible, la evidencia ya no debe deberse a interpretar cierres de Croma u otros protected breaks scoped como globales.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

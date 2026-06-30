@@ -154,6 +154,8 @@ export interface BaselineSeedConstraintAlignmentReport {
   dominantViolationCodes: readonly string[];
   violationDetailCount: number;
   violationDetailsSample: readonly ValidationViolationDetail[];
+  sampleStrategy: "stratified_by_violation_code";
+  scopedProtectedBreakValidation: true;
   likelyRootCauseCategories: readonly string[];
   recommendedNextDiagnostic: string;
   readOnly: true;
@@ -415,7 +417,7 @@ function buildBaselineSeedConstraintAlignment(audit: ORCBaselineSeedHardFeasibil
   const recommendedNextDiagnostic = top === "DIRECT_DEPENDENCY_BROKEN"
     ? "Inspect dependency pair details and verify whether V4 should enforce this precedence, whether the seed adapter mapped dependsOnTaskId correctly, or whether ORC dependency semantics are too strict."
     : top === "PLANNING_CROSSES_PROTECTED_HARD_BREAK"
-      ? "Inspect break window details and verify whether this break is truly hard for all tasks or only informational."
+      ? "Inspect break window details, protected break scope, and whether matching tasks should avoid the scoped window."
       : top === "SPACE_OVERLAP"
         ? "Inspect overlapping task pair and space capacity/concurrency configuration."
         : audit.hardFeasible ? "No hard-constraint alignment diagnostic is required for a hard-feasible baseline seed." : "Inspect baselineSeedHardFeasibility.violationDetailsSample before changing constraints or optimization logic.";
@@ -426,6 +428,8 @@ function buildBaselineSeedConstraintAlignment(audit: ORCBaselineSeedHardFeasibil
     dominantViolationCodes: codes,
     violationDetailCount: audit.violationDetailCount ?? 0,
     violationDetailsSample: audit.violationDetailsSample ?? [],
+    sampleStrategy: "stratified_by_violation_code",
+    scopedProtectedBreakValidation: true,
     likelyRootCauseCategories: [...categories].sort(),
     recommendedNextDiagnostic,
     readOnly: true,
@@ -574,6 +578,7 @@ export function runOperationalDeltaBenchmark(input: EngineInput, options: Operat
       `Raw ORC Shadow diagnostics produced ${rawShadow.summary.invalidCount} invalid simulation(s), and seeded diagnostics produced ${seededShadow.summary.invalidCount} invalid simulation(s); diagnostics are preserved separately and do not substitute the official operational result.`,
       "Delta values are ORC minus V4 using active-equivalent official ORC outcome semantics, and do not modify official planning.",
       "Operational Planning Quality Metrics measure resource/talent idle time, fragmentation, compactness, main-flow continuity details, and critical-resource spread without changing planning behavior.",
+      "Validation diagnostics apply scoped protected-break semantics and stratify violation-detail samples by code so frequent violations do not hide minority blockers.",
     ],
     planningUnchanged: stableStringify(safeInput) === before,
   } satisfies Omit<OperationalDeltaReport, "improvementReport">;
