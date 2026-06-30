@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, Copy, Cpu, Download, Info, TriangleAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, Cpu, Download, Info, Loader2, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,7 @@ type PlanEngineDiagnosticsProps = {
   planningActive?: boolean;
   latestSuccessRunId?: number | null;
   currentResult?: "v3" | "v4";
+  v4ResultState?: "idle" | "loading" | "pending_diagnostics" | "success" | "error";
 };
 
 export function PlanEngineDiagnostics({
@@ -129,11 +130,14 @@ export function PlanEngineDiagnostics({
   planningActive = false,
   latestSuccessRunId = null,
   currentResult = "v3",
+  v4ResultState = "idle",
 }: PlanEngineDiagnosticsProps) {
   const { role } = useUserRole();
   const { toast } = useToast();
   const v3DiagnosticsQuery = useEngineDiagnostics(planId, latestSuccessRunId);
-  const v4ResultQuery = useLatestEngineResult(planId, "v4");
+  const v4ResultQuery = useLatestEngineResult(planId, "v4", {
+    refetchInterval: currentResult === "v4" && (v4ResultState === "loading" || v4ResultState === "pending_diagnostics") ? 1500 : false,
+  });
   const diagnosticsQuery = currentResult === "v4" ? v4ResultQuery : v3DiagnosticsQuery;
   const optimizerSettingsQuery = useQuery<TransportOperationalSettings>({
     queryKey: [api.optimizerSettings.get.path],
@@ -156,6 +160,27 @@ export function PlanEngineDiagnostics({
   // Do not hide the panel while role resolution is pending or unavailable.
   if (role && role !== "admin" && role !== "production") return null;
 
+  if (currentResult === "v4" && (v4ResultState === "loading" || v4ResultState === "pending_diagnostics")) {
+    return (
+      <Card aria-label="Generando planificación V4">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Loader2 className="h-4 w-4 animate-spin" /> Diagnóstico del motor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {v4ResultState === "loading" ? "Generando planificación V4/ORC..." : "Planificación generada, esperando diagnóstico..."}
+          </p>
+          <Skeleton className="h-8 w-full" />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (diagnosticsQuery.isLoading) {
     return (
       <Card aria-label="Cargando diagnóstico del motor">
@@ -177,11 +202,11 @@ export function PlanEngineDiagnostics({
 
   if (diagnosticsQuery.isError) {
     return (
-      <Alert>
+      <Alert variant={currentResult === "v4" ? "destructive" : "default"}>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Plan aplicado, diagnóstico pendiente.</AlertTitle>
+        <AlertTitle>{currentResult === "v4" ? "Error V4" : "Plan aplicado, diagnóstico pendiente."}</AlertTitle>
         <AlertDescription className="flex items-center gap-2">
-          <span>La planificación sigue disponible.</span>
+          <span>{currentResult === "v4" ? "No se pudo cargar la diagnosis V4." : "La planificación sigue disponible."}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => void diagnosticsQuery.refetch()}>Reintentar</Button>
         </AlertDescription>
       </Alert>
@@ -194,8 +219,8 @@ export function PlanEngineDiagnostics({
     return (
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Aún no hay diagnóstico del motor para este plan.</AlertTitle>
-        <AlertDescription>Se mostrará aquí cuando exista un resultado persistido para el motor seleccionado.</AlertDescription>
+        <AlertTitle>{currentResult === "v4" ? "Planificación generada, esperando diagnóstico..." : "Aún no hay diagnóstico del motor para este plan."}</AlertTitle>
+        <AlertDescription>{currentResult === "v4" ? "El panel se actualizará cuando exista un resultado V4 persistido." : "Se mostrará aquí cuando exista un resultado persistido para el motor seleccionado."}</AlertDescription>
       </Alert>
     );
   }
@@ -326,7 +351,7 @@ export function PlanEngineDiagnostics({
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">Motor: {currentResult.toUpperCase()}</Badge>
-              {currentResult === "v4" ? <Badge variant="outline">Engine: {usedEngine === "orc" || (metadata as any)?.orcActiveBridge ? "ORC Active" : "V4 Fallback"}</Badge> : null}
+              {currentResult === "v4" ? <Badge variant="outline">Engine: {orcResultKind === "orc_baseline_preserved" ? "ORC baseline preservado" : usedEngine === "orc" || (metadata as any)?.orcActiveBridge ? "ORC Active" : "V4 Fallback"}</Badge> : null}
               <Badge variant="outline" className="capitalize">{label(diagnostics.solutionSource)}</Badge>
               <Badge
                 variant={isHealthy ? "default" : diagnostics.status === "infeasible" || diagnostics.status === "error" ? "destructive" : "secondary"}

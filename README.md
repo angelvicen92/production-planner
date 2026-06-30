@@ -412,3 +412,10 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - Un ORC completo con `planningMaterialization.changedTaskCount === 0` se etiqueta como `usedEngine: "orc_baseline_preserved"`, conserva `fallbackReason: null` y explica que se muestra una planificación completa equivalente al baseline.
 - Diagnostics y export JSON incluyen `planningRelationToBaseline` con `changedTaskCount`, `unchangedTaskCount` e `isEquivalentToBaseline`, manteniendo la evidencia completa (`gates`, `baselineSeed`, `planningMaterialization`, `bestCandidateTrace`, `operationalDelta`, `orcActivationReport`).
 - El panel de diagnóstico V4/ORC evita renderizar JSON gigante inline: muestra resúmenes compactos defensivos y mantiene Copiar JSON / Descargar JSON como exportación completa.
+
+## ID 195 — V4 Async Result Stabilization & ORC No-Op Classification Fix
+
+- Fecha Europe/Madrid: 2026-06-30 06:21 CEST.
+- Generar V4 entra en estados explícitos `loading` y `pending_diagnostics`, selecciona V4 inmediatamente y hace refetch/polling controlado de `engine_plan_results` para que el resultado aparezca sin recargar.
+- La UI V4/ORC ya no presenta el diagnóstico pendiente como `Error V4`; sólo muestra error cuando la petición falla realmente.
+- La clasificación ORC no-op se estabiliza alrededor de `orcResultKind`, priorizando `orc_baseline_preserved` cuando ORC preserva el baseline completo sin cambios reales y manteniendo `planningRelationToBaseline` en diagnostics/export JSON.

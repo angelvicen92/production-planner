@@ -725,7 +725,7 @@ function PlanStaffRolesTab({
   );
 }
 
-function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoading: boolean; error: unknown }) {
+function V4StrategicDiagnosis({ result, isLoading, error, state = "idle" }: { result: any; isLoading: boolean; error: unknown; state?: "idle" | "loading" | "pending_diagnostics" | "success" | "error" }) {
   const diagnostics = result?.diagnostics ?? null;
   const analysis = diagnostics?.strategicAnalysis ?? null;
   const guidedOrdering = diagnostics?.guidedOrdering ?? null;
@@ -741,10 +741,10 @@ function V4StrategicDiagnosis({ result, isLoading, error }: { result: any; isLoa
   const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
   const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
 
-  if (isLoading) {
-    return <p className="text-muted-foreground">Cargando diagnosis V4…</p>;
+  if (isLoading || state === "loading" || state === "pending_diagnostics") {
+    return <p className="text-muted-foreground">{state === "loading" ? "Generando planificación V4/ORC..." : "Planificación generada, esperando diagnóstico..."}</p>;
   }
-  if (error) {
+  if (error || state === "error") {
     return <Alert variant="destructive"><AlertTitle>Error V4</AlertTitle><AlertDescription>No se pudo cargar la diagnosis V4.</AlertDescription></Alert>;
   }
   if (!diagnostics) {
@@ -1244,10 +1244,13 @@ export default function PlanDetailsPage() {
   const generatePlan = useGeneratePlan();
   const planningRunQ = usePlanningRun(id);
   const [selectedPlanningEngine, setSelectedPlanningEngine] = useState<"v3" | "v4">("v3");
+  const [v4ResultState, setV4ResultState] = useState<"idle" | "loading" | "pending_diagnostics" | "success" | "error">("idle");
   const v4ResultQ = useQuery({
     queryKey: engineResultQueryKey(id, "v4"),
     queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestEngineResult.path, { id, engineVersion: "v4" })),
     enabled: Number.isFinite(id) && id > 0,
+    retry: false,
+    refetchInterval: v4ResultState === "loading" || v4ResultState === "pending_diagnostics" ? 1500 : false,
   });
 
   const updatePlan = useUpdatePlan();
@@ -2126,6 +2129,13 @@ ${reasonMessage}` : message,
     );
   }, [plan?.dailyTasks]);
 
+  useEffect(() => {
+    if (v4ResultState !== "loading" && v4ResultState !== "pending_diagnostics") return;
+    if ((v4ResultQ.data as any)?.id && (v4ResultQ.data as any)?.diagnostics) {
+      setV4ResultState("success");
+    }
+  }, [v4ResultQ.data, v4ResultState]);
+
   const planningViewPlan = useMemo(() => {
     if (selectedPlanningEngine !== "v4" || !Array.isArray((v4ResultQ.data as any)?.plannedTasks)) return plan;
     const plannedByTaskId = new Map<number, any>(
@@ -2721,20 +2731,34 @@ ${reasonMessage}` : message,
               size="lg"
               variant="outline"
               onClick={async () => {
+                setSelectedPlanningEngine("v4");
+                setV4ResultState("loading");
                 try {
-                  await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000, engineVersion: "v4" });
+                  const response = await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000, engineVersion: "v4" }) as any;
+                  const expectedRunId = Number(response?.runId ?? NaN);
+                  setV4ResultState("pending_diagnostics");
                   await queryClient.invalidateQueries({ queryKey: ["engine-result", id, "v4"] });
-                  await queryClient.refetchQueries({ queryKey: ["engine-result", id, "v4"] });
-                  setSelectedPlanningEngine("v4");
-                  toast({ title: "Planificación V4 generada", description: "Guardada separada de V3; la lógica real V4 aún no está implementada." });
+                  let found = false;
+                  for (let attempt = 0; attempt < 12; attempt += 1) {
+                    const result = await v4ResultQ.refetch();
+                    const row = result.data as any;
+                    if (row?.id && (!Number.isFinite(expectedRunId) || Number(row?.planningRunId) === expectedRunId)) {
+                      found = true;
+                      break;
+                    }
+                    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+                  }
+                  setV4ResultState(found ? "success" : "idle");
+                  toast({ title: "Planificación V4 generada", description: found ? "Resultado V4/ORC disponible sin recargar la página." : "Guardada separada de V3; esperando diagnóstico persistido." });
                 } catch (err: any) {
+                  setV4ResultState("error");
                   toast({ title: "No se pudo generar V4", description: err?.message || "Error desconocido", variant: "destructive" });
                 }
               }}
-              disabled={generatePlan.isPending}
+              disabled={generatePlan.isPending || v4ResultState === "loading"}
             >
-              {generatePlan.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
-              Generar V4
+              {generatePlan.isPending || v4ResultState === "loading" ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
+              {v4ResultState === "loading" ? "Generando V4/ORC..." : "Generar V4"}
             </Button>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Límite</span>
@@ -4257,6 +4281,7 @@ ${reasonMessage}` : message,
                 planningActive={planningInProgress || getPlanningRunUiState(planningRunQ.data) === "active"}
                 latestSuccessRunId={planningRunQ.data?.status === "success" ? Number(planningRunQ.data.id) : null}
                 currentResult={selectedPlanningEngine}
+                v4ResultState={v4ResultState}
               />
               {selectedPlanningEngine === "v4" ? (
                 <Card className="p-4">
@@ -4264,7 +4289,7 @@ ${reasonMessage}` : message,
                     <CardTitle className="text-base">Diagnosis Motor V4</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 text-sm">
-                    <V4StrategicDiagnosis result={v4ResultQ.data} isLoading={v4ResultQ.isLoading} error={v4ResultQ.error} />
+                    <V4StrategicDiagnosis result={v4ResultQ.data} isLoading={v4ResultQ.isLoading} error={v4ResultQ.error} state={v4ResultState} />
                   </CardContent>
                 </Card>
               ) : null}
