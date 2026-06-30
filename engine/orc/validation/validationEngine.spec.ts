@@ -38,6 +38,7 @@ test("validateSimulatedStates marks a structurally valid SimulatedState as VALID
   assert.equal(result.validationResults[0].simulatedStateId, "orc-simulation:simulated-state:cs:validation");
   assert.equal(result.validationResults[0].result, "VALID");
   assert.deepEqual(result.validationResults[0].violatedConstraints, []);
+  assert.deepEqual(result.validationResults[0].violationDetails, []);
   assert.equal(result.validationResults[0].validatedAt, "2026-06-25T00:00:00.000Z");
   assert.deepEqual(result.summary, { simulatedStateCount: 1, validCount: 1, invalidCount: 0 });
 });
@@ -109,6 +110,7 @@ const expectInvalid = (snapshot: OperationalState, code: string) => {
   const result = validateSimulatedStates([simulatedWithSnapshot(snapshot)], { createdAt: null });
   assert.equal(result.validationResults[0].result, "INVALID");
   assert.ok(result.validationResults[0].violatedConstraints.includes(code), `${code} not found in ${result.validationResults[0].violatedConstraints.join(",")}`);
+  return result.validationResults[0];
 };
 
 test("validateSimulatedStates accepts READ_ONLY_BASELINE and ASSIGNMENT_APPLICATION_SHADOW modes", () => {
@@ -124,9 +126,11 @@ test("validateSimulatedStates rejects unknown simulation modes", () => {
 
 test("validateSimulatedStates invalidates resource, contestant and space overlaps", () => {
   const tasks = [...state().tasks, { ...state().tasks[0], id: 2, contestantId: 2 }];
-  expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [7], spaceId: 11 }] }), "RESOURCE_OVERLAP");
-  expectInvalid(cloneState({ tasks: tasks.map((t) => ({ ...t, assignedResourceIds: [t.id + 10], contestantId: 1 })), planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [11], spaceId: 10 }, { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [12], spaceId: 11 }] }), "CONTESTANT_OVERLAP");
-  expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 10 }] }), "SPACE_OVERLAP");
+  assert.deepEqual(expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [7], spaceId: 11 }] }), "RESOURCE_OVERLAP").violationDetails.find((item) => item.code === "RESOURCE_OVERLAP")?.resourceIds, [7]);
+  assert.deepEqual(expectInvalid(cloneState({ tasks: tasks.map((t) => ({ ...t, assignedResourceIds: [t.id + 10], contestantId: 1 })), planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [11], spaceId: 10 }, { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [12], spaceId: 11 }] }), "CONTESTANT_OVERLAP").violationDetails.find((item) => item.code === "CONTESTANT_OVERLAP")?.taskIds, [1, 2]);
+  const space = expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 10 }] }), "SPACE_OVERLAP").violationDetails.find((item) => item.code === "SPACE_OVERLAP");
+  assert.deepEqual(space?.taskIds, [1, 2]);
+  assert.deepEqual(space?.spaceIds, [10]);
 });
 
 test("validateSimulatedStates allows overlapping space when configured capacity permits it", () => {
@@ -141,23 +145,40 @@ test("validateSimulatedStates invalidates protected task mutations", () => {
 });
 
 test("validateSimulatedStates invalidates broken locks", () => {
-  expectInvalid(cloneState({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "time", lockedStart: "09:00", lockedEnd: "09:30" }], planning: [{ ...state().planning[0], startPlanned: "09:15", endPlanned: "09:45" }] }), "TIME_LOCK_BROKEN");
+  assert.deepEqual(expectInvalid(cloneState({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "time", lockedStart: "09:00", lockedEnd: "09:30" }], planning: [{ ...state().planning[0], startPlanned: "09:15", endPlanned: "09:45" }] }), "TIME_LOCK_BROKEN").violationDetails.find((item) => item.code === "TIME_LOCK_BROKEN")?.lockIds, ["1"]);
   expectInvalid(cloneState({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "resource", lockedResourceId: 7 }], planning: [{ ...state().planning[0], assignedResourceIds: [8] }] }), "RESOURCE_LOCK_BROKEN");
 });
 
 test("validateSimulatedStates invalidates dependencies, workDay and hard meal breaks", () => {
   const base = state();
   const tasks = [base.tasks[0], { ...base.tasks[0], id: 2, dependsOnTaskIds: [1], assignedResourceIds: [8], spaceId: 11 }];
-  expectInvalid(cloneState({ tasks, planning: [base.planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 11 }] }), "DIRECT_DEPENDENCY_BROKEN");
+  assert.deepEqual(expectInvalid(cloneState({ tasks, planning: [base.planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 11 }] }), "DIRECT_DEPENDENCY_BROKEN").violationDetails.find((item) => item.code === "DIRECT_DEPENDENCY_BROKEN")?.taskIds, [2, 1]);
   expectInvalid(cloneState({ planning: [{ ...base.planning[0], startPlanned: "08:00", endPlanned: "08:30" }] }), "PLANNING_OUTSIDE_WORK_DAY");
-  expectInvalid(cloneState({ availability: { ...base.availability, meal: { start: "09:15", end: "09:45" } } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
+  assert.deepEqual(expectInvalid(cloneState({ availability: { ...base.availability, meal: { start: "09:15", end: "09:45" } } }), "PLANNING_CROSSES_HARD_MEAL_BREAK").violationDetails.find((item) => item.code === "PLANNING_CROSSES_HARD_MEAL_BREAK")?.breakWindow, { start: "09:15", end: "09:45", kind: "meal" });
 });
 
 test("validateSimulatedStates validation evidence is read-only and has no scoring", () => {
   const result = validateSimulatedStates([simulatedWithSnapshot(state())]);
-  assert.equal(result.evidence[0].data.validationScope, "hard-constraints-v1");
+  assert.equal(result.evidence[0].data.validationScope, "hard-constraints-v2-diagnostics");
+  assert.equal(result.evidence[0].data.violationDetailCount, 0);
+  assert.deepEqual(result.evidence[0].data.violationDetailsSample, []);
   assert.equal(result.evidence[0].data.readOnly, true);
   assert.equal(result.evidence[0].data.mutatesOperationalState, false);
   assert.equal(result.evidence[0].data.commitsPlanning, false);
   assert.equal("overallScore" in result.evidence[0].data, false);
+});
+
+test("validateSimulatedStates bounds details, truncates deterministically, and stays JSON serializable", () => {
+  const base = state();
+  const tasks = Array.from({ length: 120 }, (_, index) => ({ ...base.tasks[0], id: index + 1, assignedResourceIds: [index + 100], contestantId: 1, spaceId: index + 1000 }));
+  const planning = tasks.map((task) => ({ taskId: task.id, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: task.assignedResourceIds ?? [], spaceId: task.spaceId ?? null }));
+  const snapshot = cloneState({ tasks, planning });
+  const first = validateSimulatedStates([simulatedWithSnapshot(snapshot)]);
+  const second = validateSimulatedStates([simulatedWithSnapshot(snapshot)]);
+  const details = first.validationResults[0].violationDetails;
+  assert.equal(details.length, 100);
+  assert.equal(details.at(-1)?.code, "VALIDATION_DETAILS_TRUNCATED");
+  assert.equal(structuralEquals(first, second), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(first.validationResults[0])), first.validationResults[0]);
+  assert.equal((first.evidence[0].data.violationDetailsSample as unknown[]).length, 20);
 });

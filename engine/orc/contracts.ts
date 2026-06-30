@@ -279,9 +279,31 @@ export interface ValidationResult {
   readonly simulatedStateId: string;
   readonly result: "VALID" | "INVALID";
   readonly violatedConstraints: ReadonlyArray<string>;
+  readonly violationDetails: ReadonlyArray<ValidationViolationDetail>;
   readonly explanation: string;
   readonly validatedAt: string | null;
   readonly evidenceIds: ReadonlyArray<string>;
+}
+
+export type ValidationConstraintGroup = "structure" | "time" | "protected_tasks" | "locks" | "contestants_and_teams" | "resources" | "spaces" | "dependencies";
+
+export interface ValidationViolationDetail {
+  readonly code: string;
+  readonly constraintGroup: ValidationConstraintGroup;
+  readonly severity: "hard";
+  readonly taskIds: readonly number[];
+  readonly resourceIds: readonly number[];
+  readonly spaceIds: readonly number[];
+  readonly lockIds: readonly string[];
+  readonly breakWindow: { readonly start: string; readonly end: string; readonly kind: string } | null;
+  readonly timeWindow: { readonly start: string; readonly end: string } | null;
+  readonly relatedTimeWindow: { readonly start: string; readonly end: string } | null;
+  readonly message: string;
+  readonly diagnosticHint: string;
+  readonly taskLabels?: readonly string[];
+  readonly spaceLabels?: readonly string[];
+  readonly resourceLabels?: readonly string[];
+  readonly readOnly: true;
 }
 
 export interface CommitDecision {
