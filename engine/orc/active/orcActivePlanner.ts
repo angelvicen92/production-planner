@@ -8,7 +8,7 @@ import { calculateOperationalPlanningQualityMetrics, type OperationalPlanningQua
 import { stableStringify } from "../structuralEquality";
 import { deepFreeze } from "../immutability";
 import { assertSerializableORCSeed, buildORCBaselineSeededInput, type ORCBaselineSeedDiagnostics } from "./orcBaselineSeed";
-import { applyLocalScheduleMove, type EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
+import type { EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
 
 export type ORCActiveUsedEngine = "orc" | "orc_baseline_preserved" | "v4_fallback";
 export type ORCResultKind = "orc_changed_plan" | "orc_baseline_preserved" | "v4_fallback";
@@ -392,25 +392,8 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
     deterministicOutput: simulation != null && stableStringify(orcPlanned) === stableStringify(extractPlannedTasksFromORCSimulatedState(simulation, needed).plannedTasks),
     explainableDecision: true,
   };
-  let effectiveMoves: EffectiveMovesDiagnostics = EMPTY_EFFECTIVE_MOVES;
-  let materialization = planningMaterializationOf(simulation);
-  if (Object.values(gates).every(Boolean) && materialization.changedTaskCount === 0 && extraction.pendingTaskIds.length === 0) {
-    const localMove = applyLocalScheduleMove(input, orcPlanned);
-    effectiveMoves = localMove.diagnostics;
-    if (localMove.diagnostics.accepted > 0) {
-      orcPlanned = localMove.planning.map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources ?? undefined }));
-      orcMetrics = localMove.metrics;
-      materialization = { source: "candidate_transformations", plannedTaskCount: orcPlanned.length, changedTaskCount: localMove.diagnostics.acceptedMoves.length, warnings: [] };
-      const movedIds = new Set(localMove.diagnostics.acceptedMoves.map((move) => move.taskId));
-      gates.complete = needed.every((id) => new Set(orcPlanned.map((item) => item.taskId)).has(id));
-      gates.allPendingNeededPlanned = gates.complete;
-      gates.doesNotModifyDone = protectedTasksPreserved(input, orcPlanned, "done");
-      gates.doesNotModifyInProgress = protectedTasksPreserved(input, orcPlanned, "in_progress");
-      gates.respectsLocks = locksPreserved(input, orcPlanned);
-      gates.opqmNotWorseThanV4 = opqmNotWorse(v4Metrics, orcMetrics);
-      gates.deterministicOutput = stableStringify(orcPlanned) === stableStringify(localMove.planning) && movedIds.size === localMove.diagnostics.acceptedMoves.length;
-    }
-  }
+  const effectiveMoves: EffectiveMovesDiagnostics = EMPTY_EFFECTIVE_MOVES;
+  const materialization = planningMaterializationOf(simulation);
   const failedGate = Object.entries(gates).find(([, passed]) => !passed)?.[0] ?? null;
   const operationalDelta = { v4: v4Metrics, orc: orcMetrics, criticalComparison: { opqmNotWorseThanV4: gates.opqmNotWorseThanV4 } };
   const planningRelationToBaseline = buildPlanningRelationToBaseline(materialization, orcPlanned);

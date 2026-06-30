@@ -92,3 +92,72 @@ test("validateSimulatedStates emits immutable validation evidence", () => {
   assert.equal(Object.isFrozen(result.validationResults[0]), true);
   assert.equal(Object.isFrozen(result.evidence[0]), true);
 });
+
+const simulatedWithSnapshot = (snapshot: OperationalState, mode: SimulatedState["simulationMode"] = "ASSIGNMENT_APPLICATION_SHADOW"): SimulatedState => deepFreeze({
+  id: `sim:${mode}`,
+  candidateStateId: "cs:validation",
+  baseStateId: snapshot.id,
+  operationalStateSnapshot: deepFreeze(snapshot),
+  appliedTransformations: [],
+  simulationMode: mode,
+  readOnly: true,
+  createdAt: null,
+}) as SimulatedState;
+
+const cloneState = (patch: Partial<OperationalState> = {}): OperationalState => ({ ...state(), ...patch });
+const expectInvalid = (snapshot: OperationalState, code: string) => {
+  const result = validateSimulatedStates([simulatedWithSnapshot(snapshot)], { createdAt: null });
+  assert.equal(result.validationResults[0].result, "INVALID");
+  assert.ok(result.validationResults[0].violatedConstraints.includes(code), `${code} not found in ${result.validationResults[0].violatedConstraints.join(",")}`);
+};
+
+test("validateSimulatedStates accepts READ_ONLY_BASELINE and ASSIGNMENT_APPLICATION_SHADOW modes", () => {
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(state(), "READ_ONLY_BASELINE")]).validationResults[0].result, "VALID");
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(state(), "ASSIGNMENT_APPLICATION_SHADOW")]).validationResults[0].result, "VALID");
+});
+
+test("validateSimulatedStates rejects unknown simulation modes", () => {
+  const result = validateSimulatedStates([{ ...simulatedWithSnapshot(state()), simulationMode: "UNKNOWN" } as unknown as SimulatedState]);
+  assert.equal(result.validationResults[0].result, "INVALID");
+  assert.ok(result.validationResults[0].violatedConstraints.includes("INVALID_SIMULATION_MODE"));
+});
+
+test("validateSimulatedStates invalidates resource, contestant and space overlaps", () => {
+  const tasks = [...state().tasks, { ...state().tasks[0], id: 2, contestantId: 2 }];
+  expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [7], spaceId: 11 }] }), "RESOURCE_OVERLAP");
+  expectInvalid(cloneState({ tasks: tasks.map((t) => ({ ...t, assignedResourceIds: [t.id + 10], contestantId: 1 })), planning: [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [11], spaceId: 10 }, { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [12], spaceId: 11 }] }), "CONTESTANT_OVERLAP");
+  expectInvalid(cloneState({ tasks, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 10 }] }), "SPACE_OVERLAP");
+});
+
+test("validateSimulatedStates allows overlapping space when configured capacity permits it", () => {
+  const tasks = [...state().tasks, { ...state().tasks[0], id: 2, assignedResourceIds: [8] }];
+  const snapshot = cloneState({ tasks, spaces: { ...state().spaces, capacityById: { 10: 2 }, concurrencyById: { 10: 2 } }, planning: [state().planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 10 }] });
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(snapshot)]).validationResults[0].result, "VALID");
+});
+
+test("validateSimulatedStates invalidates protected task mutations", () => {
+  expectInvalid(cloneState({ tasks: [{ ...state().tasks[0], status: "done" }], planning: [{ ...state().planning[0], startPlanned: "09:10", endPlanned: "09:40" }] }), "PROTECTED_TASK_TIME_CHANGED:done");
+  expectInvalid(cloneState({ tasks: [{ ...state().tasks[0], status: "in_progress" }], planning: [{ ...state().planning[0], assignedResourceIds: [8] }] }), "PROTECTED_TASK_RESOURCES_CHANGED:in_progress");
+});
+
+test("validateSimulatedStates invalidates broken locks", () => {
+  expectInvalid(cloneState({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "time", lockedStart: "09:00", lockedEnd: "09:30" }], planning: [{ ...state().planning[0], startPlanned: "09:15", endPlanned: "09:45" }] }), "TIME_LOCK_BROKEN");
+  expectInvalid(cloneState({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "resource", lockedResourceId: 7 }], planning: [{ ...state().planning[0], assignedResourceIds: [8] }] }), "RESOURCE_LOCK_BROKEN");
+});
+
+test("validateSimulatedStates invalidates dependencies, workDay and hard meal breaks", () => {
+  const base = state();
+  const tasks = [base.tasks[0], { ...base.tasks[0], id: 2, dependsOnTaskIds: [1], assignedResourceIds: [8], spaceId: 11 }];
+  expectInvalid(cloneState({ tasks, planning: [base.planning[0], { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [8], spaceId: 11 }] }), "DIRECT_DEPENDENCY_BROKEN");
+  expectInvalid(cloneState({ planning: [{ ...base.planning[0], startPlanned: "08:00", endPlanned: "08:30" }] }), "PLANNING_OUTSIDE_WORK_DAY");
+  expectInvalid(cloneState({ availability: { ...base.availability, meal: { start: "09:15", end: "09:45" } } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
+});
+
+test("validateSimulatedStates validation evidence is read-only and has no scoring", () => {
+  const result = validateSimulatedStates([simulatedWithSnapshot(state())]);
+  assert.equal(result.evidence[0].data.validationScope, "hard-constraints-v1");
+  assert.equal(result.evidence[0].data.readOnly, true);
+  assert.equal(result.evidence[0].data.mutatesOperationalState, false);
+  assert.equal(result.evidence[0].data.commitsPlanning, false);
+  assert.equal("overallScore" in result.evidence[0].data, false);
+});

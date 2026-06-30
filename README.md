@@ -69,7 +69,13 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 188 — 2026-06-29 UTC — ORC Activation Report v1
 - ID 189 — 2026-06-29 UTC — ORC Best Candidate Trace v1
 - ID 190 — 2026-06-29 UTC — ORC Active Candidate Planning Output v1
+- ID 197 — 2026-06-30 UTC — ORC Hard Validation for Assignment Simulations v1
 
+### ORC Hard Validation for Assignment Simulations v1 (ID 197)
+
+`ValidationEngine` now accepts `ASSIGNMENT_APPLICATION_SHADOW` simulations and validates them through deterministic hard constraints instead of rejecting them by mode. The first hard-validation scope covers structural integrity, time windows, hard meals/breaks, locks, protected `done`/`in_progress` tasks, resource overlaps, space capacity/exclusivity, contestant/team overlaps, and direct dependencies. Validation evidence is read-only, records `validationScope: "hard-constraints-v1"`, and does not introduce soft scoring.
+
+`runORCActivePlanner` no longer uses `applyLocalScheduleMove` as a post-pipeline activation path. A result marked `usedEngine: "orc"` must now come from a selected ORC `SimulatedState` with materialized planning changes, a `VALID` validation result, and all activation gates passing. If ORC produces a valid equivalent baseline it is reported as `orc_baseline_preserved`; otherwise V4 remains the safe fallback. This change does not modify DB, RLS, UI, V3, or V4.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
