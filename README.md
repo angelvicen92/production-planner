@@ -81,6 +81,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 206 — 2026-06-30 UTC — ORC Hard Violation Diagnostics & Constraint Alignment Report v1
 - ID 207 — 2026-06-30 UTC — ORC Scoped Protected Break Validation & Stratified Diagnostics v1
 - ID 208 — 2026-06-30 UTC — ORC Strict V4 Baseline Seed Isolation v1
+- ID 209 — 2026-06-30 UTC — ORC Executable Main Flow Gap Closure Candidate v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -189,6 +190,15 @@ El ORC baseline seed ya no hereda planificación cruda de tareas `pending` que V
 Los diagnostics del seed distinguen planificación V4 (`v4_planned_task`) de planificación protegida heredada (`protected_existing_planning`) y reportan conteos serializables de tareas V4, protegidas, raw planning limpiado y pendientes no seedadas. El benchmark diferencia `baseline_seed_has_no_planning` de `baseline_seed_hard_infeasible`: si V4 no produce baseline suficiente, ORC Active y Operational Delta Benchmark caen a fallback V4 sin auditar horarios crudos como baseline V4 ni autorizar optimización de candidatos.
 
 Raw shadow diagnostics siguen existiendo para inspeccionar planificación cruda/manual y sus violaciones, pero ya no alimentan `baselineSeedHardFeasibility`, `officialOrcOutcome` ni métricas oficiales ORC. No hay cambios DB, RLS, UI, V3, V4 ni endpoints; no se relajan hard constraints, no se cambia el pipeline ORC, no se añaden estrategias SEE y `real-voice-audition-day` sigue incluido.
+
+
+### ORC Executable Main Flow Gap Closure Candidate v1 (ID 209)
+
+ORC SEE ahora genera candidatos ejecutables para cerrar huecos visibles del flujo principal configurado. El nuevo builder detecta primero `constraints.optimizer.mainZoneId`, identifica una tarea o bloque temprano del flujo principal y, si existe un gap inicial significativo antes de la siguiente cadena, emite assignments reales que retrasan ese bloque para terminar justo antes del anchor posterior. Los assignments conservan duración, espacio y recursos baseline, no mutan `OperationalState`, respetan tareas `done`/`in_progress` y locks obvios, y pasan por CandidateHardPrefilter antes de Simulation, Validation, Evaluation y Commit.
+
+Estos candidatos usan metadata `MAIN_FLOW_GAP_CLOSURE`, `planningInfluence: "candidate-assignments"` y `executesTransformations: true`, por lo que pueden competir contra `PRESERVE_BASELINE_SAFETY` dentro del pipeline oficial sin usar movimientos post-pipeline ni reactivar `applyLocalScheduleMove`. Si el candidato reduce el gap inicial y valida hard constraints, ORC puede consolidarlo como cambio real; si falla, el baseline safety/fallback siguen preservando V4.
+
+El evaluator de continuidad ahora usa `optimizer.mainZoneId` antes que nombres de espacios para detectar el flujo principal, manteniendo fallback por nombre sólo cuando no hay configuración y fallback global si tampoco existe nombre reconocible. Esta iteración no implementa compactación de coaches ni de recursos críticos; queda para ID 210. No hay cambios DB, RLS, UI, V3, V4 ni endpoints, no se relajan hard constraints y `real-voice-audition-day` sigue en la suite oficial.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

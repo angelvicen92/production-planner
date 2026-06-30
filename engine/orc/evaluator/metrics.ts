@@ -88,12 +88,16 @@ function gapMinutes(intervals: Interval[]): number {
   return gaps;
 }
 
-function mainStageSpaceIds(simulatedState: SimulatedState): Set<number> {
+function mainStageSpaceIds(simulatedState: SimulatedState): { ids: Set<number>; source: "optimizerMainZoneId" | "name-fallback" | "all-planning-fallback" } {
+  const optimizer = simulatedState.operationalStateSnapshot.constraints?.optimizer;
+  const rawMainZoneId = optimizer && typeof optimizer === "object" ? (optimizer as Record<string, unknown>).mainZoneId : null;
+  const configured = typeof rawMainZoneId === "number" && Number.isFinite(rawMainZoneId) ? rawMainZoneId : typeof rawMainZoneId === "string" && /^\d+$/.test(rawMainZoneId) ? Number(rawMainZoneId) : null;
+  if (configured != null) return { ids: new Set([configured]), source: "optimizerMainZoneId" };
   const ids = new Set<number>();
   for (const [rawId, name] of Object.entries(simulatedState.operationalStateSnapshot.spaces.nameById)) {
     if (/main|principal|plat[oó]|stage|set/i.test(String(name))) ids.add(Number(rawId));
   }
-  return ids;
+  return { ids, source: ids.size > 0 ? "name-fallback" : "all-planning-fallback" };
 }
 
 function overlaps(left: { start: number; end: number }, right: { start: number; end: number }): boolean {
@@ -102,12 +106,13 @@ function overlaps(left: { start: number; end: number }, right: { start: number; 
 
 function evaluateProductionContinuity(simulatedState: SimulatedState): MetricEvaluation {
   const all = planningIntervals(simulatedState);
-  const mainSpaces = mainStageSpaceIds(simulatedState);
+  const detection = mainStageSpaceIds(simulatedState);
+  const mainSpaces = detection.ids;
   const intervals = mainSpaces.size === 0 ? all : all.filter((interval) => interval.spaceId != null && mainSpaces.has(interval.spaceId));
   const gaps = gapMinutes(intervals);
   const activeSpan = span(intervals);
   const score = intervals.length <= 1 ? 1 : round(1 - gaps / Math.max(activeSpan, 1));
-  return { score, explanation: `Continuity of the main production flow compares ${gaps} idle minutes against ${activeSpan} active span minutes.`, metrics: { intervalCount: intervals.length, mainStageSpaceCount: mainSpaces.size, gapMinutes: gaps, activeSpanMinutes: activeSpan }, penalties: gaps > 0 ? [`${gaps} minutes without scheduled main-flow activity.`] : [], improvements: gaps === 0 ? ["No internal gaps detected in the main production flow."] : [] };
+  return { score, explanation: `Continuity of the main production flow compares ${gaps} idle minutes against ${activeSpan} active span minutes.`, metrics: { intervalCount: intervals.length, mainStageSpaceCount: mainSpaces.size, gapMinutes: gaps, activeSpanMinutes: activeSpan, mainFlowDetectionSource: detection.source }, penalties: gaps > 0 ? [`${gaps} minutes without scheduled main-flow activity.`] : [], improvements: gaps === 0 ? ["No internal gaps detected in the main production flow."] : [] };
 }
 
 function evaluateAvailabilityCompliance(simulatedState: SimulatedState): MetricEvaluation {

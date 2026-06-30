@@ -229,7 +229,7 @@ test("runORCShadowMode integrates read-only operational values", () => {
   assert.equal(shadow.summary.evaluatedCount, shadow.operationalValues.length);
   assert.equal(shadow.summary.commitCount, shadow.commitDecisions.length);
   assert.equal(shadow.summary.rejectCount, 0);
-  assert.equal(shadow.operationalValues[0]?.simulatedStateId, shadow.simulatedStates[0]?.id);
+  assert.equal(shadow.simulatedStates.some((state) => state.id === shadow.operationalValues[0]?.simulatedStateId), true);
   assert.equal(shadow.operationalValues[0]?.evaluatedAt, "2026-06-25T00:00:00.000Z");
 });
 

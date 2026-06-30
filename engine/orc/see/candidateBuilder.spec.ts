@@ -25,7 +25,7 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, baselineSafety: { generated: false, candidateId: null, reason: null, planningCount: 0, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" } });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: { generated: 0, acceptedBeforePrefilter: 0, discardedByPrefilter: 0, candidateIds: [], movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-only" }, baselineSafety: { generated: false, candidateId: null, reason: null, planningCount: 0, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" } });
 });
 
 const operationalState = () => ({
@@ -179,4 +179,27 @@ test("buildCandidates does not add baseline safety candidate when search spaces 
   assert.equal(result.candidates.some((candidate) => candidate.metadata.baselineSafetyCandidate === true), false);
   assert.equal(result.summary.baselineSafety.generated, false);
   assert.equal(result.summary.baselineSafety.candidateId, null);
+});
+
+
+test("buildCandidates integrates executable main-flow gap candidates before baseline safety", () => {
+  const os = {
+    ...operationalState(),
+    workDay: { start: "09:00", end: "18:00" },
+    planning: [
+      { taskId: 1, startPlanned: "10:20", endPlanned: "10:35", assignedResourceIds: [10], spaceId: 7 },
+      { taskId: 2, startPlanned: "13:25", endPlanned: "13:40", assignedResourceIds: [11], spaceId: 7 },
+    ],
+    tasks: [{ id: 1, status: "pending", spaceId: 7 }, { id: 2, status: "pending", spaceId: 7 }],
+    resources: [{ id: 10 }, { id: 11 }],
+    spaces: { parentById: {}, nameById: { 7: "Estudio 7" }, capacityById: { 7: 1 }, concurrencyById: { 7: 1 }, exclusiveById: { 7: true }, priorityById: {} },
+    availability: { ...operationalState().availability, contestantAvailabilityById: {} },
+    constraints: { optimizer: { mainZoneId: 7 } },
+  } as any;
+  const result = buildCandidates([space("gap")], { operationalState: os, maxPreselectedCandidates: 10 });
+  assert.equal(result.summary.mainFlowGapClosure.generated, 1);
+  assert.equal(result.summary.mainFlowGapClosure.acceptedBeforePrefilter, 1);
+  assert.equal(result.candidates.some((candidate) => candidate.metadata.mainFlowGapClosureCandidate === true && candidate.metadata.executesTransformations === true), true);
+  assert.equal(result.candidates.some((candidate) => candidate.metadata.baselinePreservation === true), true);
+  assert.equal(result.evidence.some((item) => item.kind === "main-flow-gap-closure-candidate-generated"), true);
 });
