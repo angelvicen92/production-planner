@@ -18,6 +18,7 @@ import { calculatePlanningOperationalQuality } from "@/lib/planning-operational-
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
 import { cn } from "@/lib/utils";
+import { summarizeInlineDiagnosticValue } from "@/lib/diagnostic-inline-summary";
 
 const MAX_WARNINGS_SHOWN = 8;
 const MAX_WARNING_MESSAGE_LENGTH = 180;
@@ -45,6 +46,7 @@ function compactMessage(value: unknown): string {
     ? `${message.slice(0, MAX_WARNING_MESSAGE_LENGTH - 1)}…`
     : message;
 }
+
 
 function MetricCell({ title, value }: { title: string; value: string }) {
   return (
@@ -201,6 +203,8 @@ export function PlanEngineDiagnostics({
   const metadata = diagnostics.engineMetadata ?? {};
   const usedEngine = (metadata as any)?.usedEngine ?? (diagnostics as any)?.usedEngine ?? null;
   const fallbackReason = (metadata as any)?.fallbackReason ?? (diagnostics as any)?.fallbackReason ?? null;
+  const orcResultKind = (metadata as any)?.orcResultKind ?? (diagnostics as any)?.orcResultKind ?? null;
+  const planningRelationToBaseline = (metadata as any)?.planningRelationToBaseline ?? (diagnostics as any)?.planningRelationToBaseline ?? null;
   const gates = (metadata as any)?.gates ?? (diagnostics as any)?.gates ?? null;
   const opqm = (metadata as any)?.OPQM ?? (metadata as any)?.opqm ?? (diagnostics as any)?.OPQM ?? (diagnostics as any)?.opqm ?? null;
   const operationalDelta = (metadata as any)?.operationalDelta ?? (metadata as any)?.operational_delta ?? (diagnostics as any)?.operationalDelta ?? null;
@@ -381,12 +385,14 @@ export function PlanEngineDiagnostics({
         {currentResult === "v4" ? (
           <section aria-labelledby="diagnostics-v4-engine-state">
             <h3 id="diagnostics-v4-engine-state" className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado V4 / ORC</h3>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <MetricCell title="usedEngine" value={label(usedEngine)} />
               <MetricCell title="fallbackReason" value={label(fallbackReason)} />
-              <MetricCell title="gates" value={gates ? JSON.stringify(gates) : "—"} />
-              <MetricCell title="OPQM" value={opqm ? JSON.stringify(opqm) : "—"} />
-              <MetricCell title="Operational Delta" value={operationalDelta ? JSON.stringify(operationalDelta) : "—"} />
+              <MetricCell title="orcResultKind" value={label(orcResultKind)} />
+              <MetricCell title="Baseline" value={summarizeInlineDiagnosticValue(planningRelationToBaseline)} />
+              <MetricCell title="gates" value={summarizeInlineDiagnosticValue(gates)} />
+              <MetricCell title="OPQM" value={summarizeInlineDiagnosticValue(opqm)} />
+              <MetricCell title="Operational Delta" value={summarizeInlineDiagnosticValue(operationalDelta)} />
             </div>
           </section>
         ) : null}
