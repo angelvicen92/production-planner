@@ -73,6 +73,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 198 — 2026-06-30 UTC — ORC Benchmark Memory Budget & Real Scenario Stabilization v1
 - ID 199 — 2026-06-30 UTC — ORC Baseline Preservation Candidate v1
 - ID 200 — 2026-06-30 UTC — ORC Candidate Hard Prefilter v1
+- ID 201 — 2026-06-30 UTC — ORC Benchmark V4-Seeded Shadow Alignment v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -105,6 +106,14 @@ SEE ahora descarta candidatos obviamente inviables antes de Simulation mediante 
 Validation Engine sigue siendo la autoridad final: el prefiltro sólo evita gastar presupuesto de simulación en candidatos imposibles y ataca la prioridad benchmark `conflicts`, sin puntuar candidatos, sin consolidar planificación y sin relajar hard constraints. Su `planningInfluence` es `candidate-filtering-only`; no cambia la planificación oficial ni introduce nuevas estrategias de planificación.
 
 No hay cambios DB, RLS, UI, V3 ni V4. El candidato `PRESERVE_BASELINE` y los candidatos abstractos/read-only siguen pasando por el pipeline oficial sin ser descartados.
+
+### ORC Benchmark V4-Seeded Shadow Alignment v1 (ID 201)
+
+El Operational Delta Benchmark oficial de ORC ahora alinea su medición con ORC Active: primero ejecuta V4 para producir un baseline seguro, después construye un V4 baseline seed serializable para ORC, y finalmente mide ORC Shadow sobre ese input seeded. Por tanto, `metrics.orc` y los deltas oficiales comparan V4 contra el comportamiento operativo real de ORC sobre el baseline V4, no contra una planificación cruda/manual distinta.
+
+Raw ORC Shadow se conserva como `rawShadowDiagnostics` para diagnóstico técnico de escenarios crudos, pero no decide el delta principal ni la recomendación de siguiente acción. Así, `conflicts` ya no puede quedar contaminado por invalids del input crudo/manual; si sólo falla raw shadow, se reporta como alerta diagnóstica, y si falla el seeded shadow, se reporta como fallo operativo ORC comparable.
+
+`real-voice-audition-day` sigue incluido en la suite oficial. El benchmark continúa siendo read-only y determinista, no relaja hard constraints y no modifica DB, RLS, UI, V3, V4, endpoints, Validation Engine, CandidateHardPrefilter, heurísticas SEE ni el pipeline ORC.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

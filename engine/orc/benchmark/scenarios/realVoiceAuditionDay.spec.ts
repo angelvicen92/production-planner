@@ -94,4 +94,10 @@ test("real voice audition day benchmark executes without full shadow snapshots i
     "totalTime",
   ].sort());
   assert.equal(stableStringify(result.report).includes("operationalStateSnapshot"), false);
+  assert.equal(result.report.orcBaselineSeed.serializable, true);
+  assert.equal(result.report.orcBaselineSeed.readOnly, true);
+  assert.equal(result.report.rawShadowDiagnostics.planningInfluence, "none");
+  if (result.report.rawShadowDiagnostics.invalidCount > 0 && result.report.metrics.orc.conflicts === 0) {
+    assert.match(result.report.rawShadowDiagnostics.explanation, /diagnostics only/);
+  }
 });

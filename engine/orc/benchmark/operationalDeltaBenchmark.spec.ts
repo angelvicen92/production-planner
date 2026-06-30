@@ -35,7 +35,10 @@ test("Operational Delta Benchmark covers a simple scenario with official metrics
   assert.deepEqual(Object.keys(report.metrics.orc).sort(), officialMetricKeys);
   assert.deepEqual(Object.keys(report.metrics.v4).sort(), officialMetricKeys);
   assert.equal(report.scenario.planId, 171);
-  assert.ok(report.evidenceExplanation.length > 0);
+  assert.ok(report.evidenceExplanation.some((line) => line.includes("V4 baseline seed")));
+  assert.equal(report.orcBaselineSeed.serializable, true);
+  assert.equal(report.orcBaselineSeed.readOnly, true);
+  assert.equal(report.rawShadowDiagnostics.planningInfluence, "none");
 });
 
 test("Operational Delta Benchmark covers a complex benchmark scenario", () => {
@@ -44,6 +47,8 @@ test("Operational Delta Benchmark covers a complex benchmark scenario", () => {
   assert.equal(report.scenario.taskCount, scenario.input.tasks.length);
   assert.equal(typeof report.metrics.orc.candidatesGenerated, "number");
   assert.equal(typeof report.metrics.v4.candidatesGenerated, "number");
+  assert.ok(report.orcBaselineSeed.seededPlanningCount <= report.orcBaselineSeed.sourcePlanningCount);
+  assert.equal(report.orcBaselineSeed.planningInfluence, "benchmark-input-seeding-only");
 });
 
 test("Operational Delta Benchmark represents ORC/V4 equality with zero deltas", () => {
@@ -79,4 +84,15 @@ test("Operational Delta Benchmark does not mutate input", () => {
   const report = runOperationalDeltaBenchmark(input, { createdAt: null });
   assert.equal(stableStringify(input), before);
   assert.equal(report.planningUnchanged, true);
+});
+
+test("Operational Delta Benchmark keeps raw shadow diagnostics separate from V4-seeded official ORC metrics", () => {
+  const input = simpleInput();
+  const report = runOperationalDeltaBenchmark(input, { createdAt: null, v4RuntimeMs: 0, orcRuntimeMs: 0 });
+  assert.equal(report.orcBaselineSeed.serializable, true);
+  assert.equal(report.orcBaselineSeed.planningInfluence, "benchmark-input-seeding-only");
+  assert.equal(report.rawShadowDiagnostics.planningInfluence, "none");
+  assert.equal(typeof report.rawShadowDiagnostics.invalidCount, "number");
+  assert.equal(typeof report.metrics.orc.conflicts, "number");
+  assert.deepEqual(JSON.parse(JSON.stringify(report)), report);
 });

@@ -58,7 +58,7 @@ function summarize(results: ProductionScenarioResult[]): ProductionScenarioBench
     orcWorseOpportunityCount: allOpportunities.filter((item) => item.comparison === "orcWorse").length,
     equalOpportunityCount: allOpportunities.filter((item) => item.comparison === "equal").length,
     evidenceExplanation: [
-      `Executed ${results.length} deterministic production scenario(s) with identical cloned input for V4 and ORC Shadow Mode.`,
+      `Executed ${results.length} deterministic production scenario(s) with identical cloned input for V4, V4-seeded ORC Shadow Mode, and raw ORC Shadow diagnostics.`,
       "Each scenario report is produced by the Operational Delta Benchmark and its associated Improvement Opportunity Report.",
       "The suite is read-only: it does not persist planning, mutate official planning, or change V4/ORC pipeline behavior.",
     ],
