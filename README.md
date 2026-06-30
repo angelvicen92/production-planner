@@ -142,6 +142,16 @@ Raw shadow y seeded shadow siguen conservados como diagnostics separados: muestr
 
 No hay cambios DB, RLS, UI, V3, V4, endpoints, Validation Engine ni CandidateHardPrefilter. No se relajan hard constraints, no se modifica el pipeline ORC, no se añaden heurísticas SEE ni movimientos post-pipeline, y `real-voice-audition-day` sigue incluido en la suite oficial.
 
+### ORC Baseline Safety Candidate for Active Search Spaces v1 (ID 204)
+
+ORC ahora genera un `PRESERVE_BASELINE_SAFETY` lógico junto a los candidatos de mejora cuando existen search spaces seleccionados y el seed V4 contiene planificación baseline. Este candidato es read-only, usa `baselinePreservation: true` y `baselineSafetyCandidate: true`, no contiene assignments y no modifica horarios, espacios, recursos, locks ni tareas protegidas.
+
+El baseline safety candidate no consume presupuesto global de candidatos de mejora ni límite de preselection: se añade después del hard prefilter y de la preselección de candidatos estratégicos para no desplazar mejoras reales. En composición se evalúa como Partial Plan standalone con `baselineSafetyPartialPlan: true`, `compatibilityScore: 1` e impacto operativo esperado `0`, y queda excluido de combinaciones con candidatos de mejora.
+
+Si todos los candidatos de mejora fallan o no consolidan pero el baseline seed valida, ORC puede preservar el baseline dentro del pipeline oficial y reportar `orc_baseline_preserved` en vez de caer innecesariamente a `v4_fallback`. Si el baseline safety falla validación, no se fuerza el resultado y se mantiene el fallback seguro con diagnostics.
+
+Los invalids de mejora siguen visibles en diagnostics y evidence; la nueva evidence `baseline-safety-candidate-generated` y `baseline-safety-partial-plan-composed` explica que la preservación de baseline es una decisión de seguridad, no una mejora. No hay cambios DB, RLS, UI, V3, V4, endpoints ni Validation Engine; no se relajan hard constraints, no se cambia el pipeline ORC, no se añaden heurísticas de planificación y `real-voice-audition-day` sigue incluido en la suite oficial.
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.

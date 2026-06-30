@@ -25,7 +25,7 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } } });
+  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, baselineSafety: { generated: false, candidateId: null, reason: null, planningCount: 0, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" } });
 });
 
 const operationalState = () => ({
@@ -155,4 +155,28 @@ test("buildCandidates runs hard prefilter before preselection and removes invali
   assert.equal(result.summary.hardPrefilter.discardedCandidateCount > 0, true);
   assert.equal(result.candidates.some((item) => item.assignments.some((assignment) => assignment.taskId === 1 && assignment.startPlanned === "09:30")), false);
   assert.equal(result.summary.preselection.generatedCandidates, result.summary.hardPrefilter.acceptedCandidateCount);
+});
+
+test("buildCandidates adds baseline safety candidate with search spaces and seeded planning without consuming improvement budget", () => {
+  const result = buildCandidates([space("one")], { operationalState: operationalState() as any, maxPreselectedCandidates: 1, createdAt: "2026-06-30T00:00:00.000Z" });
+  const safety = result.candidates.find((candidate) => candidate.metadata.baselineSafetyCandidate === true);
+  assert.ok(safety);
+  assert.equal(safety.metadata.baselinePreservation, true);
+  assert.equal(safety.metadata.strategy, "PRESERVE_BASELINE");
+  assert.equal(safety.metadata.planningInfluence, "none");
+  assert.equal(safety.metadata.readOnly, true);
+  assert.equal(safety.assignments.length, 0);
+  assert.equal(result.summary.preselection.acceptedCandidates, 1);
+  assert.equal(result.candidates.length, 2);
+  assert.equal(result.summary.baselineSafety.generated, true);
+  assert.equal(result.summary.baselineSafety.candidateId, safety.id);
+  assert.equal(result.summary.baselineSafety.planningCount, 1);
+  assert.equal(result.evidence.some((item) => item.kind === "baseline-safety-candidate-generated"), true);
+});
+
+test("buildCandidates does not add baseline safety candidate when search spaces exist without seeded planning", () => {
+  const result = buildCandidates([space("one")], { operationalState: { ...(operationalState() as any), planning: [] } });
+  assert.equal(result.candidates.some((candidate) => candidate.metadata.baselineSafetyCandidate === true), false);
+  assert.equal(result.summary.baselineSafety.generated, false);
+  assert.equal(result.summary.baselineSafety.candidateId, null);
 });
