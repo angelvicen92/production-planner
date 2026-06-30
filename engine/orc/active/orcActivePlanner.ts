@@ -8,6 +8,7 @@ import { calculateOperationalPlanningQualityMetrics, type OperationalPlanningQua
 import { stableStringify } from "../structuralEquality";
 import { deepFreeze } from "../immutability";
 import { assertSerializableORCSeed, buildORCBaselineSeededInput, type ORCBaselineSeedDiagnostics } from "./orcBaselineSeed";
+import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "./orcBaselineSeedFeasibilityAudit";
 import type { EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
 
 export type ORCActiveUsedEngine = "orc" | "orc_baseline_preserved" | "v4_fallback";
@@ -80,6 +81,7 @@ export interface ORCActiveDiagnostics {
   orcActivationReport: ORCActivationReport;
   bestCandidateTrace: ORCBestCandidateTrace;
   baselineSeed: ORCBaselineSeedDiagnostics;
+  baselineSeedHardFeasibility: ORCBaselineSeedHardFeasibilityAudit;
   effectiveMoves: EffectiveMovesDiagnostics;
   orcActiveBridge: true;
 }
@@ -342,34 +344,36 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const reportExecutionTimeMs = options.orcShadowResult !== undefined ? 0 : (v4.diagnostics.performance?.runtimeMs ?? 0);
   let seededInput: EngineInput | null = null;
   let baselineSeed: ORCBaselineSeedDiagnostics = { applied: false, seededPlanningCount: 0, source: "v4_baseline", warnings: [] };
+  let baselineSeedHardFeasibility: ORCBaselineSeedHardFeasibilityAudit = auditORCBaselineSeedHardFeasibility(null, { createdAt: null });
   try {
     const seeded = buildORCBaselineSeededInput(input, v4.output);
     assertSerializableORCSeed(seeded.seedPlanning);
     seededInput = seeded.input;
     baselineSeed = seeded.baselineSeed;
+    baselineSeedHardFeasibility = auditORCBaselineSeedHardFeasibility(seededInput, { createdAt: null });
   } catch (error) {
     baselineSeed = { applied: false, seededPlanningCount: 0, source: "v4_baseline", warnings: ["ORC baseline seed disabled before execution."], error: error instanceof Error ? error.message : String(error) };
-    const gates = { v4BaselineAvailable: true, orcExecuted: false };
+    const gates = { v4BaselineAvailable: true, baselineSeedHardFeasible: baselineSeedHardFeasibility.hardFeasible, orcExecuted: false };
     const v4Planned = (v4.output.plannedTasks ?? []).map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
     const emptyMetrics = calculateOperationalPlanningQualityMetrics(input, []);
     const v4Metrics = calculateOperationalPlanningQualityMetrics(input, v4Planned);
     const fallbackReason = baselineSeed.error?.startsWith("baseline_seed_too_large") ? "baseline_seed_too_large" : "baseline_seed_not_serializable";
     const report = buildActivationReport({ usedEngine: "v4_fallback", orcResultKind: "v4_fallback", fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation: null, validation: null, score: null, v4Metrics, orcMetrics: emptyMetrics, v4Planned, orcPlanned: [], v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: neededTaskIds(input).length });
     const trace = buildBestCandidateTrace({ baselineSeed, v4Planned, shadow: null, simulation: null, validation: null, candidateState: null, candidate: null, score: null, orcPlanned: [], pendingTasks: neededTaskIds(input), extractionSource: "none", extractionWarnings: ["ORC baseline seed failed safety validation before execution."], orcMetrics: emptyMetrics, gates, discardReason: fallbackReason });
-    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason, orcResultKind: "v4_fallback", planningRelationToBaseline: buildPlanningRelationToBaseline(planningMaterializationOf(null), []), explanation: readableFallbackReason(fallbackReason, gates, { needed: neededTaskIds(input).length, orc: 0 }) ?? "V4 se mantiene como fallback seguro.", gates, orcSummary: { error: baselineSeed.error, baselineSeed }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, baselineSeed, effectiveMoves: EMPTY_EFFECTIVE_MOVES, orcActiveBridge: true };
+    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason, orcResultKind: "v4_fallback", planningRelationToBaseline: buildPlanningRelationToBaseline(planningMaterializationOf(null), []), explanation: readableFallbackReason(fallbackReason, gates, { needed: neededTaskIds(input).length, orc: 0 }) ?? "V4 se mantiene como fallback seguro.", gates, orcSummary: { error: baselineSeed.error, baselineSeed, baselineSeedHardFeasibility }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, baselineSeed, baselineSeedHardFeasibility, effectiveMoves: EMPTY_EFFECTIVE_MOVES, orcActiveBridge: true };
     return { output: v4.output, diagnostics };
   }
   let shadow: ORCShadowModeResult | null = null;
   try {
     shadow = options.orcShadowResult !== undefined ? options.orcShadowResult : (options.runORC ? options.runORC(seededInput) : runORCShadowMode(seededInput, { enabled: true, createdAt: null }));
   } catch (error) {
-    const gates = { v4BaselineAvailable: true, orcExecuted: false };
+    const gates = { v4BaselineAvailable: true, baselineSeedHardFeasible: baselineSeedHardFeasibility.hardFeasible, orcExecuted: false };
     const v4Planned = (v4.output.plannedTasks ?? []).map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
     const emptyMetrics = calculateOperationalPlanningQualityMetrics(input, []);
     const v4Metrics = calculateOperationalPlanningQualityMetrics(input, v4Planned);
     const report = buildActivationReport({ usedEngine: "v4_fallback", orcResultKind: "v4_fallback", fallbackReason: "orc_execution_failed", gates, executionTimeMs: reportExecutionTimeMs, simulation: null, validation: null, score: null, v4Metrics, orcMetrics: emptyMetrics, v4Planned, orcPlanned: [], v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: neededTaskIds(input).length });
     const trace = buildBestCandidateTrace({ baselineSeed, v4Planned, shadow: null, simulation: null, validation: null, candidateState: null, candidate: null, score: null, orcPlanned: [], pendingTasks: neededTaskIds(input), extractionSource: "none", extractionWarnings: ["ORC execution failed before planning extraction."], orcMetrics: emptyMetrics, gates, discardReason: "orc_execution_failed" });
-    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason: "orc_execution_failed", orcResultKind: "v4_fallback", planningRelationToBaseline: buildPlanningRelationToBaseline(planningMaterializationOf(null), []), explanation: readableFallbackReason("orc_execution_failed", gates, { needed: neededTaskIds(input).length, orc: 0 }) ?? "V4 se mantiene como fallback seguro.", gates, orcSummary: { error: error instanceof Error ? error.message : String(error) }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, baselineSeed, effectiveMoves: EMPTY_EFFECTIVE_MOVES, orcActiveBridge: true };
+    const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: v4.diagnostics.status, generatedAt: v4.diagnostics.generatedAt, plannedTasks: v4.diagnostics.plannedTasks, unplannedTasks: v4.diagnostics.unplannedTasks, warning: v4.diagnostics.warning, usedEngine: "v4_fallback", fallbackReason: "orc_execution_failed", orcResultKind: "v4_fallback", planningRelationToBaseline: buildPlanningRelationToBaseline(planningMaterializationOf(null), []), explanation: readableFallbackReason("orc_execution_failed", gates, { needed: neededTaskIds(input).length, orc: 0 }) ?? "V4 se mantiene como fallback seguro.", gates, orcSummary: { error: error instanceof Error ? error.message : String(error), baselineSeedHardFeasibility }, v4Diagnostics: v4.diagnostics, operationalDelta: null, orcActivationReport: report, bestCandidateTrace: trace, baselineSeed, baselineSeedHardFeasibility, effectiveMoves: EMPTY_EFFECTIVE_MOVES, orcActiveBridge: true };
     return { output: v4.output, diagnostics };
   }
 
@@ -383,6 +387,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   let orcMetrics = calculateOperationalPlanningQualityMetrics(input, orcPlanned);
   const gates: Record<string, boolean> = {
     v4BaselineAvailable: true,
+    baselineSeedHardFeasible: baselineSeedHardFeasibility.hardFeasible,
     orcExecuted: shadow != null,
     validSimulationAvailable: simulation != null,
     complete: needed.every((id) => plannedIds.has(id)),
@@ -403,10 +408,10 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const planningRelationToBaseline = buildPlanningRelationToBaseline(materialization, orcPlanned);
   const orcResultKind: ORCResultKind = failedGate ? "v4_fallback" : materialization.changedTaskCount > 0 ? "orc_changed_plan" : "orc_baseline_preserved";
   const usedEngine: ORCActiveUsedEngine = failedGate ? "v4_fallback" : orcResultKind === "orc_changed_plan" ? "orc" : "orc_baseline_preserved";
-  const fallbackReason = failedGate ? (simulation ? (orcPlanned.length === 0 && needed.length > 0 ? "orc_planning_extraction_empty" : `gate_failed:${failedGate}`) : "no_valid_orc_simulation") : null;
+  const fallbackReason = failedGate ? (!baselineSeedHardFeasibility.hardFeasible ? "baseline_seed_hard_infeasible" : (simulation ? (orcPlanned.length === 0 && needed.length > 0 ? "orc_planning_extraction_empty" : `gate_failed:${failedGate}`) : "no_valid_orc_simulation")) : null;
   const orcActivationReport = buildActivationReport({ effectiveMoves, materialization, usedEngine, orcResultKind, fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation, validation, score: value, v4Metrics, orcMetrics, v4Planned, orcPlanned, v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: needed.length });
   const bestCandidateTrace = buildBestCandidateTrace({ effectiveMoves, materialization, baselineSeed, v4Planned, shadow, simulation, validation, candidateState, candidate, score: value, orcPlanned, pendingTasks: extraction.pendingTaskIds.length ? extraction.pendingTaskIds : needed.filter((id) => !plannedIds.has(id)), extractionSource: extraction.extractionSource, extractionWarnings: extraction.extractionWarnings, orcMetrics, gates, discardReason: fallbackReason });
-  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, orcResultKind, planningRelationToBaseline, explanation: usedEngine === "orc_baseline_preserved" ? "ORC ejecutado correctamente, pero no aplicó cambios sobre el baseline. Se muestra una planificación completa equivalente al baseline." : usedEngine === "orc" ? "ORC ejecutado correctamente y aplicó cambios reales sobre el baseline." : (readableFallbackReason(fallbackReason, gates, { needed: needed.length, orc: orcPlanned.length }) ?? "V4 se mantiene como fallback seguro."), gates, orcSummary: { ...(shadow?.summary ?? null), baselineSeed, selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value, planningExtraction: { source: extraction.extractionSource, plannedTaskCount: orcPlanned.length, pendingTaskCount: extraction.pendingTaskIds.length, warnings: extraction.extractionWarnings }, planningMaterialization: materialization, effectiveMoves }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, baselineSeed, effectiveMoves, orcActiveBridge: true };
+  const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, orcResultKind, planningRelationToBaseline, explanation: usedEngine === "orc_baseline_preserved" ? "ORC ejecutado correctamente, pero no aplicó cambios sobre el baseline. Se muestra una planificación completa equivalente al baseline." : usedEngine === "orc" ? "ORC ejecutado correctamente y aplicó cambios reales sobre el baseline." : (readableFallbackReason(fallbackReason, gates, { needed: needed.length, orc: orcPlanned.length }) ?? "V4 se mantiene como fallback seguro."), gates, orcSummary: { ...(shadow?.summary ?? null), baselineSeed, baselineSeedHardFeasibility, selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value, planningExtraction: { source: extraction.extractionSource, plannedTaskCount: orcPlanned.length, pendingTaskCount: extraction.pendingTaskIds.length, warnings: extraction.extractionWarnings }, planningMaterialization: materialization, effectiveMoves }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, baselineSeed, baselineSeedHardFeasibility, effectiveMoves, orcActiveBridge: true };
 
   if (failedGate) return { output: v4.output, diagnostics };
   return { output: { ...v4.output, feasible: true, complete: true, hardFeasible: true, plannedTasks: orcPlanned, unplanned: [], warnings: v4.output.warnings ?? [] }, diagnostics };

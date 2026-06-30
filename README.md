@@ -76,6 +76,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 201 — 2026-06-30 UTC — ORC Benchmark V4-Seeded Shadow Alignment v1
 - ID 202 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Fallback Semantics v1
 - ID 203 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Final Metrics Normalization v1
+- ID 204 — 2026-06-30 UTC — ORC Baseline Safety Candidate for Active Search Spaces v1
+- ID 205 — 2026-06-30 UTC — ORC Baseline Seed Hard-Feasibility Audit v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -151,6 +153,15 @@ El baseline safety candidate no consume presupuesto global de candidatos de mejo
 Si todos los candidatos de mejora fallan o no consolidan pero el baseline seed valida, ORC puede preservar el baseline dentro del pipeline oficial y reportar `orc_baseline_preserved` en vez de caer innecesariamente a `v4_fallback`. Si el baseline safety falla validación, no se fuerza el resultado y se mantiene el fallback seguro con diagnostics.
 
 Los invalids de mejora siguen visibles en diagnostics y evidence; la nueva evidence `baseline-safety-candidate-generated` y `baseline-safety-partial-plan-composed` explica que la preservación de baseline es una decisión de seguridad, no una mejora. No hay cambios DB, RLS, UI, V3, V4, endpoints ni Validation Engine; no se relajan hard constraints, no se cambia el pipeline ORC, no se añaden heurísticas de planificación y `real-voice-audition-day` sigue incluido en la suite oficial.
+
+
+### ORC Baseline Seed Hard-Feasibility Audit v1 (ID 205)
+
+ORC Active y el Operational Delta Benchmark ahora auditan explícitamente si el V4 baseline seed que recibe ORC es hard-feasible según ORC Validation antes de interpretar fallos como problemas de candidatos, commits o exploración. La auditoría `auditORCBaselineSeedHardFeasibility` construye `OperationalState` desde el seed, evalúa un baseline preservation candidate standalone a través del pipeline oficial, y expone un resumen serializable sin snapshots completos.
+
+Si el seed no valida, el fallback reason active-equivalent pasa a ser explícito: `baseline_seed_hard_infeasible`. El benchmark conserva invalids, violation summaries y overhead como diagnostics, pero no autoriza optimización de candidatos como siguiente paso principal si el bloqueo real es la hard-feasibility del seed base.
+
+No hay cambios DB, RLS, UI, V3 ni V4. No se relajan hard constraints, no se cambia el pipeline ORC, no se fuerza baseline preservation si el seed no valida y `real-voice-audition-day` sigue incluido en la suite oficial.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

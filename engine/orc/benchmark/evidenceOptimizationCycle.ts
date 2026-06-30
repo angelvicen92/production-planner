@@ -71,6 +71,7 @@ function aggregatePriorities(reports: ImprovementOpportunityReport[]): ActiveOpt
   for (const report of reports) {
     for (const opportunity of report.opportunities) {
       if (opportunity.optimizationPriority === "none") continue;
+      if (opportunity.objectiveJustification.includes("baseline_seed_hard_infeasible_blocks_candidate_optimization") && (opportunity.metric === "candidatesGenerated" || opportunity.metric === "candidatesSimulated" || opportunity.metric === "candidatesConsolidated" || opportunity.metric === "simulations")) continue;
       grouped.set(opportunity.metric, [...(grouped.get(opportunity.metric) ?? []), opportunity]);
     }
   }
