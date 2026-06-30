@@ -419,3 +419,10 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - Generar V4 entra en estados explícitos `loading` y `pending_diagnostics`, selecciona V4 inmediatamente y hace refetch/polling controlado de `engine_plan_results` para que el resultado aparezca sin recargar.
 - La UI V4/ORC ya no presenta el diagnóstico pendiente como `Error V4`; sólo muestra error cuando la petición falla realmente.
 - La clasificación ORC no-op se estabiliza alrededor de `orcResultKind`, priorizando `orc_baseline_preserved` cuando ORC preserva el baseline completo sin cambios reales y manteniendo `planningRelationToBaseline` en diagnostics/export JSON.
+
+## ID 196 — ORC First Effective Move v1
+
+- Fecha Europe/Madrid: 2026-06-30 14:54:39 CEST.
+- ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
+- El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
+- El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
