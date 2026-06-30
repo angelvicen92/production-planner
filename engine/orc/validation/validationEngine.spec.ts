@@ -182,3 +182,31 @@ test("validateSimulatedStates bounds details, truncates deterministically, and s
   assert.deepEqual(JSON.parse(JSON.stringify(first.validationResults[0])), first.validationResults[0]);
   assert.equal((first.evidence[0].data.violationDetailsSample as unknown[]).length, 20);
 });
+
+test("validateSimulatedStates applies scoped protected breaks only to matching tasks", () => {
+  const base = state();
+  const task2 = { ...base.tasks[0], id: 2, contestantId: 2, itinerantTeamId: 2, assignedResourceIds: [8], spaceId: 20 };
+  const planning = [
+    { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7], spaceId: 10 },
+    { taskId: 2, startPlanned: "09:40", endPlanned: "10:10", assignedResourceIds: [8], spaceId: 20 },
+  ];
+  const scoped = expectInvalid(cloneState({ tasks: [{ ...base.tasks[0], contestantId: 1, itinerantTeamId: 1 }, task2], planning, availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", kind: "protected", spaceId: 10 } as any] } }), "PLANNING_CROSSES_PROTECTED_HARD_BREAK").violationDetails.filter((item) => item.code === "PLANNING_CROSSES_PROTECTED_HARD_BREAK");
+  assert.equal(scoped.length, 1);
+  assert.deepEqual(scoped[0].taskIds, [1]);
+  assert.deepEqual(scoped[0].spaceIds, [10]);
+  assert.match(scoped[0].diagnosticHint, /space-scoped/);
+
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(cloneState({ availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", kind: "protected", spaceId: 20 } as any] } }))]).validationResults[0].result, "VALID");
+  assert.equal(expectInvalid(cloneState({ tasks: [{ ...base.tasks[0], contestantId: 7 }], availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", contestantId: 7 } as any] } }), "PLANNING_CROSSES_PROTECTED_HARD_BREAK").violationDetails[0].diagnosticHint.includes("contestant-scoped"), true);
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(cloneState({ tasks: [{ ...base.tasks[0], contestantId: 8 }], availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", contestantId: 7 } as any] } }))]).validationResults[0].result, "VALID");
+  assert.equal(expectInvalid(cloneState({ tasks: [{ ...base.tasks[0], itinerantTeamId: 5 }], availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", itinerantTeamId: 5 } as any] } }), "PLANNING_CROSSES_PROTECTED_HARD_BREAK").violationDetails[0].diagnosticHint.includes("itinerant-team-scoped"), true);
+  assert.deepEqual(expectInvalid(cloneState({ availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", resourceId: 7 } as any] } }), "PLANNING_CROSSES_PROTECTED_HARD_BREAK").violationDetails.find((item) => item.code === "PLANNING_CROSSES_PROTECTED_HARD_BREAK")?.resourceIds, [7]);
+});
+
+test("validateSimulatedStates preserves global hard break semantics and ignores unmarked unscoped protected breaks", () => {
+  const base = state();
+  expectInvalid(cloneState({ availability: { ...base.availability, globalHardBreaks: [{ start: "09:05", end: "09:20" }] } }), "PLANNING_CROSSES_GLOBAL_HARD_BREAK");
+  expectInvalid(cloneState({ availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", hard: true } as any] } }), "PLANNING_CROSSES_PROTECTED_HARD_BREAK");
+  const soft = validateSimulatedStates([simulatedWithSnapshot(cloneState({ availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", label: "FYI" } as any] } }))]);
+  assert.equal(soft.validationResults[0].result, "VALID");
+});

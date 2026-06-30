@@ -82,3 +82,19 @@ test("audit does not mutate input, is deterministic, serializable, bounded, and 
   assert.equal(first.evidence[0].data.planningInfluence, "baseline-seed-feasibility-audit-only");
   assert.equal(Object.prototype.hasOwnProperty.call(first, "operationalStateSnapshot"), false);
 });
+
+test("baseline seed audit stratifies violation detail samples and counts dominant codes from details", () => {
+  const tasks = [
+    task(1, "09:00", "10:00", { spaceId: 10 }),
+    task(2, "09:15", "09:45", { spaceId: 10 }),
+    task(3, "09:20", "09:40", { spaceId: 20, dependsOnTaskIds: [1] }),
+  ];
+  const audit = auditORCBaselineSeedHardFeasibility(input(tasks, { protectedBreaks: [{ start: "09:25", end: "09:35", kind: "protected", spaceId: 20 } as any] }), { createdAt: null });
+  const sampleCodes = new Set(audit.violationDetailsSample.map((item) => item.code));
+  assert.equal(audit.hardFeasible, false);
+  assert.ok(sampleCodes.has("DIRECT_DEPENDENCY_BROKEN"));
+  assert.ok(sampleCodes.has("SPACE_OVERLAP"));
+  assert.ok(sampleCodes.has("PLANNING_CROSSES_PROTECTED_HARD_BREAK"));
+  assert.equal(audit.evidence[0].data.sampleStrategy, "stratified_by_violation_code");
+  assert.ok(audit.dominantViolationCodes.includes("SPACE_OVERLAP"));
+});
