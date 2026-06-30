@@ -311,11 +311,16 @@ export function useEngineDiagnostics(planId: number | null, latestSuccessRunId: 
 }
 
 
-export function useLatestEngineResult(planId: number | null, engineVersion: "v3" | "v4") {
+export function useLatestEngineResult(
+  planId: number | null,
+  engineVersion: "v3" | "v4",
+  options: { refetchInterval?: number | false; retry?: boolean | number } = {},
+) {
   return useQuery<EngineResult | null>({
     queryKey: engineResultQueryKey(planId, engineVersion),
     enabled: Number.isFinite(planId) && Number(planId) > 0,
-    retry: false,
+    retry: options.retry ?? false,
+    refetchInterval: options.refetchInterval,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const response = await apiRequest<EngineResult | null>(
