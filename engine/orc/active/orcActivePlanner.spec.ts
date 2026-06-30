@@ -13,8 +13,8 @@ const fullyPlannedInput = (): EngineInput => ({
   meal: { start: "13:00", end: "14:00" },
   camerasAvailable: 1,
   tasks: [
-    { id: 1, planId: 96, templateId: 10, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7] },
-    { id: 2, planId: 96, templateId: 11, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [7] },
+    { id: 1, planId: 96, templateId: 10, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, durationOverrideMin: 30, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [7] },
+    { id: 2, planId: 96, templateId: 11, status: "pending", contestantId: 1, zoneId: 10, spaceId: 10, durationOverrideMin: 30, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [7] },
   ],
   locks: [],
   optimizerMainZoneId: 10,

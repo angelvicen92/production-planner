@@ -2,7 +2,12 @@ import type { EngineInput, EngineOutput, TaskInput } from "../../types";
 
 export interface ORCBaselineSeedDiagnostics {
   applied: boolean;
+  v4PlannedCount: number;
+  protectedExistingPlanningCount: number;
+  clearedRawPlanningCount: number;
+  unseededPendingCount: number;
   seededPlanningCount: number;
+  sourcePlanningCount: number;
   source: "v4_baseline";
   warnings: string[];
   error?: string;
@@ -20,6 +25,7 @@ export interface ORCBaselinePlanningEntry {
   endPlanned: string;
   assignedSpace?: number | null;
   assignedResources: number[];
+  source: "v4_planned_task" | "protected_existing_planning";
 }
 
 type PlannedTask = EngineOutput["plannedTasks"][number];
@@ -38,7 +44,7 @@ function assignedSpaceFor(task: TaskInput, planned: PlannedTask, output: EngineO
   return task.spaceId ?? null;
 }
 
-function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | null): TaskInput {
+function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | null, preserveExistingPlanning: boolean): TaskInput {
   const next: TaskInput = {
     id: Number(task.id),
     planId: Number(task.planId),
@@ -59,7 +65,7 @@ function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | nul
     next.startPlanned = seed.startPlanned;
     next.endPlanned = seed.endPlanned;
     next.assignedResourceIds = [...seed.assignedResources];
-  } else if (task.startPlanned && task.endPlanned) {
+  } else if (preserveExistingPlanning && task.startPlanned && task.endPlanned) {
     next.startPlanned = task.startPlanned;
     next.endPlanned = task.endPlanned;
     next.assignedResourceIds = [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
@@ -98,27 +104,46 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
     plannedByTask.set(Number(planned.taskId), planned);
   }
 
-  const lockedTaskIds = new Set((input.locks ?? []).map((lock) => lock.taskId));
+  const lockedTaskIds = new Set((input.locks ?? []).map((lock) => Number(lock.taskId)).filter(Number.isFinite));
   const seedByTask = new Map<number, ORCBaselinePlanningEntry>();
   const seedPlanning: ORCBaselinePlanningEntry[] = [];
+  const preserveExistingByTask = new Set<number>();
+  let protectedExistingPlanningCount = 0;
+  let clearedRawPlanningCount = 0;
+  let unseededPendingCount = 0;
+  let v4SeededCount = 0;
 
   for (const task of input.tasks ?? []) {
     const planned = plannedByTask.get(task.id);
-    if (!planned) continue;
-    const protectedOrLocked = task.status === "done" || task.status === "in_progress" || lockedTaskIds.has(task.id);
+    const protectedOrLocked = task.status === "done" || task.status === "in_progress" || lockedTaskIds.has(Number(task.id));
     const hasExistingPlanning = Boolean(task.startPlanned && task.endPlanned);
-    const entry: ORCBaselinePlanningEntry = protectedOrLocked && hasExistingPlanning
-      ? { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b) }
-      : { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned) };
+    if (!planned) {
+      if (protectedOrLocked && hasExistingPlanning) {
+        const entry: ORCBaselinePlanningEntry = { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b), source: "protected_existing_planning" };
+        seedByTask.set(task.id, entry);
+        seedPlanning.push(entry);
+        preserveExistingByTask.add(task.id);
+        protectedExistingPlanningCount += 1;
+      } else {
+        unseededPendingCount += 1;
+        if (hasExistingPlanning || (task.assignedResourceIds?.length ?? 0) > 0) clearedRawPlanningCount += 1;
+      }
+      continue;
+    }
+    const entry: ORCBaselinePlanningEntry = { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned), source: "v4_planned_task" };
     seedByTask.set(task.id, entry);
     seedPlanning.push(entry);
+    v4SeededCount += 1;
   }
 
-  if (plannedByTask.size > seedPlanning.length) warnings.push(`${plannedByTask.size - seedPlanning.length} V4 planned task(s) were not present in EngineInput.tasks.`);
+  if (plannedByTask.size > v4SeededCount) warnings.push(`${plannedByTask.size - v4SeededCount} V4 planned task(s) were not present in EngineInput.tasks.`);
+  if (clearedRawPlanningCount > 0) warnings.push(`Cleared raw planning from ${clearedRawPlanningCount} pending task(s) not present in V4 output.`);
+  if (protectedExistingPlanningCount > 0) warnings.push(`Preserved existing planning for ${protectedExistingPlanningCount} protected/locked task(s).`);
+  if (plannedByTask.size === 0) warnings.push("V4 produced no planned tasks; ORC baseline seed contains only protected/locked planning.");
 
   const sanitizedInput: EngineInput = {
     ...clone(input),
-    tasks: (input.tasks ?? []).map((task) => minimalSeededTask(task, seedByTask.get(task.id) ?? null)),
+    tasks: (input.tasks ?? []).map((task) => minimalSeededTask(task, seedByTask.get(task.id) ?? null, preserveExistingByTask.has(task.id))),
   };
 
   return {
@@ -126,7 +151,12 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
     seedPlanning,
     baselineSeed: {
       applied: seedPlanning.length > 0,
+      v4PlannedCount: plannedByTask.size,
+      protectedExistingPlanningCount,
+      clearedRawPlanningCount,
+      unseededPendingCount,
       seededPlanningCount: seedPlanning.length,
+      sourcePlanningCount: v4Output.plannedTasks?.length ?? 0,
       source: "v4_baseline",
       warnings,
     },

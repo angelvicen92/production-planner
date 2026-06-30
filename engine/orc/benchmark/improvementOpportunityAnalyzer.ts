@@ -166,9 +166,10 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
     const pct = metricValue(report.percentageDelta, metric);
     const comparison = compareMetric(metric, abs);
     const impact = round(Math.max(numericMagnitude(abs), numericMagnitude(pct)));
-    const seedBlocked = report.officialOrcOutcome?.kind === "v4_fallback" && report.baselineSeedHardFeasibility?.available === true && report.baselineSeedHardFeasibility?.hardFeasible === false;
+    const seedBlocked = report.officialOrcOutcome?.kind === "v4_fallback" && report.baselineSeedHardFeasibility?.reason === "baseline_seed_hard_infeasible";
+    const seedUnavailable = report.officialOrcOutcome?.kind === "v4_fallback" && (report.baselineSeedHardFeasibility?.reason === "baseline_seed_has_no_planning" || report.baselineSeedHardFeasibility?.reason === "baseline_seed_not_available");
     const candidateMetric = metric === "candidatesGenerated" || metric === "candidatesSimulated" || metric === "candidatesConsolidated" || metric === "simulations";
-    const priority = seedBlocked && candidateMetric ? "medium" : priorityFor(comparison, impact);
+    const priority = seedUnavailable && candidateMetric ? "none" : seedBlocked && candidateMetric ? "medium" : priorityFor(comparison, impact);
     const direction = LOWER_IS_BETTER.has(metric) ? "lower values are objectively better" : "higher values are objectively better";
     const rootCauseReferences = metric === "operationalPlanningQuality"
       ? (report.metrics.orc.operationalPlanningQuality?.rootCauseAnalysis?.diagnoses ?? []).filter((item) => item.severity !== "none").map((item) => `${item.metric} -> ${item.entities.join(" -> ") || "no entity"} -> ${item.explanation}`)
@@ -184,7 +185,7 @@ export function analyzeImprovementOpportunities(report: OperationalDeltaReport):
       estimatedImpact: impact,
       priority,
       priorityExplanation: priority === "none" ? `${metric}: no improvement priority because ORC is ${comparison}.` : `${metric}: ${priority} priority because ORC is worse and objective impact is ${impact}.`,
-      objectiveJustification: `${metric}: classified using official delta metrics only; ${direction}; absolute and percentage deltas are ORC minus V4.${seedBlocked ? " baseline_seed_hard_infeasible_blocks_candidate_optimization: candidate/exploration opportunities are secondary until ORC/V4 hard-constraint alignment is resolved." : ""}${rootCauseReferences.length > 0 ? ` Root cause evidence: ${rootCauseReferences[0]}` : ""}`,
+      objectiveJustification: `${metric}: classified using official delta metrics only; ${direction}; absolute and percentage deltas are ORC minus V4.${seedUnavailable ? " baseline_seed_unavailable_blocks_candidate_optimization: No candidate optimization is authorized because ORC has no V4 baseline seed to evaluate. Resolve V4 baseline generation or benchmark seed configuration first." : ""}${seedBlocked ? " baseline_seed_hard_infeasible_blocks_candidate_optimization: candidate/exploration opportunities are secondary until ORC/V4 hard-constraint alignment is resolved." : ""}${rootCauseReferences.length > 0 ? ` Root cause evidence: ${rootCauseReferences[0]}` : ""}`,
       rootCauseReferences,
       benchmarkVersion: report.benchmarkVersion,
       scenario: report.scenario,
