@@ -74,6 +74,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 199 — 2026-06-30 UTC — ORC Baseline Preservation Candidate v1
 - ID 200 — 2026-06-30 UTC — ORC Candidate Hard Prefilter v1
 - ID 201 — 2026-06-30 UTC — ORC Benchmark V4-Seeded Shadow Alignment v1
+- ID 202 — 2026-06-30 UTC — ORC Benchmark Active-Equivalent Fallback Semantics v1
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -114,6 +115,19 @@ El Operational Delta Benchmark oficial de ORC ahora alinea su medición con ORC 
 Raw ORC Shadow se conserva como `rawShadowDiagnostics` para diagnóstico técnico de escenarios crudos, pero no decide el delta principal ni la recomendación de siguiente acción. Así, `conflicts` ya no puede quedar contaminado por invalids del input crudo/manual; si sólo falla raw shadow, se reporta como alerta diagnóstica, y si falla el seeded shadow, se reporta como fallo operativo ORC comparable.
 
 `real-voice-audition-day` sigue incluido en la suite oficial. El benchmark continúa siendo read-only y determinista, no relaja hard constraints y no modifica DB, RLS, UI, V3, V4, endpoints, Validation Engine, CandidateHardPrefilter, heurísticas SEE ni el pipeline ORC.
+
+
+### ORC Benchmark Active-Equivalent Fallback Semantics v1 (ID 202)
+
+El Operational Delta Benchmark oficial de ORC ya no usa `simulatedStates[0]` cuando el seeded shadow no produce un commit válido. `OperationalDeltaReport.officialOrcOutcome` clasifica el resultado active-equivalent como `orc`, `orc_baseline_preserved` o `v4_fallback`, y sólo un simulated state validado (`ValidationResult: VALID`) y consolidado por una decisión `COMMIT` puede alimentar `metrics.orc`.
+
+Si ORC seeded shadow no produce commit válido —por ausencia de simulaciones, commits o por candidatos inválidos/rechazados— el benchmark replica ORC Active y mide `v4_fallback`: las métricas oficiales de resultado final ORC quedan equivalentes a V4 para makespan, permanencia, continuidad, conflictos y calidad de planificación. Los deltas oficiales dejan de penalizar a ORC por simulaciones inválidas no consolidadas.
+
+Raw shadow y seeded shadow se conservan como evidencia separada mediante `rawShadowDiagnostics` y `seededShadowDiagnostics`. Esos diagnostics exponen candidatos, candidate states, simulaciones, valid/invalid counts, commit count, violation summary y overhead exploratorio con `planningInfluence: "none"`, pero no sustituyen el resultado operativo oficial.
+
+Evidence Gate y las recomendaciones ya no deben autorizar optimizaciones por `candidatesConsolidated`, `conflicts`, makespan, permanencia, continuidad o planning quality cuando esos deltas sólo procedían de simulaciones inválidas no consolidadas. Si un fallo seeded shadow requiere análisis futuro, queda documentado como diagnóstico separado, no como señal automática de prioridad.
+
+No hay cambios DB, RLS, UI, V3, V4, endpoints, Validation Engine, CandidateHardPrefilter ni nuevas heurísticas SEE. No se relajan hard constraints, no hay movimientos post-pipeline y `real-voice-audition-day` sigue incluido en la suite oficial.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
