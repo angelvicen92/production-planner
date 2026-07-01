@@ -153,6 +153,7 @@ export interface ORCShadowModeResult {
       discardedCandidates: number;
       limit: number;
     };
+    mainFlowGapClosure: unknown;
     decisionFeedback: {
       feedbackCount: number;
       influencedDecisions: number;
@@ -195,6 +196,7 @@ function buildShadowSummaryEvidence(
   candidatePreselectionSummary: ORCShadowModeResult["summary"]["candidatePreselection"],
   decisionFeedbackSummary: ORCShadowModeResult["summary"]["decisionFeedback"],
   baselineSafetySummary: Record<string, unknown>,
+  mainFlowGapClosureSummary: Record<string, unknown>,
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -232,6 +234,7 @@ function buildShadowSummaryEvidence(
       candidatePreselection: candidatePreselectionSummary,
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
+      mainFlowGapClosure: mainFlowGapClosureSummary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
   };
@@ -349,6 +352,15 @@ export function runORCShadowMode(
   const baselineSafetyCandidateStateIds = new Set(transformationResult.candidateStates.filter((state) => state.candidateId === baselineSafetyCandidate?.id).map((state) => state.id));
   const baselineSafetySimulatedStateIds = new Set(simulationResult.simulatedStates.filter((state) => baselineSafetyCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
   const baselineSafetySelectedAsOutcome = baselineSafetyCandidate != null && commitResult.commitDecisions.some((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null && baselineSafetySimulatedStateIds.has(decision.operationalValueId));
+  const mainFlowCandidateIds = new Set(candidateResult.summary.mainFlowGapClosure.candidateIds ?? []);
+  const mainFlowCandidateStateIds = new Set(transformationResult.candidateStates.filter((state) => mainFlowCandidateIds.has(state.candidateId)).map((state) => state.id));
+  const mainFlowSimulatedStateIds = new Set(simulationResult.simulatedStates.filter((state) => mainFlowCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
+  const mainFlowValidSimulationCount = validationResult.validationResults.filter((result) => mainFlowSimulatedStateIds.has(result.simulatedStateId) && result.result === "VALID").length;
+  const mainFlowInvalidSimulationCount = validationResult.validationResults.filter((result) => mainFlowSimulatedStateIds.has(result.simulatedStateId) && result.result === "INVALID").length;
+  const selectedCommitValue = commitResult.commitDecisions.find((decision) => decision.decision === "COMMIT")?.operationalValueId ?? null;
+  const selectedCommitSimulation = selectedCommitValue ? evaluatorResult.operationalValues.find((value) => value.simulatedStateId === selectedCommitValue)?.simulatedStateId ?? selectedCommitValue : null;
+  const rankedBestSimulationId = rankingResult.rankedOperationalValues[0]?.simulatedStateId ?? null;
+  const mainFlowGapClosureSummary = { ...candidateResult.summary.mainFlowGapClosure, validSimulationCount: mainFlowValidSimulationCount, invalidSimulationCount: mainFlowInvalidSimulationCount, selectedCandidateId: [...mainFlowCandidateIds].find((id) => mainFlowCandidateStateIds.has(`orc-transformation:candidate-state:${id}`)) ?? null, selectedAsBest: rankedBestSimulationId != null && mainFlowSimulatedStateIds.has(rankedBestSimulationId), selectedAsCommit: selectedCommitSimulation != null && mainFlowSimulatedStateIds.has(selectedCommitSimulation) };
   const baselineSafetySummary = {
     generated: baselineSafetyCandidate != null,
     candidateId: baselineSafetyCandidate?.id ?? null,
@@ -445,7 +457,7 @@ export function runORCShadowMode(
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary),
   ];
 
   const preliminaryResult = {
@@ -491,6 +503,7 @@ export function runORCShadowMode(
       candidatePreselection: candidatePreselectionSummary,
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
+      mainFlowGapClosure: mainFlowGapClosureSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,

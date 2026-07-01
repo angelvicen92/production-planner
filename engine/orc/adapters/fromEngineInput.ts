@@ -1,6 +1,7 @@
 import type { EngineInput, TimeWindow } from "../../types";
 import type { CognitiveArtifacts, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
+import { resolveORCMainFlowConfig } from "../state/mainFlowConfigResolver";
 
 const clone = <T>(value: T): T => value === undefined ? value : JSON.parse(JSON.stringify(value));
 const record = <T>(value: T | null | undefined, fallback: T): T => clone(value ?? fallback);
@@ -39,6 +40,7 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
     dependsOnTemplateIds: [...(task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))],
   })).filter((item) => item.dependsOnTaskIds.length > 0 || item.dependsOnTemplateIds.length > 0);
 
+  const mainFlowConfig = resolveORCMainFlowConfig(input);
   const constraints: ORCRecord = {
     camerasAvailable: input.camerasAvailable ?? null,
     mealMode: input.mealMode ?? null,
@@ -52,12 +54,13 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
     resourceBundleSpaceAffinities: record(input.resourceBundleSpaceAffinities, []),
     resourceBundleLoadWarnings: record(input.resourceBundleLoadWarnings, []),
     optimizer: {
-      mainZoneId: input.optimizerMainZoneId ?? null,
+      mainZoneId: mainFlowConfig.mainFlowId,
       prioritizeMainZone: input.optimizerPrioritizeMainZone ?? null,
       groupBySpaceAndTemplate: input.optimizerGroupBySpaceAndTemplate ?? null,
       groupingZoneIds: record(input.groupingZoneIds, []),
       maxTemplateChangesByZoneId: record(input.maxTemplateChangesByZoneId, {}),
       weights: record(input.optimizerWeights, {}),
+      mainFlowConfig,
     },
   };
 

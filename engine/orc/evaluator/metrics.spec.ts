@@ -72,7 +72,7 @@ test("continuity uses optimizer.mainZoneId before name fallback", () => {
   assert.equal(continuity.metrics.intervalCount, 1);
 });
 
-test("continuity keeps name fallback when optimizer.mainZoneId is absent", () => {
+test("continuity does not use name fallback when optimizer.mainZoneId is absent", () => {
   const input = simulated();
   input.operationalStateSnapshot.spaces.nameById = { 7: "Sala cualquiera", 8: "Plató fallback" } as any;
   input.operationalStateSnapshot.constraints = {} as any;
@@ -81,6 +81,6 @@ test("continuity keeps name fallback when optimizer.mainZoneId is absent", () =>
     { taskId: 2, startPlanned: "11:00", endPlanned: "11:30", assignedResourceIds: [], spaceId: 8 },
   ];
   const continuity = evaluateContinuity(input);
-  assert.equal(continuity.metrics.mainFlowDetectionSource, "name-fallback");
-  assert.equal(continuity.metrics.intervalCount, 1);
+  assert.equal(continuity.metrics.mainFlowDetectionSource, "not-configured");
+  assert.equal(continuity.metrics.intervalCount, 0);
 });

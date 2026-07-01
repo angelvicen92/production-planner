@@ -1,4 +1,5 @@
 import type { ORCRecord, SimulatedState } from "../contracts";
+import { classifyORCPlanningEntryOperationalRole, isORCProductiveRole } from "../state/nonWorkTaskClassifier";
 
 export interface MetricEvaluation {
   readonly score: number;
@@ -49,7 +50,7 @@ function workDayDuration(simulatedState: SimulatedState): number {
   return duration(workDay?.start, workDay?.end);
 }
 
-type Interval = { taskId: number; start: number; end: number; duration: number; resources: readonly number[]; spaceId: number | null; contestantId: number | null };
+type Interval = { taskId: number; start: number; end: number; duration: number; resources: readonly number[]; spaceId: number | null; contestantId: number | null; role: ReturnType<typeof classifyORCPlanningEntryOperationalRole> };
 
 function taskById(simulatedState: SimulatedState): Map<number, SimulatedState["operationalStateSnapshot"]["tasks"][number]> {
   return new Map(simulatedState.operationalStateSnapshot.tasks.map((task) => [task.id, task]));
@@ -62,9 +63,9 @@ function planningIntervals(simulatedState: SimulatedState): Interval[] {
       const task = tasks.get(item.taskId);
       const start = minutes(item.startPlanned) ?? 0;
       const end = minutes(item.endPlanned) ?? start;
-      return { taskId: item.taskId, start, end, duration: Math.max(0, end - start), resources: item.assignedResourceIds ?? [], spaceId: item.spaceId ?? task?.spaceId ?? null, contestantId: task?.contestantId ?? null };
+      return { taskId: item.taskId, start, end, duration: Math.max(0, end - start), resources: item.assignedResourceIds ?? [], spaceId: item.spaceId ?? task?.spaceId ?? null, contestantId: task?.contestantId ?? null, role: classifyORCPlanningEntryOperationalRole({ entry: item, task, mealWindow: simulatedState.operationalStateSnapshot.availability.actualMeal ?? simulatedState.operationalStateSnapshot.availability.meal ?? simulatedState.operationalStateSnapshot.availability.mealWindow ?? null }) };
     })
-    .filter((item) => item.duration > 0)
+    .filter((item) => item.duration > 0 && isORCProductiveRole(item.role))
     .sort((left, right) => left.start - right.start || left.end - right.end || left.taskId - right.taskId);
 }
 
@@ -88,16 +89,12 @@ function gapMinutes(intervals: Interval[]): number {
   return gaps;
 }
 
-function mainStageSpaceIds(simulatedState: SimulatedState): { ids: Set<number>; source: "optimizerMainZoneId" | "name-fallback" | "all-planning-fallback" } {
+function mainStageSpaceIds(simulatedState: SimulatedState): { ids: Set<number>; source: "optimizerMainZoneId" | "not-configured" } {
   const optimizer = simulatedState.operationalStateSnapshot.constraints?.optimizer;
   const rawMainZoneId = optimizer && typeof optimizer === "object" ? (optimizer as Record<string, unknown>).mainZoneId : null;
   const configured = typeof rawMainZoneId === "number" && Number.isFinite(rawMainZoneId) ? rawMainZoneId : typeof rawMainZoneId === "string" && /^\d+$/.test(rawMainZoneId) ? Number(rawMainZoneId) : null;
   if (configured != null) return { ids: new Set([configured]), source: "optimizerMainZoneId" };
-  const ids = new Set<number>();
-  for (const [rawId, name] of Object.entries(simulatedState.operationalStateSnapshot.spaces.nameById)) {
-    if (/main|principal|plat[oó]|stage|set/i.test(String(name))) ids.add(Number(rawId));
-  }
-  return { ids, source: ids.size > 0 ? "name-fallback" : "all-planning-fallback" };
+  return { ids: new Set<number>(), source: "not-configured" };
 }
 
 function overlaps(left: { start: number; end: number }, right: { start: number; end: number }): boolean {
@@ -108,7 +105,7 @@ function evaluateProductionContinuity(simulatedState: SimulatedState): MetricEva
   const all = planningIntervals(simulatedState);
   const detection = mainStageSpaceIds(simulatedState);
   const mainSpaces = detection.ids;
-  const intervals = mainSpaces.size === 0 ? all : all.filter((interval) => interval.spaceId != null && mainSpaces.has(interval.spaceId));
+  const intervals = mainSpaces.size === 0 ? [] : all.filter((interval) => interval.spaceId != null && mainSpaces.has(interval.spaceId));
   const gaps = gapMinutes(intervals);
   const activeSpan = span(intervals);
   const score = intervals.length <= 1 ? 1 : round(1 - gaps / Math.max(activeSpan, 1));
