@@ -235,3 +235,47 @@ test("validateSimulatedStates aligns hard meal validation with mealMode semantic
 
   expectInvalid(cloneState({ planning: insideMealPlanning, tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45" }], availability: { ...base.availability, meal: { start: "13:00", end: "16:30", hardMealBreak: true } as any }, constraints: { mealMode: "flexible_meal_window" } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
 });
+
+function simulatedFrom(snapshot: OperationalState): SimulatedState {
+  return deepFreeze({ id: `sim:${snapshot.id}`, candidateStateId: "cs:transport", baseStateId: snapshot.id, simulationMode: "READ_ONLY_BASELINE", appliedTransformations: [], readOnly: true, operationalStateSnapshot: deepFreeze(snapshot) }) as SimulatedState;
+}
+
+function transportState(count: number, extra: Partial<any> = {}): OperationalState {
+  const planning = Array.from({ length: count }, (_, i) => ({ taskId: 100 + i, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49, ...extra.entry }));
+  const tasks = Array.from({ length: count }, (_, i) => ({ id: 100 + i, planId: 1, templateId: 77, templateName: "IN", status: "pending", startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49, ...extra.task }));
+  return { ...state(), id: `state:transport:${count}:${extra.id ?? "base"}`, planning, tasks, resources: [], spaces: { parentById: { 49: null }, nameById: { 49: "Transport bay" }, capacityById: { 49: 1 }, concurrencyById: { 49: 1 }, exclusiveById: { 49: true }, priorityById: { 49: 0 } }, constraints: { transportContract: { configured: true, arrivalTemplateId: null, departureTemplateId: null, arrivalTemplateName: "IN", vehicleCapacity: 6, source: "test" } } } as any;
+}
+
+test("validateSimulatedStates keeps transport arrivals valid within capacity and reports capacity overflow", () => {
+  const valid = validateSimulatedStates([simulatedFrom(transportState(6))], { createdAt: null }).validationResults[0];
+  assert.equal(valid.result, "VALID");
+  assert.equal(valid.violatedConstraints.includes("SPACE_OVERLAP"), false);
+  assert.equal(JSON.stringify(valid.violationDetails).includes("productive_task"), false);
+
+  const invalid = validateSimulatedStates([simulatedFrom(transportState(7))], { createdAt: null }).validationResults[0];
+  assert.equal(invalid.result, "INVALID");
+  const detail = invalid.violationDetails.find((d) => d.code === "TRANSPORT_GROUP_CAPACITY_EXCEEDED") as any;
+  assert.ok(detail);
+  assert.equal(detail.transportGroupCapacity, 6);
+  assert.equal(detail.transportGroupCount, 7);
+  assert.deepEqual([...new Set(detail.roleLabels)], ["transport_arrival"]);
+  assert.equal(detail.taskIds.length, 7);
+});
+
+test("validateSimulatedStates allows nonblocking transport with productive tasks but keeps blocking transport and productive overlaps hard", () => {
+  const nonBlocking = transportState(1, { id: "with-productive" });
+  nonBlocking.planning.push({ taskId: 300, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 });
+  nonBlocking.tasks.push({ id: 300, planId: 1, templateId: 300, templateName: "Scene", status: "pending", startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 } as any);
+  assert.equal(validateSimulatedStates([simulatedFrom(nonBlocking)], { createdAt: null }).validationResults[0].result, "VALID");
+
+  const blocking = transportState(1, { id: "blocking", entry: { blocksSpace: true } });
+  blocking.planning.push({ taskId: 301, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 });
+  blocking.tasks.push({ id: 301, planId: 1, templateId: 301, templateName: "Scene", status: "pending", startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 } as any);
+  assert.equal(validateSimulatedStates([simulatedFrom(blocking)], { createdAt: null }).validationResults[0].violatedConstraints.includes("SPACE_OVERLAP"), true);
+
+  const productive = state();
+  productive.id = "state:productive-overlap";
+  productive.planning = [{ taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }, { taskId: 2, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }];
+  productive.tasks = [{ id: 1, planId: 1, templateId: 1, status: "pending", startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }, { id: 2, planId: 1, templateId: 2, status: "pending", startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }] as any;
+  assert.equal(validateSimulatedStates([simulatedFrom(productive)], { createdAt: null }).validationResults[0].violatedConstraints.includes("SPACE_OVERLAP"), true);
+});
