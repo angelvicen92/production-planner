@@ -85,3 +85,14 @@ test("applies scoped protected breaks in hard prefilter", () => {
   assert.equal(prefilterCandidatesByHardConstraints([candidate("unmatched-resource")], state({ availability: { ...state().availability, protectedBreaks: [{ start: "09:00", end: "09:30", resourceItemId: 999 } as any] } })).candidates.length, 1);
   assert.equal(reason(candidate("global-hard"), state({ availability: { ...state().availability, globalHardBreaks: [{ start: "09:00", end: "09:30" }] } })), "hard-break-overlap");
 });
+
+test("prefilter aligns meal rejection with mealMode semantics", () => {
+  const moveInMeal = candidate("move-in-meal", [{ taskId: 1, startPlanned: "12:00", endPlanned: "12:30", resourceIds: [10] }]);
+  const flexible = state({ availability: { ...state().availability, meal: { start: "12:00", end: "13:00" }, mealWindow: { start: "12:00", end: "13:00" } }, constraints: { mealMode: "flexible_meal_window" } });
+  assert.equal(prefilterCandidatesByHardConstraints([moveInMeal], flexible).candidates.length, 1);
+  assert.equal(reason(moveInMeal, state({ availability: { ...state().availability, meal: { start: "12:00", end: "13:00" } }, constraints: { mealMode: "global_hard_break" } })), "hard-break-overlap");
+  assert.equal(reason(moveInMeal, state({ availability: { ...state().availability, actualMeal: { start: "12:00", end: "13:00" } }, constraints: { mealMode: "flexible_meal_window" } })), "hard-break-overlap");
+  assert.equal(reason(moveInMeal, state({ availability: { ...state().availability, globalHardBreaks: [{ start: "12:00", end: "13:00" }] }, constraints: { mealMode: "flexible_meal_window" } })), "hard-break-overlap");
+  const discarded = prefilterCandidatesByHardConstraints([moveInMeal], state({ availability: { ...state().availability, actualMeal: { start: "12:00", end: "13:00" } }, constraints: { mealMode: "flexible_meal_window" } })).discardedCandidates;
+  assert.doesNotThrow(() => JSON.stringify(discarded));
+});

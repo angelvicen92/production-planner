@@ -210,3 +210,28 @@ test("validateSimulatedStates preserves global hard break semantics and ignores 
   const soft = validateSimulatedStates([simulatedWithSnapshot(cloneState({ availability: { ...base.availability, protectedBreaks: [{ start: "09:05", end: "09:20", label: "FYI" } as any] } }))]);
   assert.equal(soft.validationResults[0].result, "VALID");
 });
+
+test("validateSimulatedStates aligns hard meal validation with mealMode semantics", () => {
+  const base = state();
+  const insideMealPlanning = [{ ...base.planning[0], startPlanned: "13:15", endPlanned: "13:45" }];
+  const flexible = cloneState({
+    planning: insideMealPlanning,
+    tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45" }],
+    availability: { ...base.availability, meal: { start: "13:00", end: "16:30" }, mealWindow: { start: "13:00", end: "16:30" } },
+    constraints: { mealMode: "flexible_meal_window" },
+  });
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(flexible)]).validationResults[0].result, "VALID");
+
+  expectInvalid(cloneState({ planning: insideMealPlanning, tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45" }], availability: { ...base.availability, meal: { start: "13:00", end: "16:30" } }, constraints: { mealMode: "global_hard_break" } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
+  expectInvalid(cloneState({ planning: insideMealPlanning, tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45" }], availability: { ...base.availability, actualMeal: { start: "13:00", end: "16:30" } }, constraints: { mealMode: "flexible_meal_window" } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
+
+  const placeholder = cloneState({
+    planning: [{ ...insideMealPlanning[0], operationalRole: "meal_break_placeholder" }],
+    tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45", operationalRole: "meal_break_placeholder" } as any],
+    availability: { ...base.availability, meal: { start: "13:00", end: "16:30" }, mealWindow: { start: "13:00", end: "16:30" } },
+    constraints: { mealMode: "flexible_meal_window" },
+  });
+  assert.equal(validateSimulatedStates([simulatedWithSnapshot(placeholder)]).validationResults[0].result, "VALID");
+
+  expectInvalid(cloneState({ planning: insideMealPlanning, tasks: [{ ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45" }], availability: { ...base.availability, meal: { start: "13:00", end: "16:30", hardMealBreak: true } as any }, constraints: { mealMode: "flexible_meal_window" } }), "PLANNING_CROSSES_HARD_MEAL_BREAK");
+});

@@ -290,3 +290,22 @@ test("ORC Active no lanza excepción si la ejecución con seed falla", () => {
   assert.equal(result.diagnostics.usedEngine, "v4_fallback");
   assert.equal(result.diagnostics.baselineSeed.source, "v4_baseline");
 });
+
+test("ORC Active does not fallback for duplicated flexible meal window baseline", () => {
+  const base = fullyPlannedInput();
+  const mealAligned = {
+    ...base,
+    workDay: { start: "09:00", end: "18:00" },
+    mealMode: "flexible_meal_window",
+    meal: { start: "13:00", end: "16:30" },
+    mealWindow: { start: "13:00", end: "16:30" },
+    tasks: [
+      { ...base.tasks[0], startPlanned: "13:15", endPlanned: "13:45", contestantId: 1, assignedResourceIds: [7], spaceId: 10 },
+      { ...base.tasks[1], startPlanned: "13:45", endPlanned: "14:15", contestantId: 1, assignedResourceIds: [7], spaceId: 10 },
+    ],
+  } as EngineInput;
+  const result = runORCActivePlanner(mealAligned);
+  assert.notEqual(result.diagnostics.fallbackReason, "baseline_seed_hard_infeasible");
+  assert.equal(JSON.stringify(result.diagnostics).includes("PLANNING_CROSSES_HARD_MEAL_BREAK"), false);
+  assert.ok(["orc_baseline_preserved", "orc", "v4_fallback"].includes(result.diagnostics.usedEngine));
+});
