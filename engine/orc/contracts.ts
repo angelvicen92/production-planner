@@ -303,6 +303,9 @@ export interface ValidationViolationDetail {
   readonly taskLabels?: readonly string[];
   readonly spaceLabels?: readonly string[];
   readonly resourceLabels?: readonly string[];
+  readonly roleLabels?: readonly string[];
+  readonly spaceOccupancyModes?: readonly string[];
+  readonly blocksSpaceFlags?: readonly boolean[];
   readonly readOnly: true;
 }
 
@@ -339,12 +342,14 @@ export interface OperationalState {
     assignedResourceIds: number[];
     spaceId?: number | null;
     seedSource?: "v4_planned_task" | "protected_existing_planning";
-    operationalRole?: "productive_task" | "meal_break_placeholder" | "arrival_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
+    operationalRole?: "productive_task" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
     blocksSpace?: boolean;
     countsAsWork?: boolean;
     countsForMainFlow?: boolean;
     countsForResourceLoad?: boolean;
     countsForTalentLoad?: boolean;
+    allowsSpaceOverlap?: boolean;
+    spaceOccupancyMode?: "exclusive" | "shared" | "non_blocking";
   }>;
   tasks: TaskInput[];
   resources: PlanResourceItemInput[];

@@ -84,6 +84,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 209 — 2026-06-30 UTC — ORC Executable Main Flow Gap Closure Candidate v1
 - ID 210 — 2026-06-30 UTC — ORC Main Flow Active Readiness & Non-Work Break Semantics v1
 - ID 211 — 2026-07-01 UTC — ORC Active Configuration & Operational Role Contract v1
+- ID 212 — 2026-07-01 UTC — ORC Baseline Viability Semantics: Meal Window, Non-Work Roles & Space Occupancy v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -220,6 +221,14 @@ ORC exige ahora configuración estructurada de flujo principal: `constraints.opt
 El baseline seed transporta contrato operativo por tarea (`seedSource`, `operationalRole`, `blocksSpace`, `countsAsWork`, `countsForMainFlow`, `countsForResourceLoad`, `countsForTalentLoad`) para distinguir trabajo productivo, comida, llegada/citación, bloqueos visuales, break de espacio y placeholders no operativos. Validation aplica hard constraints según rol: las tareas productivas siguen siendo estrictas, mientras que placeholders no productivos no contaminan hard-feasibility por comida ni por solapes de espacio salvo que bloqueen espacio explícitamente. No se relajan hard constraints productivas.
 
 `mainFlowGapClosure` aparece siempre en diagnostics reales con ejecución/skip, main flow resuelto, candidates, assignments, descartes de prefiltro, candidate/simulation counts, validaciones y selección. Los candidatos abstractos sin assignments pueden seguir como diagnóstico, pero no se presentan como cambios ejecutables cuando falta un candidate operativo; en ese caso se reporta `no_executable_candidate_available`. No se implementa compactación de coaches todavía, no hay resource handoff compaction, no se reactivan movimientos post-pipeline y `real-voice-audition-day` se mantiene en la suite.
+
+### ORC Baseline Viability Semantics: Meal Window, Non-Work Roles & Space Occupancy v1 (ID 212)
+
+ORC distingue ahora una `mealWindow` amplia usada para colocar comidas de un cierre global hard. Una ventana amplia de comida ya no apaga automáticamente toda la producción; solo `actualMeal`, `globalHardBreak`, `hardMealBreak`, `isGlobalHardBreak`, `blocksAllWork`, `dayClosed`, `productionStop` o señales equivalentes mantienen semántica hard global. Los hard breaks explícitos siguen invalidando tareas productivas que los cruzan.
+
+El baseline seed transporta roles operativos y semántica de ocupación de espacio para diferenciar tareas productivas exclusivas de placeholders de comida, llegada/citación y elementos no operativos. Validation y el hard prefilter usan esos roles para decidir `SPACE_OVERLAP`: placeholders no bloqueantes no contaminan hard-feasibility, mientras que dos tareas productivas exclusivas siguen sujetas a hard constraints reales. `mainFlowGapClosure` conserva sus diagnostics y añade detalles accionables de prefiltro cuando un candidate se descarta por solape.
+
+No se implementa compactación de coaches todavía, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4, no se cambia el pipeline ORC y `real-voice-audition-day` sigue incluido.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

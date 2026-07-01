@@ -8,6 +8,7 @@ import type { CandidateBuilderResult } from "../see/candidateBuilder";
 import { buildBaselinePreservationCandidate } from "../see/baselinePreservationCandidate";
 import { composePartialPlans } from "../see/partialPlanComposer";
 import { dominantViolationCodes, sampleViolationDetailsByCode } from "../validation/protectedBreakScope";
+import { resolveORCMealSemantics } from "../state/mealSemanticsResolver";
 
 export type ORCBaselineSeedHardFeasibilityReason =
   | "baseline_seed_not_available"
@@ -32,6 +33,8 @@ export interface ORCBaselineSeedHardFeasibilityAudit {
   violationDetailCount: number;
   violationDetailsSample: ValidationViolationDetail[];
   violationDetailsTruncated: boolean;
+  mealSemantics?: Record<string, unknown>;
+  hardFeasibilityRootCauses?: string[];
   dominantViolationCodes: string[];
   affectedTaskIds: number[];
   affectedTaskIdCount: number;
@@ -91,6 +94,8 @@ function buildAuditEvidence(audit: ORCBaselineSeedHardFeasibilityAudit, createdA
       violationDetailsTruncated: audit.violationDetailsTruncated,
       sampleStrategy: "stratified_by_violation_code",
       dominantViolationCodes: audit.dominantViolationCodes,
+      mealSemantics: audit.mealSemantics ?? null,
+      hardFeasibilityRootCauses: audit.hardFeasibilityRootCauses ?? [],
       affectedTaskIds: audit.affectedTaskIds,
       affectedTaskIdCount: audit.affectedTaskIdCount,
       commitCount: audit.commitCount,
@@ -153,8 +158,9 @@ export function auditORCBaselineSeedHardFeasibility(input: EngineInput | null | 
     const simulated = pipeline.simulation.simulatedStates[0] ?? null;
     const affected = extractAffectedTaskIds(input, validation, maxAffectedTaskIds);
     const hardFeasible = validation?.result === "VALID";
+    const mealSemantics = resolveORCMealSemantics(operationalState) as any;
     const details = validation?.violationDetails ?? [];
-    return finalize({ available: true, hardFeasible, reason: hardFeasible ? "baseline_seed_hard_feasible" : "baseline_seed_hard_infeasible", operationalStateId: operationalState.id, plannedTaskCount, candidateId: baseline.candidate.id, partialPlanId: composed.partialPlans[0]?.partialPlanId ?? null, simulatedStateId: simulated?.id ?? null, validationResultId: validation?.id ?? null, validationResult: validation?.result ?? null, violatedConstraints: [...(validation?.violatedConstraints ?? [])].sort(), violatedConstraintSummary: summarize(validation?.violatedConstraints ?? []), violationDetailCount: details.length, violationDetailsSample: sampleViolationDetailsByCode(details, { maxTotal: 20 }), violationDetailsTruncated: details.length > 20 || details.some((item) => item.code === "VALIDATION_DETAILS_TRUNCATED"), dominantViolationCodes: dominantViolationCodes(details, validation?.violatedConstraints ?? []), affectedTaskIds: affected.ids, affectedTaskIdCount: affected.count, commitCount: pipeline.commit.summary.commitCount, validSimulationCount: pipeline.validation.summary.validCount, invalidSimulationCount: pipeline.validation.summary.invalidCount }, createdAt, [...baseline.candidate.evidenceIds, ...pipeline.evidence.map((item) => item.id)]);
+    return finalize({ available: true, hardFeasible, reason: hardFeasible ? "baseline_seed_hard_feasible" : "baseline_seed_hard_infeasible", operationalStateId: operationalState.id, plannedTaskCount, candidateId: baseline.candidate.id, partialPlanId: composed.partialPlans[0]?.partialPlanId ?? null, simulatedStateId: simulated?.id ?? null, validationResultId: validation?.id ?? null, validationResult: validation?.result ?? null, violatedConstraints: [...(validation?.violatedConstraints ?? [])].sort(), violatedConstraintSummary: summarize(validation?.violatedConstraints ?? []), violationDetailCount: details.length, violationDetailsSample: sampleViolationDetailsByCode(details, { maxTotal: 20 }), violationDetailsTruncated: details.length > 20 || details.some((item) => item.code === "VALIDATION_DETAILS_TRUNCATED"), mealSemantics, hardFeasibilityRootCauses: hardFeasible ? ["valid_after_semantics_alignment"] : dominantViolationCodes(details, validation?.violatedConstraints ?? []).map((c) => c === "SPACE_OVERLAP" ? "productive_space_overlap" : c === "PLANNING_CROSSES_HARD_MEAL_BREAK" ? "explicit_global_meal_break_conflict" : "unclassified_operational_role"), dominantViolationCodes: dominantViolationCodes(details, validation?.violatedConstraints ?? []), affectedTaskIds: affected.ids, affectedTaskIdCount: affected.count, commitCount: pipeline.commit.summary.commitCount, validSimulationCount: pipeline.validation.summary.validCount, invalidSimulationCount: pipeline.validation.summary.invalidCount }, createdAt, [...baseline.candidate.evidenceIds, ...pipeline.evidence.map((item) => item.id)]);
   } catch {
     return finalize({ available: false, hardFeasible: false, reason: "baseline_seed_audit_failed", operationalStateId: null, plannedTaskCount: 0, candidateId: null, partialPlanId: null, simulatedStateId: null, validationResultId: null, validationResult: null, violatedConstraints: [], violatedConstraintSummary: emptySummary(), violationDetailCount: 0, violationDetailsSample: [], violationDetailsTruncated: false, dominantViolationCodes: [], affectedTaskIds: [], affectedTaskIdCount: 0, commitCount: 0, validSimulationCount: 0, invalidSimulationCount: 0 }, createdAt);
   }
