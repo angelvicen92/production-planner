@@ -85,6 +85,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 210 — 2026-06-30 UTC — ORC Main Flow Active Readiness & Non-Work Break Semantics v1
 - ID 211 — 2026-07-01 UTC — ORC Active Configuration & Operational Role Contract v1
 - ID 212 — 2026-07-01 UTC — ORC Baseline Viability Semantics: Meal Window, Non-Work Roles & Space Occupancy v1
+- ID 213 — 2026-07-01 UTC — ORC MealMode Contract Alignment v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -229,6 +230,14 @@ ORC distingue ahora una `mealWindow` amplia usada para colocar comidas de un cie
 El baseline seed transporta roles operativos y semántica de ocupación de espacio para diferenciar tareas productivas exclusivas de placeholders de comida, llegada/citación y elementos no operativos. Validation y el hard prefilter usan esos roles para decidir `SPACE_OVERLAP`: placeholders no bloqueantes no contaminan hard-feasibility, mientras que dos tareas productivas exclusivas siguen sujetas a hard constraints reales. `mainFlowGapClosure` conserva sus diagnostics y añade detalles accionables de prefiltro cuando un candidate se descarta por solape.
 
 No se implementa compactación de coaches todavía, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4, no se cambia el pipeline ORC y `real-voice-audition-day` sigue incluido.
+
+### ORC MealMode Contract Alignment v1 (ID 213)
+
+ORC respeta ahora `constraints.mealMode` como contrato principal para resolver la semántica de comida. `flexible_meal_window` se interpreta como ventana de colocación de comida aunque `meal` y `mealWindow` lleguen duplicados desde `buildInput`, evitando el falso `PLANNING_CROSSES_HARD_MEAL_BREAK` sobre tareas productivas dentro de una ventana flexible amplia.
+
+`global_hard_break`, `actualMeal`, `globalHardBreaks` y flags hard explícitos (`globalHardBreak`, `hardMealBreak`, `isGlobalHardBreak`, `blocksAllWork`, `dayClosed`, `productionStop`) siguen bloqueando producción como hard constraints reales. Si falta `mealMode`, ORC conserva el fallback legacy conservador para `meal` con warning diagnosticado, y no inventa cierres globales desde `mealWindow`.
+
+Validation, CandidateHardPrefilter y BaselineSeedFeasibilityAudit comparten esta semántica y exponen `mealSemantics.mealMode` en diagnostics. No se relajan hard constraints explícitas, no hay cambios DB, RLS, UI, V3 ni V4, no se implementa compactación de coaches, no se cambia el pipeline ORC y `real-voice-audition-day` sigue incluido.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

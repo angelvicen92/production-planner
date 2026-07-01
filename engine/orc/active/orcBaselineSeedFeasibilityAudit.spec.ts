@@ -98,3 +98,20 @@ test("baseline seed audit stratifies violation detail samples and counts dominan
   assert.equal(audit.evidence[0].data.sampleStrategy, "stratified_by_violation_code");
   assert.ok(audit.dominantViolationCodes.includes("SPACE_OVERLAP"));
 });
+
+test("baseline seed audit does not treat duplicated flexible meal window as hard meal break", () => {
+  const audit = auditORCBaselineSeedHardFeasibility(input([task(1, "13:15", "13:45")], { mealMode: "flexible_meal_window", meal: { start: "13:00", end: "16:30" }, mealWindow: { start: "13:00", end: "16:30" } } as any), { createdAt: null });
+  assert.equal(audit.hardFeasible, true);
+  assert.equal(audit.mealSemantics?.mealMode, "flexible_meal_window");
+  assert.equal(audit.mealSemantics?.mode, "meal_placement_window");
+  assert.equal(audit.violatedConstraints.includes("PLANNING_CROSSES_HARD_MEAL_BREAK"), false);
+  assert.equal(audit.hardFeasibilityRootCauses?.includes("explicit_global_meal_break_conflict"), false);
+});
+
+test("baseline seed audit treats global_hard_break meal as hard and reports explicit root cause", () => {
+  const audit = auditORCBaselineSeedHardFeasibility(input([task(1, "13:15", "13:45")], { mealMode: "global_hard_break", meal: { start: "13:00", end: "16:30" } } as any), { createdAt: null });
+  assert.equal(audit.hardFeasible, false);
+  assert.equal(audit.mealSemantics?.mealMode, "global_hard_break");
+  assert.ok(audit.violatedConstraints.includes("PLANNING_CROSSES_HARD_MEAL_BREAK"));
+  assert.ok(audit.hardFeasibilityRootCauses?.includes("explicit_global_meal_break_conflict"));
+});
