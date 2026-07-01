@@ -284,6 +284,38 @@ test("determinismo", () => {
   assert.deepEqual(a.diagnostics.bestCandidateTrace, b.diagnostics.bestCandidateTrace);
 });
 
+test("ORC Active unlocks baseline seed hard infeasible when selected baseline-overlap repair is valid and committed", () => {
+  const repairShadow = {
+    ...shadow(validPlanning, [], 1),
+    commitDecisions: [{ decision: "COMMIT", operationalValueId: "sim:1", reason: "repair", differences: [], evidenceId: "evidence", createdAt: null }],
+    summary: {
+      validCount: 1,
+      invalidCount: 0,
+      baselineOverlapRepair: {
+        generatedCandidateCount: 1,
+        candidateStateCount: 1,
+        simulatedStateCount: 1,
+        validSimulationCount: 1,
+        invalidSimulationCount: 0,
+        selectedAsBest: true,
+        selectedAsCommit: true,
+        selectedCandidateId: "orc-see:baseline-overlap-repair:test",
+        lineage: { rawCandidateIds: ["orc-see:baseline-overlap-repair:test"], syntheticCandidateIds: ["candidate:partial-plan:orc-see:baseline-overlap-repair:test"], partialPlanIds: ["partial-plan:orc-see:baseline-overlap-repair:test"], candidateStateIds: ["cand:1"], simulatedStateIds: ["sim:1"], committedSimulatedStateIds: ["sim:1"], readOnly: true },
+      },
+    } as any,
+  };
+  const result = runORCActivePlanner(input(), { orcShadowResult: repairShadow });
+  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.diagnostics.orcResultKind, "orc_changed_plan");
+  assert.equal(result.diagnostics.fallbackReason, null);
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.source, "candidate_transformations");
+  assert.ok(result.diagnostics.orcSummary.planningMaterialization.changedTaskCount > 0);
+  assert.equal(result.diagnostics.gates.baselineSeedHardFeasible, true);
+  assert.equal(result.diagnostics.gates.hardFeasible, true);
+  assert.equal(result.diagnostics.gates.noHardViolations, true);
+  assert.equal(result.diagnostics.orcSummary.baselineOverlapRepair.selectedAsCommit, true);
+});
+
 test("ORC Active no lanza excepción si la ejecución con seed falla", () => {
   assert.doesNotThrow(() => runORCActivePlanner(input(), { runORC: () => { throw new TypeError("seed rejected"); } }));
   const result = runORCActivePlanner(input(), { runORC: () => { throw new TypeError("seed rejected"); } });

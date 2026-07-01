@@ -90,6 +90,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 215 — 2026-07-01 UTC — ORC Active Transport Contract Wiring & Seed Role Reclassification v1
 - ID 216 — 2026-07-01 UTC — ORC Validation Transport Role Propagation v1
 - ID 217 — 2026-07-01 UTC — ORC Baseline Productive Space Overlap Repair Candidate v1
+- ID 218 — 2026-07-01 UTC — ORC Baseline Repair Lineage & Active Gate Unblocking v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -274,6 +275,14 @@ ORC SEE can now generate executable baseline-repair candidates for pre-existing 
 The repair is a normal ORC candidate with real assignments and clear `BASELINE_SPACE_OVERLAP_REPAIR` metadata/evidence. It does not mutate `OperationalState` during generation, does not use post-pipeline moves, and must pass the official Candidate → Transformation → Simulation → Validation → Evaluation → Commit path. `SPACE_OVERLAP` remains hard; no constraints are relaxed and final hard-infeasible states are not consolidated. A hard-feasible repaired plan can win over a hard-infeasible baseline even when OPQM is otherwise unchanged.
 
 CandidateHardPrefilter distinguishes the overlap being repaired from newly introduced or worsened overlaps: it allows a repair candidate to proceed when it resolves the initial conflict, but still discards candidates that create another hard overlap. This iteration does not implement coach compaction or resource handoff compaction. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
+
+### ORC Baseline Repair Lineage & Active Gate Unblocking v1 (ID 218)
+
+ORC now resolves deterministic lineage from raw baseline-overlap repair candidates through Partial Plans, synthetic candidates, CandidateStates, SimulatedStates, OperationalValues and CommitDecisions. `baselineOverlapRepair` summary counts CandidateStates, simulations, valid/invalid validations and commit selection even when the Decision Engine evaluates `candidate:partial-plan:<rawCandidateId>` instead of the raw SEE candidate directly. The bounded `lineage` diagnostic is serializable/read-only and reports raw candidate ids, synthetic candidate ids, partial plan ids, candidate state ids, simulated state ids and committed simulated state ids.
+
+ORC Active can accept a selected baseline-overlap repair when the final simulation is `VALID`, materialized from `candidate_transformations`, changes at least one task, preserves `done`/`in_progress`, respects locks and has no hard violations. A hard-feasible repaired plan may therefore beat a hard-infeasible baseline seed, but no hard-infeasible final state is consolidated. `SPACE_OVERLAP` remains hard, Validation/Evaluation/Commit are not bypassed, and no post-pipeline moves are used.
+
+This iteration does not implement coach compaction or resource handoff compaction. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
