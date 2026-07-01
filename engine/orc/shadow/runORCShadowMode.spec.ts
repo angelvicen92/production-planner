@@ -28,6 +28,28 @@ const minimalInput = (): EngineInput => ({
   groupingZoneIds: [],
 });
 
+const overlapRepairInput = (): EngineInput => ({
+  planId: 218,
+  workDay: { start: "09:00", end: "12:00" },
+  meal: { start: "13:00", end: "14:00" },
+  camerasAvailable: 2,
+  tasks: [
+    { id: 1, planId: 218, templateId: 1, status: "pending", durationOverrideMin: 30, contestantId: 1, zoneId: 1, spaceId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [10] },
+    { id: 2, planId: 218, templateId: 2, status: "pending", durationOverrideMin: 30, contestantId: 2, zoneId: 1, spaceId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [11] },
+  ],
+  locks: [],
+  optimizerMainZoneId: 1,
+  zoneResourceAssignments: {},
+  spaceResourceAssignments: { 1: [10, 11] },
+  zoneResourceTypeRequirements: {},
+  spaceResourceTypeRequirements: {},
+  planResourceItems: [
+    { id: 10, resourceItemId: 10, typeId: 1, name: "Camera A", isAvailable: true },
+    { id: 11, resourceItemId: 11, typeId: 1, name: "Camera B", isAvailable: true },
+  ],
+  resourceItemComponents: {},
+  groupingZoneIds: [],
+});
 
 const fullyPlannedInput = (): EngineInput => ({
   planId: 96,
@@ -329,6 +351,21 @@ test("runORCShadowMode exposes adaptive search-space summary and evidence", () =
   assert.equal(typeof shadow.summary.adaptiveSearchSpace.averageSize, "number");
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "adaptive-search-space-built"));
   assert.ok(shadow.evidence.some((evidence) => evidence.kind === "shadow-mode-summary" && evidence.data.adaptiveSearchSpace != null));
+});
+
+test("runORCShadowMode links baseline-overlap repair through partial-plan synthetic candidate lineage", () => {
+  const shadow = runORCShadowMode(overlapRepairInput(), { enabled: true, createdAt: "2026-07-01T00:00:00.000Z" });
+  assert.notEqual(shadow, null);
+  const summary = shadow.summary.baselineOverlapRepair as any;
+  assert.ok(summary.generatedCandidateCount > 0);
+  assert.ok(summary.candidateStateCount > 0);
+  assert.ok(summary.simulatedStateCount > 0);
+  assert.ok(summary.validSimulationCount > 0);
+  assert.equal(summary.selectedAsBest, true);
+  assert.equal(summary.selectedAsCommit, true);
+  assert.equal(summary.selectedCandidateId, summary.candidateIds[0]);
+  assert.equal(summary.lineage.readOnly, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(summary.lineage)), summary.lineage);
 });
 
 test("runORCShadowMode exposes strategy candidate summary and evidence", () => {
