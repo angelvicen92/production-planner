@@ -1,6 +1,7 @@
 import type { Candidate, Evidence, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { configuredHardBreaks, hardBreakAppliesToPlanningEntry } from "../validation/protectedBreakScope";
+import { classifyORCPlanningEntryOperationalRole, isORCProductiveRole, isORCSpaceBlockingRole } from "../state/nonWorkTaskClassifier";
 
 const SOURCE = "orc-see";
 const DEFAULT_MAX_DETAILED = 50;
@@ -110,21 +111,22 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     for (const br of configuredHardBreaks(state)) {
       const bs = timeToMinutes(br.start), be = timeToMinutes(br.end);
       const previewEntry = { taskId: assignment.taskId, startPlanned: start ?? "", endPlanned: end ?? "", assignedResourceIds: [...(assignment.resourceIds ?? current?.assignedResourceIds ?? [])], spaceId: assignment.spaceId !== undefined ? assignment.spaceId : current?.spaceId ?? null };
-      if (startMin != null && endMin != null && bs != null && be != null && overlaps(startMin, endMin, bs, be) && hardBreakAppliesToPlanningEntry(br, previewEntry, task)) return discard(candidate, "hard-break-overlap", br.code, [assignment.taskId]);
+      if (startMin != null && endMin != null && bs != null && be != null && overlaps(startMin, endMin, bs, be) && isORCProductiveRole(classifyORCPlanningEntryOperationalRole({ entry: previewEntry, task, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null })) && hardBreakAppliesToPlanningEntry(br, previewEntry, task)) return discard(candidate, "hard-break-overlap", br.code, [assignment.taskId]);
     }
   }
 
   const plan = preview(state, candidate);
-  const windows = plan.map((entry) => ({ entry, start: timeToMinutes(entry.startPlanned), end: timeToMinutes(entry.endPlanned), task: tasks.get(entry.taskId) })).filter((x): x is typeof x & { start: number; end: number } => x.start != null && x.end != null);
+  const windows = plan.map((entry) => { const task = tasks.get(entry.taskId); return { entry, start: timeToMinutes(entry.startPlanned), end: timeToMinutes(entry.endPlanned), task, role: classifyORCPlanningEntryOperationalRole({ entry, task, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null }) }; }).filter((x): x is typeof x & { start: number; end: number } => x.start != null && x.end != null);
   for (let i = 0; i < windows.length; i++) for (let j = i + 1; j < windows.length; j++) {
     const a = windows[i], b = windows[j];
     if (!overlaps(a.start, a.end, b.start, b.end)) continue;
     const ids = [a.entry.taskId, b.entry.taskId];
-    if (a.task?.contestantId != null && a.task.contestantId === b.task?.contestantId) return discard(candidate, "contestant-overlap", "CONTESTANT_OVERLAP", ids);
-    if (a.task?.itinerantTeamId != null && a.task.itinerantTeamId === b.task?.itinerantTeamId) return discard(candidate, "itinerant-team-overlap", "ITINERANT_TEAM_OVERLAP", ids);
-    if ((a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, "resource-overlap", "RESOURCE_OVERLAP", ids);
+    const productivePair = isORCProductiveRole(a.role) && isORCProductiveRole(b.role);
+    if (productivePair && a.task?.contestantId != null && a.task.contestantId === b.task?.contestantId) return discard(candidate, "contestant-overlap", "CONTESTANT_OVERLAP", ids);
+    if (productivePair && a.task?.itinerantTeamId != null && a.task.itinerantTeamId === b.task?.itinerantTeamId) return discard(candidate, "itinerant-team-overlap", "ITINERANT_TEAM_OVERLAP", ids);
+    if (productivePair && (a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, "resource-overlap", "RESOURCE_OVERLAP", ids);
     const spaceId = a.entry.spaceId ?? null;
-    if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
+    if (spaceId != null && spaceId === (b.entry.spaceId ?? null) && isORCSpaceBlockingRole(a.role) && isORCSpaceBlockingRole(b.role)) {
       const capacity = state.spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, state.spaces?.concurrencyById?.[spaceId] ?? state.spaces?.capacityById?.[spaceId] ?? 1);
       if (capacity < 2) return discard(candidate, "space-overlap", "SPACE_OVERLAP", ids);
     }

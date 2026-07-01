@@ -1,6 +1,7 @@
 import type { Evidence, OperationalState, SimulatedState, ValidationResult, ValidationViolationDetail, ValidationConstraintGroup } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { configuredHardBreaks, hardBreakAppliesToPlanningEntry, protectedBreakDiagnostic, sampleViolationDetailsByCode } from "./protectedBreakScope";
+import { classifyORCPlanningEntryOperationalRole, isORCProductiveRole, isORCSpaceBlockingRole } from "../state/nonWorkTaskClassifier";
 
 export interface ValidationEngineOptions {
   createdAt?: string | null;
@@ -141,6 +142,7 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
   const planning = snapshot.planning ?? [];
   const byTask = new Map<number, PlanningEntry>();
   const windows = new Map<number, { start: number; end: number; entry: PlanningEntry }>();
+  const roleByTask = new Map<number, ReturnType<typeof classifyORCPlanningEntryOperationalRole>>();
 
   for (const entry of planning) {
     if (!Number.isFinite(entry.taskId) || !isNonEmptyString(entry.startPlanned) || !isNonEmptyString(entry.endPlanned)) {
@@ -153,6 +155,8 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     const end = timeToMinutes(entry.endPlanned);
     if (start == null || end == null) { addDetail(violations, details, { code: "INVALID_PLANNING_TIME_FORMAT", constraintGroup: "structure", taskIds: [entry.taskId], timeWindow: windowOf(entry) }); continue; }
     if (start >= end) addDetail(violations, details, { code: "INVALID_PLANNING_TIME_RANGE", constraintGroup: "structure", taskIds: [entry.taskId], timeWindow: windowOf(entry) });
+    const task = tasks.get(entry.taskId);
+    roleByTask.set(entry.taskId, classifyORCPlanningEntryOperationalRole({ entry, task, mealWindow: snapshot.availability?.actualMeal ?? snapshot.availability?.meal ?? snapshot.availability?.mealWindow ?? null }));
     windows.set(entry.taskId, { start, end, entry });
   }
 
@@ -165,6 +169,8 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     for (const br of breaks) {
       if (br.startMin == null || br.endMin == null || !overlaps(start, end, br.startMin, br.endMin)) continue;
       const task = tasks.get(entry.taskId);
+      const role = roleByTask.get(entry.taskId) ?? "productive_task";
+      if (!isORCProductiveRole(role)) continue;
       if (!hardBreakAppliesToPlanningEntry(br, entry, task)) continue;
       const protectedDiagnostic = br.code === "PLANNING_CROSSES_PROTECTED_HARD_BREAK" ? protectedBreakDiagnostic(br) : null;
       addDetail(violations, details, {
@@ -209,12 +215,15 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     const a = planned[i], b = planned[j];
     if (!overlaps(a.start, a.end, b.start, b.end)) continue;
     const ta = tasks.get(a.entry.taskId), tb = tasks.get(b.entry.taskId);
-    if (ta?.contestantId != null && ta.contestantId === tb?.contestantId) addDetail(violations, details, { code: "CONTESTANT_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same contestant overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
-    if (ta?.itinerantTeamId != null && ta.itinerantTeamId === tb?.itinerantTeamId) addDetail(violations, details, { code: "ITINERANT_TEAM_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same itinerant team overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
+    const roleA = roleByTask.get(a.entry.taskId) ?? "productive_task";
+    const roleB = roleByTask.get(b.entry.taskId) ?? "productive_task";
+    const productivePair = isORCProductiveRole(roleA) && isORCProductiveRole(roleB);
+    if (productivePair && ta?.contestantId != null && ta.contestantId === tb?.contestantId) addDetail(violations, details, { code: "CONTESTANT_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same contestant overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
+    if (productivePair && ta?.itinerantTeamId != null && ta.itinerantTeamId === tb?.itinerantTeamId) addDetail(violations, details, { code: "ITINERANT_TEAM_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same itinerant team overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
     const sharedResources = (a.entry.assignedResourceIds ?? []).filter((id) => (b.entry.assignedResourceIds ?? []).includes(id));
-    if (sharedResources.length > 0) addDetail(violations, details, { code: "RESOURCE_OVERLAP", constraintGroup: "resources", taskIds: [a.entry.taskId, b.entry.taskId], resourceIds: sharedResources, timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two overlapping tasks share a resource. Check V4 resource assignment, fixture resource availability, or seed adapter mapping." });
+    if (productivePair && sharedResources.length > 0) addDetail(violations, details, { code: "RESOURCE_OVERLAP", constraintGroup: "resources", taskIds: [a.entry.taskId, b.entry.taskId], resourceIds: sharedResources, timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two overlapping tasks share a resource. Check V4 resource assignment, fixture resource availability, or seed adapter mapping." });
     const spaceId = a.entry.spaceId ?? null;
-    if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
+    if (spaceId != null && spaceId === (b.entry.spaceId ?? null) && isORCSpaceBlockingRole(roleA) && isORCSpaceBlockingRole(roleB)) {
       const spaces = snapshot.spaces;
       const capacity = spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, spaces?.concurrencyById?.[spaceId] ?? spaces?.capacityById?.[spaceId] ?? 1);
       if (capacity < 2) addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: [a.entry.taskId, b.entry.taskId], spaceIds: [spaceId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), message: `Two tasks overlap in space ${spaceId} with effective capacity ${capacity}.`, diagnosticHint: "Two tasks overlap in a space with effective capacity 1. Check V4 output, configured space concurrency/capacity, or whether this space should allow parallel work." });

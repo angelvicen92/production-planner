@@ -82,6 +82,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 207 — 2026-06-30 UTC — ORC Scoped Protected Break Validation & Stratified Diagnostics v1
 - ID 208 — 2026-06-30 UTC — ORC Strict V4 Baseline Seed Isolation v1
 - ID 209 — 2026-06-30 UTC — ORC Executable Main Flow Gap Closure Candidate v1
+- ID 210 — 2026-06-30 UTC — ORC Main Flow Active Readiness & Non-Work Break Semantics v1
+
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
 
@@ -199,6 +201,16 @@ ORC SEE ahora genera candidatos ejecutables para cerrar huecos visibles del fluj
 Estos candidatos usan metadata `MAIN_FLOW_GAP_CLOSURE`, `planningInfluence: "candidate-assignments"` y `executesTransformations: true`, por lo que pueden competir contra `PRESERVE_BASELINE_SAFETY` dentro del pipeline oficial sin usar movimientos post-pipeline ni reactivar `applyLocalScheduleMove`. Si el candidato reduce el gap inicial y valida hard constraints, ORC puede consolidarlo como cambio real; si falla, el baseline safety/fallback siguen preservando V4.
 
 El evaluator de continuidad ahora usa `optimizer.mainZoneId` antes que nombres de espacios para detectar el flujo principal, manteniendo fallback por nombre sólo cuando no hay configuración y fallback global si tampoco existe nombre reconocible. Esta iteración no implementa compactación de coaches ni de recursos críticos; queda para ID 210. No hay cambios DB, RLS, UI, V3, V4 ni endpoints, no se relajan hard constraints y `real-voice-audition-day` sigue en la suite oficial.
+### ORC Main Flow Active Readiness & Non-Work Break Semantics v1 (ID 210)
+
+ORC ahora resuelve explícitamente la configuración del flujo principal con un resolver read-only que prioriza `constraints.optimizer.mainZoneId`, `optimizer.mainZoneId`, aliases compatibles de V4 (`optimizerMainZoneId`, `mainFlowSpaceId`, `continuousSpaceId`) y configuración estructural de continuidad/prioridad máxima por espacio. Si no hay flujo principal configurado, ORC lo diagnostica como `main_flow_not_configured` y no infiere el flujo por nombres de espacios.
+
+Validation distingue tareas productivas de placeholders de comida, break global, break de espacio y placeholders no operativos. Los placeholders de comida/break/no-operativos no cuentan como trabajo productivo, no rompen la comida hard que representan, no alimentan continuidad del flujo principal ni trabajo activo de recursos/talentos, y sólo bloquean espacio cuando están marcados explícitamente como blockers. Las tareas productivas siguen sujetas a comida global, protected breaks, solapes reales, locks y demás hard constraints.
+
+`mainFlowGapClosure` queda trazado en diagnostics reales con ejecución, motivo de skip, main flow resuelto, candidatos generados, assignments, descartes por prefiltro, simulaciones válidas/ inválidas y selección. Los candidatos abstractos/read-only sin assignments pueden seguir existiendo como advisory, pero no compiten como mejor candidato operativo de cambio cuando no hay un candidato ejecutable.
+
+Esta iteración no implementa compactación de coaches ni resource handoff compaction, no reactiva `applyLocalScheduleMove`, no cambia DB, RLS, UI, V3, V4 ni endpoints, no relaja hard constraints productivas y no altera el pipeline ORC. `real-voice-audition-day` sigue incluido en la suite oficial.
+
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

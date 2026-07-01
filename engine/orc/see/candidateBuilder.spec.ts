@@ -25,7 +25,13 @@ test("buildCandidates handles empty SearchSpace input", () => {
   const result = buildCandidates([]);
   assert.deepEqual(result.candidates, []);
   assert.deepEqual(result.evidence, []);
-  assert.deepEqual(result.summary, { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: 20, allocatedBudget: 0, unusedBudget: 20, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: { generated: 0, acceptedBeforePrefilter: 0, discardedByPrefilter: 0, candidateIds: [], movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-only" }, baselineSafety: { generated: false, candidateId: null, reason: null, planningCount: 0, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" } });
+  assert.equal(result.summary.searchSpaceCount, 0);
+  assert.equal(result.summary.candidateCount, 0);
+  assert.equal(result.summary.mainFlowGapClosure.executed, false);
+  assert.equal(result.summary.mainFlowGapClosure.skippedReason, "no_search_spaces");
+  assert.equal(result.summary.mainFlowGapClosure.generatedCandidateCount, 0);
+  assert.equal(result.summary.mainFlowGapClosure.planningInfluence, "candidate-generation-diagnostics-only");
+  assert.deepEqual(result.summary.baselineSafety, { generated: false, candidateId: null, reason: null, planningCount: 0, searchSpaceCount: 0, readOnly: true, planningInfluence: "none" });
 });
 
 const operationalState = () => ({
