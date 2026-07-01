@@ -54,7 +54,7 @@ test("discards obvious overlaps and allows configured space concurrency", () => 
   assert.equal(reason(candidate("contestant", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", resourceIds: [10] }]), state({ tasks: [{ ...state().tasks[0], contestantId: 2 } as any, state().tasks[1]] })), "contestant-overlap");
   assert.equal(reason(candidate("team", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", resourceIds: [10] }]), state({ tasks: [{ ...state().tasks[0], itinerantTeamId: 2 } as any, state().tasks[1]] })), "itinerant-team-overlap");
   assert.equal(reason(candidate("res", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", resourceIds: [20] }])), "resource-overlap");
-  assert.equal(reason(candidate("space", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", spaceId: 2, resourceIds: [10] }])), "space-overlap");
+  assert.equal(reason(candidate("space", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", spaceId: 2, resourceIds: [10] }])), "candidate-introduced-space-overlap");
   const ok = prefilterCandidatesByHardConstraints([candidate("space-ok", [{ taskId: 1, startPlanned: "09:30", endPlanned: "10:00", spaceId: 2, resourceIds: [10] }])], state({ spaces: { ...state().spaces, concurrencyById: { 2: 2 } } }));
   assert.equal(ok.candidates.length, 1);
 });

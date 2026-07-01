@@ -3,6 +3,7 @@ import type { CognitiveArtifacts, OperationalState, ORCRecord } from "../contrac
 import { deepFreeze } from "../immutability";
 import { resolveORCMainFlowConfig } from "../state/mainFlowConfigResolver";
 import { resolveORCPlanningEntryOperationalRoleMetadata } from "../state/nonWorkTaskClassifier";
+import { resolveORCTransportContract } from "../state/transportContractResolver";
 
 const clone = <T>(value: T): T => value === undefined ? value : JSON.parse(JSON.stringify(value));
 const record = <T>(value: T | null | undefined, fallback: T): T => clone(value ?? fallback);
@@ -25,6 +26,7 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
   const tasks = record(input.tasks, []);
   const locks = record(input.locks, []);
   const resources = record(input.planResourceItems, []);
+  const transportContract = resolveORCTransportContract(input as any);
   const planning = tasks
     .filter((task) => task?.startPlanned && task?.endPlanned)
     .map((task) => {
@@ -42,7 +44,7 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       countsForResourceLoad: task.countsForResourceLoad,
       countsForTalentLoad: task.countsForTalentLoad,
       };
-      const meta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: base as any, task, mealWindow: input.actualMeal ?? input.mealWindow ?? input.meal ?? null });
+      const meta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: base as any, task, mealWindow: input.actualMeal ?? input.mealWindow ?? input.meal ?? null, transportContract });
       return { ...base, operationalRole: task.operationalRole ?? meta.role, blocksSpace: task.blocksSpace ?? meta.blocksSpace, countsAsWork: task.countsAsWork ?? meta.countsAsWork, countsForMainFlow: task.countsForMainFlow ?? meta.countsForMainFlow, countsForResourceLoad: task.countsForResourceLoad ?? meta.countsForResourceLoad, countsForTalentLoad: task.countsForTalentLoad ?? meta.countsForTalentLoad, allowsSpaceOverlap: (task as any).allowsSpaceOverlap ?? meta.allowsSpaceOverlap, spaceOccupancyMode: (task as any).spaceOccupancyMode ?? meta.spaceOccupancyMode };
     });
 
@@ -54,6 +56,7 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
 
   const mainFlowConfig = resolveORCMainFlowConfig(input);
   const constraints: ORCRecord = {
+    transportContract,
     camerasAvailable: input.camerasAvailable ?? null,
     mealMode: input.mealMode ?? null,
     zoneResourceAssignments: record(input.zoneResourceAssignments, {}),
