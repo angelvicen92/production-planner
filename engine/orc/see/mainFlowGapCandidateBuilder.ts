@@ -18,6 +18,9 @@ export interface MainFlowGapClosureSummary {
   readonly candidatesWithAssignments: number;
   readonly assignmentCount: number;
   readonly discardedByPrefilter: number;
+  readonly prefilterDiscardReasons: Record<string, number>;
+  readonly candidateStateCount: number;
+  readonly simulatedStateCount: number;
   readonly validSimulationCount: number;
   readonly invalidSimulationCount: number;
   readonly selectedCandidateId: string | null;
@@ -48,7 +51,7 @@ const toMinutes = (value: unknown): number | null => {
 };
 const toTime = (value: number): string => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 const cloneAssignment = (assignment: Candidate["assignments"][number]) => ({ ...assignment, resourceIds: [...assignment.resourceIds] });
-const emptySummary = (reason: string | null = null, mainFlowId: number | null = null): MainFlowGapClosureSummary => ({ executed: reason !== "main_flow_not_configured", skippedReason: reason, mainFlowConfigured: mainFlowId != null, mainFlowId, generatedCandidateCount: 0, candidateIds: [], candidatesWithAssignments: 0, assignmentCount: 0, discardedByPrefilter: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only", generated: 0, acceptedBeforePrefilter: 0 });
+const emptySummary = (reason: string | null = null, mainFlowId: number | null = null): MainFlowGapClosureSummary => ({ executed: reason !== "main_flow_not_configured", skippedReason: reason, mainFlowConfigured: mainFlowId != null, mainFlowId, generatedCandidateCount: 0, candidateIds: [], candidatesWithAssignments: 0, assignmentCount: 0, discardedByPrefilter: 0, prefilterDiscardReasons: {}, candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only", generated: 0, acceptedBeforePrefilter: 0 });
 const hasBlockingLock = (state: OperationalState, taskId: number): boolean => (state.locks ?? []).some((lock) => lock.taskId === taskId && ["full", "time", "space", "resource"].includes(String(lock.lockType)));
 const isProtected = (task: OperationalState["tasks"][number] | undefined): boolean => ["done", "in_progress"].includes(String(task?.status ?? ""));
 
@@ -97,15 +100,15 @@ export function buildMainFlowGapClosureCandidates(operationalState: OperationalS
   if (mainFlowId == null) return { candidates: [], evidence: [], summary: emptySummary("main_flow_not_configured", null) };
   const earlyBlock = firstBlock(entries, opts.internalBlockGapToleranceMinutes).slice(0, opts.maxMovedTasksPerCandidate);
   const anchor = entries.find((entry) => earlyBlock.length > 0 && entry.start - earlyBlock[earlyBlock.length - 1].end >= opts.minMainFlowGapMinutes);
-  if (earlyBlock.length === 0 || anchor == null || earlyBlock.length > opts.maxMovedTasksPerCandidate) return { candidates: [], evidence: [], summary: emptySummary("no_main_flow_gap_found", mainFlowId) };
-  if (earlyBlock.some((entry) => isProtected(entry.task) || hasBlockingLock(operationalState, entry.taskId))) return { candidates: [], evidence: [], summary: emptySummary("no_main_flow_gap_found", mainFlowId) };
+  if (earlyBlock.length === 0 || anchor == null || earlyBlock.length > opts.maxMovedTasksPerCandidate) return { candidates: [], evidence: [], summary: emptySummary("no_gap_above_threshold", mainFlowId) };
+  if (earlyBlock.some((entry) => isProtected(entry.task) || hasBlockingLock(operationalState, entry.taskId))) return { candidates: [], evidence: [], summary: emptySummary("no_gap_above_threshold", mainFlowId) };
   const gapBefore = anchor.start - earlyBlock[earlyBlock.length - 1].end;
   const blockStart = earlyBlock[0].start;
   const blockEnd = earlyBlock[earlyBlock.length - 1].end;
   const delta = anchor.start - blockEnd;
   const dayStart = toMinutes(operationalState.workDay?.start ?? operationalState.availability?.workDay?.start) ?? 0;
   const dayEnd = toMinutes(operationalState.workDay?.end ?? operationalState.availability?.workDay?.end) ?? 24 * 60;
-  if (gapBefore < opts.minMainFlowGapMinutes || blockStart + delta < dayStart || blockEnd + delta > dayEnd) return { candidates: [], evidence: [], summary: emptySummary("no_main_flow_gap_found", mainFlowId) };
+  if (gapBefore < opts.minMainFlowGapMinutes || blockStart + delta < dayStart || blockEnd + delta > dayEnd) return { candidates: [], evidence: [], summary: emptySummary("no_gap_above_threshold", mainFlowId) };
   const assignments = earlyBlock.map((entry) => ({ taskId: entry.taskId, startPlanned: toTime(entry.start + delta), endPlanned: toTime(entry.end + delta), spaceId: entry.spaceId ?? entry.task?.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? entry.task?.assignedResourceIds ?? [])].sort((a, b) => a - b) }));
   const candidateId = `orc-see:main-flow-gap-closure:${mainFlowId ?? "fallback"}:${earlyBlock.map((entry) => entry.taskId).join("-")}:before-${anchor.taskId}`;
   const evidenceId = `evidence:${candidateId}`;
@@ -119,5 +122,5 @@ export function buildMainFlowGapClosureCandidates(operationalState: OperationalS
     metadata: { strategy: "MAIN_FLOW_GAP_CLOSURE", strategyId: "MAIN_FLOW_GAP_CLOSURE", strategyFamily: "main-flow", strategyType: "close_initial_gap", mainFlowGapClosureCandidate: true, planningInfluence: "candidate-assignments", executesTransformations: true, readOnly: false, abstract: false, expectedImpact: "reduce-main-flow-gap", movedTaskIds, gapBeforeMinutes: gapBefore, expectedGapAfterMinutes: 0, generationReason: "Moved the first eligible main-flow block to end immediately before the following main-flow chain.", searchSpaceIds: searchSpaces.map((space) => space.id), transformations: [{ kind: "MOVE_CHAIN", reason: "Close the initial configured main-flow gap.", taskIds: movedTaskIds, coordinationRole: "primary" }] },
   };
   const evidence: Evidence = { id: evidenceId, source: "orc-see", kind: "main-flow-gap-closure-candidate-generated", subjectId: candidateId, createdAt, data: { candidateId, mainFlowId, mainFlowConfigured: true, movedTaskIds, anchorTaskIds: [anchor.taskId], originalWindows, proposedWindows, gapBeforeMinutes: gapBefore, expectedGapAfterMinutes: 0, readOnly: true, mutatesOperationalState: false, commitsPlanning: false } };
-  return { candidates: [candidate].slice(0, opts.maxCandidates), evidence: [evidence], summary: { executed: true, skippedReason: null, mainFlowConfigured: true, mainFlowId, generatedCandidateCount: 1, candidateIds: [candidateId], candidatesWithAssignments: 1, assignmentCount: assignments.length, discardedByPrefilter: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, movedTaskIds, gapBeforeMinutes: gapBefore, expectedGapAfterMinutes: 0, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only", generated: 1, acceptedBeforePrefilter: 1 } };
+  return { candidates: [candidate].slice(0, opts.maxCandidates), evidence: [evidence], summary: { executed: true, skippedReason: null, mainFlowConfigured: true, mainFlowId, generatedCandidateCount: 1, candidateIds: [candidateId], candidatesWithAssignments: 1, assignmentCount: assignments.length, discardedByPrefilter: 0, prefilterDiscardReasons: {}, candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, movedTaskIds, gapBeforeMinutes: gapBefore, expectedGapAfterMinutes: 0, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only", generated: 1, acceptedBeforePrefilter: 1 } };
 }

@@ -32,6 +32,13 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       endPlanned: String(task.endPlanned),
       assignedResourceIds: [...(task.assignedResourceIds ?? [])],
       spaceId: task.spaceId ?? null,
+      seedSource: task.seedSource,
+      operationalRole: task.operationalRole,
+      blocksSpace: task.blocksSpace,
+      countsAsWork: task.countsAsWork,
+      countsForMainFlow: task.countsForMainFlow,
+      countsForResourceLoad: task.countsForResourceLoad,
+      countsForTalentLoad: task.countsForTalentLoad,
     }));
 
   const dependencies = tasks.map((task) => ({

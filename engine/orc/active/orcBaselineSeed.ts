@@ -1,4 +1,5 @@
-import type { EngineInput, EngineOutput, TaskInput } from "../../types";
+import type { EngineInput, EngineOutput, TaskInput, TimeWindow } from "../../types";
+import { classifyORCPlanningEntryOperationalRole, isORCProductiveRole, isORCSpaceBlockingRole, type ORCPlanningEntryOperationalRole } from "../state/nonWorkTaskClassifier";
 
 export interface ORCBaselineSeedDiagnostics {
   applied: boolean;
@@ -11,6 +12,14 @@ export interface ORCBaselineSeedDiagnostics {
   source: "v4_baseline";
   warnings: string[];
   error?: string;
+  operationalRoleSummary?: Record<string, number>;
+  productiveSeededCount?: number;
+  nonProductiveSeededCount?: number;
+  mealPlaceholderCount?: number;
+  arrivalPlaceholderCount?: number;
+  spaceBlockingPlaceholderCount?: number;
+  unknownRoleCount?: number;
+  roleWarnings?: string[];
 }
 
 export interface ORCBaselineSeededInputResult {
@@ -26,6 +35,13 @@ export interface ORCBaselinePlanningEntry {
   assignedSpace?: number | null;
   assignedResources: number[];
   source: "v4_planned_task" | "protected_existing_planning";
+  seedSource: "v4_planned_task" | "protected_existing_planning";
+  operationalRole: ORCPlanningEntryOperationalRole;
+  blocksSpace: boolean;
+  countsAsWork: boolean;
+  countsForMainFlow: boolean;
+  countsForResourceLoad: boolean;
+  countsForTalentLoad: boolean;
 }
 
 type PlannedTask = EngineOutput["plannedTasks"][number];
@@ -42,6 +58,25 @@ function assignedSpaceFor(task: TaskInput, planned: PlannedTask, output: EngineO
   const scheduled = (output.schedule ?? []).find((item) => item.taskId === planned.taskId);
   if (scheduled?.assignedSpace != null) return scheduled.assignedSpace;
   return task.spaceId ?? null;
+}
+
+
+const roleFlags = (role: ORCPlanningEntryOperationalRole, task: TaskInput, entry: Pick<ORCBaselinePlanningEntry, "assignedResources">): Pick<ORCBaselinePlanningEntry, "blocksSpace" | "countsAsWork" | "countsForMainFlow" | "countsForResourceLoad" | "countsForTalentLoad"> => {
+  const blocksSpace = (task.blocksSpace === true) || isORCSpaceBlockingRole(role);
+  const countsAsWork = isORCProductiveRole(role);
+  return {
+    blocksSpace,
+    countsAsWork,
+    countsForMainFlow: countsAsWork,
+    countsForResourceLoad: countsAsWork || ((entry.assignedResources?.length ?? 0) > 0 && task.countsForResourceLoad === true),
+    countsForTalentLoad: countsAsWork,
+  };
+};
+
+function classifySeed(task: TaskInput, partial: { taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null; assignedResources: number[]; source: "v4_planned_task" | "protected_existing_planning" }, mealWindow: TimeWindow | null): ORCBaselinePlanningEntry {
+  const role = classifyORCPlanningEntryOperationalRole({ entry: { taskId: partial.taskId, startPlanned: partial.startPlanned, endPlanned: partial.endPlanned, assignedResourceIds: partial.assignedResources, spaceId: partial.assignedSpace ?? null }, task, mealWindow });
+  const flags = roleFlags(role, task, partial);
+  return { ...partial, seedSource: partial.source, operationalRole: role, ...flags };
 }
 
 function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | null, preserveExistingPlanning: boolean): TaskInput {
@@ -65,6 +100,13 @@ function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | nul
     next.startPlanned = seed.startPlanned;
     next.endPlanned = seed.endPlanned;
     next.assignedResourceIds = [...seed.assignedResources];
+    next.seedSource = seed.seedSource;
+    next.operationalRole = seed.operationalRole;
+    next.blocksSpace = seed.blocksSpace;
+    next.countsAsWork = seed.countsAsWork;
+    next.countsForMainFlow = seed.countsForMainFlow;
+    next.countsForResourceLoad = seed.countsForResourceLoad;
+    next.countsForTalentLoad = seed.countsForTalentLoad;
   } else if (preserveExistingPlanning && task.startPlanned && task.endPlanned) {
     next.startPlanned = task.startPlanned;
     next.endPlanned = task.endPlanned;
@@ -112,6 +154,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
   let clearedRawPlanningCount = 0;
   let unseededPendingCount = 0;
   let v4SeededCount = 0;
+  const mealWindow = input.actualMeal ?? input.mealWindow ?? input.meal ?? null;
 
   for (const task of input.tasks ?? []) {
     const planned = plannedByTask.get(task.id);
@@ -119,7 +162,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
     const hasExistingPlanning = Boolean(task.startPlanned && task.endPlanned);
     if (!planned) {
       if (protectedOrLocked && hasExistingPlanning) {
-        const entry: ORCBaselinePlanningEntry = { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b), source: "protected_existing_planning" };
+        const entry = classifySeed(task, { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b), source: "protected_existing_planning" }, mealWindow);
         seedByTask.set(task.id, entry);
         seedPlanning.push(entry);
         preserveExistingByTask.add(task.id);
@@ -130,7 +173,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
       }
       continue;
     }
-    const entry: ORCBaselinePlanningEntry = { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned), source: "v4_planned_task" };
+    const entry = classifySeed(task, { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned), source: "v4_planned_task" }, mealWindow);
     seedByTask.set(task.id, entry);
     seedPlanning.push(entry);
     v4SeededCount += 1;
@@ -140,6 +183,11 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
   if (clearedRawPlanningCount > 0) warnings.push(`Cleared raw planning from ${clearedRawPlanningCount} pending task(s) not present in V4 output.`);
   if (protectedExistingPlanningCount > 0) warnings.push(`Preserved existing planning for ${protectedExistingPlanningCount} protected/locked task(s).`);
   if (plannedByTask.size === 0) warnings.push("V4 produced no planned tasks; ORC baseline seed contains only protected/locked planning.");
+
+  const operationalRoleSummary = seedPlanning.reduce<Record<string, number>>((acc, entry) => { acc[entry.operationalRole] = (acc[entry.operationalRole] ?? 0) + 1; return acc; }, {});
+  const productiveSeededCount = seedPlanning.filter((entry) => entry.countsAsWork).length;
+  const nonProductiveSeededCount = seedPlanning.length - productiveSeededCount;
+  const roleWarnings: string[] = [];
 
   const sanitizedInput: EngineInput = {
     ...clone(input),
@@ -159,6 +207,14 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
       sourcePlanningCount: v4Output.plannedTasks?.length ?? 0,
       source: "v4_baseline",
       warnings,
+      operationalRoleSummary,
+      productiveSeededCount,
+      nonProductiveSeededCount,
+      mealPlaceholderCount: operationalRoleSummary.meal_break_placeholder ?? 0,
+      arrivalPlaceholderCount: operationalRoleSummary.arrival_placeholder ?? 0,
+      spaceBlockingPlaceholderCount: seedPlanning.filter((entry) => entry.blocksSpace && !entry.countsAsWork).length,
+      unknownRoleCount: operationalRoleSummary.unknown ?? 0,
+      roleWarnings,
     },
   };
 }

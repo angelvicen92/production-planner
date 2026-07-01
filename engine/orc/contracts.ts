@@ -338,6 +338,13 @@ export interface OperationalState {
     endPlanned: string;
     assignedResourceIds: number[];
     spaceId?: number | null;
+    seedSource?: "v4_planned_task" | "protected_existing_planning";
+    operationalRole?: "productive_task" | "meal_break_placeholder" | "arrival_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
+    blocksSpace?: boolean;
+    countsAsWork?: boolean;
+    countsForMainFlow?: boolean;
+    countsForResourceLoad?: boolean;
+    countsForTalentLoad?: boolean;
   }>;
   tasks: TaskInput[];
   resources: PlanResourceItemInput[];

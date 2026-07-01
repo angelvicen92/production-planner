@@ -82,6 +82,13 @@ export interface TaskInput {
       // ✅ Recursos ya asignados/persistidos (plan_resource_items.id)
       // Útil para validar solapes con tareas fijas (in_progress/done) y locks.
       assignedResourceIds?: number[] | null;
+      seedSource?: "v4_planned_task" | "protected_existing_planning";
+      operationalRole?: "productive_task" | "meal_break_placeholder" | "arrival_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
+      blocksSpace?: boolean;
+      countsAsWork?: boolean;
+      countsForMainFlow?: boolean;
+      countsForResourceLoad?: boolean;
+      countsForTalentLoad?: boolean;
     }
 
 export interface LockInput {

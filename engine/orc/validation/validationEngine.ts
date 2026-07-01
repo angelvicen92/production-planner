@@ -223,7 +223,7 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     const sharedResources = (a.entry.assignedResourceIds ?? []).filter((id) => (b.entry.assignedResourceIds ?? []).includes(id));
     if (productivePair && sharedResources.length > 0) addDetail(violations, details, { code: "RESOURCE_OVERLAP", constraintGroup: "resources", taskIds: [a.entry.taskId, b.entry.taskId], resourceIds: sharedResources, timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two overlapping tasks share a resource. Check V4 resource assignment, fixture resource availability, or seed adapter mapping." });
     const spaceId = a.entry.spaceId ?? null;
-    if (spaceId != null && spaceId === (b.entry.spaceId ?? null) && isORCSpaceBlockingRole(roleA) && isORCSpaceBlockingRole(roleB)) {
+    if (spaceId != null && spaceId === (b.entry.spaceId ?? null) && isORCSpaceBlockingRole(roleA, a.entry.blocksSpace) && isORCSpaceBlockingRole(roleB, b.entry.blocksSpace)) {
       const spaces = snapshot.spaces;
       const capacity = spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, spaces?.concurrencyById?.[spaceId] ?? spaces?.capacityById?.[spaceId] ?? 1);
       if (capacity < 2) addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: [a.entry.taskId, b.entry.taskId], spaceIds: [spaceId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), message: `Two tasks overlap in space ${spaceId} with effective capacity ${capacity}.`, diagnosticHint: "Two tasks overlap in a space with effective capacity 1. Check V4 output, configured space concurrency/capacity, or whether this space should allow parallel work." });
