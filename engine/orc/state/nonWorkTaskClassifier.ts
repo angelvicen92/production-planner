@@ -3,7 +3,7 @@ import type { TaskInput, TimeWindow } from "../../types";
 export type ORCPlanningEntryOperationalRole = "productive_task" | "transport_arrival" | "transport_departure" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
 export type ORCSpaceOccupancyMode = "exclusive" | "shared" | "non_blocking";
 export interface ORCOperationalRoleMetadata { role: ORCPlanningEntryOperationalRole; countsAsWork: boolean; blocksSpace: boolean; countsForMainFlow: boolean; countsForResourceLoad: boolean; countsForTalentLoad: boolean; allowsSpaceOverlap: boolean; spaceOccupancyMode: ORCSpaceOccupancyMode; warnings: string[]; readOnly: true; transportGroupCapacity?: number | null; transportGroupingTarget?: number | null; transportGroupingWeight?: number | null; roleSource?: string | null; }
-export interface ORCTransportRoleContract { configured: boolean; arrivalTemplateId: number | string | null; departureTemplateId: number | string | null; vehicleCapacity: number | null; arrivalTargetGroupSize?: number | null; departureTargetGroupSize?: number | null; groupingWeight?: number | null; source?: string | null; }
+export interface ORCTransportRoleContract { configured: boolean; arrivalTemplateId: number | string | null; departureTemplateId: number | string | null; arrivalTemplateName?: string | null; departureTemplateName?: string | null; vehicleCapacity: number | null; arrivalTargetGroupSize?: number | null; departureTargetGroupSize?: number | null; groupingWeight?: number | null; source?: string | null; }
 const text = (value: unknown): string => typeof value === "string" ? value.toLowerCase() : "";
 const bool = (value: unknown): boolean => value === true || value === "true";
 const has = (o: Record<string, unknown>, k: string) => Object.prototype.hasOwnProperty.call(o, k);
@@ -25,6 +25,8 @@ function roleFlags(role: ORCPlanningEntryOperationalRole, task: Record<string, u
 }
 function templateIds(task: Record<string, unknown>): Array<number | string> { return [task.templateId, task.taskTemplateId, task.template_id, task.typeId, (task.template as any)?.id, (task.taskType as any)?.id].filter((v): v is number | string => typeof v === "number" || typeof v === "string"); }
 const sameId = (a: unknown, b: unknown) => a != null && b != null && String(a) === String(b);
+const normName = (v: unknown): string => typeof v === "string" ? v.trim().toLowerCase().replace(/\s+/g, " ") : "";
+function templateNames(task: Record<string, unknown>, source: Record<string, unknown>): string[] { return [task.templateName, task.taskTemplateName, task.template_name, task.name, (task.template as any)?.name, (task.taskTemplate as any)?.name, (task.taskType as any)?.name, source.templateName, source.taskTemplateName, source.name].map(normName).filter(Boolean); }
 function classifyRole(args: { entry?: OperationalState["planning"][number] | null; task?: TaskInput | Record<string, unknown> | null; mealWindow?: TimeWindow | null; source?: Record<string, unknown> | null; transportContract?: ORCTransportRoleContract | null }): ORCOperationalRoleMetadata {
   const entry = args.entry ?? null; const task = (args.task ?? {}) as Record<string, unknown>; const source = args.source ?? {};
   const fields = [task.operationalRole, task.kind, task.type, task.category, task.templateCode, task.code, task.status, task.templateName, task.name, task.breakKind, source.operationalRole, source.kind, source.type, source.category, source.templateCode, source.code, source.name].map(text).join(" ");
@@ -40,8 +42,13 @@ function classifyRole(args: { entry?: OperationalState["planning"][number] | nul
   const explicitBlocker = bool(task.blocksSpace) || bool(task.spaceBlocker) || bool(task.blockingOnly) || bool(source.blocksSpace) || bool(source.spaceBlocker) || bool(source.blockingOnly);
   let role: ORCPlanningEntryOperationalRole = "productive_task";
   const tids = templateIds(task);
+  const names = templateNames(task, source);
+  const arrivalName = normName(args.transportContract?.arrivalTemplateName);
+  const departureName = normName(args.transportContract?.departureTemplateName);
   if (args.transportContract?.configured && tids.some((v) => sameId(v, args.transportContract?.arrivalTemplateId))) role = "transport_arrival";
   else if (args.transportContract?.configured && tids.some((v) => sameId(v, args.transportContract?.departureTemplateId))) role = "transport_departure";
+  else if (args.transportContract?.configured && arrivalName && names.includes(arrivalName)) role = "transport_arrival";
+  else if (args.transportContract?.configured && departureName && names.includes(departureName)) role = "transport_departure";
   else if (explicitProductive) role = "productive_task";
   else if ((explicitMeal || (negativeId && overlapsWindow(entry ?? {}, args.mealWindow) && !hasResources)) && (placeholder || explicitBreak || negativeId || overlapsWindow(entry ?? {}, args.mealWindow))) role = "meal_break_placeholder";
   else if (explicitArrival && (placeholder || negativeId || !hasResources)) role = "arrival_placeholder";

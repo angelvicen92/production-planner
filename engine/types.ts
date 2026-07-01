@@ -89,6 +89,11 @@ export interface TaskInput {
       countsForMainFlow?: boolean;
       countsForResourceLoad?: boolean;
       countsForTalentLoad?: boolean;
+      allowsSpaceOverlap?: boolean;
+      spaceOccupancyMode?: "exclusive" | "shared" | "non_blocking";
+      transportGroupCapacity?: number | null;
+      transportGroupingTarget?: number | null;
+      transportGroupingWeight?: number | null;
     }
 
 export interface LockInput {
@@ -289,6 +294,21 @@ export interface EngineInput {
   transportVanCapacity?: number;
   /** Resolved without relying on a fixed database id. */
   transportSpaceId?: number | null;
+  transportSettings?: {
+    arrivalTemplateId?: number | string | null;
+    departureTemplateId?: number | string | null;
+    arrivalTemplateName?: string | null;
+    departureTemplateName?: string | null;
+    arrivalTargetGroupSize?: number | null;
+    departureTargetGroupSize?: number | null;
+    arrivalMinGapMinutes?: number | null;
+    departureMinGapMinutes?: number | null;
+    vehicleCapacity?: number | null;
+    vanCapacity?: number | null;
+    transportSpaceId?: number | null;
+    groupingWeight?: number | null;
+    source: "engine-buildInput-optimizer-transport";
+  };
 
   // v-next: resources, spaces, zones, availability
 }

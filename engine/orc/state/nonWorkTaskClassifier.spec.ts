@@ -15,3 +15,16 @@ test("classifies configured transport templates without name matching", () => {
   const meta = classifyORCPlanningEntryOperationalRole({ entry: { taskId: 1, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 }, task: { id: 1, planId: 1, templateId: 77, status: "pending", templateName: "Anything" } as any, transportContract: { configured: true, arrivalTemplateId: 77, departureTemplateId: 88, vehicleCapacity: 6, arrivalTargetGroupSize: 3, groupingWeight: 3, source: "test" } });
   assert.equal(meta, "transport_arrival");
 });
+
+test("classifies transport by configured template name and lets contract beat seeded productive role", () => {
+  const role = classifyORCPlanningEntryOperationalRole({
+    entry: { taskId: 2, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 } as any,
+    task: { id: 2, planId: 1, templateId: 77, status: "pending", templateName: "Configured Arrival", operationalRole: "productive_task" } as any,
+    transportContract: { configured: true, arrivalTemplateId: null, departureTemplateId: null, arrivalTemplateName: "configured arrival", vehicleCapacity: 6, source: "test" },
+  });
+  assert.equal(role, "transport_arrival");
+});
+
+test("does not classify by name or duration without configured transport contract", () => {
+  assert.equal(classifyORCPlanningEntryOperationalRole({ entry: { taskId: 3, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 } as any, task: { id: 3, planId: 1, templateId: 77, status: "pending", templateName: "IN" } as any }), "productive_task");
+});

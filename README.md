@@ -87,6 +87,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 212 — 2026-07-01 UTC — ORC Baseline Viability Semantics: Meal Window, Non-Work Roles & Space Occupancy v1
 - ID 213 — 2026-07-01 UTC — ORC MealMode Contract Alignment v1
 - ID 214 — 2026-07-01 UTC — ORC Transport Template Occupancy Contract & Pre-existing Overlap Isolation v1
+- ID 215 — 2026-07-01 UTC — ORC Active Transport Contract Wiring & Seed Role Reclassification v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -247,6 +248,14 @@ ORC resuelve ahora un contrato de transporte read-only desde configuración estr
 El espacio usado por transporte no se convierte globalmente en compartido: las tareas productivas exclusivas mantienen `SPACE_OVERLAP` estricto, mientras que los eventos de transporte no bloqueantes no invalidan contra productivas salvo bloqueo explícito. Validation distingue capacidad de grupo de transporte (`TRANSPORT_GROUP_CAPACITY_EXCEEDED`) de solape productivo real y añade diagnostics accionables de contrato/capacidad.
 
 CandidateHardPrefilter compara overlaps del baseline frente al preview del candidate para separar solapes preexistentes de solapes introducidos o empeorados por candidatos; `mainFlowGapClosure` ya no culpa a un candidate por conflictos que no introduce. No se implementa compactación de coaches, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4 y no se relajan hard constraints productivas exclusivas.
+
+### ORC Active Transport Contract Wiring & Seed Role Reclassification v1 (ID 215)
+
+ORC Active ya lee la configuración real de transporte emitida por `buildInput`: `arrivalTaskTemplateName`, `departureTaskTemplateName`, objetivos/min gaps, `vehicleCapacity` / `vanCapacity` / `transportVanCapacity`, `transportSpaceId` y `optimizerWeights.arrivalDepartureGrouping` se publican también como `transportSettings` estructurado. El contrato soporta plantilla por ID o por nombre configurado sin hardcodear `IN`, `OUT`, nombres de espacios, duraciones ni ids de espacios.
+
+Las plantillas configuradas como llegada/salida se clasifican como `transport_arrival` / `transport_departure` y son transporte agrupable: la capacidad hard de simultaneidad viene de `vehicleCapacity` / `vanCapacity`, mientras que objetivos de agrupación y peso son preferencias blandas. El baseline seed pasa el contrato de transporte al clasificador y ya no congela por defecto estas tareas como `productive_task` exclusiva; el adapter permite que el contrato de transporte reemplace un rol productivo seedado por defecto, respetando sólo un `blocksSpace: true` explícito.
+
+Las productivas normales del mismo espacio siguen siendo exclusivas si no tienen otra configuración: `SPACE_OVERLAP` productivo real continúa siendo hard, el espacio de transporte no se vuelve compartido globalmente y no se ocultan hard violations reales. No se implementa compactación de coaches ni resource handoff compaction, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4 y no se relajan hard constraints productivas exclusivas.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
