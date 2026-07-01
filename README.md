@@ -89,6 +89,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 214 — 2026-07-01 UTC — ORC Transport Template Occupancy Contract & Pre-existing Overlap Isolation v1
 - ID 215 — 2026-07-01 UTC — ORC Active Transport Contract Wiring & Seed Role Reclassification v1
 - ID 216 — 2026-07-01 UTC — ORC Validation Transport Role Propagation v1
+- ID 217 — 2026-07-01 UTC — ORC Baseline Productive Space Overlap Repair Candidate v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -265,6 +266,14 @@ ValidationEngine resuelve ahora el `transportContract` antes de clasificar `role
 CandidateHardPrefilter usa la misma semántica de transporte que Validation en hard breaks, previews y cálculo de overlaps baseline/candidate. Las tareas IN/OUT configuradas ya no se revalidan como productivas exclusivas: transporte no bloqueante dentro de `vehicleCapacity` no genera `SPACE_OVERLAP`, mientras que un grupo que excede capacidad emite `TRANSPORT_GROUP_CAPACITY_EXCEEDED` con taskIds, capacidad y conteo.
 
 Las productivas exclusivas reales siguen siendo hard y continúan generando `SPACE_OVERLAP` en espacios de capacidad efectiva 1. Baseline audit distingue transporte válido tras alineación de contrato, exceso de capacidad (`transport_group_capacity_exceeded`) y solape productivo real. No hay cambios DB/RLS/UI, no se implementa compactación de coaches todavía, no se cambia V3 y no se reescribe V4.
+
+### ORC Baseline Productive Space Overlap Repair Candidate v1 (ID 217)
+
+ORC SEE can now generate executable baseline-repair candidates for pre-existing productive `SPACE_OVERLAP` hard violations before optimizing flow/coaches. V1 is deliberately scoped to simple pairs: exactly two productive, exclusive, replanificable tasks in the same space with valid positive windows, no `done`/`in_progress` status and no incompatible locks. The repair keeps duration, assigned space and assigned resources, and deterministically tries moving the shorter/more flexible task after the other task, plus an earlier variant when there is work-day room.
+
+The repair is a normal ORC candidate with real assignments and clear `BASELINE_SPACE_OVERLAP_REPAIR` metadata/evidence. It does not mutate `OperationalState` during generation, does not use post-pipeline moves, and must pass the official Candidate → Transformation → Simulation → Validation → Evaluation → Commit path. `SPACE_OVERLAP` remains hard; no constraints are relaxed and final hard-infeasible states are not consolidated. A hard-feasible repaired plan can win over a hard-infeasible baseline even when OPQM is otherwise unchanged.
+
+CandidateHardPrefilter distinguishes the overlap being repaired from newly introduced or worsened overlaps: it allows a repair candidate to proceed when it resolves the initial conflict, but still discards candidates that create another hard overlap. This iteration does not implement coach compaction or resource handoff compaction. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

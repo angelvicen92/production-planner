@@ -209,3 +209,27 @@ test("buildCandidates integrates executable main-flow gap candidates before base
   assert.equal(result.candidates.some((candidate) => candidate.metadata.baselinePreservation === true), true);
   assert.equal(result.evidence.some((item) => item.kind === "main-flow-gap-closure-candidate-generated"), true);
 });
+
+test("buildCandidates summarizes and prioritizes baseline overlap repair before main-flow gap closure", () => {
+  const os = {
+    ...(operationalState() as any),
+    workDay: { start: "09:00", end: "12:00" },
+    planning: [
+      { taskId: 10, startPlanned: "10:20", endPlanned: "10:35", assignedResourceIds: [1], spaceId: 7, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+      { taskId: 20, startPlanned: "10:05", endPlanned: "10:50", assignedResourceIds: [2], spaceId: 7, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    ],
+    tasks: [
+      { id: 10, status: "pending", assignedResourceIds: [1], spaceId: 7 },
+      { id: 20, status: "pending", assignedResourceIds: [2], spaceId: 7 },
+    ],
+    spaces: { parentById: {}, nameById: { 7: "Studio" }, capacityById: { 7: 1 }, concurrencyById: { 7: 1 }, exclusiveById: { 7: true }, priorityById: {} },
+    constraints: { optimizer: { mainZoneId: 7 } },
+  };
+  const result = buildCandidates([space("repair")], { operationalState: os, maxPreselectedCandidates: 10 });
+  assert.equal(result.summary.baselineOverlapRepair.generatedCandidateCount, 2);
+  assert.equal(result.summary.baselineOverlapRepair.assignmentCount, 2);
+  assert.equal(result.summary.mainFlowGapClosure.skippedReason, "baseline_overlap_repair_priority");
+  assert.equal(result.candidates.some((c) => c.metadata.baselineSafetyCandidate === true), true);
+  const repair = result.candidates.find((c) => c.metadata.baselineRepairCandidate === true);
+  assert.equal(repair?.metadata.executesTransformations, true);
+});
