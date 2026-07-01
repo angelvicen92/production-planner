@@ -45,7 +45,10 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       countsForTalentLoad: task.countsForTalentLoad,
       };
       const meta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: base as any, task, mealWindow: input.actualMeal ?? input.mealWindow ?? input.meal ?? null, transportContract });
-      return { ...base, operationalRole: task.operationalRole ?? meta.role, blocksSpace: task.blocksSpace ?? meta.blocksSpace, countsAsWork: task.countsAsWork ?? meta.countsAsWork, countsForMainFlow: task.countsForMainFlow ?? meta.countsForMainFlow, countsForResourceLoad: task.countsForResourceLoad ?? meta.countsForResourceLoad, countsForTalentLoad: task.countsForTalentLoad ?? meta.countsForTalentLoad, allowsSpaceOverlap: (task as any).allowsSpaceOverlap ?? meta.allowsSpaceOverlap, spaceOccupancyMode: (task as any).spaceOccupancyMode ?? meta.spaceOccupancyMode };
+      const transportRole = meta.role === "transport_arrival" || meta.role === "transport_departure";
+      const entry = { ...base, operationalRole: transportRole ? meta.role : (task.operationalRole ?? meta.role), blocksSpace: transportRole ? (task.blocksSpace === true ? true : meta.blocksSpace) : (task.blocksSpace ?? meta.blocksSpace), countsAsWork: transportRole ? meta.countsAsWork : (task.countsAsWork ?? meta.countsAsWork), countsForMainFlow: transportRole ? meta.countsForMainFlow : (task.countsForMainFlow ?? meta.countsForMainFlow), countsForResourceLoad: transportRole ? meta.countsForResourceLoad : (task.countsForResourceLoad ?? meta.countsForResourceLoad), countsForTalentLoad: transportRole ? meta.countsForTalentLoad : (task.countsForTalentLoad ?? meta.countsForTalentLoad), allowsSpaceOverlap: transportRole ? meta.allowsSpaceOverlap : ((task as any).allowsSpaceOverlap ?? meta.allowsSpaceOverlap), spaceOccupancyMode: transportRole ? meta.spaceOccupancyMode : ((task as any).spaceOccupancyMode ?? meta.spaceOccupancyMode) } as any;
+      if (transportRole && task.operationalRole === "productive_task") entry.seedRoleReclassifiedByTransportContract = true;
+      return entry;
     });
 
   const dependencies = tasks.map((task) => ({

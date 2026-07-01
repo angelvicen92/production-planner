@@ -1,5 +1,6 @@
 import type { EngineInput, EngineOutput, TaskInput, TimeWindow } from "../../types";
 import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole, isORCSpaceBlockingRole, type ORCPlanningEntryOperationalRole } from "../state/nonWorkTaskClassifier";
+import { resolveORCTransportContract, type ORCTransportContract } from "../state/transportContractResolver";
 
 export interface ORCBaselineSeedDiagnostics {
   applied: boolean;
@@ -26,6 +27,12 @@ export interface ORCBaselineSeedDiagnostics {
   spaceBlockingPlaceholderCount?: number;
   unknownRoleCount?: number;
   roleWarnings?: string[];
+  transportArrivalCount?: number;
+  transportDepartureCount?: number;
+  transportSeededCount?: number;
+  transportNonBlockingCount?: number;
+  transportContractConfigured?: boolean;
+  transportContractWarnings?: string[];
 }
 
 export interface ORCBaselineSeededInputResult {
@@ -48,6 +55,11 @@ export interface ORCBaselinePlanningEntry {
   countsForMainFlow: boolean;
   countsForResourceLoad: boolean;
   countsForTalentLoad: boolean;
+  allowsSpaceOverlap?: boolean;
+  spaceOccupancyMode?: "exclusive" | "shared" | "non_blocking";
+  transportGroupCapacity?: number | null;
+  transportGroupingTarget?: number | null;
+  transportGroupingWeight?: number | null;
 }
 
 type PlannedTask = EngineOutput["plannedTasks"][number];
@@ -79,10 +91,17 @@ const roleFlags = (role: ORCPlanningEntryOperationalRole, task: TaskInput, entry
   };
 };
 
-function classifySeed(task: TaskInput, partial: { taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null; assignedResources: number[]; source: "v4_planned_task" | "protected_existing_planning" }, mealWindow: TimeWindow | null): ORCBaselinePlanningEntry {
-  const roleMeta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: { taskId: partial.taskId, startPlanned: partial.startPlanned, endPlanned: partial.endPlanned, assignedResourceIds: partial.assignedResources, spaceId: partial.assignedSpace ?? null }, task, mealWindow });
-  const flags = roleFlags(roleMeta.role, task, partial);
-  return { ...partial, seedSource: partial.source, operationalRole: roleMeta.role, ...flags };
+function classifySeed(task: TaskInput, partial: { taskId: number; startPlanned: string; endPlanned: string; assignedSpace?: number | null; assignedResources: number[]; source: "v4_planned_task" | "protected_existing_planning" }, mealWindow: TimeWindow | null, transportContract: ORCTransportContract): ORCBaselinePlanningEntry {
+  const roleMeta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: { taskId: partial.taskId, startPlanned: partial.startPlanned, endPlanned: partial.endPlanned, assignedResourceIds: partial.assignedResources, spaceId: partial.assignedSpace ?? null }, task, mealWindow, transportContract });
+  const isTransport = roleMeta.role === "transport_arrival" || roleMeta.role === "transport_departure";
+  const flags = isTransport ? {
+    blocksSpace: task.blocksSpace === true ? true : roleMeta.blocksSpace,
+    countsAsWork: roleMeta.countsAsWork,
+    countsForMainFlow: roleMeta.countsForMainFlow,
+    countsForResourceLoad: roleMeta.countsForResourceLoad,
+    countsForTalentLoad: roleMeta.countsForTalentLoad,
+  } : roleFlags(roleMeta.role, task, partial);
+  return { ...partial, seedSource: partial.source, operationalRole: roleMeta.role, ...flags, allowsSpaceOverlap: roleMeta.allowsSpaceOverlap, spaceOccupancyMode: roleMeta.spaceOccupancyMode, transportGroupCapacity: roleMeta.transportGroupCapacity ?? null, transportGroupingTarget: roleMeta.transportGroupingTarget ?? null, transportGroupingWeight: roleMeta.transportGroupingWeight ?? null };
 }
 
 function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | null, preserveExistingPlanning: boolean): TaskInput {
@@ -113,6 +132,11 @@ function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | nul
     next.countsForMainFlow = seed.countsForMainFlow;
     next.countsForResourceLoad = seed.countsForResourceLoad;
     next.countsForTalentLoad = seed.countsForTalentLoad;
+    next.allowsSpaceOverlap = seed.allowsSpaceOverlap;
+    next.spaceOccupancyMode = seed.spaceOccupancyMode;
+    next.transportGroupCapacity = seed.transportGroupCapacity;
+    next.transportGroupingTarget = seed.transportGroupingTarget;
+    next.transportGroupingWeight = seed.transportGroupingWeight;
   } else if (preserveExistingPlanning && task.startPlanned && task.endPlanned) {
     next.startPlanned = task.startPlanned;
     next.endPlanned = task.endPlanned;
@@ -161,6 +185,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
   let unseededPendingCount = 0;
   let v4SeededCount = 0;
   const mealWindow = input.actualMeal ?? input.mealWindow ?? input.meal ?? null;
+  const transportContract = resolveORCTransportContract(input as any);
 
   for (const task of input.tasks ?? []) {
     const planned = plannedByTask.get(task.id);
@@ -168,7 +193,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
     const hasExistingPlanning = Boolean(task.startPlanned && task.endPlanned);
     if (!planned) {
       if (protectedOrLocked && hasExistingPlanning) {
-        const entry = classifySeed(task, { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b), source: "protected_existing_planning" }, mealWindow);
+        const entry = classifySeed(task, { taskId: task.id, startPlanned: String(task.startPlanned), endPlanned: String(task.endPlanned), assignedSpace: task.spaceId ?? null, assignedResources: [...(task.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b), source: "protected_existing_planning" }, mealWindow, transportContract);
         seedByTask.set(task.id, entry);
         seedPlanning.push(entry);
         preserveExistingByTask.add(task.id);
@@ -179,7 +204,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
       }
       continue;
     }
-    const entry = classifySeed(task, { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned), source: "v4_planned_task" }, mealWindow);
+    const entry = classifySeed(task, { taskId: task.id, startPlanned: planned.startPlanned, endPlanned: planned.endPlanned, assignedSpace: assignedSpaceFor(task, planned, v4Output) ?? null, assignedResources: resources(planned), source: "v4_planned_task" }, mealWindow, transportContract);
     seedByTask.set(task.id, entry);
     seedPlanning.push(entry);
     v4SeededCount += 1;
@@ -193,6 +218,10 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
   const operationalRoleSummary = seedPlanning.reduce<Record<string, number>>((acc, entry) => { acc[entry.operationalRole] = (acc[entry.operationalRole] ?? 0) + 1; return acc; }, {});
   const productiveSeededCount = seedPlanning.filter((entry) => entry.countsAsWork).length;
   const nonProductiveSeededCount = seedPlanning.length - productiveSeededCount;
+  const transportArrivalCount = operationalRoleSummary.transport_arrival ?? 0;
+  const transportDepartureCount = operationalRoleSummary.transport_departure ?? 0;
+  const transportSeededCount = transportArrivalCount + transportDepartureCount;
+  const transportNonBlockingCount = seedPlanning.filter((entry) => (entry.operationalRole === "transport_arrival" || entry.operationalRole === "transport_departure") && entry.blocksSpace === false).length;
   const roleWarnings: string[] = [];
   const spaceOccupancySummary = seedPlanning.reduce<Record<string, number>>((acc, entry) => { const mode = entry.blocksSpace ? "exclusive" : "non_blocking"; acc[mode] = (acc[mode] ?? 0) + 1; return acc; }, {});
 
@@ -228,6 +257,12 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
       spaceBlockingPlaceholderCount: seedPlanning.filter((entry) => entry.blocksSpace && !entry.countsAsWork).length,
       unknownRoleCount: operationalRoleSummary.unknown ?? 0,
       roleWarnings,
+      transportArrivalCount,
+      transportDepartureCount,
+      transportSeededCount,
+      transportNonBlockingCount,
+      transportContractConfigured: transportContract.configured,
+      transportContractWarnings: [...transportContract.warnings],
     },
   };
 }

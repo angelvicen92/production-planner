@@ -96,7 +96,7 @@ test("baseline seed remains planning-only and JSON serializable", () => {
   (rich.tasks![0] as any).template = { id: 1, name: "full template" };
   (rich.tasks![0] as any).createdAt = "2026-06-29T00:00:00.000Z";
   const result = buildORCBaselineSeededInput(rich, output(1));
-  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "blocksSpace", "countsAsWork", "countsForMainFlow", "countsForResourceLoad", "countsForTalentLoad", "endPlanned", "operationalRole", "seedSource", "source", "startPlanned", "taskId"]);
+  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["allowsSpaceOverlap", "assignedResources", "assignedSpace", "blocksSpace", "countsAsWork", "countsForMainFlow", "countsForResourceLoad", "countsForTalentLoad", "endPlanned", "operationalRole", "seedSource", "source", "spaceOccupancyMode", "startPlanned", "taskId", "transportGroupCapacity", "transportGroupingTarget", "transportGroupingWeight"]);
   assert.equal(JSON.stringify(result.seedPlanning).includes("comments"), false);
   assert.equal(JSON.stringify(result.seedPlanning).includes("template"), false);
   assert.doesNotThrow(() => JSON.stringify(result.seedPlanning));

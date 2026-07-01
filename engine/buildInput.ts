@@ -377,6 +377,19 @@ export async function buildEngineInput(
     ?? singleSpaceId(taskTransportSpaceIds)
     ?? namedTransportSpaceId;
   const transportVanCapacity = Math.max(0, Math.floor(Number((optimizer as any)?.vanCapacity ?? 0) || 0));
+  const transportTemplateIdByName = (name: unknown): number | null => {
+    const normalized = normalizeTransportTemplateName(name);
+    if (!normalized) return null;
+    const matches = (templates as any[])
+      .filter((tpl: any) => normalizeTransportTemplateName(tpl?.name) === normalized)
+      .map((tpl: any) => Number(tpl?.id))
+      .filter((templateId: number) => Number.isFinite(templateId) && templateId > 0);
+    return matches.length === 1 ? matches[0] : null;
+  };
+  const arrivalTransportTemplateName = String((optimizer as any)?.arrivalTaskTemplateName ?? "");
+  const departureTransportTemplateName = String((optimizer as any)?.departureTaskTemplateName ?? "");
+  const arrivalTransportTemplateId = transportTemplateIdByName(arrivalTransportTemplateName);
+  const departureTransportTemplateId = transportTemplateIdByName(departureTransportTemplateName);
 
   // ✅ Mapa id -> nombre (para mensajes de dependencias)
   const taskTemplateNameById: Record<number, string> = {};
@@ -672,6 +685,21 @@ export async function buildEngineInput(
     vanCapacity: transportVanCapacity,
     transportVanCapacity,
     transportSpaceId,
+    transportSettings: (arrivalTransportTemplateName.trim() || departureTransportTemplateName.trim()) ? {
+      arrivalTemplateId: arrivalTransportTemplateId,
+      departureTemplateId: departureTransportTemplateId,
+      arrivalTemplateName: arrivalTransportTemplateName,
+      departureTemplateName: departureTransportTemplateName,
+      arrivalTargetGroupSize: Number((optimizer as any)?.arrivalGroupingTarget ?? 0),
+      departureTargetGroupSize: Number((optimizer as any)?.departureGroupingTarget ?? 0),
+      arrivalMinGapMinutes: Number((optimizer as any)?.arrivalMinGapMinutes ?? 0),
+      departureMinGapMinutes: Number((optimizer as any)?.departureMinGapMinutes ?? 0),
+      vehicleCapacity: transportVanCapacity,
+      vanCapacity: transportVanCapacity,
+      transportSpaceId,
+      groupingWeight: transportWeight,
+      source: "engine-buildInput-optimizer-transport" as const,
+    } : undefined,
 
     optimizerWeights: {
       mainZoneFinishEarly: resolveWeight(
