@@ -80,6 +80,7 @@ function detail(input: DetailInput): ValidationViolationDetail {
     ...((input as any).roleLabels ? { roleLabels: [...(input as any).roleLabels] } : {}),
     ...((input as any).spaceOccupancyModes ? { spaceOccupancyModes: [...(input as any).spaceOccupancyModes] } : {}),
     ...((input as any).blocksSpaceFlags ? { blocksSpaceFlags: [...(input as any).blocksSpaceFlags] } : {}),
+    ...Object.fromEntries(Object.entries(input as any).filter(([key]) => !["code","constraintGroup","severity","taskIds","resourceIds","spaceIds","lockIds","breakWindow","timeWindow","relatedTimeWindow","message","diagnosticHint","taskLabels","spaceLabels","resourceLabels","roleLabels","spaceOccupancyModes","blocksSpaceFlags","readOnly"].includes(key))),
     readOnly: true,
   };
 }
@@ -148,6 +149,7 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
   const planning = snapshot.planning ?? [];
   const byTask = new Map<number, PlanningEntry>();
   const windows = new Map<number, { start: number; end: number; entry: PlanningEntry }>();
+  const transportContract = (snapshot.constraints as any)?.transportContract ?? resolveORCTransportContract(snapshot as any);
   const roleByTask = new Map<number, ReturnType<typeof resolveORCPlanningEntryOperationalRoleMetadata>>();
 
   for (const entry of planning) {
@@ -162,7 +164,7 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     if (start == null || end == null) { addDetail(violations, details, { code: "INVALID_PLANNING_TIME_FORMAT", constraintGroup: "structure", taskIds: [entry.taskId], timeWindow: windowOf(entry) }); continue; }
     if (start >= end) addDetail(violations, details, { code: "INVALID_PLANNING_TIME_RANGE", constraintGroup: "structure", taskIds: [entry.taskId], timeWindow: windowOf(entry) });
     const task = tasks.get(entry.taskId);
-    roleByTask.set(entry.taskId, resolveORCPlanningEntryOperationalRoleMetadata({ entry, task, mealWindow: snapshot.availability?.actualMeal ?? snapshot.availability?.meal ?? snapshot.availability?.mealWindow ?? null }));
+    roleByTask.set(entry.taskId, resolveORCPlanningEntryOperationalRoleMetadata({ entry, task, mealWindow: snapshot.availability?.actualMeal ?? snapshot.availability?.meal ?? snapshot.availability?.mealWindow ?? null, transportContract }));
     windows.set(entry.taskId, { start, end, entry });
   }
 
@@ -218,7 +220,6 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     if ((lock.lockType === "resource" || lock.lockType === "full") && lock.lockedResourceId != null && !(planned.assignedResourceIds ?? []).includes(lock.lockedResourceId)) addDetail(violations, details, { code: "RESOURCE_LOCK_BROKEN", constraintGroup: "locks", taskIds: [lock.taskId], lockIds: [String(lock.id ?? lock.taskId)], resourceIds: [lock.lockedResourceId], timeWindow: windowOf(planned), diagnosticHint: "Locked task resource is missing from planning. Verify locks, V4 output, or seed adapter lock mapping." });
   }
 
-  const transportContract = (snapshot.constraints as any)?.transportContract ?? resolveORCTransportContract(snapshot as any);
   const planned = [...windows.values()];
   for (let i = 0; i < planned.length; i++) for (let j = i + 1; j < planned.length; j++) {
     const a = planned[i], b = planned[j];

@@ -28,3 +28,10 @@ test("classifies transport by configured template name and lets contract beat se
 test("does not classify by name or duration without configured transport contract", () => {
   assert.equal(classifyORCPlanningEntryOperationalRole({ entry: { taskId: 3, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 } as any, task: { id: 3, planId: 1, templateId: 77, status: "pending", templateName: "IN" } as any }), "productive_task");
 });
+
+test("preserves materialized transport roles only when transport contract is configured", () => {
+  const contract = { configured: true, arrivalTemplateId: null, departureTemplateId: null, vehicleCapacity: 6, source: "test" };
+  assert.equal(classifyORCPlanningEntryOperationalRole({ entry: { taskId: 4, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49, operationalRole: "transport_arrival" } as any, task: { id: 4, planId: 1, templateId: 1, status: "pending" } as any, transportContract: contract }), "transport_arrival");
+  assert.equal(classifyORCPlanningEntryOperationalRole({ entry: { taskId: 5, startPlanned: "18:00", endPlanned: "18:05", assignedResourceIds: [], spaceId: 49 } as any, task: { id: 5, planId: 1, templateId: 1, status: "pending", operationalRole: "transport_departure" } as any, transportContract: contract }), "transport_departure");
+  assert.equal(classifyORCPlanningEntryOperationalRole({ entry: { taskId: 6, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49, operationalRole: "transport_arrival" } as any, task: { id: 6, planId: 1, templateId: 1, status: "pending" } as any }), "productive_task");
+});

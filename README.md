@@ -88,6 +88,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 213 — 2026-07-01 UTC — ORC MealMode Contract Alignment v1
 - ID 214 — 2026-07-01 UTC — ORC Transport Template Occupancy Contract & Pre-existing Overlap Isolation v1
 - ID 215 — 2026-07-01 UTC — ORC Active Transport Contract Wiring & Seed Role Reclassification v1
+- ID 216 — 2026-07-01 UTC — ORC Validation Transport Role Propagation v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -256,6 +257,14 @@ ORC Active ya lee la configuración real de transporte emitida por `buildInput`:
 Las plantillas configuradas como llegada/salida se clasifican como `transport_arrival` / `transport_departure` y son transporte agrupable: la capacidad hard de simultaneidad viene de `vehicleCapacity` / `vanCapacity`, mientras que objetivos de agrupación y peso son preferencias blandas. El baseline seed pasa el contrato de transporte al clasificador y ya no congela por defecto estas tareas como `productive_task` exclusiva; el adapter permite que el contrato de transporte reemplace un rol productivo seedado por defecto, respetando sólo un `blocksSpace: true` explícito.
 
 Las productivas normales del mismo espacio siguen siendo exclusivas si no tienen otra configuración: `SPACE_OVERLAP` productivo real continúa siendo hard, el espacio de transporte no se vuelve compartido globalmente y no se ocultan hard violations reales. No se implementa compactación de coaches ni resource handoff compaction, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4 y no se relajan hard constraints productivas exclusivas.
+
+### ORC Validation Transport Role Propagation v1 (ID 216)
+
+ValidationEngine resuelve ahora el `transportContract` antes de clasificar `roleByTask`, por lo que Validation usa los roles finales de transporte (`transport_arrival` / `transport_departure`) en lugar de volver a caer a `productive_task` por defecto. Los roles de transporte ya materializados en entry/task se conservan cuando el contrato está configurado, y un contrato por template puede corregir un rol productivo seedado sin inventar transporte por texto cuando no hay contrato.
+
+CandidateHardPrefilter usa la misma semántica de transporte que Validation en hard breaks, previews y cálculo de overlaps baseline/candidate. Las tareas IN/OUT configuradas ya no se revalidan como productivas exclusivas: transporte no bloqueante dentro de `vehicleCapacity` no genera `SPACE_OVERLAP`, mientras que un grupo que excede capacidad emite `TRANSPORT_GROUP_CAPACITY_EXCEEDED` con taskIds, capacidad y conteo.
+
+Las productivas exclusivas reales siguen siendo hard y continúan generando `SPACE_OVERLAP` en espacios de capacidad efectiva 1. Baseline audit distingue transporte válido tras alineación de contrato, exceso de capacidad (`transport_group_capacity_exceeded`) y solape productivo real. No hay cambios DB/RLS/UI, no se implementa compactación de coaches todavía, no se cambia V3 y no se reescribe V4.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
