@@ -34,7 +34,8 @@ test("buildORCBaselineSeededInput converts complete V4 baseline into Operational
   assert.equal(result.baselineSeed.applied, true);
   assert.equal(result.baselineSeed.seededPlanningCount, 219);
   assert.equal(state.planning.length, 219);
-  assert.deepEqual(state.planning[0], { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResourceIds: [10], spaceId: 200 });
+  assert.deepEqual({ taskId: state.planning[0].taskId, startPlanned: state.planning[0].startPlanned, endPlanned: state.planning[0].endPlanned, assignedResourceIds: state.planning[0].assignedResourceIds, spaceId: state.planning[0].spaceId }, { taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResourceIds: [10], spaceId: 200 });
+  assert.equal(state.planning[0].operationalRole, "productive_task");
 });
 
 test("buildORCBaselineSeededInput preserves protected task planning when V4 did not plan it", () => {
@@ -95,7 +96,7 @@ test("baseline seed remains planning-only and JSON serializable", () => {
   (rich.tasks![0] as any).template = { id: 1, name: "full template" };
   (rich.tasks![0] as any).createdAt = "2026-06-29T00:00:00.000Z";
   const result = buildORCBaselineSeededInput(rich, output(1));
-  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "endPlanned", "source", "startPlanned", "taskId"]);
+  assert.deepEqual(Object.keys(result.seedPlanning[0]).sort(), ["assignedResources", "assignedSpace", "blocksSpace", "countsAsWork", "countsForMainFlow", "countsForResourceLoad", "countsForTalentLoad", "endPlanned", "operationalRole", "seedSource", "source", "startPlanned", "taskId"]);
   assert.equal(JSON.stringify(result.seedPlanning).includes("comments"), false);
   assert.equal(JSON.stringify(result.seedPlanning).includes("template"), false);
   assert.doesNotThrow(() => JSON.stringify(result.seedPlanning));
@@ -103,7 +104,8 @@ test("baseline seed remains planning-only and JSON serializable", () => {
 
 test("baseline seed keeps only required planning values for each task", () => {
   const result = buildORCBaselineSeededInput(input(2), output(2));
-  assert.deepEqual(result.seedPlanning[1], { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedSpace: 201, assignedResources: [10], source: "v4_planned_task" });
+  assert.deepEqual({ taskId: result.seedPlanning[1].taskId, startPlanned: result.seedPlanning[1].startPlanned, endPlanned: result.seedPlanning[1].endPlanned, assignedSpace: result.seedPlanning[1].assignedSpace, assignedResources: result.seedPlanning[1].assignedResources, source: result.seedPlanning[1].source }, { taskId: 2, startPlanned: "09:10", endPlanned: "09:20", assignedSpace: 201, assignedResources: [10], source: "v4_planned_task" });
+  assert.equal(result.seedPlanning[1].operationalRole, "productive_task");
   const taskJson = JSON.stringify(result.input.tasks![0]);
   assert.equal(taskJson.includes("comments"), false);
   assert.equal(taskJson.includes("createdAt"), false);
