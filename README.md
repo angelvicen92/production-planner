@@ -91,6 +91,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 216 — 2026-07-01 UTC — ORC Validation Transport Role Propagation v1
 - ID 217 — 2026-07-01 UTC — ORC Baseline Productive Space Overlap Repair Candidate v1
 - ID 218 — 2026-07-01 UTC — ORC Baseline Repair Lineage & Active Gate Unblocking v1
+- ID 219 — 2026-07-01 UTC — ORC Baseline Space Overlap Repair Safe Variants & Repair Acceptance Policy v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -283,6 +284,16 @@ ORC now resolves deterministic lineage from raw baseline-overlap repair candidat
 ORC Active can accept a selected baseline-overlap repair when the final simulation is `VALID`, materialized from `candidate_transformations`, changes at least one task, preserves `done`/`in_progress`, respects locks and has no hard violations. A hard-feasible repaired plan may therefore beat a hard-infeasible baseline seed, but no hard-infeasible final state is consolidated. `SPACE_OVERLAP` remains hard, Validation/Evaluation/Commit are not bypassed, and no post-pipeline moves are used.
 
 This iteration does not implement coach compaction or resource handoff compaction. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
+
+### ORC Baseline Space Overlap Repair Safe Variants & Repair Acceptance Policy v1 (ID 219)
+
+Baseline overlap repair now generates bounded deterministic variants that may move either task in a simple productive exclusive space-overlap pair: A before B, A after B, B before A and B after A. The preference still favors tasks without resources, shorter tasks, non-main-flow tasks, smaller minute displacement and stable ids, but that ordering no longer discards the longer task when it may be the viable operational repair.
+
+Each repair candidate keeps duration, assigned space and assigned resources, carries real assignment metadata, records the moved/fixed/conflicting task ids, original/proposed windows and local feasibility diagnostics, and still goes through Candidate, Transformation, Simulation, Validation, Evaluation and Commit. Cheap local checks can flag obvious workday, lock, protected-task, space, resource or team/contestant blockers, but they do not replace Validation and do not relax `SPACE_OVERLAP` or `RESOURCE_OVERLAP`.
+
+ORC Active has an explicit repair acceptance policy: a validated and committed baseline repair that restores hard feasibility from a hard-infeasible baseline seed can pass the baseline-seed gate and may bypass OPQM as a hard veto when the invalid baseline only looked better because of illegal overlap compactness. The OPQM delta remains diagnostic evidence; the policy only applies to selected baseline repair candidates with `candidate_transformations`, changed tasks, preserved `done`/`in_progress`, respected locks and no hard violations.
+
+No coach compaction or resource handoff compaction is implemented yet. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

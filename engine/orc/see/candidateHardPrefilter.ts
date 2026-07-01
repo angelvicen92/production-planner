@@ -15,7 +15,7 @@ type PlanningEntry = OperationalState["planning"][number];
 type Reason =
   | "task-not-found" | "invalid-task-id" | "invalid-time-format" | "invalid-time-range" | "protected-task-status"
   | "lock-full" | "lock-time" | "lock-space" | "lock-resource" | "outside-work-day" | "hard-break-overlap"
-  | "contestant-overlap" | "itinerant-team-overlap" | "resource-overlap" | "space-overlap" | "preexisting-baseline-overlap" | "candidate-introduced-space-overlap" | "candidate-worsened-space-overlap" | "transport-capacity-exceeded" | "direct-dependency-broken";
+  | "contestant-overlap" | "itinerant-team-overlap" | "resource-overlap" | "candidate-introduced-resource-overlap" | "space-overlap" | "preexisting-baseline-overlap" | "candidate-introduced-space-overlap" | "candidate-worsened-space-overlap" | "transport-capacity-exceeded" | "direct-dependency-broken";
 
 export interface CandidateHardPrefilterDiscard {
   readonly candidateId: string;
@@ -141,7 +141,7 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     const productivePair = isORCProductiveRole(a.role) && isORCProductiveRole(b.role);
     if (productivePair && a.task?.contestantId != null && a.task.contestantId === b.task?.contestantId) return discard(candidate, "contestant-overlap", "CONTESTANT_OVERLAP", ids);
     if (productivePair && a.task?.itinerantTeamId != null && a.task.itinerantTeamId === b.task?.itinerantTeamId) return discard(candidate, "itinerant-team-overlap", "ITINERANT_TEAM_OVERLAP", ids);
-    if (productivePair && (a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, "resource-overlap", "RESOURCE_OVERLAP", ids);
+    if (productivePair && (a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, candidate.metadata?.baselineRepairCandidate === true ? "candidate-introduced-resource-overlap" : "resource-overlap", "RESOURCE_OVERLAP", ids);
     const spaceId = a.entry.spaceId ?? null;
     if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
       const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: a.task, roleMetadata: a.role, spaceConfig: state.spaces, transportContract });

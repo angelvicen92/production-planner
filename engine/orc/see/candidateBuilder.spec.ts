@@ -226,8 +226,8 @@ test("buildCandidates summarizes and prioritizes baseline overlap repair before 
     constraints: { optimizer: { mainZoneId: 7 } },
   };
   const result = buildCandidates([space("repair")], { operationalState: os, maxPreselectedCandidates: 10 });
-  assert.equal(result.summary.baselineOverlapRepair.generatedCandidateCount, 2);
-  assert.equal(result.summary.baselineOverlapRepair.assignmentCount, 2);
+  assert.equal(result.summary.baselineOverlapRepair.generatedCandidateCount, 4);
+  assert.equal(result.summary.baselineOverlapRepair.assignmentCount, 4);
   assert.equal(result.summary.mainFlowGapClosure.skippedReason, "baseline_overlap_repair_priority");
   assert.equal(result.candidates.some((c) => c.metadata.baselineSafetyCandidate === true), true);
   const repair = result.candidates.find((c) => c.metadata.baselineRepairCandidate === true);

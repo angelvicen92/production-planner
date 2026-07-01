@@ -21,10 +21,11 @@ const state = (overrides: Partial<OperationalState> = {}): OperationalState => (
 test("generates repair candidates for a simple productive overlap without mutating state", () => {
   const os = state(); const before = JSON.stringify(os);
   const result = buildBaselineOverlapRepairCandidates(os, { createdAt: "2026-07-01T00:00:00.000Z" });
-  assert.equal(result.summary.generatedCandidateCount, 2);
+  assert.equal(result.summary.generatedCandidateCount, 4);
   assert.equal(result.candidates[0].metadata.strategy, "BASELINE_SPACE_OVERLAP_REPAIR");
   assert.equal(result.candidates[0].metadata.executesTransformations, true);
-  assert.deepEqual(result.candidates[0].assignments[0], { taskId: 10, startPlanned: "10:50", endPlanned: "11:05", spaceId: 7, resourceIds: [1] });
+  assert.equal(result.candidates.filter((c) => c.metadata.movedTaskId === 10).length, 2);
+  assert.equal(result.candidates.filter((c) => c.metadata.movedTaskId === 20).length, 2);
   assert.deepEqual(result.candidates[0].metadata.conflictingTaskIds, [10, 20]);
   assert.equal(result.evidence[0].kind, "baseline-overlap-repair-candidate-generated");
   assert.equal(JSON.stringify(os), before);
@@ -37,13 +38,13 @@ test("generates earlier variant when there is room before the fixed task", () =>
 
 test("does not move done or in_progress tasks", () => {
   const done = state({ tasks: [{ id: 10, status: "done", assignedResourceIds: [1], spaceId: 7 } as any, { id: 20, status: "pending", assignedResourceIds: [2], spaceId: 7 } as any] });
-  assert.equal(buildBaselineOverlapRepairCandidates(done).summary.skippedReason, "protected_task_in_overlap");
+  { const r = buildBaselineOverlapRepairCandidates(done); assert.equal(r.candidates.every((c) => c.metadata.movedTaskId !== 10), true); assert.equal(r.summary.generatedCandidateCount, 2); }
   const inProgress = state({ tasks: [{ id: 10, status: "pending", assignedResourceIds: [1], spaceId: 7 } as any, { id: 20, status: "in_progress", assignedResourceIds: [2], spaceId: 7 } as any] });
-  assert.equal(buildBaselineOverlapRepairCandidates(inProgress).summary.skippedReason, "protected_task_in_overlap");
+  { const r = buildBaselineOverlapRepairCandidates(inProgress); assert.equal(r.candidates.every((c) => c.metadata.movedTaskId !== 20), true); assert.equal(r.summary.generatedCandidateCount, 2); }
 });
 
 test("respects obvious time/full locks", () => {
-  assert.equal(buildBaselineOverlapRepairCandidates(state({ locks: [{ taskId: 10, lockType: "time" } as any] })).summary.skippedReason, "locked_task_in_overlap");
+  { const r = buildBaselineOverlapRepairCandidates(state({ locks: [{ taskId: 10, lockType: "time" } as any] })); assert.equal(r.candidates.every((c) => c.metadata.movedTaskId !== 10), true); assert.equal(r.summary.generatedCandidateCount, 2); }
   assert.equal(buildBaselineOverlapRepairCandidates(state({ locks: [{ taskId: 10, lockType: "full" } as any, { taskId: 20, lockType: "time" } as any] })).summary.skippedReason, "locked_task_in_overlap");
 });
 
