@@ -154,6 +154,7 @@ export interface ORCShadowModeResult {
       limit: number;
     };
     mainFlowGapClosure: unknown;
+    baselineOverlapRepair: unknown;
     decisionFeedback: {
       feedbackCount: number;
       influencedDecisions: number;
@@ -197,6 +198,7 @@ function buildShadowSummaryEvidence(
   decisionFeedbackSummary: ORCShadowModeResult["summary"]["decisionFeedback"],
   baselineSafetySummary: Record<string, unknown>,
   mainFlowGapClosureSummary: Record<string, unknown>,
+  baselineOverlapRepairSummary: Record<string, unknown>,
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -235,6 +237,7 @@ function buildShadowSummaryEvidence(
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
       mainFlowGapClosure: mainFlowGapClosureSummary,
+      baselineOverlapRepair: baselineOverlapRepairSummary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
   };
@@ -352,6 +355,11 @@ export function runORCShadowMode(
   const baselineSafetyCandidateStateIds = new Set(transformationResult.candidateStates.filter((state) => state.candidateId === baselineSafetyCandidate?.id).map((state) => state.id));
   const baselineSafetySimulatedStateIds = new Set(simulationResult.simulatedStates.filter((state) => baselineSafetyCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
   const baselineSafetySelectedAsOutcome = baselineSafetyCandidate != null && commitResult.commitDecisions.some((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null && baselineSafetySimulatedStateIds.has(decision.operationalValueId));
+  const baselineRepairCandidateIds = new Set(candidateResult.summary.baselineOverlapRepair.candidateIds ?? []);
+  const baselineRepairCandidateStateIds = new Set(transformationResult.candidateStates.filter((state) => baselineRepairCandidateIds.has(state.candidateId)).map((state) => state.id));
+  const baselineRepairSimulatedStateIds = new Set(simulationResult.simulatedStates.filter((state) => baselineRepairCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
+  const baselineRepairValidSimulationCount = validationResult.validationResults.filter((result) => baselineRepairSimulatedStateIds.has(result.simulatedStateId) && result.result === "VALID").length;
+  const baselineRepairInvalidSimulationCount = validationResult.validationResults.filter((result) => baselineRepairSimulatedStateIds.has(result.simulatedStateId) && result.result === "INVALID").length;
   const mainFlowCandidateIds = new Set(candidateResult.summary.mainFlowGapClosure.candidateIds ?? []);
   const mainFlowCandidateStateIds = new Set(transformationResult.candidateStates.filter((state) => mainFlowCandidateIds.has(state.candidateId)).map((state) => state.id));
   const mainFlowSimulatedStateIds = new Set(simulationResult.simulatedStates.filter((state) => mainFlowCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
@@ -361,6 +369,7 @@ export function runORCShadowMode(
   const selectedCommitSimulation = selectedCommitValue ? evaluatorResult.operationalValues.find((value) => value.simulatedStateId === selectedCommitValue)?.simulatedStateId ?? selectedCommitValue : null;
   const rankedBestSimulationId = rankingResult.rankedOperationalValues[0]?.simulatedStateId ?? null;
   const mainFlowGapClosureSummary = { ...candidateResult.summary.mainFlowGapClosure, candidateStateCount: mainFlowCandidateStateIds.size, simulatedStateCount: mainFlowSimulatedStateIds.size, validSimulationCount: mainFlowValidSimulationCount, invalidSimulationCount: mainFlowInvalidSimulationCount, selectedCandidateId: [...mainFlowCandidateIds].find((id) => mainFlowCandidateStateIds.has(`orc-transformation:candidate-state:${id}`)) ?? null, selectedAsBest: rankedBestSimulationId != null && mainFlowSimulatedStateIds.has(rankedBestSimulationId), selectedAsCommit: selectedCommitSimulation != null && mainFlowSimulatedStateIds.has(selectedCommitSimulation) };
+  const baselineOverlapRepairSummary = { ...candidateResult.summary.baselineOverlapRepair, candidateStateCount: baselineRepairCandidateStateIds.size, simulatedStateCount: baselineRepairSimulatedStateIds.size, validSimulationCount: baselineRepairValidSimulationCount, invalidSimulationCount: baselineRepairInvalidSimulationCount, selectedCandidateId: [...baselineRepairCandidateIds].find((id) => baselineRepairCandidateStateIds.has(`orc-transformation:candidate-state:${id}`)) ?? null, selectedAsBest: rankedBestSimulationId != null && baselineRepairSimulatedStateIds.has(rankedBestSimulationId), selectedAsCommit: selectedCommitSimulation != null && baselineRepairSimulatedStateIds.has(selectedCommitSimulation) };
   const baselineSafetySummary = {
     generated: baselineSafetyCandidate != null,
     candidateId: baselineSafetyCandidate?.id ?? null,
@@ -457,7 +466,7 @@ export function runORCShadowMode(
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary, baselineOverlapRepairSummary),
   ];
 
   const preliminaryResult = {
@@ -504,6 +513,7 @@ export function runORCShadowMode(
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
       mainFlowGapClosure: mainFlowGapClosureSummary,
+      baselineOverlapRepair: baselineOverlapRepairSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,
       topOpportunityId: topOpportunity?.id ?? null,

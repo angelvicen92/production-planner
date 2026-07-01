@@ -96,3 +96,34 @@ test("prefilter aligns meal rejection with mealMode semantics", () => {
   const discarded = prefilterCandidatesByHardConstraints([moveInMeal], state({ availability: { ...state().availability, actualMeal: { start: "12:00", end: "13:00" } }, constraints: { mealMode: "flexible_meal_window" } })).discardedCandidates;
   assert.doesNotThrow(() => JSON.stringify(discarded));
 });
+
+test("allows baseline repair candidate that resolves its preexisting productive overlap", () => {
+  const s = state({
+    planning: [
+      { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [10], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+      { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [20], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    ],
+    spaces: { ...state().spaces, exclusiveById: { 1: true }, capacityById: { 1: 1 }, concurrencyById: { 1: 1 } },
+    tasks: [{ ...state().tasks[0], spaceId: 1 } as any, { ...state().tasks[1], spaceId: 1 } as any],
+  });
+  const repair = candidate("repair", [{ taskId: 1, startPlanned: "09:40", endPlanned: "10:10", spaceId: 1, resourceIds: [10] }], { baselineRepairCandidate: true, repairedViolationCode: "SPACE_OVERLAP", conflictingTaskIds: [1, 2] });
+  const result = prefilterCandidatesByHardConstraints([repair], s);
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.discardedCandidates.length, 0);
+});
+
+test("discards baseline repair candidate that introduces a different overlap", () => {
+  const s = state({
+    planning: [
+      { taskId: 1, startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [10], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+      { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [20], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+      { taskId: 3, startPlanned: "09:45", endPlanned: "10:15", assignedResourceIds: [30], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    ] as any,
+    tasks: [...state().tasks, { id: 3, status: "pending", contestantId: 3, itinerantTeamId: 3, spaceId: 1, assignedResourceIds: [30] } as any],
+    spaces: { ...state().spaces, exclusiveById: { 1: true }, capacityById: { 1: 1 }, concurrencyById: { 1: 1 } },
+  });
+  const repair = candidate("repair-introduces", [{ taskId: 1, startPlanned: "09:50", endPlanned: "10:20", spaceId: 1, resourceIds: [10] }], { baselineRepairCandidate: true, repairedViolationCode: "SPACE_OVERLAP", conflictingTaskIds: [1, 2] });
+  const result = prefilterCandidatesByHardConstraints([repair], s);
+  assert.equal(result.discardedCandidates[0].reason, "candidate-introduced-space-overlap");
+  assert.deepEqual(result.discardedCandidates[0].conflictingTaskIds, [1, 3]);
+});

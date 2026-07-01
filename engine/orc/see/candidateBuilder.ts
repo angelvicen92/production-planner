@@ -5,6 +5,8 @@ import { buildStrategyCandidates } from "./strategyCandidateBuilder";
 import { buildBaselinePreservationCandidate } from "./baselinePreservationCandidate";
 import { prefilterCandidatesByHardConstraints } from "./candidateHardPrefilter";
 import { buildMainFlowGapClosureCandidates, type MainFlowGapClosureSummary } from "./mainFlowGapCandidateBuilder";
+import { buildBaselineOverlapRepairCandidates, type BaselineOverlapRepairSummary } from "./baselineOverlapRepairCandidateBuilder";
+import type { ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 
 export interface CandidateBuilderResult {
   candidates: Candidate[];
@@ -46,6 +48,7 @@ export interface CandidateBuilderResult {
       };
     };
     mainFlowGapClosure: MainFlowGapClosureSummary;
+    baselineOverlapRepair: BaselineOverlapRepairSummary;
     baselineSafety: {
       generated: boolean;
       candidateId: string | null;
@@ -59,6 +62,8 @@ export interface CandidateBuilderResult {
 }
 
 const GLOBAL_CANDIDATE_BUDGET = 20;
+
+const emptyBaselineOverlapRepairSummary = (skippedReason: string | null = "no_space_overlap_violation"): BaselineOverlapRepairSummary => ({ executed: false, skippedReason: skippedReason as any, generatedCandidateCount: 0, candidateIds: [], conflictingTaskIds: [], movedTaskIds: [], assignmentCount: 0, discardedByPrefilter: 0, prefilterDiscardReasons: {}, candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only" });
 
 const emptyMainFlowGapClosureSummary = (skippedReason: string | null = "no_search_spaces"): MainFlowGapClosureSummary => ({ executed: false, skippedReason, mainFlowConfigured: false, mainFlowId: null, generatedCandidateCount: 0, candidateIds: [], candidatesWithAssignments: 0, assignmentCount: 0, discardedByPrefilter: 0, prefilterDiscardReasons: {}, prefilterDiscardDetails: [], candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedCandidateId: null, selectedAsBest: false, selectedAsCommit: false, movedTaskIds: [], gapBeforeMinutes: null, expectedGapAfterMinutes: null, readOnly: true, planningInfluence: "candidate-generation-diagnostics-only", generated: 0, acceptedBeforePrefilter: 0 });
 
@@ -130,6 +135,7 @@ export interface CandidateBuilderOptions {
   readonly maxPreselectedCandidates?: number | null;
   readonly createdAt?: string | null;
   readonly operationalGoals?: readonly OperationalGoal[];
+  readonly baselineSeedHardFeasibility?: ORCBaselineSeedHardFeasibilityAudit | null;
 }
 
 export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateBuilderOptions = {}): CandidateBuilderResult {
@@ -138,17 +144,27 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     return !(selection != null && typeof selection === "object" && (selection as Record<string, unknown>).selected === false);
   });
   if (sourceSearchSpaces.length === 0) {
+    const baselineOverlapRepair = buildBaselineOverlapRepairCandidates(options.operationalState ?? null, { createdAt: options.createdAt ?? null, baselineSeedHardFeasibility: options.baselineSeedHardFeasibility ?? null });
     const baselinePreservation = buildBaselinePreservationCandidate(options.operationalState, options.createdAt ?? null);
-    if (baselinePreservation) {
-      return { candidates: [baselinePreservation.candidate], evidence: [baselinePreservation.evidence], summary: { searchSpaceCount: 0, candidateCount: 1, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 1, unusedBudget: GLOBAL_CANDIDATE_BUDGET - 1, allocations: [] }, pruning: { generatedCount: 1, keptCount: 1, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 1, acceptedCandidateCount: 1, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 1, acceptedCandidates: 1, discardedCandidates: 0, limit: 1, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: emptyMainFlowGapClosureSummary(), baselineSafety: baselineSafetySummary({ generated: false, searchSpaceCount: 0, planningCount: baselinePreservation.summary.plannedTaskCount }) } };
+    if (baselineOverlapRepair.candidates.length > 0) {
+      const generatedCandidates = baselineOverlapRepair.candidates.map(cloneCandidate);
+      const hardPrefilterResult = prefilterCandidatesByHardConstraints(generatedCandidates, options.operationalState ?? null, { createdAt: options.createdAt ?? null });
+      const preselectionResult = preselectCandidates(hardPrefilterResult.candidates, { maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null, operationalState: options.operationalState ?? null });
+      const candidates = [...preselectionResult.candidates.map(cloneCandidate), ...(baselinePreservation ? [cloneCandidate(baselinePreservation.candidate)] : [])];
+      return { candidates, evidence: [...baselineOverlapRepair.evidence, ...hardPrefilterResult.evidence, ...preselectionResult.evidence, ...(baselinePreservation ? [baselinePreservation.evidence] : [])], summary: { searchSpaceCount: 0, candidateCount: candidates.length, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: generatedCandidates.length, unusedBudget: Math.max(0, GLOBAL_CANDIDATE_BUDGET - generatedCandidates.length), allocations: [] }, pruning: { generatedCount: generatedCandidates.length, keptCount: preselectionResult.candidates.length, prunedCount: generatedCandidates.length - preselectionResult.candidates.length, estimatedBudgetSaved: generatedCandidates.length - preselectionResult.candidates.length, prunedItems: generatedCandidates.filter((candidate) => !preselectionResult.candidates.some((selected) => selected.id === candidate.id)).map(cloneCandidate) }, hardPrefilter: { receivedCandidateCount: hardPrefilterResult.summary.receivedCandidateCount, acceptedCandidateCount: hardPrefilterResult.summary.acceptedCandidateCount, discardedCandidateCount: hardPrefilterResult.summary.discardedCandidateCount, discardedByReason: hardPrefilterResult.summary.discardedByReason, overflowDiscardCount: hardPrefilterResult.summary.overflowDiscardCount }, preselection: preselectionResult.summary, mainFlowGapClosure: emptyMainFlowGapClosureSummary(), baselineOverlapRepair: { ...baselineOverlapRepair.summary, discardedByPrefilter: baselineOverlapRepair.candidates.filter((candidate) => !hardPrefilterResult.candidates.some((accepted) => accepted.id === candidate.id)).length, prefilterDiscardReasons: hardPrefilterResult.summary.discardedByReason }, baselineSafety: baselineSafetySummary({ generated: baselinePreservation != null, candidateId: baselinePreservation?.candidate.id ?? null, reason: baselinePreservation?.summary.generationReason ?? null, searchSpaceCount: 0, planningCount: baselinePreservation?.summary.plannedTaskCount ?? 0 }) } };
     }
-    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: emptyMainFlowGapClosureSummary(), baselineSafety: baselineSafetySummary({ generated: false, searchSpaceCount: 0 }) } };
+    if (baselinePreservation) {
+      return { candidates: [baselinePreservation.candidate], evidence: [baselinePreservation.evidence], summary: { searchSpaceCount: 0, candidateCount: 1, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 1, unusedBudget: GLOBAL_CANDIDATE_BUDGET - 1, allocations: [] }, pruning: { generatedCount: 1, keptCount: 1, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 1, acceptedCandidateCount: 1, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 1, acceptedCandidates: 1, discardedCandidates: 0, limit: 1, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: emptyMainFlowGapClosureSummary(), baselineOverlapRepair: baselineOverlapRepair.summary, baselineSafety: baselineSafetySummary({ generated: false, searchSpaceCount: 0, planningCount: baselinePreservation.summary.plannedTaskCount }) } };
+    }
+    return { candidates: [], evidence: [], summary: { searchSpaceCount: 0, candidateCount: 0, duplicateCandidatesDiscarded: 0, truncatedByBudget: false, candidateBudget: { globalBudget: GLOBAL_CANDIDATE_BUDGET, allocatedBudget: 0, unusedBudget: GLOBAL_CANDIDATE_BUDGET, allocations: [] }, pruning: { generatedCount: 0, keptCount: 0, prunedCount: 0, estimatedBudgetSaved: 0, prunedItems: [] }, hardPrefilter: { receivedCandidateCount: 0, acceptedCandidateCount: 0, discardedCandidateCount: 0, discardedByReason: {}, overflowDiscardCount: 0 }, preselection: { generatedCandidates: 0, acceptedCandidates: 0, discardedCandidates: 0, limit: 0, partialPlans: { partialPlanCount: 0, discardedCompositionCount: 0, averageCompatibilityScore: 0 } }, mainFlowGapClosure: emptyMainFlowGapClosureSummary(), baselineOverlapRepair: baselineOverlapRepair.summary, baselineSafety: baselineSafetySummary({ generated: false, searchSpaceCount: 0 }) } };
   }
 
   const candidateBudgetBySearchSpaceId = allocateCandidateBudget(sourceSearchSpaces);
   const result = buildStrategyCandidates(sourceSearchSpaces, undefined, { candidateBudgetBySearchSpaceId, adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, operationalState: options.operationalState, operationalGoals: options.operationalGoals });
-  const mainFlowGapClosure = buildMainFlowGapClosureCandidates(options.operationalState ?? null, sourceSearchSpaces, options.createdAt ?? null);
-  const generatedCandidates = [...result.candidates, ...mainFlowGapClosure.candidates].map(cloneCandidate);
+  const baselineOverlapRepair = buildBaselineOverlapRepairCandidates(options.operationalState ?? null, { createdAt: options.createdAt ?? null, baselineSeedHardFeasibility: options.baselineSeedHardFeasibility ?? null });
+  const shouldDelayMainFlow = baselineOverlapRepair.summary.generatedCandidateCount > 0;
+  const mainFlowGapClosure = shouldDelayMainFlow ? { candidates: [], evidence: [], summary: emptyMainFlowGapClosureSummary("baseline_overlap_repair_priority") } : buildMainFlowGapClosureCandidates(options.operationalState ?? null, sourceSearchSpaces, options.createdAt ?? null);
+  const generatedCandidates = [...result.candidates, ...baselineOverlapRepair.candidates, ...mainFlowGapClosure.candidates].map(cloneCandidate);
   const hardPrefilterResult = prefilterCandidatesByHardConstraints(generatedCandidates, options.operationalState ?? null, { createdAt: options.createdAt ?? null });
   const preselectionResult = preselectCandidates(hardPrefilterResult.candidates, { adaptiveSearchSpaceProfiles: options.adaptiveSearchSpaceProfiles, opportunityPropagation: options.opportunityPropagation, maxCandidates: options.maxPreselectedCandidates, createdAt: options.createdAt ?? null, operationalState: options.operationalState ?? null });
   const baselineSafety = buildBaselinePreservationCandidate(options.operationalState, options.createdAt ?? null, { safetyCandidate: true, searchSpaceCount: sourceSearchSpaces.length });
@@ -178,9 +194,9 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
     });
   }
 
-  for (const item of [...result.evidence, ...mainFlowGapClosure.evidence]) {
+  for (const item of [...result.evidence, ...baselineOverlapRepair.evidence, ...mainFlowGapClosure.evidence]) {
     if (item.kind === "strategy-candidate-diversity") continue;
-    if (item.kind === "main-flow-gap-closure-candidate-generated") { evidence.push({ ...item, createdAt: item.createdAt ?? null }); continue; }
+    if (item.kind === "main-flow-gap-closure-candidate-generated" || item.kind === "baseline-overlap-repair-candidate-generated") { evidence.push({ ...item, createdAt: item.createdAt ?? null }); continue; }
     if (item.kind === "strategy-candidate-generated") {
       const candidate = candidatesById.get(String(item.subjectId));
       const searchSpaceId = typeof item.data.searchSpaceId === "string" ? item.data.searchSpaceId : String(item.data.searchSpaceId ?? "");
@@ -237,6 +253,7 @@ export function buildCandidates(searchSpaces: SearchSpace[], options: CandidateB
       pruning: { generatedCount: generatedCandidates.length, keptCount: preselectionResult.candidates.length, prunedCount: prunedItems.length, estimatedBudgetSaved: prunedItems.length, prunedItems },
       hardPrefilter: { receivedCandidateCount: hardPrefilterResult.summary.receivedCandidateCount, acceptedCandidateCount: hardPrefilterResult.summary.acceptedCandidateCount, discardedCandidateCount: hardPrefilterResult.summary.discardedCandidateCount, discardedByReason: hardPrefilterResult.summary.discardedByReason, overflowDiscardCount: hardPrefilterResult.summary.overflowDiscardCount },
       preselection: preselectionResult.summary,
+      baselineOverlapRepair: { ...baselineOverlapRepair.summary, discardedByPrefilter: baselineOverlapRepair.candidates.filter((candidate) => !hardPrefilterResult.candidates.some((accepted) => accepted.id === candidate.id)).length, prefilterDiscardReasons: Object.fromEntries(hardPrefilterResult.discardedCandidates.filter((d) => baselineOverlapRepair.candidates.some((c) => c.id === d.candidateId)).reduce((m, d) => m.set(d.reason, (m.get(d.reason) ?? 0) + 1), new Map<string, number>())) },
       mainFlowGapClosure: { ...mainFlowGapClosure.summary, candidatesWithAssignments: mainFlowGapClosure.candidates.filter((candidate) => candidate.assignments.length > 0).length, assignmentCount: mainFlowGapClosure.candidates.reduce((sum, candidate) => sum + candidate.assignments.length, 0), acceptedBeforePrefilter: mainFlowGapClosure.candidates.filter((candidate) => hardPrefilterResult.candidates.some((accepted) => accepted.id === candidate.id)).length, discardedByPrefilter: mainFlowGapClosure.candidates.filter((candidate) => !hardPrefilterResult.candidates.some((accepted) => accepted.id === candidate.id)).length, prefilterDiscardReasons: hardPrefilterResult.summary.discardedByReason, prefilterDiscardDetails: hardPrefilterResult.discardedCandidates.map((d) => ({ candidateId: d.candidateId, reason: d.reason, conflictingTaskIds: d.conflictingTaskIds ?? d.affectedTaskIds, spaceIds: d.spaceIds ?? [], timeWindow: d.timeWindow ?? null, relatedTimeWindow: d.relatedTimeWindow ?? null, roleLabels: d.roleLabels ?? [], spaceOccupancyModes: d.spaceOccupancyModes ?? [], diagnosticHint: d.diagnosticHint ?? null })), candidateStateCount: 0, simulatedStateCount: 0 },
       baselineSafety: baselineSafetySummary({ generated: baselineSafety != null, candidateId: baselineSafety?.candidate.id ?? null, reason: baselineSafety?.summary.generationReason ?? null, planningCount: baselineSafety?.summary.plannedTaskCount ?? 0, searchSpaceCount: sourceSearchSpaces.length }),
     },
