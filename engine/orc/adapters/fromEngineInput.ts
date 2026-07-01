@@ -2,6 +2,7 @@ import type { EngineInput, TimeWindow } from "../../types";
 import type { CognitiveArtifacts, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { resolveORCMainFlowConfig } from "../state/mainFlowConfigResolver";
+import { resolveORCPlanningEntryOperationalRoleMetadata } from "../state/nonWorkTaskClassifier";
 
 const clone = <T>(value: T): T => value === undefined ? value : JSON.parse(JSON.stringify(value));
 const record = <T>(value: T | null | undefined, fallback: T): T => clone(value ?? fallback);
@@ -26,7 +27,8 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
   const resources = record(input.planResourceItems, []);
   const planning = tasks
     .filter((task) => task?.startPlanned && task?.endPlanned)
-    .map((task) => ({
+    .map((task) => {
+      const base = {
       taskId: Number(task.id),
       startPlanned: String(task.startPlanned),
       endPlanned: String(task.endPlanned),
@@ -39,7 +41,10 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       countsForMainFlow: task.countsForMainFlow,
       countsForResourceLoad: task.countsForResourceLoad,
       countsForTalentLoad: task.countsForTalentLoad,
-    }));
+      };
+      const meta = resolveORCPlanningEntryOperationalRoleMetadata({ entry: base as any, task, mealWindow: input.actualMeal ?? input.mealWindow ?? input.meal ?? null });
+      return { ...base, operationalRole: task.operationalRole ?? meta.role, blocksSpace: task.blocksSpace ?? meta.blocksSpace, countsAsWork: task.countsAsWork ?? meta.countsAsWork, countsForMainFlow: task.countsForMainFlow ?? meta.countsForMainFlow, countsForResourceLoad: task.countsForResourceLoad ?? meta.countsForResourceLoad, countsForTalentLoad: task.countsForTalentLoad ?? meta.countsForTalentLoad, allowsSpaceOverlap: (task as any).allowsSpaceOverlap ?? meta.allowsSpaceOverlap, spaceOccupancyMode: (task as any).spaceOccupancyMode ?? meta.spaceOccupancyMode };
+    });
 
   const dependencies = tasks.map((task) => ({
     taskId: Number(task.id),

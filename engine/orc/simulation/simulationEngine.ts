@@ -32,9 +32,7 @@ function emptyCognitive(): OperationalState["cognitive"] {
 }
 
 function cloneOperationalState(state: OperationalState): OperationalState {
-  const cloned = JSON.parse(JSON.stringify(state)) as OperationalState;
-  cloned.cognitive = emptyCognitive();
-  return cloned;
+  return JSON.parse(JSON.stringify(state)) as OperationalState;
 }
 
 export function simulateCandidateStates(
@@ -73,6 +71,15 @@ export function simulateCandidateStates(
       endPlanned: entry.endPlanned,
       assignedResourceIds: [...entry.assignedResourceIds],
       spaceId: entry.spaceId ?? null,
+      seedSource: entry.seedSource,
+      operationalRole: entry.operationalRole,
+      blocksSpace: entry.blocksSpace,
+      countsAsWork: entry.countsAsWork,
+      countsForMainFlow: entry.countsForMainFlow,
+      countsForResourceLoad: entry.countsForResourceLoad,
+      countsForTalentLoad: entry.countsForTalentLoad,
+      allowsSpaceOverlap: entry.allowsSpaceOverlap,
+      spaceOccupancyMode: entry.spaceOccupancyMode,
     } as OperationalState["planning"][number]));
     const officialStateUnchanged = JSON.stringify(state) === officialStateBefore;
     const simulationMode = (candidateState.sourceAssignments?.length ?? 0) > 0 ? ASSIGNMENT_SIMULATION_MODE : READ_ONLY_SIMULATION_MODE;

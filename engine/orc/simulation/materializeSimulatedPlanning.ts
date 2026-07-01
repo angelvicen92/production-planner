@@ -27,7 +27,7 @@ function clonePlanningEntry(entry: OperationalState["planning"][number]): Mutabl
   if (!Number.isFinite(entry.taskId) || !entry.startPlanned || !entry.endPlanned) return null;
   const assignedResourceIds = [...(entry.assignedResourceIds ?? [])].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
   const spaceId = entry.spaceId ?? null;
-  return { taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, assignedResourceIds, spaceId, assignedSpace: spaceId, assignedResources: [...assignedResourceIds] };
+  return { ...entry, taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, assignedResourceIds, spaceId, assignedSpace: spaceId, assignedResources: [...assignedResourceIds] };
 }
 
 function sameResources(left: readonly number[], right: readonly number[]): boolean {
