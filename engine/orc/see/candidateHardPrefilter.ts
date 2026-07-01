@@ -4,6 +4,7 @@ import { configuredHardBreaks, hardBreakAppliesToPlanningEntry } from "../valida
 import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole } from "../state/nonWorkTaskClassifier";
 import { resolveORCMealSemantics, hardMealWindowsFromSemantics } from "../state/mealSemanticsResolver";
 import { resolveORCSpaceOccupancy } from "../state/spaceOccupancyResolver";
+import { resolveORCTransportContract } from "../state/transportContractResolver";
 
 const SOURCE = "orc-see";
 const DEFAULT_MAX_DETAILED = 50;
@@ -14,7 +15,7 @@ type PlanningEntry = OperationalState["planning"][number];
 type Reason =
   | "task-not-found" | "invalid-task-id" | "invalid-time-format" | "invalid-time-range" | "protected-task-status"
   | "lock-full" | "lock-time" | "lock-space" | "lock-resource" | "outside-work-day" | "hard-break-overlap"
-  | "contestant-overlap" | "itinerant-team-overlap" | "resource-overlap" | "space-overlap" | "direct-dependency-broken";
+  | "contestant-overlap" | "itinerant-team-overlap" | "resource-overlap" | "space-overlap" | "preexisting-baseline-overlap" | "candidate-introduced-space-overlap" | "candidate-worsened-space-overlap" | "transport-capacity-exceeded" | "direct-dependency-broken";
 
 export interface CandidateHardPrefilterDiscard {
   readonly candidateId: string;
@@ -89,6 +90,15 @@ function preview(state: OperationalState, candidate: Candidate): PlanningEntry[]
   return [...byTask.values()].sort((a, b) => a.taskId - b.taskId);
 }
 
+function spaceViolationKey(ids: number[], spaceId: number, start: string, end: string): string { return `${spaceId}|${start}|${end}|${[...ids].sort((a,b)=>a-b).join(",")}`; }
+function collectSpaceViolationKeys(plan: readonly PlanningEntry[], state: OperationalState, transportContract: any): Array<{key:string; taskIds:number[]}> {
+  const tasks = new Map((state.tasks ?? []).map((task) => [task.id, task]));
+  const windows = plan.map((entry) => { const task = tasks.get(entry.taskId); return { entry, start: timeToMinutes(entry.startPlanned), end: timeToMinutes(entry.endPlanned), task, role: resolveORCPlanningEntryOperationalRoleMetadata({ entry, task, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null, transportContract }) }; }).filter((x): x is typeof x & { start: number; end: number } => x.start != null && x.end != null);
+  const out: Array<{key:string; taskIds:number[]}> = [];
+  for (let i=0;i<windows.length;i++) for (let j=i+1;j<windows.length;j++){ const a=windows[i], b=windows[j]; if(!overlaps(a.start,a.end,b.start,b.end)) continue; const spaceId=a.entry.spaceId ?? null; if(spaceId==null || spaceId !== (b.entry.spaceId ?? null)) continue; const occA=resolveORCSpaceOccupancy({entry:a.entry, task:a.task, roleMetadata:a.role, spaceConfig:state.spaces, transportContract}); const occB=resolveORCSpaceOccupancy({entry:b.entry, task:b.task, roleMetadata:b.role, spaceConfig:state.spaces, transportContract}); if(occA.blocksSpace && occB.blocksSpace && !occA.allowsSpaceOverlap && !occB.allowsSpaceOverlap){ const capacity=state.spaces?.exclusiveById?.[spaceId]===true?1:Math.max(1,state.spaces?.concurrencyById?.[spaceId]??state.spaces?.capacityById?.[spaceId]??1); if(capacity<2){ const ids=[a.entry.taskId,b.entry.taskId]; out.push({key:spaceViolationKey(ids,spaceId,a.entry.startPlanned,a.entry.endPlanned),taskIds:ids}); } } }
+  return out;
+}
+
 function findViolation(candidate: Candidate, state: OperationalState): CandidateHardPrefilterDiscard | null {
   const tasks = new Map((state.tasks ?? []).map((task) => [task.id, task]));
   const locks = state.locks ?? [];
@@ -119,8 +129,11 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     }
   }
 
+  const transportContract = (state.constraints as any)?.transportContract ?? resolveORCTransportContract(state as any);
+  const moved = new Set((candidate.assignments ?? []).map((a) => a.taskId));
+  const baselineSpaceKeys = new Set(collectSpaceViolationKeys(state.planning as any, state, transportContract).map((v) => v.key));
   const plan = preview(state, candidate);
-  const windows = plan.map((entry) => { const task = tasks.get(entry.taskId); return { entry, start: timeToMinutes(entry.startPlanned), end: timeToMinutes(entry.endPlanned), task, role: resolveORCPlanningEntryOperationalRoleMetadata({ entry, task, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null }) }; }).filter((x): x is typeof x & { start: number; end: number } => x.start != null && x.end != null);
+  const windows = plan.map((entry) => { const task = tasks.get(entry.taskId); return { entry, start: timeToMinutes(entry.startPlanned), end: timeToMinutes(entry.endPlanned), task, role: resolveORCPlanningEntryOperationalRoleMetadata({ entry, task, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null, transportContract }) }; }).filter((x): x is typeof x & { start: number; end: number } => x.start != null && x.end != null);
   for (let i = 0; i < windows.length; i++) for (let j = i + 1; j < windows.length; j++) {
     const a = windows[i], b = windows[j];
     if (!overlaps(a.start, a.end, b.start, b.end)) continue;
@@ -131,11 +144,11 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     if (productivePair && (a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, "resource-overlap", "RESOURCE_OVERLAP", ids);
     const spaceId = a.entry.spaceId ?? null;
     if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
-      const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: a.task, roleMetadata: a.role, spaceConfig: state.spaces });
-      const occB = resolveORCSpaceOccupancy({ entry: b.entry, task: b.task, roleMetadata: b.role, spaceConfig: state.spaces });
+      const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: a.task, roleMetadata: a.role, spaceConfig: state.spaces, transportContract });
+      const occB = resolveORCSpaceOccupancy({ entry: b.entry, task: b.task, roleMetadata: b.role, spaceConfig: state.spaces, transportContract });
       if (occA.blocksSpace && occB.blocksSpace && !occA.allowsSpaceOverlap && !occB.allowsSpaceOverlap) {
         const capacity = state.spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, state.spaces?.concurrencyById?.[spaceId] ?? state.spaces?.capacityById?.[spaceId] ?? 1);
-        if (capacity < 2) return discard(candidate, "space-overlap", "SPACE_OVERLAP", ids, { conflictingTaskIds: ids, spaceIds: [spaceId], timeWindow: { start: a.entry.startPlanned, end: a.entry.endPlanned }, relatedTimeWindow: { start: b.entry.startPlanned, end: b.entry.endPlanned }, roleLabels: [a.role.role, b.role.role], spaceOccupancyModes: [occA.spaceOccupancyMode, occB.spaceOccupancyMode], diagnosticHint: `Exclusive space overlap between roles ${a.role.role} and ${b.role.role}.` });
+        if (capacity < 2) { const key = spaceViolationKey(ids, spaceId, a.entry.startPlanned, a.entry.endPlanned); if (baselineSpaceKeys.has(key) && !ids.some((id) => moved.has(id))) continue; return discard(candidate, baselineSpaceKeys.has(key) ? "candidate-worsened-space-overlap" : "candidate-introduced-space-overlap", "SPACE_OVERLAP", ids, { conflictingTaskIds: ids, spaceIds: [spaceId], timeWindow: { start: a.entry.startPlanned, end: a.entry.endPlanned }, relatedTimeWindow: { start: b.entry.startPlanned, end: b.entry.endPlanned }, roleLabels: [a.role.role, b.role.role], spaceOccupancyModes: [occA.spaceOccupancyMode, occB.spaceOccupancyMode], diagnosticHint: `Exclusive space overlap between roles ${a.role.role} and ${b.role.role}.` }); }
       }
     }
   }

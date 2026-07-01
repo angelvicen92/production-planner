@@ -12,3 +12,10 @@ test("resolveORCSpaceOccupancy distinguishes productive exclusive and arrival no
   assert.equal(arrival.blocksSpace, false);
   assert.equal(arrival.spaceOccupancyMode, "non_blocking");
 });
+
+test("transport occupancy is shared by role while space contract remains exclusive", () => {
+  const occ = resolveORCSpaceOccupancy({ entry: { taskId: 1, startPlanned: "09:00", endPlanned: "09:05", assignedResourceIds: [], spaceId: 49 }, task: { id: 1, planId: 1, templateId: 77, status: "pending" } as any, transportContract: { configured: true, arrivalTemplateId: 77, departureTemplateId: null, vehicleCapacity: 6, source: "test" } });
+  assert.equal(occ.blocksSpace, false);
+  assert.equal(occ.allowsSpaceOverlap, true);
+  assert.equal(occ.transportGroupCapacity, 6);
+});

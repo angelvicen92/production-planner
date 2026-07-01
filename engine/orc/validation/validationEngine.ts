@@ -4,6 +4,7 @@ import { configuredHardBreaks, hardBreakAppliesToPlanningEntry, protectedBreakDi
 import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole } from "../state/nonWorkTaskClassifier";
 import { resolveORCMealSemantics, hardMealWindowsFromSemantics } from "../state/mealSemanticsResolver";
 import { resolveORCSpaceOccupancy } from "../state/spaceOccupancyResolver";
+import { resolveORCTransportContract } from "../state/transportContractResolver";
 
 export interface ValidationEngineOptions {
   createdAt?: string | null;
@@ -217,13 +218,14 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     if ((lock.lockType === "resource" || lock.lockType === "full") && lock.lockedResourceId != null && !(planned.assignedResourceIds ?? []).includes(lock.lockedResourceId)) addDetail(violations, details, { code: "RESOURCE_LOCK_BROKEN", constraintGroup: "locks", taskIds: [lock.taskId], lockIds: [String(lock.id ?? lock.taskId)], resourceIds: [lock.lockedResourceId], timeWindow: windowOf(planned), diagnosticHint: "Locked task resource is missing from planning. Verify locks, V4 output, or seed adapter lock mapping." });
   }
 
+  const transportContract = (snapshot.constraints as any)?.transportContract ?? resolveORCTransportContract(snapshot as any);
   const planned = [...windows.values()];
   for (let i = 0; i < planned.length; i++) for (let j = i + 1; j < planned.length; j++) {
     const a = planned[i], b = planned[j];
     if (!overlaps(a.start, a.end, b.start, b.end)) continue;
     const ta = tasks.get(a.entry.taskId), tb = tasks.get(b.entry.taskId);
-    const roleA = roleByTask.get(a.entry.taskId) ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: a.entry, task: ta });
-    const roleB = roleByTask.get(b.entry.taskId) ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: b.entry, task: tb });
+    const roleA = roleByTask.get(a.entry.taskId) ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: a.entry, task: ta, transportContract });
+    const roleB = roleByTask.get(b.entry.taskId) ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: b.entry, task: tb, transportContract });
     const productivePair = isORCProductiveRole(roleA) && isORCProductiveRole(roleB);
     if (productivePair && ta?.contestantId != null && ta.contestantId === tb?.contestantId) addDetail(violations, details, { code: "CONTESTANT_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same contestant overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
     if (productivePair && ta?.itinerantTeamId != null && ta.itinerantTeamId === tb?.itinerantTeamId) addDetail(violations, details, { code: "ITINERANT_TEAM_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same itinerant team overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
@@ -231,15 +233,29 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     if (productivePair && sharedResources.length > 0) addDetail(violations, details, { code: "RESOURCE_OVERLAP", constraintGroup: "resources", taskIds: [a.entry.taskId, b.entry.taskId], resourceIds: sharedResources, timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two overlapping tasks share a resource. Check V4 resource assignment, fixture resource availability, or seed adapter mapping." });
     const spaceId = a.entry.spaceId ?? null;
     if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
-      const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: ta, roleMetadata: roleA, spaceConfig: snapshot.spaces });
-      const occB = resolveORCSpaceOccupancy({ entry: b.entry, task: tb, roleMetadata: roleB, spaceConfig: snapshot.spaces });
+      const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: ta, roleMetadata: roleA, spaceConfig: snapshot.spaces, transportContract });
+      const occB = resolveORCSpaceOccupancy({ entry: b.entry, task: tb, roleMetadata: roleB, spaceConfig: snapshot.spaces, transportContract });
       if (occA.blocksSpace && occB.blocksSpace && !occA.allowsSpaceOverlap && !occB.allowsSpaceOverlap) {
         const spaces = snapshot.spaces;
         const capacity = spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, spaces?.concurrencyById?.[spaceId] ?? spaces?.capacityById?.[spaceId] ?? 1);
-        if (capacity < 2) addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: [a.entry.taskId, b.entry.taskId], spaceIds: [spaceId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), message: `Two tasks overlap in space ${spaceId} with effective capacity ${capacity}.`, diagnosticHint: `Exclusive space overlap between roles ${roleA.role} and ${roleB.role}.`, roleLabels: [roleA.role, roleB.role], spaceOccupancyModes: [occA.spaceOccupancyMode, occB.spaceOccupancyMode], blocksSpaceFlags: [occA.blocksSpace, occB.blocksSpace] } as any);
+        if (capacity < 2) addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: [a.entry.taskId, b.entry.taskId], spaceIds: [spaceId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), message: `Two tasks overlap in space ${spaceId} with effective capacity ${capacity}.`, diagnosticHint: `Exclusive space overlap between roles ${roleA.role} and ${roleB.role}.`, roleLabels: [roleA.role, roleB.role], spaceOccupancyModes: [occA.spaceOccupancyMode, occB.spaceOccupancyMode], blocksSpaceFlags: [occA.blocksSpace, occB.blocksSpace], spaceCapacity: capacity, spaceContractSource: occA.spaceContractSource ?? occB.spaceContractSource ?? null, transportContractSource: transportContract.source ?? null } as any);
       }
     }
   }
+  const transportGroups = new Map<string, any[]>();
+  for (const item of planned) {
+    const task = tasks.get(item.entry.taskId);
+    const role = roleByTask.get(item.entry.taskId) ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: item.entry, task, transportContract });
+    if (role.role !== "transport_arrival" && role.role !== "transport_departure") continue;
+    const spaceKey = item.entry.spaceId == null ? "no-space" : String(item.entry.spaceId);
+    const key = `${role.role}|${spaceKey}|${item.entry.startPlanned}|${item.entry.endPlanned}`;
+    const group = transportGroups.get(key) ?? []; group.push({ item, role }); transportGroups.set(key, group);
+  }
+  for (const group of transportGroups.values()) {
+    const capacity = Math.max(1, Number(group[0]?.role?.transportGroupCapacity ?? transportContract.vehicleCapacity ?? 1));
+    if (group.length > capacity) addDetail(violations, details, { code: "TRANSPORT_GROUP_CAPACITY_EXCEEDED", constraintGroup: "spaces", taskIds: group.map((g) => g.item.entry.taskId).sort((a,b)=>a-b), spaceIds: [group[0]?.item.entry.spaceId].filter((v) => v != null), timeWindow: windowOf(group[0].item.entry), relatedTimeWindow: windowOf(group[0].item.entry), message: `Transport group capacity ${capacity} exceeded by ${group.length} tasks.`, diagnosticHint: "Transport template occupancy exceeds configured vehicleCapacity.", roleLabels: group.map((g) => g.role.role), spaceOccupancyModes: group.map(() => "shared"), blocksSpaceFlags: group.map(() => false), transportGroupCapacity: capacity, transportGroupCount: group.length, transportContractSource: transportContract.source ?? null } as any);
+  }
+
 
   for (const task of snapshot.tasks ?? []) {
     const dependent = windows.get(task.id);

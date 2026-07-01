@@ -86,6 +86,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 211 — 2026-07-01 UTC — ORC Active Configuration & Operational Role Contract v1
 - ID 212 — 2026-07-01 UTC — ORC Baseline Viability Semantics: Meal Window, Non-Work Roles & Space Occupancy v1
 - ID 213 — 2026-07-01 UTC — ORC MealMode Contract Alignment v1
+- ID 214 — 2026-07-01 UTC — ORC Transport Template Occupancy Contract & Pre-existing Overlap Isolation v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -238,6 +239,14 @@ ORC respeta ahora `constraints.mealMode` como contrato principal para resolver l
 `global_hard_break`, `actualMeal`, `globalHardBreaks` y flags hard explícitos (`globalHardBreak`, `hardMealBreak`, `isGlobalHardBreak`, `blocksAllWork`, `dayClosed`, `productionStop`) siguen bloqueando producción como hard constraints reales. Si falta `mealMode`, ORC conserva el fallback legacy conservador para `meal` con warning diagnosticado, y no inventa cierres globales desde `mealWindow`.
 
 Validation, CandidateHardPrefilter y BaselineSeedFeasibilityAudit comparten esta semántica y exponen `mealSemantics.mealMode` en diagnostics. No se relajan hard constraints explícitas, no hay cambios DB, RLS, UI, V3 ni V4, no se implementa compactación de coaches, no se cambia el pipeline ORC y `real-voice-audition-day` sigue incluido.
+
+### ORC Transport Template Occupancy Contract & Pre-existing Overlap Isolation v1 (ID 214)
+
+ORC resuelve ahora un contrato de transporte read-only desde configuración estructurada (`settings.transport`, `productionSettings.transport`, `constraints.transport`, `transportSettings` o `transport`) sin hardcodear nombres de plantillas, espacios ni duraciones. Las plantillas configuradas de llegada/salida se clasifican como `transport_arrival` / `transport_departure` y admiten simultaneidad hasta `vehicleCapacity`; `arrivalTargetGroupSize`, `departureTargetGroupSize` y `groupingWeight` quedan expuestos como preferencias blandas, no hard constraints.
+
+El espacio usado por transporte no se convierte globalmente en compartido: las tareas productivas exclusivas mantienen `SPACE_OVERLAP` estricto, mientras que los eventos de transporte no bloqueantes no invalidan contra productivas salvo bloqueo explícito. Validation distingue capacidad de grupo de transporte (`TRANSPORT_GROUP_CAPACITY_EXCEEDED`) de solape productivo real y añade diagnostics accionables de contrato/capacidad.
+
+CandidateHardPrefilter compara overlaps del baseline frente al preview del candidate para separar solapes preexistentes de solapes introducidos o empeorados por candidatos; `mainFlowGapClosure` ya no culpa a un candidate por conflictos que no introduce. No se implementa compactación de coaches, no hay cambios DB/RLS/UI, no se cambia V3, no se reescribe V4 y no se relajan hard constraints productivas exclusivas.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

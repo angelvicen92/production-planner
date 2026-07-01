@@ -83,7 +83,7 @@ export interface TaskInput {
       // Útil para validar solapes con tareas fijas (in_progress/done) y locks.
       assignedResourceIds?: number[] | null;
       seedSource?: "v4_planned_task" | "protected_existing_planning";
-      operationalRole?: "productive_task" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
+      operationalRole?: "productive_task" | "transport_arrival" | "transport_departure" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
       blocksSpace?: boolean;
       countsAsWork?: boolean;
       countsForMainFlow?: boolean;
