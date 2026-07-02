@@ -378,7 +378,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   }
   let shadow: ORCShadowModeResult | null = null;
   try {
-    shadow = options.orcShadowResult !== undefined ? options.orcShadowResult : (options.runORC ? options.runORC(seededInput) : runORCShadowMode(seededInput, { enabled: true, createdAt: null }));
+    shadow = options.orcShadowResult !== undefined ? options.orcShadowResult : (options.runORC ? options.runORC(seededInput) : runORCShadowMode(seededInput, { enabled: true, createdAt: null, baselineSeedHardFeasibility }));
   } catch (error) {
     const gates = { v4BaselineAvailable: true, baselineSeedHardFeasible: baselineSeedHardFeasibility.hardFeasible, orcExecuted: false };
     const v4Planned = (v4.output.plannedTasks ?? []).map((item) => ({ taskId: item.taskId, startPlanned: item.startPlanned, endPlanned: item.endPlanned, assignedResources: item.assignedResources }));
