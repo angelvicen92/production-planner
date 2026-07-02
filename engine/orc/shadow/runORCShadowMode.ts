@@ -37,6 +37,7 @@ import { understandOperationalCriticality, type OperationalCriticality } from ".
 import { buildSearchAndExplorationUnderstanding } from "../search/searchAndExplorationEngine";
 import { buildDecisionFeedbackEvidence, buildDecisionFeedbackFromDecisions, reuseDecisionFeedback } from "../analysis/decisionFeedbackLoop";
 import { resolveCandidateLineage } from "../decision/candidateLineage";
+import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -172,6 +173,7 @@ export interface ORCShadowModeOptions {
   createdAt?: string | null;
   cognitiveState?: CognitiveState;
   configuration?: Partial<ORCConfiguration>;
+  baselineSeedHardFeasibility?: ORCBaselineSeedHardFeasibilityAudit | null;
 }
 
 function buildShadowSummaryEvidence(
@@ -288,6 +290,7 @@ export function runORCShadowMode(
 
   const createdAt = options.createdAt ?? null;
   const operationalState = buildOperationalStateFromEngineInput(input);
+  const baselineSeedHardFeasibility = options.baselineSeedHardFeasibility ?? auditORCBaselineSeedHardFeasibility(input, { createdAt });
   const cognitiveStateInitial = options.cognitiveState ?? createInitialCognitiveState(createdAt);
   let cognitiveState = cognitiveStateInitial;
   const operationalMap = buildOperationalMap(operationalState);
@@ -334,7 +337,7 @@ export function runORCShadowMode(
   const searchSpaceSelectionEvidence = buildSearchSpaceSelectionEvidence(searchSpaceSelectionResult, operationalAnalysis.operationalPriorityMap, explorationValueAnalysis, createdAt);
   const branchOrderingEvidence = buildBranchOrderingEvidence(branchOrderingResult, createdAt);
   const repeatedSearchSpaceIds = searchSpaceResult.evidence.filter((item) => item.kind === "adaptive-search-space-discarded" && item.data.reason === "exhausted-region").map((item) => String(item.subjectId));
-  const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces, { adaptiveSearchSpaceProfiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, opportunityPropagation: searchAndExplorationUnderstanding.opportunityPropagation, operationalGoals: searchAndExplorationUnderstanding.operationalGoals, operationalState, createdAt });
+  const candidateResult = buildCandidatesFromSearchSpaces(selectedSearchSpaces, { adaptiveSearchSpaceProfiles: searchAndExplorationUnderstanding.adaptiveSearchSpaceProfiles, opportunityPropagation: searchAndExplorationUnderstanding.opportunityPropagation, operationalGoals: searchAndExplorationUnderstanding.operationalGoals, operationalState, createdAt, baselineSeedHardFeasibility });
   const partialPlanResult = composePartialPlans(candidateResult.candidates, { createdAt });
   const baselineSafetyCandidate = candidateResult.candidates.find((candidate) => candidate.metadata.baselineSafetyCandidate === true || candidate.metadata.baselinePreservation === true) ?? null;
   const baselineSafetyPartialPlan = baselineSafetyCandidate ? partialPlanResult.partialPlans.find((plan) => plan.candidateIds.length === 1 && plan.candidateIds[0] === baselineSafetyCandidate.id) ?? null : null;
@@ -518,6 +521,7 @@ export function runORCShadowMode(
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
       mainFlowGapClosure: mainFlowGapClosureSummary,
+      baselineSeedHardFeasibility,
       baselineOverlapRepair: baselineOverlapRepairSummary,
       commitCount: commitResult.summary.commitCount,
       rejectCount: commitResult.summary.rejectCount,

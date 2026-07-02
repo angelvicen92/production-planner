@@ -93,6 +93,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 218 — 2026-07-01 UTC — ORC Baseline Repair Lineage & Active Gate Unblocking v1
 - ID 219 — 2026-07-01 UTC — ORC Baseline Space Overlap Repair Safe Variants & Repair Acceptance Policy v1
 - ID 220 — 2026-07-01 UTC — ORC Baseline Repair Audit Source-of-Truth & Transport-Aware Pair Selection v1
+- ID 221 — 2026-07-02 UTC — ORC Baseline Repair Runtime Audit Wiring & Summary Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -304,6 +305,15 @@ Baseline overlap repair now uses the official hard-feasibility audit as its prim
 Transport-aware role and occupancy semantics are aligned with ValidationEngine: configured transport grouping, meal placeholders, and non-blocking placeholders do not contaminate productive exclusive overlap cardinality. The builder no longer returns `unsupported_overlap_cardinality` when at least one 2-task productive exclusive overlap group is repairable; unsupported groups are diagnosed without blocking supported groups. If multiple repairable groups exist, v1 deterministically selects one by time window, configured main zone, space id, and task ids, and records `multiple_repairable_groups_limited_to_first`.
 
 Selected repairs continue to generate bounded variants moving either task while preserving duration, space, and resources, and every candidate still passes through Candidate, Transformation, Simulation, Validation, Evaluation, and Commit. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` remain hard constraints; no coach compaction, resource handoff compaction, global repair, post-pipeline moves, DB/RLS/UI changes, V3 changes, or V4 rewrite are introduced.
+
+
+### ORC Baseline Repair Runtime Audit Wiring & Summary Contract v1 (ID 221)
+
+Shadow runtime now wires `BaselineSeedHardFeasibilityAudit` into candidate generation before baseline overlap repair candidates are built, and Active passes the same official audit when it invokes Shadow from a V4 baseline seed. This ensures `baselineSeedHardFeasibility.spaceOverlapGroups` reaches `candidateBuilder` and `baselineOverlapRepairCandidateBuilder` in the real pipeline, not only in isolated unit tests.
+
+`baselineOverlapRepair` now always publishes the summary contract fields `sourceOfTruth`, audit group counts, `repairableGroupSelection`, unsupported group diagnostics, `auditAvailable`, `auditPassedToCandidateBuilder`, `auditPassedToRepairBuilder`, `fallbackSourceUsed`, and `runtimeWiringWarnings`. If the official audit contains a repairable 2-task productive exclusive space overlap such as `[315, 504]`, the runtime source of truth is `baseline-hard-feasibility-audit` and the repair path cannot report `unsupported_overlap_cardinality` for that group.
+
+The repair remains inside Candidate, Transformation, Simulation, Validation, Evaluation, and Commit. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` are not relaxed; no post-pipeline moves, coach compaction, DB/RLS/UI changes, V3 changes, or V4 rewrite are introduced.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
