@@ -92,6 +92,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 217 — 2026-07-01 UTC — ORC Baseline Productive Space Overlap Repair Candidate v1
 - ID 218 — 2026-07-01 UTC — ORC Baseline Repair Lineage & Active Gate Unblocking v1
 - ID 219 — 2026-07-01 UTC — ORC Baseline Space Overlap Repair Safe Variants & Repair Acceptance Policy v1
+- ID 220 — 2026-07-01 UTC — ORC Baseline Repair Audit Source-of-Truth & Transport-Aware Pair Selection v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -294,6 +295,15 @@ Each repair candidate keeps duration, assigned space and assigned resources, car
 ORC Active has an explicit repair acceptance policy: a validated and committed baseline repair that restores hard feasibility from a hard-infeasible baseline seed can pass the baseline-seed gate and may bypass OPQM as a hard veto when the invalid baseline only looked better because of illegal overlap compactness. The OPQM delta remains diagnostic evidence; the policy only applies to selected baseline repair candidates with `candidate_transformations`, changed tasks, preserved `done`/`in_progress`, respected locks and no hard violations.
 
 No coach compaction or resource handoff compaction is implemented yet. There are no DB/RLS/UI changes, V3 is unchanged, V4 is not rewritten, and transport grouping plus flexible meal semantics remain covered by prior iterations.
+
+
+### ORC Baseline Repair Audit Source-of-Truth & Transport-Aware Pair Selection v1 (ID 220)
+
+Baseline overlap repair now uses the official hard-feasibility audit as its primary source of truth. When `baselineSeedHardFeasibility.spaceOverlapGroups` is available, it guides selection of the repairable pair before falling back to sampled violation details, Validation recalculation with official semantics, and only then a conservative planning scan. The `baselineOverlapRepair` summary now reports `sourceOfTruth`, audit space-overlap counts, repairable audit counts, unsupported group samples, and read-only `repairableGroupSelection` diagnostics.
+
+Transport-aware role and occupancy semantics are aligned with ValidationEngine: configured transport grouping, meal placeholders, and non-blocking placeholders do not contaminate productive exclusive overlap cardinality. The builder no longer returns `unsupported_overlap_cardinality` when at least one 2-task productive exclusive overlap group is repairable; unsupported groups are diagnosed without blocking supported groups. If multiple repairable groups exist, v1 deterministically selects one by time window, configured main zone, space id, and task ids, and records `multiple_repairable_groups_limited_to_first`.
+
+Selected repairs continue to generate bounded variants moving either task while preserving duration, space, and resources, and every candidate still passes through Candidate, Transformation, Simulation, Validation, Evaluation, and Commit. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` remain hard constraints; no coach compaction, resource handoff compaction, global repair, post-pipeline moves, DB/RLS/UI changes, V3 changes, or V4 rewrite are introduced.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

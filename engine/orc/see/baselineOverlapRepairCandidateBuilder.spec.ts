@@ -52,7 +52,7 @@ test("does not treat transport arrivals as productive repair overlap", () => {
   const os = state({ planning: [
     { taskId: 10, startPlanned: "10:00", endPlanned: "10:10", assignedResourceIds: [], spaceId: 7, operationalRole: "transport_arrival", spaceOccupancyMode: "shared", allowsSpaceOverlap: true },
     { taskId: 20, startPlanned: "10:00", endPlanned: "10:10", assignedResourceIds: [], spaceId: 7, operationalRole: "transport_arrival", spaceOccupancyMode: "shared", allowsSpaceOverlap: true },
-  ] as any });
+  ] as any, constraints: { transportContract: { configured: true, arrivalTemplateId: null, departureTemplateId: null, arrivalTemplateName: null, departureTemplateName: null, vehicleCapacity: 6, source: "test", readOnly: true } } as any });
   assert.equal(buildBaselineOverlapRepairCandidates(os).summary.generatedCandidateCount, 0);
 });
 
@@ -64,4 +64,50 @@ test("is deterministic and does not hardcode ids or spaces", () => {
   const a = buildBaselineOverlapRepairCandidates(os); const b = buildBaselineOverlapRepairCandidates(os);
   assert.deepEqual(a.candidates.map((c) => [c.id, c.assignments]), b.candidates.map((c) => [c.id, c.assignments]));
   assert.equal(a.candidates[0].assignments[0].taskId, 101);
+});
+
+
+test("uses baseline hard feasibility spaceOverlapGroups as source of truth and ignores concurrent valid transport", () => {
+  const os = state({
+    planning: [
+      ...state().planning,
+      ...[1,2,3,4,5,6].map((i) => ({ taskId: 300 + i, startPlanned: "10:20", endPlanned: "10:35", assignedResourceIds: [], spaceId: 49, operationalRole: "transport_arrival", spaceOccupancyMode: "shared", allowsSpaceOverlap: true } as any)),
+    ],
+    tasks: [
+      ...state().tasks,
+      ...[1,2,3,4,5,6].map((i) => ({ id: 300 + i, templateId: 900, status: "pending", spaceId: 49 } as any)),
+    ],
+    constraints: { transportContract: { configured: true, arrivalTemplateId: 900, departureTemplateId: null, arrivalTemplateName: null, departureTemplateName: null, vehicleCapacity: 6, source: "test", readOnly: true } } as any,
+  });
+  const audit = { hardFeasible: false, spaceOverlapGroups: [{ spaceId: 7, timeWindow: { start: "10:20", end: "10:35" }, taskIds: [10, 20], taskCount: 2, roleLabels: ["productive_task", "productive_task"], occupancyModes: ["exclusive", "exclusive"] }] } as any;
+  const result = buildBaselineOverlapRepairCandidates(os, { baselineSeedHardFeasibility: audit });
+  assert.equal(result.summary.sourceOfTruth, "baseline-hard-feasibility-audit");
+  assert.equal(result.summary.auditSpaceOverlapGroupCount, 1);
+  assert.equal(result.summary.auditRepairableGroupCount, 1);
+  assert.deepEqual(result.summary.conflictingTaskIds, [10, 20]);
+  assert.equal(result.summary.skippedReason, null);
+  assert.ok(result.summary.generatedCandidateCount > 0);
+});
+
+test("records unsupported groups without blocking a supported audit group", () => {
+  const audit = { hardFeasible: false, spaceOverlapGroups: [
+    { spaceId: 7, timeWindow: { start: "10:00", end: "10:10" }, taskIds: [1, 2, 3], taskCount: 3, roleLabels: ["productive_task", "productive_task", "productive_task"], occupancyModes: ["exclusive", "exclusive", "exclusive"] },
+    { spaceId: 7, timeWindow: { start: "10:20", end: "10:35" }, taskIds: [10, 20], taskCount: 2, roleLabels: ["productive_task", "productive_task"], occupancyModes: ["exclusive", "exclusive"] },
+  ] } as any;
+  const result = buildBaselineOverlapRepairCandidates(state(), { baselineSeedHardFeasibility: audit });
+  assert.deepEqual(result.summary.conflictingTaskIds, [10, 20]);
+  assert.equal(result.summary.unsupportedGroupCount, 1);
+  assert.equal(result.summary.unsupportedGroupsSample[0].skippedReason, "unsupported_overlap_cardinality");
+});
+
+test("limits multiple repairable audit groups to the deterministic first group", () => {
+  const os = state({ planning: [
+    ...state().planning,
+    { taskId: 30, startPlanned: "09:10", endPlanned: "09:30", assignedResourceIds: [], spaceId: 8, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    { taskId: 40, startPlanned: "09:15", endPlanned: "09:35", assignedResourceIds: [], spaceId: 8, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+  ] as any, tasks: [...state().tasks, { id: 30, status: "pending", spaceId: 8 } as any, { id: 40, status: "pending", spaceId: 8 } as any] });
+  const g = (taskIds: number[], start: string, spaceId: number) => ({ spaceId, timeWindow: { start, end: "09:30" }, taskIds, taskCount: 2, roleLabels: ["productive_task", "productive_task"], occupancyModes: ["exclusive", "exclusive"] });
+  const result = buildBaselineOverlapRepairCandidates(os, { baselineSeedHardFeasibility: { hardFeasible: false, spaceOverlapGroups: [g([10,20], "10:20", 7), g([30,40], "09:15", 8)] } as any });
+  assert.deepEqual(result.summary.conflictingTaskIds, [30, 40]);
+  assert.equal(result.summary.repairableGroupSelection?.selectionReason, "multiple_repairable_groups_limited_to_first");
 });
