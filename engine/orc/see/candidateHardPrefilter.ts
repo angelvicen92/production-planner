@@ -175,7 +175,21 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
 }
 
 function discard(candidate: Candidate, reason: Reason, violatedConstraint: string, affectedTaskIds: number[], extra: Partial<CandidateHardPrefilterDiscard> = {}): CandidateHardPrefilterDiscard {
-  return { candidateId: candidate.id, reason, violatedConstraint, affectedTaskIds, ...extra };
+  const mapped = candidate.metadata?.strategy === "MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP" ? ({
+    "resource-overlap": "main-zone-gap-swap-resource-overlap",
+    "candidate-introduced-resource-overlap": "main-zone-gap-swap-resource-overlap",
+    "candidate-introduced-space-overlap": "main-zone-gap-swap-space-overlap",
+    "candidate-worsened-space-overlap": "main-zone-gap-swap-space-overlap",
+    "direct-dependency-broken": "main-zone-gap-swap-dependency-broken",
+    "lock-full": "main-zone-gap-swap-lock-conflict",
+    "lock-time": "main-zone-gap-swap-lock-conflict",
+    "lock-space": "main-zone-gap-swap-lock-conflict",
+    "lock-resource": "main-zone-gap-swap-lock-conflict",
+    "protected-task-status": "main-zone-gap-swap-protected-task",
+    "outside-work-day": "main-zone-gap-swap-outside-workday",
+    "hard-break-overlap": "main-zone-gap-swap-crosses-hard-break",
+  } as Record<string, string>)[reason] ?? reason : reason;
+  return { candidateId: candidate.id, reason: mapped, violatedConstraint, affectedTaskIds, ...extra };
 }
 
 function evidenceForDiscard(discarded: CandidateHardPrefilterDiscard, createdAt: string | null): Evidence {

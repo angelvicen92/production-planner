@@ -97,6 +97,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 222 — 2026-07-02 UTC — ORC Baseline Repair Runtime Invariant & Late Audit Repair Pass v1
 - ID 223 — 2026-07-02 UTC — ORC Active Valid Repair Selection & Late Pass Lineage v1
 - ID 224 — 2026-07-02 UTC — ORC Active Hard-Feasibility Repair Preflight & Runtime Export Contract v1
+- ID 225 — 2026-07-02 UTC — ORC Planning Materialization Space Preservation Contract v1
+- ID 226 — 2026-07-02 UTC — ORC Main Zone Gap Resource-Block Swap Candidate v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -352,6 +354,14 @@ Every final ORC planned task must expose at least `taskId`, `startPlanned`, `end
 Diagnostics now include `planningMaterialization.materializationContractVersion: "ORC-PLANNING-MATERIALIZATION-ID225"`, `preservedAssignedSpaceCount`, `missingAssignedSpaceFieldCount`, `nullAssignedSpaceCount`, `assignedSpaceContractValid` and `readOnly: true`. `diagnostics.orcSummary.runtimeContract` also publishes `planningMaterializationContractVersion: "ORC-PLANNING-MATERIALIZATION-ID225"`. If the assigned-space materialization contract fails, Active cannot return `orc_changed_plan`; it must use safe fallback with a clear diagnostic instead of exporting an incomplete ORC changed plan.
 
 This ID does not relax Validation, `SPACE_OVERLAP` or `RESOURCE_OVERLAP`, does not change DB/RLS, does not touch V3/V4 behavior, and does not implement the pending main-flow continuity or coach compaction work.
+
+### ORC Main Zone Gap Resource-Block Swap Candidate v1 (ID 226)
+
+After ID224/ID225, ORC can work from a hard-feasible, exportable baseline and preserve `assignedSpace`/`assignedResources` through materialization. ID226 adds an executable `MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP` candidate for main-zone continuity: when a configured `mainZoneId` has a productive gap and the next main-zone block is blocked by a shared resource occupied by a small non-main-zone block, ORC can propose swapping those blocks locally.
+
+The main zone is resolved from configuration (`constraints.optimizer.mainZoneId` or equivalent operational settings), never from space names and without hardcoded production IDs. V1 is deliberately bounded: it moves blocks of one to four tasks, emits at most three candidates per gap and six per run, stays within the workday, avoids real hard breaks, refuses protected `done`/`in_progress` or locked tasks, and does not perform global search or coach compaction.
+
+The candidate contains real assignments for every moved task and preserves task identity, duration, `assignedSpace`, `assignedResources`, dependencies and locks. Simulation and Validation remain the authority: no `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependency, lock, availability or hard-break constraint is relaxed, and no post-pipeline move is applied. If the swap validates and reduces the largest main-zone gap without making the plan worse, Active may commit it through the official Candidate → Transformation → Simulation → Validation → Evaluation → Commit pipeline; otherwise diagnostics explain the blocking reason. No DB, RLS, UI, V3 or V4 changes are included.
 
 
 
