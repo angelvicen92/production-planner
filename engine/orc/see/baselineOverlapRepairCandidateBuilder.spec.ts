@@ -111,3 +111,8 @@ test("limits multiple repairable audit groups to the deterministic first group",
   assert.deepEqual(result.summary.conflictingTaskIds, [30, 40]);
   assert.equal(result.summary.repairableGroupSelection?.selectionReason, "multiple_repairable_groups_limited_to_first");
 });
+
+test("exports ID224 summary contract for repairable audit", () => {
+  const result = buildBaselineOverlapRepairCandidates(state(), { baselineSeedHardFeasibility: { hardFeasible: false, spaceOverlapGroups: [{ spaceId: 7, taskIds: [10, 20], taskCount: 2, roleLabels: ["productive_task", "productive_task"], occupancyModes: ["exclusive", "exclusive"] }] } as any });
+  assert.equal(result.summary.summaryContractVersion, "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224");
+});

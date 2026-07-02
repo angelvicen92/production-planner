@@ -95,6 +95,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 220 — 2026-07-01 UTC — ORC Baseline Repair Audit Source-of-Truth & Transport-Aware Pair Selection v1
 - ID 221 — 2026-07-02 UTC — ORC Baseline Repair Runtime Audit Wiring & Summary Contract v1
 - ID 222 — 2026-07-02 UTC — ORC Baseline Repair Runtime Invariant & Late Audit Repair Pass v1
+- ID 223 — 2026-07-02 UTC — ORC Active Valid Repair Selection & Late Pass Lineage v1
+- ID 224 — 2026-07-02 UTC — ORC Active Hard-Feasibility Repair Preflight & Runtime Export Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -332,6 +334,14 @@ ORC Active now selects with `valid-committed-repair-first-v1`: any `VALID` simul
 The late audit repair pass now resolves lineage through `resolveCandidateLineage`, including Partial Plans and `candidate:partial-plan:<rawCandidateId>` synthetic candidates. Its summary/evidence carries candidate state ids, simulated state ids, valid/invalid counts and committed simulated state ids so `baselineOverlapRepair.selectedAsCommit` works for synthetic decision candidates as well as direct raw repair candidates.
 
 OPQM remains evidence and can be bypassed only by `repairAcceptancePolicy: "hard-feasibility-restored-from-invalid-baseline"` when Validation declares the repaired final state `VALID`, no hard violations remain, protected `done`/`in_progress` tasks and locks are preserved, and pending tasks are planned. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` remain hard, no post-pipeline moves are used, no coach/resource handoff compaction or global repair is introduced, and there are no DB/RLS/UI, V3 or V4 rewrite changes.
+
+### ORC Active Hard-Feasibility Repair Preflight & Runtime Export Contract v1 (ID 224)
+
+ORC Active now has a bounded hard-feasibility-first repair preflight before returning fallback for `baseline_seed_hard_infeasible`. If the official baseline hard-feasibility audit includes a repairable two-task productive exclusive `spaceOverlapGroups` conflict, Active attempts executable baseline-overlap repair even when Shadow returned a legacy repair summary. The preflight is limited to baseline overlap repair candidates, capped at four candidates, and routes work through Candidate, Transformation, Simulation, Validation, Evaluation, Ranking, and Commit.
+
+The preflight does not apply post-pipeline moves, does not mutate `OperationalState` directly, does not skip Simulation/Validation/Evaluation, and does not relax `SPACE_OVERLAP` or `RESOURCE_OVERLAP`. A valid repaired plan wins over an impossible baseline; if no repair validates, Active keeps the safe fallback but exports generated candidates, prefilter discard reasons, simulation and validation counts, and concrete failure reasons.
+
+Runtime export now always includes `diagnostics.orcSummary.runtimeContract.orcRuntimeContractVersion: "ORC-RUNTIME-CONTRACT-ID224"`. `baselineOverlapRepair` publishes `summaryContractVersion: "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224"` plus `activeRepairPreflight`, audit wiring, source-of-truth, repairable selection, unsupported samples, runtime warnings, and invariants. A repairable audit like `[315, 504]` can no longer silently end as legacy `unsupported_overlap_cardinality` without `activeRepairPreflight`. This iteration does not implement coach compaction, resource handoff compaction, global repair, DB/RLS/UI changes, V3 changes, or a V4 rewrite.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)

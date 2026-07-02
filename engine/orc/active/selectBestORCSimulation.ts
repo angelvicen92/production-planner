@@ -18,6 +18,7 @@ export interface ORCSimulationSelectionDiagnostics {
   committedSimulationIds: string[];
   baselineRepairSimulationIds: string[];
   selectedBecause: string | null;
+  selectedSimulatedStateId: string | null;
   readOnly: true;
 }
 
@@ -66,7 +67,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-repair-first-v1", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], selectedBecause: null, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-repair-first-v1", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], selectedBecause: null, selectedSimulatedStateId: null, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -118,6 +119,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     committedSimulationIds: [...commitDecisionBySimulatedStateId.keys()].sort(),
     baselineRepairSimulationIds: [...baselineRepairIds].sort(),
     selectedBecause: selected ? `${selected.bucket}; valid simulations are preferred over invalid diagnostics` : null,
+    selectedSimulatedStateId: selected?.simulation.id ?? null,
     readOnly: true,
   };
   return { simulation: selected?.simulation ?? null, validation: selected?.validation ?? null, value: selected?.operationalValue?.overallScore ?? null, candidateState: selected?.candidateState ?? null, candidate: selected?.candidate ?? null, commitDecision: selected?.commitDecision ?? null, diagnostics };
