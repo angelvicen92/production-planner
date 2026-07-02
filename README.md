@@ -343,6 +343,17 @@ The preflight does not apply post-pipeline moves, does not mutate `OperationalSt
 
 Runtime export now always includes `diagnostics.orcSummary.runtimeContract.orcRuntimeContractVersion: "ORC-RUNTIME-CONTRACT-ID224"`. `baselineOverlapRepair` publishes `summaryContractVersion: "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224"` plus `activeRepairPreflight`, audit wiring, source-of-truth, repairable selection, unsupported samples, runtime warnings, and invariants. A repairable audit like `[315, 504]` can no longer silently end as legacy `unsupported_overlap_cardinality` without `activeRepairPreflight`. This iteration does not implement coach compaction, resource handoff compaction, global repair, DB/RLS/UI changes, V3 changes, or a V4 rewrite.
 
+### ORC Planning Materialization Space Preservation Contract v1 (ID 225)
+
+ORC Active now enforces `ORC-PLANNING-MATERIALIZATION-ID225` for final planning materialization. This fixes the regression where `candidate_transformations` exported `plannedTasks` with `taskId`, `startPlanned`, `endPlanned` and `assignedResources` but without the operational `assignedSpace`, making the plan non-executable for production.
+
+Every final ORC planned task must expose at least `taskId`, `startPlanned`, `endPlanned`, `assignedSpace` and `assignedResources`. Materialization preserves `assignedSpace` from the original baseline seed for unchanged tasks and from the selected candidate transformation for modified tasks; tasks that truly have no operational space keep `assignedSpace: null`, but the field is never omitted. Existing export/UI fields are preserved.
+
+Diagnostics now include `planningMaterialization.materializationContractVersion: "ORC-PLANNING-MATERIALIZATION-ID225"`, `preservedAssignedSpaceCount`, `missingAssignedSpaceFieldCount`, `nullAssignedSpaceCount`, `assignedSpaceContractValid` and `readOnly: true`. `diagnostics.orcSummary.runtimeContract` also publishes `planningMaterializationContractVersion: "ORC-PLANNING-MATERIALIZATION-ID225"`. If the assigned-space materialization contract fails, Active cannot return `orc_changed_plan`; it must use safe fallback with a clear diagnostic instead of exporting an incomplete ORC changed plan.
+
+This ID does not relax Validation, `SPACE_OVERLAP` or `RESOURCE_OVERLAP`, does not change DB/RLS, does not touch V3/V4 behavior, and does not implement the pending main-flow continuity or coach compaction work.
+
+
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

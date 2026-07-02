@@ -7,6 +7,7 @@ export interface PlanningAssignment {
   taskId: number;
   startPlanned: string;
   endPlanned: string;
+  assignedSpace?: number | null;
   assignedResources?: number[] | null;
 }
 

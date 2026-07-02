@@ -389,6 +389,7 @@ export interface EngineOutput {
     taskId: number;
     startPlanned: string;
     endPlanned: string;
+    assignedSpace?: number | null;
     assignedResources?: number[];
   }>;
   warnings?: EngineOutputWarning[];
