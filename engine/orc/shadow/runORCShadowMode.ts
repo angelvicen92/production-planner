@@ -41,6 +41,7 @@ import { buildSearchAndExplorationUnderstanding } from "../search/searchAndExplo
 import { buildDecisionFeedbackEvidence, buildDecisionFeedbackFromDecisions, reuseDecisionFeedback } from "../analysis/decisionFeedbackLoop";
 import { resolveCandidateLineage } from "../decision/candidateLineage";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
+import { buildORCRuntimeContractID224 } from "../active/runActiveBaselineRepairPreflight";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -560,6 +561,7 @@ export function runORCShadowMode(
       baselineSafety: baselineSafetySummary,
       mainFlowGapClosure: mainFlowGapClosureSummary,
       baselineSeedHardFeasibility,
+      runtimeContract: buildORCRuntimeContractID224(),
       baselineOverlapRepair: baselineOverlapRepairSummary,
       commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0),
       rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0),
