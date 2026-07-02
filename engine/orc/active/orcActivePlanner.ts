@@ -12,6 +12,7 @@ import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilit
 import type { EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
 import { selectBestORCSimulation } from "./selectBestORCSimulation";
 import { buildORCRuntimeContractID224, hasRepairableBaselineSpaceOverlapGroup, normalizeBaselineOverlapRepairSummaryID224, runActiveBaselineRepairPreflight, ACTIVE_REPAIR_PREFLIGHT_SOURCE_ID224 } from "./runActiveBaselineRepairPreflight";
+import { ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225 } from "../simulation/materializeSimulatedPlanning";
 
 export type ORCActiveUsedEngine = "orc" | "orc_baseline_preserved" | "v4_fallback";
 export type ORCResultKind = "orc_changed_plan" | "orc_baseline_preserved" | "v4_fallback";
@@ -24,6 +25,12 @@ export interface ORCPlanningMaterializationDiagnostics {
   plannedTaskCount: number;
   changedTaskCount: number;
   warnings: readonly string[];
+  preservedAssignedSpaceCount: number;
+  missingAssignedSpaceFieldCount: number;
+  nullAssignedSpaceCount: number;
+  assignedSpaceContractValid: boolean;
+  materializationContractVersion: typeof ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225;
+  readOnly: true;
 }
 
 export interface ORCBestCandidateTrace {
@@ -137,7 +144,8 @@ function normalizePlanningItem(item: unknown): ConvertedPlan[number] | null {
   const endPlanned = typeof item.endPlanned === "string" ? item.endPlanned : typeof item.end === "string" ? item.end : null;
   const rawResources = Array.isArray(item.assignedResourceIds) ? item.assignedResourceIds : Array.isArray(item.assignedResources) ? item.assignedResources : Array.isArray(item.resourceIds) ? item.resourceIds : [];
   if (!Number.isFinite(taskId) || !startPlanned || !endPlanned) return null;
-  return { taskId, startPlanned, endPlanned, assignedResources: rawResources.map(Number).filter(Number.isFinite).sort((a, b) => a - b) };
+  const assignedSpace = "assignedSpace" in item ? (item.assignedSpace == null ? null : Number(item.assignedSpace)) : "spaceId" in item ? (item.spaceId == null ? null : Number(item.spaceId)) : null;
+  return { taskId, startPlanned, endPlanned, assignedSpace: Number.isFinite(assignedSpace) ? assignedSpace : null, assignedResources: rawResources.map(Number).filter(Number.isFinite).sort((a, b) => a - b) };
 }
 
 export function extractPlannedTasksFromORCSimulatedState(simulatedState: SimulatedState, neededIds?: readonly number[]): ORCPlanningExtractionResult {
@@ -245,10 +253,34 @@ function recommendation(gates: Record<string, boolean>, comparison: ORCActivatio
 }
 
 
-function planningMaterializationOf(simulation: SimulatedState | null): ORCPlanningMaterializationDiagnostics {
+function assignedSpaceContractDiagnostics(plannedTasks: readonly { assignedSpace?: number | null }[]) {
+  const missingAssignedSpaceFieldCount = plannedTasks.filter((task) => !("assignedSpace" in task)).length;
+  const nullAssignedSpaceCount = plannedTasks.filter((task) => "assignedSpace" in task && task.assignedSpace == null).length;
+  return {
+    preservedAssignedSpaceCount: plannedTasks.length - missingAssignedSpaceFieldCount - nullAssignedSpaceCount,
+    missingAssignedSpaceFieldCount,
+    nullAssignedSpaceCount,
+    assignedSpaceContractValid: missingAssignedSpaceFieldCount === 0,
+    materializationContractVersion: ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225,
+    readOnly: true as const,
+  };
+}
+
+function planningMaterializationOf(simulation: SimulatedState | null, plannedTasks: readonly { assignedSpace?: number | null }[] = []): ORCPlanningMaterializationDiagnostics {
   const raw = simulation?.planningMaterialization;
-  if (!raw) return { source: "none", plannedTaskCount: 0, changedTaskCount: 0, warnings: ["No planning materialization diagnostics available."] };
-  return { source: raw.source, plannedTaskCount: raw.plannedTaskCount, changedTaskCount: raw.changedTaskCount, warnings: [...raw.warnings] };
+  const contract = assignedSpaceContractDiagnostics(plannedTasks);
+  return {
+    source: raw?.source ?? "none",
+    plannedTaskCount: raw?.plannedTaskCount ?? plannedTasks.length,
+    changedTaskCount: raw?.changedTaskCount ?? 0,
+    warnings: raw?.warnings ? [...raw.warnings] : (raw ? [] : ["No planning materialization diagnostics available."]),
+    preservedAssignedSpaceCount: raw?.preservedAssignedSpaceCount ?? contract.preservedAssignedSpaceCount,
+    missingAssignedSpaceFieldCount: raw?.missingAssignedSpaceFieldCount ?? contract.missingAssignedSpaceFieldCount,
+    nullAssignedSpaceCount: raw?.nullAssignedSpaceCount ?? contract.nullAssignedSpaceCount,
+    assignedSpaceContractValid: raw?.assignedSpaceContractValid ?? contract.assignedSpaceContractValid,
+    materializationContractVersion: raw?.materializationContractVersion ?? ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225,
+    readOnly: true,
+  };
 }
 
 function buildActivationReport(args: { effectiveMoves?: EffectiveMovesDiagnostics; materialization?: ORCPlanningMaterializationDiagnostics; usedEngine: ORCActiveUsedEngine; orcResultKind: ORCResultKind; fallbackReason: string | null; gates: Record<string, boolean>; executionTimeMs: number; simulation: SimulatedState | null; validation: ValidationResult | null; score: number | null; v4Metrics: OperationalPlanningQualityMetrics; orcMetrics: OperationalPlanningQualityMetrics; v4Planned: PlanningAssignment[]; orcPlanned: PlanningAssignment[]; v4UnplannedTasks: number; neededTasks: number }): ORCActivationReport {
@@ -394,7 +426,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const v4Metrics = calculateOperationalPlanningQualityMetrics(input, v4Planned);
   let orcMetrics = calculateOperationalPlanningQualityMetrics(input, orcPlanned);
   const shadowBaselineOverlapRepair = activePreflight?.baselineOverlapRepairSummary ?? ((shadow?.summary as Record<string, unknown> | undefined)?.baselineOverlapRepair as Record<string, unknown> | undefined);
-  const materialization = planningMaterializationOf(simulation);
+  const materialization = planningMaterializationOf(simulation, orcPlanned);
   const baselineRepairFinalHardFeasible = shadowBaselineOverlapRepair?.selectedAsCommit === true
     && Number(shadowBaselineOverlapRepair?.validSimulationCount ?? 0) > 0
     && materialization.source === "candidate_transformations"
@@ -421,6 +453,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
     noHardViolations: (validation?.violatedConstraints?.length ?? 1) === 0,
     opqmNotWorseThanV4: opqmGateBypassedForBaselineRepair || opqmNotWorse(v4Metrics, orcMetrics),
     deterministicOutput: simulation != null && stableStringify(orcPlanned) === stableStringify(extractPlannedTasksFromORCSimulatedState(simulation, needed).plannedTasks),
+    assignedSpaceContractValid: materialization.assignedSpaceContractValid,
     explainableDecision: true,
   };
   const effectiveMoves: EffectiveMovesDiagnostics = EMPTY_EFFECTIVE_MOVES;
@@ -432,7 +465,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const mainFlowGapClosure = (shadow?.summary as Record<string, unknown> | undefined)?.mainFlowGapClosure as Record<string, unknown> | undefined;
   const baselineOverlapRepair = normalizeBaselineOverlapRepairSummaryID224(shadowBaselineOverlapRepair, activePreflight?.summary, legacyRepairSummary ? ["legacy_baseline_overlap_repair_summary_detected"] : [], legacyRepairSummary ? "baseline_overlap_repair_summary_contract_missing" : null);
   const mainFlowSkippedReason = typeof mainFlowGapClosure?.skippedReason === "string" ? mainFlowGapClosure.skippedReason : null;
-  const fallbackReason = failedGate ? (failedGate === "baselineSeedHardFeasible" && !baselineRepairFinalHardFeasible ? baselineSeedHardFeasibility.reason : (mainFlowSkippedReason === "main_flow_not_configured" ? "main_flow_not_configured" : (simulation ? (orcPlanned.length === 0 && needed.length > 0 ? "orc_planning_extraction_empty" : `gate_failed:${failedGate}`) : "no_valid_orc_simulation"))) : null;
+  const fallbackReason = failedGate ? (failedGate === "baselineSeedHardFeasible" && !baselineRepairFinalHardFeasible ? baselineSeedHardFeasibility.reason : (mainFlowSkippedReason === "main_flow_not_configured" ? "main_flow_not_configured" : (simulation ? (orcPlanned.length === 0 && needed.length > 0 ? "orc_planning_extraction_empty" : failedGate === "assignedSpaceContractValid" ? "orc_planning_materialization_assigned_space_contract_invalid" : `gate_failed:${failedGate}`) : "no_valid_orc_simulation"))) : null;
   const orcActivationReport = buildActivationReport({ effectiveMoves, materialization, usedEngine, orcResultKind, fallbackReason, gates, executionTimeMs: reportExecutionTimeMs, simulation, validation, score: value, v4Metrics, orcMetrics, v4Planned, orcPlanned, v4UnplannedTasks: v4.output.unplanned?.length ?? v4.diagnostics.unplannedTasks, neededTasks: needed.length });
   const bestCandidateTrace = buildBestCandidateTrace({ effectiveMoves, materialization, baselineSeed, v4Planned, shadow, simulation, validation, candidateState, candidate, score: value, orcPlanned, pendingTasks: extraction.pendingTaskIds.length ? extraction.pendingTaskIds : needed.filter((id) => !plannedIds.has(id)), extractionSource: extraction.extractionSource, extractionWarnings: extraction.extractionWarnings, orcMetrics, gates, discardReason: fallbackReason });
   const diagnostics: ORCActiveDiagnostics = { engineVersion: "orc-active", status: failedGate ? v4.diagnostics.status : "success", generatedAt: v4.diagnostics.generatedAt, plannedTasks: failedGate ? v4.diagnostics.plannedTasks : orcPlanned.length, unplannedTasks: failedGate ? v4.diagnostics.unplannedTasks : 0, warning: failedGate ? v4.diagnostics.warning : "ORC Active Bridge generó un resultado V4 seguro.", usedEngine, fallbackReason, orcResultKind, planningRelationToBaseline, explanation: usedEngine === "orc_baseline_preserved" ? "ORC ejecutado correctamente, pero no aplicó cambios sobre el baseline. Se muestra una planificación completa equivalente al baseline." : usedEngine === "orc" ? "ORC ejecutado correctamente y aplicó cambios reales sobre el baseline." : (readableFallbackReason(fallbackReason, gates, { needed: needed.length, orc: orcPlanned.length }) ?? "V4 se mantiene como fallback seguro."), gates, orcSummary: { ...(shadow?.summary ?? null), runtimeContract: buildORCRuntimeContractID224(), baselineSeed, baselineSeedHardFeasibility, selectedSimulatedStateId: simulation?.id ?? null, selectedOverallScore: value, planningExtraction: { source: extraction.extractionSource, plannedTaskCount: orcPlanned.length, pendingTaskCount: extraction.pendingTaskIds.length, warnings: extraction.extractionWarnings }, planningMaterialization: materialization, effectiveMoves, mainFlowGapClosure, baselineOverlapRepair, simulationSelection: selection.diagnostics }, v4Diagnostics: v4.diagnostics, operationalDelta, orcActivationReport, bestCandidateTrace, baselineSeed, baselineSeedHardFeasibility, effectiveMoves, orcActiveBridge: true, repairAcceptancePolicy, repairAcceptanceSource, opqmGateBypassedForBaselineRepair };

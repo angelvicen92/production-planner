@@ -7,6 +7,7 @@ import { buildDecisionInput } from "../decision/decisionInput";
 import { executeDecisionPipeline } from "../decision/decisionPipelineOrchestrator";
 import { resolveCandidateLineage } from "../decision/candidateLineage";
 import type { ORCBaselineSeedHardFeasibilityAudit } from "./orcBaselineSeedFeasibilityAudit";
+import { ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225 } from "../simulation/materializeSimulatedPlanning";
 
 export const ORC_RUNTIME_CONTRACT_VERSION_ID224 = "ORC-RUNTIME-CONTRACT-ID224" as const;
 export const BASELINE_OVERLAP_REPAIR_SUMMARY_CONTRACT_VERSION_ID224 = "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224" as const;
@@ -40,7 +41,7 @@ export function hasRepairableBaselineSpaceOverlapGroup(audit: unknown): boolean 
 }
 
 export function buildORCRuntimeContractID224() {
-  return { orcRuntimeContractVersion: ORC_RUNTIME_CONTRACT_VERSION_ID224, activeRepairPreflightAvailable: true, baselineOverlapRepairSummaryContractVersion: BASELINE_OVERLAP_REPAIR_SUMMARY_CONTRACT_VERSION_ID224, selectBestSimulationPolicy: "valid-committed-repair-first-v1", readOnly: true as const };
+  return { orcRuntimeContractVersion: ORC_RUNTIME_CONTRACT_VERSION_ID224, planningMaterializationContractVersion: ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225, activeRepairPreflightAvailable: true, baselineOverlapRepairSummaryContractVersion: BASELINE_OVERLAP_REPAIR_SUMMARY_CONTRACT_VERSION_ID224, selectBestSimulationPolicy: "valid-committed-repair-first-v1", readOnly: true as const };
 }
 
 export function normalizeBaselineOverlapRepairSummaryID224(summary: Record<string, unknown> | null | undefined, activeRepairPreflight?: ActiveBaselineRepairPreflightSummary, warnings: string[] = [], invariant: string | null = null): Record<string, unknown> {

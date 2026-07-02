@@ -271,6 +271,12 @@ export interface SimulatedState {
     readonly plannedTaskCount: number;
     readonly changedTaskCount: number;
     readonly warnings: readonly string[];
+    readonly preservedAssignedSpaceCount?: number;
+    readonly missingAssignedSpaceFieldCount?: number;
+    readonly nullAssignedSpaceCount?: number;
+    readonly assignedSpaceContractValid?: boolean;
+    readonly materializationContractVersion?: "ORC-PLANNING-MATERIALIZATION-ID225";
+    readonly readOnly?: true;
   };
 }
 

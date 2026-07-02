@@ -63,7 +63,11 @@ test("materializeSimulatedPlanning does not modify done or in_progress tasks", (
 test("materializeSimulatedPlanning reports none for empty planning", () => {
   const base = state(0);
   const result = materializeSimulatedPlanning(candidateState(), base);
-  assert.deepEqual(result.diagnostics, { source: "none", plannedTaskCount: 0, changedTaskCount: 0, warnings: [] });
+  assert.equal(result.diagnostics.source, "none");
+  assert.equal(result.diagnostics.plannedTaskCount, 0);
+  assert.equal(result.diagnostics.changedTaskCount, 0);
+  assert.equal(result.diagnostics.assignedSpaceContractValid, true);
+  assert.equal(result.diagnostics.missingAssignedSpaceFieldCount, 0);
   assert.deepEqual(result.planning, []);
   assert.doesNotThrow(() => JSON.stringify(result.diagnostics));
 });

@@ -341,3 +341,62 @@ test("ORC Active does not fallback for duplicated flexible meal window baseline"
   assert.equal(JSON.stringify(result.diagnostics).includes("PLANNING_CROSSES_HARD_MEAL_BREAK"), false);
   assert.ok(["orc_baseline_preserved", "orc", "v4_fallback"].includes(result.diagnostics.usedEngine));
 });
+
+test("ID225 ORC changed plan preserva assignedSpace en reparación [315, 504]", () => {
+  const planning = [
+    { taskId: 315, startPlanned: "10:20", endPlanned: "10:35", assignedResourceIds: [336], spaceId: 48 },
+    { taskId: 504, startPlanned: "10:35", endPlanned: "11:20", assignedResourceIds: [], spaceId: 48 },
+  ];
+  const baseInput: EngineInput = { ...fullyPlannedInput(), tasks: [
+    { id: 315, planId: 96, templateId: 315, status: "pending", contestantId: 1, zoneId: 10, spaceId: 48, durationOverrideMin: 15, startPlanned: "10:20", endPlanned: "10:35", assignedResourceIds: [336] },
+    { id: 504, planId: 96, templateId: 504, status: "pending", contestantId: 1, zoneId: 10, spaceId: 48, durationOverrideMin: 45, startPlanned: "10:05", endPlanned: "10:50", assignedResourceIds: [] },
+  ], planResourceItems: [{ id: 336, resourceItemId: 336, typeId: 1, name: "R336", isAvailable: true }], spaceResourceAssignments: { 48: [336] } };
+  const result = runORCActivePlanner(baseInput, { orcShadowResult: shadow(planning as any, [], 1) });
+  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.diagnostics.orcResultKind, "orc_changed_plan");
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.assignedSpaceContractValid, true);
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.missingAssignedSpaceFieldCount, 0);
+  assert.ok(result.output.plannedTasks.every((task) => Object.prototype.hasOwnProperty.call(task, "assignedSpace")));
+  const byTask = new Map(result.output.plannedTasks.map((task) => [task.taskId, task]));
+  assert.deepEqual(byTask.get(315), { taskId: 315, startPlanned: "10:20", endPlanned: "10:35", assignedSpace: 48, assignedResources: [336] });
+  assert.deepEqual(byTask.get(504), { taskId: 504, startPlanned: "10:35", endPlanned: "11:20", assignedSpace: 48, assignedResources: [] });
+});
+
+test("ID225 tareas no modificadas preservan assignedSpace", () => {
+  const result = runORCActivePlanner(input(), { orcShadowResult: shadow(validPlanning, [], 1) });
+  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 2)?.assignedSpace, 1);
+  assert.equal(result.output.plannedTasks.find((task) => task.taskId === 3)?.assignedSpace, 1);
+});
+
+test("ID225 Active no exporta ORC changed plan si el contrato assignedSpace falla", () => {
+  const defective = shadow(validPlanning, [], 1);
+  const sim = { ...defective.simulatedStates[0], planningMaterialization: { ...defective.simulatedStates[0].planningMaterialization!, missingAssignedSpaceFieldCount: 1, assignedSpaceContractValid: false } } as SimulatedState;
+  const result = runORCActivePlanner(input(), { orcShadowResult: { ...defective, simulatedStates: [sim] } });
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.assignedSpaceContractValid, false);
+  assert.notEqual(result.diagnostics.orcResultKind, "orc_changed_plan");
+  assert.equal(result.diagnostics.usedEngine, "v4_fallback");
+  assert.equal(result.diagnostics.fallbackReason, "orc_planning_materialization_assigned_space_contract_invalid");
+});
+
+test("ID225 regresión sintética v4-31 conserva assignedSpace en 219 plannedTasks", () => {
+  const planning = Array.from({ length: 219 }, (_, index) => {
+    const taskId = index === 0 ? 315 : index === 1 ? 504 : 1000 + index;
+    return { taskId, startPlanned: taskId === 504 ? "10:35" : taskId === 315 ? "10:20" : "12:00", endPlanned: taskId === 504 ? "11:20" : taskId === 315 ? "10:35" : "12:05", assignedResourceIds: taskId === 315 ? [336] : [], spaceId: (taskId === 315 || taskId === 504) ? 48 : 1000 + index };
+  });
+  const tasks = planning.map((entry) => ({ id: entry.taskId, planId: 96, templateId: entry.taskId, status: (entry.taskId === 315 || entry.taskId === 504 ? "pending" : "done") as const, contestantId: 1, zoneId: 10, spaceId: entry.spaceId, durationOverrideMin: 5, startPlanned: entry.taskId === 504 ? "10:05" : entry.startPlanned, endPlanned: entry.taskId === 504 ? "10:50" : entry.endPlanned, assignedResourceIds: entry.assignedResourceIds }));
+  const baseInput: EngineInput = { ...fullyPlannedInput(), tasks, planResourceItems: [{ id: 336, resourceItemId: 336, typeId: 1, name: "R336", isAvailable: true }], spaceResourceAssignments: { 48: [336] } };
+  const repairShadow = { ...shadow(planning as any, [], 1), commitDecisions: [{ decision: "COMMIT", operationalValueId: "sim:1", reason: "repair", differences: [], evidenceId: "evidence", createdAt: null }], summary: { validCount: 1, invalidCount: 0, baselineOverlapRepair: { validSimulationCount: 1, selectedAsCommit: true } } as any };
+  const result = runORCActivePlanner(baseInput, { orcShadowResult: repairShadow });
+  assert.equal(result.diagnostics.fallbackReason, null);
+  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal(result.output.plannedTasks.length, 219);
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.source, "candidate_transformations");
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.changedTaskCount, 1);
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.missingAssignedSpaceFieldCount, 0);
+  assert.equal(result.diagnostics.orcSummary.planningMaterialization.assignedSpaceContractValid, true);
+  assert.ok(result.output.plannedTasks.every((task) => Object.prototype.hasOwnProperty.call(task, "assignedSpace")));
+  const byTask = new Map(result.output.plannedTasks.map((task) => [task.taskId, task]));
+  assert.equal(byTask.get(315)?.assignedSpace, 48);
+  assert.equal(byTask.get(504)?.assignedSpace, 48);
+});

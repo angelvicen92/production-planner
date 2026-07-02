@@ -1,12 +1,19 @@
 import type { CandidateState, OperationalState } from "../contracts";
 
 export type PlanningMaterializationSource = "baseline_seed_preserved" | "candidate_transformations" | "none";
+export const ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225 = "ORC-PLANNING-MATERIALIZATION-ID225" as const;
 
 export interface PlanningMaterializationDiagnostics {
   readonly source: PlanningMaterializationSource;
   readonly plannedTaskCount: number;
   readonly changedTaskCount: number;
   readonly warnings: readonly string[];
+  readonly preservedAssignedSpaceCount: number;
+  readonly missingAssignedSpaceFieldCount: number;
+  readonly nullAssignedSpaceCount: number;
+  readonly assignedSpaceContractValid: boolean;
+  readonly materializationContractVersion: typeof ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225;
+  readonly readOnly: true;
 }
 
 export type MaterializedPlanningEntry = OperationalState["planning"][number] & {
@@ -38,6 +45,23 @@ function hasLock(state: OperationalState, taskId: number, lockType: "full" | "ti
   return state.locks.some((lock) => lock.taskId === taskId && lock.lockType === lockType);
 }
 
+function assignedSpaceContractDiagnostics(planning: readonly { assignedSpace?: number | null }[]) {
+  const missingAssignedSpaceFieldCount = planning.filter((entry) => !("assignedSpace" in entry)).length;
+  const nullAssignedSpaceCount = planning.filter((entry) => "assignedSpace" in entry && entry.assignedSpace == null).length;
+  return {
+    preservedAssignedSpaceCount: planning.length - missingAssignedSpaceFieldCount - nullAssignedSpaceCount,
+    missingAssignedSpaceFieldCount,
+    nullAssignedSpaceCount,
+    assignedSpaceContractValid: missingAssignedSpaceFieldCount === 0,
+    materializationContractVersion: ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225,
+    readOnly: true as const,
+  };
+}
+
+function diagnostics(source: PlanningMaterializationSource, planning: readonly MutableMaterializedPlanningEntry[], changedTaskCount: number, warnings: readonly string[]): PlanningMaterializationDiagnostics {
+  return { source, plannedTaskCount: planning.length, changedTaskCount, warnings, ...assignedSpaceContractDiagnostics(planning) };
+}
+
 function planningFingerprint(entry: MaterializedPlanningEntry): string {
   return JSON.stringify({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, assignedResourceIds: [...entry.assignedResourceIds].sort((a, b) => a - b) });
 }
@@ -51,7 +75,7 @@ export function materializeSimulatedPlanning(candidateState: CandidateState, bas
 
   const assignments = candidateState.sourceAssignments ?? [];
   if (assignments.length === 0) {
-    return { planning, diagnostics: { source: planning.length > 0 ? "baseline_seed_preserved" : "none", plannedTaskCount: planning.length, changedTaskCount: 0, warnings } };
+    return { planning, diagnostics: diagnostics(planning.length > 0 ? "baseline_seed_preserved" : "none", planning, 0, warnings) };
   }
 
   for (const assignment of assignments) {
@@ -92,7 +116,7 @@ export function materializeSimulatedPlanning(candidateState: CandidateState, bas
   const changedTaskCount = planning.filter((entry) => baselineByTask.get(entry.taskId) !== planningFingerprint(entry)).length;
   if (changedTaskCount === 0) {
     const source = planning.length > 0 ? "baseline_seed_preserved" : "none";
-    return { planning, diagnostics: { source, plannedTaskCount: planning.length, changedTaskCount: 0, warnings } };
+    return { planning, diagnostics: diagnostics(source, planning, 0, warnings) };
   }
-  return { planning, diagnostics: { source: "candidate_transformations", plannedTaskCount: planning.length, changedTaskCount, warnings } };
+  return { planning, diagnostics: diagnostics("candidate_transformations", planning, changedTaskCount, warnings) };
 }
