@@ -94,6 +94,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 219 — 2026-07-01 UTC — ORC Baseline Space Overlap Repair Safe Variants & Repair Acceptance Policy v1
 - ID 220 — 2026-07-01 UTC — ORC Baseline Repair Audit Source-of-Truth & Transport-Aware Pair Selection v1
 - ID 221 — 2026-07-02 UTC — ORC Baseline Repair Runtime Audit Wiring & Summary Contract v1
+- ID 222 — 2026-07-02 UTC — ORC Baseline Repair Runtime Invariant & Late Audit Repair Pass v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -314,6 +315,14 @@ Shadow runtime now wires `BaselineSeedHardFeasibilityAudit` into candidate gener
 `baselineOverlapRepair` now always publishes the summary contract fields `sourceOfTruth`, audit group counts, `repairableGroupSelection`, unsupported group diagnostics, `auditAvailable`, `auditPassedToCandidateBuilder`, `auditPassedToRepairBuilder`, `fallbackSourceUsed`, and `runtimeWiringWarnings`. If the official audit contains a repairable 2-task productive exclusive space overlap such as `[315, 504]`, the runtime source of truth is `baseline-hard-feasibility-audit` and the repair path cannot report `unsupported_overlap_cardinality` for that group.
 
 The repair remains inside Candidate, Transformation, Simulation, Validation, Evaluation, and Commit. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` are not relaxed; no post-pipeline moves, coach compaction, DB/RLS/UI changes, V3 changes, or V4 rewrite are introduced.
+
+### ORC Baseline Repair Runtime Invariant & Late Audit Repair Pass v1 (ID 222)
+
+ORC now enforces a runtime invariant for baseline overlap repair: when the official hard-feasibility audit contains a repairable 2-task productive exclusive `spaceOverlapGroups` entry, baseline repair must process that audit, generate repair candidates, or publish an explicit invariant violation diagnostic. This prevents a simple audited productive overlap such as `[315, 504]` from ending as `unsupported_overlap_cardinality` without contract fields or wiring diagnostics.
+
+Shadow mode adds a bounded late audit repair pass for cases where the official audit is available only after initial candidate generation or the initial summary is missing the required repair contract. The late pass uses the same `OperationalState`, calls baseline overlap repair with the official audit, and routes generated candidates through Candidate, Transformation, Simulation, Validation, Evaluation, and Commit; it does not apply post-pipeline moves, mutate the baseline seed, skip Simulation/Validation/Evaluation, or relax `SPACE_OVERLAP`/`RESOURCE_OVERLAP`.
+
+`baselineOverlapRepair` always publishes the full summary contract, including audit availability/wiring, source of truth, audit group counts, repairable selection, unsupported samples, fallback source, runtime invariant, and `lateAuditRepairPass` counters. Active can accept a valid committed repair from the late pass under the existing hard-feasibility gates and records `repairAcceptancePolicy: "hard-feasibility-restored-from-invalid-baseline"` with `repairAcceptanceSource: "late-audit-repair-pass"` when it restores feasibility from an invalid baseline. No DB, RLS, UI, V3, V4 rewrite, coach compaction, resource handoff compaction, or global repair changes are introduced.
 
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
