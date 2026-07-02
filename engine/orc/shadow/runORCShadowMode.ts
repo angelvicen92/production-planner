@@ -383,7 +383,8 @@ export function runORCShadowMode(
   let baselineOverlapRepairSummary = { ...candidateResult.summary.baselineOverlapRepair, candidateStateCount: baselineRepairLineage.candidateStateIds.length, simulatedStateCount: baselineRepairLineage.simulatedStateIds.length, validSimulationCount: baselineRepairValidSimulationCount, invalidSimulationCount: baselineRepairInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(baselineRepairLineage, baselineRepairCandidateIds), selectedAsBest: baselineRepairLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && baselineRepairLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: baselineRepairLineage.rawCandidateIds, syntheticCandidateIds: baselineRepairLineage.syntheticCandidateIds, partialPlanIds: baselineRepairLineage.partialPlanIds, candidateStateIds: baselineRepairLineage.candidateStateIds, simulatedStateIds: baselineRepairLineage.simulatedStateIds, committedSimulatedStateIds: baselineRepairLineage.committedSimulatedStateIds, readOnly: true } };
 
   const initialBaselineRepairInvariant = assertBaselineRepairRuntimeInvariant({ baselineSeedHardFeasibility, baselineOverlapRepairSummary: baselineOverlapRepairSummary as Record<string, unknown>, candidateResult, operationalState });
-  let lateAuditRepairPass = { executed: false, reason: initialBaselineRepairInvariant.ok ? null : initialBaselineRepairInvariant.invariantViolationCode, candidateIds: [] as string[], generatedCandidateCount: 0, candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedAsCommit: false, warnings: [] as string[], readOnly: true as const };
+  let lateAuditRepairPass = { executed: false, reason: initialBaselineRepairInvariant.ok ? null : initialBaselineRepairInvariant.invariantViolationCode, candidateIds: [] as string[], generatedCandidateCount: 0, candidateStateCount: 0, simulatedStateCount: 0, validSimulationCount: 0, invalidSimulationCount: 0, selectedAsCommit: false, candidateStateIds: [] as string[], simulatedStateIds: [] as string[], committedSimulatedStateIds: [] as string[], lineage: { rawCandidateIds: [] as string[], syntheticCandidateIds: [] as string[], partialPlanIds: [] as string[], candidateStateIds: [] as string[], simulatedStateIds: [] as string[], committedSimulatedStateIds: [] as string[], readOnly: true as const }, warnings: [] as string[], readOnly: true as const };
+  let lateEvidence: Evidence[] = [];
   let lateDecisionPipelineResult: ReturnType<typeof executeDecisionPipeline> | null = null;
   let lateDecisionInputCandidates: Candidate[] = [];
   let latePartialPlans: ReturnType<typeof composePartialPlans>["partialPlans"] = [];
@@ -401,14 +402,17 @@ export function runORCShadowMode(
     const lateDecisionInput = buildDecisionInput(lateCandidateResult as Parameters<typeof buildDecisionInput>[0]);
     lateDecisionInputCandidates = lateDecisionInput.candidates;
     lateDecisionPipelineResult = executeDecisionPipeline({ ...lateDecisionInput, operationalState, createdAt });
+    lateEvidence = [...lateRepair.evidence, ...latePrefilter.evidence, ...latePartialPlanResult.evidence, ...lateDecisionInput.evidence, ...lateDecisionPipelineResult.evidence, ...lateDecisionPipelineResult.transformation.evidence, ...lateDecisionPipelineResult.simulation.evidence, ...lateDecisionPipelineResult.validation.evidence, ...lateDecisionPipelineResult.evaluation.evidence, ...lateDecisionPipelineResult.ranking.evidence, ...lateDecisionPipelineResult.commit.evidence];
     const lateCandidateIds = lateRepair.candidates.map((candidate) => candidate.id);
-    const lateCandidateStateIds = new Set(lateDecisionPipelineResult.transformation.candidateStates.filter((state) => lateCandidateIds.includes(state.candidateId)).map((state) => state.id));
-    const lateSimulatedStateIds = new Set(lateDecisionPipelineResult.simulation.simulatedStates.filter((state) => lateCandidateStateIds.has(state.candidateStateId)).map((state) => state.id));
+    const lateRankedBestSimulationId = lateDecisionPipelineResult.ranking.rankedOperationalValues[0]?.simulatedStateId ?? null;
+    const lateLineage = resolveCandidateLineage({ rawCandidateIds: new Set(lateCandidateIds), decisionInputCandidates: lateDecisionInput.candidates, candidateStates: lateDecisionPipelineResult.transformation.candidateStates, simulatedStates: lateDecisionPipelineResult.simulation.simulatedStates, operationalValues: lateDecisionPipelineResult.ranking.rankedOperationalValues, commitDecisions: lateDecisionPipelineResult.commit.commitDecisions, partialPlans: latePartialPlans, rankedBestSimulatedStateId: lateRankedBestSimulationId });
+    const lateSimulatedStateIds = new Set(lateLineage.simulatedStateIds);
     const lateValid = lateDecisionPipelineResult.validation.validationResults.filter((result) => lateSimulatedStateIds.has(result.simulatedStateId) && result.result === "VALID").length;
     const lateInvalid = lateDecisionPipelineResult.validation.validationResults.filter((result) => lateSimulatedStateIds.has(result.simulatedStateId) && result.result === "INVALID").length;
-    const lateCommit = lateDecisionPipelineResult.commit.commitDecisions.some((decision) => decision.decision === "COMMIT" && decision.operationalValueId != null && lateSimulatedStateIds.has(decision.operationalValueId));
-    lateAuditRepairPass = { executed: true, reason: initialBaselineRepairInvariant.invariantViolationCode, candidateIds: lateCandidateIds, generatedCandidateCount: lateRepair.candidates.length, candidateStateCount: lateCandidateStateIds.size, simulatedStateCount: lateSimulatedStateIds.size, validSimulationCount: lateValid, invalidSimulationCount: lateInvalid, selectedAsCommit: lateCommit, warnings: lateRepair.summary.runtimeWiringWarnings ?? [], readOnly: true };
-    baselineOverlapRepairSummary = { ...baselineOverlapRepairSummary, ...lateRepair.summary, generatedCandidateCount: lateRepair.summary.generatedCandidateCount, candidateIds: lateCandidateIds, conflictingTaskIds: lateRepair.summary.conflictingTaskIds, skippedReason: lateRepair.summary.generatedCandidateCount > 0 ? null : lateRepair.summary.skippedReason, candidateStateCount: lateCandidateStateIds.size, simulatedStateCount: lateSimulatedStateIds.size, validSimulationCount: lateValid, invalidSimulationCount: lateInvalid, selectedAsCommit: lateCommit, lateAuditRepairPass };
+    const lateCommit = lateLineage.committedSimulatedStateIds.length > 0;
+    const lateLineageSummary = { rawCandidateIds: lateLineage.rawCandidateIds, syntheticCandidateIds: lateLineage.syntheticCandidateIds, partialPlanIds: lateLineage.partialPlanIds, candidateStateIds: lateLineage.candidateStateIds, simulatedStateIds: lateLineage.simulatedStateIds, committedSimulatedStateIds: lateLineage.committedSimulatedStateIds, readOnly: true as const };
+    lateAuditRepairPass = { executed: true, reason: initialBaselineRepairInvariant.invariantViolationCode, candidateIds: lateCandidateIds, generatedCandidateCount: lateRepair.candidates.length, candidateStateCount: lateLineage.candidateStateIds.length, simulatedStateCount: lateLineage.simulatedStateIds.length, validSimulationCount: lateValid, invalidSimulationCount: lateInvalid, selectedAsCommit: lateCommit, candidateStateIds: lateLineage.candidateStateIds, simulatedStateIds: lateLineage.simulatedStateIds, committedSimulatedStateIds: lateLineage.committedSimulatedStateIds, lineage: lateLineageSummary, warnings: lateRepair.summary.runtimeWiringWarnings ?? [], readOnly: true };
+    baselineOverlapRepairSummary = { ...baselineOverlapRepairSummary, ...lateRepair.summary, generatedCandidateCount: lateRepair.summary.generatedCandidateCount, candidateIds: lateCandidateIds, conflictingTaskIds: lateRepair.summary.conflictingTaskIds, skippedReason: lateRepair.summary.generatedCandidateCount > 0 ? null : lateRepair.summary.skippedReason, candidateStateCount: lateLineage.candidateStateIds.length, simulatedStateCount: lateLineage.simulatedStateIds.length, validSimulationCount: lateValid, invalidSimulationCount: lateInvalid, selectedAsCommit: lateCommit, selectedCandidateId: pickSelectedRawCandidateId(lateLineage, new Set(lateCandidateIds)), lineage: lateLineageSummary, lateAuditRepairPass };
   }
   baselineOverlapRepairSummary = { ...baselineOverlapRepairSummary, lateAuditRepairPass, runtimeInvariant: assertBaselineRepairRuntimeInvariant({ baselineSeedHardFeasibility, baselineOverlapRepairSummary: baselineOverlapRepairSummary as Record<string, unknown>, candidateResult, operationalState }) };
   const baselineSafetySummary = {
@@ -504,6 +508,7 @@ export function runORCShadowMode(
     ...rankingResult.evidence,
     ...commitResult.evidence,
     ...decisionPipelineResult.evidence,
+    ...lateEvidence,
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
@@ -556,8 +561,8 @@ export function runORCShadowMode(
       mainFlowGapClosure: mainFlowGapClosureSummary,
       baselineSeedHardFeasibility,
       baselineOverlapRepair: baselineOverlapRepairSummary,
-      commitCount: commitResult.summary.commitCount,
-      rejectCount: commitResult.summary.rejectCount,
+      commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0),
+      rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0),
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,

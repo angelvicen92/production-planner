@@ -325,6 +325,15 @@ Shadow mode adds a bounded late audit repair pass for cases where the official a
 `baselineOverlapRepair` always publishes the full summary contract, including audit availability/wiring, source of truth, audit group counts, repairable selection, unsupported samples, fallback source, runtime invariant, and `lateAuditRepairPass` counters. Active can accept a valid committed repair from the late pass under the existing hard-feasibility gates and records `repairAcceptancePolicy: "hard-feasibility-restored-from-invalid-baseline"` with `repairAcceptanceSource: "late-audit-repair-pass"` when it restores feasibility from an invalid baseline. No DB, RLS, UI, V3, V4 rewrite, coach compaction, resource handoff compaction, or global repair changes are introduced.
 
 
+### ORC Active Valid Repair Selection & Late Pass Lineage v1 (ID 223)
+
+ORC Active now selects with `valid-committed-repair-first-v1`: any `VALID` simulation wins over `INVALID` diagnostics, and a committed baseline-overlap repair with `candidate_transformations` plus real `changedTaskCount` is prioritized over a hard-infeasible baseline even if the invalid baseline has a higher operational score or earlier id. The selected simulation used for extraction, materialization, gates, OPQM evidence, output, best-candidate trace and activation report must be the repaired `SimulatedState`, not the invalid baseline preservation simulation.
+
+The late audit repair pass now resolves lineage through `resolveCandidateLineage`, including Partial Plans and `candidate:partial-plan:<rawCandidateId>` synthetic candidates. Its summary/evidence carries candidate state ids, simulated state ids, valid/invalid counts and committed simulated state ids so `baselineOverlapRepair.selectedAsCommit` works for synthetic decision candidates as well as direct raw repair candidates.
+
+OPQM remains evidence and can be bypassed only by `repairAcceptancePolicy: "hard-feasibility-restored-from-invalid-baseline"` when Validation declares the repaired final state `VALID`, no hard violations remain, protected `done`/`in_progress` tasks and locks are preserved, and pending tasks are planned. `SPACE_OVERLAP` and `RESOURCE_OVERLAP` remain hard, no post-pipeline moves are used, no coach/resource handoff compaction or global repair is introduced, and there are no DB/RLS/UI, V3 or V4 rewrite changes.
+
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
