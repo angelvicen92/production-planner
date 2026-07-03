@@ -42,6 +42,7 @@ import { buildDecisionFeedbackEvidence, buildDecisionFeedbackFromDecisions, reus
 import { resolveCandidateLineage } from "../decision/candidateLineage";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 import { buildORCRuntimeContractID224 } from "../active/runActiveBaselineRepairPreflight";
+import { runPostRepairMainZoneContinuityPass } from "../active/runPostRepairMainZoneContinuityPass";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -163,6 +164,7 @@ export interface ORCShadowModeResult {
     mainZoneContinuity: unknown;
     mainZoneGapResourceBlockSwap: unknown;
     baselineOverlapRepair: unknown;
+    postRepairMainZoneContinuityPass: unknown;
     decisionFeedback: {
       feedbackCount: number;
       influencedDecisions: number;
@@ -210,6 +212,7 @@ function buildShadowSummaryEvidence(
   mainZoneContinuitySummary: Record<string, unknown>,
   mainZoneGapResourceBlockSwapSummary: Record<string, unknown>,
   baselineOverlapRepairSummary: Record<string, unknown>,
+  postRepairMainZoneContinuityPassSummary: Record<string, unknown>,
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -251,6 +254,7 @@ function buildShadowSummaryEvidence(
       mainZoneContinuity: mainZoneContinuitySummary,
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
       baselineOverlapRepair: baselineOverlapRepairSummary,
+      postRepairMainZoneContinuityPass: postRepairMainZoneContinuityPassSummary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
   };
@@ -391,7 +395,7 @@ export function runORCShadowMode(
     const selected = lineage.selectedRawCandidateIds.filter((id) => preferredIds.has(id)).sort();
     return selected[0] ?? lineage.selectedRawCandidateIds[0] ?? null;
   };
-  const mainZoneGapResourceBlockSwapSummary = { ...candidateResult.summary.mainZoneGapResourceBlockSwap, candidateStateCount: mainZoneSwapLineage.candidateStateIds.length, simulatedStateCount: mainZoneSwapLineage.simulatedStateIds.length, validSimulationCount: mainZoneSwapValidSimulationCount, invalidSimulationCount: mainZoneSwapInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(mainZoneSwapLineage, mainZoneSwapCandidateIds), selectedAsBest: mainZoneSwapLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && mainZoneSwapLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: mainZoneSwapLineage.rawCandidateIds, syntheticCandidateIds: mainZoneSwapLineage.syntheticCandidateIds, partialPlanIds: mainZoneSwapLineage.partialPlanIds, candidateStateIds: mainZoneSwapLineage.candidateStateIds, simulatedStateIds: mainZoneSwapLineage.simulatedStateIds, committedSimulatedStateIds: mainZoneSwapLineage.committedSimulatedStateIds, readOnly: true } };
+  let mainZoneGapResourceBlockSwapSummary = { ...candidateResult.summary.mainZoneGapResourceBlockSwap, candidateStateCount: mainZoneSwapLineage.candidateStateIds.length, simulatedStateCount: mainZoneSwapLineage.simulatedStateIds.length, validSimulationCount: mainZoneSwapValidSimulationCount, invalidSimulationCount: mainZoneSwapInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(mainZoneSwapLineage, mainZoneSwapCandidateIds), selectedAsBest: mainZoneSwapLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && mainZoneSwapLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: mainZoneSwapLineage.rawCandidateIds, syntheticCandidateIds: mainZoneSwapLineage.syntheticCandidateIds, partialPlanIds: mainZoneSwapLineage.partialPlanIds, candidateStateIds: mainZoneSwapLineage.candidateStateIds, simulatedStateIds: mainZoneSwapLineage.simulatedStateIds, committedSimulatedStateIds: mainZoneSwapLineage.committedSimulatedStateIds, readOnly: true } };
   const mainFlowGapClosureSummary = { ...candidateResult.summary.mainFlowGapClosure, candidateStateCount: mainFlowLineage.candidateStateIds.length, simulatedStateCount: mainFlowLineage.simulatedStateIds.length, validSimulationCount: mainFlowValidSimulationCount, invalidSimulationCount: mainFlowInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(mainFlowLineage, mainFlowCandidateIds), selectedAsBest: mainFlowLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && mainFlowLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: mainFlowLineage.rawCandidateIds, syntheticCandidateIds: mainFlowLineage.syntheticCandidateIds, partialPlanIds: mainFlowLineage.partialPlanIds, candidateStateIds: mainFlowLineage.candidateStateIds, simulatedStateIds: mainFlowLineage.simulatedStateIds, committedSimulatedStateIds: mainFlowLineage.committedSimulatedStateIds, readOnly: true } };
   let baselineOverlapRepairSummary = { ...candidateResult.summary.baselineOverlapRepair, candidateStateCount: baselineRepairLineage.candidateStateIds.length, simulatedStateCount: baselineRepairLineage.simulatedStateIds.length, validSimulationCount: baselineRepairValidSimulationCount, invalidSimulationCount: baselineRepairInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(baselineRepairLineage, baselineRepairCandidateIds), selectedAsBest: baselineRepairLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && baselineRepairLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: baselineRepairLineage.rawCandidateIds, syntheticCandidateIds: baselineRepairLineage.syntheticCandidateIds, partialPlanIds: baselineRepairLineage.partialPlanIds, candidateStateIds: baselineRepairLineage.candidateStateIds, simulatedStateIds: baselineRepairLineage.simulatedStateIds, committedSimulatedStateIds: baselineRepairLineage.committedSimulatedStateIds, readOnly: true } };
 
@@ -428,6 +432,18 @@ export function runORCShadowMode(
     baselineOverlapRepairSummary = { ...baselineOverlapRepairSummary, ...lateRepair.summary, generatedCandidateCount: lateRepair.summary.generatedCandidateCount, candidateIds: lateCandidateIds, conflictingTaskIds: lateRepair.summary.conflictingTaskIds, skippedReason: lateRepair.summary.generatedCandidateCount > 0 ? null : lateRepair.summary.skippedReason, candidateStateCount: lateLineage.candidateStateIds.length, simulatedStateCount: lateLineage.simulatedStateIds.length, validSimulationCount: lateValid, invalidSimulationCount: lateInvalid, selectedAsCommit: lateCommit, selectedCandidateId: pickSelectedRawCandidateId(lateLineage, new Set(lateCandidateIds)), lineage: lateLineageSummary, lateAuditRepairPass };
   }
   baselineOverlapRepairSummary = { ...baselineOverlapRepairSummary, lateAuditRepairPass, runtimeInvariant: assertBaselineRepairRuntimeInvariant({ baselineSeedHardFeasibility, baselineOverlapRepairSummary: baselineOverlapRepairSummary as Record<string, unknown>, candidateResult, operationalState }) };
+
+  const allSimulatedStatesForPostRepair = [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? [])];
+  const allValidationResultsForPostRepair = [...validationResult.validationResults, ...(lateDecisionPipelineResult?.validation.validationResults ?? [])];
+  const repairCommittedSimId = ((baselineOverlapRepairSummary as any).lineage?.committedSimulatedStateIds?.[0] ?? (baselineOverlapRepairSummary as any).lateAuditRepairPass?.committedSimulatedStateIds?.[0] ?? null) as string | null;
+  const selectedRepairSimulationForPostRepair = repairCommittedSimId ? allSimulatedStatesForPostRepair.find((sim) => sim.id === repairCommittedSimId) ?? null : null;
+  const selectedRepairValidationForPostRepair = repairCommittedSimId ? allValidationResultsForPostRepair.find((validation) => validation.simulatedStateId === repairCommittedSimId) ?? null : null;
+  const postRepairContinuityPass = runPostRepairMainZoneContinuityPass({ originalState: operationalState, selectedRepairSimulation: selectedRepairSimulationForPostRepair, selectedRepairValidation: selectedRepairValidationForPostRepair, baselineOverlapRepair: baselineOverlapRepairSummary, createdAt });
+  const postRepairSummary = postRepairContinuityPass.summary;
+  if (postRepairSummary.selectedAsCommit) {
+    mainZoneGapResourceBlockSwapSummary = { ...mainZoneGapResourceBlockSwapSummary, ...postRepairSummary, selectedAsCommit: true, selectedAsBest: true, skippedReason: null, lineage: { rawCandidateIds: postRepairSummary.candidateIds, syntheticCandidateIds: [], partialPlanIds: postRepairContinuityPass.partialPlans.map((p) => p.partialPlanId), candidateStateIds: postRepairContinuityPass.pipeline?.transformation.candidateStates.map((state) => state.id) ?? [], simulatedStateIds: postRepairContinuityPass.pipeline?.simulation.simulatedStates.map((state) => state.id) ?? [], committedSimulatedStateIds: postRepairSummary.selectedSimulatedStateId ? [postRepairSummary.selectedSimulatedStateId] : [], readOnly: true } };
+  }
+
   const baselineSafetySummary = {
     generated: baselineSafetyCandidate != null,
     candidateId: baselineSafetyCandidate?.id ?? null,
@@ -435,7 +451,7 @@ export function runORCShadowMode(
     selectedAsOutcome: baselineSafetySelectedAsOutcome,
     reason: typeof baselineSafetyCandidate?.metadata.generationReason === "string" ? baselineSafetyCandidate.metadata.generationReason : null,
   };
-  const decisionFeedbackLoop = buildDecisionFeedbackFromDecisions({ opportunities, operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? [])], commitDecisions: commitResult.commitDecisions });
+  const decisionFeedbackLoop = buildDecisionFeedbackFromDecisions({ opportunities, operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? [])], commitDecisions: commitResult.commitDecisions });
   cognitiveState = updateDecisionFeedbackLoop(cognitiveState, decisionFeedbackLoop);
   const decisionFeedbackReuseAfterDecision = reuseDecisionFeedback(decisionFeedbackLoop, opportunities, cognitiveState.reasoningBudget, createdAt);
   const decisionFeedbackEvidence = buildDecisionFeedbackEvidence(decisionFeedbackLoop, decisionFeedbackReuseAfterDecision.influences, createdAt);
@@ -522,10 +538,11 @@ export function runORCShadowMode(
     ...commitResult.evidence,
     ...decisionPipelineResult.evidence,
     ...lateEvidence,
+    ...postRepairContinuityPass.evidence,
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary, candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwapSummary, baselineOverlapRepairSummary),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary, candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwapSummary, baselineOverlapRepairSummary, postRepairSummary as unknown as Record<string, unknown>),
   ];
 
   const preliminaryResult = {
@@ -537,12 +554,12 @@ export function runORCShadowMode(
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
     searchSpaces: selectedSearchSpaces,
-    candidates: [...decisionInput.candidates, ...lateDecisionInputCandidates],
-    candidateStates: [...transformationResult.candidateStates, ...(lateDecisionPipelineResult?.transformation.candidateStates ?? [])],
-    simulatedStates: [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? [])],
-    validationResults: [...validationResult.validationResults, ...(lateDecisionPipelineResult?.validation.validationResults ?? [])],
-    operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? [])],
-    commitDecisions: [...commitResult.commitDecisions, ...(lateDecisionPipelineResult?.commit.commitDecisions ?? [])],
+    candidates: [...decisionInput.candidates, ...lateDecisionInputCandidates, ...postRepairContinuityPass.decisionInputCandidates],
+    candidateStates: [...transformationResult.candidateStates, ...(lateDecisionPipelineResult?.transformation.candidateStates ?? []), ...(postRepairContinuityPass.pipeline?.transformation.candidateStates ?? [])],
+    simulatedStates: [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? []), ...(postRepairContinuityPass.pipeline?.simulation.simulatedStates ?? [])],
+    validationResults: [...validationResult.validationResults, ...(lateDecisionPipelineResult?.validation.validationResults ?? []), ...(postRepairContinuityPass.pipeline?.validation.validationResults ?? [])],
+    operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? [])],
+    commitDecisions: [...commitResult.commitDecisions, ...(lateDecisionPipelineResult?.commit.commitDecisions ?? []), ...(postRepairContinuityPass.pipeline?.commit.commitDecisions ?? [])],
     evidence,
     advisoryDecision: null,
     cognitiveState,
@@ -555,12 +572,12 @@ export function runORCShadowMode(
       configuration,
       opportunityCount: opportunities.length,
       searchSpaceCount: selectedSearchSpaces.length,
-      candidateCount: candidateResult.candidates.length + lateDecisionInputCandidates.length,
-      candidateStateCount: transformationResult.candidateStates.length + (lateDecisionPipelineResult?.transformation.candidateStates.length ?? 0),
-      simulatedStateCount: simulationResult.simulatedStates.length + (lateDecisionPipelineResult?.simulation.simulatedStates.length ?? 0),
-      validCount: validationResult.summary.validCount + (lateDecisionPipelineResult?.validation.summary.validCount ?? 0),
-      invalidCount: validationResult.summary.invalidCount + (lateDecisionPipelineResult?.validation.summary.invalidCount ?? 0),
-      evaluatedCount: evaluatorResult.summary.evaluatedCount + (lateDecisionPipelineResult?.evaluation.summary.evaluatedCount ?? 0),
+      candidateCount: candidateResult.candidates.length + lateDecisionInputCandidates.length + postRepairContinuityPass.decisionInputCandidates.length,
+      candidateStateCount: transformationResult.candidateStates.length + (lateDecisionPipelineResult?.transformation.candidateStates.length ?? 0) + (postRepairContinuityPass.pipeline?.transformation.candidateStates.length ?? 0),
+      simulatedStateCount: simulationResult.simulatedStates.length + (lateDecisionPipelineResult?.simulation.simulatedStates.length ?? 0) + (postRepairContinuityPass.pipeline?.simulation.simulatedStates.length ?? 0),
+      validCount: validationResult.summary.validCount + (lateDecisionPipelineResult?.validation.summary.validCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.validCount ?? 0),
+      invalidCount: validationResult.summary.invalidCount + (lateDecisionPipelineResult?.validation.summary.invalidCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.invalidCount ?? 0),
+      evaluatedCount: evaluatorResult.summary.evaluatedCount + (lateDecisionPipelineResult?.evaluation.summary.evaluatedCount ?? 0) + (postRepairContinuityPass.pipeline?.evaluation.summary.evaluatedCount ?? 0),
       ranking: rankingSummary,
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
@@ -577,8 +594,9 @@ export function runORCShadowMode(
       baselineSeedHardFeasibility,
       runtimeContract: buildORCRuntimeContractID224(),
       baselineOverlapRepair: baselineOverlapRepairSummary,
-      commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0),
-      rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0),
+      postRepairMainZoneContinuityPass: postRepairSummary,
+      commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.commitCount ?? 0),
+      rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.rejectCount ?? 0),
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,
