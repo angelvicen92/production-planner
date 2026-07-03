@@ -99,6 +99,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 224 — 2026-07-02 UTC — ORC Active Hard-Feasibility Repair Preflight & Runtime Export Contract v1
 - ID 225 — 2026-07-02 UTC — ORC Planning Materialization Space Preservation Contract v1
 - ID 226 — 2026-07-02 UTC — ORC Main Zone Gap Resource-Block Swap Candidate v1
+- ID 227 — 2026-07-02 UTC — ORC Post-Repair Main Zone Continuity Pass v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -362,6 +363,15 @@ After ID224/ID225, ORC can work from a hard-feasible, exportable baseline and pr
 The main zone is resolved from configuration (`constraints.optimizer.mainZoneId` or equivalent operational settings), never from space names and without hardcoded production IDs. V1 is deliberately bounded: it moves blocks of one to four tasks, emits at most three candidates per gap and six per run, stays within the workday, avoids real hard breaks, refuses protected `done`/`in_progress` or locked tasks, and does not perform global search or coach compaction.
 
 The candidate contains real assignments for every moved task and preserves task identity, duration, `assignedSpace`, `assignedResources`, dependencies and locks. Simulation and Validation remain the authority: no `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependency, lock, availability or hard-break constraint is relaxed, and no post-pipeline move is applied. If the swap validates and reduces the largest main-zone gap without making the plan worse, Active may commit it through the official Candidate → Transformation → Simulation → Validation → Evaluation → Commit pipeline; otherwise diagnostics explain the blocking reason. No DB, RLS, UI, V3 or V4 changes are included.
+
+
+### ORC Post-Repair Main Zone Continuity Pass v1 (ID 227)
+
+ID226 generated isolated `MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP` candidates, but the first candidate pass may deliberately defer them when baseline-overlap repair has priority. ID227 adds a bounded second pass after a valid hard-feasibility repair has been selected and committed, so main-zone continuity is evaluated against the repaired `OperationalState` rather than the original hard-infeasible baseline.
+
+The post-repair pass executes only `MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP`; it does not re-run baseline-overlap repair, simple main-flow closure, global strategy search, global OR optimization, or coach compaction. Candidates still go through the official Candidate, Transformation, Simulation, Validation, Evaluation, Ranking, and Commit pipeline. If a swap validates, preserves ID224/ID225 contracts, keeps hard feasibility, and reduces the largest main-zone gap, it can beat the repair-only result. If no swap validates, ORC keeps the repair-only hard-feasible plan and reports concrete prefilter or validation reasons.
+
+This iteration does not relax `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependencies, locks, protected task rules, or hard breaks; it does not apply post-pipeline moves; and it does not change DB, RLS, UI, V3, or V4. It preserves ID224 runtime export diagnostics and ID225 `assignedSpace` materialization.
 
 
 
