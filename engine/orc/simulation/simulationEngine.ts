@@ -71,6 +71,7 @@ export function simulateCandidateStates(
       endPlanned: entry.endPlanned,
       assignedResourceIds: [...entry.assignedResourceIds],
       spaceId: entry.spaceId ?? null,
+      zoneId: (entry as any).zoneId ?? null,
       seedSource: entry.seedSource,
       operationalRole: entry.operationalRole,
       blocksSpace: entry.blocksSpace,

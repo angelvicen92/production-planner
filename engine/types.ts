@@ -214,6 +214,10 @@ export interface EngineInput {
   spaceIsExclusiveById?: Record<number, boolean>;
   // Prioridad operativa del catálogo de espacios. Sólo diagnóstico en V4.
   spacePriorityById?: Record<number, number>;
+  /** Explicit physical-space to logical-zone mapping exported to ORC. */
+  zoneIdBySpaceId?: Record<number, number>;
+  /** Derived logical-zone to physical-space mapping exported to ORC. */
+  spaceIdsByZoneId?: Record<number, number[]>;
 
   // ✅ Requisitos genéricos por tipo (override por plan)
   // Key: zoneId -> (resourceTypeId -> quantity)

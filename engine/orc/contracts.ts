@@ -347,6 +347,7 @@ export interface OperationalState {
     endPlanned: string;
     assignedResourceIds: number[];
     spaceId?: number | null;
+    zoneId?: number | null;
     seedSource?: "v4_planned_task" | "protected_existing_planning";
     operationalRole?: "productive_task" | "transport_arrival" | "transport_departure" | "meal_break_placeholder" | "arrival_placeholder" | "call_time_placeholder" | "space_break_placeholder" | "global_break_placeholder" | "non_operational_placeholder" | "unknown";
     blocksSpace?: boolean;
@@ -366,6 +367,8 @@ export interface OperationalState {
     concurrencyById: Record<number, number>;
     exclusiveById: Record<number, boolean>;
     priorityById: Record<number, number>;
+    zoneIdBySpaceId?: Record<number, number>;
+    spaceIdsByZoneId?: Record<number, number[]>;
   };
   availability: {
     workDay: TimeWindow | null;

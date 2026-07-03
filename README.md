@@ -374,6 +374,14 @@ The post-repair pass executes only `MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP`; it does 
 This iteration does not relax `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependencies, locks, protected task rules, or hard breaks; it does not apply post-pipeline moves; and it does not change DB, RLS, UI, V3, or V4. It preserves ID224 runtime export diagnostics and ID225 `assignedSpace` materialization.
 
 
+### ORC Main Zone Space/Zone Resolution Contract v1 (ID 228)
+
+ID228 adds `ORC-MAIN-ZONE-RESOLUTION-ID228` to the ORC runtime contract and main-zone continuity diagnostics. The ORC now distinguishes a logical main `zone` target from a physical main `space` target instead of treating `optimizerMainZoneId` as a space id in every case.
+
+When the main target resolves to a zone, ORC expands that zone to associated spaces using the exported zone/space mapping and task zone metadata. Continuity candidates detect main entries by `task.zoneId`, planning-entry `zoneId`, task `spaceId`, and `assignedSpace`/planning `spaceId`, so a v4-34-style gap `11:20–12:05` in physical space 48 is detected even when `optimizerMainZoneId` is logical zone 1.
+
+The resolver is read-only, emits warnings for ambiguous ids, and never infers the main target by name; it does not hardcode Plató 7, space 48, resource ids, or task ids. Simulation, Validation, Evaluation, and Commit remain official, `SPACE_OVERLAP`/`RESOURCE_OVERLAP` and locks/dependencies are not relaxed, no DB/RLS/UI changes are included, and ID224 plus ID225 diagnostics and assigned-space preservation remain intact.
+
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
