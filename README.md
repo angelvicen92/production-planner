@@ -383,6 +383,17 @@ When the main target resolves to a zone, ORC expands that zone to associated spa
 The resolver is read-only, emits warnings for ambiguous ids, and never infers the main target by name; it does not hardcode Plató 7, space 48, resource ids, or task ids. Simulation, Validation, Evaluation, and Commit remain official, `SPACE_OVERLAP`/`RESOURCE_OVERLAP` and locks/dependencies are not relaxed, no DB/RLS/UI changes are included, and ID224 plus ID225 diagnostics and assigned-space preservation remain intact.
 
 
+### ORC Composite Summary & Final Main-Zone Continuity Contract v1 (ID 229)
+
+ID228 allowed ORC to select a real post-repair `MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP` for main-zone continuity. ID229 fixes the diagnostics contract around that selected composite result: the final `mainZoneContinuity` summary is rebuilt from the selected final simulation instead of staying stale from an earlier pass that could still report `main_zone_not_configured`.
+
+The final summary now distinguishes the targeted gap closed by the candidate from full final main-zone continuity. `mainZoneGapResourceBlockSwap` and `postRepairMainZoneContinuityPass` publish targeted-gap fields such as `targetedGapBeforeMinutes`, `targetedGapAfterMinutes`, `targetedGapReductionMinutes`, targeted previous/next task ids, targeted windows, and `continuityMetricScope: "targeted-gap"`. The final `mainZoneContinuity` summary publishes final gap diagnostics (`finalMainZoneGapCount`, `finalLargestMainZoneGapMinutes`, `finalGaps`) with `gapComputationScope: "final-selected-planning"`, a hard-break exclusion policy, and a break coverage policy that does not treat flexible meal windows as hard breaks without concrete placeholder/state evidence.
+
+Composite materialization diagnostics now explain both comparison baselines: original V4 seed and repaired baseline. `planningMaterialization` adds `changedTaskCountFromOriginalBaseline`, `changedTaskIdsFromOriginalBaseline`, `changedTaskCountFromRepairedBaseline`, `changedTaskIdsFromRepairedBaseline`, `changeSources`, `compositeTransformationsApplied`, `compositeMaterializationContractVersion: "ORC-COMPOSITE-MATERIALIZATION-ID229"`, and `summaryContractValid`. The documented change sources are baseline-overlap repair followed by post-repair main-zone continuity.
+
+The runtime contract now publishes `ORC-COMPOSITE-SUMMARY-ID229`, `ORC-COMPOSITE-MATERIALIZATION-ID229`, and `ORC-FINAL-MAIN-ZONE-CONTINUITY-ID229`. `orcSummary` also reports `summaryContractValid`, actionable `summaryContractWarnings`, and `finalSummaryBuiltFromSelectedSimulation`. No optimization capability is added: there is no DB/RLS/UI change, no V3/V4 rewrite, no global search, no coach compaction, no new candidate builder, and ID224, ID225, and ID228 remain preserved.
+
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.

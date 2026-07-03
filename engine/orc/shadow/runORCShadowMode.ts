@@ -43,6 +43,7 @@ import { resolveCandidateLineage } from "../decision/candidateLineage";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 import { buildORCRuntimeContractID224 } from "../active/runActiveBaselineRepairPreflight";
 import { runPostRepairMainZoneContinuityPass } from "../active/runPostRepairMainZoneContinuityPass";
+import { buildFinalORCCompositeSummary } from "../active/buildFinalORCCompositeSummary";
 
 export interface ORCShadowModeResult {
   operationalState: OperationalState;
@@ -455,6 +456,10 @@ export function runORCShadowMode(
   cognitiveState = updateDecisionFeedbackLoop(cognitiveState, decisionFeedbackLoop);
   const decisionFeedbackReuseAfterDecision = reuseDecisionFeedback(decisionFeedbackLoop, opportunities, cognitiveState.reasoningBudget, createdAt);
   const decisionFeedbackEvidence = buildDecisionFeedbackEvidence(decisionFeedbackLoop, decisionFeedbackReuseAfterDecision.influences, createdAt);
+  const finalSelectedSimulation = postRepairSummary.selectedAsCommit && postRepairSummary.selectedSimulatedStateId ? postRepairContinuityPass.pipeline?.simulation.simulatedStates.find((sim) => sim.id === postRepairSummary.selectedSimulatedStateId) ?? null : (selectedCommitSimulation ? [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? [])].find((sim) => sim.id === selectedCommitSimulation) ?? null : null);
+  const compositeSummary = buildFinalORCCompositeSummary({ originalState: operationalState, repairedState: selectedRepairSimulationForPostRepair?.operationalStateSnapshot ?? null, selectedSimulation: finalSelectedSimulation, initialMainZoneContinuity: candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary as Record<string, unknown>, postRepairMainZoneContinuityPass: postRepairSummary as unknown as Record<string, unknown>, planningMaterialization: finalSelectedSimulation?.planningMaterialization as unknown as Record<string, unknown> });
+  mainZoneGapResourceBlockSwapSummary = compositeSummary.mainZoneGapResourceBlockSwap as typeof mainZoneGapResourceBlockSwapSummary;
+
   const decisionFeedbackSummary = {
     feedbackCount: decisionFeedbackLoop.entries.length,
     influencedDecisions: decisionFeedbackReuseAfterDecision.influences.filter((influence) => influence.influence !== "unchanged").length,
@@ -589,12 +594,15 @@ export function runORCShadowMode(
       decisionFeedback: decisionFeedbackSummary,
       baselineSafety: baselineSafetySummary,
       mainFlowGapClosure: mainFlowGapClosureSummary,
-      mainZoneContinuity: candidateResult.summary.mainZoneContinuity,
+      mainZoneContinuity: compositeSummary.mainZoneContinuity,
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
       baselineSeedHardFeasibility,
       runtimeContract: buildORCRuntimeContractID224(),
       baselineOverlapRepair: baselineOverlapRepairSummary,
-      postRepairMainZoneContinuityPass: postRepairSummary,
+      postRepairMainZoneContinuityPass: compositeSummary.postRepairMainZoneContinuityPass,
+      summaryContractValid: compositeSummary.summaryContractValid,
+      summaryContractWarnings: compositeSummary.summaryContractWarnings,
+      finalSummaryBuiltFromSelectedSimulation: compositeSummary.finalSummaryBuiltFromSelectedSimulation,
       commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.commitCount ?? 0),
       rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.rejectCount ?? 0),
       topOpportunityId: topOpportunity?.id ?? null,
