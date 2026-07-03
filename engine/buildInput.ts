@@ -648,6 +648,8 @@ export async function buildEngineInput(
     spaceCapacityById,
     spaceIsExclusiveById,
     spacePriorityById,
+    zoneIdBySpaceId,
+    spaceIdsByZoneId: Object.fromEntries(Object.entries(zoneIdBySpaceId).reduce((m, [sid, zid]) => { const key = String(zid); const arr = m.get(key) ?? []; arr.push(Number(sid)); m.set(key, arr); return m; }, new Map<string, number[]>()).entries()),
     groupingBySpaceId,
     minimizeChangesBySpace: Object.fromEntries(Object.entries(groupingBySpaceId).map(([k, v]) => [Number(k), { level: v.level, minChain: v.minChain }])),
     zoneResourceTypeRequirements,

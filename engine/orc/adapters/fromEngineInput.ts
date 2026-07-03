@@ -2,6 +2,7 @@ import type { EngineInput, TimeWindow } from "../../types";
 import type { CognitiveArtifacts, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { resolveORCMainFlowConfig } from "../state/mainFlowConfigResolver";
+import { resolveORCMainZoneTarget } from "../state/mainZoneTargetResolver";
 import { resolveORCPlanningEntryOperationalRoleMetadata } from "../state/nonWorkTaskClassifier";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
 
@@ -36,6 +37,7 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       endPlanned: String(task.endPlanned),
       assignedResourceIds: [...(task.assignedResourceIds ?? [])],
       spaceId: task.spaceId ?? null,
+      zoneId: task.zoneId ?? null,
       seedSource: task.seedSource,
       operationalRole: task.operationalRole,
       blocksSpace: task.blocksSpace,
@@ -73,6 +75,8 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
     resourceBundleLoadWarnings: record(input.resourceBundleLoadWarnings, []),
     optimizer: {
       mainZoneId: mainFlowConfig.mainFlowId,
+      mainZoneTarget: resolveORCMainZoneTarget(input),
+      mainZoneConfig: resolveORCMainZoneTarget(input),
       prioritizeMainZone: input.optimizerPrioritizeMainZone ?? null,
       groupBySpaceAndTemplate: input.optimizerGroupBySpaceAndTemplate ?? null,
       groupingZoneIds: record(input.groupingZoneIds, []),
@@ -96,6 +100,8 @@ export function buildOperationalStateFromEngineInput(input: EngineInput): Operat
       concurrencyById: record(input.spaceConcurrencyById, {}),
       exclusiveById: record(input.spaceIsExclusiveById, {}),
       priorityById: record(input.spacePriorityById, {}),
+      zoneIdBySpaceId: record(input.zoneIdBySpaceId, {}),
+      spaceIdsByZoneId: record(input.spaceIdsByZoneId, {}),
     },
     availability: {
       workDay: timeWindow(input.workDay),
