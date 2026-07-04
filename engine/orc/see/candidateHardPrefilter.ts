@@ -175,7 +175,20 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
 }
 
 function discard(candidate: Candidate, reason: Reason, violatedConstraint: string, affectedTaskIds: number[], extra: Partial<CandidateHardPrefilterDiscard> = {}): CandidateHardPrefilterDiscard {
-  const mapped = candidate.metadata?.strategy === "MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP" ? ({
+  const mapped = candidate.metadata?.strategy === "CRITICAL_RESOURCE_IDLE_COMPRESSION" ? ({
+    "resource-overlap": "critical-resource-idle-resource-overlap",
+    "candidate-introduced-resource-overlap": "critical-resource-idle-resource-overlap",
+    "candidate-introduced-space-overlap": "critical-resource-idle-space-overlap",
+    "candidate-worsened-space-overlap": "critical-resource-idle-space-overlap",
+    "direct-dependency-broken": "critical-resource-idle-dependency-broken",
+    "lock-full": "critical-resource-idle-lock-conflict",
+    "lock-time": "critical-resource-idle-lock-conflict",
+    "lock-space": "critical-resource-idle-lock-conflict",
+    "lock-resource": "critical-resource-idle-lock-conflict",
+    "protected-task-status": "critical-resource-idle-protected-task",
+    "outside-work-day": "critical-resource-idle-availability-violation",
+    "hard-break-overlap": "critical-resource-idle-crosses-hard-break",
+  } as Record<string, string>)[reason] ?? reason : candidate.metadata?.strategy === "MAIN_ZONE_GAP_RESOURCE_BLOCK_SWAP" ? ({
     "resource-overlap": "main-zone-gap-swap-resource-overlap",
     "candidate-introduced-resource-overlap": "main-zone-gap-swap-resource-overlap",
     "candidate-introduced-space-overlap": "main-zone-gap-swap-space-overlap",

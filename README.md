@@ -100,6 +100,9 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 225 — 2026-07-02 UTC — ORC Planning Materialization Space Preservation Contract v1
 - ID 226 — 2026-07-02 UTC — ORC Main Zone Gap Resource-Block Swap Candidate v1
 - ID 227 — 2026-07-02 UTC — ORC Post-Repair Main Zone Continuity Pass v1
+- ID 228 — 2026-07-02 UTC — ORC Main Zone Space/Zone Resolution Contract v1
+- ID 229 — 2026-07-02 UTC — ORC Composite Summary & Final Main-Zone Continuity Contract v1
+- ID 230 — 2026-07-03 UTC — ORC Critical Resource Idle Compression Candidate v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -393,6 +396,19 @@ Composite materialization diagnostics now explain both comparison baselines: ori
 
 The runtime contract now publishes `ORC-COMPOSITE-SUMMARY-ID229`, `ORC-COMPOSITE-MATERIALIZATION-ID229`, and `ORC-FINAL-MAIN-ZONE-CONTINUITY-ID229`. `orcSummary` also reports `summaryContractValid`, actionable `summaryContractWarnings`, and `finalSummaryBuiltFromSelectedSimulation`. No optimization capability is added: there is no DB/RLS/UI change, no V3/V4 rewrite, no global search, no coach compaction, no new candidate builder, and ID224, ID225, and ID228 remain preserved.
 
+
+
+### ORC Critical Resource Idle Compression Candidate v1 (ID 230)
+
+After ID229, ORC can repair hard feasibility, close the selected main-zone gap, and explain composite materialization from the selected final simulation. ID230 adds a bounded executable candidate family, `CRITICAL_RESOURCE_IDLE_COMPRESSION`, to start reducing operational waiting time for critical coaches/resources once the base plan is already hard-feasible and main-zone continuity is protected.
+
+V1 is deliberately conservative: it detects idle gaps from real `assignedResources`, optionally prioritizes resources surfaced by OPQM/root-cause diagnostics, and only generates direct pull-forward candidates for the immediately following small block of one to four tasks. It preserves task identity, duration, `assignedSpace`, `assignedResources`, dependencies, locks, and protected statuses; it never hardcodes resource ids, space ids, studio names, or task ids.
+
+The candidate does not displace tasks from other resources, does not run global search, does not compact all coaches, and does not apply post-pipeline moves. Every accepted movement still goes through Candidate, Prefilter, Transformation, Simulation, Validation, Evaluation, Ranking, and Commit. `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependency, lock, availability, hard-break, assigned-space, summary, and main-zone continuity constraints remain strict.
+
+Diagnostics now expose `runtimeContract.criticalResourceIdleCompressionContractVersion: "ORC-CRITICAL-RESOURCE-IDLE-COMPRESSION-ID230"` and `orcSummary.criticalResourceIdleCompression` with target resources, candidate counts, lineage/simulation counts, selected commit status, moved task ids, target idle before/after, gap before/after, prefilter discard reasons, actionable generation blockers, warnings, and `readOnly: true`. If no direct pull-forward window is viable, ORC keeps the previous valid plan and reports concrete blockers such as protected block, space occupied, resource conflict, hard break, dependency block, main-zone regression, makespan increase, or no direct window.
+
+This iteration preserves ID224, ID225, ID228, and ID229; it has no DB, RLS, UI, V3, or V4 changes.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
