@@ -166,6 +166,7 @@ export interface ORCShadowModeResult {
     mainZoneGapResourceBlockSwap: unknown;
     baselineOverlapRepair: unknown;
     postRepairMainZoneContinuityPass: unknown;
+    criticalResourceIdleCompression: unknown;
     decisionFeedback: {
       feedbackCount: number;
       influencedDecisions: number;
@@ -214,6 +215,7 @@ function buildShadowSummaryEvidence(
   mainZoneGapResourceBlockSwapSummary: Record<string, unknown>,
   baselineOverlapRepairSummary: Record<string, unknown>,
   postRepairMainZoneContinuityPassSummary: Record<string, unknown>,
+  criticalResourceIdleCompressionSummary: Record<string, unknown>,
 ): Evidence {
   const topOpportunity = opportunities[0] ?? null;
   return {
@@ -256,6 +258,7 @@ function buildShadowSummaryEvidence(
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
       baselineOverlapRepair: baselineOverlapRepairSummary,
       postRepairMainZoneContinuityPass: postRepairMainZoneContinuityPassSummary,
+      criticalResourceIdleCompression: criticalResourceIdleCompressionSummary,
       advisoryIntegration: advisoryIntegrationSummary,
     },
   };
@@ -382,6 +385,7 @@ export function runORCShadowMode(
   const baselineRepairSimulatedStateIds = new Set(baselineRepairLineage.simulatedStateIds);
   const baselineRepairValidSimulationCount = validationResult.validationResults.filter((result) => baselineRepairSimulatedStateIds.has(result.simulatedStateId) && result.result === "VALID").length;
   const baselineRepairInvalidSimulationCount = validationResult.validationResults.filter((result) => baselineRepairSimulatedStateIds.has(result.simulatedStateId) && result.result === "INVALID").length;
+  const criticalResourceIdleCompressionCandidateIds = new Set(candidateResult.summary.criticalResourceIdleCompression.candidateIds ?? []);
   const mainZoneSwapCandidateIds = new Set(candidateResult.summary.mainZoneGapResourceBlockSwap.candidateIds ?? []);
   const mainZoneSwapLineage = resolveCandidateLineage({ rawCandidateIds: mainZoneSwapCandidateIds, decisionInputCandidates: decisionInput.candidates, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, operationalValues: evaluatorResult.operationalValues, commitDecisions: commitResult.commitDecisions, partialPlans: partialPlanResult.partialPlans, rankedBestSimulatedStateId: rankedBestSimulationId });
   const mainZoneSwapSimulatedStateIds = new Set(mainZoneSwapLineage.simulatedStateIds);
@@ -396,6 +400,10 @@ export function runORCShadowMode(
     const selected = lineage.selectedRawCandidateIds.filter((id) => preferredIds.has(id)).sort();
     return selected[0] ?? lineage.selectedRawCandidateIds[0] ?? null;
   };
+  const criticalResourceIdleCompressionLineage = resolveCandidateLineage({ rawCandidateIds: criticalResourceIdleCompressionCandidateIds, decisionInputCandidates: decisionInput.candidates, candidateStates: transformationResult.candidateStates, simulatedStates: simulationResult.simulatedStates, operationalValues: evaluatorResult.operationalValues, commitDecisions: commitResult.commitDecisions, partialPlans: partialPlanResult.partialPlans, rankedBestSimulatedStateId: rankedBestSimulationId });
+  const criticalResourceIdleCompressionSimulatedStateIds = new Set(criticalResourceIdleCompressionLineage.simulatedStateIds);
+  const criticalResourceIdleCompressionValidSimulationCount = validationResult.validationResults.filter((result) => criticalResourceIdleCompressionSimulatedStateIds.has(result.simulatedStateId) && result.result === "VALID").length;
+  let criticalResourceIdleCompressionSummary = { ...candidateResult.summary.criticalResourceIdleCompression, candidateStateCount: criticalResourceIdleCompressionLineage.candidateStateIds.length, simulatedStateCount: criticalResourceIdleCompressionLineage.simulatedStateIds.length, validSimulationCount: criticalResourceIdleCompressionValidSimulationCount, invalidSimulationCount: Math.max(0, criticalResourceIdleCompressionLineage.simulatedStateIds.length - criticalResourceIdleCompressionValidSimulationCount), selectedCandidateId: pickSelectedRawCandidateId(criticalResourceIdleCompressionLineage, criticalResourceIdleCompressionCandidateIds), selectedAsCommit: selectedCommitSimulation != null && criticalResourceIdleCompressionLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), selectedSimulatedStateId: selectedCommitSimulation != null && criticalResourceIdleCompressionLineage.committedSimulatedStateIds.includes(selectedCommitSimulation) ? selectedCommitSimulation : null, lineage: { rawCandidateIds: criticalResourceIdleCompressionLineage.rawCandidateIds, syntheticCandidateIds: criticalResourceIdleCompressionLineage.syntheticCandidateIds, partialPlanIds: criticalResourceIdleCompressionLineage.partialPlanIds, candidateStateIds: criticalResourceIdleCompressionLineage.candidateStateIds, simulatedStateIds: criticalResourceIdleCompressionLineage.simulatedStateIds, committedSimulatedStateIds: criticalResourceIdleCompressionLineage.committedSimulatedStateIds, readOnly: true } };
   let mainZoneGapResourceBlockSwapSummary = { ...candidateResult.summary.mainZoneGapResourceBlockSwap, candidateStateCount: mainZoneSwapLineage.candidateStateIds.length, simulatedStateCount: mainZoneSwapLineage.simulatedStateIds.length, validSimulationCount: mainZoneSwapValidSimulationCount, invalidSimulationCount: mainZoneSwapInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(mainZoneSwapLineage, mainZoneSwapCandidateIds), selectedAsBest: mainZoneSwapLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && mainZoneSwapLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: mainZoneSwapLineage.rawCandidateIds, syntheticCandidateIds: mainZoneSwapLineage.syntheticCandidateIds, partialPlanIds: mainZoneSwapLineage.partialPlanIds, candidateStateIds: mainZoneSwapLineage.candidateStateIds, simulatedStateIds: mainZoneSwapLineage.simulatedStateIds, committedSimulatedStateIds: mainZoneSwapLineage.committedSimulatedStateIds, readOnly: true } };
   const mainFlowGapClosureSummary = { ...candidateResult.summary.mainFlowGapClosure, candidateStateCount: mainFlowLineage.candidateStateIds.length, simulatedStateCount: mainFlowLineage.simulatedStateIds.length, validSimulationCount: mainFlowValidSimulationCount, invalidSimulationCount: mainFlowInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(mainFlowLineage, mainFlowCandidateIds), selectedAsBest: mainFlowLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && mainFlowLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: mainFlowLineage.rawCandidateIds, syntheticCandidateIds: mainFlowLineage.syntheticCandidateIds, partialPlanIds: mainFlowLineage.partialPlanIds, candidateStateIds: mainFlowLineage.candidateStateIds, simulatedStateIds: mainFlowLineage.simulatedStateIds, committedSimulatedStateIds: mainFlowLineage.committedSimulatedStateIds, readOnly: true } };
   let baselineOverlapRepairSummary = { ...candidateResult.summary.baselineOverlapRepair, candidateStateCount: baselineRepairLineage.candidateStateIds.length, simulatedStateCount: baselineRepairLineage.simulatedStateIds.length, validSimulationCount: baselineRepairValidSimulationCount, invalidSimulationCount: baselineRepairInvalidSimulationCount, selectedCandidateId: pickSelectedRawCandidateId(baselineRepairLineage, baselineRepairCandidateIds), selectedAsBest: baselineRepairLineage.rankedBestSimulatedStateId != null, selectedAsCommit: selectedCommitSimulation != null && baselineRepairLineage.committedSimulatedStateIds.includes(selectedCommitSimulation), lineage: { rawCandidateIds: baselineRepairLineage.rawCandidateIds, syntheticCandidateIds: baselineRepairLineage.syntheticCandidateIds, partialPlanIds: baselineRepairLineage.partialPlanIds, candidateStateIds: baselineRepairLineage.candidateStateIds, simulatedStateIds: baselineRepairLineage.simulatedStateIds, committedSimulatedStateIds: baselineRepairLineage.committedSimulatedStateIds, readOnly: true } };
@@ -547,7 +555,7 @@ export function runORCShadowMode(
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
-    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary, candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwapSummary, baselineOverlapRepairSummary, postRepairSummary as unknown as Record<string, unknown>),
+    buildShadowSummaryEvidence(configuration, operationalState, operationalMap, opportunities, selectedSearchSpaces.length, candidateResult.candidates.length, commitResult.summary.commitCount, commitResult.summary.rejectCount, createdAt, reasoningBudgetSummary, cognitiveFeedbackSummary, pruningSummary, rankingSummary, evaluationSummary, sessionLearningSummary, adaptivePrioritySummary, diagnosisSummary, adaptiveSearchSpaceSummary, strategyCandidateSummary, { consulted: false, recommendationAvailable: false, evidenceReferences: [] }, candidatePreselectionSummary, decisionFeedbackSummary, baselineSafetySummary, mainFlowGapClosureSummary, candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwapSummary, baselineOverlapRepairSummary, postRepairSummary as unknown as Record<string, unknown>, criticalResourceIdleCompressionSummary as Record<string, unknown>),
   ];
 
   const preliminaryResult = {
@@ -596,6 +604,7 @@ export function runORCShadowMode(
       mainFlowGapClosure: mainFlowGapClosureSummary,
       mainZoneContinuity: compositeSummary.mainZoneContinuity,
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
+      criticalResourceIdleCompression: criticalResourceIdleCompressionSummary,
       baselineSeedHardFeasibility,
       runtimeContract: buildORCRuntimeContractID224(),
       baselineOverlapRepair: baselineOverlapRepairSummary,
