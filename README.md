@@ -112,6 +112,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 237 — 2026-07-05 UTC — ORC Production Wave Planner Blueprint & Macro Day Shape Contract v1
 - ID 238 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Candidate v1
 - ID 239 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Runtime Wiring & Summary Exposure Fix v1
+- ID 240 — 2026-07-05 UTC — ORC Dependency-Aware Macro Main-Zone Block Relayout Candidate v1
+- ID 241 — 2026-07-05 UTC — ORC Macro Main-Zone Relayout Global Net Value & Materialization Source Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -522,6 +524,17 @@ ID240 adds a read-only macro dependency-chain analysis and dependency-aware macr
 The macro value gate can accept a partial main-zone idle reduction when hard feasibility, assigned-space preservation, locks, dependencies, makespan and flexible-meal semantics remain safe. Runtime summaries expose `runtimeContract.macroMainZoneDependencyAwareRelayoutContractVersion === "ORC-MACRO-MAIN-ZONE-DEPENDENCY-AWARE-RELAYOUT-ID240"` plus dependency-safe/blocked candidate counts, prevented dependency pairs, selected preservation mode, and selected prerequisite movement diagnostics.
 
 No DB, RLS, UI, V3, hard-constraint relaxation, post-pipeline moves, global OR optimizer, macro meal rotation or new candidate family changes are included. ID224 through ID239 contracts remain preserved while the macro relayout becomes dependency-aware.
+
+
+### ID 241 — ORC Macro Main-Zone Relayout Global Net Value & Materialization Source Contract v1
+
+ID240 hizo dependency-aware el macro relayout, pero el JSON v4-47 demostró que un candidate puede ser localmente válido y aun así ser globalmente neutro o peor para la forma del día: el gate anterior aceptaba reducción de gap local sin exigir reducción global de idle visible de la zona principal. También se detectó que la fuente macro declaraba sólo `movedTaskIds`, aunque el diff final podía incluir tareas adicionales desplazadas por la simulación.
+
+ID241 añade el evaluator global `macroMainZoneGlobalNetValueEvaluator`: exige que el total visible main-zone idle baje, rechaza candidates que redistribuyen huecos sin mejorar la continuidad global, bloquea empeoramientos significativos de `mainFlowContinuityQuality` y `operationalCompactness`, y expone el contrato `ORC-MACRO-MAIN-ZONE-GLOBAL-NET-VALUE-ID241`. Un macro local positivo pero global neutro queda como diagnóstico read-only en `rejectedMacroImprovements`, no como commit ni como fuente aplicada.
+
+Cuando un macro sí se acepta, la fuente `planningMaterialization.changeSources.macroMainZoneBlockRelayout` se completa mediante diff real base post-repair-continuity → selected macro simulation e incluye declared moved ids, inferred changed ids, additional changed ids, source/selected simulation ids y `diffScope`. Esto preserva explainability: no se permite que un macro seleccionado deje diffs inexplicados, y si el macro se rechaza se conserva el mejor plan válido anterior sin fallback.
+
+No hay cambios DB/RLS/UI, no se relajan hard constraints, dependencias, locks, `SPACE_OVERLAP`, `RESOURCE_OVERLAP` ni `DIRECT_DEPENDENCY_BROKEN`, no se añaden candidate families ni movimientos post-pipeline. Se preservan ID224 a ID240.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
