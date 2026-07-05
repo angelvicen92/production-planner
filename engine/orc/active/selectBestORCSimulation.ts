@@ -14,7 +14,7 @@ export type ORCSimulationSelectionBucket =
   | "invalid-diagnostics-only";
 
 export interface ORCSimulationSelectionDiagnostics {
-  selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2";
+  selectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1";
   selectedBucket: ORCSimulationSelectionBucket | null;
   validSimulationCount: number;
   invalidSimulationCount: number;
@@ -30,6 +30,12 @@ export interface ORCSimulationSelectionDiagnostics {
   selectedFinalCandidateId: string | null;
   selectedFinalSimulatedStateId: string | null;
   selectedFinalIncludesCompositeAncestors: boolean;
+  resourceCompressionAcceptedByNetValueGate?: boolean;
+  resourceCompressionRejectedSimulationIds?: string[];
+  resourceCompressionRejectReasons?: Record<string,string>;
+  baseCompositeOverallScore?: number | null;
+  resourceCompressionOverallScore?: number | null;
+  resourceCompressionScoreDelta?: number | null;
   readOnly: true;
 }
 
@@ -97,7 +103,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, resourceCompressionAcceptedByNetValueGate: false, resourceCompressionRejectedSimulationIds: [], resourceCompressionRejectReasons: {}, baseCompositeOverallScore: null, resourceCompressionOverallScore: null, resourceCompressionScoreDelta: null, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -112,7 +118,10 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   if (isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) && shadow.summary.criticalResourceIdleCompression.executionPhase === "post-continuity-pass") {
     for (const id of criticalResourceIdleIds) postContinuityResourceIdleIds.add(id);
   }
-  const baseCompositeSimulationId = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? (typeof shadow.summary.criticalResourceIdleCompression.sourceSimulationId === "string" ? shadow.summary.criticalResourceIdleCompression.sourceSimulationId : null) : null;
+  const idleSummary = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? shadow.summary.criticalResourceIdleCompression : null;
+  const idleNetValue = isRecord(idleSummary?.netValue) ? idleSummary.netValue : null;
+  const resourceCompressionAcceptedByNetValueGate = idleNetValue?.acceptedByNetValueGate === true;
+  const baseCompositeSimulationId = idleSummary ? (typeof idleSummary.sourceSimulationId === "string" ? idleSummary.sourceSimulationId : null) : null;
 
   const rows = [...(shadow.simulatedStates ?? [])].map((simulation) => {
     const candidateState = candidateStateById.get(simulation.candidateStateId) ?? null;
@@ -129,17 +138,17 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     const postRepair = postRepairIds.has(simulation.id);
     const criticalResourceIdle = criticalResourceIdleIds.has(simulation.id) || candidate?.metadata?.strategy === "CRITICAL_RESOURCE_IDLE_COMPRESSION";
     const postContinuityCriticalResourceIdle = postContinuityResourceIdleIds.has(simulation.id);
-    const idleReduction = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? Number(shadow.summary.criticalResourceIdleCompression.targetResourceIdleReductionMinutes ?? 0) : 0;
-    const idlePreservesContinuity = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? shadow.summary.criticalResourceIdleCompression.mainZoneContinuityPreserved !== false : true;
+    const idleReduction = idleSummary ? Number(idleSummary.targetLocalGapReductionMinutes ?? idleSummary.targetResourceIdleReductionMinutes ?? 0) : 0;
+    const idlePreservesContinuity = idleSummary ? idleSummary.mainZoneContinuityPreserved !== false : true;
     const contractsOk = materialization?.assignedSpaceContractValid !== false && !((materialization as Record<string, unknown> | undefined)?.summaryContractValid === false);
     const transformations = materialization?.source === "candidate_transformations";
     const changed = (materialization?.changedTaskCount ?? 0) > 0;
     const executable = isExecutable(candidate);
     let bucket: ORCSimulationSelectionBucket;
     if (validation?.result !== "VALID" || !contractsOk) bucket = "invalid-diagnostics-only";
-    else if (committed && postContinuityCriticalResourceIdle && postRepair && transformations && changed && idleReduction > 0 && idlePreservesContinuity) bucket = "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity";
-    else if (committed && postRepair && criticalResourceIdle && transformations && changed) bucket = "valid-committed-continuity-and-resource-compactness";
-    else if (committed && criticalResourceIdle && transformations && changed) bucket = "valid-committed-critical-resource-idle-compression";
+    else if (committed && postContinuityCriticalResourceIdle && postRepair && transformations && changed && idleReduction > 0 && idlePreservesContinuity && resourceCompressionAcceptedByNetValueGate) bucket = "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity";
+    else if (committed && postRepair && criticalResourceIdle && transformations && changed && resourceCompressionAcceptedByNetValueGate) bucket = "valid-committed-continuity-and-resource-compactness";
+    else if (committed && criticalResourceIdle && transformations && changed && resourceCompressionAcceptedByNetValueGate) bucket = "valid-committed-critical-resource-idle-compression";
     else if (committed && postRepair && transformations && changed) bucket = "valid-committed-post-repair-main-zone-continuity-transformations-changed";
     else if (committed && baselineRepair && transformations && changed) bucket = "valid-committed-baseline-repair-transformations-changed";
     else if (committed && transformations && changed) bucket = "valid-committed-transformations-changed";
@@ -159,7 +168,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     || a.simulation.id.localeCompare(b.simulation.id));
   const selected = eligible[0] ?? null;
   const diagnostics: ORCSimulationSelectionDiagnostics = {
-    selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2",
+    selectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1",
     selectedBucket: selected?.bucket ?? null,
     validSimulationCount: validRows.length,
     invalidSimulationCount: rows.filter((row) => row.validation?.result === "INVALID").length,
@@ -169,12 +178,18 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     criticalResourceIdleCompressionSimulationIds: [...criticalResourceIdleIds].sort(),
     postContinuityResourceCompressionSimulationIds: [...postContinuityResourceIdleIds].sort(),
     baseCompositeSimulationId,
-    selectedBecause: selected ? `${selected.bucket}; valid simulations are preferred over invalid diagnostics` : null,
+    selectedBecause: selected ? `${selected.bucket}; resource compression requires net-positive ID234 gate` : null,
     selectedSimulatedStateId: selected?.simulation.id ?? null,
     selectedFinalCandidateFamily: selected?.bucket === "valid-committed-critical-resource-idle-compression" || selected?.bucket === "valid-committed-continuity-and-resource-compactness" || selected?.bucket === "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity" ? "critical-resource-idle-compression" : selected?.bucket === "valid-committed-post-repair-main-zone-continuity-transformations-changed" ? "post-repair-main-zone-continuity" : selected?.bucket === "valid-committed-baseline-repair-transformations-changed" || selected?.bucket === "valid-baseline-repair-transformations-changed" ? "baseline-overlap-repair" : null,
     selectedFinalCandidateId: selected?.candidate?.id ?? null,
     selectedFinalSimulatedStateId: selected?.simulation.id ?? null,
     selectedFinalIncludesCompositeAncestors: baseCompositeSimulationId != null,
+    resourceCompressionAcceptedByNetValueGate,
+    resourceCompressionRejectedSimulationIds: resourceCompressionAcceptedByNetValueGate ? [] : [...criticalResourceIdleIds].sort(),
+    resourceCompressionRejectReasons: resourceCompressionAcceptedByNetValueGate ? {} : Object.fromEntries([...criticalResourceIdleIds].sort().map(id => [id, String(idleNetValue?.rejectionReason ?? idleSummary?.rejectionReason ?? "resource_idle_net_value_not_positive")])),
+    baseCompositeOverallScore: typeof idleNetValue?.baseCompositeOverallScore === "number" ? idleNetValue.baseCompositeOverallScore : null,
+    resourceCompressionOverallScore: typeof idleNetValue?.resourceCompressionOverallScore === "number" ? idleNetValue.resourceCompressionOverallScore : null,
+    resourceCompressionScoreDelta: typeof idleNetValue?.resourceCompressionScoreDelta === "number" ? idleNetValue.resourceCompressionScoreDelta : null,
     readOnly: true,
   };
   return { simulation: selected?.simulation ?? null, validation: selected?.validation ?? null, value: selected?.operationalValue?.overallScore ?? null, candidateState: selected?.candidateState ?? null, candidate: selected?.candidate ?? null, commitDecision: selected?.commitDecision ?? null, diagnostics };

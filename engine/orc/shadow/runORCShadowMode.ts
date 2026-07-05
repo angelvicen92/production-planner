@@ -615,7 +615,7 @@ export function runORCShadowMode(
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
       criticalResourceIdleCompression: criticalResourceIdleCompressionSummary,
       baselineSeedHardFeasibility,
-      runtimeContract: { ...buildORCRuntimeContractID224(), postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231", resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2" },
+      runtimeContract: { ...buildORCRuntimeContractID224(), postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231", resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1", resourceIdleNetValueContractVersion: "ORC-RESOURCE-IDLE-NET-VALUE-ID234" },
       baselineOverlapRepair: baselineOverlapRepairSummary,
       postRepairMainZoneContinuityPass: compositeSummary.postRepairMainZoneContinuityPass,
       summaryContractValid: compositeSummary.summaryContractValid,
