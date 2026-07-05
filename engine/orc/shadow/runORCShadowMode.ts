@@ -623,7 +623,7 @@ export function runORCShadowMode(
       criticalResourceIdleCompression: criticalResourceIdleCompressionSummary,
       macroMainZoneBlockRelayout: compositeSummary.macroMainZoneBlockRelayout,
       baselineSeedHardFeasibility,
-      runtimeContract: { ...buildORCRuntimeContractID224(), postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231", resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1", resourceIdleNetValueContractVersion: "ORC-RESOURCE-IDLE-NET-VALUE-ID234", macroMainZoneBlockRelayoutContractVersion: "ORC-MACRO-MAIN-ZONE-BLOCK-RELAYOUT-ID238" },
+      runtimeContract: { ...buildORCRuntimeContractID224(), postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231", resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-net-positive-resource-compactness-first-v1", resourceIdleNetValueContractVersion: "ORC-RESOURCE-IDLE-NET-VALUE-ID234", macroMainZoneBlockRelayoutContractVersion: "ORC-MACRO-MAIN-ZONE-BLOCK-RELAYOUT-ID238", macroMainZoneDependencyAwareRelayoutContractVersion: "ORC-MACRO-MAIN-ZONE-DEPENDENCY-AWARE-RELAYOUT-ID240" },
       baselineOverlapRepair: baselineOverlapRepairSummary,
       postRepairMainZoneContinuityPass: compositeSummary.postRepairMainZoneContinuityPass,
       summaryContractValid: compositeSummary.summaryContractValid,

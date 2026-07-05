@@ -513,6 +513,16 @@ When a macro simulation is selected, final summaries are recomputed from that ma
 
 No DB/RLS/UI changes are included, no new macro capability is added, and hard constraints are not relaxed. ID224 through ID238 guarantees are preserved while making ID238 visible in real ORC runtime JSON.
 
+### ID 240 — ORC Dependency-Aware Macro Main-Zone Block Relayout Candidate v1
+
+ID239 corrected the ID238 runtime wiring: the macro pass executes, appears in ORC summaries, and does not fallback when no macro candidate validates. The v4-46 JSON showed the next operational issue: the single macro candidate was discarded by `DIRECT_DEPENDENCY_BROKEN` because it tried to move a macro block without preserving prerequisite tasks.
+
+ID240 adds a read-only macro dependency-chain analysis and dependency-aware macro variants. The `MACRO_MAIN_ZONE_BLOCK_RELAYOUT` builder now records `dependencyAnalysis`, computes `dependencySafeStart` / `latestPrerequisiteEnd`, prevents moving prerequisites behind dependents, and emits dependency-preservation metadata for each executable candidate. It can generate safe partial improvements such as `pull-dependency-ready-main-zone-block`, `pull-prerequisite-chain-then-main-zone-block`, and `dependency-preserving-split-main-zone-block`; if no safe variant exists, it reports explicit blockers and preserves the previous plan without fallback.
+
+The macro value gate can accept a partial main-zone idle reduction when hard feasibility, assigned-space preservation, locks, dependencies, makespan and flexible-meal semantics remain safe. Runtime summaries expose `runtimeContract.macroMainZoneDependencyAwareRelayoutContractVersion === "ORC-MACRO-MAIN-ZONE-DEPENDENCY-AWARE-RELAYOUT-ID240"` plus dependency-safe/blocked candidate counts, prevented dependency pairs, selected preservation mode, and selected prerequisite movement diagnostics.
+
+No DB, RLS, UI, V3, hard-constraint relaxation, post-pipeline moves, global OR optimizer, macro meal rotation or new candidate family changes are included. ID224 through ID239 contracts remain preserved while the macro relayout becomes dependency-aware.
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
@@ -868,3 +878,4 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
+

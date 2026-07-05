@@ -14,8 +14,8 @@ test("Production Scenario Benchmark Suite executes the complete official battery
   assert.equal(report.suiteVersion, PRODUCTION_SCENARIO_BENCHMARK_SUITE_VERSION);
   assert.equal(report.generatedAt, PRODUCTION_SCENARIO_BENCHMARK_CREATED_AT);
   assert.equal(productionBenchmarkScenarios.some((scenario) => scenario.id === "real-voice-audition-day"), true);
-  assert.equal(report.scenarioCount, 10);
-  assert.equal(report.passedCount, 10);
+  assert.equal(report.scenarioCount, executableScenarioIds.length);
+  assert.equal(report.passedCount, executableScenarioIds.length);
   assert.equal(report.failedCount, 0);
   assert.deepEqual(report.results.map((result) => result.scenario.id), executableScenarioIds);
   for (const result of report.results) {

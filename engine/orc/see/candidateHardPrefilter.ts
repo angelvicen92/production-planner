@@ -100,6 +100,7 @@ function collectSpaceViolationKeys(plan: readonly PlanningEntry[], state: Operat
 }
 
 function findViolation(candidate: Candidate, state: OperationalState): CandidateHardPrefilterDiscard | null {
+  if (candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" && candidate.metadata?.dependencyPreservationMode === "blocked-diagnostic-only") return discard(candidate, "direct-dependency-broken", String((candidate.metadata?.dependencyAnalysis as any)?.dependencyAnalysisWarnings?.[0] ?? "macro-main-zone-dependency-safe-window-not-found").toUpperCase(), (candidate.metadata?.dependencyUnsafeTaskIds as number[]) ?? []);
   const transportContract = (state.constraints as any)?.transportContract ?? resolveORCTransportContract(state as any);
   const tasks = new Map((state.tasks ?? []).map((task) => [task.id, task]));
   const locks = state.locks ?? [];
@@ -180,7 +181,7 @@ function discard(candidate: Candidate, reason: Reason, violatedConstraint: strin
     "candidate-introduced-resource-overlap": "macro-main-zone-resource-overlap",
     "candidate-introduced-space-overlap": "macro-main-zone-space-overlap",
     "candidate-worsened-space-overlap": "macro-main-zone-space-overlap",
-    "direct-dependency-broken": "macro-main-zone-dependency-broken",
+    "direct-dependency-broken": String((candidate.metadata?.dependencyAnalysis as any)?.dependencyAnalysisWarnings?.[0] ?? candidate.metadata?.dependencyBlockerReason ?? "macro-main-zone-dependency-broken"),
     "lock-full": "macro-main-zone-lock-conflict",
     "lock-time": "macro-main-zone-lock-conflict",
     "lock-space": "macro-main-zone-lock-conflict",
