@@ -26,6 +26,10 @@ export interface ORCSimulationSelectionDiagnostics {
   baseCompositeSimulationId: string | null;
   selectedBecause: string | null;
   selectedSimulatedStateId: string | null;
+  selectedFinalCandidateFamily: string | null;
+  selectedFinalCandidateId: string | null;
+  selectedFinalSimulatedStateId: string | null;
+  selectedFinalIncludesCompositeAncestors: boolean;
   readOnly: true;
 }
 
@@ -93,7 +97,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -167,6 +171,10 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     baseCompositeSimulationId,
     selectedBecause: selected ? `${selected.bucket}; valid simulations are preferred over invalid diagnostics` : null,
     selectedSimulatedStateId: selected?.simulation.id ?? null,
+    selectedFinalCandidateFamily: selected?.bucket === "valid-committed-critical-resource-idle-compression" || selected?.bucket === "valid-committed-continuity-and-resource-compactness" || selected?.bucket === "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity" ? "critical-resource-idle-compression" : selected?.bucket === "valid-committed-post-repair-main-zone-continuity-transformations-changed" ? "post-repair-main-zone-continuity" : selected?.bucket === "valid-committed-baseline-repair-transformations-changed" || selected?.bucket === "valid-baseline-repair-transformations-changed" ? "baseline-overlap-repair" : null,
+    selectedFinalCandidateId: selected?.candidate?.id ?? null,
+    selectedFinalSimulatedStateId: selected?.simulation.id ?? null,
+    selectedFinalIncludesCompositeAncestors: baseCompositeSimulationId != null,
     readOnly: true,
   };
   return { simulation: selected?.simulation ?? null, validation: selected?.validation ?? null, value: selected?.operationalValue?.overallScore ?? null, candidateState: selected?.candidateState ?? null, candidate: selected?.candidate ?? null, commitDecision: selected?.commitDecision ?? null, diagnostics };
