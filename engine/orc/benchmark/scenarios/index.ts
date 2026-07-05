@@ -12,7 +12,11 @@ export type ProductionScenarioId =
   | "multiple-locks"
   | "simple-day"
   | "complex-day"
-  | "real-voice-audition-day";
+  | "real-voice-audition-day"
+  | "macro-main-zone-block-relayout-positive"
+  | "macro-main-zone-block-relayout-blocked"
+  | "macro-main-zone-block-relayout-dependency-aware-positive"
+  | "macro-main-zone-block-relayout-dependency-chain-blocked";
 
 export interface ProductionBenchmarkScenario {
   id: ProductionScenarioId;
@@ -151,4 +155,36 @@ export const productionBenchmarkScenarios: ProductionBenchmarkScenario[] = [
     input: baseInput([task(91, { spaceId: AUX_SPACE_ID, durationOverrideMin: 20 }), task(92, { durationOverrideMin: 20, dependsOnTaskIds: [91], resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [501, 502] }] } }), task(93, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(94, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(95, { durationOverrideMin: 20, startPlanned: "11:00", endPlanned: "11:20" })], { locks: [{ id: 3, planId: PLAN_ID, taskId: 95, lockType: "time", lockedStart: "11:00", lockedEnd: "11:20" }] }),
   },
   realVoiceAuditionDayScenario,
+  {
+    id: "macro-main-zone-block-relayout-positive",
+    name: "Macro main-zone relayout positive",
+    category: "macro-main-zone",
+    description: "Main-zone gap benchmark fixture for safe macro block relayout.",
+    expectation: "Hard feasibility, assigned space and deterministic output are preserved while visible main-zone idle can improve.",
+    input: baseInput([task(2401, {}), task(2402, {}), task(2403, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-block-relayout-blocked",
+    name: "Macro main-zone relayout blocked",
+    category: "macro-main-zone",
+    description: "Blocked macro relayout benchmark fixture.",
+    expectation: "No regression is allowed when a macro relayout cannot be safely committed.",
+    input: baseInput([task(2411, { status: "done" }), task(2412, { dependsOnTaskIds: [2411] }), task(2413, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-block-relayout-dependency-aware-positive",
+    name: "Macro dependency-aware relayout positive",
+    category: "macro-main-zone",
+    description: "Dependency-aware macro fixture with prerequisites before a later main-zone block.",
+    expectation: "Dependencies are preserved and partial visible main-zone idle improvement is an acceptable positive outcome.",
+    input: baseInput([task(2421, { spaceId: AUX_SPACE_ID }), task(2422, { dependsOnTaskIds: [2421] }), task(2423, { dependsOnTaskIds: [2422] })], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-block-relayout-dependency-chain-blocked",
+    name: "Macro dependency chain blocked",
+    category: "macro-main-zone",
+    description: "Dependency-aware macro fixture where protected prerequisites block safe relayout.",
+    expectation: "The benchmark remains deterministic, preserves hard feasibility and reports no regression when blocked.",
+    input: baseInput([task(2431, { status: "in_progress", spaceId: AUX_SPACE_ID }), task(2432, { dependsOnTaskIds: [2431] }), task(2433, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
 ];
