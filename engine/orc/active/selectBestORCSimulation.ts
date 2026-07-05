@@ -2,7 +2,7 @@ import type { Candidate, CandidateState, CommitDecision, OperationalValue, Simul
 import type { ORCShadowModeResult } from "../shadow/runORCShadowMode";
 
 export type ORCSimulationSelectionBucket =
-  | "valid-committed-continuity-and-resource-compactness"
+  | "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity" | "valid-committed-continuity-and-resource-compactness"
   | "valid-committed-critical-resource-idle-compression"
   | "valid-committed-post-repair-main-zone-continuity-transformations-changed"
   | "valid-committed-baseline-repair-transformations-changed"
@@ -14,7 +14,7 @@ export type ORCSimulationSelectionBucket =
   | "invalid-diagnostics-only";
 
 export interface ORCSimulationSelectionDiagnostics {
-  selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v1";
+  selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2";
   selectedBucket: ORCSimulationSelectionBucket | null;
   validSimulationCount: number;
   invalidSimulationCount: number;
@@ -22,6 +22,8 @@ export interface ORCSimulationSelectionDiagnostics {
   baselineRepairSimulationIds: string[];
   postRepairContinuitySimulationIds: string[];
   criticalResourceIdleCompressionSimulationIds: string[];
+  postContinuityResourceCompressionSimulationIds: string[];
+  baseCompositeSimulationId: string | null;
   selectedBecause: string | null;
   selectedSimulatedStateId: string | null;
   readOnly: true;
@@ -91,7 +93,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v1", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], selectedBecause: null, selectedSimulatedStateId: null, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -102,6 +104,11 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   const baselineRepairIds = lineageSimulationIds(shadow.summary);
   const postRepairIds = postRepairSimulationIds(shadow.summary);
   const criticalResourceIdleIds = resourceIdleSimulationIds(shadow.summary);
+  const postContinuityResourceIdleIds = new Set<string>();
+  if (isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) && shadow.summary.criticalResourceIdleCompression.executionPhase === "post-continuity-pass") {
+    for (const id of criticalResourceIdleIds) postContinuityResourceIdleIds.add(id);
+  }
+  const baseCompositeSimulationId = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? (typeof shadow.summary.criticalResourceIdleCompression.sourceSimulationId === "string" ? shadow.summary.criticalResourceIdleCompression.sourceSimulationId : null) : null;
 
   const rows = [...(shadow.simulatedStates ?? [])].map((simulation) => {
     const candidateState = candidateStateById.get(simulation.candidateStateId) ?? null;
@@ -117,11 +124,16 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     const baselineRepair = baselineRepairIds.has(simulation.id);
     const postRepair = postRepairIds.has(simulation.id);
     const criticalResourceIdle = criticalResourceIdleIds.has(simulation.id) || candidate?.metadata?.strategy === "CRITICAL_RESOURCE_IDLE_COMPRESSION";
+    const postContinuityCriticalResourceIdle = postContinuityResourceIdleIds.has(simulation.id);
+    const idleReduction = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? Number(shadow.summary.criticalResourceIdleCompression.targetResourceIdleReductionMinutes ?? 0) : 0;
+    const idlePreservesContinuity = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? shadow.summary.criticalResourceIdleCompression.mainZoneContinuityPreserved !== false : true;
+    const contractsOk = materialization?.assignedSpaceContractValid !== false && !((materialization as Record<string, unknown> | undefined)?.summaryContractValid === false);
     const transformations = materialization?.source === "candidate_transformations";
     const changed = (materialization?.changedTaskCount ?? 0) > 0;
     const executable = isExecutable(candidate);
     let bucket: ORCSimulationSelectionBucket;
-    if (validation?.result !== "VALID") bucket = "invalid-diagnostics-only";
+    if (validation?.result !== "VALID" || !contractsOk) bucket = "invalid-diagnostics-only";
+    else if (committed && postContinuityCriticalResourceIdle && postRepair && transformations && changed && idleReduction > 0 && idlePreservesContinuity) bucket = "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity";
     else if (committed && postRepair && criticalResourceIdle && transformations && changed) bucket = "valid-committed-continuity-and-resource-compactness";
     else if (committed && criticalResourceIdle && transformations && changed) bucket = "valid-committed-critical-resource-idle-compression";
     else if (committed && postRepair && transformations && changed) bucket = "valid-committed-post-repair-main-zone-continuity-transformations-changed";
@@ -135,7 +147,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   });
   const validRows = rows.filter((row) => row.validation?.result === "VALID");
   const eligible = validRows.length > 0 ? validRows : rows;
-  const bucketOrder: ORCSimulationSelectionBucket[] = ["valid-committed-continuity-and-resource-compactness", "valid-committed-critical-resource-idle-compression", "valid-committed-post-repair-main-zone-continuity-transformations-changed", "valid-committed-baseline-repair-transformations-changed", "valid-committed-transformations-changed", "valid-baseline-repair-transformations-changed", "valid-executable-transformations", "valid-baseline-preservation", "valid-other", "invalid-diagnostics-only"];
+  const bucketOrder: ORCSimulationSelectionBucket[] = ["valid-committed-post-continuity-critical-resource-idle-compression-and-continuity", "valid-committed-continuity-and-resource-compactness", "valid-committed-critical-resource-idle-compression", "valid-committed-post-repair-main-zone-continuity-transformations-changed", "valid-committed-baseline-repair-transformations-changed", "valid-committed-transformations-changed", "valid-baseline-repair-transformations-changed", "valid-executable-transformations", "valid-baseline-preservation", "valid-other", "invalid-diagnostics-only"];
   eligible.sort((a, b) => bucketOrder.indexOf(a.bucket) - bucketOrder.indexOf(b.bucket)
     || (b.operationalValue?.overallScore ?? -Infinity) - (a.operationalValue?.overallScore ?? -Infinity)
     || hardViolationCount(a.validation) - hardViolationCount(b.validation)
@@ -143,7 +155,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     || a.simulation.id.localeCompare(b.simulation.id));
   const selected = eligible[0] ?? null;
   const diagnostics: ORCSimulationSelectionDiagnostics = {
-    selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v1",
+    selectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2",
     selectedBucket: selected?.bucket ?? null,
     validSimulationCount: validRows.length,
     invalidSimulationCount: rows.filter((row) => row.validation?.result === "INVALID").length,
@@ -151,6 +163,8 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     baselineRepairSimulationIds: [...baselineRepairIds].sort(),
     postRepairContinuitySimulationIds: [...postRepairIds].sort(),
     criticalResourceIdleCompressionSimulationIds: [...criticalResourceIdleIds].sort(),
+    postContinuityResourceCompressionSimulationIds: [...postContinuityResourceIdleIds].sort(),
+    baseCompositeSimulationId,
     selectedBecause: selected ? `${selected.bucket}; valid simulations are preferred over invalid diagnostics` : null,
     selectedSimulatedStateId: selected?.simulation.id ?? null,
     readOnly: true,
