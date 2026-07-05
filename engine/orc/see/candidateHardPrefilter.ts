@@ -175,7 +175,20 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
 }
 
 function discard(candidate: Candidate, reason: Reason, violatedConstraint: string, affectedTaskIds: number[], extra: Partial<CandidateHardPrefilterDiscard> = {}): CandidateHardPrefilterDiscard {
-  const mapped = candidate.metadata?.strategy === "CRITICAL_RESOURCE_IDLE_COMPRESSION" ? ({
+  const mapped = candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" ? ({
+    "resource-overlap": "macro-main-zone-resource-overlap",
+    "candidate-introduced-resource-overlap": "macro-main-zone-resource-overlap",
+    "candidate-introduced-space-overlap": "macro-main-zone-space-overlap",
+    "candidate-worsened-space-overlap": "macro-main-zone-space-overlap",
+    "direct-dependency-broken": "macro-main-zone-dependency-broken",
+    "lock-full": "macro-main-zone-lock-conflict",
+    "lock-time": "macro-main-zone-lock-conflict",
+    "lock-space": "macro-main-zone-lock-conflict",
+    "lock-resource": "macro-main-zone-lock-conflict",
+    "protected-task-status": "macro-main-zone-protected-task",
+    "outside-work-day": "macro-main-zone-availability-violation",
+    "hard-break-overlap": "macro-main-zone-crosses-hard-break",
+  } as Record<string, string>)[reason] ?? reason : candidate.metadata?.strategy === "CRITICAL_RESOURCE_IDLE_COMPRESSION" ? ({
     "resource-overlap": "critical-resource-idle-resource-overlap",
     "candidate-introduced-resource-overlap": "critical-resource-idle-resource-overlap",
     "candidate-introduced-space-overlap": "critical-resource-idle-space-overlap",

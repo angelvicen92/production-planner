@@ -110,6 +110,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 235 — 2026-07-05 UTC — ORC Production Concept Alignment Audit & Macro Objective Contract v1
 - ID 236 — 2026-07-05 UTC — ORC Rejected Optional Improvement Materialization & Explainability Gate Fix v1
 - ID 237 — 2026-07-05 UTC — ORC Production Wave Planner Blueprint & Macro Day Shape Contract v1
+- ID 238 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Candidate v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -488,6 +489,17 @@ ID237 añade un blueprint read-only del Production Wave Planner en `orcSummary.p
 El blueprint define objetivos macro ordenados, una forma propuesta de jornada, ventanas recomendadas de main-zone y support work, bloques de coach/main-zone configurables, balance dinámico de coaches/recursos críticos, flujo de talentos desde IN hasta primera tarea y desde última tarea hasta OUT, semántica de comida flexible con rotación en vez de blank global, release/start-later y readiness para candidates macro.
 
 No hay cambios DB/RLS/UI/V3/V4, no se crean candidates que muevan tareas, no se implementa commit macro y no se relajan constraints hard. La siguiente iteración queda preparada para convertir `macro_main_zone_block_relayout` en candidate oficial del ORC.
+
+
+### ID 238 — ORC Macro Main-Zone Block Relayout Candidate v1
+
+ID237 creó el blueprint read-only de Production Wave Planner y el JSON v4-44 confirmó que el siguiente candidate necesario es `macro_main_zone_block_relayout`: el ORC tenía un plan hard-feasible, sin fallback y con contratos válidos, pero conceptualmente desalineado por un gap visible de main-zone durante una ventana flexible de comida.
+
+ID238 implementa el primer candidate macro real del ORC: `MACRO_MAIN_ZONE_BLOCK_RELAYOUT`. Genera candidates oficiales de familia `macro-production-wave` para mover bloques completos posteriores de main-zone hacia el gap visible, preservando `assignedSpace`, `assignedResources`, locks, estados protegidos, dependencias, disponibilidad y hard breaks. La comida flexible no se trata como hard stop cuando `productiveWorkAllowedInsideMealWindow` permite trabajo productivo.
+
+El relayout pasa por el pipeline oficial completo: candidate generation, hard prefilter, transformation, simulation, validation, evaluation, ranking y commit. Si el candidate valida, mantiene hard feasibility, no aumenta makespan y aporta valor macro positivo, puede seleccionarse como commit y publicar `finalSelectedCandidateFamily: "macro-main-zone-block-relayout"` junto con `planningMaterialization.changeSources.macroMainZoneBlockRelayout`. Si no valida o no aporta valor, queda como diagnóstico read-only y se conserva el plan anterior ID236/ID237 sin fallback.
+
+No hay cambios DB/RLS/UI/V3/V4, no se relajan `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependencias hard ni locks, y no se introducen movimientos post-pipeline. Se preservan las garantías ID224 a ID237. Esta iteración empieza a corregir la forma de producción del día —mantener viva la zona principal— en lugar de limitarse a parches micro.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
