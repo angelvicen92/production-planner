@@ -130,6 +130,8 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
   assert.equal(shadow.summary.runtimeContract.productionConceptAlignmentContractVersion, "ORC-PRODUCTION-CONCEPT-ALIGNMENT-ID235");
   assert.equal((shadow.summary.productionConceptAlignment as any).readOnly, true);
+  assert.equal((shadow.summary.productionWavePlanner as any).contractVersion, "ORC-PRODUCTION-WAVE-PLANNER-BLUEPRINT-ID237");
+  assert.equal((shadow.summary.productionWavePlanner as any).doesNotMutatePlanning, true);
   assert.deepEqual(shadow.summary.pruning, { skippedOpportunities: 0, skippedSearchSpaces: 0, skippedCandidates: 0, estimatedBudgetSaved: 0 });
   assert.deepEqual(shadow.summary.adaptivePriority, { promoted: 0, demoted: 0, unchanged: shadow.opportunities.length });
   assert.equal(shadow.diagnoses.length, shadow.opportunities.length);

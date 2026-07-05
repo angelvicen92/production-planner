@@ -316,6 +316,8 @@ test("ORC Active unlocks baseline seed hard infeasible when selected baseline-ov
   assert.equal(result.diagnostics.orcSummary.baselineOverlapRepair.selectedAsCommit, true);
   assert.equal(result.diagnostics.orcSummary.runtimeContract.productionConceptAlignmentContractVersion, "ORC-PRODUCTION-CONCEPT-ALIGNMENT-ID235");
   assert.equal(result.diagnostics.orcSummary.productionConceptAlignment.readOnly, true);
+  assert.equal(result.diagnostics.orcSummary.runtimeContract.productionWavePlannerBlueprintContractVersion, "ORC-PRODUCTION-WAVE-PLANNER-BLUEPRINT-ID237");
+  assert.equal(result.diagnostics.orcSummary.productionWavePlanner.doesNotMutatePlanning, true);
 });
 
 test("ORC Active no lanza excepción si la ejecución con seed falla", () => {
