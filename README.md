@@ -107,6 +107,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 232 — 2026-07-05 UTC — ORC Post-Continuity Resource Idle Final Summary Wiring v1
 - ID 233 — 2026-07-05 UTC — ORC Composite Descendant Selection Summary Contract v1
 - ID 234 — 2026-07-05 UTC — ORC Resource Idle Net Value & OPQM Delta Contract v1
+- ID 235 — 2026-07-05 UTC — ORC Production Concept Alignment Audit & Macro Objective Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -450,6 +451,17 @@ ID234 separa explícitamente la reducción de gap local del recurso, la reducci�
 La compresión opcional de recurso sólo puede seleccionarse si mantiene hard feasibility, assignedSpace contract, summary contract, makespan y continuidad de main-zone, y si demuestra valor neto: baja `resourceIdleTime`, o baja fragmentación sin empeorar compactness, o aporta una ganancia explícita de compactación sin empeorar talent idle ni main-flow continuity. El bypass de baseline repair sigue disponible para reparar un baseline hard-infeasible, pero no puede justificar optimizaciones opcionales posteriores con valor neto negativo.
 
 Si resource compression no aporta valor neto, ORC conserva el plan compuesto ID229/continuity seleccionado y publica el rechazo `resource_idle_net_value_not_positive` sin caer a fallback. Si aporta valor neto, se acepta como tercera fuente de materialización junto a baseline-overlap repair y post-repair main-zone continuity. No hay cambios DB/RLS/UI/V3/V4, y se preservan ID224, ID225, ID228, ID229, ID230, ID231, ID232 e ID233.
+
+
+### ID 235 — ORC Production Concept Alignment Audit & Macro Objective Contract v1
+
+Tras ID233/ID234, ORC ya puede reparar un baseline hard-infeasible, cerrar un gap local de main-zone y evaluar si la compresión de recursos aporta valor neto OPQM. El siguiente problema detectado por producción no era otro solape concreto, sino que un planning hard-feasible y localmente optimizado podía seguir siendo conceptualmente malo como planificación real.
+
+ID235 añade una auditoría read-only `orcSummary.productionConceptAlignment` con contrato `ORC-PRODUCTION-CONCEPT-ALIGNMENT-ID235` y exporta `runtimeContract.productionConceptAlignmentContractVersion`. La auditoría no mueve tareas, no crea candidate builders, no aplica búsqueda global ni modifica V3/V4, DB, RLS o UI. Sólo mide y explica si el plan final seleccionado se parece a un planning operativo real.
+
+La auditoría mide continuidad visible de la main-zone resuelta por ID228, balance de coaches/recursos críticos detectados dinámicamente, espera desde IN hasta la primera tarea productiva, espera desde última tarea productiva hasta OUT, semántica de comida flexible frente a parón global, day shape/start-later y bloques/cambios de coach en main-zone. Una ventana flexible de comida no se considera parón global salvo que exista hard break real o una ocupación concreta aplicable.
+
+El summary normaliza root causes accionables como `main_zone_visible_idle`, `critical_resource_span_imbalance`, `call_time_not_linked_to_first_productive_task`, `departure_not_linked_to_last_required_task`, `meal_window_over_blocking_suspected`, `macro_day_shape_missing` y `local_optimization_cannot_fix_macro_shape`. Esta evidencia prepara la siguiente iteración: diseñar un macro planner / production wave planner en lugar de seguir acumulando micro-correcciones sobre una forma de día débil.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

@@ -626,6 +626,7 @@ export function runORCShadowMode(
       finalSelectedSimulationIncludesBaselineRepair: compositeSummary.finalSelectedSimulationIncludesBaselineRepair,
       finalSelectedSimulationIncludesPostRepairContinuity: compositeSummary.finalSelectedSimulationIncludesPostRepairContinuity,
       finalSelectedSimulationIncludesCriticalResourceIdleCompression: compositeSummary.finalSelectedSimulationIncludesCriticalResourceIdleCompression,
+      productionConceptAlignment: compositeSummary.productionConceptAlignment,
       commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.commitCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.commit.summary.commitCount ?? 0),
       rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.rejectCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.commit.summary.rejectCount ?? 0),
       topOpportunityId: topOpportunity?.id ?? null,
