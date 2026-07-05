@@ -417,6 +417,16 @@ ID230 creó el candidate `CRITICAL_RESOURCE_IDLE_COMPRESSION`, pero el runtime r
 
 Si la compresión valida, ORC puede seleccionar un resultado compuesto con tres fuentes: `baselineOverlapRepair`, `postRepairMainZoneContinuity` y `criticalResourceIdleCompression`. Si no valida, conserva el resultado ID229 y publica blockers accionables sin fallback innecesario. No relaja hard constraints, locks, dependencias, SPACE_OVERLAP ni RESOURCE_OVERLAP; no hay cambios DB/RLS/UI/V3. Se preservan ID224, ID225, ID228, ID229 e ID230. El runtime contract expone `postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231"` y `resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2"`.
 
+### ID 232 — ORC Post-Continuity Resource Idle Final Summary Wiring v1
+
+ID231 añadió el pass de compactación post-continuity, pero se detectó un wiring de integración: el pass podía recibir `candidateResult.summary.mainZoneContinuity`, un diagnóstico del primer candidate-generation pass que puede estar stale cuando baseline-overlap repair retrasa main-zone por `baseline_overlap_repair_priority_initial_pass`.
+
+ID232 corrige el pass para usar el selected composite summary construido desde la simulation final ID229: primero plan hard-feasible, después main-zone post-repair, y solo entonces compactación de recurso crítico. ID231 ya no debe bloquearse por un falso `main_zone_not_configured` si la main-zone final seleccionada está configurada; acepta `configured === true` o `mainZoneConfigured === true` en el summary compuesto seleccionado.
+
+La materialización base de compactación conserva el contrato `ORC-COMPOSITE-MATERIALIZATION-ID229` y las fuentes previas `baselineOverlapRepair` y `postRepairMainZoneContinuity`; si la compactación valida, añade `criticalResourceIdleCompression` como tercera fuente. Si no hay ventana viable, se conserva el resultado ID229 con blockers concretos.
+
+No se añaden nuevas capacidades de optimización: no hay búsqueda global, compactación global de coaches ni movimientos post-pipeline. No hay cambios DB/RLS/UI/V3/V4, y se preservan ID224, ID225, ID228, ID229, ID230 e ID231.
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
