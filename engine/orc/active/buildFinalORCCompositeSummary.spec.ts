@@ -39,3 +39,24 @@ test("summary contract detecta incoherencia", () => {
   assert.equal(r.summaryContractValid, false);
   assert.ok(r.summaryContractWarnings.includes("main_zone_final_summary_inconsistent_with_selected_commit"));
 });
+
+test("ID233 v4-39-like acepta postRepair como ancestro de idle compression", () => {
+  const original = st([1,2,3,4,5,6,7,8].map((taskId)=>({taskId,startPlanned:"10:00",endPlanned:"10:15",spaceId:1,zoneId:1,assignedResourceIds:[1]})));
+  const repaired = st(original.planning.map((p:any)=>p.taskId===8?{...p,startPlanned:"10:15",endPlanned:"10:30"}:p));
+  const final = st(repaired.planning.map((p:any)=>p.taskId<=6?{...p,startPlanned:"11:00",endPlanned:"11:15"}:p.taskId===7?{...p,startPlanned:"09:45",endPlanned:"10:00"}:p));
+  const r = buildFinalORCCompositeSummary({ originalState: original, repairedState: repaired, selectedSimulation: sim("sim:idle", final), mainZoneGapResourceBlockSwap:{ selectedAsCommit:true, selectedCandidateId:"cand:swap", baselineRepairChangedTaskIds:[8] }, postRepairMainZoneContinuityPass:{ selectedAsCommit:true, selectedSimulatedStateId:"sim:post", selectedCandidateId:"cand:post", movedMainZoneTaskIds:[1,2,3], movedBlockingTaskIds:[4,5,6] }, criticalResourceIdleCompression:{ selectedAsCommit:true, selectedSimulatedStateId:"sim:idle", selectedCandidateId:"cand:idle", sourceSimulationId:"sim:post", movedTaskIds:[7], mainZoneContinuityPreserved:true }, simulationSelection:{ selectedSimulatedStateId:"sim:idle", selectedBucket:"valid-committed-critical-resource-idle-compression", baseCompositeSimulationId:"sim:post" }, planningMaterialization:{ changeSources:{ baselineOverlapRepair:{ changedTaskCount:1, changedTaskIds:[8] }, postRepairMainZoneContinuity:{ changedTaskCount:6, changedTaskIds:[1,2,3,4,5,6] }, criticalResourceIdleCompression:{ changedTaskCount:1, changedTaskIds:[7] } } } });
+  assert.equal(r.summaryContractValid, true);
+  assert.ok(!r.summaryContractWarnings.includes("post_repair_commit_not_reflected_in_simulation_selection"));
+  assert.equal(r.compositeSimulationLineage.includesBaselineOverlapRepair, true);
+  assert.equal(r.compositeSimulationLineage.includesPostRepairMainZoneContinuity, true);
+  assert.equal(r.compositeSimulationLineage.includesCriticalResourceIdleCompression, true);
+  assert.equal(r.finalSelectedCandidateFamily, "critical-resource-idle-compression");
+  assert.equal(r.mainZoneContinuity.finalSelectedCandidateFamily, "critical-resource-idle-compression");
+  assert.equal(r.criticalResourceIdleCompression.selectedAsFinalCommit, true);
+});
+
+test("ID233 mantiene warning cuando postRepair commit no está probado como ancestro", () => {
+  const r = buildFinalORCCompositeSummary({ selectedSimulation: sim("sim:other", st([])), postRepairMainZoneContinuityPass:{ selectedAsCommit:true, selectedSimulatedStateId:"sim:post" }, simulationSelection:{ selectedSimulatedStateId:"sim:other" }, planningMaterialization:{ changeSources:{} } });
+  assert.equal(r.summaryContractValid, false);
+  assert.ok(r.summaryContractWarnings.includes("post_repair_commit_not_reflected_in_simulation_selection"));
+});

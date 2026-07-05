@@ -104,6 +104,8 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 229 — 2026-07-02 UTC — ORC Composite Summary & Final Main-Zone Continuity Contract v1
 - ID 230 — 2026-07-03 UTC — ORC Critical Resource Idle Compression Candidate v1
 - ID 231 — 2026-07-04 UTC — ORC Post-Continuity Critical Resource Idle Compression Pass v1
+- ID 232 — 2026-07-05 UTC — ORC Post-Continuity Resource Idle Final Summary Wiring v1
+- ID 233 — 2026-07-05 UTC — ORC Composite Descendant Selection Summary Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -426,6 +428,16 @@ ID232 corrige el pass para usar el selected composite summary construido desde l
 La materialización base de compactación conserva el contrato `ORC-COMPOSITE-MATERIALIZATION-ID229` y las fuentes previas `baselineOverlapRepair` y `postRepairMainZoneContinuity`; si la compactación valida, añade `criticalResourceIdleCompression` como tercera fuente. Si no hay ventana viable, se conserva el resultado ID229 con blockers concretos.
 
 No se añaden nuevas capacidades de optimización: no hay búsqueda global, compactación global de coaches ni movimientos post-pipeline. No hay cambios DB/RLS/UI/V3/V4, y se preservan ID224, ID225, ID228, ID229, ID230 e ID231.
+
+### ID 233 — ORC Composite Descendant Selection Summary Contract v1
+
+ID232 permitió ejecutar resource-idle compression después de la continuidad post-repair sobre el planning compuesto seleccionado. El JSON `engine-result-plan-27-v4-39.json` mostró que la mejora validaba y estaba committeada, pero ORC hacía fallback por un falso negativo del summary contract: la selected simulation final era la compresión de recurso crítico y el contrato antiguo esperaba que la simulation de continuidad post-repair fuese también la selección directa final.
+
+ID233 documenta explícitamente que una selected simulation final puede ser una mejora descendiente de otras mejoras committeadas. El summary contract ahora construye `compositeSimulationLineage` y reconoce ancestors de la cadena `baseline-overlap repair → post-repair main-zone continuity → critical-resource idle compression`, usando `sourceSimulationId`, `baseCompositeSimulationId` y `planningMaterialization.changeSources` como evidencia serializable.
+
+Con este contrato se evita el falso warning `post_repair_commit_not_reflected_in_simulation_selection` cuando postRepair está reflejado como ancestro compuesto. Además, `orcSummary`, `mainZoneContinuity`, `criticalResourceIdleCompression` y `simulationSelection` publican campos explícitos para la final selected simulation y la final candidate family, de modo que los campos legacy de continuidad no se confundan con la selección final.
+
+No se añaden nuevas capacidades de optimización: no hay nuevos candidate builders, búsqueda global ni movimientos post-pipeline. No hay cambios DB/RLS/UI/V3/V4. Se preservan ID224, ID225, ID228, ID229, ID230, ID231 e ID232, manteniendo hard feasibility, assignedSpace contract, baseline-overlap repair, post-repair main-zone continuity y critical-resource idle compression.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 

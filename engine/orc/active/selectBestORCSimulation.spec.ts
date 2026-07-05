@@ -44,3 +44,15 @@ describe("selectBestORCSimulation", () => {
     assert.equal(selectBestORCSimulation(input).simulation?.id, "sim:a");
   });
 });
+
+describe("ID233 explicit final selection diagnostics", () => {
+  it("preserves baseCompositeSimulationId and labels critical-resource-idle-compression final family", () => {
+    const result = selectBestORCSimulation(shadow({ candidates: [candidate("cand:idle", { strategy:"CRITICAL_RESOURCE_IDLE_COMPRESSION" })], candidateStates: [candidateState("cs:idle", "cand:idle")], simulatedStates: [simulatedState("sim:idle", "cs:idle")], validationResults: [validation("sim:idle", "VALID")], operationalValues: [value("sim:idle", 1)], commitDecisions: [commit("sim:idle")], summary: { criticalResourceIdleCompression: { selectedSimulatedStateId:"sim:idle", sourceSimulationId:"sim:post", executionPhase:"post-continuity-pass", targetResourceIdleReductionMinutes: 10, mainZoneContinuityPreserved:true } } }));
+    assert.equal(result.diagnostics.selectedBucket, "valid-committed-critical-resource-idle-compression");
+    assert.equal(result.diagnostics.baseCompositeSimulationId, "sim:post");
+    assert.equal(result.diagnostics.selectedFinalCandidateFamily, "critical-resource-idle-compression");
+    assert.equal(result.diagnostics.selectedFinalCandidateId, "cand:idle");
+    assert.equal(result.diagnostics.selectedFinalSimulatedStateId, "sim:idle");
+    assert.equal(result.diagnostics.selectedFinalIncludesCompositeAncestors, true);
+  });
+});
