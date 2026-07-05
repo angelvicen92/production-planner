@@ -129,6 +129,9 @@ test("runORCShadowMode produces operational state, map, opportunities, evidence 
   assert.equal(shadow.summary.topOpportunityKind, shadow.opportunities[0]?.kind ?? null);
   assert.equal(shadow.summary.generatedAt, "2026-06-25T00:00:00.000Z");
   assert.equal(shadow.summary.runtimeContract.productionConceptAlignmentContractVersion, "ORC-PRODUCTION-CONCEPT-ALIGNMENT-ID235");
+  assert.equal(shadow.summary.runtimeContract.macroMainZoneBlockRelayoutContractVersion, "ORC-MACRO-MAIN-ZONE-BLOCK-RELAYOUT-ID238");
+  assert.equal(typeof (shadow.summary.macroMainZoneBlockRelayout as any).executed, "boolean");
+  assert.equal((shadow.summary.macroMainZoneBlockRelayout as any).readOnly, true);
   assert.equal((shadow.summary.productionConceptAlignment as any).readOnly, true);
   assert.equal((shadow.summary.productionWavePlanner as any).contractVersion, "ORC-PRODUCTION-WAVE-PLANNER-BLUEPRINT-ID237");
   assert.equal((shadow.summary.productionWavePlanner as any).doesNotMutatePlanning, true);

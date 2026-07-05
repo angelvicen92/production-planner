@@ -111,6 +111,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 236 — 2026-07-05 UTC — ORC Rejected Optional Improvement Materialization & Explainability Gate Fix v1
 - ID 237 — 2026-07-05 UTC — ORC Production Wave Planner Blueprint & Macro Day Shape Contract v1
 - ID 238 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Candidate v1
+- ID 239 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Runtime Wiring & Summary Exposure Fix v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -500,6 +501,17 @@ ID238 implementa el primer candidate macro real del ORC: `MACRO_MAIN_ZONE_BLOCK_
 El relayout pasa por el pipeline oficial completo: candidate generation, hard prefilter, transformation, simulation, validation, evaluation, ranking y commit. Si el candidate valida, mantiene hard feasibility, no aumenta makespan y aporta valor macro positivo, puede seleccionarse como commit y publicar `finalSelectedCandidateFamily: "macro-main-zone-block-relayout"` junto con `planningMaterialization.changeSources.macroMainZoneBlockRelayout`. Si no valida o no aporta valor, queda como diagnóstico read-only y se conserva el plan anterior ID236/ID237 sin fallback.
 
 No hay cambios DB/RLS/UI/V3/V4, no se relajan `SPACE_OVERLAP`, `RESOURCE_OVERLAP`, dependencias hard ni locks, y no se introducen movimientos post-pipeline. Se preservan las garantías ID224 a ID237. Esta iteración empieza a corregir la forma de producción del día —mantener viva la zona principal— en lugar de limitarse a parches micro.
+
+
+### ID 239 — ORC Macro Main-Zone Block Relayout Runtime Wiring & Summary Exposure Fix v1
+
+ID238 passed technical tests, but the real v4-45 runtime JSON showed that the macro pass was not entering the active ORC pipeline: the runtime contract, `orcSummary.macroMainZoneBlockRelayout`, selection diagnostics and macro materialization source were missing even though the Production Wave Planner recommended `macro_main_zone_block_relayout`.
+
+ID239 wires `runMacroMainZoneBlockRelayoutPass` into runtime after baseline overlap repair, post-repair main-zone continuity, critical-resource idle compression, production concept alignment and the ID237 blueprint. The pass is now always exposed in summary: it either executes and selects a valid macro simulation, executes and rejects candidates with blockers, or reports explicit non-execution blockers without pretending the pass ran.
+
+When a macro simulation is selected, final summaries are recomputed from that macro simulation, including main-zone continuity, production concept alignment, Production Wave Planner, planning materialization, composite lineage and operational delta consumers. Materialization includes `macroMainZoneBlockRelayout` only when the macro candidate is actually applied; rejected macro improvements remain diagnostics and preserve the previous ID236/ID237 plan without fallback.
+
+No DB/RLS/UI changes are included, no new macro capability is added, and hard constraints are not relaxed. ID224 through ID238 guarantees are preserved while making ID238 visible in real ORC runtime JSON.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
