@@ -60,11 +60,13 @@ function withCompositeMaterialization(sim: SimulatedState, original: Operational
 }
 
 export function runCriticalResourceIdleCompressionPass(args: { originalState: OperationalState; baseSimulation: SimulatedState | null; baseValidation: ValidationResult | null; basePlanningMaterialization?: Rec | null; mainZoneContinuity?: Rec | null; postRepairMainZoneContinuityPass?: Rec | null; criticalResourceIdleCompressionSummaryFromInitialPass?: Rec | null; createdAt?: string | null; budget?: { maxCandidates?: number } }): CriticalResourceIdleCompressionPassResult {
-  if (!args.baseSimulation) return empty("base_simulation_missing");
+  if (!args.baseSimulation) return empty("base_composite_summary_missing");
   if (args.baseValidation?.result !== "VALID") return empty("base_plan_hard_infeasible", { sourceSimulationId: args.baseSimulation.id });
   const mat = (args.basePlanningMaterialization ?? args.baseSimulation.planningMaterialization ?? {}) as Rec;
   if (mat.assignedSpaceContractValid === false || (num(mat.missingAssignedSpaceFieldCount) ?? 0) > 0) return empty("assigned_space_contract_invalid", { sourceSimulationId: args.baseSimulation.id });
-  if (mat.summaryContractValid === false || args.mainZoneContinuity?.configured !== true) return empty(args.mainZoneContinuity?.configured !== true ? "main_zone_not_configured" : "summary_contract_invalid", { sourceSimulationId: args.baseSimulation.id });
+  if (mat.summaryContractValid === false) return empty("summary_contract_invalid", { sourceSimulationId: args.baseSimulation.id });
+  const mainZoneConfiguredInSelectedBase = args.mainZoneContinuity?.configured === true || args.mainZoneContinuity?.mainZoneConfigured === true;
+  if (!mainZoneConfiguredInSelectedBase) return empty("main_zone_not_configured_in_selected_base", { sourceSimulationId: args.baseSimulation.id });
   if (args.postRepairMainZoneContinuityPass && args.postRepairMainZoneContinuityPass.executed === true && args.postRepairMainZoneContinuityPass.selectedAsCommit !== true) return empty("post_repair_main_zone_continuity_not_selected", { sourceSimulationId: args.baseSimulation.id });
   if ((mat.source === "baseline_seed_preserved" || (num(mat.changedTaskCount) ?? 0) === 0) && args.baseValidation.violatedConstraints.length > 0) return empty("base_plan_hard_infeasible", { sourceSimulationId: args.baseSimulation.id });
 

@@ -43,3 +43,36 @@ test("conserva plan base si compression inválida o sin ventana", () => {
   assert.ok(r.summary.candidateGenerationBlockers.length > 0 || r.summary.validationRejectReasons.length > 0);
 });
 
+
+test("ID232 acepta mainZoneConfigured true aunque configured esté ausente", () => {
+  const s = state();
+  const r = runCriticalResourceIdleCompressionPass({ originalState: s, baseSimulation: sim(s), baseValidation: valid(), mainZoneContinuity: { mainZoneConfigured: true }, postRepairMainZoneContinuityPass: { executed: true, selectedAsCommit: true } });
+  assert.notEqual(r.summary.reason, "main_zone_not_configured");
+  assert.notEqual(r.summary.reason, "main_zone_not_configured_in_selected_base");
+  assert.equal(r.summary.executed, true);
+});
+
+test("ID232 rechaza solo cuando el selected base no tiene main-zone final configurada", () => {
+  const s = state();
+  const r = runCriticalResourceIdleCompressionPass({ originalState: s, baseSimulation: sim(s), baseValidation: valid(), mainZoneContinuity: { configured: false, mainZoneConfigured: false }, postRepairMainZoneContinuityPass: { executed: true, selectedAsCommit: true } });
+  assert.equal(r.summary.executed, false);
+  assert.equal(r.summary.reason, "main_zone_not_configured_in_selected_base");
+});
+
+test("ID232 usa la materialización compuesta ID229 como base y conserva fuentes previas", () => {
+  const s = state();
+  const base = sim(s);
+  base.planningMaterialization = {
+    ...base.planningMaterialization,
+    compositeMaterializationContractVersion: "ORC-COMPOSITE-MATERIALIZATION-ID229",
+    changeSources: {
+      baselineOverlapRepair: { changedTaskCount: 1, changedTaskIds: [1], readOnly: true },
+      postRepairMainZoneContinuity: { changedTaskCount: 1, changedTaskIds: [2], readOnly: true },
+    },
+  };
+  const r = runCriticalResourceIdleCompressionPass({ originalState: s, baseSimulation: base, baseValidation: valid(), basePlanningMaterialization: base.planningMaterialization, mainZoneContinuity: { configured: true }, postRepairMainZoneContinuityPass: { executed: true, selectedAsCommit: true } });
+  assert.equal(r.summary.selectedAsCommit, true);
+  assert.ok(r.selectedSimulation?.planningMaterialization?.changeSources?.baselineOverlapRepair);
+  assert.ok(r.selectedSimulation?.planningMaterialization?.changeSources?.postRepairMainZoneContinuity);
+  assert.ok(r.selectedSimulation?.planningMaterialization?.changeSources?.criticalResourceIdleCompression);
+});
