@@ -108,6 +108,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 233 — 2026-07-05 UTC — ORC Composite Descendant Selection Summary Contract v1
 - ID 234 — 2026-07-05 UTC — ORC Resource Idle Net Value & OPQM Delta Contract v1
 - ID 235 — 2026-07-05 UTC — ORC Production Concept Alignment Audit & Macro Objective Contract v1
+- ID 236 — 2026-07-05 UTC — ORC Rejected Optional Improvement Materialization & Explainability Gate Fix v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -462,6 +463,17 @@ ID235 añade una auditoría read-only `orcSummary.productionConceptAlignment` co
 La auditoría mide continuidad visible de la main-zone resuelta por ID228, balance de coaches/recursos críticos detectados dinámicamente, espera desde IN hasta la primera tarea productiva, espera desde última tarea productiva hasta OUT, semántica de comida flexible frente a parón global, day shape/start-later y bloques/cambios de coach en main-zone. Una ventana flexible de comida no se considera parón global salvo que exista hard break real o una ocupación concreta aplicable.
 
 El summary normaliza root causes accionables como `main_zone_visible_idle`, `critical_resource_span_imbalance`, `call_time_not_linked_to_first_productive_task`, `departure_not_linked_to_last_required_task`, `meal_window_over_blocking_suspected`, `macro_day_shape_missing` y `local_optimization_cannot_fix_macro_shape`. Esta evidencia prepara la siguiente iteración: diseñar un macro planner / production wave planner en lugar de seguir acumulando micro-correcciones sobre una forma de día débil.
+
+
+### ID 236 — ORC Rejected Optional Improvement Materialization & Explainability Gate Fix v1
+
+ID235 añadió una auditoría conceptual read-only y el JSON v4-42 demostró que esa auditoría funciona, pero también expuso un falso fallback: ORC podía rechazar correctamente una compresión opcional de recurso por valor neto negativo y aun así contaminar la materialización aplicada, generando `composite_materialization_change_sources_do_not_explain_final_diff`.
+
+ID236 corrige el contrato de explainability y materialización compuesta: si `criticalResourceIdleCompression` se ejecuta pero `selectedAsCommit === false`, permanece como diagnóstico read-only en `orcSummary.criticalResourceIdleCompression` y `orcSummary.rejectedOptionalImprovements`, pero no aparece en `planningMaterialization.changeSources`, no se registra en `compositeTransformationsApplied` y no cuenta como diff aplicado. La validación final compara el baseline original contra la selected final simulation real y exige que sólo las fuentes aplicadas expliquen el diff.
+
+Production Concept Alignment puede declarar un plan `conceptually_misaligned` y `macroPlannerRequired === true`, pero esa auditoría no invalida por sí sola un plan hard-feasible, con assignedSpace válido y materialización explicable. Si el plan compuesto ID229 sigue siendo válido, Active devuelve `usedEngine: "orc"` con `fallbackReason: null` en lugar de caer a V4 fallback.
+
+No hay cambios DB/RLS/UI/V3/V4, no se añaden capacidades nuevas de optimización, no se implementa macro planner todavía y no se relajan constraints hard. Esta corrección prepara la siguiente iteración real: macro planner / production wave planner.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
