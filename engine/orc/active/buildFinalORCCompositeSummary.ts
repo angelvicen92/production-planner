@@ -24,20 +24,21 @@ function targeted(summary: Rec): Rec {
   return { targetedGapBeforeMinutes: before, targetedGapAfterMinutes: after, targetedGapReductionMinutes: reduction, targetedGapPreviousTaskId: summary.targetedGapPreviousTaskId ?? null, targetedGapNextTaskId: summary.targetedGapNextTaskId ?? null, targetedGapWindowBefore: summary.targetedGapWindowBefore ?? null, targetedGapWindowAfter: summary.targetedGapWindowAfter ?? null, continuityMetricScope: "targeted-gap", mainZoneGapReductionMinutes: reduction };
 }
 
-export function buildFinalORCCompositeSummary(args: { originalState?: OperationalState | null; repairedState?: OperationalState | null; selectedSimulation?: SimulatedState | null; initialMainZoneContinuity?: Rec | null; mainZoneGapResourceBlockSwap?: Rec | null; postRepairMainZoneContinuityPass?: Rec | null; simulationSelection?: Rec | null; planningMaterialization?: Rec | null }): { mainZoneContinuity: Rec; mainZoneGapResourceBlockSwap: Rec; postRepairMainZoneContinuityPass: Rec; planningMaterialization: Rec; summaryContractValid: boolean; summaryContractWarnings: string[]; finalSummaryBuiltFromSelectedSimulation: boolean } {
+export function buildFinalORCCompositeSummary(args: { originalState?: OperationalState | null; repairedState?: OperationalState | null; selectedSimulation?: SimulatedState | null; initialMainZoneContinuity?: Rec | null; mainZoneGapResourceBlockSwap?: Rec | null; postRepairMainZoneContinuityPass?: Rec | null; simulationSelection?: Rec | null; criticalResourceIdleCompression?: Rec | null; planningMaterialization?: Rec | null }): { mainZoneContinuity: Rec; mainZoneGapResourceBlockSwap: Rec; postRepairMainZoneContinuityPass: Rec; criticalResourceIdleCompression: Rec; planningMaterialization: Rec; summaryContractValid: boolean; summaryContractWarnings: string[]; finalSummaryBuiltFromSelectedSimulation: boolean } {
   const finalState = args.selectedSimulation?.operationalStateSnapshot ?? null;
   const selectedPost = isRec(args.postRepairMainZoneContinuityPass) && args.postRepairMainZoneContinuityPass.selectedAsCommit === true;
   const selectedSwap = isRec(args.mainZoneGapResourceBlockSwap) && args.mainZoneGapResourceBlockSwap.selectedAsCommit === true;
+  const selectedIdle = isRec(args.criticalResourceIdleCompression) && args.criticalResourceIdleCompression.selectedAsCommit === true;
   const built = finalState ? buildMainZoneGapResourceBlockSwapCandidates(finalState) : null;
   const baseContinuity = built?.mainZoneContinuity ?? args.initialMainZoneContinuity ?? {};
   const finalGaps = Array.isArray((baseContinuity as any).gaps) ? [...(baseContinuity as any).gaps] : [];
   const mainZoneContinuity: Rec = {
     ...baseContinuity,
     summaryScope: "final-selected-planning",
-    resolutionSource: selectedPost || selectedSwap ? "selected-composite-simulation" : "selected-simulation",
+    resolutionSource: selectedIdle || selectedPost || selectedSwap ? "selected-composite-simulation" : "selected-simulation",
     selectedSimulatedStateId: args.selectedSimulation?.id ?? null,
     selectedCandidateId: str(args.postRepairMainZoneContinuityPass?.selectedCandidateId) ?? str(args.mainZoneGapResourceBlockSwap?.selectedCandidateId),
-    finalPlanningSource: selectedPost ? "post-repair-main-zone-continuity" : "selected-orc-simulation",
+    finalPlanningSource: selectedIdle ? "critical-resource-idle-compression" : selectedPost ? "post-repair-main-zone-continuity" : "selected-orc-simulation",
     finalMainZoneGapCount: finalGaps.length,
     finalLargestMainZoneGapMinutes: finalGaps.reduce((m, g: any) => Math.max(m, Number(g.gapMinutes ?? 0)), 0),
     finalGaps,
@@ -47,17 +48,20 @@ export function buildFinalORCCompositeSummary(args: { originalState?: Operationa
     readOnly: true,
   };
   const warnings: string[] = [];
-  if ((selectedPost || selectedSwap) && mainZoneContinuity.configured === false) warnings.push("main_zone_final_summary_inconsistent_with_selected_commit");
+  if ((selectedIdle || selectedPost || selectedSwap) && mainZoneContinuity.configured === false) warnings.push("main_zone_final_summary_inconsistent_with_selected_commit");
   if (selectedPost && args.simulationSelection && str(args.simulationSelection.selectedSimulatedStateId) != null && str(args.simulationSelection.selectedSimulatedStateId) !== str(args.postRepairMainZoneContinuityPass?.selectedSimulatedStateId)) warnings.push("post_repair_commit_not_reflected_in_simulation_selection");
 
   const fromOriginal = changedIds(args.originalState, finalState);
   const fromRepaired = changedIds(args.repairedState ?? null, finalState);
   const repairIds = nums(args.mainZoneGapResourceBlockSwap?.baselineRepairChangedTaskIds).length ? nums(args.mainZoneGapResourceBlockSwap?.baselineRepairChangedTaskIds) : changedIds(args.originalState, args.repairedState ?? null);
   const postIds = [...new Set([...nums(args.postRepairMainZoneContinuityPass?.movedMainZoneTaskIds), ...nums(args.postRepairMainZoneContinuityPass?.movedBlockingTaskIds)])].sort((a,b)=>a-b);
-  const compositeSelected = selectedPost || selectedSwap;
+  const idleIds = nums(args.criticalResourceIdleCompression?.movedTaskIds);
+  const compositeSelected = selectedIdle || selectedPost || selectedSwap;
   const effectiveChangedIds = compositeSelected ? fromOriginal : nums(args.planningMaterialization?.changedTaskIds);
   const effectiveChangedCount = compositeSelected ? fromOriginal.length : Number(args.planningMaterialization?.changedTaskCount ?? effectiveChangedIds.length);
-  const planningMaterialization: Rec = { ...(args.planningMaterialization ?? {}), changedTaskCount: effectiveChangedCount, changedTaskIds: effectiveChangedIds, changedTaskCountFromOriginalBaseline: compositeSelected ? fromOriginal.length : effectiveChangedCount, changedTaskIdsFromOriginalBaseline: compositeSelected ? fromOriginal : effectiveChangedIds, changedTaskCountFromRepairedBaseline: compositeSelected ? fromRepaired.length : effectiveChangedCount, changedTaskIdsFromRepairedBaseline: compositeSelected ? fromRepaired : effectiveChangedIds, changeSources: { baselineOverlapRepair: { changedTaskCount: repairIds.length, changedTaskIds: repairIds, readOnly: true }, postRepairMainZoneContinuity: { changedTaskCount: postIds.length, changedTaskIds: postIds, readOnly: true } }, compositeTransformationsApplied: [repairIds.length ? "baseline-overlap-repair" : null, postIds.length ? "post-repair-main-zone-continuity" : null].filter(Boolean), compositeMaterializationContractVersion: ORC_COMPOSITE_MATERIALIZATION_CONTRACT_VERSION_ID229, summaryContractValid: warnings.length === 0, readOnly: true };
-  if ((selectedPost || selectedSwap) && fromOriginal.length && repairIds.length + postIds.filter((id) => !repairIds.includes(id)).length !== fromOriginal.length) warnings.push("composite_materialization_change_sources_do_not_explain_final_diff");
-  return { mainZoneContinuity, mainZoneGapResourceBlockSwap: { ...(args.mainZoneGapResourceBlockSwap ?? {}), ...targeted(args.mainZoneGapResourceBlockSwap ?? {}) }, postRepairMainZoneContinuityPass: { ...(args.postRepairMainZoneContinuityPass ?? {}), ...targeted(args.postRepairMainZoneContinuityPass ?? {}) }, planningMaterialization: { ...planningMaterialization, summaryContractValid: warnings.length === 0 }, summaryContractValid: warnings.length === 0, summaryContractWarnings: warnings, finalSummaryBuiltFromSelectedSimulation: finalState != null };
+  const planningMaterialization: Rec = { ...(args.planningMaterialization ?? {}), changedTaskCount: effectiveChangedCount, changedTaskIds: effectiveChangedIds, changedTaskCountFromOriginalBaseline: compositeSelected ? fromOriginal.length : effectiveChangedCount, changedTaskIdsFromOriginalBaseline: compositeSelected ? fromOriginal : effectiveChangedIds, changedTaskCountFromRepairedBaseline: compositeSelected ? fromRepaired.length : effectiveChangedCount, changedTaskIdsFromRepairedBaseline: compositeSelected ? fromRepaired : effectiveChangedIds, changeSources: { baselineOverlapRepair: { changedTaskCount: repairIds.length, changedTaskIds: repairIds, readOnly: true }, postRepairMainZoneContinuity: { changedTaskCount: postIds.length, changedTaskIds: postIds, readOnly: true }, ...(selectedIdle || idleIds.length ? { criticalResourceIdleCompression: { changedTaskCount: idleIds.length, changedTaskIds: idleIds, readOnly: true } } : {}) }, compositeTransformationsApplied: [repairIds.length ? "baseline-overlap-repair" : null, postIds.length ? "post-repair-main-zone-continuity" : null, idleIds.length ? "critical-resource-idle-compression" : null].filter(Boolean), compositeMaterializationContractVersion: ORC_COMPOSITE_MATERIALIZATION_CONTRACT_VERSION_ID229, summaryContractValid: warnings.length === 0, readOnly: true };
+  if ((selectedIdle || selectedPost || selectedSwap) && fromOriginal.length && repairIds.length + postIds.filter((id) => !repairIds.includes(id)).length + idleIds.filter((id) => !repairIds.includes(id) && !postIds.includes(id)).length !== fromOriginal.length) warnings.push("composite_materialization_change_sources_do_not_explain_final_diff");
+  if (selectedIdle && args.criticalResourceIdleCompression?.mainZoneContinuityPreserved === false) warnings.push("critical_resource_idle_compression_would_worsen_main_zone_continuity");
+  if (selectedIdle && args.criticalResourceIdleCompression?.selectedAsCommit !== true) warnings.push("critical_resource_idle_compression_selected_but_summary_not_committed");
+  return { mainZoneContinuity, mainZoneGapResourceBlockSwap: { ...(args.mainZoneGapResourceBlockSwap ?? {}), ...targeted(args.mainZoneGapResourceBlockSwap ?? {}) }, postRepairMainZoneContinuityPass: { ...(args.postRepairMainZoneContinuityPass ?? {}), ...targeted(args.postRepairMainZoneContinuityPass ?? {}) }, criticalResourceIdleCompression: { ...(args.criticalResourceIdleCompression ?? {}) }, planningMaterialization: { ...planningMaterialization, summaryContractValid: warnings.length === 0 }, summaryContractValid: warnings.length === 0, summaryContractWarnings: warnings, finalSummaryBuiltFromSelectedSimulation: finalState != null };
 }

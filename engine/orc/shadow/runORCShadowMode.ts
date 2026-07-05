@@ -43,6 +43,7 @@ import { resolveCandidateLineage } from "../decision/candidateLineage";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "../active/orcBaselineSeedFeasibilityAudit";
 import { buildORCRuntimeContractID224 } from "../active/runActiveBaselineRepairPreflight";
 import { runPostRepairMainZoneContinuityPass } from "../active/runPostRepairMainZoneContinuityPass";
+import { runCriticalResourceIdleCompressionPass } from "../active/runCriticalResourceIdleCompressionPass";
 import { buildFinalORCCompositeSummary } from "../active/buildFinalORCCompositeSummary";
 
 export interface ORCShadowModeResult {
@@ -460,12 +461,18 @@ export function runORCShadowMode(
     selectedAsOutcome: baselineSafetySelectedAsOutcome,
     reason: typeof baselineSafetyCandidate?.metadata.generationReason === "string" ? baselineSafetyCandidate.metadata.generationReason : null,
   };
-  const decisionFeedbackLoop = buildDecisionFeedbackFromDecisions({ opportunities, operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? [])], commitDecisions: commitResult.commitDecisions });
+  const resourceIdleBaseSimulation = postRepairSummary.selectedAsCommit && postRepairSummary.selectedSimulatedStateId ? postRepairContinuityPass.pipeline?.simulation.simulatedStates.find((sim) => sim.id === postRepairSummary.selectedSimulatedStateId) ?? null : selectedRepairSimulationForPostRepair;
+  const resourceIdleBaseValidation = resourceIdleBaseSimulation ? [...(postRepairContinuityPass.pipeline?.validation.validationResults ?? []), ...allValidationResultsForPostRepair].find((validation) => validation.simulatedStateId === resourceIdleBaseSimulation.id) ?? null : null;
+  const resourceIdleBaseMaterialization = resourceIdleBaseSimulation?.planningMaterialization as Record<string, unknown> | null;
+  const postContinuityResourceIdlePass = runCriticalResourceIdleCompressionPass({ originalState: operationalState, baseSimulation: resourceIdleBaseSimulation, baseValidation: resourceIdleBaseValidation, basePlanningMaterialization: resourceIdleBaseMaterialization, mainZoneContinuity: { ...(candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>), configured: (candidateResult.summary.mainZoneContinuity as any).configured ?? (candidateResult.summary.mainZoneContinuity as any).mainZoneConfigured ?? true }, postRepairMainZoneContinuityPass: postRepairSummary as unknown as Record<string, unknown>, criticalResourceIdleCompressionSummaryFromInitialPass: criticalResourceIdleCompressionSummary as unknown as Record<string, unknown>, createdAt });
+  criticalResourceIdleCompressionSummary = { ...criticalResourceIdleCompressionSummary, ...postContinuityResourceIdlePass.summary } as any;
+
+  const decisionFeedbackLoop = buildDecisionFeedbackFromDecisions({ opportunities, operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? []), ...(postContinuityResourceIdlePass.pipeline?.ranking.rankedOperationalValues ?? [])], commitDecisions: commitResult.commitDecisions });
   cognitiveState = updateDecisionFeedbackLoop(cognitiveState, decisionFeedbackLoop);
   const decisionFeedbackReuseAfterDecision = reuseDecisionFeedback(decisionFeedbackLoop, opportunities, cognitiveState.reasoningBudget, createdAt);
   const decisionFeedbackEvidence = buildDecisionFeedbackEvidence(decisionFeedbackLoop, decisionFeedbackReuseAfterDecision.influences, createdAt);
-  const finalSelectedSimulation = postRepairSummary.selectedAsCommit && postRepairSummary.selectedSimulatedStateId ? postRepairContinuityPass.pipeline?.simulation.simulatedStates.find((sim) => sim.id === postRepairSummary.selectedSimulatedStateId) ?? null : (selectedCommitSimulation ? [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? [])].find((sim) => sim.id === selectedCommitSimulation) ?? null : null);
-  const compositeSummary = buildFinalORCCompositeSummary({ originalState: operationalState, repairedState: selectedRepairSimulationForPostRepair?.operationalStateSnapshot ?? null, selectedSimulation: finalSelectedSimulation, initialMainZoneContinuity: candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary as Record<string, unknown>, postRepairMainZoneContinuityPass: postRepairSummary as unknown as Record<string, unknown>, planningMaterialization: finalSelectedSimulation?.planningMaterialization as unknown as Record<string, unknown> });
+  const finalSelectedSimulation = postContinuityResourceIdlePass.summary.selectedAsCommit && postContinuityResourceIdlePass.selectedSimulation ? postContinuityResourceIdlePass.selectedSimulation : (postRepairSummary.selectedAsCommit && postRepairSummary.selectedSimulatedStateId ? postRepairContinuityPass.pipeline?.simulation.simulatedStates.find((sim) => sim.id === postRepairSummary.selectedSimulatedStateId) ?? null : (selectedCommitSimulation ? [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? [])].find((sim) => sim.id === selectedCommitSimulation) ?? null : null));
+  const compositeSummary = buildFinalORCCompositeSummary({ originalState: operationalState, repairedState: selectedRepairSimulationForPostRepair?.operationalStateSnapshot ?? null, selectedSimulation: finalSelectedSimulation, initialMainZoneContinuity: candidateResult.summary.mainZoneContinuity as unknown as Record<string, unknown>, mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary as Record<string, unknown>, postRepairMainZoneContinuityPass: postRepairSummary as unknown as Record<string, unknown>, criticalResourceIdleCompression: criticalResourceIdleCompressionSummary as Record<string, unknown>, planningMaterialization: finalSelectedSimulation?.planningMaterialization as unknown as Record<string, unknown> } as any);
   mainZoneGapResourceBlockSwapSummary = compositeSummary.mainZoneGapResourceBlockSwap as typeof mainZoneGapResourceBlockSwapSummary;
 
   const decisionFeedbackSummary = {
@@ -552,6 +559,7 @@ export function runORCShadowMode(
     ...decisionPipelineResult.evidence,
     ...lateEvidence,
     ...postRepairContinuityPass.evidence,
+    ...postContinuityResourceIdlePass.evidence,
     ...decisionFeedbackEvidence,
     buildCognitiveStateEvidence(operationalState, "cognitive-state-final", cognitiveState, createdAt),
     buildCognitiveStateEvidence(operationalState, "cognitive-state-diff", cognitiveStateDiff, createdAt),
@@ -567,12 +575,12 @@ export function runORCShadowMode(
     opportunities,
     diagnoses: diagnosisResult.diagnoses,
     searchSpaces: selectedSearchSpaces,
-    candidates: [...decisionInput.candidates, ...lateDecisionInputCandidates, ...postRepairContinuityPass.decisionInputCandidates],
-    candidateStates: [...transformationResult.candidateStates, ...(lateDecisionPipelineResult?.transformation.candidateStates ?? []), ...(postRepairContinuityPass.pipeline?.transformation.candidateStates ?? [])],
-    simulatedStates: [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? []), ...(postRepairContinuityPass.pipeline?.simulation.simulatedStates ?? [])],
-    validationResults: [...validationResult.validationResults, ...(lateDecisionPipelineResult?.validation.validationResults ?? []), ...(postRepairContinuityPass.pipeline?.validation.validationResults ?? [])],
-    operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? [])],
-    commitDecisions: [...commitResult.commitDecisions, ...(lateDecisionPipelineResult?.commit.commitDecisions ?? []), ...(postRepairContinuityPass.pipeline?.commit.commitDecisions ?? [])],
+    candidates: [...decisionInput.candidates, ...lateDecisionInputCandidates, ...postRepairContinuityPass.decisionInputCandidates, ...postContinuityResourceIdlePass.decisionInputCandidates],
+    candidateStates: [...transformationResult.candidateStates, ...(lateDecisionPipelineResult?.transformation.candidateStates ?? []), ...(postRepairContinuityPass.pipeline?.transformation.candidateStates ?? []), ...(postContinuityResourceIdlePass.pipeline?.transformation.candidateStates ?? [])],
+    simulatedStates: [...simulationResult.simulatedStates, ...(lateDecisionPipelineResult?.simulation.simulatedStates ?? []), ...(postRepairContinuityPass.pipeline?.simulation.simulatedStates ?? []), ...(postContinuityResourceIdlePass.selectedSimulation ? [postContinuityResourceIdlePass.selectedSimulation] : (postContinuityResourceIdlePass.pipeline?.simulation.simulatedStates ?? []))],
+    validationResults: [...validationResult.validationResults, ...(lateDecisionPipelineResult?.validation.validationResults ?? []), ...(postRepairContinuityPass.pipeline?.validation.validationResults ?? []), ...(postContinuityResourceIdlePass.selectedValidation ? [postContinuityResourceIdlePass.selectedValidation] : (postContinuityResourceIdlePass.pipeline?.validation.validationResults ?? []))],
+    operationalValues: [...rankingResult.rankedOperationalValues, ...(lateDecisionPipelineResult?.ranking.rankedOperationalValues ?? []), ...(postRepairContinuityPass.pipeline?.ranking.rankedOperationalValues ?? []), ...(postContinuityResourceIdlePass.pipeline?.ranking.rankedOperationalValues ?? [])],
+    commitDecisions: [...commitResult.commitDecisions, ...(lateDecisionPipelineResult?.commit.commitDecisions ?? []), ...(postRepairContinuityPass.pipeline?.commit.commitDecisions ?? []), ...(postContinuityResourceIdlePass.pipeline?.commit.commitDecisions ?? [])],
     evidence,
     advisoryDecision: null,
     cognitiveState,
@@ -585,12 +593,12 @@ export function runORCShadowMode(
       configuration,
       opportunityCount: opportunities.length,
       searchSpaceCount: selectedSearchSpaces.length,
-      candidateCount: candidateResult.candidates.length + lateDecisionInputCandidates.length + postRepairContinuityPass.decisionInputCandidates.length,
-      candidateStateCount: transformationResult.candidateStates.length + (lateDecisionPipelineResult?.transformation.candidateStates.length ?? 0) + (postRepairContinuityPass.pipeline?.transformation.candidateStates.length ?? 0),
-      simulatedStateCount: simulationResult.simulatedStates.length + (lateDecisionPipelineResult?.simulation.simulatedStates.length ?? 0) + (postRepairContinuityPass.pipeline?.simulation.simulatedStates.length ?? 0),
-      validCount: validationResult.summary.validCount + (lateDecisionPipelineResult?.validation.summary.validCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.validCount ?? 0),
-      invalidCount: validationResult.summary.invalidCount + (lateDecisionPipelineResult?.validation.summary.invalidCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.invalidCount ?? 0),
-      evaluatedCount: evaluatorResult.summary.evaluatedCount + (lateDecisionPipelineResult?.evaluation.summary.evaluatedCount ?? 0) + (postRepairContinuityPass.pipeline?.evaluation.summary.evaluatedCount ?? 0),
+      candidateCount: candidateResult.candidates.length + lateDecisionInputCandidates.length + postRepairContinuityPass.decisionInputCandidates.length + postContinuityResourceIdlePass.decisionInputCandidates.length,
+      candidateStateCount: transformationResult.candidateStates.length + (lateDecisionPipelineResult?.transformation.candidateStates.length ?? 0) + (postRepairContinuityPass.pipeline?.transformation.candidateStates.length ?? 0) + (postContinuityResourceIdlePass.pipeline?.transformation.candidateStates.length ?? 0),
+      simulatedStateCount: simulationResult.simulatedStates.length + (lateDecisionPipelineResult?.simulation.simulatedStates.length ?? 0) + (postRepairContinuityPass.pipeline?.simulation.simulatedStates.length ?? 0) + (postContinuityResourceIdlePass.pipeline?.simulation.simulatedStates.length ?? 0),
+      validCount: validationResult.summary.validCount + (lateDecisionPipelineResult?.validation.summary.validCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.validCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.validation.summary.validCount ?? 0),
+      invalidCount: validationResult.summary.invalidCount + (lateDecisionPipelineResult?.validation.summary.invalidCount ?? 0) + (postRepairContinuityPass.pipeline?.validation.summary.invalidCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.validation.summary.invalidCount ?? 0),
+      evaluatedCount: evaluatorResult.summary.evaluatedCount + (lateDecisionPipelineResult?.evaluation.summary.evaluatedCount ?? 0) + (postRepairContinuityPass.pipeline?.evaluation.summary.evaluatedCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.evaluation.summary.evaluatedCount ?? 0),
       ranking: rankingSummary,
       evaluation: evaluationSummary,
       sessionLearning: sessionLearningSummary,
@@ -606,14 +614,14 @@ export function runORCShadowMode(
       mainZoneGapResourceBlockSwap: mainZoneGapResourceBlockSwapSummary,
       criticalResourceIdleCompression: criticalResourceIdleCompressionSummary,
       baselineSeedHardFeasibility,
-      runtimeContract: buildORCRuntimeContractID224(),
+      runtimeContract: { ...buildORCRuntimeContractID224(), postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231", resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2" },
       baselineOverlapRepair: baselineOverlapRepairSummary,
       postRepairMainZoneContinuityPass: compositeSummary.postRepairMainZoneContinuityPass,
       summaryContractValid: compositeSummary.summaryContractValid,
       summaryContractWarnings: compositeSummary.summaryContractWarnings,
       finalSummaryBuiltFromSelectedSimulation: compositeSummary.finalSummaryBuiltFromSelectedSimulation,
-      commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.commitCount ?? 0),
-      rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.rejectCount ?? 0),
+      commitCount: commitResult.summary.commitCount + (lateDecisionPipelineResult?.commit.summary.commitCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.commitCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.commit.summary.commitCount ?? 0),
+      rejectCount: commitResult.summary.rejectCount + (lateDecisionPipelineResult?.commit.summary.rejectCount ?? 0) + (postRepairContinuityPass.pipeline?.commit.summary.rejectCount ?? 0) + (postContinuityResourceIdlePass.pipeline?.commit.summary.rejectCount ?? 0),
       topOpportunityId: topOpportunity?.id ?? null,
       topOpportunityKind: topOpportunity?.kind ?? null,
       generatedAt: createdAt,

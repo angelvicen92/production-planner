@@ -103,6 +103,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 228 — 2026-07-02 UTC — ORC Main Zone Space/Zone Resolution Contract v1
 - ID 229 — 2026-07-02 UTC — ORC Composite Summary & Final Main-Zone Continuity Contract v1
 - ID 230 — 2026-07-03 UTC — ORC Critical Resource Idle Compression Candidate v1
+- ID 231 — 2026-07-04 UTC — ORC Post-Continuity Critical Resource Idle Compression Pass v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -409,6 +410,12 @@ The candidate does not displace tasks from other resources, does not run global 
 Diagnostics now expose `runtimeContract.criticalResourceIdleCompressionContractVersion: "ORC-CRITICAL-RESOURCE-IDLE-COMPRESSION-ID230"` and `orcSummary.criticalResourceIdleCompression` with target resources, candidate counts, lineage/simulation counts, selected commit status, moved task ids, target idle before/after, gap before/after, prefilter discard reasons, actionable generation blockers, warnings, and `readOnly: true`. If no direct pull-forward window is viable, ORC keeps the previous valid plan and reports concrete blockers such as protected block, space occupied, resource conflict, hard break, dependency block, main-zone regression, makespan increase, or no direct window.
 
 This iteration preserves ID224, ID225, ID228, and ID229; it has no DB, RLS, UI, V3, or V4 changes.
+
+### ID 231 — ORC Post-Continuity Critical Resource Idle Compression Pass v1
+
+ID230 creó el candidate `CRITICAL_RESOURCE_IDLE_COMPRESSION`, pero el runtime real necesita ejecutarlo después de que exista un planning compuesto hard-feasible. ID231 añade un tercer pass acotado tras la reparación baseline-overlap y la continuidad post-repair de main-zone. El pass reutiliza el builder ID230, parte del selected simulation válido, no usa el baseline inicial hard-infeasible, y sigue el pipeline oficial Candidate → Prefilter → Transformation → Simulation → Validation → Evaluation → Ranking → Commit.
+
+Si la compresión valida, ORC puede seleccionar un resultado compuesto con tres fuentes: `baselineOverlapRepair`, `postRepairMainZoneContinuity` y `criticalResourceIdleCompression`. Si no valida, conserva el resultado ID229 y publica blockers accionables sin fallback innecesario. No relaja hard constraints, locks, dependencias, SPACE_OVERLAP ni RESOURCE_OVERLAP; no hay cambios DB/RLS/UI/V3. Se preservan ID224, ID225, ID228, ID229 e ID230. El runtime contract expone `postContinuityResourceIdleCompressionPassVersion: "ORC-POST-CONTINUITY-RESOURCE-IDLE-PASS-ID231"` y `resourceIdleCompositeSelectionPolicy: "valid-committed-continuity-and-resource-compactness-first-v2"`.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
