@@ -18,6 +18,8 @@ test("summary final usa selected composite simulation", () => {
   assert.ok(!(r.mainZoneContinuity.resolutionWarnings as string[]).includes("main_zone_not_configured"));
   assert.equal(r.productionConceptAlignment.contractVersion, "ORC-PRODUCTION-CONCEPT-ALIGNMENT-ID235");
   assert.equal(r.productionConceptAlignment.readOnly, true);
+  assert.equal(r.productionWavePlanner.contractVersion, "ORC-PRODUCTION-WAVE-PLANNER-BLUEPRINT-ID237");
+  assert.equal(r.productionWavePlanner.doesNotMutatePlanning, true);
 });
 
 test("gap objetivo y gaps finales no se mezclan", () => {

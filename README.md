@@ -109,6 +109,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 234 — 2026-07-05 UTC — ORC Resource Idle Net Value & OPQM Delta Contract v1
 - ID 235 — 2026-07-05 UTC — ORC Production Concept Alignment Audit & Macro Objective Contract v1
 - ID 236 — 2026-07-05 UTC — ORC Rejected Optional Improvement Materialization & Explainability Gate Fix v1
+- ID 237 — 2026-07-05 UTC — ORC Production Wave Planner Blueprint & Macro Day Shape Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -474,6 +475,19 @@ ID236 corrige el contrato de explainability y materialización compuesta: si `cr
 Production Concept Alignment puede declarar un plan `conceptually_misaligned` y `macroPlannerRequired === true`, pero esa auditoría no invalida por sí sola un plan hard-feasible, con assignedSpace válido y materialización explicable. Si el plan compuesto ID229 sigue siendo válido, Active devuelve `usedEngine: "orc"` con `fallbackReason: null` en lugar de caer a V4 fallback.
 
 No hay cambios DB/RLS/UI/V3/V4, no se añaden capacidades nuevas de optimización, no se implementa macro planner todavía y no se relajan constraints hard. Esta corrección prepara la siguiente iteración real: macro planner / production wave planner.
+
+
+### ID 237 — ORC Production Wave Planner Blueprint & Macro Day Shape Contract v1
+
+ID236 estabilizó la salida ORC con auditoría conceptual: el motor puede aceptar el plan compuesto hard-feasible, mantener `fallbackReason: null` y preservar los contratos de summary/materialización aunque `productionConceptAlignment` declare que el plan sigue conceptualmente desalineado.
+
+La auditoría ID235/ID236 demuestra que el problema actual es macro, no micro: la main-zone puede quedar con huecos visibles, la ventana flexible de comida puede confundirse operativamente con un parón global, los coaches/recursos críticos pueden tener spans desequilibrados, y las políticas de release y cambios de coach aún no están configuradas.
+
+ID237 añade un blueprint read-only del Production Wave Planner en `orcSummary.productionWavePlanner` y exporta `runtimeContract.productionWavePlannerBlueprintContractVersion === "ORC-PRODUCTION-WAVE-PLANNER-BLUEPRINT-ID237"`. El blueprint no mueve tareas, no cambia selected simulation, no afecta gates, no provoca fallback y no modifica `plannedTasks`.
+
+El blueprint define objetivos macro ordenados, una forma propuesta de jornada, ventanas recomendadas de main-zone y support work, bloques de coach/main-zone configurables, balance dinámico de coaches/recursos críticos, flujo de talentos desde IN hasta primera tarea y desde última tarea hasta OUT, semántica de comida flexible con rotación en vez de blank global, release/start-later y readiness para candidates macro.
+
+No hay cambios DB/RLS/UI/V3/V4, no se crean candidates que muevan tareas, no se implementa commit macro y no se relajan constraints hard. La siguiente iteración queda preparada para convertir `macro_main_zone_block_relayout` en candidate oficial del ORC.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
