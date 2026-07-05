@@ -106,6 +106,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 231 — 2026-07-04 UTC — ORC Post-Continuity Critical Resource Idle Compression Pass v1
 - ID 232 — 2026-07-05 UTC — ORC Post-Continuity Resource Idle Final Summary Wiring v1
 - ID 233 — 2026-07-05 UTC — ORC Composite Descendant Selection Summary Contract v1
+- ID 234 — 2026-07-05 UTC — ORC Resource Idle Net Value & OPQM Delta Contract v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -438,6 +439,17 @@ ID233 documenta explícitamente que una selected simulation final puede ser una 
 Con este contrato se evita el falso warning `post_repair_commit_not_reflected_in_simulation_selection` cuando postRepair está reflejado como ancestro compuesto. Además, `orcSummary`, `mainZoneContinuity`, `criticalResourceIdleCompression` y `simulationSelection` publican campos explícitos para la final selected simulation y la final candidate family, de modo que los campos legacy de continuidad no se confundan con la selección final.
 
 No se añaden nuevas capacidades de optimización: no hay nuevos candidate builders, búsqueda global ni movimientos post-pipeline. No hay cambios DB/RLS/UI/V3/V4. Se preservan ID224, ID225, ID228, ID229, ID230, ID231 e ID232, manteniendo hard feasibility, assignedSpace contract, baseline-overlap repair, post-repair main-zone continuity y critical-resource idle compression.
+
+
+### ID 234 — ORC Resource Idle Net Value & OPQM Delta Contract v1
+
+ID233 permitió aceptar una simulation final descendiente del plan compuesto, pero el JSON `engine-result-plan-27-v4-40.json` demostró un riesgo operativo: `critical-resource idle compression` podía declararse como reducción de idle aunque la métrica OPQM global `resourceIdleTime` del recurso objetivo no bajase.
+
+ID234 separa explícitamente la reducción de gap local del recurso, la reducción real de idle OPQM, la reducción de fragmentación y el delta de `operationalCompactness`. El contrato `runtimeContract.resourceIdleNetValueContractVersion` expone `ORC-RESOURCE-IDLE-NET-VALUE-ID234`, y el summary de `criticalResourceIdleCompression` añade evidencia `netValue` read-only contra el plan base compuesto inmediato, no sólo contra V4.
+
+La compresión opcional de recurso sólo puede seleccionarse si mantiene hard feasibility, assignedSpace contract, summary contract, makespan y continuidad de main-zone, y si demuestra valor neto: baja `resourceIdleTime`, o baja fragmentación sin empeorar compactness, o aporta una ganancia explícita de compactación sin empeorar talent idle ni main-flow continuity. El bypass de baseline repair sigue disponible para reparar un baseline hard-infeasible, pero no puede justificar optimizaciones opcionales posteriores con valor neto negativo.
+
+Si resource compression no aporta valor neto, ORC conserva el plan compuesto ID229/continuity seleccionado y publica el rechazo `resource_idle_net_value_not_positive` sin caer a fallback. Si aporta valor neto, se acepta como tercera fuente de materialización junto a baseline-overlap repair y post-repair main-zone continuity. No hay cambios DB/RLS/UI/V3/V4, y se preservan ID224, ID225, ID228, ID229, ID230, ID231, ID232 e ID233.
 
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
