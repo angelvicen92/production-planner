@@ -114,6 +114,7 @@ import('/src/i18n/language.ts').then(({ setLanguage }) => setLanguage('en'))
 - ID 239 — 2026-07-05 UTC — ORC Macro Main-Zone Block Relayout Runtime Wiring & Summary Exposure Fix v1
 - ID 240 — 2026-07-05 UTC — ORC Dependency-Aware Macro Main-Zone Block Relayout Candidate v1
 - ID 241 — 2026-07-05 UTC — ORC Macro Main-Zone Relayout Global Net Value & Materialization Source Contract v1
+- ID 242 — 2026-07-05 UTC — ORC Dependency-Safe Macro Main-Zone Suffix Compaction Candidate v1
 
 
 ### ORC Hard Validation for Assignment Simulations v1 (ID 197)
@@ -536,6 +537,16 @@ Cuando un macro sí se acepta, la fuente `planningMaterialization.changeSources.
 
 No hay cambios DB/RLS/UI, no se relajan hard constraints, dependencias, locks, `SPACE_OVERLAP`, `RESOURCE_OVERLAP` ni `DIRECT_DEPENDENCY_BROKEN`, no se añaden candidate families ni movimientos post-pipeline. Se preservan ID224 a ID240.
 
+### ID 242 — ORC Dependency-Safe Macro Main-Zone Suffix Compaction Candidate v1
+
+ID241 corrigió el gate global de valor macro y rechazó correctamente el candidate local-only observado en el JSON v4-48 cuando sólo redistribuía el hueco visible sin reducir el idle global de main-zone. El problema restante era que `MACRO_MAIN_ZONE_BLOCK_RELAYOUT` podía mover subbloques dependency-safe, pero no compactaba el sufijo posterior completo de la zona principal, por lo que podía cerrar un hueco local y crear huecos compensatorios más tarde.
+
+ID242 añade la variante oficial `dependency-safe-main-zone-suffix-compaction` dentro de la misma estrategia `MACRO_MAIN_ZONE_BLOCK_RELAYOUT`, familia `macro-production-wave` y tipo `main-zone-block-relayout`. La variante toma el sufijo productivo posterior completo de main-zone, preserva `assignedSpace`, `assignedResources`, duración, locks, estados protegidos y orden estable, y lo adelanta con un cursor tarea a tarea que espera sólo por dependencias, disponibilidad real de espacio/recurso o hard breaks reales. La comida flexible no se trata como hard stop.
+
+La variante no mueve OUT, transportes ni release en esta iteración. Si reduce el idle visible global de main-zone y pasa el gate global ID241, puede commitear y materializar una fuente `planningMaterialization.changeSources.macroMainZoneBlockRelayout` completa por diff real. Si no reduce el idle global o falla feasibility, queda rechazada como diagnóstico con blockers específicos y se conserva el plan anterior sin fallback.
+
+No hay cambios DB, RLS ni UI. Se preservan los contratos operativos ID224 a ID241 y se añade `runtimeContract.macroMainZoneSuffixCompactionContractVersion === "ORC-MACRO-MAIN-ZONE-SUFFIX-COMPACTION-ID242"`.
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
@@ -891,4 +902,3 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
-
