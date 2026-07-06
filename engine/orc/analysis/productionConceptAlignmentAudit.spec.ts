@@ -50,10 +50,11 @@ test("detects flexible meal over-blocking", () => {
   assert.ok(codes(r).includes("meal_window_over_blocking_suspected"));
 });
 
-test("detects missing coach switch policy", () => {
+test("coach switch policy defaults avoid missing config false positive", () => {
   const s=state([e(1,"10:00","10:30",[1]), e(2,"10:30","11:00",[2])]);
   const r=auditProductionConceptAlignment({operationalState:s as any});
-  assert.ok(codes(r).includes("main_zone_coach_switch_policy_missing"));
+  assert.equal(codes(r).includes("main_zone_coach_switch_policy_missing"), false);
+  assert.equal(r.mainZoneCoachSwitchPolicy.mainZoneMaxCoachSwitchesPerDay, 4);
 });
 
 test("v4-40-like conceptual audit", () => {
