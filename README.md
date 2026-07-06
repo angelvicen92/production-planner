@@ -909,3 +909,31 @@ Separates the selected V3/V4 result across diagnostics, JSON copy/download, visu
 - ORC Active puede intentar un primer movimiento local mínimo sobre el baseline seed cuando la simulación ORC preserva baseline completo y ya ha superado gates.
 - El movimiento compacta de forma determinista un hueco operativo de recurso sin tocar tareas `done`, `in_progress` ni bloqueadas, sin dependencias no verificables y con validación de solapes de recurso, talent y espacio.
 - El movimiento sólo se acepta si mantiene la planificación completa, no empeora OPQM crítica y mejora al menos una métrica operacional; si no hay movimiento seguro, conserva baseline con diagnostics `effectiveMoves` serializables.
+
+## ID245 — Production Wave Planner v1: Dependency Bundle Candidate
+
+ID245 convierte el Production Wave Planner de blueprint diagnóstico en una primera capacidad ejecutiva ORC para huecos reales del flujo principal. El caso observado en `engine-result-plan-27-v4-51.json` ya llegaba al motor final ORC (`usedEngine === "orc"`, `orcResultKind === "orc_changed_plan"`) y mantenía los gates de explicabilidad/materialización de ID244, pero conservaba un hueco visible de 45 minutos del plató principal y el macro relayout existente sólo compactaba sufijos sin mover prerequisitos.
+
+La nueva familia `macro-production-wave-dependency-bundle` se genera desde oportunidades `PRODUCTION_WAVE_GAP` cuando el siguiente bloque del flujo principal depende de tareas pendientes movibles. El candidato agrupa la tarea principal dependiente, prerequisitos directos/transitivos hasta el límite de política y la trazabilidad de movimientos, y entra por el pipeline oficial ORC: SEE/candidate generation, transformación por assignments, simulación, validación hard, evaluación, commit y evidence. Si el bundle no mejora o no valida, el ORC conserva la mejor solución previa, incluido `macro-main-zone-block-relayout` de ID244.
+
+La política explícita `PRODUCTION_WAVE_POLICY_V1` se resuelve con `resolveProductionWavePolicy` y se serializa en diagnostics como `productionWavePolicy`. Los defaults iniciales proceden de `defaultProfile`: máximo de idle visible conservador de 10 minutos, 2 bloques de main flow, dos bloques alrededor de comida flexible, 2 bloques preferidos de coach, límites de switches 4/2/2, comida flexible no hard-stop, release desactivado, budget de 6 candidatos, 12 simulaciones, bundle máximo 12 tareas, profundidad 2 y soft runtime 60000 ms. Los campos defaultados se publican en `defaultedFields`; ya no son warnings críticos de configuración ausente.
+
+El JSON final publica también `orcRuntimeMetrics` bajo `diagnostics.orcRuntimeMetrics` y dentro de `diagnostics.orcSummary.orcRuntimeMetrics`. Incluye versión `ORC_RUNTIME_METRICS_V1`, tiempo de ejecución, motor seleccionado, fallback, familia/candidato/simulación seleccionados, conteos de candidatos/simulaciones, oportunidades detectadas, pruned candidates, métricas de idle visible antes/después, largest visible gap antes/después, makespan/talent idle y versión/fuente de política.
+
+La evidence específica `productionWaveDependencyBundle` indica si se ejecutó la búsqueda, número de candidatos, si fue commit, IDs seleccionados, gap objetivo antes/después, tareas main/prerequisite/support/resource-blocker movidas, candidatos rechazados, razones de rechazo, política usada y una explicación humana operativa.
+
+Archivos principales modificados:
+
+- `engine/orc/macro/productionWavePolicy.ts`: resolver puro y defaults de `PRODUCTION_WAVE_POLICY_V1`.
+- `engine/orc/macro/productionWavePlannerBlueprint.ts`: integración de policy y eliminación de falsos missing config para defaults.
+- `engine/orc/macro/productionWaveDependencyBundleCandidate.ts`: detección SEE-like de gaps, generación del candidato dependency-bundle y transformación trazable.
+- `engine/orc/active/runMacroMainZoneBlockRelayoutPass.ts`: competencia del bundle con el macro relayout existente usando el pipeline ORC.
+- `engine/orc/active/orcActivePlanner.ts`: diagnostics `productionWavePolicy`, `productionWaveDependencyBundle` y `orcRuntimeMetrics`.
+- `engine/orc/analysis/productionConceptAlignmentAudit.ts`: defaults serializables para política de bloques coach en auditoría conceptual.
+- Specs nuevas en `engine/orc/macro/productionWavePolicy.spec.ts` y `engine/orc/macro/productionWaveDependencyBundleCandidate.spec.ts`.
+
+Tests añadidos/cubiertos: resolución de policy, defaults no críticos, detección de dependency bundle, trazabilidad de candidate state y rechazo por lock/done. Benchmarks ORC deben interpretarse con los nuevos campos runtime: `selectedCandidateFamily`, idle visible before/after, largest gap before/after, candidate count y simulated state count. El escenario recomendado siguiente es `ID245_PRODUCTION_WAVE_DEPENDENCY_BUNDLE_MAIN_FLOW_GAP`: debe demostrar cierre/reducción del gap que el suffix relayout no podía cerrar o explicar blockers hard reales.
+
+Criterios de aceptación: `diagnostics.usedEngine` sigue siendo ORC cuando los gates pasan; `diagnostics.gates.explainableDecision === true`; `planningMaterialization.unexplainedChangedTaskIds` permanece vacío; `productionWavePolicy.version === "PRODUCTION_WAVE_POLICY_V1"`; `orcRuntimeMetrics.version === "ORC_RUNTIME_METRICS_V1"`; y si el hueco visible se mantiene, `productionWaveDependencyBundle` debe explicar con razones concretas por qué no se puede cerrar sin romper locks, estados protegidos, dependencias, disponibilidad o solapes.
+
+Siguiente paso recomendado: ampliar el bundle para incluir soporte dependiente posterior y resource blockers reordenables con ventanas de disponibilidad más ricas, manteniendo la misma política versionada y el pipeline ORC completo.
