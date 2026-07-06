@@ -64,3 +64,22 @@ test("ID233 mantiene warning cuando postRepair commit no está probado como ance
   assert.equal(r.summaryContractValid, false);
   assert.ok(r.summaryContractWarnings.includes("post_repair_commit_not_reflected_in_simulation_selection"));
 });
+
+test("ID244 materializa macro seleccionado por simulationSelection aunque el resumen legado lo marque rechazado", () => {
+  const original = st([217,227,245].map((taskId, i)=>({taskId,startPlanned:`10:${String(i*15).padStart(2,"0")}`,endPlanned:`10:${String(i*15+10).padStart(2,"0")}`,spaceId:48,zoneId:1,assignedResourceIds:[1]})));
+  const final = st(original.planning.map((p:any, i:number)=>({ ...p, startPlanned:`09:${String(i*15).padStart(2,"0")}`, endPlanned:`09:${String(i*15+10).padStart(2,"0")}` })));
+  const r = buildFinalORCCompositeSummary({
+    originalState: original,
+    repairedState: original,
+    selectedSimulation: sim("sim:macro", final),
+    macroMainZoneBlockRelayout: { executed:true, selectedAsCommit:false, movedTaskIds:[217], netValue:{ acceptedByMacroValueGate:true, acceptedByGlobalMacroValueGate:true, acceptedByDominanceGate:true } },
+    simulationSelection: { selectedBucket:"valid-committed-macro-main-zone-block-relayout", selectedFinalCandidateFamily:"macro-main-zone-block-relayout", selectedSimulatedStateId:"sim:macro" },
+    planningMaterialization: { source:"candidate_transformations", changedTaskCount:3, changedTaskIds:[217,227,245], changeSources:{} },
+  });
+  assert.equal(r.summaryContractValid, true);
+  assert.equal(r.finalSelectedCandidateFamily, "macro-main-zone-block-relayout");
+  assert.deepEqual(r.planningMaterialization.unexplainedChangedTaskIds, []);
+  assert.deepEqual(r.planningMaterialization.rejectedChangeSourceKeys, []);
+  assert.deepEqual((r.planningMaterialization.changeSources as any).macroMainZoneBlockRelayout.changedTaskIds, [217,227,245]);
+  assert.equal((r.planningMaterialization.changeSources as any).macroMainZoneBlockRelayout.selectedMacroSimulationId, "sim:macro");
+});
