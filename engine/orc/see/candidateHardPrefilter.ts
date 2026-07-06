@@ -100,6 +100,7 @@ function collectSpaceViolationKeys(plan: readonly PlanningEntry[], state: Operat
 }
 
 function findViolation(candidate: Candidate, state: OperationalState): CandidateHardPrefilterDiscard | null {
+  if (candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" && candidate.metadata?.variantType === "dependency-safe-main-zone-suffix-compaction" && candidate.metadata?.dependencyBlockerReason) return discard(candidate, "direct-dependency-broken", String(candidate.metadata.dependencyBlockerReason).toUpperCase(), (candidate.metadata?.movedTaskIds as number[]) ?? []);
   if (candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" && candidate.metadata?.dependencyPreservationMode === "blocked-diagnostic-only") return discard(candidate, "direct-dependency-broken", String((candidate.metadata?.dependencyAnalysis as any)?.dependencyAnalysisWarnings?.[0] ?? "macro-main-zone-dependency-safe-window-not-found").toUpperCase(), (candidate.metadata?.dependencyUnsafeTaskIds as number[]) ?? []);
   const transportContract = (state.constraints as any)?.transportContract ?? resolveORCTransportContract(state as any);
   const tasks = new Map((state.tasks ?? []).map((task) => [task.id, task]));
@@ -176,7 +177,21 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
 }
 
 function discard(candidate: Candidate, reason: Reason, violatedConstraint: string, affectedTaskIds: number[], extra: Partial<CandidateHardPrefilterDiscard> = {}): CandidateHardPrefilterDiscard {
-  const mapped = candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" ? ({
+  const suffix = candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" && candidate.metadata?.variantType === "dependency-safe-main-zone-suffix-compaction";
+  const mapped = suffix ? ({
+    "resource-overlap": "macro-main-zone-suffix-resource-overlap",
+    "candidate-introduced-resource-overlap": "macro-main-zone-suffix-resource-overlap",
+    "candidate-introduced-space-overlap": "macro-main-zone-suffix-space-overlap",
+    "candidate-worsened-space-overlap": "macro-main-zone-suffix-space-overlap",
+    "direct-dependency-broken": String(candidate.metadata?.dependencyBlockerReason ?? "macro-main-zone-suffix-dependency-broken"),
+    "lock-full": "macro-main-zone-suffix-lock-conflict",
+    "lock-time": "macro-main-zone-suffix-lock-conflict",
+    "lock-space": "macro-main-zone-suffix-lock-conflict",
+    "lock-resource": "macro-main-zone-suffix-lock-conflict",
+    "protected-task-status": "macro-main-zone-suffix-protected-task",
+    "outside-work-day": "macro-main-zone-suffix-hard-break-crossing",
+    "hard-break-overlap": "macro-main-zone-suffix-hard-break-crossing",
+  } as Record<string, string>)[reason] ?? reason : candidate.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" ? ({
     "resource-overlap": "macro-main-zone-resource-overlap",
     "candidate-introduced-resource-overlap": "macro-main-zone-resource-overlap",
     "candidate-introduced-space-overlap": "macro-main-zone-space-overlap",
