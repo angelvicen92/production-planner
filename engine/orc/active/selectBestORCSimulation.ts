@@ -15,7 +15,7 @@ export type ORCSimulationSelectionBucket =
   | "invalid-diagnostics-only";
 
 export interface ORCSimulationSelectionDiagnostics {
-  selectionPolicy: "valid-committed-global-positive-macro-main-zone-relayout-first-v2";
+  selectionPolicy: "valid-committed-dominant-macro-main-zone-relayout-first-v3";
   selectedBucket: ORCSimulationSelectionBucket | null;
   validSimulationCount: number;
   invalidSimulationCount: number;
@@ -113,7 +113,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-global-positive-macro-main-zone-relayout-first-v2", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], macroMainZoneRelayoutSimulationIds: [], macroMainZoneRelayoutAcceptedSimulationIds: [], macroMainZoneRelayoutRejectedSimulationIds: [], macroMainZoneRelayoutRejectReasons: {}, macroMainZoneRelayoutAcceptedByMacroValueGate: false, macroMainZoneRelayoutAcceptedByGlobalMacroValueGate: false, macroMainZoneRelayoutGlobalRejectReasons: {}, macroMainZoneRelayoutGlobalValueBySimulationId: {}, macroMainZoneRelayoutScoreDelta: null, baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, resourceCompressionAcceptedByNetValueGate: false, resourceCompressionRejectedSimulationIds: [], resourceCompressionRejectReasons: {}, baseCompositeOverallScore: null, resourceCompressionOverallScore: null, resourceCompressionScoreDelta: null, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-dominant-macro-main-zone-relayout-first-v3", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], macroMainZoneRelayoutSimulationIds: [], macroMainZoneRelayoutAcceptedSimulationIds: [], macroMainZoneRelayoutRejectedSimulationIds: [], macroMainZoneRelayoutRejectReasons: {}, macroMainZoneRelayoutAcceptedByMacroValueGate: false, macroMainZoneRelayoutAcceptedByGlobalMacroValueGate: false, macroMainZoneRelayoutGlobalRejectReasons: {}, macroMainZoneRelayoutGlobalValueBySimulationId: {}, macroMainZoneRelayoutScoreDelta: null, baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, resourceCompressionAcceptedByNetValueGate: false, resourceCompressionRejectedSimulationIds: [], resourceCompressionRejectReasons: {}, baseCompositeOverallScore: null, resourceCompressionOverallScore: null, resourceCompressionScoreDelta: null, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -131,7 +131,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   const macroSummary = isRecord(shadow.summary) && isRecord((shadow.summary as any).macroMainZoneBlockRelayout) ? (shadow.summary as any).macroMainZoneBlockRelayout as Record<string,unknown> : null;
   const macroIds = new Set<string>(macroSummary && isRecord(macroSummary.lineage) ? stringArray((macroSummary.lineage as any).simulatedStateIds) : []);
   if (typeof macroSummary?.selectedSimulatedStateId === "string") macroIds.add(macroSummary.selectedSimulatedStateId);
-  const macroAccepted = macroSummary?.selectedAsCommit === true && isRecord(macroSummary.netValue) && (macroSummary.netValue as any).acceptedByMacroValueGate === true && (macroSummary.netValue as any).acceptedByGlobalMacroValueGate === true;
+  const macroAccepted = macroSummary?.selectedAsCommit === true && isRecord(macroSummary.netValue) && (macroSummary.netValue as any).acceptedByMacroValueGate === true && (macroSummary.netValue as any).acceptedByGlobalMacroValueGate === true && (macroSummary.netValue as any).acceptedByDominanceGate === true && (macroSummary.netValue as any).macroMaterializationSourceComplete !== false;
   const macroLocalAccepted = isRecord(macroSummary?.netValue) && (macroSummary!.netValue as any).acceptedByMacroValueGate === true;
   const macroGlobalAccepted = isRecord(macroSummary?.netValue) && (macroSummary!.netValue as any).acceptedByGlobalMacroValueGate === true;
   const idleSummary = isRecord(shadow.summary) && isRecord(shadow.summary.criticalResourceIdleCompression) ? shadow.summary.criticalResourceIdleCompression : null;
@@ -186,7 +186,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     || a.simulation.id.localeCompare(b.simulation.id));
   const selected = eligible[0] ?? null;
   const diagnostics: ORCSimulationSelectionDiagnostics = {
-    selectionPolicy: "valid-committed-global-positive-macro-main-zone-relayout-first-v2",
+    selectionPolicy: "valid-committed-dominant-macro-main-zone-relayout-first-v3",
     selectedBucket: selected?.bucket ?? null,
     validSimulationCount: validRows.length,
     invalidSimulationCount: rows.filter((row) => row.validation?.result === "INVALID").length,
@@ -205,7 +205,7 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     macroMainZoneRelayoutGlobalValueBySimulationId: Object.fromEntries([...macroIds].sort().map(id => [id, (macroSummary?.netValue as any)?.globalMacroValue ?? macroSummary?.netValue ?? null])),
     macroMainZoneRelayoutScoreDelta: typeof (macroSummary?.netValue as any)?.visibleMainZoneIdleReductionMinutes === "number" ? (macroSummary?.netValue as any).visibleMainZoneIdleReductionMinutes : null,
     baseCompositeSimulationId,
-    selectedBecause: selected ? (selected.bucket === "valid-committed-macro-main-zone-block-relayout" ? `${selected.bucket}; macro main-zone relayout accepted by ID238 local and ID241 global macro value gates` : `${selected.bucket}; no viable macro main-zone relayout selected; resource compression requires net-positive ID234 gate`) : (macroIds.size === 0 ? "no macro main-zone relayout candidates were simulated" : null),
+    selectedBecause: selected ? (selected.bucket === "valid-committed-macro-main-zone-block-relayout" ? `${selected.bucket}; macro main-zone relayout accepted by ID238 local, ID241 global, and ID243 dominance gates` : `${selected.bucket}; no viable macro main-zone relayout selected; resource compression requires net-positive ID234 gate`) : (macroIds.size === 0 ? "no macro main-zone relayout candidates were simulated" : null),
     selectedSimulatedStateId: selected?.simulation.id ?? null,
     selectedFinalCandidateFamily: selected?.bucket === "valid-committed-macro-main-zone-block-relayout" || selected?.candidate?.metadata?.strategy === "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" ? "macro-main-zone-block-relayout" : selected?.bucket === "valid-committed-critical-resource-idle-compression" || selected?.bucket === "valid-committed-continuity-and-resource-compactness" || selected?.bucket === "valid-committed-post-continuity-critical-resource-idle-compression-and-continuity" ? "critical-resource-idle-compression" : selected?.bucket === "valid-committed-post-repair-main-zone-continuity-transformations-changed" ? "post-repair-main-zone-continuity" : selected?.bucket === "valid-committed-baseline-repair-transformations-changed" || selected?.bucket === "valid-baseline-repair-transformations-changed" ? "baseline-overlap-repair" : null,
     selectedFinalCandidateId: selected?.candidate?.id ?? null,

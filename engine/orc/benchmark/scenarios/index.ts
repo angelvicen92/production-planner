@@ -16,7 +16,13 @@ export type ProductionScenarioId =
   | "macro-main-zone-block-relayout-positive"
   | "macro-main-zone-block-relayout-blocked"
   | "macro-main-zone-block-relayout-dependency-aware-positive"
-  | "macro-main-zone-block-relayout-dependency-chain-blocked";
+  | "macro-main-zone-block-relayout-dependency-chain-blocked"
+  | "macro-main-zone-block-relayout-local-positive-global-neutral"
+  | "macro-main-zone-block-relayout-global-positive"
+  | "macro-main-zone-suffix-compaction-dominant-positive"
+  | "macro-main-zone-suffix-compaction-compactness-warning"
+  | "macro-main-zone-suffix-compaction-small-gain-rejected"
+  | "macro-main-zone-suffix-compaction-severe-regression-rejected";
 
 export interface ProductionBenchmarkScenario {
   id: ProductionScenarioId;
@@ -155,6 +161,55 @@ export const productionBenchmarkScenarios: ProductionBenchmarkScenario[] = [
     input: baseInput([task(91, { spaceId: AUX_SPACE_ID, durationOverrideMin: 20 }), task(92, { durationOverrideMin: 20, dependsOnTaskIds: [91], resourceRequirements: { anyOf: [{ quantity: 1, resourceItemIds: [501, 502] }] } }), task(93, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(94, { durationOverrideMin: 20, spaceId: COACH_SPACE_ID, resourceRequirements: { byItem: { 901: 1 } } }), task(95, { durationOverrideMin: 20, startPlanned: "11:00", endPlanned: "11:20" })], { locks: [{ id: 3, planId: PLAN_ID, taskId: 95, lockType: "time", lockedStart: "11:00", lockedEnd: "11:20" }] }),
   },
   realVoiceAuditionDayScenario,
+
+  {
+    id: "macro-main-zone-block-relayout-local-positive-global-neutral",
+    name: "Macro local positive / global neutral",
+    category: "macro-main-zone",
+    description: "ID241 guardrail fixture for a local-only macro improvement that must remain rejected globally.",
+    expectation: "Local-only global-neutral macro remains rejected without fallback when the base plan is valid.",
+    input: baseInput([task(2441, {}), task(2442, {}), task(2443, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-block-relayout-global-positive",
+    name: "Macro global positive",
+    category: "macro-main-zone",
+    description: "Global-positive macro fixture preserved from ID241/ID242 coverage.",
+    expectation: "Hard feasibility, dependencies, assignedSpace and deterministic output are preserved.",
+    input: baseInput([task(2451, {}), task(2452, {}), task(2453, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-suffix-compaction-dominant-positive",
+    name: "Suffix compaction dominant positive",
+    category: "macro-main-zone",
+    description: "ID243 v4-49-like suffix compaction benchmark where main-zone idle reduction is dominant.",
+    expectation: "Dominant main-zone idle reduction is accepted by the global and dominance gates.",
+    input: baseInput([task(2461, {}), task(2462, {}), task(2463, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-suffix-compaction-compactness-warning",
+    name: "Suffix compaction compactness warning",
+    category: "macro-main-zone",
+    description: "ID243 fixture where moderate compactness regression is diagnostic, not blocking.",
+    expectation: "Moderate compactness regression is reported as a warning while hard constraints remain preserved.",
+    input: baseInput([task(2471, {}), task(2472, {}), task(2473, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-suffix-compaction-small-gain-rejected",
+    name: "Suffix compaction small gain rejected",
+    category: "macro-main-zone",
+    description: "ID243 negative fixture for idle reductions below dominance threshold.",
+    expectation: "Small visible-idle gain is rejected without fallback when the base plan is valid.",
+    input: baseInput([task(2481, {}), task(2482, {}), task(2483, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
+  {
+    id: "macro-main-zone-suffix-compaction-severe-regression-rejected",
+    name: "Suffix compaction severe regression rejected",
+    category: "macro-main-zone",
+    description: "ID243 negative fixture for severe secondary regression despite visible idle improvement.",
+    expectation: "Severe compactness or talent-wait regression remains rejected and does not relax hard constraints.",
+    input: baseInput([task(2491, {}), task(2492, {}), task(2493, {})], { workDay: { start: "09:00", end: "18:00" }, meal: { start: "13:00", end: "16:30" } }),
+  },
   {
     id: "macro-main-zone-block-relayout-positive",
     name: "Macro main-zone relayout positive",

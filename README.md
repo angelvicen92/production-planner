@@ -547,6 +547,13 @@ La variante no mueve OUT, transportes ni release en esta iteración. Si reduce e
 
 No hay cambios DB, RLS ni UI. Se preservan los contratos operativos ID224 a ID241 y se añade `runtimeContract.macroMainZoneSuffixCompactionContractVersion === "ORC-MACRO-MAIN-ZONE-SUFFIX-COMPACTION-ID242"`.
 
+### ID 243 — ORC Macro Main-Zone Dominance Gate & Suffix Summary Consistency v1
+
+ID243 añade el dominance gate `ORC-MACRO-MAIN-ZONE-DOMINANCE-GATE-ID243` y el contrato de summary `ORC-MACRO-MAIN-ZONE-SUFFIX-SUMMARY-CONSISTENCY-ID243`. ID242 generó por primera vez una suffix compaction real capaz de reducir el idle visible global de main-zone de 135 a 45 minutos; el JSON v4-49 demostró que el gate global aún podía rechazar esa mejora por métricas secundarias. ID243 separa primary main-zone gain, hard safety y secondary metric impact para que una mejora fuerte de plató principal pueda dominar una regresión moderada y configurable de compactness.
+
+`mainFlowContinuityQuality` raw deja de ser veto absoluto cuando contradice métricas visibles primarias claras sin nuevos gaps visibles: se serializa como `ambiguous_not_gate_blocking` y queda como warning diagnóstico. La regresión moderada de `operationalCompactness` pasa a warning `macro_operational_compactness_regression_allowed_by_main_zone_dominance` mientras permanezca bajo el umbral configurable. También se corrigen los summaries de suffix compaction (`selectedSuffixCompaction`, valid/rejected suffix simulation ids, selected suffix simulation y reasons). Si el macro se acepta, la materialización explica todos los diffs desde la macro simulation y los summaries finales se recomputan desde esa simulation. No hay cambios DB/RLS/UI y se preservan ID224 a ID242; el siguiente paso probable será `macro_release_wave` para reducir esperas de salida tras compactar el plató principal.
+
+
 ### ORC Benchmark CLI Operational Evidence (ID 176)
 
 `npm run benchmark:orc` is the official ORC operational evidence entry point. It runs the Production Scenario Benchmark Suite, Evidence Optimization Cycle, Evidence Gate, and prints a stable JSON report with scenario summary, operational delta summary, authorization counts, `planningInfluence: "none"`, and the next action recommendation only when Evidence Gate authorization exists.
