@@ -109,3 +109,145 @@ export function buildProductionWaveDependencyClosure(input: ProductionWaveDepend
     hardBlockers: [...hard].sort(), warnings: [...warnings].sort(), missingDependencyTaskIds: uniq([...missing, ...broken.map((p) => p.dependsOnTaskId)]),
   };
 }
+
+export interface ProductionWaveBundleDependencyTransformMove {
+  taskId: number;
+  startPlanned: string;
+  endPlanned: string;
+}
+
+export interface ProductionWaveTransformedDependencyPair {
+  dependentTaskId: number;
+  prerequisiteTaskId: number;
+  dependentProposedStart: string | null;
+  prerequisiteProposedEnd: string | null;
+  minDelayMinutes: number | null;
+  violatedConstraint: "DIRECT_DEPENDENCY_BROKEN";
+  dependencyDirectionResolved: true;
+  reason: string;
+  affectedTaskIds: number[];
+  readOnly: true;
+}
+
+export interface ProductionWaveBundleDependencyTransformValidationInput {
+  operationalState: OperationalState;
+  proposedMoves: ProductionWaveBundleDependencyTransformMove[];
+  includedTaskIds: number[];
+  maxBundleSearchDepth: number;
+  maxDependencyBundleSize: number;
+}
+
+export interface ProductionWaveBundleDependencyTransformValidationResult {
+  complete: boolean;
+  brokenDependencyPairs: ProductionWaveTransformedDependencyPair[];
+  missingDependencyTaskIds: number[];
+  leftInPlaceCompatibleTaskIds: number[];
+  includedTaskIds: number[];
+  movedTaskIds: number[];
+  blockedByProtectedTaskIds: number[];
+  blockedByBudgetTaskIds: number[];
+  blockedByDepthTaskIds: number[];
+  reasonCodes: string[];
+}
+
+const minutes = (t?: string | null) => {
+  const parts = String(t ?? "").split(":").map(Number);
+  return parts.length === 2 && parts.every(Number.isFinite) ? parts[0] * 60 + parts[1] : null;
+};
+
+export function validateProductionWaveBundleDependencyClosureAfterTransform(
+  input: ProductionWaveBundleDependencyTransformValidationInput,
+): ProductionWaveBundleDependencyTransformValidationResult {
+  const state = input.operationalState;
+  const tasks = new Map((state.tasks ?? []).map((t: any) => [Number(t.id), t]));
+  const planning = new Map((state.planning ?? []).map((e: any) => [Number(e.taskId), e]));
+  const moveByTaskId = new Map(input.proposedMoves.map((m) => [Number(m.taskId), m]));
+  const included = new Set(uniq(input.includedTaskIds));
+  const moved = new Set(uniq(input.proposedMoves.map((m) => Number(m.taskId))));
+  const broken: ProductionWaveTransformedDependencyPair[] = [];
+  const missing = new Set<number>();
+  const leftCompatible = new Set<number>();
+  const protectedIds = new Set<number>();
+  const budgetIds = new Set<number>();
+  const depthIds = new Set<number>();
+  const reasonCodes = new Set<string>();
+
+  if (included.size > input.maxDependencyBundleSize) {
+    for (const id of [...included].slice(input.maxDependencyBundleSize)) budgetIds.add(id);
+    reasonCodes.add("dependency-bundle-budget-exceeded");
+  }
+
+  const timing = (taskId: number) => {
+    const move = moveByTaskId.get(taskId);
+    const planned = planning.get(taskId) as any;
+    return {
+      start: minutes(move?.startPlanned ?? planned?.startPlanned),
+      end: minutes(move?.endPlanned ?? planned?.endPlanned),
+      startText: move?.startPlanned ?? planned?.startPlanned ?? null,
+      endText: move?.endPlanned ?? planned?.endPlanned ?? null,
+    };
+  };
+
+  for (const dependentId of included) {
+    const task = tasks.get(dependentId);
+    if (!task) {
+      missing.add(dependentId);
+      reasonCodes.add("missing-dependency-task");
+      continue;
+    }
+    for (const prerequisiteId of deps(task)) {
+      const prerequisite = tasks.get(prerequisiteId);
+      if (!prerequisite || !planning.has(prerequisiteId)) {
+        missing.add(prerequisiteId);
+        reasonCodes.add("dependency-closure-incomplete");
+      }
+      if (!included.has(prerequisiteId)) {
+        const preTiming = timing(prerequisiteId);
+        const depTiming = timing(dependentId);
+        if (preTiming.end != null && depTiming.start != null && preTiming.end <= depTiming.start) {
+          leftCompatible.add(prerequisiteId);
+          continue;
+        }
+        missing.add(prerequisiteId);
+        if (prerequisite && isProtected(prerequisiteId, prerequisite, state)) {
+          protectedIds.add(prerequisiteId);
+          reasonCodes.add("protected-prerequisite");
+        } else {
+          reasonCodes.add("prerequisite-not-movable");
+        }
+      }
+      const preTiming = timing(prerequisiteId);
+      const depTiming = timing(dependentId);
+      if (preTiming.end == null || depTiming.start == null || preTiming.end > depTiming.start) {
+        reasonCodes.add("transformed-dependency-broken");
+        broken.push({
+          dependentTaskId: dependentId,
+          prerequisiteTaskId: prerequisiteId,
+          dependentProposedStart: depTiming.startText,
+          prerequisiteProposedEnd: preTiming.endText,
+          minDelayMinutes: preTiming.end != null && depTiming.start != null ? Math.max(0, preTiming.end - depTiming.start) : null,
+          violatedConstraint: "DIRECT_DEPENDENCY_BROKEN",
+          dependencyDirectionResolved: true,
+          reason: "transformed_dependency_broken",
+          affectedTaskIds: [dependentId, prerequisiteId],
+          readOnly: true,
+        });
+      }
+    }
+  }
+
+  const complete = broken.length === 0 && missing.size === 0 && protectedIds.size === 0 && budgetIds.size === 0 && depthIds.size === 0;
+  if (!complete) reasonCodes.add("dependency-closure-incomplete");
+  return {
+    complete,
+    brokenDependencyPairs: broken,
+    missingDependencyTaskIds: uniq([...missing]),
+    leftInPlaceCompatibleTaskIds: uniq([...leftCompatible]),
+    includedTaskIds: uniq([...included]),
+    movedTaskIds: uniq([...moved]),
+    blockedByProtectedTaskIds: uniq([...protectedIds]),
+    blockedByBudgetTaskIds: uniq([...budgetIds]),
+    blockedByDepthTaskIds: uniq([...depthIds]),
+    reasonCodes: [...reasonCodes].sort(),
+  };
+}
