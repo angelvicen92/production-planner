@@ -65,23 +65,26 @@ export function simulateCandidateStates(
     const mutableSnapshot = cloneOperationalState(state);
     const application = applyCandidateAssignments(mutableSnapshot, candidateState.sourceAssignments ?? []);
     const materialization = materializeSimulatedPlanning(candidateState, state);
-    mutableSnapshot.planning = materialization.planning.map((entry) => ({
-      taskId: entry.taskId,
-      startPlanned: entry.startPlanned,
-      endPlanned: entry.endPlanned,
-      assignedResourceIds: [...entry.assignedResourceIds],
-      spaceId: entry.spaceId ?? null,
-      zoneId: (entry as any).zoneId ?? null,
-      seedSource: entry.seedSource,
-      operationalRole: entry.operationalRole,
-      blocksSpace: entry.blocksSpace,
-      countsAsWork: entry.countsAsWork,
-      countsForMainFlow: entry.countsForMainFlow,
-      countsForResourceLoad: entry.countsForResourceLoad,
-      countsForTalentLoad: entry.countsForTalentLoad,
-      allowsSpaceOverlap: entry.allowsSpaceOverlap,
-      spaceOccupancyMode: entry.spaceOccupancyMode,
-    } as OperationalState["planning"][number]));
+    mutableSnapshot.planning = materialization.planning.map((entry) => {
+      const normalized: OperationalState["planning"][number] = {
+        taskId: entry.taskId,
+        startPlanned: entry.startPlanned,
+        endPlanned: entry.endPlanned,
+        assignedResourceIds: [...entry.assignedResourceIds],
+        spaceId: entry.spaceId ?? null,
+      };
+      if ((entry as any).zoneId !== undefined) normalized.zoneId = (entry as any).zoneId ?? null;
+      if (entry.seedSource !== undefined) normalized.seedSource = entry.seedSource;
+      if (entry.operationalRole !== undefined) normalized.operationalRole = entry.operationalRole;
+      if (entry.blocksSpace !== undefined) normalized.blocksSpace = entry.blocksSpace;
+      if (entry.countsAsWork !== undefined) normalized.countsAsWork = entry.countsAsWork;
+      if (entry.countsForMainFlow !== undefined) normalized.countsForMainFlow = entry.countsForMainFlow;
+      if (entry.countsForResourceLoad !== undefined) normalized.countsForResourceLoad = entry.countsForResourceLoad;
+      if (entry.countsForTalentLoad !== undefined) normalized.countsForTalentLoad = entry.countsForTalentLoad;
+      if (entry.allowsSpaceOverlap !== undefined) normalized.allowsSpaceOverlap = entry.allowsSpaceOverlap;
+      if (entry.spaceOccupancyMode !== undefined) normalized.spaceOccupancyMode = entry.spaceOccupancyMode;
+      return normalized;
+    });
     const officialStateUnchanged = JSON.stringify(state) === officialStateBefore;
     const simulationMode = (candidateState.sourceAssignments?.length ?? 0) > 0 ? ASSIGNMENT_SIMULATION_MODE : READ_ONLY_SIMULATION_MODE;
     const snapshot = deepFreeze(mutableSnapshot) as OperationalState;
