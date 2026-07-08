@@ -85,6 +85,9 @@ export interface OrcOperationalBenchmarkReport {
     calculationTimeTracked: boolean;
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
+  macroProductionWaveDayShapeSummary: {
+    scenarioCount: number; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+  };
   nextActionRecommendation: {
     allowed: boolean;
     reason: string;
@@ -139,6 +142,7 @@ export function buildOrcOperationalBenchmarkReport(params: {
   const optimizationReport = clone(params.optimizationReport);
   const authorizationReport = clone(params.authorizationReport);
   const passedReports = suiteReport.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null);
+  const dayShapes = passedReports.map((report:any) => report?.diagnostics?.orcSummary?.macroProductionWaveDayShape ?? report?.orcSummary?.macroProductionWaveDayShape ?? null).filter(Boolean);
   return {
     benchmarkVersion: ORC_OPERATIONAL_BENCHMARK_VERSION,
     generatedAt: suiteReport.generatedAt,
@@ -216,6 +220,17 @@ export function buildOrcOperationalBenchmarkReport(params: {
       simulationsAvoidedTracked: true,
       correctlyDiscardedCandidatesTracked: true,
       calculationTimeTracked: true,
+      planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+    },
+    macroProductionWaveDayShapeSummary: {
+      scenarioCount: dayShapes.length,
+      candidateGeneratedCount: dayShapes.filter((d:any)=>Number(d.candidateCount??0)>0).length,
+      preflightPassedCount: dayShapes.filter((d:any)=>d.preflight?.accepted===true || (Number(d.candidateCount??0)>0 && Number(d.candidatePreflightRejectedCount??0)===0)).length,
+      prefilterPassedCount: dayShapes.filter((d:any)=>Number(d.candidatePrefilterAcceptedCount??0)>0).length,
+      simulatedCount: dayShapes.filter((d:any)=>Number(d.simulatedStateCount??0)>0).length,
+      validCount: dayShapes.filter((d:any)=>Number(d.validSimulationCount??0)>0).length,
+      selectedCount: dayShapes.filter((d:any)=>d.selectedAsCommit===true).length,
+      metricsScopeAlignedCount: dayShapes.filter((d:any)=>d.metricMatchesProductionConceptAlignment===true).length,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
     },
     nextActionRecommendation: buildNextActionRecommendation(authorizationReport, suiteReport),

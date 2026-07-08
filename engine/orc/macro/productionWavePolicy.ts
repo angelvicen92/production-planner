@@ -6,7 +6,7 @@ export type ProductionWavePolicy = {
   coachBlocks: { preferredMainFlowCoachBlocks: number; maxCoachSwitchesPerDay: number; maxCoachSwitchesBeforeMeal: number; maxCoachSwitchesAfterMeal: number; coachBlockBalanceWeight: number; };
   meal: { allowFlexibleMealWindowProductiveWork: boolean; treatFlexibleMealAsHardStop: boolean; mealWindowCanSplitMainFlow: boolean; };
   release: { enabled: boolean; maxLastTaskToDepartureWaitMinutes: number; };
-  runtime: { macroPlannerCandidateBudget: number; macroPlannerSimulationBudget: number; maxDependencyBundleSize: number; maxBundleSearchDepth: number; maxExecutionTimeMsSoft: number; };
+  runtime: { macroPlannerCandidateBudget: number; macroPlannerSimulationBudget: number; maxDependencyBundleSize: number; maxBundleSearchDepth: number; maxExecutionTimeMsSoft: number; macroDayShapeMaxMovedTasks: number; macroDayShapeMaxMainTasks: number; macroDayShapeMaxPrerequisiteTasks: number; macroDayShapeMaxResources: number; };
   scoring: { mainFlowVisibleIdleWeight: number; criticalResourceIdleWeight: number; talentWaitWeight: number; makespanWeight: number; stabilityWeight: number; dependencyRiskPenalty: number; partialMainFlowGapReductionMinMinutes: number; partialMainFlowGapReductionAllowed: boolean; };
 };
 export type ProductionWavePolicyDiagnostics = { version: typeof PRODUCTION_WAVE_POLICY_VERSION; source: ProductionWavePolicySource; values: ProductionWavePolicy; warnings: string[]; defaultedFields: string[]; configuredFields: string[]; readOnly: true };
@@ -16,7 +16,7 @@ const DEFAULT_POLICY: ProductionWavePolicy = {
   coachBlocks: { preferredMainFlowCoachBlocks: 2, maxCoachSwitchesPerDay: 4, maxCoachSwitchesBeforeMeal: 2, maxCoachSwitchesAfterMeal: 2, coachBlockBalanceWeight: 1 },
   meal: { allowFlexibleMealWindowProductiveWork: true, treatFlexibleMealAsHardStop: false, mealWindowCanSplitMainFlow: true },
   release: { enabled: false, maxLastTaskToDepartureWaitMinutes: 60 },
-  runtime: { macroPlannerCandidateBudget: 6, macroPlannerSimulationBudget: 12, maxDependencyBundleSize: 12, maxBundleSearchDepth: 2, maxExecutionTimeMsSoft: 60000 },
+  runtime: { macroPlannerCandidateBudget: 6, macroPlannerSimulationBudget: 12, maxDependencyBundleSize: 12, maxBundleSearchDepth: 2, maxExecutionTimeMsSoft: 60000, macroDayShapeMaxMovedTasks: 30, macroDayShapeMaxMainTasks: 12, macroDayShapeMaxPrerequisiteTasks: 24, macroDayShapeMaxResources: 2 },
   scoring: { mainFlowVisibleIdleWeight: 10, criticalResourceIdleWeight: 3, talentWaitWeight: 2, makespanWeight: 2, stabilityWeight: 1, dependencyRiskPenalty: 5, partialMainFlowGapReductionMinMinutes: 15, partialMainFlowGapReductionAllowed: true },
 };
 const flat = (o:any,p=""): string[] => Object.entries(o).flatMap(([k,v]) => v && typeof v === "object" && !Array.isArray(v) ? flat(v, p?`${p}.${k}`:k) : [p?`${p}.${k}`:k]);
@@ -37,7 +37,7 @@ const legacy: Record<string,string[]> = {
   "runtime.macroPlannerSimulationBudget":["runtime.macroPlannerSimulationBudget","macroPlannerSimulationBudget"],
 };
 export function resolveProductionWavePolicy(input:any = {}, options:any = {}): ProductionWavePolicyDiagnostics {
-  const roots = [{src:"optimizerConfig" as const, obj: input?.constraints?.optimizer ?? input?.optimizer ?? options?.optimizerConfig}, {src:"planConfig" as const, obj: input?.planningSettings ?? input?.operationalPolicy ?? options?.planConfig}];
+  const roots = [{src:"optimizerConfig" as const, obj: input?.constraints?.optimizer?.productionWavePolicy ?? input?.constraints?.optimizer ?? input?.optimizer?.productionWavePolicy ?? input?.optimizer ?? options?.optimizerConfig?.productionWavePolicy ?? options?.optimizerConfig}, {src:"planConfig" as const, obj: input?.planningSettings?.productionWavePolicy ?? input?.planningSettings ?? input?.operationalPolicy?.productionWavePolicy ?? input?.operationalPolicy ?? options?.planConfig?.productionWavePolicy ?? options?.planConfig}];
   const values: ProductionWavePolicy = JSON.parse(JSON.stringify(DEFAULT_POLICY));
   const configuredFields:string[]=[];
   for (const path of flat(DEFAULT_POLICY).filter(p=>!['version','source','readOnly'].includes(p))) for (const root of roots) {
