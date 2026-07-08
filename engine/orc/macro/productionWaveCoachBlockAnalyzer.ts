@@ -1,12 +1,13 @@
 import type { OperationalState } from "../contracts";
 import type { ProductionWavePolicyDiagnostics } from "./productionWavePolicy";
+import { classifyMacroProductionWaveTasks } from "./macroProductionWaveTaskClassifier";
 
 type Entry = any & { a: number; b: number; task: any };
 const toMin = (t?: string | null): number | null => { const p=String(t??"").split(":").map(Number); return p.length===2&&p.every(Number.isFinite)?p[0]*60+p[1]:null; };
 const uniq = (xs:number[]) => [...new Set(xs.filter(Number.isFinite))].sort((a,b)=>a-b);
 const productive = (e:any) => e.countsAsWork !== false && !["transport_arrival","transport_departure","meal_break_placeholder","global_break_placeholder","non_operational_placeholder"].includes(e.operationalRole);
 const deps = (task:any) => uniq([...(task?.dependsOnTaskIds??[]), ...(task?.dependsOnTaskId!=null?[task.dependsOnTaskId]:[])]);
-const subjectId = (task:any) => task?.contestantId ?? task?.itinerantTeamId ?? null;
+const subjectId = (task:any) => task?.contestantId ?? task?.contestant_id ?? task?.talentId ?? task?.talent_id ?? task?.participantId ?? task?.participant_id ?? task?.itinerantTeamId ?? task?.itinerant_team_id ?? null;
 
 export interface ProductionWaveBlockAnalysis {
   mainFlowTasks: Entry[];
@@ -24,9 +25,9 @@ export interface ProductionWaveBlockAnalysis {
 export function analyzeProductionWaveBlocks(args:{ operationalState: OperationalState; productionWavePolicy: ProductionWavePolicyDiagnostics; mainZoneTarget: any; currentPlanning?: any[] }): ProductionWaveBlockAnalysis {
   const state=args.operationalState; const tasks=new Map((state.tasks??[]).map((t:any)=>[t.id,t]));
   const planning=(args.currentPlanning??state.planning??[]).map((e:any)=>({...e,a:toMin(e.startPlanned),b:toMin(e.endPlanned),task:tasks.get(e.taskId)})).filter((e:any)=>e.a!=null&&e.b!=null).sort((x:any,y:any)=>x.a-y.a||x.b-y.b) as Entry[];
-  const mainFlowTasks=planning.filter((e:any)=>productive(e) && (e.countsForMainFlow===true || (e.spaceId!=null&&args.mainZoneTarget?.mainSpaceIds?.includes(e.spaceId)) || (e.zoneId!=null&&args.mainZoneTarget?.mainZoneIds?.includes(e.zoneId))));
-  const byTask=new Map(planning.map(e=>[e.taskId,e])); const prereq:Record<number,number[]>={};
-  for(const e of mainFlowTasks) prereq[e.taskId]=deps(e.task).filter(id=>byTask.has(id));
+  const classification=classifyMacroProductionWaveTasks({operationalState:state,mainZoneTarget:args.mainZoneTarget,currentPlanning:args.currentPlanning??state.planning});
+  const mainFlowTasks=planning.filter((e:any)=>classification.mainFlowTaskIds.includes(e.taskId));
+  const byTask=new Map(planning.map(e=>[e.taskId,e])); const prereq:Record<number,number[]>=classification.upstreamPrerequisiteTaskIdsByMainTask;
   const mainIds=new Set(mainFlowTasks.map(e=>e.taskId)); const prereqIds=new Set(Object.values(prereq).flat());
   const load=new Map<number,{taskIds:Set<number>; total:number; main:number; pre:number; reasons:Set<string>}>();
   for(const e of planning.filter(productive)) for(const r of e.assignedResourceIds??[]) { const x=load.get(r)??{taskIds:new Set(),total:0,main:0,pre:0,reasons:new Set<string>()}; x.taskIds.add(e.taskId); x.total+=e.b-e.a; if(mainIds.has(e.taskId)){x.main+=e.b-e.a; x.reasons.add("appears_in_main_flow");} if(prereqIds.has(e.taskId)){x.pre+=e.b-e.a; x.reasons.add("appears_in_main_flow_prerequisites");} load.set(r,x); }
