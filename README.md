@@ -1018,3 +1018,27 @@ Tests added in `engine/orc/macro/productionWaveDependencyBundleCandidate.spec.ts
 Acceptance for the next plan-27 JSON is either a real partial improvement (`partialResourceUnblockSelectedAsCommit === true`, non-null selected candidate, and visible main-zone idle/largest gap below 45) or an explained impossibility (`partialResourceUnblockExecuted === true` with partial candidates or rejected details explaining each blocker). It is no longer acceptable to attempt only the full bundle, produce `candidateCount === 0` without partial analysis, move already-satisfied prerequisites, or compute final net value for a candidate that was never built or simulated.
 
 Validation executed during ID249 included `npm run check` and `npx tsx --test engine/orc/macro/productionWaveDependencyBundleCandidate.spec.ts`. Full engine and ORC benchmark commands remain the recommended release validation path: `npm run test:engine:full` and `npm run benchmark:orc`.
+
+## ID250 — ORC Strategic Pivot: Macro Production Wave Day Shape
+
+ID250 descarta explícitamente el prompt anterior centrado en `latestWindowBefore` y en mover mejor un blocker local. La evidencia acumulada entre `engine-result-plan-27-v4-52.json` y `engine-result-plan-27-v4-57.json` indicaba que el ORC estaba mejorando diagnóstico y trazabilidad, pero no la forma operativa de la jornada: el hueco visible del plató principal seguía en 45 minutos, el recurso crítico 335 mantenía 120 minutos de idle, `production-wave-dependency-bundle` y `partial-resource-unblock` no consolidaban mejoras, y el resultado final seguía dependiendo de `macro-main-zone-block-relayout`.
+
+El fallo estratégico identificado es que el ORC continuaba actuando como refinador posterior de V4: recibía una planificación base, detectaba huecos o blockers y aplicaba reparaciones locales. ID250 introduce el primer candidato macro de forma de jornada, `macro-production-wave-day-shape-v1`, para empezar a construir alternativas desde el Estado Operativo completo.
+
+El nuevo enfoque añade análisis puro de bloques de producción y prioridad de talentos. El candidato `macro-production-wave-day-shape` agrupa tareas por recurso crítico/coach inferido desde evidencia, coloca prerequisitos cerca de las tareas del flujo principal, protege la continuidad del main flow, prioriza talentos con ventanas más restrictivas y trata la comida flexible como una ventana productiva salvo configuración contraria. El candidato entra en el pipeline normal ORC: Candidate → CandidateState → SimulatedState → Validation → OperationalValue → Commit/Reject → Evidence; no se materializa directamente y no relaja restricciones hard.
+
+Tests añadidos o actualizados:
+
+- `engine/orc/macro/macroProductionWaveDayShapeCandidate.spec.ts` cubre agrupación de prerequisitos y main flow por recurso crítico, prioridad por salida temprana, ausencia de hardcodes de recursos/espacios, comida flexible, rechazo por no mejora OperationalValue y un caso representativo tipo plan 27.
+- `engine/orc/macro/productionWaveDependencyBundleCandidate.spec.ts` se mantiene como protección de regresión para el candidato dependency-bundle existente.
+
+Benchmark actualizado conceptualmente:
+
+- `realVoiceAuditionDay` sigue siendo el escenario representativo para comparar V4 baseline, ORC previo y ORC con el nuevo resumen `macroProductionWaveDayShape` dentro del Evidence Report ORC.
+- Las métricas relevantes para interpretar el reporte son idle visible del main zone, mayor hueco del main zone, idle de recursos críticos, permanencia de talento, makespan, compactness operativa, candidate count, simulated count y runtime.
+
+Cómo interpretar el próximo JSON:
+
+- Una mejora real debe mostrar `macroProductionWaveDayShape.executed === true`, `candidateCount > 0`, `selectedAsCommit === true`, reducción de idle del main zone o de idle de recurso crítico, `planningMaterialization.unexplainedChangedTaskIds === []`, `gates.explainableDecision === true` y `usedEngine === "orc"`.
+- Un rechazo útil también es aceptable si `macroProductionWaveDayShape` incluye candidato o detalles de rechazo, `coachBlockPlan`, `talentPriorityOrder`, `mainFlowBlockPlan`, `prerequisitePlacementPlan`, `mealUsagePlan` y una razón concreta como hard constraint, dependencia, disponibilidad, recurso, espacio, comida, falta de mejora OperationalValue, coste de estabilidad o runtime.
+- No debe aceptarse un JSON que solo añada diagnósticos, que vuelva a centrarse en el blocker 376 o en el hueco 12:05–12:50, o que no incluya candidato/rechazo estratégico de day shape.
