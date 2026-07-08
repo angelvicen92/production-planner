@@ -87,7 +87,7 @@ export interface OrcOperationalBenchmarkReport {
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
   macroProductionWaveDayShapeSummary: {
-    scenarioCount: number; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+    scenarioCount: number; contextAwarePlacementExecuted: boolean; preflightPrefilterConsistency: boolean; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; contextRejectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
   nextActionRecommendation: {
     allowed: boolean;
@@ -229,12 +229,15 @@ export function buildOrcOperationalBenchmarkReport(params: {
     },
     macroProductionWaveDayShapeSummary: {
       scenarioCount: dayShapes.length,
+      contextAwarePlacementExecuted: dayShapes.some((d:any)=>d.contextAwarePlacementExecuted===true),
+      preflightPrefilterConsistency: dayShapes.every((d:any)=>d.preflightPrefilterConsistency?.ok!==false && Array.isArray(d.unexpectedPrefilterRejections)),
       candidateGeneratedCount: dayShapes.filter((d:any)=>Number(d.candidateCount??0)>0).length,
       preflightPassedCount: dayShapes.filter((d:any)=>d.preflight?.accepted===true || (Number(d.candidateCount??0)>0 && Number(d.candidatePreflightRejectedCount??0)===0)).length,
       prefilterPassedCount: dayShapes.filter((d:any)=>Number(d.candidatePrefilterAcceptedCount??0)>0).length,
       simulatedCount: dayShapes.filter((d:any)=>Number(d.simulatedStateCount??0)>0).length,
       validCount: dayShapes.filter((d:any)=>Number(d.validSimulationCount??0)>0).length,
       selectedCount: dayShapes.filter((d:any)=>d.selectedAsCommit===true).length,
+      contextRejectedCount: dayShapes.reduce((n:number,d:any)=>n+Number(d.contextAwarePlacementRejectedCount??0),0),
       metricsScopeAlignedCount: dayShapes.filter((d:any)=>d.metricMatchesProductionConceptAlignment===true).length,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
     },
@@ -261,5 +264,7 @@ export function serializeOrcOperationalBenchmarkReport(report: OrcOperationalBen
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { report } = runOrcOperationalBenchmark();
   if (report.macroProductionWaveDayShapeSummary.scenarioCount <= 0) throw new Error("macroProductionWaveDayShapeSummary.scenarioCount must be > 0");
+  if (!report.macroProductionWaveDayShapeSummary.contextAwarePlacementExecuted) throw new Error("macroProductionWaveDayShapeSummary.contextAwarePlacementExecuted must be true");
+  if (!report.macroProductionWaveDayShapeSummary.preflightPrefilterConsistency) throw new Error("macroProductionWaveDayShapeSummary.preflightPrefilterConsistency must be true");
   process.stdout.write(serializeOrcOperationalBenchmarkReport(report));
 }
