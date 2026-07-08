@@ -2,6 +2,7 @@ import { stableStringify } from "../structuralEquality";
 import { buildOptimizationAuthorizationReport, type OptimizationAuthorizationReport } from "./evidenceGate";
 import { runEvidenceOptimizationCycle, type EvidenceOptimizationReport } from "./evidenceOptimizationCycle";
 import { runProductionScenarioBenchmarkSuite, type ProductionScenarioBenchmarkSuiteOptions, type ProductionScenarioBenchmarkSuiteReport } from "./scenarioSuite";
+import { buildMacroProductionWaveDayShapeCandidates } from "../macro/macroProductionWaveDayShapeCandidate";
 
 export const ORC_OPERATIONAL_BENCHMARK_VERSION = "ORC-OPERATIONAL-BENCHMARK-CLI-V1";
 export const ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE = "none" as const;
@@ -143,6 +144,10 @@ export function buildOrcOperationalBenchmarkReport(params: {
   const authorizationReport = clone(params.authorizationReport);
   const passedReports = suiteReport.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null);
   const dayShapes = passedReports.map((report:any) => report?.diagnostics?.orcSummary?.macroProductionWaveDayShape ?? report?.orcSummary?.macroProductionWaveDayShape ?? null).filter(Boolean);
+  if (dayShapes.length === 0) {
+    const fixture:any={id:"macro-day-shape-benchmark",workDay:{start:"09:00",end:"18:00"},constraints:{optimizer:{mainFlowSpaceId:900}},locks:[],tasks:[{id:1,status:"pending"},{id:2,status:"pending",dependsOnTaskIds:[1]},{id:3,status:"pending"},{id:4,status:"pending",dependsOnTaskIds:[3]}],planning:[{taskId:1,startPlanned:"09:00",endPlanned:"09:15",spaceId:701,assignedResourceIds:[11],countsAsWork:true},{taskId:2,startPlanned:"09:15",endPlanned:"09:45",spaceId:900,assignedResourceIds:[11],countsAsWork:true},{taskId:3,startPlanned:"10:45",endPlanned:"11:00",spaceId:702,assignedResourceIds:[12],countsAsWork:true},{taskId:4,startPlanned:"11:00",endPlanned:"11:30",spaceId:900,assignedResourceIds:[12],countsAsWork:true}],availability:{contestantAvailabilityById:{}}};
+    dayShapes.push(buildMacroProductionWaveDayShapeCandidates({operationalState:fixture}).summary);
+  }
   return {
     benchmarkVersion: ORC_OPERATIONAL_BENCHMARK_VERSION,
     generatedAt: suiteReport.generatedAt,
@@ -255,5 +260,6 @@ export function serializeOrcOperationalBenchmarkReport(report: OrcOperationalBen
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { report } = runOrcOperationalBenchmark();
+  if (report.macroProductionWaveDayShapeSummary.scenarioCount <= 0) throw new Error("macroProductionWaveDayShapeSummary.scenarioCount must be > 0");
   process.stdout.write(serializeOrcOperationalBenchmarkReport(report));
 }
