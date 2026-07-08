@@ -92,3 +92,31 @@ test("ID248 detects real resource blocker in production wave gap",()=>{
  assert.ok(r.summary.resourceBlockerTaskIds.includes(2));
  assert.equal(r.summary.blockingPrerequisiteTaskIds.length,0);
 });
+
+test("ID249 generates partial resource unblock candidates by blocker prefix",()=>{
+ const operationalState:any={ constraints:{ optimizer:{ mainFlowSpaceId:10 } }, tasks:[{id:305,status:"pending"},{id:365,status:"pending"},{id:376,status:"pending"},{id:386,status:"pending"},{id:396,status:"pending"}], locks:[], planning:[{taskId:305,startPlanned:"11:30",endPlanned:"12:05",spaceId:10,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:376,startPlanned:"12:05",endPlanned:"12:20",spaceId:20,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:386,startPlanned:"12:20",endPlanned:"12:35",spaceId:20,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:396,startPlanned:"12:35",endPlanned:"12:50",spaceId:20,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:365,startPlanned:"12:50",endPlanned:"13:05",spaceId:10,assignedResourceIds:[336],operationalRole:"productive_task"}] };
+ const r=buildProductionWaveDependencyBundleCandidates({operationalState});
+ const partials=r.candidates.filter((c:any)=>c.metadata.variantType==="partial-resource-unblock");
+ assert.ok(partials.length>=1);
+ assert.deepEqual(partials[0].metadata.movedResourceBlockerTaskIds,[376]);
+ assert.equal(partials[0].metadata.expectedTargetGapAfterMinutes,30);
+ assert.equal(partials[0].metadata.expectedVisibleMainZoneIdleReductionMinutes,15);
+ assert.equal(r.summary.partialResourceUnblockCandidateCount, partials.length);
+});
+
+test("ID249 leaves satisfied resource blocker prerequisites in place",()=>{
+ const operationalState:any={ constraints:{ optimizer:{ mainFlowSpaceId:10 } }, tasks:[{id:305,status:"pending"},{id:365,status:"pending"},{id:368,status:"pending"},{id:376,status:"pending",dependsOnTaskIds:[368]},{id:900,status:"pending",dependsOnTaskIds:[368]}], locks:[], planning:[{taskId:368,startPlanned:"11:00",endPlanned:"11:10",spaceId:30,assignedResourceIds:[999],operationalRole:"productive_task"},{taskId:305,startPlanned:"11:30",endPlanned:"12:05",spaceId:10,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:376,startPlanned:"12:05",endPlanned:"12:20",spaceId:20,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:365,startPlanned:"12:20",endPlanned:"12:35",spaceId:10,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:900,startPlanned:"13:00",endPlanned:"13:10",spaceId:30,assignedResourceIds:[999],operationalRole:"productive_task"}] };
+ const r=buildProductionWaveDependencyBundleCandidates({operationalState});
+ const p=r.candidates.find((c:any)=>c.metadata.variantType==="partial-resource-unblock") as any;
+ assert.ok(p);
+ assert.ok(p.metadata.leftInPlaceCompatibleTaskIds.includes(368));
+ assert.equal(p.metadata.movedResourceBlockerPrerequisiteTaskIds.includes(368),false);
+ assert.deepEqual(p.metadata.brokenDownstreamDependencyPairs,[]);
+});
+
+test("ID249 explains partial resource unblock rejection when first blocker has no compatible window",()=>{
+ const operationalState:any={ constraints:{ optimizer:{ mainFlowSpaceId:10 } }, tasks:[{id:305,status:"pending"},{id:365,status:"pending"},{id:376,status:"pending"},{id:111,status:"pending"}], locks:[], planning:[{taskId:111,startPlanned:"00:00",endPlanned:"12:05",spaceId:20,assignedResourceIds:[336],operationalRole:"productive_task"},{taskId:305,startPlanned:"11:30",endPlanned:"12:05",spaceId:10,assignedResourceIds:[337],operationalRole:"productive_task"},{taskId:376,startPlanned:"12:05",endPlanned:"12:20",spaceId:20,assignedResourceIds:[337],operationalRole:"productive_task"},{taskId:365,startPlanned:"12:20",endPlanned:"12:35",spaceId:10,assignedResourceIds:[337],operationalRole:"productive_task"}] };
+ const r=buildProductionWaveDependencyBundleCandidates({operationalState});
+ assert.ok(r.summary.partialResourceUnblockRejectedCandidateDetails.some((d:any)=>d.reason==="no-compatible-window-for-resource-blocker"));
+ assert.equal(r.summary.partialResourceUnblockExecuted,true);
+});

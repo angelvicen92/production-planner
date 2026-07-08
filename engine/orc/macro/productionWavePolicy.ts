@@ -7,7 +7,7 @@ export type ProductionWavePolicy = {
   meal: { allowFlexibleMealWindowProductiveWork: boolean; treatFlexibleMealAsHardStop: boolean; mealWindowCanSplitMainFlow: boolean; };
   release: { enabled: boolean; maxLastTaskToDepartureWaitMinutes: number; };
   runtime: { macroPlannerCandidateBudget: number; macroPlannerSimulationBudget: number; maxDependencyBundleSize: number; maxBundleSearchDepth: number; maxExecutionTimeMsSoft: number; };
-  scoring: { mainFlowVisibleIdleWeight: number; criticalResourceIdleWeight: number; talentWaitWeight: number; makespanWeight: number; stabilityWeight: number; dependencyRiskPenalty: number; };
+  scoring: { mainFlowVisibleIdleWeight: number; criticalResourceIdleWeight: number; talentWaitWeight: number; makespanWeight: number; stabilityWeight: number; dependencyRiskPenalty: number; partialMainFlowGapReductionMinMinutes: number; partialMainFlowGapReductionAllowed: boolean; };
 };
 export type ProductionWavePolicyDiagnostics = { version: typeof PRODUCTION_WAVE_POLICY_VERSION; source: ProductionWavePolicySource; values: ProductionWavePolicy; warnings: string[]; defaultedFields: string[]; configuredFields: string[]; readOnly: true };
 const DEFAULT_POLICY: ProductionWavePolicy = {
@@ -17,7 +17,7 @@ const DEFAULT_POLICY: ProductionWavePolicy = {
   meal: { allowFlexibleMealWindowProductiveWork: true, treatFlexibleMealAsHardStop: false, mealWindowCanSplitMainFlow: true },
   release: { enabled: false, maxLastTaskToDepartureWaitMinutes: 60 },
   runtime: { macroPlannerCandidateBudget: 6, macroPlannerSimulationBudget: 12, maxDependencyBundleSize: 12, maxBundleSearchDepth: 2, maxExecutionTimeMsSoft: 60000 },
-  scoring: { mainFlowVisibleIdleWeight: 10, criticalResourceIdleWeight: 3, talentWaitWeight: 2, makespanWeight: 2, stabilityWeight: 1, dependencyRiskPenalty: 5 },
+  scoring: { mainFlowVisibleIdleWeight: 10, criticalResourceIdleWeight: 3, talentWaitWeight: 2, makespanWeight: 2, stabilityWeight: 1, dependencyRiskPenalty: 5, partialMainFlowGapReductionMinMinutes: 15, partialMainFlowGapReductionAllowed: true },
 };
 const flat = (o:any,p=""): string[] => Object.entries(o).flatMap(([k,v]) => v && typeof v === "object" && !Array.isArray(v) ? flat(v, p?`${p}.${k}`:k) : [p?`${p}.${k}`:k]);
 const get = (o:any,path:string) => path.split(".").reduce((c,k)=>c?.[k],o);
