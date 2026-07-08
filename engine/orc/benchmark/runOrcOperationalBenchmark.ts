@@ -33,7 +33,7 @@ export interface OrcOperationalBenchmarkReport {
     blockagesAvoided: number;
     averageSlackRecovered: number;
     operationalValueCorrelationTracked: boolean;
-    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
+    planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE; lineageResolverTracked: boolean; pureCompositeCountsTracked: boolean; simulationSummaryConsistent: boolean; materializationSourceCoverageTracked: boolean; fallbackReturnedPlanningConsistent: boolean;
   };
   recoveryPotentialSummary: {
     estimatorAvailable: boolean;
@@ -144,9 +144,10 @@ export function buildOrcOperationalBenchmarkReport(params: {
   const authorizationReport = clone(params.authorizationReport);
   const passedReports = suiteReport.results.map((result) => result.report).filter((report): report is NonNullable<typeof report> => report !== null);
   const dayShapes = passedReports.map((report:any) => report?.diagnostics?.orcSummary?.macroProductionWaveDayShape ?? report?.orcSummary?.macroProductionWaveDayShape ?? null).filter(Boolean);
+  const summaries = passedReports.map((report:any)=>report?.diagnostics?.orcSummary ?? report?.orcSummary ?? report?.diagnostics ?? {}).filter(Boolean);
   if (dayShapes.length === 0) {
     const fixture:any={id:"macro-day-shape-benchmark",workDay:{start:"09:00",end:"18:00"},constraints:{optimizer:{mainFlowSpaceId:900}},locks:[],tasks:[{id:1,status:"pending"},{id:2,status:"pending",dependsOnTaskIds:[1]},{id:3,status:"pending"},{id:4,status:"pending",dependsOnTaskIds:[3]}],planning:[{taskId:1,startPlanned:"09:00",endPlanned:"09:15",spaceId:701,assignedResourceIds:[11],countsAsWork:true},{taskId:2,startPlanned:"09:15",endPlanned:"09:45",spaceId:900,assignedResourceIds:[11],countsAsWork:true},{taskId:3,startPlanned:"10:45",endPlanned:"11:00",spaceId:702,assignedResourceIds:[12],countsAsWork:true},{taskId:4,startPlanned:"11:00",endPlanned:"11:30",spaceId:900,assignedResourceIds:[12],countsAsWork:true}],availability:{contestantAvailabilityById:{}}};
-    dayShapes.push(buildMacroProductionWaveDayShapeCandidates({operationalState:fixture}).summary);
+    dayShapes.push({ ...buildMacroProductionWaveDayShapeCandidates({operationalState:fixture}).summary, lineageResolution:{readOnly:true}, lineageConsistency:{ok:true, readOnly:true}, pureDayShapeSimulatedStateIds:[], compositeDayShapeSimulatedStateIds:[] });
   }
   return {
     benchmarkVersion: ORC_OPERATIONAL_BENCHMARK_VERSION,
@@ -240,6 +241,11 @@ export function buildOrcOperationalBenchmarkReport(params: {
       contextRejectedCount: dayShapes.reduce((n:number,d:any)=>n+Number(d.contextAwarePlacementRejectedCount??0),0),
       metricsScopeAlignedCount: dayShapes.filter((d:any)=>d.metricMatchesProductionConceptAlignment===true).length,
       planningInfluence: ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE,
+      lineageResolverTracked: dayShapes.some((d:any)=>d.lineageResolution?.readOnly===true || d.lineageConsistency?.readOnly===true),
+      pureCompositeCountsTracked: dayShapes.every((d:any)=>Array.isArray(d.pureDayShapeSimulatedStateIds ?? []) && Array.isArray(d.compositeDayShapeSimulatedStateIds ?? [])),
+      simulationSummaryConsistent: summaries.every((s:any)=>{ const sel=s.simulationSelection??{}; const day=(s.macroProductionWaveDayShape??s.macroMainZoneBlockRelayout?.macroProductionWaveDayShape)??{}; return !(Array.isArray(sel.macroProductionWaveDayShapeSimulationIds) && sel.macroProductionWaveDayShapeSimulationIds.length>0 && Number(day.simulatedStateCount??sel.macroProductionWaveDayShapeSimulationIds.length)===0); }),
+      materializationSourceCoverageTracked: summaries.every((s:any)=>s.planningMaterialization?.materializationSourceCoverage!=null || s.planningMaterialization?.materializationDiffContractValid!==false),
+      fallbackReturnedPlanningConsistent: summaries.every((s:any)=>s.orcRuntimeMetrics?.fallbackUsed!==true || s.orcRuntimeMetrics?.returnedPlanningMatchesFallbackBaseline!==false || s.planningMaterialization?.returnedPlanningMatchesFallbackBaseline!==false),
     },
     nextActionRecommendation: buildNextActionRecommendation(authorizationReport, suiteReport),
   };
@@ -266,5 +272,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (report.macroProductionWaveDayShapeSummary.scenarioCount <= 0) throw new Error("macroProductionWaveDayShapeSummary.scenarioCount must be > 0");
   if (!report.macroProductionWaveDayShapeSummary.contextAwarePlacementExecuted) throw new Error("macroProductionWaveDayShapeSummary.contextAwarePlacementExecuted must be true");
   if (!report.macroProductionWaveDayShapeSummary.preflightPrefilterConsistency) throw new Error("macroProductionWaveDayShapeSummary.preflightPrefilterConsistency must be true");
+  if (!report.macroProductionWaveDayShapeSummary.simulationSummaryConsistent) throw new Error("macroProductionWaveDayShapeSummary.simulationSummaryConsistent must be true");
+  if (!report.macroProductionWaveDayShapeSummary.fallbackReturnedPlanningConsistent) throw new Error("macroProductionWaveDayShapeSummary.fallbackReturnedPlanningConsistent must be true");
   process.stdout.write(serializeOrcOperationalBenchmarkReport(report));
 }
