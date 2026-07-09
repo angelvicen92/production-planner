@@ -87,7 +87,7 @@ export interface OrcOperationalBenchmarkReport {
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
   macroProductionWaveDayShapeSummary: {
-    scenarioCount: number; contextAwarePlacementExecuted: boolean; preflightPrefilterConsistency: boolean; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; contextRejectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE; lineageResolverTracked: boolean; pureCompositeCountsTracked: boolean; simulationSummaryConsistent: boolean; materializationSourceCoverageTracked: boolean; fallbackReturnedPlanningConsistent: boolean; lineageWrapperNormalizationTracked: boolean; globalDayShapeSelectionTracked: boolean; macroMainPollutionDetected: boolean; materializationFinalSourceCoverageTracked: boolean; explainabilityGateSourceTracked: boolean; fallbackCoherenceTracked: boolean;
+    scenarioCount: number; contextAwarePlacementExecuted: boolean; preflightPrefilterConsistency: boolean; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; contextRejectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE; lineageResolverTracked: boolean; pureCompositeCountsTracked: boolean; simulationSummaryConsistent: boolean; materializationSourceCoverageTracked: boolean; fallbackReturnedPlanningConsistent: boolean; lineageWrapperNormalizationTracked: boolean; globalDayShapeSelectionTracked: boolean; macroMainPollutionDetected: boolean; materializationFinalSourceCoverageTracked: boolean; explainabilityGateSourceTracked: boolean; fallbackCoherenceTracked: boolean; postMacroUnifiedSelectionTracked: boolean; stalePreMacroSelectionDetected: boolean; macroPassSimulationPoolTracked: boolean; selectedMacroGateConsistencyTracked: boolean; finalMaterializationLineageTracked: boolean;
   };
   nextActionRecommendation: {
     allowed: boolean;
@@ -252,6 +252,11 @@ export function buildOrcOperationalBenchmarkReport(params: {
       materializationFinalSourceCoverageTracked: summaries.every((s:any)=>s.planningMaterialization?.materializationDiffContractValid!==false || (s.planningMaterialization?.selectedLineage!=null && s.planningMaterialization?.materializationSourceCoverage!=null)),
       explainabilityGateSourceTracked: summaries.every((s:any)=>s.explainabilityGateSource!=null || s.gates?.explainableDecision!==false),
       fallbackCoherenceTracked: summaries.every((s:any)=>s.orcRuntimeMetrics?.fallbackUsed!==true || s.orcRuntimeMetrics?.returnedPlanningMatchesFallbackBaseline===true),
+      postMacroUnifiedSelectionTracked: summaries.every((s:any)=>s.simulationSelection==null || s.simulationSelection?.postMacroSelectionExecuted===true || s.simulationSelection?.postMacroUnifiedPoolBuilt===true || s.orcRuntimeMetrics?.postMacroSelectionExecuted===true),
+      stalePreMacroSelectionDetected: summaries.every((s:any)=>!(s.simulationSelection?.selectedBucket==="valid-committed-macro-main-zone-block-relayout" && s.macroMainZoneBlockRelayout?.selectedAsCommit===false)),
+      macroPassSimulationPoolTracked: summaries.every((s:any)=>s.simulationSelection?.macroPassLineageFallbackUsed!==true || Number(s.simulationSelection?.macroPassSimulationIdsMissingCount??0)>0),
+      selectedMacroGateConsistencyTracked: summaries.every((s:any)=>!(s.simulationSelection?.macroMainZoneRelayoutAcceptedByGlobalMacroValueGate===true && s.macroMainZoneBlockRelayout?.netValue?.acceptedByGlobalMacroValueGate===false)),
+      finalMaterializationLineageTracked: summaries.every((s:any)=>s.selectedSimulatedStateId==null || (s.planningMaterialization?.selectedLineage!=null && Array.isArray(s.planningMaterialization?.selectedCandidateFamilies) && s.planningMaterialization.selectedCandidateFamilies.length>0) || s.orcRuntimeMetrics?.fallbackUsed===true),
     },
     nextActionRecommendation: buildNextActionRecommendation(authorizationReport, suiteReport),
   };
@@ -284,5 +289,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (report.macroProductionWaveDayShapeSummary.macroMainPollutionDetected) throw new Error("macro-main selection contains pure day-shape pollution");
   if (!report.macroProductionWaveDayShapeSummary.materializationFinalSourceCoverageTracked) throw new Error("materialization source coverage must be present when diff contract fails");
   if (!report.macroProductionWaveDayShapeSummary.fallbackCoherenceTracked) throw new Error("fallback must return baseline coherently");
+  if (!report.macroProductionWaveDayShapeSummary.postMacroUnifiedSelectionTracked) throw new Error("post-macro unified selection must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.stalePreMacroSelectionDetected) throw new Error("stale pre-macro macro-main selection detected");
+  if (!report.macroProductionWaveDayShapeSummary.macroPassSimulationPoolTracked) throw new Error("macro pass simulation pool must be resolved before lineage fallback");
+  if (!report.macroProductionWaveDayShapeSummary.selectedMacroGateConsistencyTracked) throw new Error("selected macro gate flags must match final macro summary");
+  if (!report.macroProductionWaveDayShapeSummary.finalMaterializationLineageTracked) throw new Error("final materialization lineage must be tracked for selected simulations");
   process.stdout.write(serializeOrcOperationalBenchmarkReport(report));
 }
