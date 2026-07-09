@@ -56,3 +56,27 @@ describe("ID233 explicit final selection diagnostics", () => {
     assert.equal(result.diagnostics.selectedFinalIncludesCompositeAncestors, true);
   });
 });
+
+describe("ID255 global simulation selection lineage buckets", () => {
+  it("separates macro-main, pure day-shape, and real composite simulations", () => {
+    const macro = "candidate:macro-main-zone-block-relayout:1";
+    const day = "candidate:macro-production-wave-day-shape:gap-next-main-only";
+    const composite = `candidate:partial-plan:${macro}+${day}`;
+    const result = selectBestORCSimulation(shadow({
+      candidates: [candidate(macro, { strategy: "MACRO_MAIN_ZONE_BLOCK_RELAYOUT" }), candidate(day), candidate(composite)],
+      candidateStates: [candidateState("cs:macro", macro), candidateState("cs:day", `candidate:partial-plan:${day}`), candidateState("cs:composite", composite)],
+      simulatedStates: [simulatedState(`orc-simulation:simulated-state:orc-transformation:candidate-state:${macro}`, "cs:macro"), simulatedState(`orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:${day}`, "cs:day"), simulatedState(`orc-simulation:simulated-state:orc-transformation:candidate-state:${composite}`, "cs:composite")],
+      validationResults: [validation(`orc-simulation:simulated-state:orc-transformation:candidate-state:${macro}`, "VALID"), validation(`orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:${day}`, "VALID"), validation(`orc-simulation:simulated-state:orc-transformation:candidate-state:${composite}`, "VALID")],
+      operationalValues: [value(`orc-simulation:simulated-state:orc-transformation:candidate-state:${macro}`, 1), value(`orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:${day}`, 2), value(`orc-simulation:simulated-state:orc-transformation:candidate-state:${composite}`, 3)],
+      summary: { macroMainZoneBlockRelayout: { selectedAsCommit: true, netValue: { acceptedByMacroValueGate: true, acceptedByGlobalMacroValueGate: true, acceptedByDominanceGate: true }, macroProductionWaveDayShape: { simulatedStateCount: 2 } } },
+    }));
+    assert.equal(result.diagnostics.macroMainZoneRelayoutSimulationIds.length, 2);
+    assert.equal(result.diagnostics.macroProductionWaveDayShapeSimulationIds.length, 2);
+    assert.equal(result.diagnostics.pureMacroProductionWaveDayShapeSimulationIds.length, 1);
+    assert.equal(result.diagnostics.compositeMacroProductionWaveDayShapeSimulationIds.length, 1);
+    assert.equal(result.diagnostics.compositeMacroSimulationIds.length, 1);
+    const pureDay = `orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:${day}`;
+    assert.equal(result.diagnostics.macroMainZoneRelayoutAcceptedSimulationIds.includes(pureDay), false);
+    assert.equal(result.diagnostics.lineageConsistency.ok, true);
+  });
+});

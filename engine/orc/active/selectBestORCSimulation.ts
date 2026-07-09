@@ -31,6 +31,9 @@ export interface ORCSimulationSelectionDiagnostics {
   compositeMacroProductionWaveDayShapeSimulationIds: string[];
   compositeMacroSimulationIds: string[];
   lineageConsistency: { ok: boolean; warnings: string[]; readOnly: true };
+  macroPassSimulationIds: string[];
+  macroPassLineageFallbackUsed: boolean;
+  macroPassLineageFallbackWarnings: string[];
   macroMainZoneRelayoutAcceptedSimulationIds: string[];
   macroMainZoneRelayoutRejectedSimulationIds: string[];
   macroMainZoneRelayoutRejectReasons: Record<string,string>;
@@ -119,7 +122,7 @@ function isExecutable(candidate: Candidate | null): boolean {
 }
 
 export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORCSimulationSelection {
-  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-dominant-macro-main-zone-relayout-first-v3", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], macroMainZoneRelayoutSimulationIds: [], macroProductionWaveDayShapeSimulationIds: [], pureMacroProductionWaveDayShapeSimulationIds: [], compositeMacroProductionWaveDayShapeSimulationIds: [], compositeMacroSimulationIds: [], lineageConsistency: { ok: true, warnings: [], readOnly: true }, macroMainZoneRelayoutAcceptedSimulationIds: [], macroMainZoneRelayoutRejectedSimulationIds: [], macroMainZoneRelayoutRejectReasons: {}, macroMainZoneRelayoutAcceptedByMacroValueGate: false, macroMainZoneRelayoutAcceptedByGlobalMacroValueGate: false, macroMainZoneRelayoutGlobalRejectReasons: {}, macroMainZoneRelayoutGlobalValueBySimulationId: {}, macroMainZoneRelayoutScoreDelta: null, baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, resourceCompressionAcceptedByNetValueGate: false, resourceCompressionRejectedSimulationIds: [], resourceCompressionRejectReasons: {}, baseCompositeOverallScore: null, resourceCompressionOverallScore: null, resourceCompressionScoreDelta: null, readOnly: true };
+  const emptyDiagnostics: ORCSimulationSelectionDiagnostics = { selectionPolicy: "valid-committed-dominant-macro-main-zone-relayout-first-v3", selectedBucket: null, validSimulationCount: 0, invalidSimulationCount: 0, committedSimulationIds: [], baselineRepairSimulationIds: [], postRepairContinuitySimulationIds: [], criticalResourceIdleCompressionSimulationIds: [], postContinuityResourceCompressionSimulationIds: [], macroMainZoneRelayoutSimulationIds: [], macroProductionWaveDayShapeSimulationIds: [], pureMacroProductionWaveDayShapeSimulationIds: [], compositeMacroProductionWaveDayShapeSimulationIds: [], compositeMacroSimulationIds: [], lineageConsistency: { ok: true, warnings: [], readOnly: true }, macroPassSimulationIds: [], macroPassLineageFallbackUsed: false, macroPassLineageFallbackWarnings: [], macroMainZoneRelayoutAcceptedSimulationIds: [], macroMainZoneRelayoutRejectedSimulationIds: [], macroMainZoneRelayoutRejectReasons: {}, macroMainZoneRelayoutAcceptedByMacroValueGate: false, macroMainZoneRelayoutAcceptedByGlobalMacroValueGate: false, macroMainZoneRelayoutGlobalRejectReasons: {}, macroMainZoneRelayoutGlobalValueBySimulationId: {}, macroMainZoneRelayoutScoreDelta: null, baseCompositeSimulationId: null, selectedBecause: null, selectedSimulatedStateId: null, selectedFinalCandidateFamily: null, selectedFinalCandidateId: null, selectedFinalSimulatedStateId: null, selectedFinalIncludesCompositeAncestors: false, resourceCompressionAcceptedByNetValueGate: false, resourceCompressionRejectedSimulationIds: [], resourceCompressionRejectReasons: {}, baseCompositeOverallScore: null, resourceCompressionOverallScore: null, resourceCompressionScoreDelta: null, readOnly: true };
   if (!shadow) return { simulation: null, validation: null, value: null, candidateState: null, candidate: null, commitDecision: null, diagnostics: emptyDiagnostics };
   const validationBySimulatedStateId = new Map((shadow.validationResults ?? []).map((item) => [item.simulatedStateId, item]));
   const operationalValueBySimulatedStateId = new Map((shadow.operationalValues ?? []).map((item) => [item.simulatedStateId, item]));
@@ -146,8 +149,12 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   const compositeDayShapeLineageIds = new Set([...lineageBySimulationId.entries()].filter(([,l])=>l.containsMacroProductionWaveDayShape&&l.compositeFamily).map(([id])=>id));
   const compositeMacroIds = new Set([...lineageBySimulationId.entries()].filter(([,l])=>l.compositeFamily&&l.candidateFamilies.filter(f=>f.startsWith("macro-")).length>1).map(([id])=>id));
   const macroSummary = isRecord(shadow.summary) && isRecord((shadow.summary as any).macroMainZoneBlockRelayout) ? (shadow.summary as any).macroMainZoneBlockRelayout as Record<string,unknown> : null;
-  const macroIds = new Set<string>([...macroMainLineageIds, ...(macroSummary && isRecord(macroSummary.lineage) ? stringArray((macroSummary.lineage as any).simulatedStateIds) : [])]);
-  if (typeof macroSummary?.selectedSimulatedStateId === "string") macroIds.add(macroSummary.selectedSimulatedStateId);
+  const macroPassSimulationIds = new Set<string>(macroSummary && isRecord(macroSummary.lineage) ? stringArray((macroSummary.lineage as any).simulatedStateIds) : []);
+  if (typeof macroSummary?.selectedSimulatedStateId === "string") macroPassSimulationIds.add(macroSummary.selectedSimulatedStateId);
+  const macroPassLineageFallbackWarnings: string[] = [];
+  const macroPassLineageFallbackUsed = [...macroPassSimulationIds].some((id) => !lineageBySimulationId.has(id));
+  if (macroPassLineageFallbackUsed) macroPassLineageFallbackWarnings.push("macro_pass_contains_simulation_ids_not_present_in_shadow_simulated_states");
+  const macroIds = new Set<string>(macroMainLineageIds);
   const macroAccepted = macroSummary?.selectedAsCommit === true && isRecord(macroSummary.netValue) && (macroSummary.netValue as any).acceptedByMacroValueGate === true && (macroSummary.netValue as any).acceptedByGlobalMacroValueGate === true && (macroSummary.netValue as any).acceptedByDominanceGate === true && (macroSummary.netValue as any).macroMaterializationSourceComplete !== false;
   const macroLocalAccepted = isRecord(macroSummary?.netValue) && (macroSummary!.netValue as any).acceptedByMacroValueGate === true;
   const macroGlobalAccepted = isRecord(macroSummary?.netValue) && (macroSummary!.netValue as any).acceptedByGlobalMacroValueGate === true;
@@ -155,6 +162,17 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   const idleNetValue = isRecord(idleSummary?.netValue) ? idleSummary.netValue : null;
   const resourceCompressionAcceptedByNetValueGate = idleNetValue?.acceptedByNetValueGate === true;
   const baseCompositeSimulationId = idleSummary ? (typeof idleSummary.sourceSimulationId === "string" ? idleSummary.sourceSimulationId : null) : null;
+
+  const lineageWarnings: string[] = [];
+  const localDayShape = isRecord(macroSummary?.macroProductionWaveDayShape) ? macroSummary!.macroProductionWaveDayShape as Record<string, unknown> : null;
+  const localDayShapeCount = Number(localDayShape?.simulatedStateCount ?? localDayShape?.validSimulationCount ?? 0);
+  for (const id of macroMainLineageIds) { const l = lineageBySimulationId.get(id); if (id.includes("macro-production-wave-day-shape") && l && !l.containsMacroMainZoneBlockRelayout) lineageWarnings.push(`macro_main_contains_pure_day_shape:${id}`); }
+  for (const [id, l] of lineageBySimulationId) {
+    if (id.includes("macro-production-wave-day-shape") && !l.containsMacroProductionWaveDayShape) lineageWarnings.push(`day_shape_text_not_resolved:${id}`);
+  }
+  if (localDayShapeCount > 0 && dayShapeLineageIds.size === 0) lineageWarnings.push("local_day_shape_simulations_missing_from_global_selection");
+  const textualCompositeMacro = [...lineageBySimulationId.entries()].filter(([id,l]) => id.includes("+") && l.candidateFamilies.filter(f=>f.startsWith("macro-")).length > 1);
+  if (textualCompositeMacro.length > 0 && compositeMacroIds.size === 0) lineageWarnings.push("textual_composite_macro_ids_missing_from_composite_selection");
 
   const rows = [...(shadow.simulatedStates ?? [])].map((simulation) => {
     const candidateState = candidateStateById.get(simulation.candidateStateId) ?? null;
@@ -217,7 +235,10 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     pureMacroProductionWaveDayShapeSimulationIds: [...pureDayShapeLineageIds].sort(),
     compositeMacroProductionWaveDayShapeSimulationIds: [...compositeDayShapeLineageIds].sort(),
     compositeMacroSimulationIds: [...compositeMacroIds].sort(),
-    lineageConsistency: { ok: !(dayShapeLineageIds.size > 0 && isRecord((macroSummary as any)?.macroProductionWaveDayShape) && Number(((macroSummary as any).macroProductionWaveDayShape as any).simulatedStateCount ?? dayShapeLineageIds.size) === 0), warnings: [], readOnly: true },
+    lineageConsistency: { ok: lineageWarnings.length === 0, warnings: lineageWarnings.sort(), readOnly: true },
+    macroPassSimulationIds: [...macroPassSimulationIds].sort(),
+    macroPassLineageFallbackUsed,
+    macroPassLineageFallbackWarnings,
     macroMainZoneRelayoutAcceptedSimulationIds: macroAccepted ? [...macroIds].sort() : [],
     macroMainZoneRelayoutRejectedSimulationIds: macroAccepted ? [] : [...macroIds].sort(),
     macroMainZoneRelayoutRejectReasons: macroAccepted ? {} : Object.fromEntries([...macroIds].sort().map(id => [id, String((macroSummary?.netValue as any)?.rejectionReason ?? "macro_main_zone_relayout_not_positive")])),
