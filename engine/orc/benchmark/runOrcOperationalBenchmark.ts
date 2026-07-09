@@ -87,7 +87,7 @@ export interface OrcOperationalBenchmarkReport {
     planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE;
   };
   macroProductionWaveDayShapeSummary: {
-    scenarioCount: number; contextAwarePlacementExecuted: boolean; preflightPrefilterConsistency: boolean; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; contextRejectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE; lineageResolverTracked: boolean; pureCompositeCountsTracked: boolean; simulationSummaryConsistent: boolean; materializationSourceCoverageTracked: boolean; fallbackReturnedPlanningConsistent: boolean; lineageWrapperNormalizationTracked: boolean; globalDayShapeSelectionTracked: boolean; macroMainPollutionDetected: boolean; materializationFinalSourceCoverageTracked: boolean; explainabilityGateSourceTracked: boolean; fallbackCoherenceTracked: boolean; postMacroUnifiedSelectionTracked: boolean; stalePreMacroSelectionDetected: boolean; macroPassSimulationPoolTracked: boolean; selectedMacroGateConsistencyTracked: boolean; finalMaterializationLineageTracked: boolean;
+    scenarioCount: number; contextAwarePlacementExecuted: boolean; preflightPrefilterConsistency: boolean; candidateGeneratedCount: number; preflightPassedCount: number; prefilterPassedCount: number; simulatedCount: number; validCount: number; selectedCount: number; contextRejectedCount: number; metricsScopeAlignedCount: number; planningInfluence: typeof ORC_OPERATIONAL_BENCHMARK_PLANNING_INFLUENCE; lineageResolverTracked: boolean; pureCompositeCountsTracked: boolean; simulationSummaryConsistent: boolean; materializationSourceCoverageTracked: boolean; fallbackReturnedPlanningConsistent: boolean; lineageWrapperNormalizationTracked: boolean; globalDayShapeSelectionTracked: boolean; macroMainPollutionDetected: boolean; materializationFinalSourceCoverageTracked: boolean; explainabilityGateSourceTracked: boolean; fallbackCoherenceTracked: boolean; postMacroUnifiedSelectionTracked: boolean; stalePreMacroSelectionDetected: boolean; macroPassSimulationPoolTracked: boolean; selectedMacroGateConsistencyTracked: boolean; finalMaterializationLineageTracked: boolean; productionConceptNonRegressionTracked: boolean; mainZoneContinuityConceptAlignmentTracked: boolean; mealBreakBlockGenerationTracked: boolean; mealBreakBlockCoverageTracked: boolean; flexibleMealGapRegressionTracked: boolean; spaceTaskChangeLimitTracked: boolean; spaceTaskChangeLimitViolationCount: number; productionConceptGateBlockedRegressionCount: number;
   };
   nextActionRecommendation: {
     allowed: boolean;
@@ -257,6 +257,14 @@ export function buildOrcOperationalBenchmarkReport(params: {
       macroPassSimulationPoolTracked: summaries.every((s:any)=>s.simulationSelection?.macroPassLineageFallbackUsed!==true || Number(s.simulationSelection?.macroPassSimulationIdsMissingCount??0)>0),
       selectedMacroGateConsistencyTracked: summaries.every((s:any)=>!(s.simulationSelection?.macroMainZoneRelayoutAcceptedByGlobalMacroValueGate===true && s.macroMainZoneBlockRelayout?.netValue?.acceptedByGlobalMacroValueGate===false)),
       finalMaterializationLineageTracked: summaries.every((s:any)=>s.selectedSimulatedStateId==null || (s.planningMaterialization?.selectedLineage!=null && Array.isArray(s.planningMaterialization?.selectedCandidateFamilies) && s.planningMaterialization.selectedCandidateFamilies.length>0) || s.orcRuntimeMetrics?.fallbackUsed===true),
+      productionConceptNonRegressionTracked: summaries.every((s:any)=>s.productionConceptAlignment == null || s.orcRuntimeMetrics?.productionConceptGatePassed != null || s.productionConceptNonRegressionGate?.passed != null || s.gates?.productionConceptNotWorseThanV4 != null),
+      mainZoneContinuityConceptAlignmentTracked: summaries.every((s:any)=>s.mainZoneContinuity?.productionConceptAlignmentMismatch != null || s.productionConceptAlignment == null),
+      mealBreakBlockGenerationTracked: summaries.every((s:any)=>s.productionConceptAlignment == null || s.orcRuntimeMetrics?.mealBreakBlocksGenerated != null || s.mealBreakBlocks?.blocks != null),
+      mealBreakBlockCoverageTracked: summaries.every((s:any)=>s.productionConceptAlignment == null || s.orcRuntimeMetrics?.mealBreakBlockCoverageValid != null || s.mealBreakBlocks?.blockers != null),
+      flexibleMealGapRegressionTracked: summaries.every((s:any)=>s.orcRuntimeMetrics?.flexibleMealGapRegressionDetected != null || Number(s.productionConceptAlignment?.gapsIncorrectlyIgnoredBecauseMealWindow ?? 0) === 0),
+      spaceTaskChangeLimitTracked: summaries.every((s:any)=>s.productionConceptAlignment == null || s.orcRuntimeMetrics?.spaceTaskChangeLimitChecked === true || s.spaceTaskChangeLimitChecked === true),
+      spaceTaskChangeLimitViolationCount: summaries.reduce((n:number,s:any)=>n+Number(s.orcRuntimeMetrics?.spaceTaskChangeLimitViolationsCount ?? s.spaceTaskChangeLimitViolations?.length ?? 0),0),
+      productionConceptGateBlockedRegressionCount: summaries.filter((s:any)=>s.orcRuntimeMetrics?.productionConceptGatePassed === false || s.productionConceptNonRegressionGate?.passed === false || s.gates?.productionConceptNotWorseThanV4 === false).length,
     },
     nextActionRecommendation: buildNextActionRecommendation(authorizationReport, suiteReport),
   };
@@ -294,5 +302,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (!report.macroProductionWaveDayShapeSummary.macroPassSimulationPoolTracked) throw new Error("macro pass simulation pool must be resolved before lineage fallback");
   if (!report.macroProductionWaveDayShapeSummary.selectedMacroGateConsistencyTracked) throw new Error("selected macro gate flags must match final macro summary");
   if (!report.macroProductionWaveDayShapeSummary.finalMaterializationLineageTracked) throw new Error("final materialization lineage must be tracked for selected simulations");
+  if (!report.macroProductionWaveDayShapeSummary.productionConceptNonRegressionTracked) throw new Error("production concept non-regression gate must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.mainZoneContinuityConceptAlignmentTracked) throw new Error("main-zone continuity and production concept alignment must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.mealBreakBlockGenerationTracked) throw new Error("meal break block generation must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.mealBreakBlockCoverageTracked) throw new Error("meal break block coverage must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.flexibleMealGapRegressionTracked) throw new Error("flexible meal gap regression must be tracked");
+  if (!report.macroProductionWaveDayShapeSummary.spaceTaskChangeLimitTracked) throw new Error("space task change limit must be tracked");
+  if (report.macroProductionWaveDayShapeSummary.spaceTaskChangeLimitViolationCount > 0) throw new Error("space task change limit violation detected");
   process.stdout.write(serializeOrcOperationalBenchmarkReport(report));
 }
