@@ -55,6 +55,23 @@ export interface ORCSimulationSelectionDiagnostics {
   baseCompositeOverallScore?: number | null;
   resourceCompressionOverallScore?: number | null;
   resourceCompressionScoreDelta?: number | null;
+  postMacroSelectionExecuted?: boolean;
+  postMacroUnifiedPoolBuilt?: boolean;
+  postMacroUnifiedCandidateCount?: number;
+  postMacroUnifiedCandidateStateCount?: number;
+  postMacroUnifiedSimulatedStateCount?: number;
+  postMacroUnifiedValidationCount?: number;
+  postMacroUnifiedOperationalValueCount?: number;
+  postMacroUnifiedCommitDecisionCount?: number;
+  postMacroSources?: string[];
+  postMacroSelectionSource?: string | null;
+  macroPassSimulationIdsResolvedCount?: number;
+  macroPassSimulationIdsMissingCount?: number;
+  macroPassSimulationIdsMissing?: string[];
+  stalePreMacroSelectionDiscarded?: boolean;
+  stalePreMacroSelectionReason?: string | null;
+  postMacroSelectionAvailable?: boolean;
+  postMacroSelectionReason?: string | null;
   readOnly: true;
 }
 
@@ -152,8 +169,9 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
   const macroPassSimulationIds = new Set<string>(macroSummary && isRecord(macroSummary.lineage) ? stringArray((macroSummary.lineage as any).simulatedStateIds) : []);
   if (typeof macroSummary?.selectedSimulatedStateId === "string") macroPassSimulationIds.add(macroSummary.selectedSimulatedStateId);
   const macroPassLineageFallbackWarnings: string[] = [];
-  const macroPassLineageFallbackUsed = [...macroPassSimulationIds].some((id) => !lineageBySimulationId.has(id));
-  if (macroPassLineageFallbackUsed) macroPassLineageFallbackWarnings.push("macro_pass_contains_simulation_ids_not_present_in_shadow_simulated_states");
+  const explicitMissing = Array.isArray((shadow as any).sourceBreakdown?.macroPassSimulationIdsMissing) ? (shadow as any).sourceBreakdown.macroPassSimulationIdsMissing : null;
+  const macroPassLineageFallbackUsed = explicitMissing ? explicitMissing.length > 0 : [...macroPassSimulationIds].some((id) => !lineageBySimulationId.has(id));
+  if (macroPassLineageFallbackUsed) macroPassLineageFallbackWarnings.push("macro_pass_contains_simulation_ids_not_present_in_unified_simulated_states");
   const macroIds = new Set<string>(macroMainLineageIds);
   const macroAccepted = macroSummary?.selectedAsCommit === true && isRecord(macroSummary.netValue) && (macroSummary.netValue as any).acceptedByMacroValueGate === true && (macroSummary.netValue as any).acceptedByGlobalMacroValueGate === true && (macroSummary.netValue as any).acceptedByDominanceGate === true && (macroSummary.netValue as any).macroMaterializationSourceComplete !== false;
   const macroLocalAccepted = isRecord(macroSummary?.netValue) && (macroSummary!.netValue as any).acceptedByMacroValueGate === true;
@@ -260,6 +278,23 @@ export function selectBestORCSimulation(shadow: ORCShadowModeResult | null): ORC
     baseCompositeOverallScore: typeof idleNetValue?.baseCompositeOverallScore === "number" ? idleNetValue.baseCompositeOverallScore : null,
     resourceCompressionOverallScore: typeof idleNetValue?.resourceCompressionOverallScore === "number" ? idleNetValue.resourceCompressionOverallScore : null,
     resourceCompressionScoreDelta: typeof idleNetValue?.resourceCompressionScoreDelta === "number" ? idleNetValue.resourceCompressionScoreDelta : null,
+    postMacroSelectionExecuted: (shadow as any).postMacroSelection?.postMacroUnifiedPoolBuilt === true,
+    postMacroUnifiedPoolBuilt: (shadow as any).postMacroSelection?.postMacroUnifiedPoolBuilt === true,
+    postMacroUnifiedCandidateCount: shadow.candidates?.length ?? 0,
+    postMacroUnifiedCandidateStateCount: shadow.candidateStates?.length ?? 0,
+    postMacroUnifiedSimulatedStateCount: shadow.simulatedStates?.length ?? 0,
+    postMacroUnifiedValidationCount: shadow.validationResults?.length ?? 0,
+    postMacroUnifiedOperationalValueCount: shadow.operationalValues?.length ?? 0,
+    postMacroUnifiedCommitDecisionCount: shadow.commitDecisions?.length ?? 0,
+    postMacroSources: (shadow as any).postMacroSelection?.postMacroSources ?? undefined,
+    postMacroSelectionSource: selected ? (((shadow as any).sourceBreakdown?.simulatedStates?.["macro-pass"] ?? 0) > 0 && macroPassSimulationIds.has(selected.simulation.id) ? "macro-pass" : "shadow") : null,
+    macroPassSimulationIdsResolvedCount: (shadow as any).sourceBreakdown?.macroPassSimulationIdsResolvedCount,
+    macroPassSimulationIdsMissingCount: (shadow as any).sourceBreakdown?.macroPassSimulationIdsMissingCount,
+    macroPassSimulationIdsMissing: (shadow as any).sourceBreakdown?.macroPassSimulationIdsMissing,
+    stalePreMacroSelectionDiscarded: (shadow as any).postMacroSelection?.stalePreMacroSelectionDiscarded === true,
+    stalePreMacroSelectionReason: (shadow as any).postMacroSelection?.stalePreMacroSelectionReason ?? null,
+    postMacroSelectionAvailable: selected != null,
+    postMacroSelectionReason: selected ? "selected_from_unified_pool" : "no_selectable_simulation_in_unified_pool",
     readOnly: true,
   };
   return { simulation: selected?.simulation ?? null, validation: selected?.validation ?? null, value: selected?.operationalValue?.overallScore ?? null, candidateState: selected?.candidateState ?? null, candidate: selected?.candidate ?? null, commitDecision: selected?.commitDecision ?? null, diagnostics };
