@@ -1,0 +1,19 @@
+import type { TimeWindow } from "../../types";
+import type { OperationalState } from "../contracts";
+import { resolveORCMealSemantics } from "../state/mealSemanticsResolver";
+
+export const DEFAULT_MEAL_BREAK_DURATION_MINUTES = 75;
+export const MEAL_BREAK_BLOCK_REASON = "meal_break_block_cannot_fit_in_window";
+const toMin=(t?:string|null)=>{const p=String(t??"").split(":").map(Number);return p.length===2&&p.every(Number.isFinite)?p[0]*60+p[1]:null};
+const hh=(x:number)=>`${String(Math.floor(x/60)).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`;
+const norm=(v:unknown)=>{const n=Number(v); if(v===0||v==="0") return {minutes:0,warnings:[] as string[]}; if(Number.isFinite(n)&&n>0) return {minutes:Math.floor(n),warnings:[] as string[]}; return {minutes:DEFAULT_MEAL_BREAK_DURATION_MINUTES,warnings:["meal_break_duration_invalid_defaulted"]};};
+export function resolveMealBreakDurationMinutes(root:any){return norm(root?.mealBreakDurationMinutes ?? root?.constraints?.mealBreakDurationMinutes ?? root?.constraints?.optimizer?.mealBreakDurationMinutes ?? root?.operationalPolicy?.mealBreakDurationMinutes ?? root?.engineConfig?.mealBreakDurationMinutes);}
+export type MealBreakBlock = { id:string; taskId:number; spaceId:number; startPlanned:string; endPlanned:string; assignedResourceIds:number[]; operationalRole:"meal_break_placeholder"; blocksSpace:true; countsAsWork:false; countsForMainFlow:false; countsForResourceLoad:false; countsForTalentLoad:false; isMealBreakBlock:true; visibleInSpacePlanning:true; readOnly:true };
+export function isMealBreakPlanningEntry(e:any){return e?.isMealBreakBlock===true || e?.operationalRole==="meal_break_placeholder" || String(e?.id??"").startsWith("meal-break:");}
+export function buildMealBreakBlocksForSpaces(args:{operationalState?:OperationalState|null; mealBreakDurationMinutes?:number|null; mealWindow?:TimeWindow|null; spaceIds?:number[]|null}){
+ const s=args.operationalState; const d=args.mealBreakDurationMinutes==null?resolveMealBreakDurationMinutes(s).minutes:resolveMealBreakDurationMinutes({mealBreakDurationMinutes:args.mealBreakDurationMinutes}).minutes; const warnings=[...resolveMealBreakDurationMinutes({mealBreakDurationMinutes:args.mealBreakDurationMinutes ?? (s as any)?.constraints?.mealBreakDurationMinutes}).warnings];
+ const meal=resolveORCMealSemantics(s as any); const win=args.mealWindow ?? meal.placementWindows[0] ?? meal.actualMealBreaks[0] ?? meal.globalHardBreaks[0] ?? s?.availability?.mealWindow ?? s?.availability?.meal ?? null; const a=toMin(win?.start), b=toMin(win?.end); const blockers:string[]=[]; const blocks:MealBreakBlock[]=[]; if(d===0) return {mealBreakDurationMinutes:0, blocks, warnings, blockers, evidence:{disabled:true,readOnly:true}, readOnly:true as const}; if(!s||!win||a==null||b==null||b-a<d){blockers.push(MEAL_BREAK_BLOCK_REASON);return {mealBreakDurationMinutes:d,blocks,warnings,blockers,evidence:{window:win,readOnly:true},readOnly:true as const};}
+ const spaces=(args.spaceIds?.length?args.spaceIds:Object.keys(s.spaces?.nameById??{}).map(Number)).filter(Number.isFinite).sort((x,y)=>x-y); const start=a,end=a+d;
+ for(const spaceId of spaces){const resources=[...new Set((s.planning??[]).filter(e=>e.spaceId===spaceId).flatMap(e=>e.assignedResourceIds??[]))].sort((x,y)=>x-y); blocks.push({id:`meal-break:${s.planId}:${spaceId}:${hh(start)}-${hh(end)}`,taskId:-(900000000+spaceId),spaceId,startPlanned:hh(start),endPlanned:hh(end),assignedResourceIds:resources,operationalRole:"meal_break_placeholder",blocksSpace:true,countsAsWork:false,countsForMainFlow:false,countsForResourceLoad:false,countsForTalentLoad:false,isMealBreakBlock:true,visibleInSpacePlanning:true,readOnly:true});}
+ return {mealBreakDurationMinutes:d,blocks,warnings,blockers,evidence:{window:win,spaceCount:spaces.length,blocksGenerated:blocks.length,readOnly:true},readOnly:true as const};
+}
