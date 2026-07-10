@@ -204,6 +204,7 @@ export async function buildEngineInput(
   };
   const zoneGroupingMap = new Map<number, { level: number; minChain: number }>();
   const maxTemplateChangesByZoneId: Record<number, number> = {};
+  const spaceMealBreakMinutesByZoneId: Record<number, number> = {};
   const groupingZoneIds: number[] = Array.from(
     new Set<number>(
       (Array.isArray((optimizer as any)?.groupingZoneIds)
@@ -231,6 +232,8 @@ export async function buildEngineInput(
     const zoneMinChain = clamp((z as any)?.grouping_min_chain ?? (z as any)?.groupingMinChain ?? (z as any)?.minimize_changes_min_chain ?? (z as any)?.minimizeChangesMinChain, 1, 50, 4);
     zoneGroupingMap.set(zid, { level: zoneLevel, minChain: zoneMinChain });
     maxTemplateChangesByZoneId[zid] = clamp((z as any)?.max_template_changes ?? (z as any)?.maxTemplateChanges, 0, 50, 4);
+    const zoneMealRaw = (z as any)?.space_meal_break_minutes ?? (z as any)?.spaceMealBreakMinutes;
+    if (zoneMealRaw !== null && zoneMealRaw !== undefined) spaceMealBreakMinutesByZoneId[zid] = clamp(zoneMealRaw, 0, 240, 75);
   }
 
   for (const s of (allSpaces as any[]) ?? []) {
@@ -670,6 +673,7 @@ export async function buildEngineInput(
 
     groupingZoneIds,
     maxTemplateChangesByZoneId,
+    spaceMealBreakMinutesByZoneId,
 
     optimizerMainZonePriorityLevel: optimizer?.mainZonePriorityLevel ?? (optimizer?.prioritizeMainZone ? 2 : 0),
     optimizerGroupingLevel: optimizer?.groupingLevel ?? (optimizerGroupBySpaceAndTemplate ? 2 : 0),
@@ -1040,7 +1044,7 @@ export async function buildEngineInput(
                 if (!preferredEnd) return globalEnd;
                 return preferredEnd < globalEnd ? preferredEnd : globalEnd;
               })(),
-              durationOverrideMin: Number(b.duration_minutes ?? 45),
+              durationOverrideMin: Number(b.duration_minutes ?? 75),
               startPlanned: b.planned_start ?? null,
               endPlanned: b.planned_end ?? null,
               lockedStart: b.locked_start ?? null,

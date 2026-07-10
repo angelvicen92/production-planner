@@ -1708,8 +1708,8 @@ function mapDeleteError(err: any, fallback: string) {
         mealMode: String(data.meal_mode ?? "flexible_meal_window"),
         contestantMealDurationMinutes: Number(data.contestant_meal_duration_minutes),
         contestantMealMaxSimultaneous: Number(data.contestant_meal_max_simultaneous),
-        spaceMealBreakMinutes: Number(data.space_meal_break_minutes ?? 45),
-        itinerantMealBreakMinutes: Number(data.itinerant_meal_break_minutes ?? 45),
+        spaceMealBreakMinutes: Number(data.space_meal_break_minutes ?? 75),
+        itinerantMealBreakMinutes: Number(data.itinerant_meal_break_minutes ?? 75),
         mealTaskTemplateName: String(data.meal_task_template_name ?? "Comer"),
         clockMode: data.clock_mode === "manual" ? "manual" : "auto",
         simulatedTime:
@@ -3110,7 +3110,7 @@ function mapDeleteError(err: any, fallback: string) {
             spaceId: b.space_id == null ? null : Number(b.space_id),
             itinerantTeamId:
               b.itinerant_team_id == null ? null : Number(b.itinerant_team_id),
-            durationMinutes: Number(b.duration_minutes ?? 45),
+            durationMinutes: Number(b.duration_minutes ?? 75),
             earliestStart: b.earliest_start ?? null,
             latestEnd: b.latest_end ?? null,
             lockedStart: b.locked_start ?? null,
@@ -4253,7 +4253,12 @@ function normalizeHexColor(value: unknown): string | null {
           const planned = (result as any).plannedTasks || [];
           for (const p of planned) {
             if (Number((p as any).taskId) < 0) {
-              const breakId = Math.abs(Number((p as any).taskId));
+              const taskId = Number((p as any).taskId);
+              if (taskId <= -900000000) {
+                console.warn("invalidSyntheticMealBreakIdsDetected", { planId, taskId });
+                continue;
+              }
+              const breakId = Math.abs(taskId);
               await storage.savePlannedBreakTimes(planId, breakId, String((p as any).startPlanned), String((p as any).endPlanned));
               continue;
             }
@@ -5370,7 +5375,7 @@ function normalizeHexColor(value: unknown): string | null {
 
       type PlanningSnapshot = { tasks: any[]; breaks: any[] };
       const operations = [
-        ...planned.filter((item: any) => Number(item?.taskId) < 0).map((item: any) => ({
+        ...planned.filter((item: any) => Number(item?.taskId) < 0 && Number(item?.taskId) > -900000000).map((item: any) => ({
           key: `break:${Math.abs(Number(item.taskId))}`,
           apply: async () => {
             await storage.savePlannedBreakTimes(planId, Math.abs(Number(item.taskId)), String(item.startPlanned), String(item.endPlanned));

@@ -188,7 +188,7 @@ export function GeneralProgramSettings() {
               type="number"
               min={1}
               max={240}
-              value={draft?.spaceMealBreakMinutes ?? 45}
+              value={draft?.spaceMealBreakMinutes ?? 75}
               onChange={(e) =>
                 setDraft((p) =>
                   p

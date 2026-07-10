@@ -36,7 +36,7 @@ export const updatePlanSchema = z
 
   contestantMealDurationMinutes: z.number().int().min(1).max(240).optional(),
   contestantMealMaxSimultaneous: z.number().int().min(1).max(50).optional(),
-  spaceMealBreakMinutes: z.number().int().min(1).max(240).nullable().optional(),
+  spaceMealBreakMinutes: z.number().int().min(0).max(240).nullable().optional(),
 
   camerasAvailable: z.number().int().min(0).max(20).optional(),
 
@@ -900,7 +900,7 @@ export const api = {
             .min(1)
             .max(50)
             .optional(),
-          spaceMealBreakMinutes: z.number().int().min(1).max(240).optional(),
+          spaceMealBreakMinutes: z.number().int().min(0).max(240).optional(),
           itinerantMealBreakMinutes: z.number().int().min(1).max(240).optional(),
           mealTaskTemplateName: z.string().min(1).max(80).optional(),
           clockMode: z.enum(["auto", "manual"]).optional(),
@@ -1114,6 +1114,7 @@ export const api = {
           groupingMinChain: z.union([z.number(), z.string()]).optional(),
           uiOrderIndex: z.number().int().nullable().optional(),
           maxTemplateChanges: z.number().int().min(0).max(50).optional(),
+          spaceMealBreakMinutes: z.number().int().min(0).max(240).nullable().optional(),
         })
         .strict(),
       responses: {

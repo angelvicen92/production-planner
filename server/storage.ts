@@ -122,6 +122,7 @@ export interface IStorage {
       groupingMinChain?: unknown;
       uiOrderIndex?: number | null;
       maxTemplateChanges?: number;
+      spaceMealBreakMinutes?: number | null;
     },
   ): Promise<any>;
 
@@ -337,15 +338,19 @@ export class SupabaseStorage implements IStorage {
       .maybeSingle();
     if (settingsErr) throw settingsErr;
 
-    const planBreakDuration = Number((plan as any)?.space_meal_break_minutes ?? NaN);
-    const programBreakDuration = Number((settings as any)?.space_meal_break_minutes ?? NaN);
-    const mealBreakDuration = Number.isFinite(planBreakDuration) && planBreakDuration > 0
-      ? Math.round(planBreakDuration)
-      : Number.isFinite(programBreakDuration) && programBreakDuration > 0
-        ? Math.round(programBreakDuration)
-        : 45;
-    const spaceDuration = Math.max(1, mealBreakDuration);
-    const itinerantDuration = Math.max(1, mealBreakDuration);
+    const resolveMealBreakDuration = (...values: unknown[]) => {
+      for (const value of values) {
+        if (value === null || value === undefined || value === "") continue;
+        const n = Number(value);
+        if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+      }
+      return 75;
+    };
+    const planBreakDuration = (plan as any)?.space_meal_break_minutes;
+    const programBreakDuration = (settings as any)?.space_meal_break_minutes;
+    const mealBreakDuration = resolveMealBreakDuration(planBreakDuration, programBreakDuration);
+    const spaceDuration = mealBreakDuration;
+    const itinerantDuration = Math.max(1, mealBreakDuration || 75);
 
     const mealStart = String((plan as any)?.meal_start ?? "12:00");
     const mealEnd = String((plan as any)?.meal_end ?? "16:00");
@@ -353,14 +358,24 @@ export class SupabaseStorage implements IStorage {
 
     const { data: spaces } = await supabaseAdmin
       .from("spaces")
-      .select("id");
+      .select("id, zone_id");
+    const { data: zones } = await supabaseAdmin
+      .from("zones")
+      .select("id, space_meal_break_minutes");
+    const zoneMealBreakById = new Map<number, number | null>();
+    for (const z of zones ?? []) {
+      const zid = Number((z as any)?.id);
+      const raw = (z as any)?.space_meal_break_minutes;
+      if (Number.isFinite(zid)) zoneMealBreakById.set(zid, raw == null ? null : resolveMealBreakDuration(raw));
+    }
+
     const { data: teams } = await supabaseAdmin
       .from("itinerant_teams")
       .select("id, is_active");
 
     const { data: existing } = await supabaseAdmin
       .from("plan_breaks")
-      .select("id, kind, space_id, itinerant_team_id, duration_minutes, earliest_start, latest_end")
+      .select("id, kind, space_id, itinerant_team_id, duration_minutes, earliest_start, latest_end, planned_start, planned_end")
       .eq("plan_id", planId);
 
     const existingSpace = new Set<number>();
@@ -375,17 +390,28 @@ export class SupabaseStorage implements IStorage {
     }
 
     const toInsert: any[] = [];
-    for (const s of mealMode === "global_hard_break" ? (spaces ?? []) : []) {
+    for (const s of mealBreakDuration > 0 ? (spaces ?? []) : []) {
       const sid = Number((s as any)?.id);
       if (!Number.isFinite(sid) || existingSpace.has(sid)) continue;
+      const zid = Number((s as any)?.zone_id);
+      const effectiveSpaceDuration = Number.isFinite(zid) && zoneMealBreakById.has(zid) && zoneMealBreakById.get(zid) !== null
+        ? Number(zoneMealBreakById.get(zid))
+        : spaceDuration;
+      if (effectiveSpaceDuration <= 0) continue;
       toInsert.push({
         plan_id: planId,
         kind: "space_meal",
         space_id: sid,
         itinerant_team_id: null,
-        duration_minutes: spaceDuration,
+        duration_minutes: effectiveSpaceDuration,
         earliest_start: mealStart,
         latest_end: mealEnd,
+        planned_start: mealStart,
+        planned_end: (() => {
+          const [h, m] = mealStart.split(":").map(Number);
+          const total = (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0) + effectiveSpaceDuration;
+          return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+        })(),
       });
     }
     for (const t of teams ?? []) {
@@ -423,7 +449,7 @@ export class SupabaseStorage implements IStorage {
       const currentEnd = String(row?.latest_end ?? "");
       const currentDuration = Number(row?.duration_minutes ?? NaN);
 
-      const needTime = currentStart !== mealStart || currentEnd !== mealEnd;
+      const needTime = currentStart !== mealStart || currentEnd !== mealEnd || !row?.planned_start || !row?.planned_end;
       if (kind === "space_meal") {
         if (needTime) spaceNeedTimeIds.push(id);
         if (currentDuration !== spaceDuration) spaceNeedDurIds.push(id);
@@ -442,9 +468,14 @@ export class SupabaseStorage implements IStorage {
       if (error) throw error;
     };
 
-    await updateByIds(spaceNeedTimeIds, { earliest_start: mealStart, latest_end: mealEnd });
+    const plannedEnd = (() => {
+      const [h, m] = mealStart.split(":").map(Number);
+      const total = (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0) + spaceDuration;
+      return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    })();
+    await updateByIds(spaceNeedTimeIds, { earliest_start: mealStart, latest_end: mealEnd, planned_start: mealStart, planned_end: plannedEnd });
     await updateByIds(itinerantNeedTimeIds, { earliest_start: mealStart, latest_end: mealEnd });
-    await updateByIds(spaceNeedDurIds, { duration_minutes: spaceDuration });
+    await updateByIds(spaceNeedDurIds, { duration_minutes: spaceDuration, planned_start: mealStart, planned_end: plannedEnd });
     await updateByIds(itinerantNeedDurIds, { duration_minutes: itinerantDuration });
   }
 
@@ -1544,6 +1575,7 @@ export class SupabaseStorage implements IStorage {
       groupingMinChain?: unknown;
       uiOrderIndex?: number | null;
       maxTemplateChanges?: number;
+      spaceMealBreakMinutes?: number | null;
     },
   ) {
     const clamp = (v: unknown, min: number, max: number, fallback: number) => {
@@ -1573,6 +1605,9 @@ export class SupabaseStorage implements IStorage {
     }
     if (Object.prototype.hasOwnProperty.call(input, "maxTemplateChanges")) {
       upd.max_template_changes = clamp(input.maxTemplateChanges, 0, 50, 4);
+    }
+    if (Object.prototype.hasOwnProperty.call(input, "spaceMealBreakMinutes")) {
+      upd.space_meal_break_minutes = input.spaceMealBreakMinutes == null ? null : clamp(input.spaceMealBreakMinutes, 0, 240, 75);
     }
 
     const { data, error } = await supabaseAdmin
@@ -1605,6 +1640,7 @@ export class SupabaseStorage implements IStorage {
       groupingLevel: s.grouping_level ?? 0,
       groupingMinChain: s.grouping_min_chain ?? 4,
       maxTemplateChanges: s.max_template_changes ?? 4,
+      spaceMealBreakMinutes: s.space_meal_break_minutes ?? null,
       groupingApplyToDescendants: Boolean(s.grouping_apply_to_descendants ?? false),
     }));
   }
