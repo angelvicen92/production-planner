@@ -49,6 +49,7 @@ export function useUpdateZone() {
       minimizeChangesMinChain?: number;
       uiOrderIndex?: number | null;
       maxTemplateChanges?: number;
+      spaceMealBreakMinutes?: number | null;
     }) =>
       apiRequest("PATCH", buildUrl(api.zones.update.path, { id: args.id }), {
         name: args.name,
@@ -57,6 +58,7 @@ export function useUpdateZone() {
         minimizeChangesMinChain: args.minimizeChangesMinChain,
         uiOrderIndex: args.uiOrderIndex,
         maxTemplateChanges: args.maxTemplateChanges,
+        spaceMealBreakMinutes: args.spaceMealBreakMinutes ?? null,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [api.zones.list.path] });

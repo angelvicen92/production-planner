@@ -1288,6 +1288,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const [editingZoneName, setEditingZoneName] = useState("");
   const [editingZoneColor, setEditingZoneColor] = useState<string>("");
   const [editingZoneMaxTemplateChanges, setEditingZoneMaxTemplateChanges] = useState<number>(4);
+  const [editingZoneSpaceMealBreakMinutes, setEditingZoneSpaceMealBreakMinutes] = useState<string>("");
 
   const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
   const [editingSpace, setEditingSpace] = useState<{
@@ -1791,6 +1792,18 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                               />
                             </div>
 
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Comida plató (min, vacío hereda, 0 desactiva)</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={240}
+                                className="w-24"
+                                value={editingZoneSpaceMealBreakMinutes}
+                                onChange={(e) => setEditingZoneSpaceMealBreakMinutes(e.target.value)}
+                              />
+                            </div>
+
                             <Button
                               size="sm"
                               onClick={() => {
@@ -1800,10 +1813,12 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                   name: editingZoneName.trim(),
                                   uiColor: editingZoneColor || null,
                                   maxTemplateChanges: editingZoneMaxTemplateChanges,
+                                  spaceMealBreakMinutes: editingZoneSpaceMealBreakMinutes.trim() === "" ? null : Math.max(0, Math.min(240, Number(editingZoneSpaceMealBreakMinutes) || 0)),
                                 });
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
                                 setEditingZoneMaxTemplateChanges(4);
+                                setEditingZoneSpaceMealBreakMinutes("");
                               }}
                             >
                               Save
@@ -1815,6 +1830,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                 setEditingZoneId(null);
                                 setEditingZoneName("");
                                 setEditingZoneMaxTemplateChanges(4);
+                                setEditingZoneSpaceMealBreakMinutes("");
                               }}
                             >
                               Cancel
@@ -1835,6 +1851,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                     "",
                                 );
                                 setEditingZoneMaxTemplateChanges(Number((z as any).maxTemplateChanges ?? (z as any).max_template_changes ?? 4));
+                                setEditingZoneSpaceMealBreakMinutes((z as any).spaceMealBreakMinutes == null && (z as any).space_meal_break_minutes == null ? "" : String((z as any).spaceMealBreakMinutes ?? (z as any).space_meal_break_minutes));
                               }}
                             >
                               Edit

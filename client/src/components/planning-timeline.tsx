@@ -1001,7 +1001,7 @@ function TaskStatusMenuTrigger({
         endPlanned: (b as any).plannedEnd ?? b.lockedEnd ?? null,
         lockedStart: b.lockedStart ?? null,
         lockedEnd: b.lockedEnd ?? null,
-        template: { name: "COMIDA", abbrev: "BREAK", uiColor: "#d6d3d1" },
+        template: { name: b.kind === "space_meal" ? "Descanso comida" : "COMIDA", abbrev: "BREAK", uiColor: "#d6d3d1" },
         spaceId: b.spaceId,
         zoneId: null,
         breakKind: b.kind,

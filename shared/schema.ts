@@ -85,7 +85,7 @@ export const programSettings = pgTable("program_settings", {
   mealMode: text("meal_mode").notNull().default("flexible_meal_window"),
   contestantMealDurationMinutes: integer("contestant_meal_duration_minutes").notNull().default(75),
   contestantMealMaxSimultaneous: integer("contestant_meal_max_simultaneous").notNull().default(10),
-  spaceMealBreakMinutes: integer("space_meal_break_minutes").notNull().default(45),
+  spaceMealBreakMinutes: integer("space_meal_break_minutes").notNull().default(75),
   itinerantMealBreakMinutes: integer("itinerant_meal_break_minutes").notNull().default(45),
   clockMode: text("clock_mode").notNull().default("auto"),
   simulatedTime: text("simulated_time"),
@@ -167,6 +167,7 @@ export const zones = pgTable("zones", {
   groupingLevel: integer("grouping_level").notNull().default(0),
   groupingMinChain: integer("grouping_min_chain").notNull().default(4),
   maxTemplateChanges: integer("max_template_changes").notNull().default(4),
+  spaceMealBreakMinutes: integer("space_meal_break_minutes"),
   uiOrderIndex: integer("ui_order_index"),
 });
 
