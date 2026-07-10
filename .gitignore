@@ -9,3 +9,5 @@ vite.config.ts.*
 .upm
 # V4 benchmark runtime output
 engine/v4/benchmarks/latest-result.json
+
+local_engine_scenarios/

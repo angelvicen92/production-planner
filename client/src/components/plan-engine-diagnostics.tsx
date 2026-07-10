@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Copy, Cpu, Download, Info, Loader2, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -134,6 +134,7 @@ export function PlanEngineDiagnostics({
 }: PlanEngineDiagnosticsProps) {
   const { role } = useUserRole();
   const { toast } = useToast();
+  const [scenarioDownloading, setScenarioDownloading] = useState(false);
   const v3DiagnosticsQuery = useEngineDiagnostics(planId, latestSuccessRunId);
   const v4ResultQuery = useLatestEngineResult(planId, "v4", {
     refetchInterval: currentResult === "v4" && (v4ResultState === "loading" || v4ResultState === "pending_diagnostics") ? 1500 : false,
@@ -309,6 +310,28 @@ export function PlanEngineDiagnostics({
     }
   };
 
+  const downloadEngineScenario = async () => {
+    setScenarioDownloading(true);
+    try {
+      const path = api.planningRuns.engineScenarioSnapshot.path.replace(":id", String(planId));
+      const snapshot = await apiRequest<unknown>("GET", path);
+      const json = JSON.stringify(snapshot, null, 2);
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `optiplan-plan-${planId}-engine-scenario-v1.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Escenario reproducible descargado", description: "El JSON contiene la entrada completa del motor." });
+    } catch {
+      toast({ title: "No se pudo descargar el escenario", description: "Revisa permisos o vuelve a intentarlo desde este panel.", variant: "destructive" });
+    } finally {
+      setScenarioDownloading(false);
+    }
+  };
+
   const downloadDiagnostics = () => {
     if (!exportAvailability.ready) {
       toast({ title: "JSON no disponible", description: exportAvailability.message, variant: exportAvailability.reason === "load_failed" ? "destructive" : "default" });
@@ -366,6 +389,9 @@ export function PlanEngineDiagnostics({
               </Button>
               <Button type="button" size="sm" variant="secondary" onClick={downloadDiagnostics} disabled={!exportAvailability.ready} title={exportAvailability.message}>
                 <Download /> Descargar JSON
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={downloadEngineScenario} disabled={scenarioDownloading} title="Descarga el EngineInput completo para replay offline">
+                {scenarioDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download />} Descargar escenario reproducible
               </Button>
             </div>
             {!exportAvailability.ready ? <p className="max-w-sm text-right text-xs text-muted-foreground">{exportAvailability.message}</p> : null}

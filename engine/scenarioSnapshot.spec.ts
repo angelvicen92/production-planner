@@ -1,0 +1,12 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import type { EngineInput } from "./types";
+import { buildEngineScenarioSnapshot, hashEngineInput, parseEngineScenarioSnapshot, validateEngineScenarioSnapshot } from "./scenarioSnapshot";
+
+const input = (): EngineInput => ({ planId: 259, workDay: { start: "09:00", end: "10:00" }, meal: { start: "13:00", end: "14:00" }, camerasAvailable: 1, tasks: [{ id: 2, planId: 259, templateId: 20, status: "pending", contestantId: null, zoneId: 1, spaceId: 1, dependsOnTaskIds: [1], resourceRequirements: undefined as any }, { id: 1, planId: 259, templateId: 10, status: "done", contestantId: 7, zoneId: 1, spaceId: 1, startPlanned: "09:00", endPlanned: "09:10" }], locks: [], zoneResourceAssignments: {}, spaceResourceAssignments: {}, zoneResourceTypeRequirements: {}, spaceResourceTypeRequirements: {}, planResourceItems: [], resourceItemComponents: {}, groupingZoneIds: [] });
+
+test("scenario snapshot serializes, preserves order/null, strips undefined, and does not mutate", () => { const original = input(); const before = structuredClone(original); const snapshot = buildEngineScenarioSnapshot(259, original, "2026-07-10T00:00:00.000Z"); assert.deepEqual(original, before); assert.equal(snapshot.exportVersion, "optiplan-engine-scenario-v1"); assert.equal(snapshot.counts.tasks, 2); assert.equal(snapshot.counts.pendingTasks, 1); assert.deepEqual(snapshot.engineInput.tasks.map((t) => t.id), [2, 1]); assert.equal(snapshot.engineInput.tasks[0].contestantId, null); assert.equal("resourceRequirements" in snapshot.engineInput.tasks[0], false); const parsed = parseEngineScenarioSnapshot(JSON.stringify(snapshot)); assert.deepEqual(parsed.engineInput, snapshot.engineInput); });
+
+test("engine input hash is stable with object keys sorted but array order preserved", () => { const a = input(); const b = { ...input(), tasks: [...input().tasks] } as EngineInput; assert.equal(hashEngineInput(a), hashEngineInput(b)); b.tasks = [...b.tasks].reverse(); assert.notEqual(hashEngineInput(a), hashEngineInput(b)); });
+
+test("scenario snapshot rejects tampering and unknown versions", () => { const snapshot: any = buildEngineScenarioSnapshot(259, input()); snapshot.engineInput.tasks[0].templateId = 999; assert.throws(() => validateEngineScenarioSnapshot(snapshot), /inputHash mismatch/); const unknown = buildEngineScenarioSnapshot(259, input()) as any; unknown.exportVersion = "other"; assert.throws(() => validateEngineScenarioSnapshot(unknown), /Unsupported/); });
