@@ -10,3 +10,13 @@ test("scenario snapshot serializes, preserves order/null, strips undefined, and 
 test("engine input hash is stable with object keys sorted but array order preserved", () => { const a = input(); const b = { ...input(), tasks: [...input().tasks] } as EngineInput; assert.equal(hashEngineInput(a), hashEngineInput(b)); b.tasks = [...b.tasks].reverse(); assert.notEqual(hashEngineInput(a), hashEngineInput(b)); });
 
 test("scenario snapshot rejects tampering and unknown versions", () => { const snapshot: any = buildEngineScenarioSnapshot(259, input()); snapshot.engineInput.tasks[0].templateId = 999; assert.throws(() => validateEngineScenarioSnapshot(snapshot), /inputHash mismatch/); const unknown = buildEngineScenarioSnapshot(259, input()) as any; unknown.exportVersion = "other"; assert.throws(() => validateEngineScenarioSnapshot(unknown), /Unsupported/); });
+
+test("countEngineInput counts only real contestants and availability, not null meal placeholders", () => {
+  const base = input();
+  base.contestantAvailabilityById = Object.fromEntries(Array.from({ length: 19 }, (_, i) => [i + 1, { start: "09:00", end: "18:00" }]));
+  base.tasks = [
+    ...Array.from({ length: 19 }, (_, i) => ({ id: i + 1, planId: 259, templateId: 10, status: "pending" as const, contestantId: i + 1, spaceId: 1, zoneId: 1 })),
+    ...Array.from({ length: 26 }, (_, i) => ({ id: 100 + i, planId: 259, templateId: 99, templateName: "Comida", status: "pending" as const, contestantId: null, spaceId: 1, zoneId: 1, operationalRole: "meal_break_placeholder" as const, breakKind: "space_meal" }))
+  ];
+  assert.equal(buildEngineScenarioSnapshot(259, base).counts.contestants, 19);
+});

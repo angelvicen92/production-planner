@@ -1186,3 +1186,31 @@ npm run replay:engine-scenario -- local_engine_scenarios/<archivo>.json --engine
 The replay CLI validates version and hash, clones the `EngineInput`, runs V3, V4 and/or ORC Active without importing server storage or requiring Supabase variables, and emits a compact report with per-engine runtime, status, planned/unplanned counts, feasibility/completeness, output hash, ORC fallback reason when present, false gates, and selected high-level quality metrics. Repeated executions compare output hashes and mark `deterministic: false` with a non-zero exit code if the same input produces different outputs.
 
 This capability is diagnostic-only. It creates a portable source of truth for future fixture promotion and engine investigation, but does not change V3, V4, ORC heuristics, gates, weights, locks, RLS, database schema, persistence, or existing planning behavior.
+
+### ID260 — Real Scenario Replay Hardening & Input Preflight v1
+
+ID260 hardens the offline scenario replay loop without changing V3, V4, ORC, gates, heuristics, optimizer weights, persisted planning, DB schema, RLS, or production behavior. The new `Engine Input Preflight` is a pure diagnostic audit over the `EngineInput` contained in an `optiplan-engine-scenario-v1` snapshot. It reports structural errors, informational warnings, operational facts, meal-placeholder classification, main-zone facts, and the exact optimizer configuration received by the engine.
+
+Preflight **errors** are structural issues that can make a replay invalid or misleading, such as missing dependency targets, self-dependencies, dependency cycles, missing spaces/resources, invalid windows, invalid durations, or locks pointing at missing tasks. By default, any preflight error blocks engine execution and creates `preflight_blocked` execution summaries. Use `--allow-preflight-errors` only when intentionally investigating a malformed fixture.
+
+Preflight **warnings** are diagnostic signals that do not block replay and do not modify configuration. Configuration contradictions such as `MAIN_ZONE_IDENTIFIED_BUT_NOT_PRIORITIZED`, `MAIN_ZONE_KEEP_BUSY_ENABLED_WITH_PRIORITY_LEVEL_ZERO`, `MAIN_ZONE_FINISH_EARLY_DISABLED`, `CONTESTANT_COMPACTNESS_DISABLED`, `CONTESTANT_ZONE_STABILITY_DISABLED`, or `GROUPING_LEVEL_ZERO_WITH_GROUPING_FLAG_ENABLED` mean “this is what the engine was given”, not “the replay changed it”. ID260 only reports these values; it does not enable main-zone priority, finish-early, contestant compactness, stay-in-zone, or grouping levels.
+
+Run a fast audit without importing or executing engines:
+
+```bash
+npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json --preflight-only --output local_engine_scenarios/plan-27-preflight-v1.json
+```
+
+The preflight report separates real contestant tasks from synthetic meal/placeholders. Tasks with `contestantId == null` are not counted as contestants, so plan-27 style snapshots with 19 real contestants plus synthetic meal placeholders report 19 contestants rather than inferring an extra placeholder contestant.
+
+Replay execution now runs each requested engine/repetition in an isolated child process. The coordinator does not import V3, V4, or ORC at top level; each child imports only the selected engine. `--time-limit-ms` is enforced per engine execution. If a worker exceeds its budget, the coordinator terminates it, records `executionStatus: "timeout"`, keeps any completed prior executions, and continues to the next engine/repetition unless `--fail-fast` is set.
+
+Example bounded replay:
+
+```bash
+npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json --engine all --repeat 1 --time-limit-ms 120000 --output local_engine_scenarios/plan-27-replay-v1.json
+```
+
+Use `--fail-fast` when the first timeout or worker error should stop the remaining replay queue. Without it, the report is partial but still usable: each execution is clearly marked as `completed`, `timeout`, `error`, or `preflight_blocked`, and the top-level report counts timed-out and failed executions.
+
+`deterministic` now has three meanings: `true` only when at least two completed executions of the same engine have matching output fingerprints; `false` when completed executions of the same engine differ; and `null` when there are not enough completed repetitions to decide. Timeouts are not treated as nondeterminism. Output fingerprints intentionally ignore runtime, timestamps, generated-at fields, and bulky diagnostics while preserving planning, unplanned tasks, feasibility, completeness, selected engine, fallback, and semantic gate evidence.

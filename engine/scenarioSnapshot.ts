@@ -55,16 +55,17 @@ export function countEngineInput(engineInput: EngineInput): EngineScenarioSnapsh
   const locks = Array.isArray((engineInput as any)?.locks) ? (engineInput as any).locks : [];
   const planResourceItems = Array.isArray((engineInput as any)?.planResourceItems) ? (engineInput as any).planResourceItems : [];
   const contestantIds = new Set<number>();
+  const availabilityContestantIds = new Set(Object.keys((engineInput as any)?.contestantAvailabilityById ?? {}).map(Number).filter(Number.isFinite));
   let dependencies = 0;
   for (const task of tasks) {
-    const contestantId = Number((task as any)?.contestantId);
-    if (Number.isFinite(contestantId)) contestantIds.add(contestantId);
+    const rawContestantId = (task as any)?.contestantId;
+    const contestantId = Number(rawContestantId);
+    if (rawContestantId != null && Number.isFinite(contestantId)) contestantIds.add(contestantId);
     if (Array.isArray((task as any)?.dependsOnTaskIds)) dependencies += (task as any).dependsOnTaskIds.length;
     else if ((task as any)?.dependsOnTaskId != null) dependencies += 1;
     if (Array.isArray((task as any)?.dependsOnTemplateIds)) dependencies += (task as any).dependsOnTemplateIds.length;
     else if ((task as any)?.dependsOnTemplateId != null) dependencies += 1;
   }
-  const contestantAvailability = countRecordKeys((engineInput as any)?.contestantAvailabilityById);
   return {
     tasks: tasks.length,
     pendingTasks: tasks.filter((task: any) => task?.status === "pending").length,
@@ -73,7 +74,7 @@ export function countEngineInput(engineInput: EngineInput): EngineScenarioSnapsh
     planResourceItems: planResourceItems.length,
     spaces: new Set([...Object.keys((engineInput as any)?.spaceNameById ?? {}), ...Object.keys((engineInput as any)?.spaceParentById ?? {}), ...tasks.map((task: any) => task?.spaceId).filter((id: any) => id != null).map(String)]).size,
     zones: new Set([...Object.keys((engineInput as any)?.zoneResourceAssignments ?? {}), ...Object.keys((engineInput as any)?.zoneResourceTypeRequirements ?? {}), ...tasks.map((task: any) => task?.zoneId).filter((id: any) => id != null).map(String)]).size,
-    contestants: Math.max(contestantIds.size, contestantAvailability),
+    contestants: new Set([...contestantIds, ...availabilityContestantIds]).size,
     dependencies,
   };
 }

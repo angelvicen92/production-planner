@@ -1,0 +1,44 @@
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { canonicalizeForEngineScenario, cloneEngineScenarioValue, parseEngineScenarioSnapshot } from "../scenarioSnapshot";
+import type { EngineInput, EngineOutput } from "../types";
+import type { ReplayEngine, ReplayExecutionSummary } from "./replayEngineScenario";
+
+export interface WorkerResult { summary: ReplayExecutionSummary; compact?: unknown; workerStartupMs: number; engineExecutionMs: number; totalRuntimeMs: number }
+const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(canonicalizeForEngineScenario(v))).digest("hex");
+const asArray = (v: unknown): unknown[] => Array.isArray(v) ? v : [];
+const num = (v: unknown): number | null => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+export function stableReplayOutputFingerprint(value: unknown): string {
+  const scrub = (v: any): any => {
+    if (Array.isArray(v)) return v.map(scrub);
+    if (!v || typeof v !== "object") return v;
+    const out: any = {};
+    for (const k of Object.keys(v).sort()) {
+      if (["runtimeMs","generatedAt","totalMs","ms","startedAt","endedAt","workerStartupMs","engineExecutionMs","totalRuntimeMs","operationalStateSnapshot"].includes(k)) continue;
+      if (typeof v[k] === "string" && v[k].length > 256 && /hash|snapshot|diagnostic/i.test(k)) continue;
+      out[k] = scrub(v[k]);
+    }
+    return out;
+  };
+  return hash(scrub(value));
+}
+function compactOutput(engine: ReplayEngine, result: any) { const output: EngineOutput = engine === "v4" || engine === "orc" ? result.output : result; const diagnostics = engine === "v4" || engine === "orc" ? result.diagnostics : output.v3Meta ?? {}; const gates = diagnostics?.gates && typeof diagnostics.gates === "object" ? Object.entries(diagnostics.gates).filter(([, v]) => v === false).map(([k]) => k) : []; return { output: { feasible: output?.feasible ?? null, complete: output?.complete ?? null, plannedTasks: asArray(output?.plannedTasks).map((p: any) => ({ taskId: p.taskId, startPlanned: p.startPlanned, endPlanned: p.endPlanned, assignedResources: p.assignedResources ?? [] })), unplanned: asArray((output as any)?.unplanned).map((u: any) => ({ taskId: u.taskId ?? u.id, reason: u.reason?.code ?? u.reason ?? null })) }, diagnostics: { status: diagnostics?.status ?? (output?.feasible ? "success" : "infeasible"), usedEngine: diagnostics?.usedEngine ?? null, fallbackReason: diagnostics?.fallbackReason ?? null, falseGates: gates, makespan: diagnostics?.quality?.makespan ?? diagnostics?.OPQM?.makespan ?? diagnostics?.opqm?.makespan ?? null, talentIdle: diagnostics?.quality?.talentIdle ?? diagnostics?.OPQM?.talentIdle ?? diagnostics?.opqm?.talentIdle ?? null, visibleMainFlowIdle: diagnostics?.OPQM?.visibleMainFlowIdle ?? diagnostics?.opqm?.visibleMainFlowIdle ?? null, largestMainFlowGap: diagnostics?.OPQM?.largestMainFlowGap ?? diagnostics?.opqm?.largestMainFlowGap ?? null } }; }
+async function execute(engine: ReplayEngine, input: EngineInput) {
+  if (process.env.REPLAY_WORKER_SIMULATE === "sleep") await new Promise(() => undefined);
+  if (process.env.REPLAY_WORKER_SIMULATE === "success") return { feasible: true, complete: true, plannedTasks: input.tasks.map(t => ({ taskId: t.id, startPlanned: "09:00", endPlanned: "09:01", assignedResources: [] })), unplanned: [] };
+  if (process.env.REPLAY_WORKER_SIMULATE === "different") return { feasible: true, complete: true, plannedTasks: [{ taskId: Math.random(), startPlanned: "09:00", endPlanned: "09:01", assignedResources: [] }], unplanned: [] };
+  if (engine === "v3") return (await import("../v3/index.ts")).generatePlanV3(input as any);
+  if (engine === "v4") return (await import("../v4/index.ts")).generatePlanV4(input);
+  return (await import("../orc/active/orcActivePlanner.ts")).runORCActivePlanner(input);
+}
+export async function runReplayWorker(snapshotPath: string, engine: ReplayEngine, repetition: number): Promise<WorkerResult> {
+  const started = performance.now();
+  const snapshot = parseEngineScenarioSnapshot(readFileSync(snapshotPath));
+  const afterLoad = performance.now();
+  const result = await execute(engine, cloneEngineScenarioValue(snapshot.engineInput));
+  const afterExec = performance.now();
+  const compact = compactOutput(engine, result); const output = (compact as any).output; const d = (compact as any).diagnostics;
+  const summary: ReplayExecutionSummary = { engine, repetition, executionStatus: "completed", runtimeMs: Math.round(afterExec - started), status: String(d.status ?? "unknown"), plannedTasks: asArray(output.plannedTasks).length, unplannedTasks: asArray(output.unplanned).length, hardFeasible: typeof output.feasible === "boolean" ? output.feasible : null, complete: typeof output.complete === "boolean" ? output.complete : null, outputHash: stableReplayOutputFingerprint(compact), usedEngine: d.usedEngine, fallbackReason: d.fallbackReason, falseGates: d.falseGates, makespan: num(d.makespan), talentIdle: num(d.talentIdle), visibleMainFlowIdle: num(d.visibleMainFlowIdle), largestMainFlowGap: num(d.largestMainFlowGap) };
+  return { summary, compact, workerStartupMs: Math.round(afterLoad-started), engineExecutionMs: Math.round(afterExec-afterLoad), totalRuntimeMs: Math.round(afterExec-started) };
+}
+if (import.meta.url === `file://${process.argv[1]}`) runReplayWorker(process.argv[2], process.argv[3] as ReplayEngine, Number(process.argv[4] ?? 1)).then(r => { console.log(JSON.stringify(r)); }).catch(e => { console.error(e instanceof Error ? e.stack || e.message : String(e)); process.exit(1); });
