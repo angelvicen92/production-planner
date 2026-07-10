@@ -91,6 +91,10 @@ export const api = {
       method: "GET" as const,
       path: "/api/plans/:id/engine-results/:engineVersion/latest",
     },
+    engineScenarioSnapshot: {
+      method: "GET" as const,
+      path: "/api/plans/:id/engine-scenario-snapshot",
+    },
   },
   // Staff catalog (Producción / Redacción)
   staffPeople: {
