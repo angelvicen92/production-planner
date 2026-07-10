@@ -1214,3 +1214,13 @@ npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine
 Use `--fail-fast` when the first timeout or worker error should stop the remaining replay queue. Without it, the report is partial but still usable: each execution is clearly marked as `completed`, `timeout`, `error`, or `preflight_blocked`, and the top-level report counts timed-out and failed executions.
 
 `deterministic` now has three meanings: `true` only when at least two completed executions of the same engine have matching output fingerprints; `false` when completed executions of the same engine differ; and `null` when there are not enough completed repetitions to decide. Timeouts are not treated as nondeterminism. Output fingerprints intentionally ignore runtime, timestamps, generated-at fields, and bulky diagnostics while preserving planning, unplanned tasks, feasibility, completeness, selected engine, fallback, and semantic gate evidence.
+
+### ID 261 — Meal Semantics & Preflight Classification Fix v1
+
+The engine-input preflight now uses a single operational task classifier for four mutually exclusive categories: `productive_task`, `contestant_meal`, `synthetic_space_meal`, and `synthetic_itinerant_meal`. A contestant meal is a flexible contestant-owned meal task, identified first from the configured meal template id/name and only then by the legacy meal-name fallback such as `Sodexo`, `Comida`, or `meal`.
+
+Contestant meals are not productive work: they do not count as synthetic placeholders, do not require a physical space, may carry `spaceId: 0`, and may have `zoneId: null`. `PRODUCTIVE_TASK_WITHOUT_SPACE` is emitted only for tasks classified as `productive_task`, so a real productive task with `spaceId: 0`, `null`, `undefined`, or `"<none>"` remains a structural preflight error.
+
+Synthetic meal placeholders remain separate from contestant meals. Space-scoped placeholders count as `synthetic_space_meal`; itinerant-team placeholders count as `synthetic_itinerant_meal`; both continue to contribute to `syntheticTasks` while contestant meals contribute only to `meal.contestantMealTasks`.
+
+Preflight space and zone facts now distinguish known and used identifiers. `facts.spaces`/`facts.knownSpaces` represent real known physical spaces in the EngineInput, and `facts.usedSpaces` represents real task space ids. Placeholder ids (`0`, `null`, `undefined`, and `"<none>"`) are excluded from both real-space and real-zone counts. Likewise, `facts.zones`/`facts.knownZones` count only real zones, while `facts.usedZones` counts only real zone ids referenced by tasks.
