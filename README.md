@@ -1258,3 +1258,17 @@ npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine
 ```
 
 This iteration is diagnostic-only. It does not change V3, V4, ORC, SEE, candidate builders, simulation, validation, operational evaluator, commit logic, gates, weights, configuration, meal planning, DB, RLS, persisted planning, or the generation endpoint.
+
+### ID 263 — ORC Incumbent Preservation & Baseline-Relative Acceptance v1
+
+ID263 introduces an internal ORC incumbent contract for active execution. The incumbent keeps the selected planning, simulation, validation, value, candidate state, candidate, extracted planning, pending ids, materialization, composite summary, production-concept audit, operational-quality metrics, and zone task-change audit together as one atomic record. This prevents the active planner from returning the planning of one candidate with diagnostics, validation, or materialization from another candidate.
+
+Stage selection and final acceptance are now separate decisions. The post-macro selector may still propose a candidate from the existing unified pool, but that proposal is materialized and audited independently before it can replace the incumbent. A post-macro candidate can replace the incumbent only after hard validity, completeness, locks/protected-task preservation, assigned-space consistency, production-concept non-regression against the incumbent, baseline-relative task-change non-regression against the incumbent, and existing operational-value ordering all pass. If the post-macro proposal worsens production continuity, the planner records `retain_incumbent` with the rejected candidate id and continues final acceptance with the previous incumbent instead of falling through to V4 solely because a later proposal regressed.
+
+Final acceptance is explicitly baseline-relative to the real V4 fallback output. `productionConceptNotWorseThanV4` now compares the final ORC incumbent against a production-concept audit built from `v4.output.plannedTasks`, not against the pre-macro ORC summary. The diagnostics include `finalAcceptanceBaselineSource: "v4_baseline"`, compact V4 production metrics, and a compact V4 planning fingerprint.
+
+Zone activity-change auditing now enriches planning entries from `EngineInput`/`OperationalState` metadata before grouping. Where metadata exists, grouping uses task group, group, template id, or template name before the final task-id fallback, preserving meal and transport non-work semantics so non-productive placeholders do not create false activity changes.
+
+The task-change gate now distinguishes absolute violations from regressions. Absolute over-limit evidence remains visible as `spaceTaskChangeLimitAbsoluteExceeded`, while `spaceTaskChangeLimitRespected` represents baseline-relative non-regression. Inherited violations with the same count do not force fallback; inherited improvements pass; new violations or worsened counts/excess fail.
+
+The fallback chain remains unchanged in spirit: V4 is still the final safe fallback when no acceptable ORC incumbent exists. ID263 does not add candidate families, macro strategies, heuristics, weights, configuration, EngineInput fields, database changes, RLS changes, UI changes, or persistence changes. New compact diagnostics are published under `incumbentSelection` with `version: "ORC-INCUMBENT-SELECTION-V1"`.
