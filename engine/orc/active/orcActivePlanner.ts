@@ -10,7 +10,7 @@ import { deepFreeze } from "../immutability";
 import { assertSerializableORCSeed, buildORCBaselineSeededInput, type ORCBaselineSeedDiagnostics } from "./orcBaselineSeed";
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "./orcBaselineSeedFeasibilityAudit";
 import type { EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
-import { selectBestORCSimulation, type ORCSimulationSelection } from "./selectBestORCSimulation";
+import { selectBestORCSimulation } from "./selectBestORCSimulation";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildORCRuntimeContractID224, hasRepairableBaselineSpaceOverlapGroup, normalizeBaselineOverlapRepairSummaryID224, runActiveBaselineRepairPreflight, ACTIVE_REPAIR_PREFLIGHT_SOURCE_ID224 } from "./runActiveBaselineRepairPreflight";
 import { ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225 } from "../simulation/materializeSimulatedPlanning";
@@ -401,39 +401,6 @@ function opqmNotWorse(v4: OperationalPlanningQualityMetrics, orc: OperationalPla
     && total(orc.talentIdleTime) <= total(v4.talentIdleTime);
 }
 
-function activeRepairPreflightSelectionDiagnostics(
-  previous: ORCSimulationSelection["diagnostics"],
-  selected: NonNullable<ReturnType<typeof runActiveBaselineRepairPreflight>["selected"]>,
-): ORCSimulationSelection["diagnostics"] {
-  const simulatedStateId = selected.simulation.id;
-  const candidateId = selected.candidate?.id ?? selected.candidateState?.candidateId ?? null;
-  const committedSimulationIds = [...new Set([...previous.committedSimulationIds, simulatedStateId])].sort();
-  const baselineRepairSimulationIds = [...new Set([...previous.baselineRepairSimulationIds, simulatedStateId])].sort();
-  return {
-    ...previous,
-    selectedBucket: "valid-committed-baseline-repair-transformations-changed",
-    committedSimulationIds,
-    baselineRepairSimulationIds,
-    selectedBecause: "active_repair_preflight_selected_canonical_hard_valid_baseline_overlap_repair",
-    selectedSimulatedStateId: simulatedStateId,
-    selectedFinalCandidateFamily: "baseline-overlap-repair",
-    selectedFinalCandidateId: candidateId,
-    selectedFinalSimulatedStateId: simulatedStateId,
-    selectedFinalIncludesCompositeAncestors: false,
-    postMacroSelectionSource: ACTIVE_REPAIR_PREFLIGHT_SOURCE_ID224,
-    stalePreMacroSelectionDiscarded: true,
-    stalePreMacroSelectionReason: "active_repair_preflight_authoritative_selection_replaced_shadow_selection",
-    postMacroSelectionAvailable: true,
-    postMacroSelectionReason: "selected_from_active_repair_preflight",
-    lineageConsistency: {
-      ok: previous.lineageConsistency.ok,
-      warnings: previous.lineageConsistency.warnings.filter((warning) => !warning.includes(simulatedStateId)).sort(),
-      readOnly: true,
-    },
-    readOnly: true,
-  };
-}
-
 export function runORCActivePlanner(input: EngineInput, options: ORCActivePlannerOptions = {}): ORCActivePlannerResult {
   const v4 = generatePlanV4(input, options);
   const reportExecutionTimeMs = options.orcShadowResult !== undefined ? 0 : (v4.diagnostics.performance?.runtimeMs ?? 0);
@@ -490,16 +457,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
       value = activePreflight.selected.value?.overallScore ?? value;
       candidateState = activePreflight.selected.candidateState;
       candidate = activePreflight.selected.candidate;
-      selection = {
-        ...selection,
-        simulation,
-        validation,
-        value,
-        candidateState,
-        candidate,
-        commitDecision: activePreflight.selected.commitDecision,
-        diagnostics: activeRepairPreflightSelectionDiagnostics(selection.diagnostics, activePreflight.selected),
-      };
+      selection = { ...selection, simulation, validation, value, candidateState, candidate, commitDecision: activePreflight.selected.commitDecision, diagnostics: { ...selection.diagnostics, selectedSimulatedStateId: simulation.id } as any };
     }
   }
   if (baselineSeedHardFeasibility.hardFeasible === false && repairableAuditDetected && activePreflight && !activePreflight.selected) {
@@ -640,7 +598,7 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const productionConceptGate = evaluateProductionConceptNonRegressionGate({ baseline: v4ProductionConceptAlignment, selected: compositeSummary.productionConceptAlignment, mealBreakPolicy: { mealBreakDurationMinutes: mealBreakBlocks.mealBreakDurationMinutes, mealBreakBlockCoverageValid: mealBreakBlocks.blockers.length === 0 || mealBreakBlocks.mealBreakDurationMinutes === 0 || !(mealBreakBlocks.evidence as any).window } });
   const finalTaskChangeComparison = compareZoneTaskChangeAudits({ baseline: v4ZoneTaskChangeAudit, candidate: zoneTaskChangeLimit });
   const selectedChangesPlanning = Number((materialization as any).changedTaskCount ?? 0) > 0;
-  gates.productionConceptNotWorseThanV4 = !selectedChangesPlanning || shadow == null || opqmGateBypassedForBaselineRepair || productionConceptGate.passed;
+  gates.productionConceptNotWorseThanV4 = !selectedChangesPlanning || shadow == null || productionConceptGate.passed;
   gates.spaceTaskChangeLimitRespected = !selectedChangesPlanning || shadow == null || opqmGateBypassedForBaselineRepair || finalTaskChangeComparison.passedNonRegression;
   gates.mealBreakBlockCoverageValid = !selectedChangesPlanning || shadow == null || mealBreakBlocks.mealBreakDurationMinutes === 0 || mealBreakBlocks.blockers.length === 0 || !(mealBreakBlocks.evidence as any).window;
   gates.explainableDecision = compositeSummary.summaryContractValid;
