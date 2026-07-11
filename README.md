@@ -1346,3 +1346,17 @@ PartialPlan lineage is resolved explicitly through `resolveBaselineRepairCandida
 Canonical selection remains hard-filter-first: a repair can become the pre-macro incumbent only after pipeline VALID simulation, resolved raw lineage, materialized planning, original-input canonical hard validation, matching fingerprint/lineage checks, and the existing deterministic repair ranking. No new repair heuristics, boundaries, weights, V4 behavior, DB changes, UI changes, or larger budgets were introduced.
 
 Replay evidence now exposes compact active-repair fields for the plan-27 scenario, including authoritative preflight execution, operational identity audit, candidates generated/sent before prefilter, accepted/rejected hard-prefilter counts, post-prefilter limit, candidates sent to simulation, lineage-resolution counts, canonical validation counts, selected source/assignment/moved-task fields, final acceptance state, final engine, and fallback reason, without including full fingerprints or full planning payloads.
+
+### ID 269 — Canonical Hard-Feasibility Restoration Commit & Selection Lineage Coherence v1
+
+ID269 makes the active baseline-repair preflight selection an atomic ORC selection package. When preflight selects a canonical baseline-overlap repair, candidate, candidate state, simulated state, validation, value, commit decision, and diagnostics are rebuilt together by `buildActiveRepairORCSelection` from the selected repair package instead of extending stale shadow or macro diagnostics.
+
+Active-repair diagnostics now represent only the baseline-overlap repair lineage: the final family is `baseline-overlap-repair`, selected simulated/candidate ids point at the same package, macro/production-wave/post-repair/critical-resource arrays are empty unless actually selected, and lineage warnings are recalculated from the final identities.
+
+The new selection Evidence coherence audit records compact identity and fingerprint fields for the final package without copying planning. ORC explainability now requires coherent Candidate/Simulation/Validation diagnostics, matching planning fingerprints, a valid summary contract, no summary warnings, a valid materialization diff contract, and no unexplained or declared-but-unchanged task changes.
+
+Final materialization keeps change-source attribution on `changeSources.baselineOverlapRepair.changedTaskIds` for baseline-overlap repair modifications and does not declare macro, post-repair continuity, critical-resource compression, or production-wave sources when those families are not part of the selected planning.
+
+ID269 adds strict hard-feasibility restoration acceptance with lexicographic precedence: a canonically hard-valid active-repair baseline-overlap candidate may beat a hard-invalid V4 baseline only after structural gates, locks, protected tasks, assigned-space contract, lineage, fingerprint, Evidence coherence, and explainability all pass. Production concept, task-change, and OPQM comparisons are still calculated as raw gates and published separately from effective acceptance gates, so soft regressions remain visible with the reason `soft_regression_accepted_to_restore_hard_feasibility`.
+
+The legacy `opqmGateBypassedForBaselineRepair` diagnostic is retained only as compatibility evidence derived from the new strict restoration policy. No new repair candidates, heuristics, limits, weights, V4 changes, EngineInput changes, DB/RLS changes, UI changes, or persistence changes were introduced.
