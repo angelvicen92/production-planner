@@ -36,3 +36,10 @@ test("rejects ambiguous PartialPlan baseline repair lineage", () => {
   assert.equal(result.lineageConsistent, false);
   assert.equal(result.ambiguityReason, "ambiguous_baseline_repair_partial_plan");
 });
+
+test("rejects textual synthetic prefix without matching decision candidate and PartialPlan identity", () => {
+  const raw = candidate("raw:repair");
+  const result = resolveBaselineRepairCandidateForSimulation({ simulatedState: sim("cs:synthetic"), candidateState: cs("candidate:partial-plan:raw:repair"), rawCandidates: [raw], partialPlans: [plan("partial-plan:raw:repair", [raw.id])], decisionCandidates: [] });
+  assert.equal(result.lineageConsistent, false);
+  assert.equal(result.ambiguityReason, "partial_plan_not_found");
+});

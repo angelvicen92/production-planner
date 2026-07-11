@@ -14,7 +14,17 @@ export function evaluateSelectionEvidenceCoherence(args: { selectionSource?: str
   const simulationMatchesValidation = simulation?.id != null && validation?.simulatedStateId === simulation.id;
   const simulationMatchesDiagnostics = simulation?.id != null && diagnostics.selectedSimulatedStateId === simulation.id && diagnostics.selectedFinalSimulatedStateId === simulation.id;
   const candidateMatchesDiagnostics = rawCandidateId != null && diagnostics.selectedFinalCandidateId === rawCandidateId && diagnostics.selectedFinalCandidateFamily === "baseline-overlap-repair";
-  const candidateStateMatchesCandidate = rawCandidateId != null && (candidateStateCandidateId == null || String(candidateStateCandidateId) === String(rawCandidateId));
+  const candidateLineage = selection.candidateLineage ?? candidate?.candidateLineage ?? diagnostics.candidateLineage ?? null;
+  const candidateStateDirectlyMatchesCandidate = rawCandidateId != null && candidateStateCandidateId != null && String(candidateStateCandidateId) === String(rawCandidateId);
+  const candidateLineageResolutionKind = candidateLineage?.resolutionKind ?? null;
+  const candidateLineageRawCandidateId = candidateLineage?.rawCandidateId ?? null;
+  const candidateLineagePartialPlanId = candidateLineage?.partialPlanId ?? null;
+  const candidateLineagePartialPlanCandidateIds = Array.isArray(candidateLineage?.partialPlanCandidateIds) ? [...candidateLineage.partialPlanCandidateIds].map(String).sort() : [];
+  const candidateLineageAmbiguityReason = candidateLineage?.ambiguityReason ?? null;
+  const candidateLineageResolutionAvailable = candidateLineageResolutionKind != null;
+  const candidateLineageResolutionConsistent = candidateLineage?.lineageConsistent === true && candidateLineageAmbiguityReason == null;
+  const candidateStateMatchesCandidateThroughPartialPlan = rawCandidateId != null && candidateStateCandidateId != null && candidateLineageResolutionConsistent && candidateLineageResolutionKind === "single_candidate_partial_plan" && String(candidateLineageRawCandidateId) === String(rawCandidateId) && String(candidateLineage?.candidateStateCandidateId ?? "") === String(candidateStateCandidateId) && candidateLineage?.candidateStateMatchesPartialPlan === true && candidateLineage?.rawCandidateContainedInPartialPlan === true && candidateLineagePartialPlanCandidateIds.length === 1 && candidateLineagePartialPlanCandidateIds[0] === rawCandidateId;
+  const candidateStateMatchesCandidate = rawCandidateId != null && (candidateStateCandidateId == null || candidateStateDirectlyMatchesCandidate || candidateStateMatchesCandidateThroughPartialPlan);
   const fingerprintMatches = planningFingerprint != null && materializedPlanningFingerprint != null && planningFingerprint === materializedPlanningFingerprint;
   const checks: Array<[boolean, string]> = [
     [simulationMatchesValidation, "selection_simulation_validation_mismatch"],
@@ -42,6 +52,15 @@ export function evaluateSelectionEvidenceCoherence(args: { selectionSource?: str
     simulationMatchesDiagnostics,
     candidateMatchesDiagnostics,
     candidateStateMatchesCandidate,
+    candidateStateDirectlyMatchesCandidate,
+    candidateStateMatchesCandidateThroughPartialPlan,
+    candidateLineageResolutionAvailable,
+    candidateLineageResolutionKind,
+    candidateLineageRawCandidateId,
+    candidateLineagePartialPlanId,
+    candidateLineagePartialPlanCandidateIds,
+    candidateLineageAmbiguityReason,
+    candidateLineageResolutionConsistent,
     fingerprintMatches,
     coherent: warnings.length === 0,
     warnings,

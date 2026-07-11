@@ -13,7 +13,20 @@ export function buildActiveRepairORCSelection(args: { selected: any; preflightSu
   if (validation?.simulatedStateId !== simulation?.id) warnings.push("active_repair_selection_validation_lineage_mismatch");
   if (candidate?.id == null) warnings.push("active_repair_selection_missing_candidate");
   const candidateStateCandidateId = candidateState?.candidateId ?? candidateState?.candidate?.id ?? candidateState?.candidate?.candidateId ?? null;
-  if (candidateStateCandidateId != null && candidate?.id != null && String(candidateStateCandidateId) !== String(candidate.id)) warnings.push("active_repair_selection_candidate_state_mismatch");
+  const candidateLineage = selected?.candidateLineage ?? null;
+  const directMatch = candidateStateCandidateId != null && candidate?.id != null && String(candidateStateCandidateId) === String(candidate.id);
+  const partialPlanMatch = candidateLineage?.lineageConsistent === true
+    && candidateLineage?.resolutionKind === "single_candidate_partial_plan"
+    && candidateLineage?.ambiguityReason == null
+    && String(candidateLineage?.candidateStateCandidateId ?? "") === String(candidateStateCandidateId ?? "")
+    && candidateLineage?.candidateStateMatchesPartialPlan === true
+    && candidateLineage?.rawCandidateContainedInPartialPlan === true
+    && Array.isArray(candidateLineage?.partialPlanCandidateIds)
+    && candidateLineage.partialPlanCandidateIds.length === 1
+    && candidate?.id != null
+    && String(candidateLineage.rawCandidateId) === String(candidate.id)
+    && String(candidateLineage.partialPlanCandidateIds[0]) === String(candidate.id);
+  if (candidateStateCandidateId != null && candidate?.id != null && !directMatch && !partialPlanMatch) warnings.push("active_repair_selection_candidate_state_mismatch");
   const committedSimulationIds = simulation?.id && selected?.commitDecision?.committed === true ? [simulation.id] : simulation?.id ? [simulation.id] : [];
   const diagnostics = {
     selectionPolicy: "active-repair-preflight-canonical-baseline-repair-v1",
@@ -47,6 +60,15 @@ export function buildActiveRepairORCSelection(args: { selected: any; preflightSu
     selectedFinalSimulatedStateId: simulation?.id ?? null,
     selectedFinalCandidateId: candidate?.id ?? null,
     selectedFinalCandidateFamily: "baseline-overlap-repair",
+    candidateLineage,
+    selectedCandidateStateCandidateId: candidateStateCandidateId,
+    selectedRawCandidateId: candidate?.id ?? null,
+    selectedPartialPlanId: candidateLineage?.partialPlanId ?? null,
+    selectedPartialPlanCandidateIds: candidateLineage?.partialPlanCandidateIds ?? [],
+    selectedCandidateLineageResolutionKind: candidateLineage?.resolutionKind ?? null,
+    selectedCandidateStateMatchesPartialPlan: candidateLineage?.candidateStateMatchesPartialPlan ?? false,
+    selectedRawCandidateContainedInPartialPlan: candidateLineage?.rawCandidateContainedInPartialPlan ?? false,
+    selectedCandidateLineageConsistent: candidateLineage?.lineageConsistent ?? false,
     selectedFinalIncludesCompositeAncestors: false,
     resourceCompressionAcceptedByNetValueGate: false,
     resourceCompressionRejectedSimulationIds: [],
