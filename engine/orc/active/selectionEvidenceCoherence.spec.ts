@@ -23,3 +23,13 @@ test("reports incoherent evidence when IDs diverge", () => {
   assert.equal(result.coherent, false);
   assert.ok(result.warnings.includes("selection_candidate_diagnostics_mismatch"));
 });
+
+test("accepts CandidateState through resolved single-candidate PartialPlan lineage", () => {
+  const planning = [{ taskId: 1, startPlanned: "a", endPlanned: "b" }];
+  const result = evaluateSelectionEvidenceCoherence({ selectionSource: "active_repair_preflight", selection: { ...selection, candidateState: { id: "cs:synthetic", candidateId: "candidate:partial-plan:cand:1" }, candidateLineage: { rawCandidateId: "cand:1", partialPlanId: "partial-plan:cand:1", partialPlanCandidateIds: ["cand:1"], candidateStateCandidateId: "candidate:partial-plan:cand:1", candidateStateMatchesPartialPlan: true, rawCandidateContainedInPartialPlan: true, resolutionKind: "single_candidate_partial_plan", lineageConsistent: true, ambiguityReason: null, readOnly: true } }, planning, materializedPlanning: planning });
+  assert.equal(result.candidateStateDirectlyMatchesCandidate, false);
+  assert.equal(result.candidateStateMatchesCandidateThroughPartialPlan, true);
+  assert.equal(result.candidateStateMatchesCandidate, true);
+  assert.equal(result.coherent, true);
+  assert.deepEqual(result.warnings, []);
+});

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluateHardFeasibilityRestorationAcceptance } from "./hardFeasibilityRestorationAcceptance";
+import { evaluateHardFeasibilityRestorationAcceptance, resolveBaselineHardViolationCodes } from "./hardFeasibilityRestorationAcceptance";
 
 const base = {
   baselineHardFeasible: false,
@@ -40,4 +40,23 @@ test("rejects incoherent fingerprint even when candidate is hard valid", () => {
   const result = evaluateHardFeasibilityRestorationAcceptance({ ...base, fingerprintConsistent: false });
   assert.equal(result.accepted, false);
   assert.ok(result.rejectionReasons.includes("fingerprint_inconsistent"));
+});
+
+
+test("resolves baseline violations from real audit fields in deterministic order", () => {
+  assert.deepEqual(resolveBaselineHardViolationCodes({ baselineSeedHardFeasibility: { violatedConstraints: [{ constraintCode: "b" }, { code: "a" }, "a"] } }).codes, ["a", "b"]);
+  assert.deepEqual(resolveBaselineHardViolationCodes({ baselineSeedHardFeasibility: { dominantViolationCodes: ["dominant"] } }).codes, ["dominant"]);
+  assert.deepEqual(resolveBaselineHardViolationCodes({ baselineSeedHardFeasibility: { violatedConstraintSummary: { zero: 0, two: 2 } } }).codes, ["two"]);
+});
+
+test("does not apply hard restoration when invalid baseline has no violation evidence", () => {
+  const result = evaluateHardFeasibilityRestorationAcceptance({ ...base, baselineViolationCodes: [], baselineSeedHardFeasibility: { hardFeasible: false } });
+  assert.equal(result.applicable, false);
+  assert.ok(result.rejectionReasons.includes("baseline_hard_infeasible_without_violation_evidence"));
+});
+
+test("respects explicit false lineage over coherent diagnostic fallback", () => {
+  const result = evaluateHardFeasibilityRestorationAcceptance({ ...base, lineageConsistent: false, selectionEvidenceCoherence: { coherent: true } });
+  assert.equal(result.accepted, false);
+  assert.ok(result.rejectionReasons.includes("lineage_inconsistent"));
 });

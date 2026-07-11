@@ -1360,3 +1360,15 @@ Final materialization keeps change-source attribution on `changeSources.baseline
 ID269 adds strict hard-feasibility restoration acceptance with lexicographic precedence: a canonically hard-valid active-repair baseline-overlap candidate may beat a hard-invalid V4 baseline only after structural gates, locks, protected tasks, assigned-space contract, lineage, fingerprint, Evidence coherence, and explainability all pass. Production concept, task-change, and OPQM comparisons are still calculated as raw gates and published separately from effective acceptance gates, so soft regressions remain visible with the reason `soft_regression_accepted_to_restore_hard_feasibility`.
 
 The legacy `opqmGateBypassedForBaselineRepair` diagnostic is retained only as compatibility evidence derived from the new strict restoration policy. No new repair candidates, heuristics, limits, weights, V4 changes, EngineInput changes, DB/RLS changes, UI changes, or persistence changes were introduced.
+
+### ID 270 — Lineage-Aware Hard Restoration Activation & Non-Blocking Raw Diagnostics v1
+
+ID270 makes active repair acceptance lineage-aware end-to-end. A selected CandidateState may now match the raw repair candidate directly or through the explicit CandidateState → PartialPlan → raw Candidate resolution captured by `resolveBaselineRepairCandidateForSimulation`; valid single-candidate PartialPlans are coherent, while missing, ambiguous, mismatched, or unresolved PartialPlans remain rejected.
+
+Canonical baseline-repair preflight preserves the resolved candidate lineage on each canonical evaluation and carries it into the active ORC selection diagnostics. Selection Evidence now reports direct match, PartialPlan match, resolution kind, raw candidate id, PartialPlan id/candidate ids, ambiguity reason, and consistency without relying on text-prefix heuristics.
+
+Hard-feasibility restoration now reads baseline violation codes from the official audit fields in deterministic order: explicit override, `violatedConstraints`, `dominantViolationCodes`, positive `violatedConstraintSummary` entries, `violationDetailsSample`, then legacy compatibility fields. A hard-infeasible baseline with no resolvable violation Evidence is rejected with `baseline_hard_infeasible_without_violation_evidence` rather than accepted from a boolean alone.
+
+Raw production-concept, task-change, and OPQM comparisons remain visible as diagnostics under raw acceptance comparisons and inside the restoration policy, but they are no longer inserted into the blocking `gates` map. Effective soft gates pass only when the raw comparison passes or the strict hard-restoration policy accepts, so `falseGates` contains only operational blocking gates and not accepted diagnostic regressions.
+
+This iteration does not modify candidate generation, search, simulation, V4, DB/RLS, UI, persistence, operational metrics, heuristics, budgets, or limits; it only corrects resolved lineage interpretation, baseline violation Evidence extraction, hard-restoration policy evidence, and separation of raw diagnostics from blocking gates.
