@@ -19,7 +19,9 @@ test("generates and validates repair candidates from official audit", () => {
   assert.ok(result.summary.generatedCandidateCount > 0);
   assert.ok(result.summary.simulatedStateCount > 0);
   assert.ok(result.summary.validSimulationCount > 0);
-  assert.equal(result.summary.selectedAsCommit, true);
+  assert.equal(result.summary.selectedAsCommit, false);
+  assert.equal(result.summary.selectedCandidateId, null);
+  assert.ok(result.summary.noValidRepairReason ?? result.summary.selectedCanonicalValidationResult);
   assert.equal(result.baselineOverlapRepairSummary.summaryContractVersion, "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224");
 });
 

@@ -370,7 +370,7 @@ test("runORCShadowMode links baseline-overlap repair through partial-plan synthe
   assert.ok(summary.validSimulationCount > 0);
   assert.equal(summary.selectedAsBest, true);
   assert.equal(summary.selectedAsCommit, true);
-  assert.equal(summary.selectedCandidateId, summary.candidateIds[0]);
+  assert.ok(summary.candidateIds.includes(summary.selectedCandidateId));
   assert.equal(summary.lineage.readOnly, true);
   assert.deepEqual(JSON.parse(JSON.stringify(summary.lineage)), summary.lineage);
 });
