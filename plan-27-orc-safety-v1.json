@@ -1,0 +1,844 @@
+{
+  "snapshot": {
+    "exportVersion": "optiplan-engine-scenario-v1",
+    "planId": 27,
+    "inputHash": "dbae5f5398d569625f8b1ad36ab00ac2f9dcb5e64c2c0fadb63fdbfb0c93a5b4",
+    "counts": {
+      "tasks": 219,
+      "pendingTasks": 219,
+      "protectedTasks": 0,
+      "locks": 0,
+      "planResourceItems": 13,
+      "spaces": 23,
+      "zones": 7,
+      "contestants": 19,
+      "dependencies": 1614
+    }
+  },
+  "preflight": {
+    "version": "ENGINE_INPUT_PREFLIGHT_V1",
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      {
+        "code": "MAIN_ZONE_FINISH_EARLY_DISABLED",
+        "severity": "warning",
+        "message": "Main-zone finish-early is disabled."
+      },
+      {
+        "code": "CONTESTANT_COMPACTNESS_DISABLED",
+        "severity": "warning",
+        "message": "Contestant compactness is disabled."
+      },
+      {
+        "code": "CONTESTANT_ZONE_STABILITY_DISABLED",
+        "severity": "warning",
+        "message": "Contestant zone stability is disabled."
+      }
+    ],
+    "facts": {
+      "tasks": 219,
+      "productiveTasks": 174,
+      "syntheticTasks": 26,
+      "pendingTasks": 219,
+      "protectedTasks": 0,
+      "contestants": 19,
+      "contestantsWithAvailability": 19,
+      "spaces": 23,
+      "knownSpaces": 23,
+      "usedSpaces": 23,
+      "zones": 7,
+      "knownZones": 7,
+      "usedZones": 7,
+      "resources": 13,
+      "locks": 0,
+      "dependencyEdgesByTaskId": 737,
+      "dependencyEdgesByTemplateId": 1225,
+      "tasksByTemplate": {
+        "Sodexo": 19,
+        "Ensayo (Lucía)": 8,
+        "Reality Entorno Ensayo": 1,
+        "Prueba Vocal Lucía": 8,
+        "Estilismo": 19,
+        "Croma": 19,
+        "Pasillo": 19,
+        "Redes": 19,
+        "Ensayo (Jose María)": 11,
+        "Estilismo Salida": 19,
+        "OUT": 19,
+        "Prueba vocal Jose María": 11,
+        "IN": 19,
+        "Totales 1": 1,
+        "Estrellas": 1,
+        "COMIDA": 26
+      },
+      "tasksBySpace": {
+        "0": 19,
+        "3": 20,
+        "4": 1,
+        "5": 1,
+        "8": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "31": 1,
+        "32": 1,
+        "33": 1,
+        "34": 2,
+        "35": 9,
+        "39": 20,
+        "40": 39,
+        "41": 12,
+        "42": 1,
+        "43": 20,
+        "44": 1,
+        "45": 2,
+        "46": 1,
+        "48": 21,
+        "49": 39,
+        "<none>": 3
+      },
+      "tasksByZone": {
+        "1": 21,
+        "2": 24,
+        "3": 25,
+        "11": 5,
+        "12": 3,
+        "13": 21,
+        "14": 98,
+        "<none>": 22
+      },
+      "tasksByOperationalKind": {
+        "productive_task": 174,
+        "contestant_meal": 19,
+        "synthetic_space_meal": 23,
+        "synthetic_itinerant_meal": 3
+      },
+      "meal": {
+        "contestantMealTasks": 19,
+        "syntheticSpaceMealTasks": 23,
+        "syntheticItinerantMealTasks": 3,
+        "otherMealTasks": 0,
+        "durationMinutesByKind": {
+          "contestant": [
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40
+          ],
+          "synthetic_space": [
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75
+          ],
+          "synthetic_itinerant": [
+            75,
+            75,
+            75
+          ]
+        },
+        "mealWindow": {
+          "start": "13:00",
+          "end": "16:30"
+        }
+      },
+      "mainZone": {
+        "zoneId": 1,
+        "spaceIds": [
+          48
+        ],
+        "productiveTaskCount": 20,
+        "productiveDurationMinutes": 315
+      }
+    },
+    "configuration": {
+      "mainZoneId": 1,
+      "prioritizeMainZone": true,
+      "mainZonePriorityLevel": 3,
+      "mainZoneKeepBusy": true,
+      "mainZoneFinishEarly": false,
+      "contestantCompactLevel": 0,
+      "contestantStayInZoneLevel": 0,
+      "groupingLevel": 3,
+      "groupingBySpaceAndTemplate": true,
+      "optimizerWeights": {
+        "arrivalDepartureGrouping": 3,
+        "contestantCompact": 0,
+        "contestantStayInZone": 0,
+        "contestantTotalSpan": 0,
+        "groupBySpaceActive": 10,
+        "groupBySpaceTemplateMatch": 10,
+        "mainZoneFinishEarly": 0,
+        "mainZoneKeepBusy": 10
+      },
+      "mealMode": "flexible_meal_window",
+      "mealWindow": {
+        "start": "13:00",
+        "end": "16:30"
+      },
+      "maxTemplateChangesByZoneId": {
+        "1": 4,
+        "2": 4,
+        "3": 4,
+        "11": 4,
+        "12": 4,
+        "13": 4,
+        "14": 4
+      }
+    }
+  },
+  "options": {
+    "engines": [
+      "orc"
+    ],
+    "repeat": 2,
+    "timeLimitMs": 150000,
+    "failFast": false
+  },
+  "executions": [
+    {
+      "engine": "orc",
+      "repetition": 1,
+      "executionStatus": "completed",
+      "runtimeMs": 131813,
+      "status": "success",
+      "plannedTasks": 219,
+      "unplannedTasks": 0,
+      "hardFeasible": true,
+      "complete": true,
+      "outputHash": "a6a932c1f2f141abb86ab35dccb7341871da7b66df33134dcaf889c66e907d2d",
+      "usedEngine": "v4_fallback",
+      "fallbackReason": "gate_failed:finalMaterializedPlanningHardValid",
+      "falseGates": [
+        "finalMaterializedPlanningHardValid"
+      ],
+      "operationalMetrics": {
+        "plannedTaskCount": 219,
+        "unplannedTaskCount": 0,
+        "productiveTaskCount": 174,
+        "contestantMealTaskCount": 19,
+        "syntheticTaskCount": 26,
+        "earliestStartMinute": 540,
+        "latestEndMinute": 1100,
+        "makespanMinutes": 560,
+        "totalContestantIdleMinutes": 5345,
+        "maximumContestantIdleMinutes": 390,
+        "contestantsWithIdle": 19,
+        "totalContestantSpanMinutes": 7580,
+        "maximumContestantSpanMinutes": 505,
+        "contestantSummaries": [
+          {
+            "contestantId": 80,
+            "firstStart": 540,
+            "lastEnd": 945,
+            "spanMinutes": 405,
+            "idleMinutes": 290,
+            "taskCount": 10,
+            "largestGapMinutes": 190
+          },
+          {
+            "contestantId": 81,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 180
+          },
+          {
+            "contestantId": 82,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 185
+          },
+          {
+            "contestantId": 83,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 175
+          },
+          {
+            "contestantId": 84,
+            "firstStart": 540,
+            "lastEnd": 1035,
+            "spanMinutes": 495,
+            "idleMinutes": 380,
+            "taskCount": 10,
+            "largestGapMinutes": 160
+          },
+          {
+            "contestantId": 85,
+            "firstStart": 540,
+            "lastEnd": 1035,
+            "spanMinutes": 495,
+            "idleMinutes": 380,
+            "taskCount": 10,
+            "largestGapMinutes": 175
+          },
+          {
+            "contestantId": 86,
+            "firstStart": 575,
+            "lastEnd": 1035,
+            "spanMinutes": 460,
+            "idleMinutes": 345,
+            "taskCount": 10,
+            "largestGapMinutes": 190
+          },
+          {
+            "contestantId": 87,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 55
+          },
+          {
+            "contestantId": 88,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 55
+          },
+          {
+            "contestantId": 89,
+            "firstStart": 575,
+            "lastEnd": 900,
+            "spanMinutes": 325,
+            "idleMinutes": 210,
+            "taskCount": 10,
+            "largestGapMinutes": 70
+          },
+          {
+            "contestantId": 90,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 135,
+            "taskCount": 13,
+            "largestGapMinutes": 75
+          },
+          {
+            "contestantId": 91,
+            "firstStart": 575,
+            "lastEnd": 1080,
+            "spanMinutes": 505,
+            "idleMinutes": 390,
+            "taskCount": 10,
+            "largestGapMinutes": 165
+          },
+          {
+            "contestantId": 92,
+            "firstStart": 610,
+            "lastEnd": 1080,
+            "spanMinutes": 470,
+            "idleMinutes": 355,
+            "taskCount": 10,
+            "largestGapMinutes": 180
+          },
+          {
+            "contestantId": 93,
+            "firstStart": 610,
+            "lastEnd": 1080,
+            "spanMinutes": 470,
+            "idleMinutes": 355,
+            "taskCount": 10,
+            "largestGapMinutes": 195
+          },
+          {
+            "contestantId": 94,
+            "firstStart": 610,
+            "lastEnd": 1100,
+            "spanMinutes": 490,
+            "idleMinutes": 375,
+            "taskCount": 10,
+            "largestGapMinutes": 210
+          },
+          {
+            "contestantId": 95,
+            "firstStart": 610,
+            "lastEnd": 900,
+            "spanMinutes": 290,
+            "idleMinutes": 175,
+            "taskCount": 10,
+            "largestGapMinutes": 95
+          },
+          {
+            "contestantId": 96,
+            "firstStart": 610,
+            "lastEnd": 900,
+            "spanMinutes": 290,
+            "idleMinutes": 175,
+            "taskCount": 10,
+            "largestGapMinutes": 85
+          },
+          {
+            "contestantId": 97,
+            "firstStart": 610,
+            "lastEnd": 945,
+            "spanMinutes": 335,
+            "idleMinutes": 220,
+            "taskCount": 10,
+            "largestGapMinutes": 80
+          },
+          {
+            "contestantId": 98,
+            "firstStart": 645,
+            "lastEnd": 945,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 65
+          }
+        ],
+        "mainZoneProductiveTaskCount": 20,
+        "mainZoneProductiveMinutes": 315,
+        "mainZoneFirstStartMinute": 605,
+        "mainZoneLastEndMinute": 1085,
+        "mainZoneVisibleIdleMinutes": 165,
+        "mainZoneLargestGapMinutes": 90,
+        "mainZoneGapCount": 2,
+        "mainZoneGapIntervals": [
+          {
+            "start": 650,
+            "end": 725,
+            "durationMinutes": 75,
+            "previousTaskIds": [
+              504,
+              315
+            ],
+            "nextTaskIds": [
+              285,
+              295,
+              305
+            ]
+          },
+          {
+            "start": 770,
+            "end": 860,
+            "durationMinutes": 90,
+            "previousTaskIds": [
+              285,
+              295,
+              305
+            ],
+            "nextTaskIds": [
+              365,
+              375,
+              385,
+              395,
+              217
+            ]
+          }
+        ],
+        "templateChangesByZoneId": {
+          "1": {
+            "changes": 2,
+            "limit": 4,
+            "excess": 0
+          },
+          "2": {
+            "changes": 2,
+            "limit": 4,
+            "excess": 0
+          },
+          "3": {
+            "changes": 0,
+            "limit": 4,
+            "excess": 0
+          },
+          "12": {
+            "changes": 0,
+            "limit": 4,
+            "excess": 0
+          },
+          "13": {
+            "changes": 14,
+            "limit": 4,
+            "excess": 10
+          },
+          "14": {
+            "changes": 49,
+            "limit": 4,
+            "excess": 45
+          }
+        },
+        "totalTemplateChanges": 67,
+        "zonesExceedingTemplateChangeLimit": [
+          "13",
+          "14"
+        ],
+        "hardOverlapCount": 65,
+        "contestantOverlapCount": 1,
+        "spaceOverlapCount": 64,
+        "resourceOverlapCount": 0,
+        "dependencyViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "protectedTaskMutationCount": 0,
+        "scheduledOutsidePlanWindowCount": 0
+      },
+      "replayWarnings": [],
+      "compactPlanningIncluded": false,
+      "operationalMetricsMs": 7,
+      "makespan": null,
+      "talentIdle": null,
+      "visibleMainFlowIdle": null,
+      "largestMainFlowGap": null,
+      "workerStartupMs": 18,
+      "engineExecutionMs": 131462,
+      "totalRuntimeMs": 131480,
+      "compactPlanningPath": "plan-27-orc-compact-v3.json"
+    },
+    {
+      "engine": "orc",
+      "repetition": 2,
+      "executionStatus": "completed",
+      "runtimeMs": 137770,
+      "status": "success",
+      "plannedTasks": 219,
+      "unplannedTasks": 0,
+      "hardFeasible": true,
+      "complete": true,
+      "outputHash": "a6a932c1f2f141abb86ab35dccb7341871da7b66df33134dcaf889c66e907d2d",
+      "usedEngine": "v4_fallback",
+      "fallbackReason": "gate_failed:finalMaterializedPlanningHardValid",
+      "falseGates": [
+        "finalMaterializedPlanningHardValid"
+      ],
+      "operationalMetrics": {
+        "plannedTaskCount": 219,
+        "unplannedTaskCount": 0,
+        "productiveTaskCount": 174,
+        "contestantMealTaskCount": 19,
+        "syntheticTaskCount": 26,
+        "earliestStartMinute": 540,
+        "latestEndMinute": 1100,
+        "makespanMinutes": 560,
+        "totalContestantIdleMinutes": 5345,
+        "maximumContestantIdleMinutes": 390,
+        "contestantsWithIdle": 19,
+        "totalContestantSpanMinutes": 7580,
+        "maximumContestantSpanMinutes": 505,
+        "contestantSummaries": [
+          {
+            "contestantId": 80,
+            "firstStart": 540,
+            "lastEnd": 945,
+            "spanMinutes": 405,
+            "idleMinutes": 290,
+            "taskCount": 10,
+            "largestGapMinutes": 190
+          },
+          {
+            "contestantId": 81,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 180
+          },
+          {
+            "contestantId": 82,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 185
+          },
+          {
+            "contestantId": 83,
+            "firstStart": 540,
+            "lastEnd": 990,
+            "spanMinutes": 450,
+            "idleMinutes": 335,
+            "taskCount": 10,
+            "largestGapMinutes": 175
+          },
+          {
+            "contestantId": 84,
+            "firstStart": 540,
+            "lastEnd": 1035,
+            "spanMinutes": 495,
+            "idleMinutes": 380,
+            "taskCount": 10,
+            "largestGapMinutes": 160
+          },
+          {
+            "contestantId": 85,
+            "firstStart": 540,
+            "lastEnd": 1035,
+            "spanMinutes": 495,
+            "idleMinutes": 380,
+            "taskCount": 10,
+            "largestGapMinutes": 175
+          },
+          {
+            "contestantId": 86,
+            "firstStart": 575,
+            "lastEnd": 1035,
+            "spanMinutes": 460,
+            "idleMinutes": 345,
+            "taskCount": 10,
+            "largestGapMinutes": 190
+          },
+          {
+            "contestantId": 87,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 55
+          },
+          {
+            "contestantId": 88,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 55
+          },
+          {
+            "contestantId": 89,
+            "firstStart": 575,
+            "lastEnd": 900,
+            "spanMinutes": 325,
+            "idleMinutes": 210,
+            "taskCount": 10,
+            "largestGapMinutes": 70
+          },
+          {
+            "contestantId": 90,
+            "firstStart": 575,
+            "lastEnd": 875,
+            "spanMinutes": 300,
+            "idleMinutes": 135,
+            "taskCount": 13,
+            "largestGapMinutes": 75
+          },
+          {
+            "contestantId": 91,
+            "firstStart": 575,
+            "lastEnd": 1080,
+            "spanMinutes": 505,
+            "idleMinutes": 390,
+            "taskCount": 10,
+            "largestGapMinutes": 165
+          },
+          {
+            "contestantId": 92,
+            "firstStart": 610,
+            "lastEnd": 1080,
+            "spanMinutes": 470,
+            "idleMinutes": 355,
+            "taskCount": 10,
+            "largestGapMinutes": 180
+          },
+          {
+            "contestantId": 93,
+            "firstStart": 610,
+            "lastEnd": 1080,
+            "spanMinutes": 470,
+            "idleMinutes": 355,
+            "taskCount": 10,
+            "largestGapMinutes": 195
+          },
+          {
+            "contestantId": 94,
+            "firstStart": 610,
+            "lastEnd": 1100,
+            "spanMinutes": 490,
+            "idleMinutes": 375,
+            "taskCount": 10,
+            "largestGapMinutes": 210
+          },
+          {
+            "contestantId": 95,
+            "firstStart": 610,
+            "lastEnd": 900,
+            "spanMinutes": 290,
+            "idleMinutes": 175,
+            "taskCount": 10,
+            "largestGapMinutes": 95
+          },
+          {
+            "contestantId": 96,
+            "firstStart": 610,
+            "lastEnd": 900,
+            "spanMinutes": 290,
+            "idleMinutes": 175,
+            "taskCount": 10,
+            "largestGapMinutes": 85
+          },
+          {
+            "contestantId": 97,
+            "firstStart": 610,
+            "lastEnd": 945,
+            "spanMinutes": 335,
+            "idleMinutes": 220,
+            "taskCount": 10,
+            "largestGapMinutes": 80
+          },
+          {
+            "contestantId": 98,
+            "firstStart": 645,
+            "lastEnd": 945,
+            "spanMinutes": 300,
+            "idleMinutes": 185,
+            "taskCount": 10,
+            "largestGapMinutes": 65
+          }
+        ],
+        "mainZoneProductiveTaskCount": 20,
+        "mainZoneProductiveMinutes": 315,
+        "mainZoneFirstStartMinute": 605,
+        "mainZoneLastEndMinute": 1085,
+        "mainZoneVisibleIdleMinutes": 165,
+        "mainZoneLargestGapMinutes": 90,
+        "mainZoneGapCount": 2,
+        "mainZoneGapIntervals": [
+          {
+            "start": 650,
+            "end": 725,
+            "durationMinutes": 75,
+            "previousTaskIds": [
+              504,
+              315
+            ],
+            "nextTaskIds": [
+              285,
+              295,
+              305
+            ]
+          },
+          {
+            "start": 770,
+            "end": 860,
+            "durationMinutes": 90,
+            "previousTaskIds": [
+              285,
+              295,
+              305
+            ],
+            "nextTaskIds": [
+              365,
+              375,
+              385,
+              395,
+              217
+            ]
+          }
+        ],
+        "templateChangesByZoneId": {
+          "1": {
+            "changes": 2,
+            "limit": 4,
+            "excess": 0
+          },
+          "2": {
+            "changes": 2,
+            "limit": 4,
+            "excess": 0
+          },
+          "3": {
+            "changes": 0,
+            "limit": 4,
+            "excess": 0
+          },
+          "12": {
+            "changes": 0,
+            "limit": 4,
+            "excess": 0
+          },
+          "13": {
+            "changes": 14,
+            "limit": 4,
+            "excess": 10
+          },
+          "14": {
+            "changes": 49,
+            "limit": 4,
+            "excess": 45
+          }
+        },
+        "totalTemplateChanges": 67,
+        "zonesExceedingTemplateChangeLimit": [
+          "13",
+          "14"
+        ],
+        "hardOverlapCount": 65,
+        "contestantOverlapCount": 1,
+        "spaceOverlapCount": 64,
+        "resourceOverlapCount": 0,
+        "dependencyViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "protectedTaskMutationCount": 0,
+        "scheduledOutsidePlanWindowCount": 0
+      },
+      "replayWarnings": [],
+      "compactPlanningIncluded": false,
+      "operationalMetricsMs": 8,
+      "makespan": null,
+      "talentIdle": null,
+      "visibleMainFlowIdle": null,
+      "largestMainFlowGap": null,
+      "workerStartupMs": 11,
+      "engineExecutionMs": 137479,
+      "totalRuntimeMs": 137490,
+      "compactPlanningPath": "plan-27-orc-compact-v3.json"
+    }
+  ],
+  "deterministic": true,
+  "completed": true,
+  "timedOutExecutions": 0,
+  "failedExecutions": 0,
+  "comparisonVersion": "REPLAY_OPERATIONAL_COMPARISON_V1",
+  "comparisons": []
+}
