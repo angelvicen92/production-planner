@@ -11,6 +11,7 @@ import { assertSerializableORCSeed, buildORCBaselineSeededInput, type ORCBaselin
 import { auditORCBaselineSeedHardFeasibility, type ORCBaselineSeedHardFeasibilityAudit } from "./orcBaselineSeedFeasibilityAudit";
 import type { EffectiveMovesDiagnostics } from "../simulation/applyLocalScheduleMove";
 import { selectBestORCSimulation } from "./selectBestORCSimulation";
+import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { buildORCRuntimeContractID224, hasRepairableBaselineSpaceOverlapGroup, normalizeBaselineOverlapRepairSummaryID224, runActiveBaselineRepairPreflight, ACTIVE_REPAIR_PREFLIGHT_SOURCE_ID224 } from "./runActiveBaselineRepairPreflight";
 import { ORC_PLANNING_MATERIALIZATION_CONTRACT_VERSION_ID225 } from "../simulation/materializeSimulatedPlanning";
 import { buildFinalORCCompositeSummary } from "./buildFinalORCCompositeSummary";
@@ -404,14 +405,16 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const v4 = generatePlanV4(input, options);
   const reportExecutionTimeMs = options.orcShadowResult !== undefined ? 0 : (v4.diagnostics.performance?.runtimeMs ?? 0);
   let seededInput: EngineInput | null = null;
+  let canonicalRepairInput: EngineInput | null = null;
   let baselineSeed: ORCBaselineSeedDiagnostics = { applied: false, v4PlannedCount: 0, protectedExistingPlanningCount: 0, clearedRawPlanningCount: 0, unseededPendingCount: 0, seededPlanningCount: 0, sourcePlanningCount: 0, source: "v4_baseline", warnings: [] };
   let baselineSeedHardFeasibility: ORCBaselineSeedHardFeasibilityAudit = auditORCBaselineSeedHardFeasibility(null, { createdAt: null });
   try {
     const seeded = buildORCBaselineSeededInput(input, v4.output);
     assertSerializableORCSeed(seeded.seedPlanning);
     seededInput = seeded.input;
+    canonicalRepairInput = seeded.canonicalRepairInput;
     baselineSeed = seeded.baselineSeed;
-    baselineSeedHardFeasibility = auditORCBaselineSeedHardFeasibility(seededInput, { createdAt: null });
+    baselineSeedHardFeasibility = auditORCBaselineSeedHardFeasibility(canonicalRepairInput, { createdAt: null });
   } catch (error) {
     baselineSeed = { applied: false, v4PlannedCount: 0, protectedExistingPlanningCount: 0, clearedRawPlanningCount: 0, unseededPendingCount: 0, seededPlanningCount: 0, sourcePlanningCount: v4.output.plannedTasks?.length ?? 0, source: "v4_baseline", warnings: ["ORC baseline seed disabled before execution."], error: error instanceof Error ? error.message : String(error) };
     const gates = { v4BaselineAvailable: true, baselineSeedHardFeasible: baselineSeedHardFeasibility.hardFeasible, orcExecuted: false };
@@ -445,8 +448,9 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const initialSummary = (shadow?.summary as Record<string, unknown> | undefined)?.baselineOverlapRepair as Record<string, unknown> | undefined;
   const legacyRepairSummary = repairableAuditDetected && initialSummary?.summaryContractVersion !== "BASELINE-OVERLAP-REPAIR-SUMMARY-ID224";
   let activePreflight = null as ReturnType<typeof runActiveBaselineRepairPreflight> | null;
-  if (baselineSeedHardFeasibility.hardFeasible === false && repairableAuditDetected && ((validation?.result !== "VALID") || legacyRepairSummary || Number(initialSummary?.validSimulationCount ?? 0) === 0 || Number(initialSummary?.generatedCandidateCount ?? 0) === 0)) {
-    activePreflight = runActiveBaselineRepairPreflight({ input: seededInput, operationalState: shadow?.operationalState ?? null, baselineSeedHardFeasibility, createdAt: null, maxCandidates: 4, warnings: legacyRepairSummary ? ["legacy_baseline_overlap_repair_summary_detected"] : [] });
+  if (baselineSeedHardFeasibility.hardFeasible === false && repairableAuditDetected) {
+    const repairOperationalState = canonicalRepairInput ? buildOperationalStateFromEngineInput(canonicalRepairInput) : null;
+    activePreflight = runActiveBaselineRepairPreflight({ canonicalInput: input, repairOperationalState, baselineSeedHardFeasibility, createdAt: null, maxCandidatesAfterHardPrefilter: 4, warnings: legacyRepairSummary ? ["legacy_baseline_overlap_repair_summary_detected"] : [] });
     if (activePreflight.selected) {
       simulation = activePreflight.selected.simulation;
       validation = activePreflight.selected.validation;
