@@ -1224,3 +1224,37 @@ Contestant meals are not productive work: they do not count as synthetic placeho
 Synthetic meal placeholders remain separate from contestant meals. Space-scoped placeholders count as `synthetic_space_meal`; itinerant-team placeholders count as `synthetic_itinerant_meal`; both continue to contribute to `syntheticTasks` while contestant meals contribute only to `meal.contestantMealTasks`.
 
 Preflight space and zone facts now distinguish known and used identifiers. `facts.spaces`/`facts.knownSpaces` represent real known physical spaces in the EngineInput, and `facts.usedSpaces` represents real task space ids. Placeholder ids (`0`, `null`, `undefined`, and `"<none>"`) are excluded from both real-space and real-zone counts. Likewise, `facts.zones`/`facts.knownZones` count only real zones, while `facts.usedZones` counts only real zone ids referenced by tasks.
+
+### ID 262 — Replay Operational Metrics & Cross-Engine Comparison v1
+
+ID262 converts offline replay into an operational comparator. The replay report now computes comparable metrics from the materialized planning plus the original `EngineInput`, rather than trusting engine-specific diagnostic paths. Diagnostics remain useful context for status, fallback reason, and gate evidence, but they are not the source of truth for replay makespan, contestant idle, main-zone continuity, task changes, overlaps, dependency violations, availability violations, or protected-task mutation audits.
+
+Optional numeric conversion is null-safe: missing values (`null`, `undefined`, empty strings, non-numeric values, `NaN`, `Infinity`, objects, or arrays) remain `null`. A reported zero now means the replay evaluator actually calculated zero; absence is never coerced through `Number(null)`.
+
+The common evaluator normalizes V3, V4, and ORC planned tasks into compact planning rows containing task id, planned start/end, space, zone, contestant, template, assigned resources, and operational kind. Missing fields are completed only from `EngineInput.tasks` by `taskId`; values are not invented, and replay warnings mark missing tasks or times.
+
+Temporal parsing accepts only strict `HH:mm` values in a same-day window. Invalid or absent times return `null`; midnight rollover is not interpreted. Makespan is calculated as the difference between the earliest valid planned start and latest valid planned end across planned tasks, or `null` when no valid interval exists.
+
+Contestant jornada metrics include productive tasks and contestant meal tasks, exclude synthetic placeholders, and treat the contestant meal as part of the contestant span. Meal duration itself is not idle; positive gaps before or after the meal are idle. The report includes total and maximum contestant idle, total and maximum contestant span, contestants with idle, and compact per-contestant summaries using ids only.
+
+Main-zone continuity uses `optimizerMainZoneId`, `spaceIdsByZoneId`, and the shared operational classification. It includes only productive main-zone work, merges overlapping or contiguous productive intervals, and reports visible idle minutes, largest gap, gap count, and compact gap intervals with bounded neighboring task ids.
+
+Activity changes are counted per zone from productive tasks ordered by start and grouped by `templateId` or the available template grouping identity, not by `taskId`. Consecutive tasks from the same template do not add a change; contestant meals and synthetic placeholders are ignored. The evaluator compares changes to `maxTemplateChangesByZoneId` and reports zones exceeding their limits.
+
+Replay comparisons now include `comparisonVersion: REPLAY_OPERATIONAL_COMPARISON_V1` and compare completed runs for V4 vs V3, ORC vs V4, and ORC vs V3. Each metric delta states the baseline value, candidate value, delta, whether lower or higher is better, and an assessment of `improved`, `worsened`, `equal`, or `unavailable`; positive deltas are never labelled improvements without direction.
+
+When ORC reports `usedEngine: v4_fallback`, replay compares normalized ORC planning against V4 planning and reports planning equivalence, changed task ids, timing changes, assignment changes, and metadata-only equivalence. If fallback output is not operationally equivalent to V4, the replay adds `ORC_FALLBACK_OUTPUT_NOT_EQUIVALENT_TO_V4` as a replay warning. This verification does not modify ORC selection, gates, candidate evaluation, or commit behavior.
+
+Compact planning remains omitted from execution summaries by default. Use:
+
+```bash
+npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json --engine all --repeat 1 --time-limit-ms 150000 --output plan-27-replay-v3.json --include-compact-planning
+```
+
+Use `--compact-planning-output <ruta>` to save a separate compact planning file without bulky internal diagnostics, for example:
+
+```bash
+npm run replay:engine-scenario -- local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json --engine all --repeat 1 --time-limit-ms 150000 --output plan-27-replay-v3.json --compact-planning-output local_engine_scenarios/plan-27-compact-v1.json
+```
+
+This iteration is diagnostic-only. It does not change V3, V4, ORC, SEE, candidate builders, simulation, validation, operational evaluator, commit logic, gates, weights, configuration, meal planning, DB, RLS, persisted planning, or the generation endpoint.
