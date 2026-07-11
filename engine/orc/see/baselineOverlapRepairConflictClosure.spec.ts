@@ -39,3 +39,35 @@ test("blocks closure when a displaced task is protected", () => {
   assert.ok((result.summary.rejectedReasonCounts.protected_task ?? 0) > 0);
   assert.equal(result.candidates.some((c) => c.movedTaskIds.includes(3)), false);
 });
+
+const multiConflictState = (): OperationalState => ({
+  id: "closure:multi", planId: 1, workDay: { start: "09:00", end: "14:00" },
+  planning: [
+    { taskId: 10, startPlanned: "09:00", endPlanned: "10:00", assignedResourceIds: [10], spaceId: 1, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    { taskId: 20, startPlanned: "10:00", endPlanned: "10:30", assignedResourceIds: [20], spaceId: 2, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    { taskId: 30, startPlanned: "10:30", endPlanned: "11:00", assignedResourceIds: [30], spaceId: 3, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+    { taskId: 40, startPlanned: "11:00", endPlanned: "11:30", assignedResourceIds: [40], spaceId: 4, operationalRole: "productive_task", spaceOccupancyMode: "exclusive", blocksSpace: true },
+  ],
+  tasks: [
+    { id: 10, contestantId: 500, templateId: 10, status: "pending", assignedResourceIds: [10], spaceId: 1 } as any,
+    { id: 20, contestantId: 500, templateId: 20, status: "pending", assignedResourceIds: [20], spaceId: 2 } as any,
+    { id: 30, contestantId: 500, templateId: 30, status: "pending", assignedResourceIds: [30], spaceId: 3 } as any,
+    { id: 40, contestantId: 500, templateId: 40, status: "pending", assignedResourceIds: [40], spaceId: 4 } as any,
+  ],
+  resources: [], spaces: { parentById: {}, nameById: {}, capacityById: {}, concurrencyById: {}, exclusiveById: {}, priorityById: {} },
+  availability: { workDay: null, meal: null, mealWindow: null, actualMeal: null, globalHardBreaks: [], protectedBreaks: [], contestantAvailabilityById: {} },
+  dependencies: [], locks: [], constraints: {}, operationalMetrics: {}, cognitive: { opportunities: [], searchSpaces: [], candidates: [], candidateStates: [], simulatedStates: [], validationResults: [], operationalValues: [], commitDecisions: [], evidence: [], metadata: {} }, source: "EngineInput", schemaVersion: "ORC-SPEC-01",
+});
+
+test("reaudits root after displacing the first sibling conflict", () => {
+  const result = buildBaselineRepairConflictClosure({ operationalState: multiConflictState(), originalConflictTaskIds: [10,20], rootTaskId: 10, direction: "forward", limits: { maxClosureTasks: 2, maxClosureDepth: 2, maxGeneratedClosureCandidates: 1, maxBoundaryCandidatesPerRoot: 2 } });
+  assert.equal(result.candidates.some((c) => c.conflictsRemaining.length === 0 && c.movedTaskIds.length === 2), false);
+  assert.ok((result.summary.residualConflictReasonCounts.contestant_overlap ?? 0) > 0);
+  assert.equal(result.summary.previewRejectedCandidateCount > 0, true);
+});
+
+test("invalid preview branches do not consume executable candidate budget", () => {
+  const result = buildBaselineRepairConflictClosure({ operationalState: multiConflictState(), originalConflictTaskIds: [10,20], rootTaskId: 10, direction: "forward", limits: { maxClosureTasks: 4, maxClosureDepth: 4, maxGeneratedClosureCandidates: 1, maxBoundaryCandidatesPerRoot: 16 } });
+  assert.ok(result.summary.boundaryCandidatesEvaluated > result.summary.executableCandidateCount);
+  assert.equal(result.candidates.every((c) => c.residualConflictCount === 0 && c.conflictsRemaining.length === 0), true);
+});

@@ -122,11 +122,12 @@ export function buildBaselineOverlapRepairCandidates(operationalState: Operation
   buildable.sort((x,y)=>{ const sx=variantRank(operationalState,x), sy=variantRank(operationalState,y); for(let i=0;i<sx.length;i++) if(sx[i]!==sy[i]) return sx[i]<sy[i]?-1:1; return 0; });
   const simpleKept = buildable.map((v)=>makeCandidate(operationalState, v.variant, v.moved, v.fixed, v.start, createdAt, v.localFeasibility));
   const conflictingTaskIds = [a.taskId,b.taskId].sort((x,y)=>x-y);
-  const shouldRunClosure = simpleKept.length === 0;
-  const closureRuns = shouldRunClosure ? [a, b].flatMap((root) => (["forward", "backward"] as const).map((direction) => buildBaselineRepairConflictClosure({ operationalState, originalConflictTaskIds: conflictingTaskIds, originalViolationCodes: ["SPACE_OVERLAP"], rootTaskId: root.taskId, direction, limits: options.closureLimits, createdAt }))) : [];
-  const closureConverted = closureRuns.flatMap((r) => r.candidates.map((c) => closureCandidateToORCCandidate(c, conflictingTaskIds, createdAt)));
+  const closureRuns = [a, b].flatMap((root) => (["forward", "backward"] as const).map((direction) => buildBaselineRepairConflictClosure({ operationalState, originalConflictTaskIds: conflictingTaskIds, originalViolationCodes: ["SPACE_OVERLAP"], rootTaskId: root.taskId, direction, limits: options.closureLimits, createdAt })));
+  const simpleAssignmentKeys = new Set(simpleKept.map((x) => x.candidate.assignments.map((a) => `${a.taskId}:${a.startPlanned}:${a.endPlanned}`).sort().join("|")));
+  const closureConverted = closureRuns.flatMap((r) => r.candidates.filter((c) => c.residualConflictCount === 0 && c.blockingReason == null && (simpleKept.length === 0 || c.assignments.length > 1)).map((c) => closureCandidateToORCCandidate(c, conflictingTaskIds, createdAt))).filter((x) => !simpleAssignmentKeys.has(x.candidate.assignments.map((a) => `${a.taskId}:${a.startPlanned}:${a.endPlanned}`).sort().join("|")));
   for (const r of closureRuns) for (const [reason,count] of Object.entries(r.summary.rejectedReasonCounts)) skipped[reason]=(skipped[reason]??0)+count;
   const kept = [...simpleKept, ...closureConverted].sort((x,y)=>{
+    const xf = (x.candidate.metadata as any).baselineRepairType === "productive-space-overlap" ? 0 : 1, yf = (y.candidate.metadata as any).baselineRepairType === "productive-space-overlap" ? 0 : 1; if (xf!==yf) return xf-yf;
     const ax=x.candidate.assignments.length, ay=y.candidate.assignments.length; if(ax!==ay) return ax-ay;
     const ad=Number((x.candidate.metadata.conflictClosure as any)?.selectedTotalDisplacementMinutes ?? 0), bd=Number((y.candidate.metadata.conflictClosure as any)?.selectedTotalDisplacementMinutes ?? 0); if(ad!==bd) return ad-bd;
     return x.candidate.id.localeCompare(y.candidate.id);
