@@ -228,7 +228,7 @@
       "orc"
     ],
     "repeat": 2,
-    "timeLimitMs": 150000,
+    "timeLimitMs": 210000,
     "failFast": false
   },
   "executions": [
@@ -236,18 +236,18 @@
       "engine": "orc",
       "repetition": 1,
       "executionStatus": "completed",
-      "runtimeMs": 143132,
+      "runtimeMs": 114107,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "b0a436eb3006e1e1d8e412be9ceaf96452e40f0ee14a444b66158a85dfacb70b",
+      "outputHash": "5e8fc25b51a67076e869587293f80e3746a5903ec4e1339c2b9d5a30ace187a6",
       "usedEngine": "v4_fallback",
-      "fallbackReason": "no_hard_valid_baseline_repair",
+      "fallbackReason": "gate_failed:explainableDecision",
       "falseGates": [
-        "finalMaterializedPlanningHardValid",
-        "finalIncumbentLineageConsistent"
+        "explainableDecision",
+        "productionConceptNotWorseThanV4"
       ],
       "operationalMetrics": {
         "plannedTaskCount": 219,
@@ -524,25 +524,56 @@
       },
       "replayWarnings": [],
       "compactPlanningIncluded": false,
-      "operationalMetricsMs": 16,
+      "operationalMetricsMs": 7,
       "makespan": null,
       "talentIdle": null,
       "visibleMainFlowIdle": null,
       "largestMainFlowGap": null,
       "orcSafetyEvidence": {
-        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+        "baselineSeedOperationalIdentityAudit": {
+          "version": "baseline-seed-operational-identity-audit-v1",
+          "originalTaskCount": 219,
+          "seededTaskCount": 219,
+          "originalContestantLinkedTaskCount": 193,
+          "seededContestantLinkedTaskCount": 193,
+          "missingContestantIdTaskIdsSample": [],
+          "originalItinerantTeamLinkedTaskCount": 3,
+          "seededItinerantTeamLinkedTaskCount": 3,
+          "missingItinerantTeamIdTaskIdsSample": [],
+          "originalTemplateNameCount": 219,
+          "seededTemplateNameCount": 219,
+          "originalResourceRequirementsCount": 38,
+          "seededResourceRequirementsCount": 38,
+          "dependencyIdentityPreserved": true,
+          "protectedTaskIdentityPreserved": true,
+          "lockIdentityPreserved": true,
+          "planningFieldsOverlaidCorrectly": true,
+          "operationalIdentityComplete": true,
+          "readOnly": true
+        },
+        "activeRepairPreflightExecuted": true,
+        "activeRepairPreflightAuthoritative": true,
+        "candidatesGeneratedBeforePrefilter": 9,
+        "candidatesSentToPrefilter": 9,
+        "prefilterAcceptedCount": 2,
+        "prefilterRejectedCount": 7,
+        "candidateLimitAfterPrefilter": 4,
+        "candidatesSentToSimulation": 2,
+        "candidateLineageResolutionCount": 2,
+        "candidateLineageResolutionFailureCount": 0,
+        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
         "repairCandidateAdmissionSummary": {
-          "generatedSimpleCandidateCount": 2,
-          "generatedClosureCandidateCount": 21,
-          "simplePreviewAcceptedCount": 2,
+          "generatedSimpleCandidateCount": 0,
+          "generatedClosureCandidateCount": 9,
+          "simplePreviewAcceptedCount": 0,
           "simplePreviewRejectedCount": 0,
           "simplePreviewRejectedReasonCounts": {},
-          "closurePreviewAcceptedCount": 21,
+          "closurePreviewAcceptedCount": 9,
           "closurePreviewRejectedCount": 0,
           "closurePreviewRejectedReasonCounts": {},
           "duplicateCandidateCount": 0,
-          "deduplicatedCandidateCount": 23,
-          "previewCleanCandidateCount": 23,
+          "deduplicatedCandidateCount": 9,
+          "previewCleanCandidateCount": 9,
           "readOnly": true
         },
         "conflictClosureSummary": {
@@ -556,8 +587,8 @@
           ],
           "rootVariantsEvaluated": 4,
           "boundaryCandidatesEvaluated": 61,
-          "generatedCandidateCount": 21,
-          "locallyRejectedCandidateCount": 40,
+          "generatedCandidateCount": 9,
+          "locallyRejectedCandidateCount": 52,
           "prefilterRejectedCandidateCount": 0,
           "canonicallyValidCandidateCount": 0,
           "selectedCandidateId": null,
@@ -577,48 +608,52 @@
           "selectedAvailabilityViolationCount": 0,
           "previewClosedCandidateCount": 0,
           "previewRejectedCandidateCount": 16,
-          "executableCandidateCount": 23,
+          "executableCandidateCount": 9,
           "residualConflictReasonCounts": {
             "closure_limit_reached": 16,
-            "obvious_resource_overlap": 36,
-            "obvious_space_overlap": 34
+            "contestant_overlap": 47,
+            "obvious_resource_overlap": 31,
+            "obvious_space_overlap": 19
           },
           "selectedResidualConflictCount": null,
           "selectedResidualConflictCodes": [],
           "noValidRepairReason": "closure_limit_reached",
           "searchExhausted": false,
           "rejectedReasonCounts": {
-            "closure_limit_reached": 30,
+            "closure_limit_reached": 42,
             "outside_workday": 10
           },
           "searchLimitReached": true,
           "deterministic": true,
           "readOnly": true
         },
-        "selectedCandidateSource": null,
-        "canonicalValidationExecutedCount": null,
-        "canonicalValidCandidateCount": null,
-        "canonicalInvalidCandidateCount": null,
-        "selectedCanonicalValidationResult": null,
-        "selectedAssignmentCount": null,
-        "selectedMovedTaskIds": null,
-        "finalAcceptanceExecuted": false,
-        "finalAcceptanceSkippedReason": "no_hard_valid_baseline_repair",
+        "selectedCandidateSource": "conflict_closure",
+        "canonicalValidationExecutedCount": 2,
+        "canonicalValidCandidateCount": 2,
+        "canonicalInvalidCandidateCount": 0,
+        "selectedCanonicalValidationResult": "VALID",
+        "selectedAssignmentCount": 2,
+        "selectedMovedTaskIds": [
+          504,
+          506
+        ],
+        "finalAcceptanceExecuted": null,
+        "finalAcceptanceSkippedReason": null,
         "incumbentDecision": {
           "version": "ORC-INCUMBENT-SELECTION-V1",
           "preMacroCandidateId": "candidate:macro-main-zone-block-relayout:1",
-          "preMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:candidate:macro-main-zone-block-relayout:1",
-          "postMacroCandidateId": null,
-          "postMacroSimulatedStateId": null,
-          "finalCandidateId": "candidate:macro-main-zone-block-relayout:1",
-          "finalSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:candidate:macro-main-zone-block-relayout:1",
-          "incumbentSource": null,
+          "preMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "postMacroCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "postMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "finalCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "finalSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "incumbentSource": "active_repair_preflight",
           "decision": "retain_incumbent",
-          "decisionReason": "no_usable_incumbent",
+          "decisionReason": "post_macro_candidate_not_usable",
           "incumbentRetained": true,
           "incumbentReplaced": false,
-          "rejectedCandidateId": null,
-          "rejectedCandidateReason": "candidate_missing_simulation",
+          "rejectedCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "rejectedCandidateReason": "candidate_canonical_hard_validation_invalid",
           "stageAcceptanceBaselineSource": "pre_macro_incumbent",
           "finalAcceptanceBaselineSource": "v4_baseline",
           "stageProductionConceptComparison": null,
@@ -631,21 +666,24 @@
               "verdict": "conceptually_misaligned"
             },
             "selected": {
-              "totalVisibleMainZoneIdleMinutes": 45,
-              "largestVisibleMainZoneGapMinutes": 45,
-              "visibleMainZoneGapCount": 1,
+              "totalVisibleMainZoneIdleMinutes": 135,
+              "largestVisibleMainZoneGapMinutes": 90,
+              "visibleMainZoneGapCount": 3,
               "score": 72,
               "verdict": "partially_aligned"
             },
             "deltas": {
-              "totalVisibleMainZoneIdleMinutes": -135,
-              "largestVisibleMainZoneGapMinutes": -45,
-              "visibleMainZoneGapCount": -1
+              "totalVisibleMainZoneIdleMinutes": -45,
+              "largestVisibleMainZoneGapMinutes": 0,
+              "visibleMainZoneGapCount": 1
             },
-            "passed": true,
-            "verdict": "not_worse",
-            "blockers": [],
-            "reason": "production_concept_not_worse_than_baseline",
+            "passed": false,
+            "verdict": "regression",
+            "blockers": [
+              "visible_main_zone_gap_count_regression",
+              "flexible_meal_gap_regression"
+            ],
+            "reason": "production_concept_regression_detected",
             "readOnly": true
           },
           "stageTaskChangeComparison": null,
@@ -703,13 +741,15 @@
             "readOnly": true
           },
           "deterministicTieBreakUsed": false,
-          "finalIncumbentLineageConsistent": false,
-          "preMacroCanonicalHardValid": false,
+          "finalIncumbentLineageConsistent": true,
+          "preMacroCanonicalHardValid": true,
           "postMacroCanonicalHardValid": false,
-          "finalCanonicalHardValid": false,
+          "finalCanonicalHardValid": true,
           "validationLineageConsistent": true,
-          "rejectedByCanonicalHardValidation": false,
-          "rejectedHardViolationCodes": [],
+          "rejectedByCanonicalHardValidation": true,
+          "rejectedHardViolationCodes": [
+            "CONTESTANT_OVERLAP"
+          ],
           "v4Baseline": {
             "planningFingerprint": "[{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-347},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-346},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-345},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-344},{\"assignedResources\":[],\"assignedSpace\":32,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-343},{\"assignedResources\":[],\"assignedSpace\":8,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-342},{\"assignedResources\":[],\"assignedSpace\":46,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-341},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-340},{\"assignedResources\":[],\"assignedSpace\":5,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-339},{\"assignedResources\":[],\"assignedSpace\":42,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-338},{\"assignedResources\":[],\"assignedSpace\":45,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-337},{\"assignedResources\":[],\"assignedSpace\":44,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-336},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-335},{\"assignedResources\":[],\"assignedSpace\":33,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-334},{\"assignedResources\":[],\"assignedSpace\":34,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-333},{\"assignedResources\":[],\"assignedSpace\":41,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-332},{\"assignedResources\":[],\"assignedSpace\":35,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-331},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-330},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-329},{\"assignedResources\":[],\"assignedSpace\":28,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-328},{\"assignedResources\":[],\"assignedSpace\":27,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-327},{\"assignedResources\":[],\"assignedSpace\":26,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-326},{\"assignedResources\":[],\"assignedSpace\":25,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-325},{\"assignedResources\":[],\"assignedSpace\":4,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-324},{\"assignedResources\":[],\"assignedSpace\":31,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-323},{\"assignedResources\":[],\"assignedSpace\":48,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-322},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":214},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":223},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":233},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":241},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":251},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":261},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":271},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":281},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":291},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":311},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":301},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":321},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":331},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":341},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":351},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":361},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":371},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":381},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":391},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":308},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:40\",\"taskId\":316},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:05\",\"startPlanned\":\"09:55\",\"taskId\":313},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:20\",\"taskId\":315},{\"assignedResources\":[],\"assignedSpace\":48,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:05\",\"taskId\":504},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:50\",\"taskId\":312},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:55\",\"taskId\":307},{\"assignedResources\":[],\"assignedSpace\":45,\"endPlanned\":\"11:10\",\"startPlanned\":\"11:05\",\"taskId\":505},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:10\",\"taskId\":310},{\"assignedResources\":[],\"assignedSpace\":34,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:15\",\"taskId\":506},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:20\",\"startPlanned\":\"14:15\",\"taskId\":314},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":210},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":220},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":230},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":238},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":248},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":258},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":268},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":278},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"10:10\",\"startPlanned\":\"09:55\",\"taskId\":286},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":288},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:35\",\"taskId\":296},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":298},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:50\",\"taskId\":306},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":318},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":328},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":338},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":348},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":358},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:05\",\"taskId\":366},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":368},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:20\",\"taskId\":376},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":378},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:35\",\"taskId\":386},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:45\",\"taskId\":388},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:50\",\"taskId\":396},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:15\",\"startPlanned\":\"09:05\",\"taskId\":216},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:20\",\"startPlanned\":\"09:15\",\"taskId\":213},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:30\",\"startPlanned\":\"09:20\",\"taskId\":209},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:25\",\"startPlanned\":\"09:15\",\"taskId\":225},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:30\",\"taskId\":219},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:30\",\"startPlanned\":\"09:25\",\"taskId\":222},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:25\",\"taskId\":235},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:40\",\"taskId\":229},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":232},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:45\",\"startPlanned\":\"09:35\",\"taskId\":243},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:00\",\"startPlanned\":\"09:50\",\"taskId\":237},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:45\",\"taskId\":240},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:45\",\"taskId\":253},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:10\",\"startPlanned\":\"10:00\",\"taskId\":247},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:00\",\"startPlanned\":\"09:55\",\"taskId\":250},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:05\",\"taskId\":263},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:25\",\"startPlanned\":\"10:15\",\"taskId\":257},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:30\",\"startPlanned\":\"10:25\",\"taskId\":260},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:25\",\"startPlanned\":\"10:15\",\"taskId\":273},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:25\",\"taskId\":267},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:40\",\"startPlanned\":\"10:35\",\"taskId\":270},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:25\",\"taskId\":323},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:35\",\"taskId\":317},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:45\",\"taskId\":320},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:35\",\"taskId\":333},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:45\",\"taskId\":327},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:00\",\"startPlanned\":\"10:55\",\"taskId\":330},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:45\",\"taskId\":343},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:05\",\"taskId\":337},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:05\",\"startPlanned\":\"11:00\",\"taskId\":340},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:55\",\"taskId\":353},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:15\",\"taskId\":347},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:10\",\"startPlanned\":\"11:05\",\"taskId\":350},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:05\",\"taskId\":283},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:20\",\"startPlanned\":\"12:05\",\"taskId\":285},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:25\",\"taskId\":277},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:15\",\"taskId\":280},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:15\",\"taskId\":293},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:35\",\"startPlanned\":\"12:20\",\"taskId\":295},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:35\",\"taskId\":287},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:30\",\"startPlanned\":\"11:25\",\"taskId\":290},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:25\",\"taskId\":303},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:50\",\"startPlanned\":\"12:35\",\"taskId\":305},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:45\",\"taskId\":297},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:40\",\"startPlanned\":\"11:35\",\"taskId\":300},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:35\",\"taskId\":363},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:20\",\"taskId\":365},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:55\",\"taskId\":357},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:45\",\"taskId\":360},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:45\",\"taskId\":373},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"14:50\",\"startPlanned\":\"14:35\",\"taskId\":375},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:05\",\"taskId\":367},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:00\",\"startPlanned\":\"11:55\",\"taskId\":370},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:55\",\"taskId\":383},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"15:05\",\"startPlanned\":\"14:50\",\"taskId\":385},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:25\",\"startPlanned\":\"12:15\",\"taskId\":377},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:10\",\"startPlanned\":\"12:05\",\"taskId\":380},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:05\",\"taskId\":393},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"15:20\",\"startPlanned\":\"15:05\",\"taskId\":395},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:35\",\"startPlanned\":\"12:25\",\"taskId\":387},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:20\",\"startPlanned\":\"12:15\",\"taskId\":390},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:30\",\"taskId\":215},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:45\",\"startPlanned\":\"09:40\",\"taskId\":224},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:50\",\"taskId\":234},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:05\",\"startPlanned\":\"10:00\",\"taskId\":242},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":252},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:30\",\"taskId\":262},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:40\",\"taskId\":272},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:00\",\"startPlanned\":\"10:55\",\"taskId\":322},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:05\",\"startPlanned\":\"11:00\",\"taskId\":332},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:15\",\"taskId\":342},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:10\",\"taskId\":352},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:20\",\"taskId\":282},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:25\",\"startPlanned\":\"14:20\",\"taskId\":284},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:30\",\"taskId\":292},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:30\",\"startPlanned\":\"14:25\",\"taskId\":294},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:40\",\"taskId\":302},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":304},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:50\",\"taskId\":362},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:40\",\"startPlanned\":\"14:35\",\"taskId\":364},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:05\",\"startPlanned\":\"12:00\",\"taskId\":372},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:55\",\"startPlanned\":\"14:50\",\"taskId\":374},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:10\",\"taskId\":382},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:10\",\"startPlanned\":\"15:05\",\"taskId\":384},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:25\",\"startPlanned\":\"12:20\",\"taskId\":392},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:25\",\"startPlanned\":\"15:20\",\"taskId\":394},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:35\",\"taskId\":218},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"13:00\",\"startPlanned\":\"12:45\",\"taskId\":228},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:20\",\"startPlanned\":\"09:05\",\"taskId\":398},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:20\",\"taskId\":246},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"10:30\",\"startPlanned\":\"10:15\",\"taskId\":256},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:35\",\"taskId\":266},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:50\",\"taskId\":276},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:05\",\"taskId\":326},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:20\",\"taskId\":336},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:35\",\"taskId\":346},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:50\",\"taskId\":356},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"15:35\",\"startPlanned\":\"15:20\",\"taskId\":217},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"15:50\",\"startPlanned\":\"15:35\",\"taskId\":227},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:05\",\"startPlanned\":\"15:50\",\"taskId\":397},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:20\",\"startPlanned\":\"16:05\",\"taskId\":245},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:35\",\"startPlanned\":\"16:20\",\"taskId\":255},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:50\",\"startPlanned\":\"16:35\",\"taskId\":265},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:05\",\"startPlanned\":\"16:50\",\"taskId\":275},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:20\",\"startPlanned\":\"17:05\",\"taskId\":325},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:35\",\"startPlanned\":\"17:20\",\"taskId\":335},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:50\",\"startPlanned\":\"17:35\",\"taskId\":345},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"18:05\",\"startPlanned\":\"17:50\",\"taskId\":355},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:40\",\"startPlanned\":\"15:35\",\"taskId\":212},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:55\",\"startPlanned\":\"15:50\",\"taskId\":226},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:10\",\"startPlanned\":\"16:05\",\"taskId\":236},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:25\",\"startPlanned\":\"16:20\",\"taskId\":244},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:40\",\"startPlanned\":\"16:35\",\"taskId\":254},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:55\",\"startPlanned\":\"16:50\",\"taskId\":264},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:10\",\"startPlanned\":\"17:05\",\"taskId\":274},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:25\",\"startPlanned\":\"17:20\",\"taskId\":324},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:40\",\"startPlanned\":\"17:35\",\"taskId\":334},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:55\",\"startPlanned\":\"17:50\",\"taskId\":344},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"18:10\",\"startPlanned\":\"18:05\",\"taskId\":354},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":309},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":279},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":289},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":299},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":359},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":369},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":211},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":379},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":389},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":221},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":231},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":239},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":249},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":259},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":269},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":319},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":329},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":339},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:20\",\"startPlanned\":\"18:15\",\"taskId\":349}]",
             "productionConcept": {
@@ -742,63 +782,38 @@
             }
           },
           "readOnly": true,
-          "preMacroUnusableReason": "candidate_canonical_hard_validation_invalid",
-          "preMacroAssignedAsIncumbent": false
+          "preMacroUnusableReason": null,
+          "preMacroAssignedAsIncumbent": true
         },
         "finalMaterializedValidationResult": null,
         "violationCodes": [],
-        "overlapTaskPairs": [
-          [
-            307,
-            504
-          ],
-          [
-            310,
-            504
-          ],
-          [
-            312,
-            504
-          ],
-          [
-            391,
-            395
-          ],
-          [
-            504,
-            505
-          ],
-          [
-            504,
-            506
-          ]
-        ],
-        "changedTaskCount": 16,
+        "overlapTaskPairs": [],
+        "changedTaskCount": 2,
         "finalUsedEngine": "v4_fallback",
-        "fallbackReason": "no_hard_valid_baseline_repair",
+        "fallbackReason": "gate_failed:explainableDecision",
         "readOnly": true
       },
-      "workerStartupMs": 16,
-      "engineExecutionMs": 142534,
-      "totalRuntimeMs": 142550,
-      "compactPlanningPath": "plan-27-orc-compact-v6.json"
+      "workerStartupMs": 22,
+      "engineExecutionMs": 113790,
+      "totalRuntimeMs": 113812,
+      "compactPlanningPath": "plan-27-orc-compact-v7.json"
     },
     {
       "engine": "orc",
       "repetition": 2,
       "executionStatus": "completed",
-      "runtimeMs": 141947,
+      "runtimeMs": 114287,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "b0a436eb3006e1e1d8e412be9ceaf96452e40f0ee14a444b66158a85dfacb70b",
+      "outputHash": "5e8fc25b51a67076e869587293f80e3746a5903ec4e1339c2b9d5a30ace187a6",
       "usedEngine": "v4_fallback",
-      "fallbackReason": "no_hard_valid_baseline_repair",
+      "fallbackReason": "gate_failed:explainableDecision",
       "falseGates": [
-        "finalMaterializedPlanningHardValid",
-        "finalIncumbentLineageConsistent"
+        "explainableDecision",
+        "productionConceptNotWorseThanV4"
       ],
       "operationalMetrics": {
         "plannedTaskCount": 219,
@@ -1075,25 +1090,56 @@
       },
       "replayWarnings": [],
       "compactPlanningIncluded": false,
-      "operationalMetricsMs": 13,
+      "operationalMetricsMs": 6,
       "makespan": null,
       "talentIdle": null,
       "visibleMainFlowIdle": null,
       "largestMainFlowGap": null,
       "orcSafetyEvidence": {
-        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+        "baselineSeedOperationalIdentityAudit": {
+          "version": "baseline-seed-operational-identity-audit-v1",
+          "originalTaskCount": 219,
+          "seededTaskCount": 219,
+          "originalContestantLinkedTaskCount": 193,
+          "seededContestantLinkedTaskCount": 193,
+          "missingContestantIdTaskIdsSample": [],
+          "originalItinerantTeamLinkedTaskCount": 3,
+          "seededItinerantTeamLinkedTaskCount": 3,
+          "missingItinerantTeamIdTaskIdsSample": [],
+          "originalTemplateNameCount": 219,
+          "seededTemplateNameCount": 219,
+          "originalResourceRequirementsCount": 38,
+          "seededResourceRequirementsCount": 38,
+          "dependencyIdentityPreserved": true,
+          "protectedTaskIdentityPreserved": true,
+          "lockIdentityPreserved": true,
+          "planningFieldsOverlaidCorrectly": true,
+          "operationalIdentityComplete": true,
+          "readOnly": true
+        },
+        "activeRepairPreflightExecuted": true,
+        "activeRepairPreflightAuthoritative": true,
+        "candidatesGeneratedBeforePrefilter": 9,
+        "candidatesSentToPrefilter": 9,
+        "prefilterAcceptedCount": 2,
+        "prefilterRejectedCount": 7,
+        "candidateLimitAfterPrefilter": 4,
+        "candidatesSentToSimulation": 2,
+        "candidateLineageResolutionCount": 2,
+        "candidateLineageResolutionFailureCount": 0,
+        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
         "repairCandidateAdmissionSummary": {
-          "generatedSimpleCandidateCount": 2,
-          "generatedClosureCandidateCount": 21,
-          "simplePreviewAcceptedCount": 2,
+          "generatedSimpleCandidateCount": 0,
+          "generatedClosureCandidateCount": 9,
+          "simplePreviewAcceptedCount": 0,
           "simplePreviewRejectedCount": 0,
           "simplePreviewRejectedReasonCounts": {},
-          "closurePreviewAcceptedCount": 21,
+          "closurePreviewAcceptedCount": 9,
           "closurePreviewRejectedCount": 0,
           "closurePreviewRejectedReasonCounts": {},
           "duplicateCandidateCount": 0,
-          "deduplicatedCandidateCount": 23,
-          "previewCleanCandidateCount": 23,
+          "deduplicatedCandidateCount": 9,
+          "previewCleanCandidateCount": 9,
           "readOnly": true
         },
         "conflictClosureSummary": {
@@ -1107,8 +1153,8 @@
           ],
           "rootVariantsEvaluated": 4,
           "boundaryCandidatesEvaluated": 61,
-          "generatedCandidateCount": 21,
-          "locallyRejectedCandidateCount": 40,
+          "generatedCandidateCount": 9,
+          "locallyRejectedCandidateCount": 52,
           "prefilterRejectedCandidateCount": 0,
           "canonicallyValidCandidateCount": 0,
           "selectedCandidateId": null,
@@ -1128,48 +1174,52 @@
           "selectedAvailabilityViolationCount": 0,
           "previewClosedCandidateCount": 0,
           "previewRejectedCandidateCount": 16,
-          "executableCandidateCount": 23,
+          "executableCandidateCount": 9,
           "residualConflictReasonCounts": {
             "closure_limit_reached": 16,
-            "obvious_resource_overlap": 36,
-            "obvious_space_overlap": 34
+            "contestant_overlap": 47,
+            "obvious_resource_overlap": 31,
+            "obvious_space_overlap": 19
           },
           "selectedResidualConflictCount": null,
           "selectedResidualConflictCodes": [],
           "noValidRepairReason": "closure_limit_reached",
           "searchExhausted": false,
           "rejectedReasonCounts": {
-            "closure_limit_reached": 30,
+            "closure_limit_reached": 42,
             "outside_workday": 10
           },
           "searchLimitReached": true,
           "deterministic": true,
           "readOnly": true
         },
-        "selectedCandidateSource": null,
-        "canonicalValidationExecutedCount": null,
-        "canonicalValidCandidateCount": null,
-        "canonicalInvalidCandidateCount": null,
-        "selectedCanonicalValidationResult": null,
-        "selectedAssignmentCount": null,
-        "selectedMovedTaskIds": null,
-        "finalAcceptanceExecuted": false,
-        "finalAcceptanceSkippedReason": "no_hard_valid_baseline_repair",
+        "selectedCandidateSource": "conflict_closure",
+        "canonicalValidationExecutedCount": 2,
+        "canonicalValidCandidateCount": 2,
+        "canonicalInvalidCandidateCount": 0,
+        "selectedCanonicalValidationResult": "VALID",
+        "selectedAssignmentCount": 2,
+        "selectedMovedTaskIds": [
+          504,
+          506
+        ],
+        "finalAcceptanceExecuted": null,
+        "finalAcceptanceSkippedReason": null,
         "incumbentDecision": {
           "version": "ORC-INCUMBENT-SELECTION-V1",
           "preMacroCandidateId": "candidate:macro-main-zone-block-relayout:1",
-          "preMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:candidate:macro-main-zone-block-relayout:1",
-          "postMacroCandidateId": null,
-          "postMacroSimulatedStateId": null,
-          "finalCandidateId": "candidate:macro-main-zone-block-relayout:1",
-          "finalSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:candidate:macro-main-zone-block-relayout:1",
-          "incumbentSource": null,
+          "preMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "postMacroCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "postMacroSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "finalCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "finalSimulatedStateId": "orc-simulation:simulated-state:orc-transformation:candidate-state:candidate:partial-plan:orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-11:15-12:00_506-12:00-12:30",
+          "incumbentSource": "active_repair_preflight",
           "decision": "retain_incumbent",
-          "decisionReason": "no_usable_incumbent",
+          "decisionReason": "post_macro_candidate_not_usable",
           "incumbentRetained": true,
           "incumbentReplaced": false,
-          "rejectedCandidateId": null,
-          "rejectedCandidateReason": "candidate_missing_simulation",
+          "rejectedCandidateId": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+          "rejectedCandidateReason": "candidate_canonical_hard_validation_invalid",
           "stageAcceptanceBaselineSource": "pre_macro_incumbent",
           "finalAcceptanceBaselineSource": "v4_baseline",
           "stageProductionConceptComparison": null,
@@ -1182,21 +1232,24 @@
               "verdict": "conceptually_misaligned"
             },
             "selected": {
-              "totalVisibleMainZoneIdleMinutes": 45,
-              "largestVisibleMainZoneGapMinutes": 45,
-              "visibleMainZoneGapCount": 1,
+              "totalVisibleMainZoneIdleMinutes": 135,
+              "largestVisibleMainZoneGapMinutes": 90,
+              "visibleMainZoneGapCount": 3,
               "score": 72,
               "verdict": "partially_aligned"
             },
             "deltas": {
-              "totalVisibleMainZoneIdleMinutes": -135,
-              "largestVisibleMainZoneGapMinutes": -45,
-              "visibleMainZoneGapCount": -1
+              "totalVisibleMainZoneIdleMinutes": -45,
+              "largestVisibleMainZoneGapMinutes": 0,
+              "visibleMainZoneGapCount": 1
             },
-            "passed": true,
-            "verdict": "not_worse",
-            "blockers": [],
-            "reason": "production_concept_not_worse_than_baseline",
+            "passed": false,
+            "verdict": "regression",
+            "blockers": [
+              "visible_main_zone_gap_count_regression",
+              "flexible_meal_gap_regression"
+            ],
+            "reason": "production_concept_regression_detected",
             "readOnly": true
           },
           "stageTaskChangeComparison": null,
@@ -1254,13 +1307,15 @@
             "readOnly": true
           },
           "deterministicTieBreakUsed": false,
-          "finalIncumbentLineageConsistent": false,
-          "preMacroCanonicalHardValid": false,
+          "finalIncumbentLineageConsistent": true,
+          "preMacroCanonicalHardValid": true,
           "postMacroCanonicalHardValid": false,
-          "finalCanonicalHardValid": false,
+          "finalCanonicalHardValid": true,
           "validationLineageConsistent": true,
-          "rejectedByCanonicalHardValidation": false,
-          "rejectedHardViolationCodes": [],
+          "rejectedByCanonicalHardValidation": true,
+          "rejectedHardViolationCodes": [
+            "CONTESTANT_OVERLAP"
+          ],
           "v4Baseline": {
             "planningFingerprint": "[{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-347},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-346},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-345},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-344},{\"assignedResources\":[],\"assignedSpace\":32,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-343},{\"assignedResources\":[],\"assignedSpace\":8,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-342},{\"assignedResources\":[],\"assignedSpace\":46,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-341},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-340},{\"assignedResources\":[],\"assignedSpace\":5,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-339},{\"assignedResources\":[],\"assignedSpace\":42,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-338},{\"assignedResources\":[],\"assignedSpace\":45,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-337},{\"assignedResources\":[],\"assignedSpace\":44,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-336},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-335},{\"assignedResources\":[],\"assignedSpace\":33,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-334},{\"assignedResources\":[],\"assignedSpace\":34,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-333},{\"assignedResources\":[],\"assignedSpace\":41,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-332},{\"assignedResources\":[],\"assignedSpace\":35,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-331},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-330},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-329},{\"assignedResources\":[],\"assignedSpace\":28,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-328},{\"assignedResources\":[],\"assignedSpace\":27,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-327},{\"assignedResources\":[],\"assignedSpace\":26,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-326},{\"assignedResources\":[],\"assignedSpace\":25,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-325},{\"assignedResources\":[],\"assignedSpace\":4,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-324},{\"assignedResources\":[],\"assignedSpace\":31,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-323},{\"assignedResources\":[],\"assignedSpace\":48,\"endPlanned\":\"14:15\",\"startPlanned\":\"13:00\",\"taskId\":-322},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":214},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":223},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":233},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":241},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":251},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":261},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":271},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":281},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":291},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"13:40\",\"startPlanned\":\"13:00\",\"taskId\":311},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":301},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":321},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":331},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":341},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":351},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":361},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":371},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":381},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:20\",\"startPlanned\":\"13:40\",\"taskId\":391},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":308},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:40\",\"taskId\":316},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:05\",\"startPlanned\":\"09:55\",\"taskId\":313},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:20\",\"taskId\":315},{\"assignedResources\":[],\"assignedSpace\":48,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:05\",\"taskId\":504},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:50\",\"taskId\":312},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:55\",\"taskId\":307},{\"assignedResources\":[],\"assignedSpace\":45,\"endPlanned\":\"11:10\",\"startPlanned\":\"11:05\",\"taskId\":505},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:10\",\"taskId\":310},{\"assignedResources\":[],\"assignedSpace\":34,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:15\",\"taskId\":506},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:20\",\"startPlanned\":\"14:15\",\"taskId\":314},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":210},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":220},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":230},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":238},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":248},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:05\",\"startPlanned\":\"09:00\",\"taskId\":258},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":268},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":278},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"10:10\",\"startPlanned\":\"09:55\",\"taskId\":286},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":288},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:35\",\"taskId\":296},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":298},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:50\",\"taskId\":306},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":318},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":328},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":338},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":348},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":358},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:05\",\"taskId\":366},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":368},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:20\",\"taskId\":376},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":378},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:35\",\"taskId\":386},{\"assignedResources\":[],\"assignedSpace\":49,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:45\",\"taskId\":388},{\"assignedResources\":[336],\"assignedSpace\":35,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:50\",\"taskId\":396},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:15\",\"startPlanned\":\"09:05\",\"taskId\":216},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:20\",\"startPlanned\":\"09:15\",\"taskId\":213},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:30\",\"startPlanned\":\"09:20\",\"taskId\":209},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:25\",\"startPlanned\":\"09:15\",\"taskId\":225},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:30\",\"taskId\":219},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:30\",\"startPlanned\":\"09:25\",\"taskId\":222},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:25\",\"taskId\":235},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:40\",\"taskId\":229},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:40\",\"startPlanned\":\"09:35\",\"taskId\":232},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:45\",\"startPlanned\":\"09:35\",\"taskId\":243},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:00\",\"startPlanned\":\"09:50\",\"taskId\":237},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:45\",\"taskId\":240},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:45\",\"taskId\":253},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:10\",\"startPlanned\":\"10:00\",\"taskId\":247},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:00\",\"startPlanned\":\"09:55\",\"taskId\":250},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:05\",\"taskId\":263},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:25\",\"startPlanned\":\"10:15\",\"taskId\":257},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:30\",\"startPlanned\":\"10:25\",\"taskId\":260},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:25\",\"startPlanned\":\"10:15\",\"taskId\":273},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:25\",\"taskId\":267},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:40\",\"startPlanned\":\"10:35\",\"taskId\":270},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:25\",\"taskId\":323},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:35\",\"taskId\":317},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:45\",\"taskId\":320},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:35\",\"taskId\":333},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:45\",\"taskId\":327},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:00\",\"startPlanned\":\"10:55\",\"taskId\":330},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"10:55\",\"startPlanned\":\"10:45\",\"taskId\":343},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:05\",\"taskId\":337},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:05\",\"startPlanned\":\"11:00\",\"taskId\":340},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:55\",\"taskId\":353},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:15\",\"taskId\":347},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:10\",\"startPlanned\":\"11:05\",\"taskId\":350},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:05\",\"taskId\":283},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:20\",\"startPlanned\":\"12:05\",\"taskId\":285},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:25\",\"taskId\":277},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:15\",\"taskId\":280},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:15\",\"taskId\":293},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:35\",\"startPlanned\":\"12:20\",\"taskId\":295},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:35\",\"taskId\":287},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:30\",\"startPlanned\":\"11:25\",\"taskId\":290},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:25\",\"taskId\":303},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"12:50\",\"startPlanned\":\"12:35\",\"taskId\":305},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:45\",\"taskId\":297},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:40\",\"startPlanned\":\"11:35\",\"taskId\":300},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:35\",\"taskId\":363},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:20\",\"taskId\":365},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:55\",\"taskId\":357},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:45\",\"taskId\":360},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:45\",\"taskId\":373},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"14:50\",\"startPlanned\":\"14:35\",\"taskId\":375},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:05\",\"taskId\":367},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:00\",\"startPlanned\":\"11:55\",\"taskId\":370},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:55\",\"taskId\":383},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"15:05\",\"startPlanned\":\"14:50\",\"taskId\":385},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:25\",\"startPlanned\":\"12:15\",\"taskId\":377},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:10\",\"startPlanned\":\"12:05\",\"taskId\":380},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:05\",\"taskId\":393},{\"assignedResources\":[336],\"assignedSpace\":48,\"endPlanned\":\"15:20\",\"startPlanned\":\"15:05\",\"taskId\":395},{\"assignedResources\":[],\"assignedSpace\":43,\"endPlanned\":\"12:35\",\"startPlanned\":\"12:25\",\"taskId\":387},{\"assignedResources\":[],\"assignedSpace\":3,\"endPlanned\":\"12:20\",\"startPlanned\":\"12:15\",\"taskId\":390},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:30\",\"taskId\":215},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:45\",\"startPlanned\":\"09:40\",\"taskId\":224},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"09:55\",\"startPlanned\":\"09:50\",\"taskId\":234},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:05\",\"startPlanned\":\"10:00\",\"taskId\":242},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:15\",\"startPlanned\":\"10:10\",\"taskId\":252},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:35\",\"startPlanned\":\"10:30\",\"taskId\":262},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"10:45\",\"startPlanned\":\"10:40\",\"taskId\":272},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:00\",\"startPlanned\":\"10:55\",\"taskId\":322},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:05\",\"startPlanned\":\"11:00\",\"taskId\":332},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:15\",\"taskId\":342},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:15\",\"startPlanned\":\"11:10\",\"taskId\":352},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:25\",\"startPlanned\":\"11:20\",\"taskId\":282},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:25\",\"startPlanned\":\"14:20\",\"taskId\":284},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:30\",\"taskId\":292},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:30\",\"startPlanned\":\"14:25\",\"taskId\":294},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:45\",\"startPlanned\":\"11:40\",\"taskId\":302},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":304},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"11:55\",\"startPlanned\":\"11:50\",\"taskId\":362},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:40\",\"startPlanned\":\"14:35\",\"taskId\":364},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:05\",\"startPlanned\":\"12:00\",\"taskId\":372},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"14:55\",\"startPlanned\":\"14:50\",\"taskId\":374},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:15\",\"startPlanned\":\"12:10\",\"taskId\":382},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:10\",\"startPlanned\":\"15:05\",\"taskId\":384},{\"assignedResources\":[],\"assignedSpace\":39,\"endPlanned\":\"12:25\",\"startPlanned\":\"12:20\",\"taskId\":392},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:25\",\"startPlanned\":\"15:20\",\"taskId\":394},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:50\",\"startPlanned\":\"09:35\",\"taskId\":218},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"13:00\",\"startPlanned\":\"12:45\",\"taskId\":228},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:20\",\"startPlanned\":\"09:05\",\"taskId\":398},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"09:35\",\"startPlanned\":\"09:20\",\"taskId\":246},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"10:30\",\"startPlanned\":\"10:15\",\"taskId\":256},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"10:50\",\"startPlanned\":\"10:35\",\"taskId\":266},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:05\",\"startPlanned\":\"10:50\",\"taskId\":276},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:20\",\"startPlanned\":\"11:05\",\"taskId\":326},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:35\",\"startPlanned\":\"11:20\",\"taskId\":336},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"11:50\",\"startPlanned\":\"11:35\",\"taskId\":346},{\"assignedResources\":[335],\"assignedSpace\":41,\"endPlanned\":\"12:05\",\"startPlanned\":\"11:50\",\"taskId\":356},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"15:35\",\"startPlanned\":\"15:20\",\"taskId\":217},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"15:50\",\"startPlanned\":\"15:35\",\"taskId\":227},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:05\",\"startPlanned\":\"15:50\",\"taskId\":397},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:20\",\"startPlanned\":\"16:05\",\"taskId\":245},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:35\",\"startPlanned\":\"16:20\",\"taskId\":255},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"16:50\",\"startPlanned\":\"16:35\",\"taskId\":265},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:05\",\"startPlanned\":\"16:50\",\"taskId\":275},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:20\",\"startPlanned\":\"17:05\",\"taskId\":325},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:35\",\"startPlanned\":\"17:20\",\"taskId\":335},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"17:50\",\"startPlanned\":\"17:35\",\"taskId\":345},{\"assignedResources\":[335],\"assignedSpace\":48,\"endPlanned\":\"18:05\",\"startPlanned\":\"17:50\",\"taskId\":355},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:40\",\"startPlanned\":\"15:35\",\"taskId\":212},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"15:55\",\"startPlanned\":\"15:50\",\"taskId\":226},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:10\",\"startPlanned\":\"16:05\",\"taskId\":236},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:25\",\"startPlanned\":\"16:20\",\"taskId\":244},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:40\",\"startPlanned\":\"16:35\",\"taskId\":254},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"16:55\",\"startPlanned\":\"16:50\",\"taskId\":264},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:10\",\"startPlanned\":\"17:05\",\"taskId\":274},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:25\",\"startPlanned\":\"17:20\",\"taskId\":324},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:40\",\"startPlanned\":\"17:35\",\"taskId\":334},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"17:55\",\"startPlanned\":\"17:50\",\"taskId\":344},{\"assignedResources\":[],\"assignedSpace\":40,\"endPlanned\":\"18:10\",\"startPlanned\":\"18:05\",\"taskId\":354},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":309},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":279},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"14:35\",\"startPlanned\":\"14:30\",\"taskId\":289},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":299},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":359},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:00\",\"startPlanned\":\"14:55\",\"taskId\":369},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":211},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":379},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"15:45\",\"startPlanned\":\"15:40\",\"taskId\":389},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":221},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":231},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"16:30\",\"startPlanned\":\"16:25\",\"taskId\":239},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":249},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":259},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"17:15\",\"startPlanned\":\"17:10\",\"taskId\":269},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":319},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":329},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:00\",\"startPlanned\":\"17:55\",\"taskId\":339},{\"assignedResources\":[],\"assignedSpace\":null,\"endPlanned\":\"18:20\",\"startPlanned\":\"18:15\",\"taskId\":349}]",
             "productionConcept": {
@@ -1293,46 +1348,21 @@
             }
           },
           "readOnly": true,
-          "preMacroUnusableReason": "candidate_canonical_hard_validation_invalid",
-          "preMacroAssignedAsIncumbent": false
+          "preMacroUnusableReason": null,
+          "preMacroAssignedAsIncumbent": true
         },
         "finalMaterializedValidationResult": null,
         "violationCodes": [],
-        "overlapTaskPairs": [
-          [
-            307,
-            504
-          ],
-          [
-            310,
-            504
-          ],
-          [
-            312,
-            504
-          ],
-          [
-            391,
-            395
-          ],
-          [
-            504,
-            505
-          ],
-          [
-            504,
-            506
-          ]
-        ],
-        "changedTaskCount": 16,
+        "overlapTaskPairs": [],
+        "changedTaskCount": 2,
         "finalUsedEngine": "v4_fallback",
-        "fallbackReason": "no_hard_valid_baseline_repair",
+        "fallbackReason": "gate_failed:explainableDecision",
         "readOnly": true
       },
-      "workerStartupMs": 13,
-      "engineExecutionMs": 141578,
-      "totalRuntimeMs": 141591,
-      "compactPlanningPath": "plan-27-orc-compact-v6.json"
+      "workerStartupMs": 12,
+      "engineExecutionMs": 113969,
+      "totalRuntimeMs": 113981,
+      "compactPlanningPath": "plan-27-orc-compact-v7.json"
     }
   ],
   "deterministic": true,
