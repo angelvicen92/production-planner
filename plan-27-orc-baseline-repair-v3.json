@@ -236,13 +236,13 @@
       "engine": "orc",
       "repetition": 1,
       "executionStatus": "completed",
-      "runtimeMs": 136652,
+      "runtimeMs": 143132,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "1256acd56b1e3144725746ad976807d141d277249cef56c3ee35a2f4f1984675",
+      "outputHash": "b0a436eb3006e1e1d8e412be9ceaf96452e40f0ee14a444b66158a85dfacb70b",
       "usedEngine": "v4_fallback",
       "fallbackReason": "no_hard_valid_baseline_repair",
       "falseGates": [
@@ -524,13 +524,27 @@
       },
       "replayWarnings": [],
       "compactPlanningIncluded": false,
-      "operationalMetricsMs": 8,
+      "operationalMetricsMs": 16,
       "makespan": null,
       "talentIdle": null,
       "visibleMainFlowIdle": null,
       "largestMainFlowGap": null,
       "orcSafetyEvidence": {
-        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:productive-space-overlap:move-b-after-a:315-504:move-504:10:35-11:20",
+        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+        "repairCandidateAdmissionSummary": {
+          "generatedSimpleCandidateCount": 2,
+          "generatedClosureCandidateCount": 21,
+          "simplePreviewAcceptedCount": 2,
+          "simplePreviewRejectedCount": 0,
+          "simplePreviewRejectedReasonCounts": {},
+          "closurePreviewAcceptedCount": 21,
+          "closurePreviewRejectedCount": 0,
+          "closurePreviewRejectedReasonCounts": {},
+          "duplicateCandidateCount": 0,
+          "deduplicatedCandidateCount": 23,
+          "previewCleanCandidateCount": 23,
+          "readOnly": true
+        },
         "conflictClosureSummary": {
           "version": "BASELINE-OVERLAP-REPAIR-CONFLICT-CLOSURE-V1",
           "originalConflictTaskIds": [
@@ -546,7 +560,7 @@
           "locallyRejectedCandidateCount": 40,
           "prefilterRejectedCandidateCount": 0,
           "canonicallyValidCandidateCount": 0,
-          "selectedCandidateId": "orc-see:baseline-overlap-repair:productive-space-overlap:move-b-after-a:315-504:move-504:10:35-11:20",
+          "selectedCandidateId": null,
           "selectedRootTaskId": null,
           "selectedDirection": null,
           "selectedMovedTaskIds": [],
@@ -563,7 +577,7 @@
           "selectedAvailabilityViolationCount": 0,
           "previewClosedCandidateCount": 0,
           "previewRejectedCandidateCount": 16,
-          "executableCandidateCount": 0,
+          "executableCandidateCount": 23,
           "residualConflictReasonCounts": {
             "closure_limit_reached": 16,
             "obvious_resource_overlap": 36,
@@ -581,6 +595,15 @@
           "deterministic": true,
           "readOnly": true
         },
+        "selectedCandidateSource": null,
+        "canonicalValidationExecutedCount": null,
+        "canonicalValidCandidateCount": null,
+        "canonicalInvalidCandidateCount": null,
+        "selectedCanonicalValidationResult": null,
+        "selectedAssignmentCount": null,
+        "selectedMovedTaskIds": null,
+        "finalAcceptanceExecuted": false,
+        "finalAcceptanceSkippedReason": "no_hard_valid_baseline_repair",
         "incumbentDecision": {
           "version": "ORC-INCUMBENT-SELECTION-V1",
           "preMacroCandidateId": "candidate:macro-main-zone-block-relayout:1",
@@ -644,7 +667,7 @@
               "3": 0,
               "11": 0,
               "12": 0,
-              "13": 10,
+              "13": 14,
               "14": 32
             },
             "baselineExcessByZoneId": {
@@ -662,7 +685,7 @@
               "3": 0,
               "11": 0,
               "12": 0,
-              "13": 6,
+              "13": 10,
               "14": 28
             },
             "newViolatingZoneIds": [],
@@ -670,10 +693,11 @@
               "1"
             ],
             "improvedZoneIds": [
-              "13",
               "14"
             ],
-            "unchangedViolatingZoneIds": [],
+            "unchangedViolatingZoneIds": [
+              "13"
+            ],
             "passedNonRegression": false,
             "acceptanceMode": "baseline_relative_non_regression",
             "readOnly": true
@@ -725,22 +749,6 @@
         "violationCodes": [],
         "overlapTaskPairs": [
           [
-            277,
-            285
-          ],
-          [
-            282,
-            285
-          ],
-          [
-            287,
-            295
-          ],
-          [
-            297,
-            305
-          ],
-          [
             307,
             504
           ],
@@ -751,14 +759,6 @@
           [
             312,
             504
-          ],
-          [
-            367,
-            376
-          ],
-          [
-            377,
-            386
           ],
           [
             391,
@@ -773,27 +773,27 @@
             506
           ]
         ],
-        "changedTaskCount": 22,
+        "changedTaskCount": 16,
         "finalUsedEngine": "v4_fallback",
         "fallbackReason": "no_hard_valid_baseline_repair",
         "readOnly": true
       },
-      "workerStartupMs": 14,
-      "engineExecutionMs": 136233,
-      "totalRuntimeMs": 136247,
-      "compactPlanningPath": "plan-27-orc-compact-v5.json"
+      "workerStartupMs": 16,
+      "engineExecutionMs": 142534,
+      "totalRuntimeMs": 142550,
+      "compactPlanningPath": "plan-27-orc-compact-v6.json"
     },
     {
       "engine": "orc",
       "repetition": 2,
       "executionStatus": "completed",
-      "runtimeMs": 136194,
+      "runtimeMs": 141947,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "1256acd56b1e3144725746ad976807d141d277249cef56c3ee35a2f4f1984675",
+      "outputHash": "b0a436eb3006e1e1d8e412be9ceaf96452e40f0ee14a444b66158a85dfacb70b",
       "usedEngine": "v4_fallback",
       "fallbackReason": "no_hard_valid_baseline_repair",
       "falseGates": [
@@ -1075,13 +1075,27 @@
       },
       "replayWarnings": [],
       "compactPlanningIncluded": false,
-      "operationalMetricsMs": 6,
+      "operationalMetricsMs": 13,
       "makespan": null,
       "talentIdle": null,
       "visibleMainFlowIdle": null,
       "largestMainFlowGap": null,
       "orcSafetyEvidence": {
-        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:productive-space-overlap:move-b-after-a:315-504:move-504:10:35-11:20",
+        "baselineRepairSelectedCandidate": "orc-see:baseline-overlap-repair:conflict-closure:forward:root-504:504-10:50-11:35",
+        "repairCandidateAdmissionSummary": {
+          "generatedSimpleCandidateCount": 2,
+          "generatedClosureCandidateCount": 21,
+          "simplePreviewAcceptedCount": 2,
+          "simplePreviewRejectedCount": 0,
+          "simplePreviewRejectedReasonCounts": {},
+          "closurePreviewAcceptedCount": 21,
+          "closurePreviewRejectedCount": 0,
+          "closurePreviewRejectedReasonCounts": {},
+          "duplicateCandidateCount": 0,
+          "deduplicatedCandidateCount": 23,
+          "previewCleanCandidateCount": 23,
+          "readOnly": true
+        },
         "conflictClosureSummary": {
           "version": "BASELINE-OVERLAP-REPAIR-CONFLICT-CLOSURE-V1",
           "originalConflictTaskIds": [
@@ -1097,7 +1111,7 @@
           "locallyRejectedCandidateCount": 40,
           "prefilterRejectedCandidateCount": 0,
           "canonicallyValidCandidateCount": 0,
-          "selectedCandidateId": "orc-see:baseline-overlap-repair:productive-space-overlap:move-b-after-a:315-504:move-504:10:35-11:20",
+          "selectedCandidateId": null,
           "selectedRootTaskId": null,
           "selectedDirection": null,
           "selectedMovedTaskIds": [],
@@ -1114,7 +1128,7 @@
           "selectedAvailabilityViolationCount": 0,
           "previewClosedCandidateCount": 0,
           "previewRejectedCandidateCount": 16,
-          "executableCandidateCount": 0,
+          "executableCandidateCount": 23,
           "residualConflictReasonCounts": {
             "closure_limit_reached": 16,
             "obvious_resource_overlap": 36,
@@ -1132,6 +1146,15 @@
           "deterministic": true,
           "readOnly": true
         },
+        "selectedCandidateSource": null,
+        "canonicalValidationExecutedCount": null,
+        "canonicalValidCandidateCount": null,
+        "canonicalInvalidCandidateCount": null,
+        "selectedCanonicalValidationResult": null,
+        "selectedAssignmentCount": null,
+        "selectedMovedTaskIds": null,
+        "finalAcceptanceExecuted": false,
+        "finalAcceptanceSkippedReason": "no_hard_valid_baseline_repair",
         "incumbentDecision": {
           "version": "ORC-INCUMBENT-SELECTION-V1",
           "preMacroCandidateId": "candidate:macro-main-zone-block-relayout:1",
@@ -1195,7 +1218,7 @@
               "3": 0,
               "11": 0,
               "12": 0,
-              "13": 10,
+              "13": 14,
               "14": 32
             },
             "baselineExcessByZoneId": {
@@ -1213,7 +1236,7 @@
               "3": 0,
               "11": 0,
               "12": 0,
-              "13": 6,
+              "13": 10,
               "14": 28
             },
             "newViolatingZoneIds": [],
@@ -1221,10 +1244,11 @@
               "1"
             ],
             "improvedZoneIds": [
-              "13",
               "14"
             ],
-            "unchangedViolatingZoneIds": [],
+            "unchangedViolatingZoneIds": [
+              "13"
+            ],
             "passedNonRegression": false,
             "acceptanceMode": "baseline_relative_non_regression",
             "readOnly": true
@@ -1276,22 +1300,6 @@
         "violationCodes": [],
         "overlapTaskPairs": [
           [
-            277,
-            285
-          ],
-          [
-            282,
-            285
-          ],
-          [
-            287,
-            295
-          ],
-          [
-            297,
-            305
-          ],
-          [
             307,
             504
           ],
@@ -1302,14 +1310,6 @@
           [
             312,
             504
-          ],
-          [
-            367,
-            376
-          ],
-          [
-            377,
-            386
           ],
           [
             391,
@@ -1324,15 +1324,15 @@
             506
           ]
         ],
-        "changedTaskCount": 22,
+        "changedTaskCount": 16,
         "finalUsedEngine": "v4_fallback",
         "fallbackReason": "no_hard_valid_baseline_repair",
         "readOnly": true
       },
       "workerStartupMs": 13,
-      "engineExecutionMs": 135742,
-      "totalRuntimeMs": 135754,
-      "compactPlanningPath": "plan-27-orc-compact-v5.json"
+      "engineExecutionMs": 141578,
+      "totalRuntimeMs": 141591,
+      "compactPlanningPath": "plan-27-orc-compact-v6.json"
     }
   ],
   "deterministic": true,
