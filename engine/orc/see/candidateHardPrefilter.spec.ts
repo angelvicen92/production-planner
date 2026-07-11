@@ -127,3 +127,13 @@ test("discards baseline repair candidate that introduces a different overlap", (
   assert.equal(result.discardedCandidates[0].reason, "candidate-introduced-space-overlap");
   assert.deepEqual(result.discardedCandidates[0].conflictingTaskIds, [1, 3]);
 });
+
+test("prefilter uses contestant occupancy semantics for real meal overlaps", () => {
+  const s = state({
+    planning: [...state().planning, { taskId: 3, startPlanned: "09:30", endPlanned: "10:00", assignedResourceIds: [], spaceId: 3 }],
+    tasks: [...state().tasks, { id: 3, status: "pending", contestantId: 1, isMeal: true, isBreak: true, assignedResourceIds: [], spaceId: 3, startPlanned: "09:30", endPlanned: "10:00" } as any],
+  });
+  const result = prefilterCandidatesByHardConstraints([candidate("meal-overlap", [{ taskId: 1, startPlanned: "09:40", endPlanned: "09:55", spaceId: 1, resourceIds: [10] }])], s);
+  assert.equal(result.discardedCandidates[0].reason, "contestant-overlap");
+  assert.equal(result.discardedCandidates[0].violatedConstraint, "CONTESTANT_OVERLAP");
+});

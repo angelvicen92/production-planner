@@ -1,5 +1,6 @@
 import { evaluateProductionConceptNonRegressionGate } from "./productionConceptNonRegressionGate";
 import { compareZoneTaskChangeAudits } from "./spaceTaskChangeLimit";
+import { fingerprintORCPlanning } from "./finalMaterializedPlanningValidation";
 
 export type ORCIncumbentSource = "active_repair_preflight" | "pre_macro_selection" | "post_macro_selection";
 
@@ -16,6 +17,9 @@ export interface ORCIncumbentCandidate {
   planningMaterialization: any;
   compositeSummary: any;
   productionConceptAlignment: any;
+  canonicalHardValidation?: any;
+  validatedPlanningFingerprint?: string | null;
+  validationLineageConsistent?: boolean;
   operationalQualityMetrics: any;
   zoneTaskChangeAudit: any;
   safety?: {
@@ -48,18 +52,31 @@ export function compactProductionConceptComparison(gate: any) {
   };
 }
 
+export function getUnusableORCIncumbentReason(candidate: ORCIncumbentCandidate | null | undefined): string | null {
+  if (!candidate?.simulation) return "candidate_missing_simulation";
+  if (candidate.validation?.simulatedStateId !== candidate.simulation.id) return "candidate_validation_lineage_mismatch";
+  const extracted = candidate.extractedPlanning?.plannedTasks ?? [];
+  const simulationPlanning = candidate.simulation?.operationalStateSnapshot?.planning ?? [];
+  if (fingerprintORCPlanning(extracted) !== fingerprintORCPlanning(simulationPlanning)) return "candidate_validation_planning_fingerprint_mismatch";
+  if (candidate.canonicalHardValidation && candidate.canonicalHardValidation.finalGatePassed !== true) {
+    if (candidate.canonicalHardValidation.validationBelongsToSimulation === false) return "candidate_validation_lineage_mismatch";
+    if (candidate.canonicalHardValidation.planningFingerprintMatches === false) return "candidate_validation_planning_fingerprint_mismatch";
+    return "candidate_canonical_hard_validation_invalid";
+  }
+  if (candidate.validation?.result !== "VALID") return "candidate_validation_invalid";
+  if ((candidate.validation?.violatedConstraints?.length ?? 0) > 0) return "candidate_validation_violated_constraints";
+  if ((candidate.pendingTaskIds?.length ?? 0) > 0) return "candidate_pending_tasks";
+  if (candidate.safety?.complete === false) return "candidate_incomplete";
+  if (candidate.safety?.respectsLocks === false) return "candidate_lock_violation";
+  if (candidate.safety?.preservesDone === false) return "candidate_done_changed";
+  if (candidate.safety?.preservesInProgress === false) return "candidate_in_progress_changed";
+  if (candidate.safety?.assignedSpaceContractValid === false) return "candidate_assigned_space_contract_invalid";
+  if (candidate.safety?.lineageConsistent === false) return "candidate_validation_lineage_mismatch";
+  return null;
+}
+
 export function isUsableORCIncumbent(candidate: ORCIncumbentCandidate | null | undefined) {
-  if (!candidate?.simulation) return false;
-  if (candidate.validation?.result !== "VALID") return false;
-  if ((candidate.validation?.violatedConstraints?.length ?? 0) > 0) return false;
-  if ((candidate.pendingTaskIds?.length ?? 0) > 0) return false;
-  if (candidate.safety?.complete === false) return false;
-  if (candidate.safety?.respectsLocks === false) return false;
-  if (candidate.safety?.preservesDone === false) return false;
-  if (candidate.safety?.preservesInProgress === false) return false;
-  if (candidate.safety?.assignedSpaceContractValid === false) return false;
-  if (candidate.safety?.lineageConsistent === false) return false;
-  return true;
+  return getUnusableORCIncumbentReason(candidate) === null;
 }
 
 const scoreOf = (candidate: ORCIncumbentCandidate) => Number(candidate.value?.overallScore ?? candidate.value ?? 0);
@@ -73,10 +90,11 @@ export function selectORCIncumbent(args: { incumbent: ORCIncumbentCandidate | nu
     return { incumbent: candidate, decision: "replace_incumbent", decisionReason: "first_usable_candidate", rejectedCandidateId: null, rejectedCandidateReason: null, productionConceptComparison: null, taskChangeComparison: null, deterministicTieBreakUsed: false, readOnly: true };
   }
   if (!incumbent) {
-    return { incumbent: null, decision: "retain_incumbent", decisionReason: "no_usable_incumbent", rejectedCandidateId: candidateId, rejectedCandidateReason: "candidate_not_usable", productionConceptComparison: null, taskChangeComparison: null, deterministicTieBreakUsed: false, readOnly: true };
+    return { incumbent: null, decision: "retain_incumbent", decisionReason: "no_usable_incumbent", rejectedCandidateId: candidateId, rejectedCandidateReason: getUnusableORCIncumbentReason(candidate) ?? "candidate_not_usable", productionConceptComparison: null, taskChangeComparison: null, deterministicTieBreakUsed: false, readOnly: true };
   }
   if (!isUsableORCIncumbent(candidate)) {
-    return { incumbent, decision: "retain_incumbent", decisionReason: "post_macro_candidate_not_usable", rejectedCandidateId: candidateId, rejectedCandidateReason: "post_macro_candidate_not_usable", productionConceptComparison: null, taskChangeComparison: null, deterministicTieBreakUsed: false, readOnly: true };
+    const reason = getUnusableORCIncumbentReason(candidate) ?? "post_macro_candidate_not_usable";
+    return { incumbent, decision: "retain_incumbent", decisionReason: "post_macro_candidate_not_usable", rejectedCandidateId: candidateId, rejectedCandidateReason: reason, productionConceptComparison: null, taskChangeComparison: null, deterministicTieBreakUsed: false, readOnly: true };
   }
   const conceptGate = evaluateProductionConceptNonRegressionGate({ baseline: incumbent.productionConceptAlignment, selected: candidate!.productionConceptAlignment, mealBreakPolicy: args.mealBreakPolicy });
   const taskChangeComparison = compareZoneTaskChangeAudits({ baseline: incumbent.zoneTaskChangeAudit, candidate: candidate!.zoneTaskChangeAudit });
