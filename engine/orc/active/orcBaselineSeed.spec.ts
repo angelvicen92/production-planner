@@ -118,3 +118,36 @@ test("baseline seed safety rejects non-serializable and too-large payloads", () 
   assert.throws(() => assertSerializableORCSeed(circular), /baseline_seed_not_serializable/);
   assert.throws(() => assertSerializableORCSeed([{ taskId: 1, startPlanned: "09:00", endPlanned: "09:10", assignedResources: [10], blob: "x".repeat(128) }], 64), /baseline_seed_too_large/);
 });
+
+test("canonical repair input preserves operational identity while seedPlanning stays minimal", () => {
+  const base = input(3);
+  Object.assign(base.tasks![0] as any, { contestantId: 501, contestantName: "Hidden", templateName: "Interview", resourceRequirements: [{ typeId: 1, count: 1 }], itinerantTeamId: 8, allowedItinerantTeamIds: [8, 9], itinerantTeamRequirement: "required", hasDependency: true, dependsOnTaskIds: [2], _invalidSpaceId: 999 });
+  base.tasks![1].startPlanned = "10:00";
+  base.tasks![1].endPlanned = "10:10";
+  const seeded = buildORCBaselineSeededInput(base, { ...output(1), plannedTasks: [output(1).plannedTasks[0]], schedule: [output(1).schedule[0]] });
+  const repairTask = seeded.canonicalRepairInput.tasks!.find((task) => task.id === 1)! as any;
+  assert.equal(repairTask.contestantId, 501);
+  assert.equal(repairTask.templateName, "Interview");
+  assert.deepEqual(repairTask.resourceRequirements, [{ typeId: 1, count: 1 }]);
+  assert.equal(repairTask.itinerantTeamId, 8);
+  assert.deepEqual(repairTask.allowedItinerantTeamIds, [8, 9]);
+  assert.equal(repairTask.itinerantTeamRequirement, "required");
+  assert.deepEqual(repairTask.dependsOnTaskIds, [2]);
+  assert.equal(repairTask._invalidSpaceId, undefined);
+  assert.equal(seeded.seedPlanning.some((entry: any) => entry.contestantId != null || entry.templateName != null || entry.resourceRequirements != null), false);
+  assert.equal(seeded.baselineSeedOperationalIdentityAudit.operationalIdentityComplete, true);
+});
+
+test("canonical repair input clears planning only for pending tasks omitted by V4", () => {
+  const base = input(1);
+  Object.assign(base.tasks![0] as any, { contestantId: 700, templateName: "Pending", resourceRequirements: [{ typeId: 2, count: 1 }], startPlanned: "12:00", endPlanned: "12:15", assignedResourceIds: [10], seedSource: "raw" });
+  const seeded = buildORCBaselineSeededInput(base, { ...output(0), plannedTasks: [], schedule: [] });
+  const repairTask = seeded.canonicalRepairInput.tasks![0] as any;
+  assert.equal(repairTask.contestantId, 700);
+  assert.equal(repairTask.templateName, "Pending");
+  assert.deepEqual(repairTask.resourceRequirements, [{ typeId: 2, count: 1 }]);
+  assert.equal(repairTask.startPlanned, undefined);
+  assert.equal(repairTask.endPlanned, undefined);
+  assert.deepEqual(repairTask.assignedResourceIds, []);
+  assert.equal(repairTask.seedSource, undefined);
+});

@@ -2,6 +2,28 @@ import type { EngineInput, EngineOutput, TaskInput, TimeWindow } from "../../typ
 import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole, isORCSpaceBlockingRole, type ORCPlanningEntryOperationalRole } from "../state/nonWorkTaskClassifier";
 import { resolveORCTransportContract, type ORCTransportContract } from "../state/transportContractResolver";
 
+export interface BaselineSeedOperationalIdentityAudit {
+  version: "baseline-seed-operational-identity-audit-v1";
+  originalTaskCount: number;
+  seededTaskCount: number;
+  originalContestantLinkedTaskCount: number;
+  seededContestantLinkedTaskCount: number;
+  missingContestantIdTaskIdsSample: number[];
+  originalItinerantTeamLinkedTaskCount: number;
+  seededItinerantTeamLinkedTaskCount: number;
+  missingItinerantTeamIdTaskIdsSample: number[];
+  originalTemplateNameCount: number;
+  seededTemplateNameCount: number;
+  originalResourceRequirementsCount: number;
+  seededResourceRequirementsCount: number;
+  dependencyIdentityPreserved: boolean;
+  protectedTaskIdentityPreserved: boolean;
+  lockIdentityPreserved: boolean;
+  planningFieldsOverlaidCorrectly: boolean;
+  operationalIdentityComplete: boolean;
+  readOnly: true;
+}
+
 export interface ORCBaselineSeedDiagnostics {
   applied: boolean;
   v4PlannedCount: number;
@@ -33,11 +55,15 @@ export interface ORCBaselineSeedDiagnostics {
   transportNonBlockingCount?: number;
   transportContractConfigured?: boolean;
   transportContractWarnings?: string[];
+  baselineSeedOperationalIdentityAudit?: BaselineSeedOperationalIdentityAudit;
 }
 
 export interface ORCBaselineSeededInputResult {
   input: EngineInput;
+  canonicalRepairInput: EngineInput;
+  operationallyCompleteSeededInput: EngineInput;
   baselineSeed: ORCBaselineSeedDiagnostics;
+  baselineSeedOperationalIdentityAudit: BaselineSeedOperationalIdentityAudit;
   seedPlanning: ORCBaselinePlanningEntry[];
 }
 
@@ -145,6 +171,69 @@ function minimalSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | nul
   return next;
 }
 
+function completeSeededTask(task: TaskInput, seed: ORCBaselinePlanningEntry | null, preserveExistingPlanning: boolean): TaskInput {
+  const next: TaskInput = clone(task);
+  if (seed) {
+    next.startPlanned = seed.startPlanned;
+    next.endPlanned = seed.endPlanned;
+    next.spaceId = seed.assignedSpace ?? null;
+    next.assignedResourceIds = [...seed.assignedResources];
+    next.seedSource = seed.seedSource;
+    next.operationalRole = seed.operationalRole;
+    next.blocksSpace = seed.blocksSpace;
+    next.countsAsWork = seed.countsAsWork;
+    next.countsForMainFlow = seed.countsForMainFlow;
+    next.countsForResourceLoad = seed.countsForResourceLoad;
+    next.countsForTalentLoad = seed.countsForTalentLoad;
+    next.allowsSpaceOverlap = seed.allowsSpaceOverlap;
+    next.spaceOccupancyMode = seed.spaceOccupancyMode;
+    next.transportGroupCapacity = seed.transportGroupCapacity;
+    next.transportGroupingTarget = seed.transportGroupingTarget;
+    next.transportGroupingWeight = seed.transportGroupingWeight;
+  } else if (!preserveExistingPlanning) {
+    delete (next as any).startPlanned;
+    delete (next as any).endPlanned;
+    next.assignedResourceIds = [];
+    delete (next as any).seedSource;
+    delete (next as any).operationalRole;
+    delete (next as any).blocksSpace;
+    delete (next as any).countsAsWork;
+    delete (next as any).countsForMainFlow;
+    delete (next as any).countsForResourceLoad;
+    delete (next as any).countsForTalentLoad;
+    delete (next as any).allowsSpaceOverlap;
+    delete (next as any).spaceOccupancyMode;
+    delete (next as any).transportGroupCapacity;
+    delete (next as any).transportGroupingTarget;
+    delete (next as any).transportGroupingWeight;
+  }
+  for (const key of Object.keys(next as any)) {
+    if (key.startsWith("_")) delete (next as any)[key];
+  }
+  return next;
+}
+
+const hasValue = (v: unknown): boolean => v != null && !(Array.isArray(v) && v.length === 0);
+const depSig = (t: TaskInput): string => JSON.stringify({ hasDependency: (t as any).hasDependency ?? null, dependsOnTemplateIds: (t as any).dependsOnTemplateIds ?? [], dependsOnTaskIds: (t as any).dependsOnTaskIds ?? [], dependsOnTemplateId: (t as any).dependsOnTemplateId ?? null, dependsOnTaskId: (t as any).dependsOnTaskId ?? null });
+function buildOperationalIdentityAudit(originalTasks: TaskInput[], seededTasks: TaskInput[], seedByTask: Map<number, ORCBaselinePlanningEntry>, preserveExistingByTask: Set<number>, lockedTaskIds: Set<number>): BaselineSeedOperationalIdentityAudit {
+  const seededById = new Map(seededTasks.map((t) => [Number(t.id), t]));
+  const missing = (predicate: (t: TaskInput) => boolean, field: keyof TaskInput) => originalTasks.filter((t) => predicate(t) && !hasValue((seededById.get(Number(t.id)) as any)?.[field])).map((t) => Number(t.id)).filter(Number.isFinite).slice(0, 10);
+  const originalContestantLinkedTaskCount = originalTasks.filter((t) => hasValue((t as any).contestantId)).length;
+  const seededContestantLinkedTaskCount = seededTasks.filter((t) => hasValue((t as any).contestantId)).length;
+  const originalItinerantTeamLinkedTaskCount = originalTasks.filter((t) => hasValue((t as any).itinerantTeamId)).length;
+  const seededItinerantTeamLinkedTaskCount = seededTasks.filter((t) => hasValue((t as any).itinerantTeamId)).length;
+  const originalTemplateNameCount = originalTasks.filter((t) => hasValue((t as any).templateName)).length;
+  const seededTemplateNameCount = seededTasks.filter((t) => hasValue((t as any).templateName)).length;
+  const originalResourceRequirementsCount = originalTasks.filter((t) => hasValue((t as any).resourceRequirements)).length;
+  const seededResourceRequirementsCount = seededTasks.filter((t) => hasValue((t as any).resourceRequirements)).length;
+  const dependencyIdentityPreserved = originalTasks.every((t) => depSig(t) === depSig(seededById.get(Number(t.id)) ?? ({} as TaskInput)));
+  const protectedTaskIdentityPreserved = originalTasks.filter((t) => preserveExistingByTask.has(Number(t.id))).every((t) => JSON.stringify({ contestantId:(t as any).contestantId, itinerantTeamId:(t as any).itinerantTeamId, templateName:(t as any).templateName, resourceRequirements:(t as any).resourceRequirements }) === JSON.stringify({ contestantId:(seededById.get(Number(t.id)) as any)?.contestantId, itinerantTeamId:(seededById.get(Number(t.id)) as any)?.itinerantTeamId, templateName:(seededById.get(Number(t.id)) as any)?.templateName, resourceRequirements:(seededById.get(Number(t.id)) as any)?.resourceRequirements }));
+  const lockIdentityPreserved = [...lockedTaskIds].every((id) => { const o=originalTasks.find((t)=>Number(t.id)===id), s=seededById.get(id); return !o || !s || ((o as any).contestantId === (s as any).contestantId && (o as any).itinerantTeamId === (s as any).itinerantTeamId); });
+  const planningFieldsOverlaidCorrectly = [...seedByTask.entries()].every(([id, seed]) => { const t=seededById.get(id) as any; return t?.startPlanned === seed.startPlanned && t?.endPlanned === seed.endPlanned && (t?.spaceId ?? null) === (seed.assignedSpace ?? null) && JSON.stringify([...(t?.assignedResourceIds ?? [])].sort((a:number,b:number)=>a-b)) === JSON.stringify([...seed.assignedResources].sort((a,b)=>a-b)); });
+  const operationalIdentityComplete = originalContestantLinkedTaskCount === seededContestantLinkedTaskCount && originalItinerantTeamLinkedTaskCount === seededItinerantTeamLinkedTaskCount && originalTemplateNameCount === seededTemplateNameCount && originalResourceRequirementsCount === seededResourceRequirementsCount && dependencyIdentityPreserved && protectedTaskIdentityPreserved && lockIdentityPreserved && planningFieldsOverlaidCorrectly;
+  return { version: "baseline-seed-operational-identity-audit-v1", originalTaskCount: originalTasks.length, seededTaskCount: seededTasks.length, originalContestantLinkedTaskCount, seededContestantLinkedTaskCount, missingContestantIdTaskIdsSample: missing((t)=>hasValue((t as any).contestantId), "contestantId" as any), originalItinerantTeamLinkedTaskCount, seededItinerantTeamLinkedTaskCount, missingItinerantTeamIdTaskIdsSample: missing((t)=>hasValue((t as any).itinerantTeamId), "itinerantTeamId" as any), originalTemplateNameCount, seededTemplateNameCount, originalResourceRequirementsCount, seededResourceRequirementsCount, dependencyIdentityPreserved, protectedTaskIdentityPreserved, lockIdentityPreserved, planningFieldsOverlaidCorrectly, operationalIdentityComplete, readOnly: true };
+}
+
 export function assertSerializableORCSeed(seed: unknown, maxBytes = ORC_BASELINE_SEED_MAX_SERIALIZED_BYTES): string {
   let serialized: string;
   try {
@@ -229,9 +318,17 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
     ...clone(input),
     tasks: (input.tasks ?? []).map((task) => minimalSeededTask(task, seedByTask.get(task.id) ?? null, preserveExistingByTask.has(task.id))),
   };
+  const canonicalRepairInput: EngineInput = {
+    ...clone(input),
+    tasks: (input.tasks ?? []).map((task) => completeSeededTask(task, seedByTask.get(task.id) ?? null, preserveExistingByTask.has(task.id))),
+  };
+  const baselineSeedOperationalIdentityAudit = buildOperationalIdentityAudit(input.tasks ?? [], canonicalRepairInput.tasks ?? [], seedByTask, preserveExistingByTask, lockedTaskIds);
 
   return {
     input: sanitizedInput,
+    canonicalRepairInput,
+    operationallyCompleteSeededInput: canonicalRepairInput,
+    baselineSeedOperationalIdentityAudit,
     seedPlanning,
     baselineSeed: {
       applied: seedPlanning.length > 0,
@@ -263,6 +360,7 @@ export function buildORCBaselineSeededInput(input: EngineInput, v4Output: Engine
       transportNonBlockingCount,
       transportContractConfigured: transportContract.configured,
       transportContractWarnings: [...transportContract.warnings],
+      baselineSeedOperationalIdentityAudit,
     },
   };
 }
