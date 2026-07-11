@@ -279,3 +279,17 @@ test("validateSimulatedStates allows nonblocking transport with productive tasks
   productive.tasks = [{ id: 1, planId: 1, templateId: 1, status: "pending", startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }, { id: 2, planId: 1, templateId: 2, status: "pending", startPlanned: "09:00", endPlanned: "09:30", assignedResourceIds: [], spaceId: 10 }] as any;
   assert.equal(validateSimulatedStates([simulatedFrom(productive)], { createdAt: null }).validationResults[0].violatedConstraints.includes("SPACE_OVERLAP"), true);
 });
+
+test("validateSimulatedStates treats real contestant meal and transport as contestant occupancy but ignores synthetic meals", () => {
+  const base = state();
+  const realMeal = { ...base.tasks[0], id: 2, contestantId: 1, isMeal: true, isBreak: true, assignedResourceIds: [], spaceId: 11, startPlanned: "09:10", endPlanned: "09:40" } as any;
+  assert.ok(expectInvalid(cloneState({ tasks: [{ ...base.tasks[0], contestantId: 1 }, realMeal], planning: [{ ...base.planning[0], assignedResourceIds: [11] }, { taskId: 2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [], spaceId: 11 }] }), "CONTESTANT_OVERLAP"));
+
+  const syntheticMeal = { ...realMeal, id: -2, contestantId: 0, isPlaceholder: true } as any;
+  const syntheticResult = validateSimulatedStates([simulatedWithSnapshot(cloneState({ tasks: [{ ...base.tasks[0], contestantId: 1 }, syntheticMeal], planning: [{ ...base.planning[0], assignedResourceIds: [11] }, { taskId: -2, startPlanned: "09:10", endPlanned: "09:40", assignedResourceIds: [], spaceId: 11 }] }))]);
+  assert.equal(syntheticResult.validationResults[0].violatedConstraints.includes("CONTESTANT_OVERLAP"), false);
+
+  const transport = { ...base.tasks[0], id: 3, contestantId: 1, templateId: 99, assignedResourceIds: [], spaceId: 12, startPlanned: "09:10", endPlanned: "09:20" } as any;
+  const transportState = cloneState({ tasks: [{ ...base.tasks[0], contestantId: 1 }, transport], planning: [{ ...base.planning[0], assignedResourceIds: [11] }, { taskId: 3, startPlanned: "09:10", endPlanned: "09:20", assignedResourceIds: [], spaceId: 12 }], constraints: { transportContract: { configured: true, arrivalTemplateId: 99, departureTemplateId: 100, vehicleCapacity: 6 } } });
+  assert.ok(expectInvalid(transportState, "CONTESTANT_OVERLAP"));
+});

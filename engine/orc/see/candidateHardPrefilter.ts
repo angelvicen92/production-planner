@@ -1,7 +1,7 @@
 import type { Candidate, Evidence, OperationalState, ORCRecord } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { configuredHardBreaks, hardBreakAppliesToPlanningEntry } from "../validation/protectedBreakScope";
-import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole } from "../state/nonWorkTaskClassifier";
+import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole, occupiesContestantTime } from "../state/nonWorkTaskClassifier";
 import { resolveORCMealSemantics, hardMealWindowsFromSemantics } from "../state/mealSemanticsResolver";
 import { resolveORCSpaceOccupancy } from "../state/spaceOccupancyResolver";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
@@ -141,7 +141,7 @@ function findViolation(candidate: Candidate, state: OperationalState): Candidate
     if (!overlaps(a.start, a.end, b.start, b.end)) continue;
     const ids = [a.entry.taskId, b.entry.taskId];
     const productivePair = isORCProductiveRole(a.role) && isORCProductiveRole(b.role);
-    if (productivePair && a.task?.contestantId != null && a.task.contestantId === b.task?.contestantId) return discard(candidate, "contestant-overlap", "CONTESTANT_OVERLAP", ids);
+    if (occupiesContestantTime({ task: a.task, entry: a.entry, roleMetadata: a.role, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null, transportContract }) && occupiesContestantTime({ task: b.task, entry: b.entry, roleMetadata: b.role, mealWindow: state.availability?.actualMeal ?? state.availability?.meal ?? state.availability?.mealWindow ?? null, transportContract }) && a.task?.contestantId != null && Number(a.task.contestantId) > 0 && a.task.contestantId === b.task?.contestantId) return discard(candidate, "contestant-overlap", "CONTESTANT_OVERLAP", ids);
     if (productivePair && a.task?.itinerantTeamId != null && a.task.itinerantTeamId === b.task?.itinerantTeamId) return discard(candidate, "itinerant-team-overlap", "ITINERANT_TEAM_OVERLAP", ids);
     if (productivePair && (a.entry.assignedResourceIds ?? []).some((id) => (b.entry.assignedResourceIds ?? []).includes(id))) return discard(candidate, candidate.metadata?.baselineRepairCandidate === true ? "candidate-introduced-resource-overlap" : "resource-overlap", "RESOURCE_OVERLAP", ids);
     const spaceId = a.entry.spaceId ?? null;

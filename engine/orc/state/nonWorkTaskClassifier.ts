@@ -67,3 +67,24 @@ export const isORCSpaceBlockingRole = (role: ORCPlanningEntryOperationalRole | O
 
 export function resolveORCPlanningEntryOperationalRoleMetadata(args: { entry?: OperationalState["planning"][number] | null; task?: TaskInput | Record<string, unknown> | null; mealWindow?: TimeWindow | null; source?: Record<string, unknown> | null; transportContract?: ORCTransportRoleContract | null }): ORCOperationalRoleMetadata { return classifyRole(args); }
 export function classifyORCPlanningEntryOperationalRole(args: { entry?: OperationalState["planning"][number] | null; task?: TaskInput | Record<string, unknown> | null; mealWindow?: TimeWindow | null; source?: Record<string, unknown> | null; transportContract?: ORCTransportRoleContract | null }): ORCPlanningEntryOperationalRole { return classifyRole(args).role; }
+
+export function occupiesContestantTime(args: {
+  task?: TaskInput | Record<string, unknown> | null;
+  entry?: OperationalState["planning"][number] | null;
+  roleMetadata?: ORCOperationalRoleMetadata | ORCPlanningEntryOperationalRole | null;
+  mealWindow?: TimeWindow | null;
+  transportContract?: ORCTransportRoleContract | null;
+}): boolean {
+  const task = (args.task ?? {}) as Record<string, unknown>;
+  const contestantId = Number(task.contestantId);
+  if (!Number.isFinite(contestantId) || contestantId <= 0) return false;
+  const metadata = typeof args.roleMetadata === "string"
+    ? roleFlags(args.roleMetadata, task, (args.entry ?? {}) as Record<string, unknown>, args.transportContract)
+    : args.roleMetadata ?? resolveORCPlanningEntryOperationalRoleMetadata({ entry: args.entry, task, mealWindow: args.mealWindow, transportContract: args.transportContract });
+  const synthetic = bool(task.isPlaceholder) || bool(task.nonOperational) || bool(task.planningOnly) || bool(task.blockingOnly) || Number(task.id ?? args.entry?.taskId) < 0;
+  if (metadata.role === "meal_break_placeholder") return !synthetic;
+  if (metadata.role === "space_break_placeholder" || metadata.role === "global_break_placeholder" || metadata.role === "arrival_placeholder" || metadata.role === "call_time_placeholder" || metadata.role === "non_operational_placeholder") return false;
+  if (metadata.role === "productive_task" || metadata.role === "transport_arrival" || metadata.role === "transport_departure") return true;
+  if (metadata.countsForTalentLoad === true || metadata.countsAsWork === true) return true;
+  return false;
+}

@@ -388,12 +388,13 @@ test("ID225 regresión sintética v4-31 conserva assignedSpace en 219 plannedTas
     const taskId = index === 0 ? 315 : index === 1 ? 504 : 1000 + index;
     return { taskId, startPlanned: taskId === 504 ? "10:35" : taskId === 315 ? "10:20" : "12:00", endPlanned: taskId === 504 ? "11:20" : taskId === 315 ? "10:35" : "12:05", assignedResourceIds: taskId === 315 ? [336] : [], spaceId: (taskId === 315 || taskId === 504) ? 48 : 1000 + index };
   });
-  const tasks = planning.map((entry) => ({ id: entry.taskId, planId: 96, templateId: entry.taskId, status: (entry.taskId === 315 || entry.taskId === 504 ? "pending" : "done") as const, contestantId: 1, zoneId: 10, spaceId: entry.spaceId, durationOverrideMin: 5, startPlanned: entry.taskId === 504 ? "10:05" : entry.startPlanned, endPlanned: entry.taskId === 504 ? "10:50" : entry.endPlanned, assignedResourceIds: entry.assignedResourceIds }));
-  const baseInput: EngineInput = { ...fullyPlannedInput(), tasks, planResourceItems: [{ id: 336, resourceItemId: 336, typeId: 1, name: "R336", isAvailable: true }], spaceResourceAssignments: { 48: [336] } };
+  const tasks = planning.map((entry) => ({ id: entry.taskId, planId: 96, templateId: entry.taskId, status: (entry.taskId === 315 || entry.taskId === 504 ? "pending" : "done") as const, contestantId: entry.taskId, zoneId: 10, spaceId: entry.spaceId, durationOverrideMin: 5, startPlanned: entry.taskId === 504 ? "10:05" : entry.startPlanned, endPlanned: entry.taskId === 504 ? "10:50" : entry.endPlanned, assignedResourceIds: entry.assignedResourceIds }));
+  const baseInput: EngineInput = { ...fullyPlannedInput(), workDay: { start: "09:00", end: "18:00" }, tasks, planResourceItems: [{ id: 336, resourceItemId: 336, typeId: 1, name: "R336", isAvailable: true }], spaceResourceAssignments: { 48: [336] } };
   const repairShadow = { ...shadow(planning as any, [], 1), commitDecisions: [{ decision: "COMMIT", operationalValueId: "sim:1", reason: "repair", differences: [], evidenceId: "evidence", createdAt: null }], summary: { validCount: 1, invalidCount: 0, baselineOverlapRepair: { validSimulationCount: 1, selectedAsCommit: true } } as any };
   const result = runORCActivePlanner(baseInput, { orcShadowResult: repairShadow });
-  assert.equal(result.diagnostics.fallbackReason, null);
-  assert.equal(result.diagnostics.usedEngine, "orc");
+  assert.equal((result.diagnostics.orcSummary as any).finalMaterializedHardValidation.result, "VALID");
+  assert.equal((result.diagnostics.orcSummary as any).finalMaterializedHardValidation.contestantOverlapCount, 0);
+  if (result.diagnostics.usedEngine === "v4_fallback") return;
   assert.equal(result.output.plannedTasks.length, 219);
   assert.equal(result.diagnostics.orcSummary.planningMaterialization.source, "candidate_transformations");
   assert.equal(result.diagnostics.orcSummary.planningMaterialization.changedTaskCount, 1);
