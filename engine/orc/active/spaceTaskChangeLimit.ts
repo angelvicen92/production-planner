@@ -25,3 +25,61 @@ export function evaluateSpaceTaskChangeLimit(args:{planning:any[]; spaces?:any; 
  const legacyExceeded=violations.length>0;
  return {...zoneResult, exceeded: zoneResult.exceeded || legacyExceeded, violations:[...zoneResult.violations,...violations], changeCountBySpaceId:counts, limitBySpaceId:limits, sequenceBySpaceId:seqs, changesIgnoredByMealBreakBySpaceId:ignored};
 }
+
+export function enrichPlanningEntriesForTaskChangeLimit(args:{planning:any[]; tasks?:any[]|null; operationalState?:any|null}) {
+ const taskById=new Map<number,any>();
+ for(const t of [...(args.operationalState?.tasks??[]), ...(args.tasks??[])]){const id=Number(t?.id); if(Number.isFinite(id)) taskById.set(id,t);}
+ return (args.planning??[]).map((e:any)=>{
+  const task=taskById.get(Number(e.taskId??e.id)) ?? e.task ?? null;
+  const metadata=task?.metadata ?? {};
+  return {
+   ...e,
+   task,
+   templateId:e.templateId??e.template_id??task?.templateId??task?.template_id,
+   templateName:e.templateName??e.template_name??task?.templateName??task?.template_name,
+   taskGroupId:e.taskGroupId??e.task_group_id??task?.taskGroupId??task?.task_group_id??metadata.taskGroupId??metadata.task_group_id,
+   groupId:e.groupId??e.group_id??task?.groupId??task?.group_id??metadata.groupId??metadata.group_id,
+   operationalRole:e.operationalRole??task?.operationalRole??metadata.operationalRole,
+   countsAsWork:e.countsAsWork??task?.countsAsWork??task?.productive??metadata.countsAsWork,
+   breakKind:e.breakKind??task?.breakKind??metadata.breakKind,
+   isMealBreakBlock:e.isMealBreakBlock??task?.isMealBreakBlock??task?.isMeal,
+   mealOccupiesSpace:e.mealOccupiesSpace??task?.mealOccupiesSpace,
+   isTransport:e.isTransport??task?.isTransport,
+   zoneId:e.zoneId??e.zone_id??task?.zoneId??task?.zone_id,
+   spaceId:e.spaceId??e.space_id??e.assignedSpace??task?.spaceId??task?.space_id,
+  };
+ });
+}
+
+export function compareZoneTaskChangeAudits(args:{baseline:any; candidate:any}) {
+ const baselineCounts=args.baseline?.changeCountByZoneId??{}, candidateCounts=args.candidate?.changeCountByZoneId??{};
+ const baselineLimits=args.baseline?.limitByZoneId??{}, candidateLimits=args.candidate?.limitByZoneId??baselineLimits;
+ const zones=[...new Set([...Object.keys(baselineCounts),...Object.keys(candidateCounts),...Object.keys(baselineLimits),...Object.keys(candidateLimits)])].sort();
+ const baselineExcessByZoneId:Record<string,number>={}, candidateExcessByZoneId:Record<string,number>={};
+ const newViolatingZoneIds:string[]=[], worsenedZoneIds:string[]=[], improvedZoneIds:string[]=[], unchangedViolatingZoneIds:string[]=[];
+ for(const zid of zones){
+  const bc=Number(baselineCounts[zid]??0), cc=Number(candidateCounts[zid]??0);
+  const bl=Number(baselineLimits[zid]??candidateLimits[zid]??DEFAULT_ZONE_TASK_CHANGE_LIMIT), cl=Number(candidateLimits[zid]??baselineLimits[zid]??DEFAULT_ZONE_TASK_CHANGE_LIMIT);
+  const be=Math.max(0,bc-bl), ce=Math.max(0,cc-cl);
+  baselineExcessByZoneId[zid]=be; candidateExcessByZoneId[zid]=ce;
+  if(be===0&&ce>0) newViolatingZoneIds.push(zid);
+  if(cc>bc||ce>be) worsenedZoneIds.push(zid);
+  else if(cc<bc||ce<be) improvedZoneIds.push(zid);
+  else if(be>0&&ce===be) unchangedViolatingZoneIds.push(zid);
+ }
+ return {
+  baselineExceeded:Object.values(baselineExcessByZoneId).some(v=>v>0),
+  candidateExceeded:Object.values(candidateExcessByZoneId).some(v=>v>0),
+  baselineChangeCountByZoneId:baselineCounts,
+  candidateChangeCountByZoneId:candidateCounts,
+  baselineExcessByZoneId,
+  candidateExcessByZoneId,
+  newViolatingZoneIds,
+  worsenedZoneIds:[...new Set(worsenedZoneIds)].sort(),
+  improvedZoneIds:[...new Set(improvedZoneIds)].sort(),
+  unchangedViolatingZoneIds,
+  passedNonRegression:newViolatingZoneIds.length===0&&worsenedZoneIds.length===0,
+  acceptanceMode:"baseline_relative_non_regression" as const,
+  readOnly:true as const,
+ };
+}
