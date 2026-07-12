@@ -1,0 +1,3 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import { buildInitialConstructionSearchSpaces } from "./initialConstructionSearchSpace";
+test("search windows split around protected meal frontiers",()=>{ const input:any={workDay:{start:"08:00",end:"12:00"},meal:{start:"09:00",end:"09:30"},tasks:[{id:1,durationMin:20,contestantId:1}]}; const anchors:any[]=[{anchorTaskId:1,contestantId:1,transitivePrerequisiteTaskIds:[],spaceId:null,zoneId:null,futureFreedomRisk:false}]; const s:any[]=buildInitialConstructionSearchSpaces({input,anchors,initialConstructionMap:{},maxWindowsPerAnchor:10}); assert.equal(s[0].provisionalWindows.some((w:any)=>w.start<"09:00"&&w.end>"09:30"),false); });
