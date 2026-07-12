@@ -56,7 +56,7 @@ interface CapabilityAudit {
   completeInitialPlanningImplemented: boolean;
   publicPlanningUsesStage2: boolean;
   coherent: boolean;
-  capabilityName: "bounded_branch_retry";
+  capabilityName: "bounded_recursive_assignment_backtracking";
   warnings: string[];
 }
 
@@ -156,13 +156,13 @@ function buildCapabilityAudit(flags: { assignments: boolean; partialPlans: boole
     zoneChangeConstructiveCheckSupported: false,
     setupConstructiveCheckSupported: false,
     branchRetryImplemented: flags.retry,
-    recursiveAssignmentBacktrackingImplemented: false,
+    recursiveAssignmentBacktrackingImplemented: true,
     anchorBacktrackingImplemented: false,
     fullFutureFeasibilityImplemented: false,
     completeInitialPlanningImplemented: false,
     publicPlanningUsesStage2: false,
     coherent: flags.coherent,
-    capabilityName: "bounded_branch_retry",
+    capabilityName: "bounded_recursive_assignment_backtracking",
     warnings: ["Stage 2 is an experimental read-only first PartialPlan gate.", "Future Feasibility is preliminary and normally UNKNOWN when uncovered dimensions remain."],
   };
 }
@@ -180,7 +180,7 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
   }
 
   const maxBranches = Math.max(2, Math.min(8, args.reasoningBudget?.maxCandidates ?? 6));
-  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: args.stage1, maxBranches });
+  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: args.stage1, maxBranches, reasoningBudget: args.reasoningBudget });
   const attempts: BranchAttempt[] = [];
   const selectable: Array<{ branch: InitialConstructionBranch; partialPlanId: string | null; validation: ValidationResult; futureFeasibility: FutureFeasibilityAudit }> = [];
   let hardValidBranchCount = 0;
@@ -255,6 +255,10 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
   const selectedIndex = attempts.findIndex((attempt) => attempt.branchId === selected?.branch.branchId);
   const branchRetryCount = selectedIndex >= 0 ? selectedIndex : attempts.length;
   const closureIncompleteBranchCount = built.branches.filter((branch) => branch.status === "closure-incomplete").length;
+  const completeClosureBranchCount = built.branches.filter((branch) => branch.searchEvidence?.closureComplete === true).length;
+  const recursiveAssignmentBacktrackCount = built.branches.reduce((sum, branch) => sum + (branch.searchEvidence?.recursiveBacktrackCount ?? 0), 0);
+  const totalPlacementAttemptCount = built.branches.reduce((sum, branch) => sum + (branch.searchEvidence?.placementAttemptCount ?? 0), 0);
+  const totalRepeatedStatePruneCount = built.branches.reduce((sum, branch) => sum + (branch.searchEvidence?.repeatedStatePruneCount ?? 0), 0);
   const unsupportedBranchCount = built.branches.filter((branch) => branch.status === "unsupported").length;
   const hardInvalidBranchCount = attempts.filter((attempt) => attempt.rejectionReason === "hard-invalid").length;
   const capabilityAudit = buildCapabilityAudit({ assignments: built.branches.some((branch) => branch.assignments.length > 0), partialPlans: attempts.some((attempt) => attempt.partialPlanId != null), transformations: transformationsExecuted > 0, simulations: simulationsExecuted > 0, validations: validationsExecuted > 0, retry: attempts.length > 1, coherent: attempts.every((attempt) => attempt.lineageCoherent !== false) });
@@ -276,6 +280,10 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
     branchCandidateCount: built.branches.length,
     attemptedBranchCount: attempts.length,
     closureIncompleteBranchCount,
+    completeClosureBranchCount,
+    recursiveAssignmentBacktrackCount,
+    totalPlacementAttemptCount,
+    totalRepeatedStatePruneCount,
     unsupportedBranchCount,
     hardInvalidBranchCount,
     futureInfeasibleBranchCount,

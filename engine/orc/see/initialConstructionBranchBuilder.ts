@@ -1,5 +1,5 @@
 import type { EngineInput } from "../../types";
-import type { Candidate, CandidateAssignment, OperationalState } from "../contracts";
+import type { Candidate, CandidateAssignment, OperationalState, ReasoningBudgetProfile } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
 import { createHash } from "node:crypto";
@@ -20,6 +20,21 @@ export interface InitialConstructionBranch {
   blockers: Blocker[];
   unsupportedRequirementCodes: string[];
   evidence: Blocker[];
+  searchEvidence?: AssignmentSearchEvidence;
+}
+
+export interface AssignmentSearchEvidence {
+  closureComplete: boolean;
+  failedTaskId: number | null;
+  placementAttemptCount: number;
+  temporalCandidateCount: number;
+  resourceAlternativeCount: number;
+  recursiveBacktrackCount: number;
+  repeatedStatePruneCount: number;
+  searchDepthReached: number;
+  budgetExhausted: boolean;
+  deadEndReasonCounts: Record<string, number>;
+  assignmentSearchFingerprint: string;
 }
 
 export interface InitialConstructionBranchBuilderResult {
@@ -111,17 +126,17 @@ function resourceAlternatives(input: EngineInput, task: TaskLike, occupied: Cand
     return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "byType", taskId: Number(task.id), evidence: req.byType } }];
   }
 
-  const base: number[] = [];
+  let byItemAlternatives: number[][] = [[]];
   for (const [resourceItemId, quantity] of Object.entries(req.byItem ?? {})) {
     if (Number(quantity) !== 1) {
       return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "byItem.quantity", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId), quantity } } }];
     }
-    const item = (input.planResourceItems ?? [])
+    const items = (input.planResourceItems ?? [])
       .filter((candidate) => candidate.isAvailable !== false && Number(candidate.resourceItemId) === Number(resourceItemId))
       .sort((a, b) => a.id - b.id)
-      .find((candidate) => !occupied.some((assignment) => assignment.resourceIds.includes(candidate.id) && overlaps(assignment, { start, end })));
-    if (!item) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "byItem", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId) } } }];
-    base.push(item.id);
+      .filter((candidate) => !occupied.some((assignment) => assignment.resourceIds.includes(candidate.id) && overlaps(assignment, { start, end })));
+    if (!items.length) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "byItem", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId) } } }];
+    byItemAlternatives = byItemAlternatives.flatMap((baseIds) => items.map((item) => [...baseIds, item.id]));
   }
 
   const groups = req.anyOf ?? [];
@@ -129,7 +144,7 @@ function resourceAlternatives(input: EngineInput, task: TaskLike, occupied: Cand
     return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "ANY_OF.quantity", taskId: Number(task.id), evidence: groups } }];
   }
 
-  let alternatives = [base];
+  let alternatives = byItemAlternatives;
   for (const group of groups) {
     const usable = (group.resourceItemIds ?? [])
       .flatMap((resourceItemId: number) => (input.planResourceItems ?? []).filter((item) => item.isAvailable !== false && Number(item.resourceItemId) === Number(resourceItemId)))
@@ -182,7 +197,77 @@ function canPlace(input: EngineInput, task: TaskLike, assignment: CandidateAssig
   });
 }
 
-export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number }): InitialConstructionBranchBuilderResult {
+
+function addReason(counts: Record<string, number>, code: string): void { counts[code] = (counts[code] ?? 0) + 1; }
+
+function makeSearchEvidence(assignments: CandidateAssignment[], metrics: Omit<AssignmentSearchEvidence, "assignmentSearchFingerprint" | "closureComplete"> & { closureComplete?: boolean }): AssignmentSearchEvidence {
+  const payload = { assignments: assignments.map((a) => ({ taskId: a.taskId, startPlanned: a.startPlanned, endPlanned: a.endPlanned, spaceId: a.spaceId ?? null, resourceIds: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.taskId - b.taskId), metrics: { ...metrics, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()) } };
+  return { closureComplete: metrics.closureComplete ?? false, failedTaskId: metrics.failedTaskId, placementAttemptCount: metrics.placementAttemptCount, temporalCandidateCount: metrics.temporalCandidateCount, resourceAlternativeCount: metrics.resourceAlternativeCount, recursiveBacktrackCount: metrics.recursiveBacktrackCount, repeatedStatePruneCount: metrics.repeatedStatePruneCount, searchDepthReached: metrics.searchDepthReached, budgetExhausted: metrics.budgetExhausted, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()), assignmentSearchFingerprint: createHash("sha256").update(stableStringify(payload)).digest("hex") };
+}
+
+function temporalCandidates(input: EngineInput, task: TaskLike, latestEnd: number, branchWindow: { start: string; end: string }, occupied: CandidateAssignment[]): number[] {
+  const duration = durationOf(task);
+  const boundaries = new Set<number>();
+  const push = (v: number | null) => { if (v != null && Number.isFinite(v)) boundaries.add(v); };
+  push(latestEnd); push(toMin(input.workDay?.start)); push(toMin(input.workDay?.end)); push(toMin(branchWindow.start)); push(toMin(branchWindow.end));
+  const availability = task.contestantId != null ? (input.contestantAvailabilityById ?? {})[Number(task.contestantId)] : null;
+  push(toMin(availability?.start ?? input.workDay?.start)); push(toMin(availability?.end ?? input.workDay?.end));
+  push(toMin(String(task.fixedWindowStart ?? ""))); push(toMin(String(task.fixedWindowEnd ?? "")));
+  for (const assignment of occupied) { push(toMin(assignment.startPlanned)); push(toMin(assignment.endPlanned)); }
+  for (const interval of taskProtectedIntervals(input, task)) { push(toMin(interval.start)); push(toMin(interval.end)); }
+  const starts = new Set<number>();
+  for (const boundary of boundaries) { starts.add(boundary - duration); starts.add(boundary); }
+  return [...starts].filter((start) => start + duration <= latestEnd).sort((a, b) => b - a);
+}
+
+export function searchInitialConstructionClosureAssignments(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; closureTopologicalTaskIds: number[]; anchorAssignment: CandidateAssignment; branchWindow: { start: string; end: string }; reasoningBudget?: ReasoningBudgetProfile | null; tasks?: Map<number, TaskLike>; prerequisites?: Map<number, number[]> }): { ok: boolean; assignments: CandidateAssignment[]; blockers: Blocker[]; evidence: AssignmentSearchEvidence } {
+  const tasks = args.tasks ?? taskMap(args.input);
+  const prerequisites = args.prerequisites ?? prereqMap(args.stage1);
+  const baseOccupied: CandidateAssignment[] = (args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] }));
+  const order = [...args.closureTopologicalTaskIds].reverse().filter((id) => id !== args.anchorAssignment.taskId);
+  const budget = { maxDepth: args.reasoningBudget?.maxDepth ?? args.closureTopologicalTaskIds.length + 1, maxPositions: Math.max(8, (args.reasoningBudget?.maxSearchSpaceSize ?? 8) * Math.max(1, args.closureTopologicalTaskIds.length) * 4), maxResources: Math.max(8, (args.reasoningBudget?.maxSearchSpaceSize ?? 8) * Math.max(1, args.closureTopologicalTaskIds.length) * 4), maxStates: Math.max(16, (args.reasoningBudget?.explorationBudget ?? 64) * Math.max(1, args.closureTopologicalTaskIds.length)), maxBacktracks: Math.max(8, (args.reasoningBudget?.explorationBudget ?? 64)) };
+  const metrics = { failedTaskId: null as number | null, placementAttemptCount: 0, temporalCandidateCount: 0, resourceAlternativeCount: 0, recursiveBacktrackCount: 0, repeatedStatePruneCount: 0, searchDepthReached: 0, budgetExhausted: false, deadEndReasonCounts: {} as Record<string, number> };
+  const seen = new Set<string>();
+  const fingerprint = (idx: number, provisional: CandidateAssignment[]) => stableStringify({ next: order[idx] ?? null, placed: provisional.map((a) => ({ t: a.taskId, s: a.startPlanned, e: a.endPlanned, p: a.spaceId ?? null, r: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.t - b.t) });
+  const exhausted = () => metrics.budgetExhausted || metrics.placementAttemptCount > budget.maxPositions || metrics.resourceAlternativeCount > budget.maxResources || seen.size > budget.maxStates || metrics.recursiveBacktrackCount > budget.maxBacktracks;
+  const dfs = (idx: number, provisional: CandidateAssignment[]): CandidateAssignment[] | null => {
+    metrics.searchDepthReached = Math.max(metrics.searchDepthReached, idx + 1);
+    if (idx >= order.length) return provisional;
+    if (idx > budget.maxDepth) { metrics.budgetExhausted = true; return null; }
+    const key = fingerprint(idx, provisional);
+    if (seen.has(key)) { metrics.repeatedStatePruneCount += 1; return null; }
+    seen.add(key);
+    const taskId = order[idx]; const task = tasks.get(taskId);
+    if (!task) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "MISSING_TASK"); return null; }
+    const dependentStarts = provisional.filter((assignment) => (prerequisites.get(assignment.taskId) ?? []).includes(taskId)).map((assignment) => toMin(assignment.startPlanned)).filter((v): v is number => v != null);
+    if (!dependentStarts.length) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "DEPENDENT_NOT_PLACED"); return null; }
+    const candidates = temporalCandidates(args.input, task, Math.min(...dependentStarts), args.branchWindow, [...baseOccupied, ...provisional]);
+    metrics.temporalCandidateCount += candidates.length;
+    for (const start of candidates) {
+      if (exhausted()) { metrics.budgetExhausted = true; return null; }
+      metrics.placementAttemptCount += 1;
+      const base = { taskId, startPlanned: hh(start), endPlanned: hh(start + durationOf(task)), spaceId: task.spaceId ?? null, resourceIds: [] as number[] };
+      const alts = resourceAlternatives(args.input, task, [...baseOccupied, ...provisional], base.startPlanned, base.endPlanned);
+      metrics.resourceAlternativeCount += alts.length;
+      for (const alt of alts) {
+        if (alt.unsupported) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, alt.unsupported.code); continue; }
+        const assignment = { ...base, resourceIds: alt.ids };
+        if (!canPlace(args.input, task, assignment, [...baseOccupied, ...provisional], tasks)) { addReason(metrics.deadEndReasonCounts, "TEMPORAL_OR_OCCUPANCY_CONFLICT"); continue; }
+        const found = dfs(idx + 1, [...provisional, assignment]);
+        if (found) return found;
+        metrics.recursiveBacktrackCount += 1;
+        if (exhausted()) { metrics.budgetExhausted = true; return null; }
+      }
+    }
+    metrics.failedTaskId = metrics.failedTaskId ?? taskId; return null;
+  };
+  const found = dfs(0, [args.anchorAssignment]);
+  const blockers = found ? [] : [{ code: metrics.budgetExhausted ? "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED" : "PREREQUISITE_PLACEMENT_FAILED", taskId: metrics.failedTaskId }];
+  const assignments = found ?? [args.anchorAssignment];
+  return { ok: !!found, assignments, blockers, evidence: makeSearchEvidence(assignments, { ...metrics, closureComplete: !!found }) };
+}
+
+export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null }): InitialConstructionBranchBuilderResult {
   const anchorId = Number(args.stage1.selectedAnchor?.anchorTaskId);
   const closure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId });
   const tasks = taskMap(args.input);
@@ -225,17 +310,9 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
       }
       provisional.push(anchorAssignment);
 
-      let ok = blockers.length === 0;
-      for (const taskId of [...closure.topologicalTaskOrder].reverse().filter((id) => id !== anchorId)) {
-        const dependentStarts = provisional.filter((assignment) => (prereqMap(args.stage1).get(assignment.taskId) ?? []).includes(taskId)).map((assignment) => toMin(assignment.startPlanned) ?? anchorStart);
-        if (!placeTask(args.input, tasks, taskId, Math.min(...dependentStarts, anchorStart), window.start, baseOccupied, provisional)) {
-          ok = false;
-          blockers.push({ code: "PREREQUISITE_PLACEMENT_FAILED", taskId });
-          break;
-        }
-      }
-
-      branches.push(materializeBranch(branchId, ok, blockers, provisional));
+      const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1) }) : null;
+      const ok = blockers.length === 0 && !!searchResult?.ok;
+      branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? [])], searchResult?.assignments ?? provisional, searchResult?.evidence));
       if (branches.length >= maxBranches) break;
     }
   }
@@ -268,7 +345,7 @@ function placeTask(input: EngineInput, tasks: Map<number, TaskLike>, taskId: num
   return false;
 }
 
-function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[]): InitialConstructionBranch {
+function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[], searchEvidence?: AssignmentSearchEvidence): InitialConstructionBranch {
   const unsupportedCodes = [...new Set(blockers.filter((blocker) => blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT").map((blocker) => blocker.code))];
   return {
     branchId,
@@ -278,6 +355,7 @@ function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], p
     blockers: blockers.slice(0, 10),
     unsupportedRequirementCodes: unsupportedCodes,
     evidence: blockers.slice(0, 5),
+    searchEvidence,
   };
 }
 
