@@ -1454,3 +1454,21 @@ Dependency evidence now reads the canonical dependency counter fields, including
 Compact Stage 1 evidence is upgraded to `INITIAL-CONSTRUCTION-STAGE1-EVIDENCE-V4` and the structural fingerprint payload to `INITIAL-CONSTRUCTION-STAGE1-FINGERPRINT-V2`. The added evidence remains bounded to meal semantics counts, protected interval crossing count, and applicable/non-applicable dependency reference counters; it does not include full payloads.
 
 This closes the read-only Stage 1 trust gate only. It does not start Stage 2, materialize PartialPlans, change public planning output, change V3/V4, change baseline repair, alter gates, or modify DB/RLS/UI/API behavior.
+
+### ID 277 — First Reversible Constructive PartialPlan & Bounded Branch Backtracking v1
+
+ID277 adds experimental Initial Construction Stage 2 before V4 generation. Stage 2 is gated by `INITIAL_CONSTRUCTION`, coherent Stage 1 evidence, a selected Stage 1 anchor, and an available Search Space for that anchor. It receives only the original `EngineInput`, the original `OperationalState`, Stage 1 evidence, budget, and timestamp; it does not accept V4 planning or `EngineOutput`.
+
+Stage 2 builds the first constructive prerequisite closure for the selected anchor from the canonical dependency graph. The closure includes the anchor plus direct and transitive prerequisites, excludes cycle/protected/non-pending tasks, records blockers for missing or unavailable prerequisites, and preserves deterministic topological order before branch construction.
+
+The new branch builder materializes bounded real branch assignments from Stage 1 provisional windows, compatible frontier placements, deterministic resource alternatives, and late-as-possible prerequisite placement before dependents. Branches carry concrete `taskId`, planned start/end, space, and resource ids, while preserving task duration, contestant, and space instead of manufacturing feasibility by changing task identity.
+
+Resource resolution now distinguishes fixed `byItem` requirements from plan-resource inventory: Stage 2 selects an available `planResourceItem.id` that represents the requested `resourceItemId` and avoids provisional overlaps. Quantity-one `ANY_OF` groups generate deterministic alternatives. Unsupported contracts such as unresolved `byType`, quantity greater than one, or unresolved structural requirements are rejected explicitly with `UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT` evidence rather than ignored.
+
+Each materialized branch uses the official ORC pipeline: `Candidate`, `composePartialPlans`, `buildCandidateStates`, `simulateCandidateStates`, and `validateSimulatedStates`. A branch is only `partialHardValid` when the simulated partial assignment passes hard validation. Stage 2 does not run the Operational Evaluator or Commit Engine and never converts a PartialPlan directly into official state.
+
+After hard validation, Stage 2 computes a conservative preliminary Future Feasibility audit over remaining work, including contestant remaining load versus availability and missing resource inventory. Results are `FEASIBLE`, `INFEASIBLE`, or `UNKNOWN`; this is intentionally preliminary and is not the full SPEC-06 Future Feasibility implementation.
+
+Stage 2 records bounded backtracking evidence for every attempted branch. Closure-incomplete, hard-invalid, future-infeasible, and unsupported branches are exhausted and the next branch is tried. Valid branches are ranked deterministically by hard validity, preliminary Future Feasibility, anchor finish time, remaining slack/resource freedom proxies, provisional decision count, and stable branch id.
+
+The selected Stage 2 result exposes the selected anchor, closure ids, topological order, branch counts, attempts, rejection counts, hard-valid and future-feasible counts, selected branch/PartialPlan ids, selected assignments, validation, preliminary Future Feasibility, unsupported codes, and a stable structural fingerprint. The stage remains read-only: it performs zero commits, does not modify incumbent selection, gates, fallback, public materialized planning, or the compact planning output preserved by ID276.
