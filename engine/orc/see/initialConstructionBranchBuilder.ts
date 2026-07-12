@@ -225,15 +225,22 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
   const prerequisites = args.prerequisites ?? prereqMap(args.stage1);
   const baseOccupied: CandidateAssignment[] = (args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] }));
   const order = [...args.closureTopologicalTaskIds].reverse().filter((id) => id !== args.anchorAssignment.taskId);
-  const budget = { maxDepth: args.reasoningBudget?.maxDepth ?? args.closureTopologicalTaskIds.length + 1, maxPositions: Math.max(8, (args.reasoningBudget?.maxSearchSpaceSize ?? 8) * Math.max(1, args.closureTopologicalTaskIds.length) * 4), maxResources: Math.max(8, (args.reasoningBudget?.maxSearchSpaceSize ?? 8) * Math.max(1, args.closureTopologicalTaskIds.length) * 4), maxStates: Math.max(16, (args.reasoningBudget?.explorationBudget ?? 64) * Math.max(1, args.closureTopologicalTaskIds.length)), maxBacktracks: Math.max(8, (args.reasoningBudget?.explorationBudget ?? 64)) };
+  const budget = {
+    maxDepth: args.reasoningBudget?.maxDepth ?? args.closureTopologicalTaskIds.length + 1,
+    maxPositions: args.reasoningBudget?.maxSearchSpaceSize ?? Math.max(8, args.closureTopologicalTaskIds.length * 32),
+    maxResources: args.reasoningBudget?.maxSearchSpaceSize ?? Math.max(8, args.closureTopologicalTaskIds.length * 32),
+    maxStates: args.reasoningBudget?.explorationBudget ?? Math.max(16, args.closureTopologicalTaskIds.length * 64),
+    maxBacktracks: args.reasoningBudget?.explorationBudget ?? 64,
+  };
   const metrics = { failedTaskId: null as number | null, placementAttemptCount: 0, temporalCandidateCount: 0, resourceAlternativeCount: 0, recursiveBacktrackCount: 0, repeatedStatePruneCount: 0, searchDepthReached: 0, budgetExhausted: false, deadEndReasonCounts: {} as Record<string, number> };
   const seen = new Set<string>();
   const fingerprint = (idx: number, provisional: CandidateAssignment[]) => stableStringify({ next: order[idx] ?? null, placed: provisional.map((a) => ({ t: a.taskId, s: a.startPlanned, e: a.endPlanned, p: a.spaceId ?? null, r: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.t - b.t) });
-  const exhausted = () => metrics.budgetExhausted || metrics.placementAttemptCount > budget.maxPositions || metrics.resourceAlternativeCount > budget.maxResources || seen.size > budget.maxStates || metrics.recursiveBacktrackCount > budget.maxBacktracks;
+  const exhausted = () => metrics.budgetExhausted || metrics.placementAttemptCount >= budget.maxPositions || metrics.resourceAlternativeCount >= budget.maxResources || seen.size >= budget.maxStates || metrics.recursiveBacktrackCount >= budget.maxBacktracks;
+  const markBudgetExhausted = () => { metrics.budgetExhausted = true; addReason(metrics.deadEndReasonCounts, "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED"); };
   const dfs = (idx: number, provisional: CandidateAssignment[]): CandidateAssignment[] | null => {
     metrics.searchDepthReached = Math.max(metrics.searchDepthReached, idx + 1);
     if (idx >= order.length) return provisional;
-    if (idx > budget.maxDepth) { metrics.budgetExhausted = true; return null; }
+    if (idx >= budget.maxDepth) { markBudgetExhausted(); return null; }
     const key = fingerprint(idx, provisional);
     if (seen.has(key)) { metrics.repeatedStatePruneCount += 1; return null; }
     seen.add(key);
@@ -244,10 +251,12 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
     const candidates = temporalCandidates(args.input, task, Math.min(...dependentStarts), args.branchWindow, [...baseOccupied, ...provisional]);
     metrics.temporalCandidateCount += candidates.length;
     for (const start of candidates) {
-      if (exhausted()) { metrics.budgetExhausted = true; return null; }
+      if (exhausted()) { markBudgetExhausted(); return null; }
       metrics.placementAttemptCount += 1;
+      if (metrics.placementAttemptCount > budget.maxPositions) { markBudgetExhausted(); return null; }
       const base = { taskId, startPlanned: hh(start), endPlanned: hh(start + durationOf(task)), spaceId: task.spaceId ?? null, resourceIds: [] as number[] };
       const alts = resourceAlternatives(args.input, task, [...baseOccupied, ...provisional], base.startPlanned, base.endPlanned);
+      if (metrics.resourceAlternativeCount + alts.length > budget.maxResources) { markBudgetExhausted(); return null; }
       metrics.resourceAlternativeCount += alts.length;
       for (const alt of alts) {
         if (alt.unsupported) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, alt.unsupported.code); continue; }
@@ -256,7 +265,7 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
         const found = dfs(idx + 1, [...provisional, assignment]);
         if (found) return found;
         metrics.recursiveBacktrackCount += 1;
-        if (exhausted()) { metrics.budgetExhausted = true; return null; }
+        if (exhausted()) { markBudgetExhausted(); return null; }
       }
     }
     metrics.failedTaskId = metrics.failedTaskId ?? taskId; return null;
@@ -319,30 +328,6 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
 
   const structuralFingerprint = createHash("sha256").update(stableStringify({ anchorId, closure: closure.closureTaskIds, branches: branches.map((branch) => ({ id: branch.branchId, status: branch.status, assignments: branch.assignments })) })).digest("hex");
   return deepFreeze({ selectedAnchorTaskId: anchorId || null, closureTaskIds: closure.closureTaskIds, topologicalTaskOrder: closure.topologicalTaskOrder, branches, structuralFingerprint, readOnly: true }) as InitialConstructionBranchBuilderResult;
-}
-
-function placeTask(input: EngineInput, tasks: Map<number, TaskLike>, taskId: number, latestEnd: number, windowStart: string, baseOccupied: CandidateAssignment[], provisional: CandidateAssignment[]): boolean {
-  const task = tasks.get(taskId);
-  if (!task) return false;
-  const fixedStart = toMin(String(task.fixedWindowStart ?? ""));
-  const fixedEnd = toMin(String(task.fixedWindowEnd ?? ""));
-  const candidateStarts = [fixedStart, fixedEnd == null ? null : fixedEnd - durationOf(task), latestEnd - durationOf(task), (toMin(windowStart) ?? latestEnd) - durationOf(task), toMin(input.workDay.start)]
-    .filter((value): value is number => value != null && Number.isFinite(value))
-    .filter((value, index, array) => array.indexOf(value) === index)
-    .sort((a, b) => b - a);
-
-  for (const start of candidateStarts) {
-    const assignmentBase = { taskId, startPlanned: hh(start), endPlanned: hh(start + durationOf(task)), spaceId: task.spaceId ?? null, resourceIds: [] };
-    for (const resources of resourceAlternatives(input, task, [...baseOccupied, ...provisional], assignmentBase.startPlanned, assignmentBase.endPlanned)) {
-      if (resources.unsupported) continue;
-      const assignment = { ...assignmentBase, resourceIds: resources.ids };
-      if (canPlace(input, task, assignment, [...baseOccupied, ...provisional], tasks)) {
-        provisional.push(assignment);
-        return true;
-      }
-    }
-  }
-  return false;
 }
 
 function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[], searchEvidence?: AssignmentSearchEvidence): InitialConstructionBranch {

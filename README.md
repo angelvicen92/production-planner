@@ -1497,3 +1497,13 @@ The search places prerequisites in reverse topological order, keeps the anchor f
 The intra-branch memory fingerprints partial placements by placed tasks, times, spaces, resources, and next task, so structurally equivalent states are pruned only for the lifetime of Stage 2. A finite budget derived from `ReasoningBudgetProfile` (or deterministic closure-size defaults) caps depth, positions, resource alternatives, explored states, and backtracks; exhaustion reports `ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED` rather than a false infeasibility.
 
 This iteration can materialize the first complete closure branch as Candidate → PartialPlan → Transformation → Simulation → Validation while remaining read-only. It does not implement anchor backtracking, Future Feasibility expansion, commits, public planning materialization, or complete-day planning.
+
+### ID 280 — Recursive Backtracking Proof Gate & Runtime Evidence v1
+
+Initial Construction Stage 2 now distinguishes implemented capability from runtime observation. The Evidence keeps the legacy fields while adding supported/observed flags for recursive assignment backtracking and branch retry, plus compact per-branch search metrics. A plan can therefore report that bounded recursive assignment backtracking is supported while honestly showing that no backtrack happened in a specific replay.
+
+Adversarial tests demonstrate two real regret paths inside a single anchor closure: temporal backtracking (a prerequisite is first placed too late, then undone and moved earlier so the sibling prerequisite can fit) and resource backtracking (a prerequisite first consumes `R1`, then is undone and reassigned to `R2` so a later prerequisite that only accepts `R1` can fit). A separate budget test proves the strict bounded search terminates with `ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED` instead of a generic placement blocker.
+
+Plan 27 is intentionally unchanged at the public planning level: Stage 2 may support backtracking, but that replay does not need to observe it because the first valid combination already closes `[308, 313, 316, 315]`. Stage 2 remains read-only, starts no Stage 3, adds no anchors, performs no commits, and does not publish a full public planning replacement.
+
+The obsolete greedy placement route was removed so the branch builder has a single placement algorithm: the bounded recursive assignment search with deterministic fingerprints and compact branch evidence.
