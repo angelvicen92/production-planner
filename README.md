@@ -1372,3 +1372,15 @@ Hard-feasibility restoration now reads baseline violation codes from the officia
 Raw production-concept, task-change, and OPQM comparisons remain visible as diagnostics under raw acceptance comparisons and inside the restoration policy, but they are no longer inserted into the blocking `gates` map. Effective soft gates pass only when the raw comparison passes or the strict hard-restoration policy accepts, so `falseGates` contains only operational blocking gates and not accepted diagnostic regressions.
 
 This iteration does not modify candidate generation, search, simulation, V4, DB/RLS, UI, persistence, operational metrics, heuristics, budgets, or limits; it only corrects resolved lineage interpretation, baseline violation Evidence extraction, hard-restoration policy evidence, and separation of raw diagnostics from blocking gates.
+
+### ID 271 — Restore Real PartialPlan Lineage & Consolidate Known Hard-Valid Repair v1
+
+ID271 restores the real active-repair lineage topology used by the Decision Pipeline: `DecisionInput.candidates` contains the original raw repair Candidates, while `preparePartialPlanDecisionUnits` creates internal synthetic Candidates with ids of the form `candidate:${partialPlan.partialPlanId}` for simulation. The absence of that synthetic Candidate object from `DecisionInput.candidates` is therefore not itself a lineage failure.
+
+`resolveBaselineRepairCandidateForSimulation` now resolves synthetic CandidateStates through exact PartialPlan identity. When an explicit synthetic decision Candidate is available, its `metadata.partialPlanId`, expected synthetic id, and CandidateState id must all agree. When it is absent, the resolver may derive a possible PartialPlan id only by removing the exact `candidate:` prefix, and it still accepts only if that id matches a real PartialPlan supplied to the resolver and the CandidateState id exactly equals `candidate:${partialPlan.partialPlanId}`.
+
+After resolving the real PartialPlan, the resolver still requires exactly one contained raw repair Candidate. Missing PartialPlans, mismatched CandidateState ids, contradictory explicit synthetic metadata, zero raw Candidates, multiple raw Candidates, and non-contained raw Candidates remain rejected; no candidates are reconstructed by textual similarity.
+
+Active preflight now publishes a bounded `candidateLineageResolutionFailuresSample` for failed lineage resolutions only, capped at four entries and limited to ids/reasons. The real-topology regression test builds raw Candidates, composes real PartialPlans, builds `DecisionInput`, creates the synthetic Candidate through `preparePartialPlanDecisionUnits`, and verifies that a CandidateState pointing at the synthetic id resolves back to the raw Candidate even though `DecisionInput.candidates` does not contain the synthetic Candidate.
+
+No new ORC components, policies, gates, candidate builders, repair heuristics, budgets, V4 behavior, DB/RLS changes, UI changes, or persistence changes were introduced.
