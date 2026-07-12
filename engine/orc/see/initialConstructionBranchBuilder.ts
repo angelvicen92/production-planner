@@ -5,26 +5,302 @@ import { stableStringify } from "../structuralEquality";
 import { createHash } from "node:crypto";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
 
-const toMin=(s?:string|null)=>/^\d{2}:\d{2}$/.test(String(s??""))?Number(String(s).slice(0,2))*60+Number(String(s).slice(3)):null;
-const hh=(m:number)=>`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
-const dur=(t:any)=>Number(t?.durationOverrideMin??t?.durationMin??t?.durationMinutes??t?.duration??0)||0;
-const overlaps=(a:any,b:any)=>{const as=toMin(a.startPlanned??a.start),ae=toMin(a.endPlanned??a.end),bs=toMin(b.startPlanned??b.start),be=toMin(b.endPlanned??b.end);return as!=null&&ae!=null&&bs!=null&&be!=null&&as<be&&bs<ae};
-const protectedStatus=new Set(["done","in_progress"]);
+const protectedStatus = new Set(["done", "in_progress"]);
 
-export type Stage2BranchStatus="candidate"|"closure-incomplete"|"unsupported";
-export interface InitialConstructionBranch { branchId:string; status:Stage2BranchStatus; assignments:CandidateAssignment[]; rejectionReason?:string|null; blockers:any[]; unsupportedRequirementCodes:string[]; evidence:any[]; }
-export interface InitialConstructionBranchBuilderResult { selectedAnchorTaskId:number|null; closureTaskIds:number[]; topologicalTaskOrder:number[]; branches:InitialConstructionBranch[]; structuralFingerprint:string; readOnly:true; }
+type TaskLike = NonNullable<EngineInput["tasks"]>[number] & Record<string, unknown>;
+type Blocker = { code: string; taskId?: number | null; dependentTaskId?: number | null; [key: string]: unknown };
 
-function prereqMap(stage1:any):Map<number,number[]> { return new Map((stage1.initialConstructionMap?.dependencyGraph?.nodes??[]).map((n:any)=>[Number(n.taskId),(n.directPrerequisiteTaskIds??[]).map(Number).sort((a:number,b:number)=>a-b)])); }
-function cycleSet(stage1:any):Set<number>{ return new Set((stage1.initialConstructionMap?.dependencyGraph?.nodes??[]).filter((n:any)=>n.inDependencyCycle).map((n:any)=>Number(n.taskId))); }
-export function buildInitialConstructionClosure(args:{input:EngineInput; stage1:any; anchorTaskId:number}){ const tasks=new Map((args.input.tasks??[]).map((t:any)=>[Number(t.id),t])); const pre=prereqMap(args.stage1); const cycles=cycleSet(args.stage1); const seen=new Set<number>(), order:number[]=[], blockers:any[]=[]; const visit=(id:number, stack:number[])=>{ if(seen.has(id)||cycles.has(id)) return; const task=tasks.get(id); if(!task){blockers.push({code:"MISSING_PREREQUISITE_TASK",taskId:id,dependentTaskId:stack.at(-1)??null}); return;} if(task.status!=="pending"&&task.status!=="interrupted") { if(id!==args.anchorTaskId) blockers.push({code:"PROTECTED_PREREQUISITE_TASK",taskId:id}); return; } seen.add(id); for(const p of pre.get(id)??[]) visit(p,[...stack,id]); order.push(id); }; visit(args.anchorTaskId,[]); return {closureTaskIds:order, topologicalTaskOrder:order, blockers}; }
-function resourceAlternatives(input:EngineInput, task:any, occupied:CandidateAssignment[], start:string, end:string):{ids:number[]; unsupported?:any}[]{ const req=task.resourceRequirements??{}; if(req.byType&&Object.values(req.byType).some((q:any)=>Number(q)>0)) return [{ids:[],unsupported:{code:"UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT",contract:"byType",taskId:task.id,evidence:req.byType}}]; const fixed=Object.entries(req.byItem??{}); let base:number[]=[]; for(const [rid,q] of fixed){ if(Number(q)!==1) return [{ids:[],unsupported:{code:"UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT",contract:"byItem.quantity",taskId:task.id,evidence:{resourceItemId:Number(rid),quantity:q}}}]; const item=(input.planResourceItems??[]).filter(x=>x.isAvailable!==false&&Number(x.resourceItemId)===Number(rid)).sort((a,b)=>a.id-b.id).find(pr=>!occupied.some(o=>o.resourceIds.includes(pr.id)&&overlaps(o,{start,end}))); if(!item) return [{ids:[],unsupported:{code:"REQUIRED_RESOURCE_UNAVAILABLE",contract:"byItem",taskId:task.id,evidence:{resourceItemId:Number(rid)}}}]; base.push(item.id); }
- const groups=req.anyOf??[]; if(groups.some((g:any)=>Number(g.quantity)!==1)) return [{ids:[],unsupported:{code:"UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT",contract:"ANY_OF.quantity",taskId:task.id,evidence:groups}}]; let alts=[base]; for(const g of groups){ const opts=(g.resourceItemIds??[]).flatMap((rid:number)=>(input.planResourceItems??[]).filter(x=>x.isAvailable!==false&&Number(x.resourceItemId)===Number(rid))).sort((a:any,b:any)=>a.id-b.id); const usable=opts.filter((pr:any)=>!occupied.some(o=>o.resourceIds.includes(pr.id)&&overlaps(o,{start,end}))); if(!usable.length) return [{ids:[],unsupported:{code:"REQUIRED_RESOURCE_UNAVAILABLE",contract:"ANY_OF",taskId:task.id,evidence:g}}]; alts=alts.flatMap((a:number[])=>usable.map((u:any)=>[...a,u.id])); }
- return alts.map(ids=>({ids:[...new Set(ids)].sort((a,b)=>a-b)})); }
-function canPlace(input:EngineInput, task:any, a:CandidateAssignment, occupied:CandidateAssignment[], protectedIntervals:any[]):boolean{ const s=toMin(a.startPlanned), e=toMin(a.endPlanned), ws=toMin(input.workDay?.start), we=toMin(input.workDay?.end); if(s==null||e==null||ws==null||we==null||s<ws||e>we||e-s!==dur(task)) return false; if(protectedIntervals.some(i=>overlaps(a,i))) return false; if(occupied.some(o=>overlaps(o,a)&&(o.spaceId===a.spaceId|| (task.contestantId!=null && (input.tasks??[]).find(t=>t.id===o.taskId)?.contestantId===task.contestantId) || o.resourceIds.some(r=>a.resourceIds.includes(r))))) return false; return true; }
-export function buildInitialConstructionBranches(args:{input:EngineInput; originOperationalState:OperationalState; stage1:any; maxBranches?:number}):InitialConstructionBranchBuilderResult{ const anchorId=Number(args.stage1.selectedAnchor?.anchorTaskId); const closure=buildInitialConstructionClosure({input:args.input,stage1:args.stage1,anchorTaskId:anchorId}); const tasks=new Map((args.input.tasks??[]).map((t:any)=>[Number(t.id),t])); const search=(args.stage1.searchSpaces??[]).find((s:any)=>Number(s.anchorTaskId)===anchorId); const branches:InitialConstructionBranch[]=[]; const max=args.maxBranches??8; const baseOccupied:CandidateAssignment[]=(args.originOperationalState.planning??[]).map((p:any)=>({taskId:p.taskId,startPlanned:p.startPlanned,endPlanned:p.endPlanned,spaceId:p.spaceId??null,resourceIds:[...(p.assignedResourceIds??[])]})); let seq=0;
- for(const w of (search?.provisionalWindows??[])){ if(branches.length>=max) break; const anchor=tasks.get(anchorId); if(!anchor) continue; const anchorEnd=toMin(w.end)!; const anchorStart=anchorEnd-dur(anchor); const provisional:CandidateAssignment[]=[]; const blockers=[...closure.blockers]; const prot=resolveInitialConstructionProtectedIntervalsForAnchor({input:args.input,anchor:args.stage1.selectedAnchor}); const tryTask=(taskId:number, latestEnd:number):boolean=>{ const task=tasks.get(taskId); if(!task) return false; const candidates=[latestEnd-dur(task), toMin(w.start)!-dur(task), toMin(args.input.workDay.start)!].filter((v,i,a)=>Number.isFinite(v)&&a.indexOf(v)===i).sort((a,b)=>b-a); for(const st of candidates){ const ass0={taskId,startPlanned:hh(st),endPlanned:hh(st+dur(task)),spaceId:task.spaceId??null,resourceIds:[]}; const res=resourceAlternatives(args.input,task,[...baseOccupied,...provisional],ass0.startPlanned!,ass0.endPlanned!); for(const r of res){ if(r.unsupported){ blockers.push(r.unsupported); continue; } const ass={...ass0,resourceIds:r.ids}; if(canPlace(args.input,task,ass,[...baseOccupied,...provisional],prot)){ provisional.push(ass); return true; } } } return false; };
- const anchorRes=resourceAlternatives(args.input,anchor,baseOccupied,hh(anchorStart),hh(anchorEnd)); for(const r of anchorRes){ seq++; const bid=`stage2-branch:${String(seq).padStart(3,"0")}`; if(r.unsupported){branches.push({branchId:bid,status:r.unsupported.code==="UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT"?"unsupported":"closure-incomplete",assignments:[],rejectionReason:r.unsupported.code,blockers:[r.unsupported],unsupportedRequirementCodes:[r.unsupported.code],evidence:[r.unsupported]}); continue;} provisional.length=0; const aa={taskId:anchorId,startPlanned:hh(anchorStart),endPlanned:hh(anchorEnd),spaceId:anchor.spaceId??null,resourceIds:r.ids}; if(!canPlace(args.input,anchor,aa,baseOccupied,prot)){branches.push({branchId:bid,status:"closure-incomplete",assignments:[],rejectionReason:"ANCHOR_WINDOW_INFEASIBLE",blockers,evidence:[],unsupportedRequirementCodes:[]}); continue;} provisional.push(aa); let ok=true; for(const taskId of [...closure.topologicalTaskOrder].reverse().filter(id=>id!==anchorId)){ const depStarts=provisional.filter(a=> (prereqMap(args.stage1).get(a.taskId)??[]).includes(taskId)).map(a=>toMin(a.startPlanned)!); if(!tryTask(taskId, Math.min(...depStarts, anchorStart))) {ok=false; blockers.push({code:"PREREQUISITE_PLACEMENT_FAILED",taskId}); break;} } branches.push({branchId:bid,status:ok&&blockers.length===0?"candidate":blockers.some(b=>b.code==="UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT")?"unsupported":"closure-incomplete",assignments:[...provisional].sort((a,b)=>toMin(a.startPlanned)!-toMin(b.startPlanned)!||a.taskId-b.taskId),rejectionReason:ok&&blockers.length===0?null:(blockers.at(-1)?.code??"CLOSURE_INCOMPLETE"),blockers:blockers.slice(0,10),unsupportedRequirementCodes:[...new Set(blockers.filter(b=>b.code==="UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT").map(b=>b.code))],evidence:blockers.slice(0,5)}); }
- }
- const fp=createHash("sha256").update(stableStringify({anchorId,closure:closure.closureTaskIds,branches:branches.map(b=>({id:b.branchId,s:b.status,a:b.assignments}))})).digest("hex"); return deepFreeze({selectedAnchorTaskId:anchorId||null,closureTaskIds:closure.closureTaskIds,topologicalTaskOrder:closure.topologicalTaskOrder,branches,structuralFingerprint:fp,readOnly:true}) as any; }
-export function branchToCandidate(branch:InitialConstructionBranch):Candidate{ return {id:`candidate:${branch.branchId}`,assignments:branch.assignments,state:{status:"draft",evidenceIds:[],metadata:{readOnly:true}},metadata:{strategy:"SCHEDULE_PENDING_TASKS",initialConstructionStage:2,branchId:branch.branchId,taskIds:branch.assignments.map(a=>a.taskId),executesTransformations:false,readOnly:true},evidenceIds:[],operationalValues:[]}; }
+export type Stage2BranchStatus = "candidate" | "closure-incomplete" | "unsupported";
+
+export interface InitialConstructionBranch {
+  branchId: string;
+  status: Stage2BranchStatus;
+  assignments: CandidateAssignment[];
+  rejectionReason?: string | null;
+  blockers: Blocker[];
+  unsupportedRequirementCodes: string[];
+  evidence: Blocker[];
+}
+
+export interface InitialConstructionBranchBuilderResult {
+  selectedAnchorTaskId: number | null;
+  closureTaskIds: number[];
+  topologicalTaskOrder: number[];
+  branches: InitialConstructionBranch[];
+  structuralFingerprint: string;
+  readOnly: true;
+}
+
+const toMin = (value?: string | null): number | null => {
+  if (!/^\d{2}:\d{2}$/.test(String(value ?? ""))) return null;
+  return Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3));
+};
+
+const hh = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+const durationOf = (task: TaskLike | null | undefined): number => Number(task?.durationOverrideMin ?? task?.durationMin ?? task?.durationMinutes ?? task?.duration ?? 0) || 0;
+
+const overlaps = (left: { startPlanned?: string | null; endPlanned?: string | null; start?: string | null; end?: string | null }, right: { startPlanned?: string | null; endPlanned?: string | null; start?: string | null; end?: string | null }): boolean => {
+  const leftStart = toMin(left.startPlanned ?? left.start);
+  const leftEnd = toMin(left.endPlanned ?? left.end);
+  const rightStart = toMin(right.startPlanned ?? right.start);
+  const rightEnd = toMin(right.endPlanned ?? right.end);
+  return leftStart != null && leftEnd != null && rightStart != null && rightEnd != null && leftStart < rightEnd && rightStart < leftEnd;
+};
+
+const taskMap = (input: EngineInput): Map<number, TaskLike> => new Map((input.tasks ?? []).map((task) => [Number(task.id), task as TaskLike]));
+
+function prereqMap(stage1: any): Map<number, number[]> {
+  return new Map((stage1.initialConstructionMap?.dependencyGraph?.nodes ?? []).map((node: any) => [Number(node.taskId), (node.directPrerequisiteTaskIds ?? []).map(Number).sort((a: number, b: number) => a - b)]));
+}
+
+function cycleSet(stage1: any): Set<number> {
+  return new Set((stage1.initialConstructionMap?.dependencyGraph?.nodes ?? []).filter((node: any) => node.inDependencyCycle).map((node: any) => Number(node.taskId)));
+}
+
+function protectedFinish(task: TaskLike): number | null {
+  return toMin(String(task.endPlanned ?? task.fixedWindowEnd ?? task.end ?? ""));
+}
+
+export function buildInitialConstructionClosure(args: { input: EngineInput; stage1: any; anchorTaskId: number }) {
+  const tasks = taskMap(args.input);
+  const prerequisites = prereqMap(args.stage1);
+  const cycles = cycleSet(args.stage1);
+  const seen = new Set<number>();
+  const order: number[] = [];
+  const blockers: Blocker[] = [];
+
+  const visit = (taskId: number, dependentTaskId: number | null): void => {
+    if (seen.has(taskId)) return;
+    if (cycles.has(taskId)) {
+      blockers.push({ code: "DEPENDENCY_CYCLE_IN_CLOSURE", taskId, dependentTaskId });
+      return;
+    }
+
+    const task = tasks.get(taskId);
+    if (!task) {
+      blockers.push({ code: "MISSING_PREREQUISITE_TASK", taskId, dependentTaskId });
+      return;
+    }
+
+    if (taskId !== args.anchorTaskId && protectedStatus.has(String(task.status))) {
+      const finish = protectedFinish(task);
+      const anchorStart = toMin(String(tasks.get(args.anchorTaskId)?.fixedWindowStart ?? ""));
+      if (String(task.status) === "done" || (finish != null && (anchorStart == null || finish <= anchorStart))) return;
+      blockers.push({ code: "PROTECTED_PREREQUISITE_TASK_BLOCKS_ANCHOR", taskId, dependentTaskId, protectedEnd: finish == null ? null : hh(finish) });
+      return;
+    }
+
+    if (task.status !== "pending" && task.status !== "interrupted") {
+      if (taskId !== args.anchorTaskId) blockers.push({ code: "PROTECTED_PREREQUISITE_TASK", taskId, dependentTaskId });
+      return;
+    }
+
+    seen.add(taskId);
+    for (const prerequisiteId of prerequisites.get(taskId) ?? []) visit(prerequisiteId, taskId);
+    order.push(taskId);
+  };
+
+  visit(args.anchorTaskId, null);
+  return { closureTaskIds: order, topologicalTaskOrder: order, blockers };
+}
+
+function resourceAlternatives(input: EngineInput, task: TaskLike, occupied: CandidateAssignment[], start: string, end: string): { ids: number[]; unsupported?: Blocker }[] {
+  const req = (task.resourceRequirements ?? {}) as any;
+  if (req.byType && Object.values(req.byType).some((quantity: any) => Number(quantity) > 0)) {
+    return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "byType", taskId: Number(task.id), evidence: req.byType } }];
+  }
+
+  const base: number[] = [];
+  for (const [resourceItemId, quantity] of Object.entries(req.byItem ?? {})) {
+    if (Number(quantity) !== 1) {
+      return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "byItem.quantity", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId), quantity } } }];
+    }
+    const item = (input.planResourceItems ?? [])
+      .filter((candidate) => candidate.isAvailable !== false && Number(candidate.resourceItemId) === Number(resourceItemId))
+      .sort((a, b) => a.id - b.id)
+      .find((candidate) => !occupied.some((assignment) => assignment.resourceIds.includes(candidate.id) && overlaps(assignment, { start, end })));
+    if (!item) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "byItem", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId) } } }];
+    base.push(item.id);
+  }
+
+  const groups = req.anyOf ?? [];
+  if (groups.some((group: any) => Number(group.quantity) !== 1)) {
+    return [{ ids: [], unsupported: { code: "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT", contract: "ANY_OF.quantity", taskId: Number(task.id), evidence: groups } }];
+  }
+
+  let alternatives = [base];
+  for (const group of groups) {
+    const usable = (group.resourceItemIds ?? [])
+      .flatMap((resourceItemId: number) => (input.planResourceItems ?? []).filter((item) => item.isAvailable !== false && Number(item.resourceItemId) === Number(resourceItemId)))
+      .sort((a: any, b: any) => a.id - b.id)
+      .filter((item: any) => !occupied.some((assignment) => assignment.resourceIds.includes(item.id) && overlaps(assignment, { start, end })));
+    if (!usable.length) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "ANY_OF", taskId: Number(task.id), evidence: group } }];
+    alternatives = alternatives.flatMap((baseIds) => usable.map((item: any) => [...baseIds, item.id]));
+  }
+
+  return alternatives.map((ids) => ({ ids: [...new Set(ids)].sort((a, b) => a - b) }));
+}
+
+function taskProtectedIntervals(input: EngineInput, task: TaskLike) {
+  return resolveInitialConstructionProtectedIntervalsForAnchor({
+    input,
+    anchor: { anchorTaskId: task.id, contestantId: task.contestantId ?? null, spaceId: task.spaceId ?? null, zoneId: task.zoneId ?? null },
+  });
+}
+
+function taskWindowOk(input: EngineInput, task: TaskLike, assignment: CandidateAssignment): boolean {
+  const start = toMin(assignment.startPlanned);
+  const end = toMin(assignment.endPlanned);
+  const workStart = toMin(input.workDay?.start);
+  const workEnd = toMin(input.workDay?.end);
+  if (start == null || end == null || workStart == null || workEnd == null) return false;
+  if (start < workStart || end > workEnd || end - start !== durationOf(task)) return false;
+
+  const availability = task.contestantId != null ? (input.contestantAvailabilityById ?? {})[Number(task.contestantId)] : null;
+  const availabilityStart = toMin(availability?.start ?? input.workDay?.start);
+  const availabilityEnd = toMin(availability?.end ?? input.workDay?.end);
+  if (availabilityStart != null && start < availabilityStart) return false;
+  if (availabilityEnd != null && end > availabilityEnd) return false;
+
+  const fixedStart = toMin(String(task.fixedWindowStart ?? ""));
+  const fixedEnd = toMin(String(task.fixedWindowEnd ?? ""));
+  if (fixedStart != null && start !== fixedStart) return false;
+  if (fixedEnd != null && end !== fixedEnd) return false;
+  return true;
+}
+
+function canPlace(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>): boolean {
+  if (!taskWindowOk(input, task, assignment)) return false;
+  if (taskProtectedIntervals(input, task).some((interval) => overlaps(assignment, interval))) return false;
+  return !occupied.some((other) => {
+    const otherTask = tasks.get(other.taskId);
+    const sameContestant = task.contestantId != null && otherTask?.contestantId != null && Number(otherTask.contestantId) === Number(task.contestantId);
+    const sameSpace = other.spaceId != null && assignment.spaceId != null && other.spaceId === assignment.spaceId;
+    const sameResource = other.resourceIds.some((resourceId) => assignment.resourceIds.includes(resourceId));
+    return overlaps(other, assignment) && (sameSpace || sameContestant || sameResource);
+  });
+}
+
+export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number }): InitialConstructionBranchBuilderResult {
+  const anchorId = Number(args.stage1.selectedAnchor?.anchorTaskId);
+  const closure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId });
+  const tasks = taskMap(args.input);
+  const search = (args.stage1.searchSpaces ?? []).find((space: any) => Number(space.anchorTaskId) === anchorId);
+  const maxBranches = args.maxBranches ?? 8;
+  const branches: InitialConstructionBranch[] = [];
+  const baseOccupied: CandidateAssignment[] = (args.originOperationalState.planning ?? []).map((entry: any) => ({
+    taskId: entry.taskId,
+    startPlanned: entry.startPlanned,
+    endPlanned: entry.endPlanned,
+    spaceId: entry.spaceId ?? null,
+    resourceIds: [...(entry.assignedResourceIds ?? [])],
+  }));
+  let sequence = 0;
+
+  for (const window of search?.provisionalWindows ?? []) {
+    if (branches.length >= maxBranches) break;
+    const anchor = tasks.get(anchorId);
+    const windowEnd = toMin(window.end);
+    if (!anchor || windowEnd == null) continue;
+    const anchorEnd = toMin(String(anchor.fixedWindowEnd ?? "")) ?? windowEnd;
+    const anchorStart = toMin(String(anchor.fixedWindowStart ?? "")) ?? anchorEnd - durationOf(anchor);
+    const anchorResources = resourceAlternatives(args.input, anchor, baseOccupied, hh(anchorStart), hh(anchorEnd));
+
+    for (const resourceAlternative of anchorResources) {
+      sequence += 1;
+      const branchId = `stage2-branch:${String(sequence).padStart(3, "0")}`;
+      const blockers = [...closure.blockers];
+      const provisional: CandidateAssignment[] = [];
+
+      if (resourceAlternative.unsupported) {
+        branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, []));
+        continue;
+      }
+
+      const anchorAssignment = { taskId: anchorId, startPlanned: hh(anchorStart), endPlanned: hh(anchorEnd), spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
+      if (!canPlace(args.input, anchor, anchorAssignment, baseOccupied, tasks)) {
+        branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: "ANCHOR_WINDOW_INFEASIBLE", blockers: blockers.slice(0, 10), evidence: blockers.slice(0, 5), unsupportedRequirementCodes: [] });
+        continue;
+      }
+      provisional.push(anchorAssignment);
+
+      let ok = blockers.length === 0;
+      for (const taskId of [...closure.topologicalTaskOrder].reverse().filter((id) => id !== anchorId)) {
+        const dependentStarts = provisional.filter((assignment) => (prereqMap(args.stage1).get(assignment.taskId) ?? []).includes(taskId)).map((assignment) => toMin(assignment.startPlanned) ?? anchorStart);
+        if (!placeTask(args.input, tasks, taskId, Math.min(...dependentStarts, anchorStart), window.start, baseOccupied, provisional)) {
+          ok = false;
+          blockers.push({ code: "PREREQUISITE_PLACEMENT_FAILED", taskId });
+          break;
+        }
+      }
+
+      branches.push(materializeBranch(branchId, ok, blockers, provisional));
+      if (branches.length >= maxBranches) break;
+    }
+  }
+
+  const structuralFingerprint = createHash("sha256").update(stableStringify({ anchorId, closure: closure.closureTaskIds, branches: branches.map((branch) => ({ id: branch.branchId, status: branch.status, assignments: branch.assignments })) })).digest("hex");
+  return deepFreeze({ selectedAnchorTaskId: anchorId || null, closureTaskIds: closure.closureTaskIds, topologicalTaskOrder: closure.topologicalTaskOrder, branches, structuralFingerprint, readOnly: true }) as InitialConstructionBranchBuilderResult;
+}
+
+function placeTask(input: EngineInput, tasks: Map<number, TaskLike>, taskId: number, latestEnd: number, windowStart: string, baseOccupied: CandidateAssignment[], provisional: CandidateAssignment[]): boolean {
+  const task = tasks.get(taskId);
+  if (!task) return false;
+  const fixedStart = toMin(String(task.fixedWindowStart ?? ""));
+  const fixedEnd = toMin(String(task.fixedWindowEnd ?? ""));
+  const candidateStarts = [fixedStart, fixedEnd == null ? null : fixedEnd - durationOf(task), latestEnd - durationOf(task), (toMin(windowStart) ?? latestEnd) - durationOf(task), toMin(input.workDay.start)]
+    .filter((value): value is number => value != null && Number.isFinite(value))
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .sort((a, b) => b - a);
+
+  for (const start of candidateStarts) {
+    const assignmentBase = { taskId, startPlanned: hh(start), endPlanned: hh(start + durationOf(task)), spaceId: task.spaceId ?? null, resourceIds: [] };
+    for (const resources of resourceAlternatives(input, task, [...baseOccupied, ...provisional], assignmentBase.startPlanned, assignmentBase.endPlanned)) {
+      if (resources.unsupported) continue;
+      const assignment = { ...assignmentBase, resourceIds: resources.ids };
+      if (canPlace(input, task, assignment, [...baseOccupied, ...provisional], tasks)) {
+        provisional.push(assignment);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[]): InitialConstructionBranch {
+  const unsupportedCodes = [...new Set(blockers.filter((blocker) => blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT").map((blocker) => blocker.code))];
+  return {
+    branchId,
+    status: ok && blockers.length === 0 ? "candidate" : unsupportedCodes.length > 0 ? "unsupported" : "closure-incomplete",
+    assignments: [...provisional].sort((a, b) => (toMin(a.startPlanned) ?? 0) - (toMin(b.startPlanned) ?? 0) || a.taskId - b.taskId),
+    rejectionReason: ok && blockers.length === 0 ? null : blockers.at(-1)?.code ?? "CLOSURE_INCOMPLETE",
+    blockers: blockers.slice(0, 10),
+    unsupportedRequirementCodes: unsupportedCodes,
+    evidence: blockers.slice(0, 5),
+  };
+}
+
+function rejectedBranch(branchId: string, blocker: Blocker, assignments: CandidateAssignment[]): InitialConstructionBranch {
+  return { branchId, status: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? "unsupported" : "closure-incomplete", assignments, rejectionReason: blocker.code, blockers: [blocker], unsupportedRequirementCodes: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? [blocker.code] : [], evidence: [blocker] };
+}
+
+export function branchToCandidate(branch: InitialConstructionBranch): Candidate {
+  return {
+    id: `candidate:${branch.branchId}`,
+    assignments: branch.assignments,
+    state: { status: "draft", evidenceIds: [], metadata: { readOnly: true } },
+    metadata: {
+      strategy: "SCHEDULE_PENDING_TASKS",
+      planningInfluence: "candidate-assignments",
+      initialConstructionStage: 2,
+      branchId: branch.branchId,
+      taskIds: branch.assignments.map((assignment) => assignment.taskId),
+      executesTransformations: branch.assignments.length > 0,
+      commitsPlanning: false,
+      readOnly: true,
+    },
+    evidenceIds: [],
+    operationalValues: [],
+  };
+}

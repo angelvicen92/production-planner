@@ -112,7 +112,7 @@ export function buildCandidateStates(
         sourceAssignmentCount: candidate.assignments.length,
         sourceAssignments: candidate.assignments.map((assignment) => ({ ...assignment, resourceIds: [...assignment.resourceIds] })),
         readOnly: true,
-        executesTransformations: false,
+        executesTransformations: plannedTransformations.length > 0 && (candidate.assignments?.length ?? 0) > 0,
       },
     });
   }
