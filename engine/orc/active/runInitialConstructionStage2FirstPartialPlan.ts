@@ -51,6 +51,10 @@ interface CapabilityAudit {
   setupConstructiveCheckSupported: boolean;
   branchRetryImplemented: boolean;
   recursiveAssignmentBacktrackingImplemented: boolean;
+  recursiveAssignmentBacktrackingSupported: boolean;
+  recursiveAssignmentBacktrackingObserved: boolean;
+  branchAlternativeEvaluationSupported: boolean;
+  branchRetryObserved: boolean;
   anchorBacktrackingImplemented: boolean;
   fullFutureFeasibilityImplemented: boolean;
   completeInitialPlanningImplemented: boolean;
@@ -72,6 +76,16 @@ interface BranchAttempt {
   candidateAssignmentsFingerprint: string | null;
   simulatedAssignmentsFingerprint: string | null;
   lineageCoherent: boolean | null;
+  closureComplete: boolean | null;
+  placementAttemptCount: number;
+  temporalCandidateCount: number;
+  resourceAlternativeCount: number;
+  recursiveBacktrackCount: number;
+  repeatedStatePruneCount: number;
+  searchDepthReached: number;
+  budgetExhausted: boolean;
+  deadEndReasonCounts: Record<string, number>;
+  assignmentSearchFingerprint: string | null;
 }
 
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -131,7 +145,7 @@ function preliminaryFutureFeasibility(input: EngineInput, branch: InitialConstru
   return { status, checkedDimensions: [...CHECKED_FUTURE_DIMENSIONS], uncoveredDimensions: [...UNCOVERED_FUTURE_DIMENSIONS], reasons: [...new Set(reasons)].sort().slice(0, SAMPLE_LIMIT), confidence: status === "INFEASIBLE" ? "medium" : "low", preliminary: true, readOnly: true };
 }
 
-function buildCapabilityAudit(flags: { assignments: boolean; partialPlans: boolean; transformations: boolean; simulations: boolean; validations: boolean; retry: boolean; coherent: boolean }): CapabilityAudit {
+function buildCapabilityAudit(flags: { assignments: boolean; partialPlans: boolean; transformations: boolean; simulations: boolean; validations: boolean; branchAlternativeEvaluationSupported: boolean; branchRetryObserved: boolean; recursiveAssignmentBacktrackingObserved: boolean; coherent: boolean }): CapabilityAudit {
   return {
     originalInputOnly: true,
     v4PlanningRead: false,
@@ -155,8 +169,12 @@ function buildCapabilityAudit(flags: { assignments: boolean; partialPlans: boole
     cameraCapacityConstructiveCheckSupported: false,
     zoneChangeConstructiveCheckSupported: false,
     setupConstructiveCheckSupported: false,
-    branchRetryImplemented: flags.retry,
+    branchRetryImplemented: flags.branchRetryObserved,
     recursiveAssignmentBacktrackingImplemented: true,
+    recursiveAssignmentBacktrackingSupported: true,
+    recursiveAssignmentBacktrackingObserved: flags.recursiveAssignmentBacktrackingObserved,
+    branchAlternativeEvaluationSupported: flags.branchAlternativeEvaluationSupported,
+    branchRetryObserved: flags.branchRetryObserved,
     anchorBacktrackingImplemented: false,
     fullFutureFeasibilityImplemented: false,
     completeInitialPlanningImplemented: false,
@@ -176,7 +194,7 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
   const anchor = args.stage1.selectedAnchor;
   const hasSpace = (args.stage1.searchSpaces ?? []).some((space: any) => space.anchorTaskId === anchor?.anchorTaskId);
   if (args.stage1.planningMode !== "INITIAL_CONSTRUCTION" || !audit.coherent || !anchor || !hasSpace) {
-    return deepFreeze({ version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-V2", executed: false, reason: "stage2_preconditions_not_met", selectedAnchorTaskId: anchor?.anchorTaskId ?? null, readOnly: true }) as any;
+    return deepFreeze({ version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-V3", executed: false, reason: "stage2_preconditions_not_met", selectedAnchorTaskId: anchor?.anchorTaskId ?? null, readOnly: true }) as any;
   }
 
   const maxBranches = Math.max(2, Math.min(8, args.reasoningBudget?.maxCandidates ?? 6));
@@ -191,9 +209,26 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
   let validationsExecuted = 0;
 
   for (const branch of built.branches) {
-    const attempt: BranchAttempt = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, futureFeasibility: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null };
+    const ev = branch.searchEvidence;
+    const attempt: BranchAttempt = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, futureFeasibility: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null, closureComplete: ev?.closureComplete ?? null, placementAttemptCount: ev?.placementAttemptCount ?? 0, temporalCandidateCount: ev?.temporalCandidateCount ?? 0, resourceAlternativeCount: ev?.resourceAlternativeCount ?? 0, recursiveBacktrackCount: ev?.recursiveBacktrackCount ?? 0, repeatedStatePruneCount: ev?.repeatedStatePruneCount ?? 0, searchDepthReached: ev?.searchDepthReached ?? 0, budgetExhausted: ev?.budgetExhausted ?? false, deadEndReasonCounts: ev?.deadEndReasonCounts ?? {}, assignmentSearchFingerprint: ev?.assignmentSearchFingerprint ?? null };
 
     if (branch.status !== "candidate") {
+      attempts.push(attempt);
+      continue;
+    }
+
+
+    const closureIds = new Set(built.closureTaskIds);
+    const assignedIds = branch.assignments.map((assignment) => assignment.taskId);
+    const uniqueAssignedIds = new Set(assignedIds);
+    const closureIntegrityOk = branch.searchEvidence?.closureComplete === true
+      && assignedIds.length === built.closureTaskIds.length
+      && uniqueAssignedIds.size === built.closureTaskIds.length
+      && assignedIds.every((taskId) => closureIds.has(taskId))
+      && built.closureTaskIds.every((taskId) => uniqueAssignedIds.has(taskId))
+      && !!branch.searchEvidence?.assignmentSearchFingerprint;
+    if (!closureIntegrityOk) {
+      attempt.rejectionReason = "CLOSURE_ASSIGNMENT_INTEGRITY_FAILED";
       attempts.push(attempt);
       continue;
     }
@@ -253,7 +288,8 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
 
   const selected = selectable[0] ?? null;
   const selectedIndex = attempts.findIndex((attempt) => attempt.branchId === selected?.branch.branchId);
-  const branchRetryCount = selectedIndex >= 0 ? selectedIndex : attempts.length;
+  const branchesRejectedBeforeSelection = selectedIndex >= 0 ? attempts.slice(0, selectedIndex).filter((attempt) => attempt.rejectionReason != null || attempt.status !== "candidate").length : attempts.filter((attempt) => attempt.rejectionReason != null || attempt.status !== "candidate").length;
+  const branchRetryCount = branchesRejectedBeforeSelection;
   const closureIncompleteBranchCount = built.branches.filter((branch) => branch.status === "closure-incomplete").length;
   const completeClosureBranchCount = built.branches.filter((branch) => branch.searchEvidence?.closureComplete === true).length;
   const recursiveAssignmentBacktrackCount = built.branches.reduce((sum, branch) => sum + (branch.searchEvidence?.recursiveBacktrackCount ?? 0), 0);
@@ -261,12 +297,12 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
   const totalRepeatedStatePruneCount = built.branches.reduce((sum, branch) => sum + (branch.searchEvidence?.repeatedStatePruneCount ?? 0), 0);
   const unsupportedBranchCount = built.branches.filter((branch) => branch.status === "unsupported").length;
   const hardInvalidBranchCount = attempts.filter((attempt) => attempt.rejectionReason === "hard-invalid").length;
-  const capabilityAudit = buildCapabilityAudit({ assignments: built.branches.some((branch) => branch.assignments.length > 0), partialPlans: attempts.some((attempt) => attempt.partialPlanId != null), transformations: transformationsExecuted > 0, simulations: simulationsExecuted > 0, validations: validationsExecuted > 0, retry: attempts.length > 1, coherent: attempts.every((attempt) => attempt.lineageCoherent !== false) });
+  const capabilityAudit = buildCapabilityAudit({ assignments: built.branches.some((branch) => branch.assignments.length > 0), partialPlans: attempts.some((attempt) => attempt.partialPlanId != null), transformations: transformationsExecuted > 0, simulations: simulationsExecuted > 0, validations: validationsExecuted > 0, branchAlternativeEvaluationSupported: maxBranches > 1, branchRetryObserved: branchRetryCount > 0, recursiveAssignmentBacktrackingObserved: recursiveAssignmentBacktrackCount > 0, coherent: attempts.every((attempt) => attempt.lineageCoherent !== false) });
   const fingerprintPayload = { version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-FINGERPRINT-V2", anchor: built.selectedAnchorTaskId, closure: built.closureTaskIds, attempts: attempts.map((attempt) => ({ branchId: attempt.branchId, status: attempt.status, rejectionReason: attempt.rejectionReason, assignmentCount: attempt.assignmentCount, validation: attempt.validation?.result, future: attempt.futureFeasibility?.status, lineage: attempt.lineageCoherent })) };
   const structuralFingerprint = createHash("sha256").update(stableStringify(fingerprintPayload)).digest("hex");
 
   return deepFreeze({
-    version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-V2",
+    version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-V3",
     executed: true,
     executedBeforeV4: true,
     inputSource: "original-engine-input-and-origin-operational-state",
@@ -282,6 +318,7 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
     closureIncompleteBranchCount,
     completeClosureBranchCount,
     recursiveAssignmentBacktrackCount,
+    recursiveBacktrackCount: recursiveAssignmentBacktrackCount,
     totalPlacementAttemptCount,
     totalRepeatedStatePruneCount,
     unsupportedBranchCount,
@@ -301,6 +338,7 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
     checkedFutureFeasibilityDimensions: selected?.futureFeasibility.checkedDimensions ?? [...CHECKED_FUTURE_DIMENSIONS],
     uncoveredFutureFeasibilityDimensions: selected?.futureFeasibility.uncoveredDimensions ?? [...UNCOVERED_FUTURE_DIMENSIONS],
     branchRetryCount,
+    branchesRejectedBeforeSelection,
     backtrackCount: branchRetryCount,
     transformationsExecuted,
     simulationsExecuted,
