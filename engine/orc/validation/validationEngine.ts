@@ -5,6 +5,7 @@ import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole, oc
 import { resolveORCMealSemantics, hardMealWindowsFromSemantics } from "../state/mealSemanticsResolver";
 import { resolveORCSpaceOccupancy } from "../state/spaceOccupancyResolver";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
+import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
 
 export interface ValidationEngineOptions {
   createdAt?: string | null;
@@ -258,26 +259,16 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
   }
 
 
-  for (const task of snapshot.tasks ?? []) {
-    const dependent = windows.get(task.id);
-    if (!dependent) continue;
-    const directIds = [...(task.dependsOnTaskIds ?? []), ...(task.dependsOnTaskId != null ? [task.dependsOnTaskId] : [])];
-    for (const predecessorId of directIds) {
-      const predecessor = windows.get(predecessorId);
-      if (predecessor && dependent.start < predecessor.end) addDetail(violations, details, { code: "DIRECT_DEPENDENCY_BROKEN", constraintGroup: "dependencies", taskIds: [task.id, predecessorId], timeWindow: windowOf(dependent.entry), relatedTimeWindow: windowOf(predecessor.entry), diagnosticHint: "Dependent task starts before predecessor finishes. Check V4 ordering, dependency mapping in the seed, or whether dependency semantics should be relaxed only if documented." });
-    }
-    const templateIds = [...(task.dependsOnTemplateIds ?? []), ...(task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : [])];
-    for (const templateId of templateIds) {
-      for (const predecessorTask of snapshot.tasks ?? []) {
-        if (predecessorTask.id === task.id || predecessorTask.templateId !== templateId) continue;
-        const sameContestant = task.contestantId != null && task.contestantId === predecessorTask.contestantId;
-        const sameTeam = task.itinerantTeamId != null && task.itinerantTeamId === predecessorTask.itinerantTeamId;
-        if (!sameContestant && !sameTeam) continue;
-        const predecessor = windows.get(predecessorTask.id);
-        if (predecessor && dependent.start < predecessor.end) addDetail(violations, details, { code: "TEMPLATE_DEPENDENCY_BROKEN", constraintGroup: "dependencies", taskIds: [task.id, predecessorTask.id], timeWindow: windowOf(dependent.entry), relatedTimeWindow: windowOf(predecessor.entry), diagnosticHint: "Dependent task starts before predecessor template finishes. Check V4 ordering, dependency mapping in the seed, or whether dependency semantics should be relaxed only if documented." });
-      }
-    }
+  const dependencyGraph = resolveORCTaskDependencyGraph(snapshot.tasks ?? []);
+  const taskById = new Map((snapshot.tasks ?? []).map((task) => [task.id, task]));
+  for (const edge of dependencyGraph.edges) {
+    const dependent = windows.get(edge.toTaskId);
+    const predecessor = windows.get(edge.fromTaskId);
+    if (!dependent || !predecessor || dependent.start >= predecessor.end) continue;
+    const code = edge.sourceTypes.includes("template") && !edge.sourceTypes.includes("explicit_task") ? "TEMPLATE_DEPENDENCY_BROKEN" : "DIRECT_DEPENDENCY_BROKEN";
+    addDetail(violations, details, { code, constraintGroup: "dependencies", taskIds: [edge.toTaskId, edge.fromTaskId], timeWindow: windowOf(dependent.entry), relatedTimeWindow: windowOf(predecessor.entry), diagnosticHint: code === "TEMPLATE_DEPENDENCY_BROKEN" ? "Dependent task starts before predecessor template finishes. Dependency semantics are resolved through shared ORC canonical dependency graph." : "Dependent task starts before predecessor finishes. Dependency semantics are resolved through shared ORC canonical dependency graph.", dependencySourceTypes: edge.sourceTypes, dependentTemplateId: (taskById.get(edge.toTaskId) as any)?.templateId ?? null, predecessorTemplateId: (taskById.get(edge.fromTaskId) as any)?.templateId ?? null } as any);
   }
+
 }
 
 function validateSimulatedState(simulatedState: SimulatedState): { violatedConstraints: string[]; violationDetails: ValidationViolationDetail[] } {
