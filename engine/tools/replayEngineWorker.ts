@@ -44,6 +44,8 @@ export function compactInitialConstructionStage2(stage2: any) {
     completeClosureBranchCount: stage2.completeClosureBranchCount ?? null,
     recursiveAssignmentBacktrackCount: stage2.recursiveAssignmentBacktrackCount ?? null,
     recursiveBacktrackCount: stage2.recursiveBacktrackCount ?? stage2.recursiveAssignmentBacktrackCount ?? null,
+    totalTemporalDecisionBacktrackCount: stage2.totalTemporalDecisionBacktrackCount ?? null,
+    totalResourceDecisionBacktrackCount: stage2.totalResourceDecisionBacktrackCount ?? null,
     totalPlacementAttemptCount: stage2.totalPlacementAttemptCount ?? null,
     totalRepeatedStatePruneCount: stage2.totalRepeatedStatePruneCount ?? null,
     unsupportedBranchCount: stage2.unsupportedBranchCount ?? null,

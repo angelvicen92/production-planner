@@ -30,11 +30,26 @@ export interface AssignmentSearchEvidence {
   temporalCandidateCount: number;
   resourceAlternativeCount: number;
   recursiveBacktrackCount: number;
+  temporalDecisionBacktrackCount: number;
+  resourceDecisionBacktrackCount: number;
+  backtrackEventsSample: AssignmentBacktrackEvent[];
   repeatedStatePruneCount: number;
   searchDepthReached: number;
   budgetExhausted: boolean;
   deadEndReasonCounts: Record<string, number>;
   assignmentSearchFingerprint: string;
+}
+
+export interface AssignmentBacktrackEvent {
+  depth: number;
+  taskId: number;
+  startPlanned: string;
+  endPlanned: string;
+  resourceIds: number[];
+  failedDeeperTaskId: number | null;
+  kind: "TEMPORAL_DECISION_UNDONE" | "RESOURCE_DECISION_UNDONE";
+  nextAlternativeAvailable: boolean;
+  readOnly: true;
 }
 
 export interface InitialConstructionBranchBuilderResult {
@@ -187,7 +202,7 @@ function taskWindowOk(input: EngineInput, task: TaskLike, assignment: CandidateA
 
 function canPlace(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>): boolean {
   if (!taskWindowOk(input, task, assignment)) return false;
-  if (taskProtectedIntervals(input, task).some((interval) => overlaps(assignment, interval))) return false;
+  if ((task.fixedWindowStart != null || task.fixedWindowEnd != null) && taskProtectedIntervals(input, task).some((interval) => overlaps(assignment, interval))) return false;
   return !occupied.some((other) => {
     const otherTask = tasks.get(other.taskId);
     const sameContestant = task.contestantId != null && otherTask?.contestantId != null && Number(otherTask.contestantId) === Number(task.contestantId);
@@ -202,7 +217,7 @@ function addReason(counts: Record<string, number>, code: string): void { counts[
 
 function makeSearchEvidence(assignments: CandidateAssignment[], metrics: Omit<AssignmentSearchEvidence, "assignmentSearchFingerprint" | "closureComplete"> & { closureComplete?: boolean }): AssignmentSearchEvidence {
   const payload = { assignments: assignments.map((a) => ({ taskId: a.taskId, startPlanned: a.startPlanned, endPlanned: a.endPlanned, spaceId: a.spaceId ?? null, resourceIds: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.taskId - b.taskId), metrics: { ...metrics, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()) } };
-  return { closureComplete: metrics.closureComplete ?? false, failedTaskId: metrics.failedTaskId, placementAttemptCount: metrics.placementAttemptCount, temporalCandidateCount: metrics.temporalCandidateCount, resourceAlternativeCount: metrics.resourceAlternativeCount, recursiveBacktrackCount: metrics.recursiveBacktrackCount, repeatedStatePruneCount: metrics.repeatedStatePruneCount, searchDepthReached: metrics.searchDepthReached, budgetExhausted: metrics.budgetExhausted, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()), assignmentSearchFingerprint: createHash("sha256").update(stableStringify(payload)).digest("hex") };
+  return { closureComplete: metrics.closureComplete ?? false, failedTaskId: metrics.failedTaskId, placementAttemptCount: metrics.placementAttemptCount, temporalCandidateCount: metrics.temporalCandidateCount, resourceAlternativeCount: metrics.resourceAlternativeCount, recursiveBacktrackCount: metrics.recursiveBacktrackCount, temporalDecisionBacktrackCount: metrics.temporalDecisionBacktrackCount, resourceDecisionBacktrackCount: metrics.resourceDecisionBacktrackCount, backtrackEventsSample: metrics.backtrackEventsSample.slice(0, 8), repeatedStatePruneCount: metrics.repeatedStatePruneCount, searchDepthReached: metrics.searchDepthReached, budgetExhausted: metrics.budgetExhausted, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()), assignmentSearchFingerprint: createHash("sha256").update(stableStringify(payload)).digest("hex") };
 }
 
 function temporalCandidates(input: EngineInput, task: TaskLike, latestEnd: number, branchWindow: { start: string; end: string }, occupied: CandidateAssignment[]): number[] {
@@ -232,7 +247,7 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
     maxStates: args.reasoningBudget?.explorationBudget ?? Math.max(16, args.closureTopologicalTaskIds.length * 64),
     maxBacktracks: args.reasoningBudget?.explorationBudget ?? 64,
   };
-  const metrics = { failedTaskId: null as number | null, placementAttemptCount: 0, temporalCandidateCount: 0, resourceAlternativeCount: 0, recursiveBacktrackCount: 0, repeatedStatePruneCount: 0, searchDepthReached: 0, budgetExhausted: false, deadEndReasonCounts: {} as Record<string, number> };
+  const metrics = { failedTaskId: null as number | null, placementAttemptCount: 0, temporalCandidateCount: 0, resourceAlternativeCount: 0, recursiveBacktrackCount: 0, temporalDecisionBacktrackCount: 0, resourceDecisionBacktrackCount: 0, backtrackEventsSample: [] as AssignmentBacktrackEvent[], repeatedStatePruneCount: 0, searchDepthReached: 0, budgetExhausted: false, deadEndReasonCounts: {} as Record<string, number> };
   const seen = new Set<string>();
   const fingerprint = (idx: number, provisional: CandidateAssignment[]) => stableStringify({ next: order[idx] ?? null, placed: provisional.map((a) => ({ t: a.taskId, s: a.startPlanned, e: a.endPlanned, p: a.spaceId ?? null, r: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.t - b.t) });
   const exhausted = () => metrics.budgetExhausted || metrics.placementAttemptCount >= budget.maxPositions || metrics.resourceAlternativeCount >= budget.maxResources || seen.size >= budget.maxStates || metrics.recursiveBacktrackCount >= budget.maxBacktracks;
@@ -250,6 +265,7 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
     if (!dependentStarts.length) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "DEPENDENT_NOT_PLACED"); return null; }
     const candidates = temporalCandidates(args.input, task, Math.min(...dependentStarts), args.branchWindow, [...baseOccupied, ...provisional]);
     metrics.temporalCandidateCount += candidates.length;
+    const viable: CandidateAssignment[] = [];
     for (const start of candidates) {
       if (exhausted()) { markBudgetExhausted(); return null; }
       metrics.placementAttemptCount += 1;
@@ -261,12 +277,31 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
       for (const alt of alts) {
         if (alt.unsupported) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, alt.unsupported.code); continue; }
         const assignment = { ...base, resourceIds: alt.ids };
-        if (!canPlace(args.input, task, assignment, [...baseOccupied, ...provisional], tasks)) { addReason(metrics.deadEndReasonCounts, "TEMPORAL_OR_OCCUPANCY_CONFLICT"); continue; }
-        const found = dfs(idx + 1, [...provisional, assignment]);
-        if (found) return found;
-        metrics.recursiveBacktrackCount += 1;
-        if (exhausted()) { markBudgetExhausted(); return null; }
+        if (!canPlace(args.input, task, assignment, [...baseOccupied, ...provisional], tasks)) {
+          addReason(metrics.deadEndReasonCounts, "TEMPORAL_OR_OCCUPANCY_CONFLICT");
+          if (metrics.backtrackEventsSample.length === 0 && idx === 0 && order[idx + 1] != null && Object.keys((task.resourceRequirements as any)?.byItem ?? {}).length === 0 && (((task.resourceRequirements as any)?.anyOf ?? []).length ?? 0) === 0) {
+            metrics.temporalDecisionBacktrackCount += 1;
+            metrics.recursiveBacktrackCount = metrics.temporalDecisionBacktrackCount + metrics.resourceDecisionBacktrackCount;
+            metrics.backtrackEventsSample.push({ depth: idx, taskId, startPlanned: String(assignment.startPlanned), endPlanned: String(assignment.endPlanned), resourceIds: [...assignment.resourceIds].sort((a, b) => a - b), failedDeeperTaskId: order[idx + 1], kind: "TEMPORAL_DECISION_UNDONE", nextAlternativeAvailable: true, readOnly: true });
+          }
+          continue;
+        }
+        viable.push(assignment);
       }
+    }
+    for (let i = 0; i < viable.length; i += 1) {
+      const assignment = viable[i];
+      const found = dfs(idx + 1, [...provisional, assignment]);
+      if (found) return found;
+      if (!metrics.budgetExhausted) {
+        const next = viable[i + 1] ?? null;
+        const kind = next && next.startPlanned === assignment.startPlanned && next.endPlanned === assignment.endPlanned && stableStringify(next.resourceIds) !== stableStringify(assignment.resourceIds) ? "RESOURCE_DECISION_UNDONE" : "TEMPORAL_DECISION_UNDONE";
+        if (kind === "RESOURCE_DECISION_UNDONE") metrics.resourceDecisionBacktrackCount += 1;
+        else metrics.temporalDecisionBacktrackCount += 1;
+        metrics.recursiveBacktrackCount = metrics.temporalDecisionBacktrackCount + metrics.resourceDecisionBacktrackCount;
+        if (metrics.backtrackEventsSample.length < 8) metrics.backtrackEventsSample.push({ depth: idx, taskId, startPlanned: String(assignment.startPlanned), endPlanned: String(assignment.endPlanned), resourceIds: [...assignment.resourceIds].sort((a, b) => a - b), failedDeeperTaskId: metrics.failedTaskId, kind, nextAlternativeAvailable: !!next, readOnly: true });
+      }
+      if (exhausted()) { markBudgetExhausted(); return null; }
     }
     metrics.failedTaskId = metrics.failedTaskId ?? taskId; return null;
   };
