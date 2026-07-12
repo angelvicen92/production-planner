@@ -1440,3 +1440,17 @@ The semantic audit independently recalculates protected-window crossings from `p
 Stage 1 evidence now keeps a compact public fingerprint: the canonical fingerprint payload is internal, while `stage1StructuralFingerprint` is a SHA-256 hexadecimal digest with a fixed 64-character shape. Evidence includes the fingerprint version and payload byte length, but not the full payload. Dependency counters are built explicitly from the dependency graph root fields, so dependency evidence remains compact and non-empty when dependencies exist.
 
 This iteration preserves the read-only construction boundary: Stage 1 still materializes no PartialPlans, executes zero constructive transformations, runs zero constructive simulations, commits zero planning changes, and does not alter V3, V4, grounding, baseline repair, gates, budgets, OperationalValue, DB/RLS/UI, or final materialization. The public planning output is preserved while Stage 1 evidence becomes reliable enough to authorize a later construction stage.
+
+### ID 276 — Canonical Role, Meal Semantics & Dependency Evidence Parity v1
+
+ID276 closes the Initial Construction Stage 1 trust gate by making the map and semantic audit use the same canonical operational role classification. Main-flow productive tasks, protected downtime, and anchor-eligible tasks are now reconstructed through `resolveORCPlanningEntryOperationalRoleMetadata`, the ORC transport contract, and the same main-zone target resolution used by the construction map, so synthetic meal placeholders without legacy `type`, `countsAsWork`, or `isMeal` fields are not misclassified as productive.
+
+Stage 1 Search Spaces now consume the official meal semantics resolver. A `flexible_meal_window` remains a placement boundary and never becomes a derived global production stop just because `meal` or `mealWindow` exists, while `global_hard_break`, explicit global hard breaks, and concrete `actualMeal` intervals still create protected intervals according to their contract.
+
+Synthetic non-productive meal intervals are applied by scope rather than by contestant only. Contestant meals block only the matching contestant, and synthetic meals with a physical `spaceId` but no contestant block only that physical space. Other spaces remain available, and windows after the real protected interval are preserved as usable Stage 1 capacity.
+
+Dependency evidence now reads the canonical dependency counter fields, including applicable and non-applicable template dependency reference counts. The semantic audit checks edge count parity with `totalUniqueDependencyEdgeCount`, duplicate-edge absence, counter coherence, and blocker coherence from missing explicit dependencies plus cycles.
+
+Compact Stage 1 evidence is upgraded to `INITIAL-CONSTRUCTION-STAGE1-EVIDENCE-V4` and the structural fingerprint payload to `INITIAL-CONSTRUCTION-STAGE1-FINGERPRINT-V2`. The added evidence remains bounded to meal semantics counts, protected interval crossing count, and applicable/non-applicable dependency reference counters; it does not include full payloads.
+
+This closes the read-only Stage 1 trust gate only. It does not start Stage 2, materialize PartialPlans, change public planning output, change V3/V4, change baseline repair, alter gates, or modify DB/RLS/UI/API behavior.
