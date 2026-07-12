@@ -236,13 +236,13 @@
       "engine": "orc",
       "repetition": 1,
       "executionStatus": "completed",
-      "runtimeMs": 144483,
+      "runtimeMs": 145057,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "2d4db9d79ac799b7cc003a402f2efe7dc7791e492200196f99840ac73f355e15",
+      "outputHash": "31412f215e1b17869c60e2178a7f791ca3767b192a10bd5b3d46a804525d185b",
       "usedEngine": "orc",
       "fallbackReason": null,
       "falseGates": [],
@@ -531,7 +531,7 @@
       },
       "replayWarnings": [],
       "compactPlanningIncluded": false,
-      "operationalMetricsMs": 13,
+      "operationalMetricsMs": 8,
       "makespan": null,
       "talentIdle": null,
       "visibleMainFlowIdle": null,
@@ -1009,18 +1009,55 @@
           ],
           "branchCandidateCount": 2,
           "attemptedBranchCount": 2,
-          "closureIncompleteBranchCount": 2,
+          "closureIncompleteBranchCount": 1,
+          "completeClosureBranchCount": 1,
+          "recursiveAssignmentBacktrackCount": 0,
+          "totalPlacementAttemptCount": 5,
+          "totalRepeatedStatePruneCount": 0,
           "unsupportedBranchCount": 0,
           "hardInvalidBranchCount": 0,
           "futureInfeasibleBranchCount": 0,
-          "futureUnknownBranchCount": 0,
-          "hardValidBranchCount": 0,
-          "selectedBranchId": null,
-          "selectedPartialPlanId": null,
-          "selectedAssignmentCount": 0,
-          "selectedAssignmentsSample": [],
-          "selectedValidationResult": null,
-          "selectedFutureFeasibilityStatus": null,
+          "futureUnknownBranchCount": 1,
+          "hardValidBranchCount": 1,
+          "selectedBranchId": "stage2-branch:001",
+          "selectedPartialPlanId": "partial-plan:candidate:stage2-branch:001",
+          "selectedAssignmentCount": 4,
+          "selectedAssignmentsSample": [
+            {
+              "taskId": 308,
+              "startPlanned": "12:15",
+              "endPlanned": "12:20",
+              "spaceId": 49,
+              "resourceIds": []
+            },
+            {
+              "taskId": 313,
+              "startPlanned": "12:20",
+              "endPlanned": "12:30",
+              "spaceId": 40,
+              "resourceIds": []
+            },
+            {
+              "taskId": 316,
+              "startPlanned": "12:30",
+              "endPlanned": "12:45",
+              "spaceId": 35,
+              "resourceIds": [
+                336
+              ]
+            },
+            {
+              "taskId": 315,
+              "startPlanned": "12:45",
+              "endPlanned": "13:00",
+              "spaceId": 48,
+              "resourceIds": [
+                336
+              ]
+            }
+          ],
+          "selectedValidationResult": "VALID",
+          "selectedFutureFeasibilityStatus": "UNKNOWN",
           "checkedFutureFeasibilityDimensions": [
             "contestant_remaining_load",
             "fixed_resource_inventory"
@@ -1033,24 +1070,45 @@
             "future_setups",
             "pending_dependency_chains"
           ],
-          "branchRetryCount": 2,
-          "transformationsExecuted": 0,
-          "simulationsExecuted": 0,
-          "validationsExecuted": 0,
+          "branchRetryCount": 0,
+          "transformationsExecuted": 1,
+          "simulationsExecuted": 1,
+          "validationsExecuted": 1,
           "commitsExecuted": 0,
           "branchAttempts": [
             {
               "branchId": "stage2-branch:001",
-              "status": "closure-incomplete",
-              "assignmentCount": 3,
-              "rejectionReason": "PREREQUISITE_PLACEMENT_FAILED",
-              "validation": null,
-              "futureFeasibility": null,
-              "partialPlanId": null,
-              "branchAssignmentsFingerprint": null,
-              "candidateAssignmentsFingerprint": null,
-              "simulatedAssignmentsFingerprint": null,
-              "lineageCoherent": null
+              "status": "candidate",
+              "assignmentCount": 4,
+              "rejectionReason": null,
+              "validation": {
+                "result": "VALID",
+                "violatedConstraints": []
+              },
+              "futureFeasibility": {
+                "status": "UNKNOWN",
+                "checkedDimensions": [
+                  "contestant_remaining_load",
+                  "fixed_resource_inventory"
+                ],
+                "uncoveredDimensions": [
+                  "future_space_capacity",
+                  "future_itinerant_team_capacity",
+                  "future_camera_capacity",
+                  "future_zone_changes",
+                  "future_setups",
+                  "pending_dependency_chains"
+                ],
+                "reasons": [],
+                "confidence": "low",
+                "preliminary": true,
+                "readOnly": true
+              },
+              "partialPlanId": "partial-plan:candidate:stage2-branch:001",
+              "branchAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "candidateAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "simulatedAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "lineageCoherent": true
             },
             {
               "branchId": "stage2-branch:002",
@@ -1066,17 +1124,17 @@
               "lineageCoherent": null
             }
           ],
-          "structuralFingerprint": "33e0013c5471f3aa0f59c7bba22b45623b3ed11e85fffb17e9467095862fa79f",
-          "branchBuilderFingerprint": "851d816e77da84e3d2a945b1f98f5eef58e5aabdc85ac8d5d2ecf426d9f32d8f",
+          "structuralFingerprint": "18dfce19ecd1a9ccb4aa104198aaada821d1cc03b57cb2cc0a120fd3583fc7b5",
+          "branchBuilderFingerprint": "30d2f8568fceef08a9ea5dd28ca12c0e2a8c60a72b2f15dcdc2cf3f0342a8a56",
           "capabilityAudit": {
             "originalInputOnly": true,
             "v4PlanningRead": false,
             "canonicalDependencyClosureUsed": true,
             "concreteAssignmentsGenerated": true,
-            "partialPlansComposed": false,
-            "transformationsExecuted": false,
-            "simulationsExecuted": false,
-            "validationsExecuted": false,
+            "partialPlansComposed": true,
+            "transformationsExecuted": true,
+            "simulationsExecuted": true,
+            "validationsExecuted": true,
             "contestantOverlapChecked": true,
             "spaceOverlapChecked": true,
             "resourceOverlapChecked": true,
@@ -1092,13 +1150,13 @@
             "zoneChangeConstructiveCheckSupported": false,
             "setupConstructiveCheckSupported": false,
             "branchRetryImplemented": true,
-            "recursiveAssignmentBacktrackingImplemented": false,
+            "recursiveAssignmentBacktrackingImplemented": true,
             "anchorBacktrackingImplemented": false,
             "fullFutureFeasibilityImplemented": false,
             "completeInitialPlanningImplemented": false,
             "publicPlanningUsesStage2": false,
             "coherent": true,
-            "capabilityName": "bounded_branch_retry",
+            "capabilityName": "bounded_recursive_assignment_backtracking",
             "warnings": [
               "Stage 2 is an experimental read-only first PartialPlan gate.",
               "Future Feasibility is preliminary and normally UNKNOWN when uncovered dimensions remain."
@@ -3618,22 +3676,22 @@
         "fallbackReason": null,
         "readOnly": true
       },
-      "workerStartupMs": 25,
-      "engineExecutionMs": 143890,
-      "totalRuntimeMs": 143916,
-      "compactPlanningPath": "plan-27-orc-compact-v17.json"
+      "workerStartupMs": 20,
+      "engineExecutionMs": 144589,
+      "totalRuntimeMs": 144609,
+      "compactPlanningPath": "plan-27-orc-compact-v18.json"
     },
     {
       "engine": "orc",
       "repetition": 2,
       "executionStatus": "completed",
-      "runtimeMs": 143974,
+      "runtimeMs": 140682,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
       "hardFeasible": true,
       "complete": true,
-      "outputHash": "2d4db9d79ac799b7cc003a402f2efe7dc7791e492200196f99840ac73f355e15",
+      "outputHash": "31412f215e1b17869c60e2178a7f791ca3767b192a10bd5b3d46a804525d185b",
       "usedEngine": "orc",
       "fallbackReason": null,
       "falseGates": [],
@@ -4400,18 +4458,55 @@
           ],
           "branchCandidateCount": 2,
           "attemptedBranchCount": 2,
-          "closureIncompleteBranchCount": 2,
+          "closureIncompleteBranchCount": 1,
+          "completeClosureBranchCount": 1,
+          "recursiveAssignmentBacktrackCount": 0,
+          "totalPlacementAttemptCount": 5,
+          "totalRepeatedStatePruneCount": 0,
           "unsupportedBranchCount": 0,
           "hardInvalidBranchCount": 0,
           "futureInfeasibleBranchCount": 0,
-          "futureUnknownBranchCount": 0,
-          "hardValidBranchCount": 0,
-          "selectedBranchId": null,
-          "selectedPartialPlanId": null,
-          "selectedAssignmentCount": 0,
-          "selectedAssignmentsSample": [],
-          "selectedValidationResult": null,
-          "selectedFutureFeasibilityStatus": null,
+          "futureUnknownBranchCount": 1,
+          "hardValidBranchCount": 1,
+          "selectedBranchId": "stage2-branch:001",
+          "selectedPartialPlanId": "partial-plan:candidate:stage2-branch:001",
+          "selectedAssignmentCount": 4,
+          "selectedAssignmentsSample": [
+            {
+              "taskId": 308,
+              "startPlanned": "12:15",
+              "endPlanned": "12:20",
+              "spaceId": 49,
+              "resourceIds": []
+            },
+            {
+              "taskId": 313,
+              "startPlanned": "12:20",
+              "endPlanned": "12:30",
+              "spaceId": 40,
+              "resourceIds": []
+            },
+            {
+              "taskId": 316,
+              "startPlanned": "12:30",
+              "endPlanned": "12:45",
+              "spaceId": 35,
+              "resourceIds": [
+                336
+              ]
+            },
+            {
+              "taskId": 315,
+              "startPlanned": "12:45",
+              "endPlanned": "13:00",
+              "spaceId": 48,
+              "resourceIds": [
+                336
+              ]
+            }
+          ],
+          "selectedValidationResult": "VALID",
+          "selectedFutureFeasibilityStatus": "UNKNOWN",
           "checkedFutureFeasibilityDimensions": [
             "contestant_remaining_load",
             "fixed_resource_inventory"
@@ -4424,24 +4519,45 @@
             "future_setups",
             "pending_dependency_chains"
           ],
-          "branchRetryCount": 2,
-          "transformationsExecuted": 0,
-          "simulationsExecuted": 0,
-          "validationsExecuted": 0,
+          "branchRetryCount": 0,
+          "transformationsExecuted": 1,
+          "simulationsExecuted": 1,
+          "validationsExecuted": 1,
           "commitsExecuted": 0,
           "branchAttempts": [
             {
               "branchId": "stage2-branch:001",
-              "status": "closure-incomplete",
-              "assignmentCount": 3,
-              "rejectionReason": "PREREQUISITE_PLACEMENT_FAILED",
-              "validation": null,
-              "futureFeasibility": null,
-              "partialPlanId": null,
-              "branchAssignmentsFingerprint": null,
-              "candidateAssignmentsFingerprint": null,
-              "simulatedAssignmentsFingerprint": null,
-              "lineageCoherent": null
+              "status": "candidate",
+              "assignmentCount": 4,
+              "rejectionReason": null,
+              "validation": {
+                "result": "VALID",
+                "violatedConstraints": []
+              },
+              "futureFeasibility": {
+                "status": "UNKNOWN",
+                "checkedDimensions": [
+                  "contestant_remaining_load",
+                  "fixed_resource_inventory"
+                ],
+                "uncoveredDimensions": [
+                  "future_space_capacity",
+                  "future_itinerant_team_capacity",
+                  "future_camera_capacity",
+                  "future_zone_changes",
+                  "future_setups",
+                  "pending_dependency_chains"
+                ],
+                "reasons": [],
+                "confidence": "low",
+                "preliminary": true,
+                "readOnly": true
+              },
+              "partialPlanId": "partial-plan:candidate:stage2-branch:001",
+              "branchAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "candidateAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "simulatedAssignmentsFingerprint": "a1704c1b2584206bbac63656294e1ef4422f639e486273e39ec75282edaa4fcf",
+              "lineageCoherent": true
             },
             {
               "branchId": "stage2-branch:002",
@@ -4457,17 +4573,17 @@
               "lineageCoherent": null
             }
           ],
-          "structuralFingerprint": "33e0013c5471f3aa0f59c7bba22b45623b3ed11e85fffb17e9467095862fa79f",
-          "branchBuilderFingerprint": "851d816e77da84e3d2a945b1f98f5eef58e5aabdc85ac8d5d2ecf426d9f32d8f",
+          "structuralFingerprint": "18dfce19ecd1a9ccb4aa104198aaada821d1cc03b57cb2cc0a120fd3583fc7b5",
+          "branchBuilderFingerprint": "30d2f8568fceef08a9ea5dd28ca12c0e2a8c60a72b2f15dcdc2cf3f0342a8a56",
           "capabilityAudit": {
             "originalInputOnly": true,
             "v4PlanningRead": false,
             "canonicalDependencyClosureUsed": true,
             "concreteAssignmentsGenerated": true,
-            "partialPlansComposed": false,
-            "transformationsExecuted": false,
-            "simulationsExecuted": false,
-            "validationsExecuted": false,
+            "partialPlansComposed": true,
+            "transformationsExecuted": true,
+            "simulationsExecuted": true,
+            "validationsExecuted": true,
             "contestantOverlapChecked": true,
             "spaceOverlapChecked": true,
             "resourceOverlapChecked": true,
@@ -4483,13 +4599,13 @@
             "zoneChangeConstructiveCheckSupported": false,
             "setupConstructiveCheckSupported": false,
             "branchRetryImplemented": true,
-            "recursiveAssignmentBacktrackingImplemented": false,
+            "recursiveAssignmentBacktrackingImplemented": true,
             "anchorBacktrackingImplemented": false,
             "fullFutureFeasibilityImplemented": false,
             "completeInitialPlanningImplemented": false,
             "publicPlanningUsesStage2": false,
             "coherent": true,
-            "capabilityName": "bounded_branch_retry",
+            "capabilityName": "bounded_recursive_assignment_backtracking",
             "warnings": [
               "Stage 2 is an experimental read-only first PartialPlan gate.",
               "Future Feasibility is preliminary and normally UNKNOWN when uncovered dimensions remain."
@@ -7009,10 +7125,10 @@
         "fallbackReason": null,
         "readOnly": true
       },
-      "workerStartupMs": 13,
-      "engineExecutionMs": 143634,
-      "totalRuntimeMs": 143647,
-      "compactPlanningPath": "plan-27-orc-compact-v17.json"
+      "workerStartupMs": 12,
+      "engineExecutionMs": 140373,
+      "totalRuntimeMs": 140385,
+      "compactPlanningPath": "plan-27-orc-compact-v18.json"
     }
   ],
   "deterministic": true,
