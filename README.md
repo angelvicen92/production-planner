@@ -1507,3 +1507,11 @@ Adversarial tests demonstrate two real regret paths inside a single anchor closu
 Plan 27 is intentionally unchanged at the public planning level: Stage 2 may support backtracking, but that replay does not need to observe it because the first valid combination already closes `[308, 313, 316, 315]`. Stage 2 remains read-only, starts no Stage 3, adds no anchors, performs no commits, and does not publish a full public planning replacement.
 
 The obsolete greedy placement route was removed so the branch builder has a single placement algorithm: the bounded recursive assignment search with deterministic fingerprints and compact branch evidence.
+
+### ID 281 — Genuine Temporal Backtracking Proof & Decision Trace v1
+
+ID280 is corrected: its resource fixture was causal, but the first temporal fixture was insufficient because it could be satisfied by rejecting a local placement before any previously accepted assignment was undone. ID281 replaces that temporal proof with a bounded decision trace that distinguishes recursive regret from ordinary local candidate rejection.
+
+Stage 2 evidence now separates temporal and resource decision backtracks and publishes a compact sample of undone decisions. The trace records depth, task id, planned interval, resources, the deeper task that failed, whether the undone decision was temporal or resource-based, whether another alternative remained, and read-only status. The recursive total remains the sum of temporal and resource decision backtracks.
+
+Replay compact Stage 2 evidence now includes temporal/resource decision counts per branch and total temporal/resource decision backtrack counts. The capability audit declares temporal and resource assignment backtracking support separately, while observed flags remain execution-local. Plan 27 remains unchanged at the public planning level and observes neither temporal nor resource assignment backtracking.

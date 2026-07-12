@@ -33,13 +33,15 @@ test("Stage 2 publishes coherent fingerprints, UNKNOWN feasibility, honest audit
   assert.equal(first.capabilityAudit.recursiveAssignmentBacktrackingImplemented, true);
   assert.equal(first.capabilityAudit.recursiveAssignmentBacktrackingSupported, true);
   assert.equal(first.capabilityAudit.recursiveAssignmentBacktrackingObserved, false);
+  assert.equal(first.capabilityAudit.temporalAssignmentBacktrackingObserved, false);
+  assert.equal(first.capabilityAudit.resourceAssignmentBacktrackingObserved, false);
   assert.equal(first.capabilityAudit.branchAlternativeEvaluationSupported, true);
   assert.equal(first.capabilityAudit.branchRetryObserved, false);
   assert.equal(first.recursiveBacktrackCount, 0);
   assert.equal(first.branchRetryCount, 0);
   assert.equal(first.branchesRejectedBeforeSelection, 0);
   assert.equal(first.completeClosureBranchCount, 1);
-  assert.equal(first.totalPlacementAttemptCount, 1);
+  assert.equal(first.totalPlacementAttemptCount, 2);
   assert.equal(first.capabilityAudit.completeInitialPlanningImplemented, false);
   assert.equal(first.capabilityAudit.publicPlanningUsesStage2, false);
   assert.equal(first.branchAttempts.every((attempt: any) => attempt.lineageCoherent !== false), true);
