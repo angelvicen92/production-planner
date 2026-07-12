@@ -236,7 +236,7 @@
       "engine": "orc",
       "repetition": 1,
       "executionStatus": "completed",
-      "runtimeMs": 116580,
+      "runtimeMs": 118320,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
@@ -3493,16 +3493,16 @@
         "fallbackReason": null,
         "readOnly": true
       },
-      "workerStartupMs": 12,
-      "engineExecutionMs": 116227,
-      "totalRuntimeMs": 116238,
-      "compactPlanningPath": "plan-27-orc-compact-v15.json"
+      "workerStartupMs": 14,
+      "engineExecutionMs": 118013,
+      "totalRuntimeMs": 118027,
+      "compactPlanningPath": "plan-27-orc-compact-v16.json"
     },
     {
       "engine": "orc",
       "repetition": 2,
       "executionStatus": "completed",
-      "runtimeMs": 114833,
+      "runtimeMs": 116398,
       "status": "success",
       "plannedTasks": 219,
       "unplannedTasks": 0,
@@ -6759,10 +6759,10 @@
         "fallbackReason": null,
         "readOnly": true
       },
-      "workerStartupMs": 8,
-      "engineExecutionMs": 114569,
-      "totalRuntimeMs": 114577,
-      "compactPlanningPath": "plan-27-orc-compact-v15.json"
+      "workerStartupMs": 10,
+      "engineExecutionMs": 116134,
+      "totalRuntimeMs": 116144,
+      "compactPlanningPath": "plan-27-orc-compact-v16.json"
     }
   ],
   "deterministic": true,
