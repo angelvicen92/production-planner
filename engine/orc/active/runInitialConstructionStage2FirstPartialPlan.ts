@@ -38,6 +38,8 @@ interface CapabilityAudit {
   contestantOverlapChecked: boolean;
   spaceOverlapChecked: boolean;
   resourceOverlapChecked: boolean;
+  spaceCapacityConstructiveCheckSupported: boolean;
+  nonBlockingSpaceOccupancySupported: boolean;
   contestantAvailabilityChecked: boolean;
   taskWindowChecked: boolean;
   taskScopedProtectedIntervalsChecked: boolean;
@@ -93,6 +95,12 @@ interface BranchAttempt {
   budgetExhausted: boolean;
   deadEndReasonCounts: Record<string, number>;
   assignmentSearchFingerprint: string | null;
+  placementFeasibilityVersion: string | null;
+  taskWindowConflictCount: number;
+  protectedIntervalConflictCount: number;
+  contestantOverlapConflictCount: number;
+  spaceOverlapConflictCount: number;
+  resourceOverlapConflictCount: number;
 }
 
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -165,6 +173,8 @@ function buildCapabilityAudit(flags: { assignments: boolean; partialPlans: boole
     contestantOverlapChecked: true,
     spaceOverlapChecked: true,
     resourceOverlapChecked: true,
+    spaceCapacityConstructiveCheckSupported: true,
+    nonBlockingSpaceOccupancySupported: true,
     contestantAvailabilityChecked: true,
     taskWindowChecked: true,
     taskScopedProtectedIntervalsChecked: true,
@@ -221,7 +231,7 @@ export function runInitialConstructionStage2FirstPartialPlan(args: { originInput
 
   for (const branch of built.branches) {
     const ev = branch.searchEvidence;
-    const attempt: BranchAttempt = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, futureFeasibility: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null, closureComplete: ev?.closureComplete ?? null, placementAttemptCount: ev?.placementAttemptCount ?? 0, temporalCandidateCount: ev?.temporalCandidateCount ?? 0, resourceAlternativeCount: ev?.resourceAlternativeCount ?? 0, recursiveBacktrackCount: ev?.recursiveBacktrackCount ?? 0, temporalDecisionBacktrackCount: ev?.temporalDecisionBacktrackCount ?? 0, resourceDecisionBacktrackCount: ev?.resourceDecisionBacktrackCount ?? 0, backtrackEventsSample: ev?.backtrackEventsSample ?? [], repeatedStatePruneCount: ev?.repeatedStatePruneCount ?? 0, searchDepthReached: ev?.searchDepthReached ?? 0, budgetExhausted: ev?.budgetExhausted ?? false, deadEndReasonCounts: ev?.deadEndReasonCounts ?? {}, assignmentSearchFingerprint: ev?.assignmentSearchFingerprint ?? null };
+    const attempt: BranchAttempt = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, futureFeasibility: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null, closureComplete: ev?.closureComplete ?? null, placementAttemptCount: ev?.placementAttemptCount ?? 0, temporalCandidateCount: ev?.temporalCandidateCount ?? 0, resourceAlternativeCount: ev?.resourceAlternativeCount ?? 0, recursiveBacktrackCount: ev?.recursiveBacktrackCount ?? 0, temporalDecisionBacktrackCount: ev?.temporalDecisionBacktrackCount ?? 0, resourceDecisionBacktrackCount: ev?.resourceDecisionBacktrackCount ?? 0, backtrackEventsSample: ev?.backtrackEventsSample ?? [], repeatedStatePruneCount: ev?.repeatedStatePruneCount ?? 0, searchDepthReached: ev?.searchDepthReached ?? 0, budgetExhausted: ev?.budgetExhausted ?? false, deadEndReasonCounts: ev?.deadEndReasonCounts ?? {}, assignmentSearchFingerprint: ev?.assignmentSearchFingerprint ?? null, placementFeasibilityVersion: ev?.placementFeasibilityVersion ?? null, taskWindowConflictCount: ev?.taskWindowConflictCount ?? 0, protectedIntervalConflictCount: ev?.protectedIntervalConflictCount ?? 0, contestantOverlapConflictCount: ev?.contestantOverlapConflictCount ?? 0, spaceOverlapConflictCount: ev?.spaceOverlapConflictCount ?? 0, resourceOverlapConflictCount: ev?.resourceOverlapConflictCount ?? 0 };
 
     if (branch.status !== "candidate") {
       attempts.push(attempt);

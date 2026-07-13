@@ -4,6 +4,7 @@ import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
 import { createHash } from "node:crypto";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
+import { evaluateInitialConstructionPlacementFeasibility } from "./initialConstructionPlacementFeasibility";
 
 const protectedStatus = new Set(["done", "in_progress"]);
 
@@ -37,6 +38,12 @@ export interface AssignmentSearchEvidence {
   searchDepthReached: number;
   budgetExhausted: boolean;
   deadEndReasonCounts: Record<string, number>;
+  placementFeasibilityVersion: "initial-construction-placement-feasibility-v1";
+  taskWindowConflictCount: number;
+  protectedIntervalConflictCount: number;
+  contestantOverlapConflictCount: number;
+  spaceOverlapConflictCount: number;
+  resourceOverlapConflictCount: number;
   assignmentSearchFingerprint: string;
 }
 
@@ -148,8 +155,7 @@ function resourceAlternatives(input: EngineInput, task: TaskLike, occupied: Cand
     }
     const items = (input.planResourceItems ?? [])
       .filter((candidate) => candidate.isAvailable !== false && Number(candidate.resourceItemId) === Number(resourceItemId))
-      .sort((a, b) => a.id - b.id)
-      .filter((candidate) => !occupied.some((assignment) => assignment.resourceIds.includes(candidate.id) && overlaps(assignment, { start, end })));
+      .sort((a, b) => a.id - b.id);
     if (!items.length) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "byItem", taskId: Number(task.id), evidence: { resourceItemId: Number(resourceItemId) } } }];
     byItemAlternatives = byItemAlternatives.flatMap((baseIds) => items.map((item) => [...baseIds, item.id]));
   }
@@ -163,8 +169,7 @@ function resourceAlternatives(input: EngineInput, task: TaskLike, occupied: Cand
   for (const group of groups) {
     const usable = (group.resourceItemIds ?? [])
       .flatMap((resourceItemId: number) => (input.planResourceItems ?? []).filter((item) => item.isAvailable !== false && Number(item.resourceItemId) === Number(resourceItemId)))
-      .sort((a: any, b: any) => a.id - b.id)
-      .filter((item: any) => !occupied.some((assignment) => assignment.resourceIds.includes(item.id) && overlaps(assignment, { start, end })));
+      .sort((a: any, b: any) => a.id - b.id);
     if (!usable.length) return [{ ids: [], unsupported: { code: "REQUIRED_RESOURCE_UNAVAILABLE", contract: "ANY_OF", taskId: Number(task.id), evidence: group } }];
     alternatives = alternatives.flatMap((baseIds) => usable.map((item: any) => [...baseIds, item.id]));
   }
@@ -200,24 +205,16 @@ function taskWindowOk(input: EngineInput, task: TaskLike, assignment: CandidateA
   return true;
 }
 
-function canPlace(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>): boolean {
-  if (!taskWindowOk(input, task, assignment)) return false;
-  if ((task.fixedWindowStart != null || task.fixedWindowEnd != null) && taskProtectedIntervals(input, task).some((interval) => overlaps(assignment, interval))) return false;
-  return !occupied.some((other) => {
-    const otherTask = tasks.get(other.taskId);
-    const sameContestant = task.contestantId != null && otherTask?.contestantId != null && Number(otherTask.contestantId) === Number(task.contestantId);
-    const sameSpace = other.spaceId != null && assignment.spaceId != null && other.spaceId === assignment.spaceId;
-    const sameResource = other.resourceIds.some((resourceId) => assignment.resourceIds.includes(resourceId));
-    return overlaps(other, assignment) && (sameSpace || sameContestant || sameResource);
-  });
+function canPlace(input: EngineInput, originOperationalState: OperationalState, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>) {
+  return evaluateInitialConstructionPlacementFeasibility({ input, originOperationalState, task, assignment, occupiedAssignments: occupied, tasks });
 }
 
 
 function addReason(counts: Record<string, number>, code: string): void { counts[code] = (counts[code] ?? 0) + 1; }
 
-function makeSearchEvidence(assignments: CandidateAssignment[], metrics: Omit<AssignmentSearchEvidence, "assignmentSearchFingerprint" | "closureComplete"> & { closureComplete?: boolean }): AssignmentSearchEvidence {
+function makeSearchEvidence(assignments: CandidateAssignment[], metrics: Omit<AssignmentSearchEvidence, "assignmentSearchFingerprint" | "closureComplete" | "placementFeasibilityVersion" | "taskWindowConflictCount" | "protectedIntervalConflictCount" | "contestantOverlapConflictCount" | "spaceOverlapConflictCount" | "resourceOverlapConflictCount"> & { closureComplete?: boolean }): AssignmentSearchEvidence {
   const payload = { assignments: assignments.map((a) => ({ taskId: a.taskId, startPlanned: a.startPlanned, endPlanned: a.endPlanned, spaceId: a.spaceId ?? null, resourceIds: [...a.resourceIds].sort((x, y) => x - y) })).sort((a, b) => a.taskId - b.taskId), metrics: { ...metrics, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()) } };
-  return { closureComplete: metrics.closureComplete ?? false, failedTaskId: metrics.failedTaskId, placementAttemptCount: metrics.placementAttemptCount, temporalCandidateCount: metrics.temporalCandidateCount, resourceAlternativeCount: metrics.resourceAlternativeCount, recursiveBacktrackCount: metrics.recursiveBacktrackCount, temporalDecisionBacktrackCount: metrics.temporalDecisionBacktrackCount, resourceDecisionBacktrackCount: metrics.resourceDecisionBacktrackCount, backtrackEventsSample: metrics.backtrackEventsSample.slice(0, 8), repeatedStatePruneCount: metrics.repeatedStatePruneCount, searchDepthReached: metrics.searchDepthReached, budgetExhausted: metrics.budgetExhausted, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()), assignmentSearchFingerprint: createHash("sha256").update(stableStringify(payload)).digest("hex") };
+  return { closureComplete: metrics.closureComplete ?? false, failedTaskId: metrics.failedTaskId, placementAttemptCount: metrics.placementAttemptCount, temporalCandidateCount: metrics.temporalCandidateCount, resourceAlternativeCount: metrics.resourceAlternativeCount, recursiveBacktrackCount: metrics.recursiveBacktrackCount, temporalDecisionBacktrackCount: metrics.temporalDecisionBacktrackCount, resourceDecisionBacktrackCount: metrics.resourceDecisionBacktrackCount, backtrackEventsSample: metrics.backtrackEventsSample.slice(0, 8), repeatedStatePruneCount: metrics.repeatedStatePruneCount, searchDepthReached: metrics.searchDepthReached, budgetExhausted: metrics.budgetExhausted, deadEndReasonCounts: Object.fromEntries(Object.entries(metrics.deadEndReasonCounts).sort()), placementFeasibilityVersion: "initial-construction-placement-feasibility-v1", taskWindowConflictCount: metrics.deadEndReasonCounts.TASK_WINDOW_CONFLICT ?? 0, protectedIntervalConflictCount: metrics.deadEndReasonCounts.PROTECTED_INTERVAL_CONFLICT ?? 0, contestantOverlapConflictCount: metrics.deadEndReasonCounts.CONTESTANT_OVERLAP ?? 0, spaceOverlapConflictCount: metrics.deadEndReasonCounts.SPACE_OVERLAP ?? 0, resourceOverlapConflictCount: metrics.deadEndReasonCounts.RESOURCE_OVERLAP ?? 0, assignmentSearchFingerprint: createHash("sha256").update(stableStringify(payload)).digest("hex") };
 }
 
 function temporalCandidates(input: EngineInput, task: TaskLike, latestEnd: number, branchWindow: { start: string; end: string }, occupied: CandidateAssignment[]): number[] {
@@ -277,8 +274,9 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
       for (const alt of alts) {
         if (alt.unsupported) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, alt.unsupported.code); continue; }
         const assignment = { ...base, resourceIds: alt.ids };
-        if (!canPlace(args.input, task, assignment, [...baseOccupied, ...provisional], tasks)) {
-          addReason(metrics.deadEndReasonCounts, "TEMPORAL_OR_OCCUPANCY_CONFLICT");
+        const feasibility = canPlace(args.input, args.originOperationalState, task, assignment, [...baseOccupied, ...provisional], tasks);
+        if (!feasibility.valid) {
+          for (const code of feasibility.reasonCodes) addReason(metrics.deadEndReasonCounts, code);
           continue;
         }
         viable.push(assignment);
@@ -343,8 +341,10 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
       }
 
       const anchorAssignment = { taskId: anchorId, startPlanned: hh(anchorStart), endPlanned: hh(anchorEnd), spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
-      if (!canPlace(args.input, anchor, anchorAssignment, baseOccupied, tasks)) {
-        branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: "ANCHOR_WINDOW_INFEASIBLE", blockers: blockers.slice(0, 10), evidence: blockers.slice(0, 5), unsupportedRequirementCodes: [] });
+      const anchorFeasibility = canPlace(args.input, args.originOperationalState, anchor, anchorAssignment, baseOccupied, tasks);
+      if (!anchorFeasibility.valid) {
+        const anchorBlockers = anchorFeasibility.reasonCodes.map((code) => ({ code, taskId: anchorId }));
+        branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: anchorFeasibility.reasonCodes[0] ?? "ANCHOR_WINDOW_INFEASIBLE", blockers: [...blockers, ...anchorBlockers].slice(0, 10), evidence: [...blockers, ...anchorBlockers].slice(0, 5), unsupportedRequirementCodes: [] });
         continue;
       }
       provisional.push(anchorAssignment);
