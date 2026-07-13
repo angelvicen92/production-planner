@@ -211,10 +211,13 @@ function temporalCandidates(input: EngineInput, task: TaskLike, latestEnd: numbe
   return [...starts].filter((start) => start + duration <= latestEnd).sort((a, b) => b - a);
 }
 
-export function searchInitialConstructionClosureAssignments(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; closureTopologicalTaskIds: number[]; anchorAssignment: CandidateAssignment; branchWindow: { start: string; end: string }; reasoningBudget?: ReasoningBudgetProfile | null; tasks?: Map<number, TaskLike>; prerequisites?: Map<number, number[]> }): { ok: boolean; assignments: CandidateAssignment[]; blockers: Blocker[]; evidence: AssignmentSearchEvidence } {
+export function searchInitialConstructionClosureAssignments(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; closureTopologicalTaskIds: number[]; anchorAssignment: CandidateAssignment; branchWindow: { start: string; end: string }; reasoningBudget?: ReasoningBudgetProfile | null; tasks?: Map<number, TaskLike>; prerequisites?: Map<number, number[]>; baseProvisionalAssignments?: readonly CandidateAssignment[] }): { ok: boolean; assignments: CandidateAssignment[]; blockers: Blocker[]; evidence: AssignmentSearchEvidence } {
   const tasks = args.tasks ?? taskMap(args.input);
   const prerequisites = args.prerequisites ?? prereqMap(args.stage1);
-  const baseOccupied: CandidateAssignment[] = (args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] }));
+  const baseOccupied: CandidateAssignment[] = [
+    ...(args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] })),
+    ...(args.baseProvisionalAssignments ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.resourceIds ?? entry.assignedResourceIds ?? [])] })),
+  ];
   const order = [...args.closureTopologicalTaskIds].reverse().filter((id) => id !== args.anchorAssignment.taskId);
   const budget = {
     maxDepth: args.reasoningBudget?.maxDepth ?? args.closureTopologicalTaskIds.length + 1,
@@ -283,20 +286,18 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
   return { ok: !!found, assignments, blockers, evidence: makeSearchEvidence(assignments, { ...metrics, closureComplete: !!found }) };
 }
 
-export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null }): InitialConstructionBranchBuilderResult {
+export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; closureTaskIds?: readonly number[] }): InitialConstructionBranchBuilderResult {
   const anchorId = Number(args.stage1.selectedAnchor?.anchorTaskId);
-  const closure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId });
+  const originalClosure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId });
+  const closure = args.closureTaskIds ? { closureTaskIds: [...args.closureTaskIds].map(Number), topologicalTaskOrder: [...args.closureTaskIds].map(Number), blockers: originalClosure.blockers.filter((b) => args.closureTaskIds?.includes(Number(b.taskId))) } : originalClosure;
   const tasks = taskMap(args.input);
   const search = (args.stage1.searchSpaces ?? []).find((space: any) => Number(space.anchorTaskId) === anchorId);
   const maxBranches = args.maxBranches ?? 8;
   const branches: InitialConstructionBranch[] = [];
-  const baseOccupied: CandidateAssignment[] = (args.originOperationalState.planning ?? []).map((entry: any) => ({
-    taskId: entry.taskId,
-    startPlanned: entry.startPlanned,
-    endPlanned: entry.endPlanned,
-    spaceId: entry.spaceId ?? null,
-    resourceIds: [...(entry.assignedResourceIds ?? [])],
-  }));
+  const baseOccupied: CandidateAssignment[] = [
+    ...(args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] })),
+    ...(args.baseProvisionalAssignments ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.resourceIds ?? entry.assignedResourceIds ?? [])] })),
+  ];
   let sequence = 0;
 
   for (const window of search?.provisionalWindows ?? []) {
@@ -328,7 +329,7 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
       }
       provisional.push(anchorAssignment);
 
-      const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1) }) : null;
+      const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1), baseProvisionalAssignments: args.baseProvisionalAssignments }) : null;
       const ok = blockers.length === 0 && !!searchResult?.ok;
       branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? [])], searchResult?.assignments ?? provisional, searchResult?.evidence));
       if (branches.length >= maxBranches) break;
