@@ -1,0 +1,56 @@
+{
+  "version": "PLAN-27-ORC-PRODUCTION-CONSTRUCTIVE-FRONTIER-V1",
+  "deterministic": true,
+  "runs": [
+    {
+      "exclusiveConstructiveRuntimeMs": 32447,
+      "assignmentsReached": 69,
+      "cycles": 30,
+      "stopReason": "NO_VIABLE_ANCHOR",
+      "budgetLimitReached": null,
+      "sessionFingerprint": "eee5e7e34f8449dfec6e8b65767ab8a25bef8e7b8d84801499621bd7f576d707",
+      "finalCombinedAssignmentsFingerprint": "14767426cdf98b637ac9305214b2f6400558a489657ffbc3d5cfe6c5ea9324bf",
+      "finalValidationResult": "VALID",
+      "exactEligibleAnchorCountAtStop": 105,
+      "terminalAnchorsScanned": 105,
+      "allEligibleAnchorsExhausted": true,
+      "terminalBlockerCodeCounts": {
+        "NO_HARD_VALID_BRANCH": 103,
+        "NO_SEARCH_SPACE": 105,
+        "COMBINED_INVALID": 2,
+        "DEPENDENCY_CONFLICT": 2
+      },
+      "runtimeTelemetry": {
+        "sessionRuntimeMs": 32297,
+        "assignmentsPerSecond": 2.013,
+        "exclusiveConstructiveRuntimeMs": 32447
+      },
+      "fingerprint": "eee5e7e34f8449dfec6e8b65767ab8a25bef8e7b8d84801499621bd7f576d707"
+    },
+    {
+      "exclusiveConstructiveRuntimeMs": 33009,
+      "assignmentsReached": 69,
+      "cycles": 30,
+      "stopReason": "NO_VIABLE_ANCHOR",
+      "budgetLimitReached": null,
+      "sessionFingerprint": "eee5e7e34f8449dfec6e8b65767ab8a25bef8e7b8d84801499621bd7f576d707",
+      "finalCombinedAssignmentsFingerprint": "14767426cdf98b637ac9305214b2f6400558a489657ffbc3d5cfe6c5ea9324bf",
+      "finalValidationResult": "VALID",
+      "exactEligibleAnchorCountAtStop": 105,
+      "terminalAnchorsScanned": 105,
+      "allEligibleAnchorsExhausted": true,
+      "terminalBlockerCodeCounts": {
+        "NO_HARD_VALID_BRANCH": 103,
+        "NO_SEARCH_SPACE": 105,
+        "COMBINED_INVALID": 2,
+        "DEPENDENCY_CONFLICT": 2
+      },
+      "runtimeTelemetry": {
+        "sessionRuntimeMs": 32840,
+        "assignmentsPerSecond": 1.979,
+        "exclusiveConstructiveRuntimeMs": 33009
+      },
+      "fingerprint": "eee5e7e34f8449dfec6e8b65767ab8a25bef8e7b8d84801499621bd7f576d707"
+    }
+  ]
+}
