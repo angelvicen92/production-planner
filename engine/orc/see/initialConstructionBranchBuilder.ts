@@ -279,11 +279,6 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
         const assignment = { ...base, resourceIds: alt.ids };
         if (!canPlace(args.input, task, assignment, [...baseOccupied, ...provisional], tasks)) {
           addReason(metrics.deadEndReasonCounts, "TEMPORAL_OR_OCCUPANCY_CONFLICT");
-          if (metrics.backtrackEventsSample.length === 0 && idx === 0 && order[idx + 1] != null && Object.keys((task.resourceRequirements as any)?.byItem ?? {}).length === 0 && (((task.resourceRequirements as any)?.anyOf ?? []).length ?? 0) === 0) {
-            metrics.temporalDecisionBacktrackCount += 1;
-            metrics.recursiveBacktrackCount = metrics.temporalDecisionBacktrackCount + metrics.resourceDecisionBacktrackCount;
-            metrics.backtrackEventsSample.push({ depth: idx, taskId, startPlanned: String(assignment.startPlanned), endPlanned: String(assignment.endPlanned), resourceIds: [...assignment.resourceIds].sort((a, b) => a - b), failedDeeperTaskId: order[idx + 1], kind: "TEMPORAL_DECISION_UNDONE", nextAlternativeAvailable: true, readOnly: true });
-          }
           continue;
         }
         viable.push(assignment);

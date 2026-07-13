@@ -1515,3 +1515,11 @@ ID280 is corrected: its resource fixture was causal, but the first temporal fixt
 Stage 2 evidence now separates temporal and resource decision backtracks and publishes a compact sample of undone decisions. The trace records depth, task id, planned interval, resources, the deeper task that failed, whether the undone decision was temporal or resource-based, whether another alternative remained, and read-only status. The recursive total remains the sum of temporal and resource decision backtracks.
 
 Replay compact Stage 2 evidence now includes temporal/resource decision counts per branch and total temporal/resource decision backtrack counts. The capability audit declares temporal and resource assignment backtracking support separately, while observed flags remain execution-local. Plan 27 remains unchanged at the public planning level and observes neither temporal nor resource assignment backtracking.
+
+### ID 282 — Remove Fabricated Backtracking Evidence & Prove Causal Temporal Regret v1
+
+ID281 is corrected again: the first implementation still fabricated a temporal undo event from a rejected position inside the local `canPlace === false` branch. That position had never been accepted into the provisional PartialPlan, had never been sent into recursive `dfs`, and therefore could not honestly be reported as a decision undone by backtracking.
+
+ID282 removes that false instrumentation completely. Local placement rejection now only records the local dead-end reason and continues to the next alternative; it does not increment temporal/resource/recursive backtrack counters, create `TEMPORAL_DECISION_UNDONE` events, or consume backtracking budget.
+
+The new temporal fixture demonstrates the real causal regret path: task `3` is accepted at `10:00–10:30`, the deeper fixed task `2` then fails because that exclusive space interval is occupied, the accepted task `3` assignment is removed, task `3` is retried at `09:30–10:00`, task `2` is placed at `10:00–10:30`, and the anchor remains at `10:30–11:00`. The recorded event now identifies the interval that was actually withdrawn, not a locally rejected candidate or the final interval.
