@@ -184,27 +184,6 @@ function taskProtectedIntervals(input: EngineInput, task: TaskLike) {
   });
 }
 
-function taskWindowOk(input: EngineInput, task: TaskLike, assignment: CandidateAssignment): boolean {
-  const start = toMin(assignment.startPlanned);
-  const end = toMin(assignment.endPlanned);
-  const workStart = toMin(input.workDay?.start);
-  const workEnd = toMin(input.workDay?.end);
-  if (start == null || end == null || workStart == null || workEnd == null) return false;
-  if (start < workStart || end > workEnd || end - start !== durationOf(task)) return false;
-
-  const availability = task.contestantId != null ? (input.contestantAvailabilityById ?? {})[Number(task.contestantId)] : null;
-  const availabilityStart = toMin(availability?.start ?? input.workDay?.start);
-  const availabilityEnd = toMin(availability?.end ?? input.workDay?.end);
-  if (availabilityStart != null && start < availabilityStart) return false;
-  if (availabilityEnd != null && end > availabilityEnd) return false;
-
-  const fixedStart = toMin(String(task.fixedWindowStart ?? ""));
-  const fixedEnd = toMin(String(task.fixedWindowEnd ?? ""));
-  if (fixedStart != null && start !== fixedStart) return false;
-  if (fixedEnd != null && end !== fixedEnd) return false;
-  return true;
-}
-
 function canPlace(input: EngineInput, originOperationalState: OperationalState, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>) {
   return evaluateInitialConstructionPlacementFeasibility({ input, originOperationalState, task, assignment, occupiedAssignments: occupied, tasks });
 }
