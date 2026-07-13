@@ -1,0 +1,22 @@
+{
+  "version": "PLAN-27-ORC-PROGRESSIVE-ANCHOR-WIDENING-V1",
+  "deterministic": true,
+  "runs": [
+    {
+      "exclusiveConstructiveRuntimeMs": 6551,
+      "assignmentsReached": 29,
+      "cycles": 10,
+      "stopReason": "BUDGET_EXHAUSTED",
+      "budgetLimitReached": "MAX_ANCHOR_RANKS_SCANNED",
+      "fingerprint": "7423498a3f2b18aacbbf6ca3942e30c453dc06c4998c1253ca669f5e632abe69"
+    },
+    {
+      "exclusiveConstructiveRuntimeMs": 6650,
+      "assignmentsReached": 29,
+      "cycles": 10,
+      "stopReason": "BUDGET_EXHAUSTED",
+      "budgetLimitReached": "MAX_ANCHOR_RANKS_SCANNED",
+      "fingerprint": "7423498a3f2b18aacbbf6ca3942e30c453dc06c4998c1253ca669f5e632abe69"
+    }
+  ]
+}
