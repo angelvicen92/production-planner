@@ -15,7 +15,7 @@ export function stableReplayOutputFingerprint(value: unknown): string {
     if (!v || typeof v !== "object") return v;
     const out: any = {};
     for (const k of Object.keys(v).sort()) {
-      if (["runtimeMs","generatedAt","totalMs","ms","startedAt","endedAt","workerStartupMs","engineExecutionMs","totalRuntimeMs","operationalStateSnapshot"].includes(k)) continue;
+      if (["runtimeMs","generatedAt","totalMs","ms","startedAt","endedAt","workerStartupMs","engineExecutionMs","totalRuntimeMs","sessionRuntimeMs","assignmentsPerSecond","runtimeTelemetry","operationalStateSnapshot"].includes(k)) continue;
       if (typeof v[k] === "string" && v[k].length > 256 && /hash|snapshot|diagnostic/i.test(k)) continue;
       out[k] = scrub(v[k]);
     }

@@ -4,20 +4,20 @@ import { defaultInitialConstructionIterationBudget, initialConstructionIteration
 
 test("default iterative construction budget is explicit and decoupled from opportunities", () => {
   const budget = defaultInitialConstructionIterationBudget();
-  assert.equal(budget.maxAcceptedCycles, 24);
+  assert.equal(budget.maxAcceptedCycles, 48);
   assert.equal(budget.maxElapsedMs, 60_000);
   assert.equal(budget.anchorBatchSize, 12);
   assert.equal(budget.maxAnchorsPerCycle, 12);
-  assert.equal(budget.maxAnchorRanksScannedPerCycle, 48);
+  assert.equal(budget.maxAnchorRanksScannedPerCycle, 128);
   assert.ok(budget.maxTotalAnchorAttempts >= budget.maxAcceptedCycles * budget.maxAnchorRanksScannedPerCycle);
 });
 
 test("maxAcceptedCycles is not derived from maxOpportunities", () => {
   const budget = initialConstructionIterationBudgetFromReasoningBudget({ maxOpportunities: 0, maxCandidates: 3 } as any);
-  assert.equal(budget.maxAcceptedCycles, 24);
+  assert.equal(budget.maxAcceptedCycles, 48);
   assert.equal(budget.anchorBatchSize, 3);
   assert.equal(budget.maxAnchorsPerCycle, 3);
-  assert.equal(budget.maxAnchorRanksScannedPerCycle, 48);
+  assert.equal(budget.maxAnchorRanksScannedPerCycle, 128);
 });
 
 test("explicit maxAcceptedCycles overrides the constructive depth", () => {

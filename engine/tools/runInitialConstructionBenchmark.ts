@@ -11,6 +11,15 @@ export interface InitialConstructionBenchmarkResult {
   cycles: number;
   stopReason: string | null;
   budgetLimitReached: string | null;
+  sessionFingerprint: string | null;
+  finalCombinedAssignmentsFingerprint: string | null;
+  finalValidationResult: string | null;
+  exactEligibleAnchorCountAtStop: number | null;
+  terminalAnchorsScanned: number | null;
+  allEligibleAnchorsExhausted: boolean | null;
+  terminalBlockerCodeCounts: Record<string, number>;
+  runtimeTelemetry: unknown;
+  /** @deprecated use sessionFingerprint */
   fingerprint: string | null;
 }
 
@@ -28,7 +37,15 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     cycles: session.evidence?.acceptedCycleCount ?? 0,
     stopReason: session.evidence?.stopReason ?? null,
     budgetLimitReached: session.evidence?.budgetLimitReached ?? null,
-    fingerprint: session.evidence?.finalCombinedAssignmentsFingerprint ?? null,
+    sessionFingerprint: session.evidence?.sessionFingerprint ?? null,
+    finalCombinedAssignmentsFingerprint: session.evidence?.finalCombinedAssignmentsFingerprint ?? null,
+    finalValidationResult: session.evidence?.finalCombinedValidationResult ?? null,
+    exactEligibleAnchorCountAtStop: session.evidence?.terminalCycle?.eligibleAnchorCount ?? null,
+    terminalAnchorsScanned: session.evidence?.terminalCycle?.anchorRanksScanned ?? null,
+    allEligibleAnchorsExhausted: session.evidence?.terminalCycle?.allEligibleAnchorsExhausted ?? null,
+    terminalBlockerCodeCounts: session.evidence?.terminalCycle?.terminalBlockerCodeCounts ?? {},
+    runtimeTelemetry: { ...(session.evidence?.runtimeTelemetry ?? {}), exclusiveConstructiveRuntimeMs: Math.round(ended - started) },
+    fingerprint: session.evidence?.sessionFingerprint ?? null,
   };
 }
 
