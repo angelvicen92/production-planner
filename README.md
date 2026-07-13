@@ -1523,3 +1523,17 @@ ID281 is corrected again: the first implementation still fabricated a temporal u
 ID282 removes that false instrumentation completely. Local placement rejection now only records the local dead-end reason and continues to the next alternative; it does not increment temporal/resource/recursive backtrack counters, create `TEMPORAL_DECISION_UNDONE` events, or consume backtracking budget.
 
 The new temporal fixture demonstrates the real causal regret path: task `3` is accepted at `10:00–10:30`, the deeper fixed task `2` then fails because that exclusive space interval is occupied, the accepted task `3` assignment is removed, task `3` is retried at `09:30–10:00`, task `2` is placed at `10:00–10:30`, and the anchor remains at `10:30–11:00`. The recorded event now identifies the interval that was actually withdrawn, not a locally rejected candidate or the final interval.
+
+### ID 283 — Canonical Constructive Placement Feasibility Parity v1
+
+Initial Construction Stage 2 now delegates local placement checks to a typed, read-only `evaluateInitialConstructionPlacementFeasibility` precheck. The precheck runs for the anchor, prerequisites, temporal alternatives, and resource alternatives, and reports concrete operational reasons: `TASK_WINDOW_CONFLICT`, `PROTECTED_INTERVAL_CONFLICT`, `CONTESTANT_OVERLAP`, `SPACE_OVERLAP`, and `RESOURCE_OVERLAP`.
+
+Protected intervals are checked for fixed and flexible tasks across the whole candidate assignment interval. Hard breaks, real protected meals, contestant/space breaks, applicable protected transport, and protected tasks/locks can reject a flexible task; a flexible meal placement window is not promoted to a hard interval.
+
+Contestant occupancy uses the canonical ORC operational role metadata and `occupiesContestantTime`, so productive tasks for the same contestant cannot overlap while placeholders that do not occupy contestant time do not cause false constructive conflicts.
+
+Space occupancy uses the canonical ORC role, transport contract, and `resolveORCSpaceOccupancy` semantics together with `originOperationalState.spaces` capacity/concurrency/exclusivity. Non-blocking tasks and tasks/spaces that allow simultaneity can coexist; exclusive capacity-one overlaps are rejected.
+
+The parity scope is intentionally limited to task windows, protected intervals, contestant occupancy, canonical space occupancy/capacity, and already assigned concrete resource-item overlaps. It does not claim support for itinerant teams, cameras, `byType` resources, quantities greater than one, zone changes, or setups.
+
+Stage 2 evidence includes `placementFeasibilityVersion` plus conflict counters for task windows, protected intervals, contestants, spaces, and resources. The capability audit marks task-scoped protected intervals, constructive space capacity, and non-blocking space occupancy as supported while leaving the unsupported dimensions false. This iteration adds no second anchor, makes zero commits, does not expand Future Feasibility, does not complete the day, and does not change public planning.
