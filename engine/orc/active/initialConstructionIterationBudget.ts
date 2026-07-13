@@ -35,9 +35,9 @@ const nonNegative = (value: unknown, fallback: number) => {
 const positive = (value: unknown, fallback: number) => Math.max(1, nonNegative(value, fallback));
 
 export function defaultInitialConstructionIterationBudget(): InitialConstructionIterationBudget {
-  const maxAcceptedCycles = 24;
+  const maxAcceptedCycles = 48;
   const anchorBatchSize = 12;
-  const maxAnchorRanksScannedPerCycle = 48;
+  const maxAnchorRanksScannedPerCycle = 128;
   return {
     maxAcceptedCycles,
     maxElapsedMs: 60_000,

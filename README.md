@@ -1598,3 +1598,13 @@ Plan 27 regression coverage documents at least thirteen unique combined assignme
 - `finalCombinedValidationResult` describe el último Combined PartialPlan conservado y permanece `VALID` mientras ese plan válido se mantenga. El resultado del ciclo terminal se informa por separado mediante `terminalCycleValidationResult`, `terminalCycleAccepted` y `terminalCycleReason` para no confundir un último intento fallido con la validez del plan provisional retenido.
 - En la regresión de Plan 27, los defaults de ID 289 permiten observar widening más allá del primer lote y alcanzar al menos 29 assignments hard-valid y 10 ciclos aceptados sin usar V4 como seed, sin duplicar tareas, con fingerprint determinista y con runtime constructivo aislado bajo el presupuesto de desarrollo.
 - No se añaden heurísticas, scoring, comparadores, restricciones nuevas ni backtracking sobre PartialPlans aceptados. La sesión sigue siendo read-only: cero commits, sin publicación ORC y sin cambios en el planning público.
+
+## ID 290 — Production-Scale Constructive Frontier & Terminal Blocker Proof v1
+
+- Initial Construction now uses the centralized production-scale constructive profile `48/12/128/60000` (`maxAcceptedCycles`, `anchorBatchSize`, `maxAnchorRanksScannedPerCycle`, `maxElapsedMs`) while preserving existing explicit overrides.
+- The iterative ORC session enumerates the exact residual eligible-anchor universe once per residual fingerprint, preserves the official deterministic ranking, and only then applies the rank-scan limit.
+- Plan 27 regression evidence is expected to demonstrate the current constructive frontier: at least 69 unique assignments and at least 30 accepted cycles, with the terminal fixture universe exhausted at 105 anchors.
+- Terminal evidence is published separately from compact cycle evidence, including exact eligible counts, scanned ranks, unscanned counts, blocker-code counts, and deterministic blocked-anchor samples.
+- Final combined validation is authoritative: it is carried from the last accepted `ValidationResult`/`SimulatedState` and matched to the combined PartialPlan fingerprint rather than inferred from assignment counts or terminal failure state.
+- Structural evidence and runtime telemetry are separated. Runtime duration and throughput may be reported under `runtimeTelemetry`, but structural fingerprints and replay output hashes exclude temporal telemetry.
+- This ID adds no new ranking heuristic, does not alter placements or Search Space semantics, does not backtrack across accepted PartialPlans, does not use V4 as a seed, and does not publish ORC output into public planning.
