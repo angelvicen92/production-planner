@@ -2,6 +2,7 @@ import type { EngineInput } from "../../types";
 import type { CandidateAssignment, OperationalState } from "../contracts";
 import { resolveORCPlanningEntryOperationalRoleMetadata, occupiesContestantTime } from "../state/nonWorkTaskClassifier";
 import { resolveORCSpaceOccupancy, type ORCSpaceOccupancyMode } from "../state/spaceOccupancyResolver";
+import { evaluateORCSpaceCapacitySemantics } from "../state/spaceCapacitySemantics";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
 
@@ -55,6 +56,9 @@ export function evaluateInitialConstructionPlacementFeasibility(args: { input: E
   if (!taskWindowOk(args.input, args.task, args.assignment)) reasonCodes.push("TASK_WINDOW_CONFLICT");
   const protectedIntervalConflicts = resolveInitialConstructionProtectedIntervalsForAnchor({ input: args.input, anchor: { anchorTaskId: args.task.id, contestantId: args.task.contestantId ?? null, spaceId: args.task.spaceId ?? null, zoneId: args.task.zoneId ?? null } }).filter((interval) => overlaps(args.assignment, interval)).map((interval: any) => ({ start: interval.start, end: interval.end, scope: interval.scope ?? null, source: interval.source ?? null }));
   if (protectedIntervalConflicts.length) reasonCodes.push("PROTECTED_INTERVAL_CONFLICT");
+
+  const spaceEntries = [args.assignment, ...args.occupiedAssignments].map(entryOf) as any[];
+  if (evaluateORCSpaceCapacitySemantics({ entries: spaceEntries, tasks: args.tasks as any, spaces: args.originOperationalState.spaces, mealWindow, transportContract }).some((violation) => violation.taskIds.includes(args.assignment.taskId))) reasonCodes.push("SPACE_OVERLAP");
   for (const other of args.occupiedAssignments) {
     if (!overlaps(other, args.assignment)) continue;
     const otherTask = args.tasks.get(other.taskId);
@@ -63,15 +67,6 @@ export function evaluateInitialConstructionPlacementFeasibility(args: { input: E
     if (contestantOccupiesTime && occupiesContestantTime({ task: otherTask, entry: otherEntry, roleMetadata: otherRole, mealWindow, transportContract }) && args.task.contestantId != null && Number(args.task.contestantId) > 0 && args.task.contestantId === otherTask?.contestantId) reasonCodes.push("CONTESTANT_OVERLAP");
     const sharedResources = other.resourceIds.filter((id) => args.assignment.resourceIds.includes(id));
     if (role.countsAsWork && otherRole.countsAsWork && sharedResources.length) reasonCodes.push("RESOURCE_OVERLAP");
-    if (args.assignment.spaceId != null && args.assignment.spaceId === other.spaceId) {
-      const otherOcc = resolveORCSpaceOccupancy({ entry: otherEntry, task: otherTask, roleMetadata: otherRole, spaceConfig: args.originOperationalState.spaces, transportContract });
-      if (occupancy.blocksSpace && otherOcc.blocksSpace && !occupancy.allowsSpaceOverlap && !otherOcc.allowsSpaceOverlap) {
-        const spaceId = Number(args.assignment.spaceId);
-        const spaces = args.originOperationalState.spaces;
-        const capacity = spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, spaces?.concurrencyById?.[spaceId] ?? spaces?.capacityById?.[spaceId] ?? 1);
-        if (capacity < 2) reasonCodes.push("SPACE_OVERLAP");
-      }
-    }
   }
   return Object.freeze({ valid: reasonCodes.length === 0, reasonCodes: uniq(reasonCodes), checkedDimensions, role, contestantOccupiesTime, spaceOccupancyMode: occupancy.spaceOccupancyMode, spaceCapacity: occupancy.spaceCapacity ?? null, protectedIntervalConflicts, readOnly: true });
 }

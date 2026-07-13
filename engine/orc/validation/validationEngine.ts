@@ -3,7 +3,7 @@ import { deepFreeze } from "../immutability";
 import { configuredHardBreaks, hardBreakAppliesToPlanningEntry, protectedBreakDiagnostic, sampleViolationDetailsByCode } from "./protectedBreakScope";
 import { resolveORCPlanningEntryOperationalRoleMetadata, isORCProductiveRole, occupiesContestantTime } from "../state/nonWorkTaskClassifier";
 import { resolveORCMealSemantics, hardMealWindowsFromSemantics } from "../state/mealSemanticsResolver";
-import { resolveORCSpaceOccupancy } from "../state/spaceOccupancyResolver";
+import { evaluateORCSpaceCapacitySemantics } from "../state/spaceCapacitySemantics";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
 import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
 
@@ -233,17 +233,11 @@ function validateHardConstraints(snapshot: OperationalState, violations: string[
     if (productivePair && ta?.itinerantTeamId != null && ta.itinerantTeamId === tb?.itinerantTeamId) addDetail(violations, details, { code: "ITINERANT_TEAM_OVERLAP", constraintGroup: "contestants_and_teams", taskIds: [a.entry.taskId, b.entry.taskId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two tasks for the same itinerant team overlap. Check V4 sequencing, fixture timing, or seed adapter mapping." });
     const sharedResources = (a.entry.assignedResourceIds ?? []).filter((id) => (b.entry.assignedResourceIds ?? []).includes(id));
     if (productivePair && sharedResources.length > 0) addDetail(violations, details, { code: "RESOURCE_OVERLAP", constraintGroup: "resources", taskIds: [a.entry.taskId, b.entry.taskId], resourceIds: sharedResources, timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), diagnosticHint: "Two overlapping tasks share a resource. Check V4 resource assignment, fixture resource availability, or seed adapter mapping." });
-    const spaceId = a.entry.spaceId ?? null;
-    if (spaceId != null && spaceId === (b.entry.spaceId ?? null)) {
-      const occA = resolveORCSpaceOccupancy({ entry: a.entry, task: ta, roleMetadata: roleA, spaceConfig: snapshot.spaces, transportContract });
-      const occB = resolveORCSpaceOccupancy({ entry: b.entry, task: tb, roleMetadata: roleB, spaceConfig: snapshot.spaces, transportContract });
-      if (occA.blocksSpace && occB.blocksSpace && !occA.allowsSpaceOverlap && !occB.allowsSpaceOverlap) {
-        const spaces = snapshot.spaces;
-        const capacity = spaces?.exclusiveById?.[spaceId] === true ? 1 : Math.max(1, spaces?.concurrencyById?.[spaceId] ?? spaces?.capacityById?.[spaceId] ?? 1);
-        if (capacity < 2) addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: [a.entry.taskId, b.entry.taskId], spaceIds: [spaceId], timeWindow: windowOf(a.entry), relatedTimeWindow: windowOf(b.entry), message: `Two tasks overlap in space ${spaceId} with effective capacity ${capacity}.`, diagnosticHint: `Exclusive space overlap between roles ${roleA.role} and ${roleB.role}.`, roleLabels: [roleA.role, roleB.role], spaceOccupancyModes: [occA.spaceOccupancyMode, occB.spaceOccupancyMode], blocksSpaceFlags: [occA.blocksSpace, occB.blocksSpace], spaceCapacity: capacity, spaceContractSource: occA.spaceContractSource ?? occB.spaceContractSource ?? null, transportContractSource: transportContract.source ?? null } as any);
-      }
-    }
   }
+  for (const violation of evaluateORCSpaceCapacitySemantics({ entries: planning as any, tasks: tasks as any, spaces: snapshot.spaces, mealWindow: snapshot.availability?.actualMeal ?? snapshot.availability?.meal ?? snapshot.availability?.mealWindow ?? null, transportContract })) {
+    addDetail(violations, details, { code: "SPACE_OVERLAP", constraintGroup: "spaces", taskIds: violation.taskIds, spaceIds: [violation.spaceId], timeWindow: { start: violation.start, end: violation.end }, relatedTimeWindow: { start: violation.start, end: violation.end }, message: `Space ${violation.spaceId} has ${violation.occupied} concurrent occupancies with effective capacity ${violation.capacity}.`, diagnosticHint: "Space capacity uses canonical concurrent cardinality semantics.", roleLabels: violation.roleLabels, spaceOccupancyModes: violation.spaceOccupancyModes, blocksSpaceFlags: violation.blocksSpaceFlags, spaceCapacity: violation.capacity, spaceConcurrentOccupancy: violation.occupied, spaceContractSource: violation.spaceContractSource ?? null, transportContractSource: transportContract.source ?? null } as any);
+  }
+
   const transportGroups = new Map<string, any[]>();
   for (const item of planned) {
     const task = tasks.get(item.entry.taskId);

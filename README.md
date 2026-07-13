@@ -1537,3 +1537,11 @@ Space occupancy uses the canonical ORC role, transport contract, and `resolveORC
 The parity scope is intentionally limited to task windows, protected intervals, contestant occupancy, canonical space occupancy/capacity, and already assigned concrete resource-item overlaps. It does not claim support for itinerant teams, cameras, `byType` resources, quantities greater than one, zone changes, or setups.
 
 Stage 2 evidence includes `placementFeasibilityVersion` plus conflict counters for task windows, protected intervals, contestants, spaces, and resources. The capability audit marks task-scoped protected intervals, constructive space capacity, and non-blocking space occupancy as supported while leaving the unsupported dimensions false. This iteration adds no second anchor, makes zero commits, does not expand Future Feasibility, does not complete the day, and does not change public planning.
+
+### ID 284 — Constructive Placement Feasibility Proof Gate & Space Capacity Cardinality v1
+
+ID284 adds the dedicated proof gate that ID283 intentionally lacked. ID283 introduced the constructive placement precheck and wired it into Initial Construction Stage 2, but its evidence still depended on older green tests rather than a focused battery for the new implementation.
+
+The Stage 2 precheck and Validation Engine now share one canonical space-capacity implementation. The previous pairwise interpretation has been replaced by real concurrent cardinality: a shared space with capacity `2` accepts exactly two compatible simultaneous blocking occupancies, rejects a third concurrent occupancy, and keeps non-blocking operational roles at zero capacity consumption. Exclusive tasks or exclusive/break occupancy still block conflicting productive occupancy, while existing transport grouping semantics remain separate.
+
+The dedicated tests for ID284 prove task windows, protected intervals, contestant occupancy, canonical space capacity, non-blocking placeholders, concrete resource-item overlap, deterministic reason-code ordering, and parity with Validation for the supported dimensions. The unsupported declarations remain unchanged: no itinerant-team expansion, no camera capacity, no `byType`, no multi-quantity resources, no zone changes, no setups, no full Future Feasibility, and no complete initial planning.
