@@ -24,7 +24,8 @@
     "benchmark:v4:smoke": "tsx engine/v4/benchmarks/runV4Benchmark.ts --smoke",
     "benchmark:orc": "tsx engine/orc/benchmark/runOrcOperationalBenchmark.ts",
     "benchmark:orc:legacy": "tsx engine/orc/benchmarks/shadowSearchBenchmark.ts",
-    "replay:engine-scenario": "tsx engine/tools/replayEngineScenario.ts"
+    "replay:engine-scenario": "tsx engine/tools/replayEngineScenario.ts",
+    "benchmark:orc:initial-construction": "tsx engine/tools/runInitialConstructionBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
