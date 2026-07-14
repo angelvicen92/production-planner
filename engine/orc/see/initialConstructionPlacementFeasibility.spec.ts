@@ -34,3 +34,16 @@ test("placement feasibility covers windows, protected breaks, contestants, space
   const triple = input([task(1),task(2),task(3)]); const pre = evalCase(triple, task(3), assignment(3), [assignment(1), assignment(2)]); assert.deepEqual(pre.reasonCodes, ["SPACE_OVERLAP"]); assert.ok(validationCodes(triple, [assignment(1), assignment(2), assignment(3)].map((a:any)=>({taskId:a.taskId,startPlanned:a.startPlanned,endPlanned:a.endPlanned,spaceId:a.spaceId,assignedResourceIds:a.resourceIds}))).includes("SPACE_OVERLAP"));
   assert.deepEqual(evalCase(triple, task(3), assignment(3), [assignment(1), assignment(2)]), evalCase(triple, task(3), assignment(3), [assignment(1), assignment(2)]));
 });
+
+test("placement feasibility reports causal conflict ids",()=>{
+  const i:any=input([task(1,{contestantId:1,spaceId:1}),task(2,{contestantId:1,spaceId:1,dependsOnTaskIds:[1]})], { contestantAvailabilityById:{1:{start:"08:00",end:"12:00"}}, workDay:{start:"08:00",end:"12:00"} });
+  const tasks=new Map(i.tasks.map((t:any)=>[t.id,t]));
+  const result=evaluateInitialConstructionPlacementFeasibility({input:i,originOperationalState:state(i),task:i.tasks[1],assignment:{taskId:2,startPlanned:"08:15",endPlanned:"08:45",spaceId:1,resourceIds:[7]},occupiedAssignments:[{taskId:1,startPlanned:"08:00",endPlanned:"08:30",spaceId:1,resourceIds:[7]}],tasks});
+  assert.equal(result.valid,false);
+  assert.ok(result.reasonCodes.includes("CONTESTANT_OVERLAP"));
+  assert.ok(result.reasonCodes.includes("DEPENDENCY_CONFLICT"));
+  assert.deepEqual(result.contestantConflictTaskIds,[1]);
+  assert.deepEqual(result.resourceConflictTaskIds,[1]);
+  assert.deepEqual(result.dependencyLowerBoundTaskIds,[1]);
+  assert.equal(result.taskWindowConflictDetails.some((d)=>d.kind==="DEPENDENCY_LOWER_BOUND"),true);
+});
