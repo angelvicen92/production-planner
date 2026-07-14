@@ -1,16 +1,16 @@
 {
-  "version": "PLAN-27-ORC-SHARED-CANONICAL-CONTEXT-REPAIR-V1",
+  "version": "PLAN-27-ORC-CANDIDATE-SCOPED-REPAIR-V1",
   "deterministic": true,
-  "preRepairGatePassed": true,
+  "correctnessGatePassed": true,
   "productiveConstructionCompleted": false,
   "runs": [
     {
-      "exclusiveConstructiveRuntimeMs": 43919,
+      "exclusiveConstructiveRuntimeMs": 42841,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "ecdb19277a4522d07ab8bacd40ea288c34843bf32a76d4994fac059471fdc6b8",
+      "sessionFingerprint": "2a86112957260f2a862e5ded0b3fe093c02ac80ed19eaffdda5052379bd5497a",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -24,7 +24,7 @@
       },
       "terminalBlockerEvidenceComplete": true,
       "terminalBlockerEvidenceIncompleteAnchorCount": 0,
-      "terminalBlockerEvidenceFingerprint": "7f26ffe2a413142b817eced472cafe35aae6bcc7d4b222b6d622c84596115276",
+      "terminalBlockerEvidenceFingerprint": "8dad7bc64683a07081fe89b69772bc2b1601b2d6f2252b0b126c11d0c9937cfa",
       "terminalPrimaryBlockerCodeCounts": {
         "TASK_WINDOW_CONFLICT": 4
       },
@@ -219,7 +219,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "cae09f5e0d7f530cccdfebdc497fb2980da075874762f72c071dba80a1bcb176",
-          "attemptDiagnosticsFingerprint": "0f353a3d60f67914ca440ee38c439aebf081ebc55fa08b69e13f3e3912261c1b",
+          "attemptDiagnosticsFingerprint": "81f7f3576b5519e07ba8fa846a85ac4307f4acecb7ceaed5353eaa100b7369e9",
           "readOnly": true
         },
         {
@@ -417,7 +417,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "3fb2c23ddd90930eaa782a530a84685edf0dbec6eba2d01054802b15c9fa0765",
-          "attemptDiagnosticsFingerprint": "2101565aaeeee218d800921dd89b373ffe9010caf15a457a787f0c5ce8524371",
+          "attemptDiagnosticsFingerprint": "1c8a688d0189131096b87851c08e929cd4b06533ae83186c273df5864de3958c",
           "readOnly": true
         },
         {
@@ -507,7 +507,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
-          "attemptDiagnosticsFingerprint": "490b91705d4d3b6711d873f7f4c8d297c3379e2bfb0b1209dfee793e897bdf68",
+          "attemptDiagnosticsFingerprint": "f8dc363247b746f9c41553bb45c6b63b1e5a49678415b1a71c6c3c49b041a5bf",
           "readOnly": true
         },
         {
@@ -559,14 +559,14 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "0c164d4d6ff6e7f9f9bd7ac1a6613f06535595047136bcba6e03eabb67d1fd9f",
-          "attemptDiagnosticsFingerprint": "e9bb3e0ff8bbfecf9c241c36b679af446f425a797b5f3f250379b33ce6c233d5",
+          "attemptDiagnosticsFingerprint": "9d6e4ff565aa4db7bced13f795c39b10abe6edd3c29d7b8e6df814b1cfc61135",
           "readOnly": true
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 43718,
-        "assignmentsPerSecond": 3.797,
-        "exclusiveConstructiveRuntimeMs": 43919
+        "sessionRuntimeMs": 42638,
+        "assignmentsPerSecond": 3.893,
+        "exclusiveConstructiveRuntimeMs": 42841
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -584,18 +584,18 @@
       "productiveTasksRemaining": 4,
       "repairExecuted": true,
       "repairRoundCount": 1,
-      "repairAttemptCount": 32,
+      "repairAttemptCount": 3,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
-      "candidateEjectionSetCount": 6195,
+      "candidateEjectionSetCount": 3,
       "acceptedBlockedAnchorTaskIds": [],
       "acceptedEjectionTaskIds": [],
       "acceptedRepairDependencyClosureTaskIds": [],
       "productiveAssignmentDelta": 0,
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
-      "repairStopReason": "NO_CAUSAL_REPAIR_CANDIDATES",
-      "repairFingerprint": "d9b093ab2dc3eed46529f453d04c1036dfbfe6efc0fe1c8412d0e40d8f869d80",
+      "repairStopReason": "NO_VALID_REPAIR",
+      "repairFingerprint": "58b181dbb8705892ce28ab73f66b55173b8bc48bb9e1b252a11d0c30ff42e53d",
       "commitsExecuted": 0,
       "v4SeedUsed": false,
       "canonicalContextSource": "stage1-initial-construction-map",
@@ -608,15 +608,15 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "ecdb19277a4522d07ab8bacd40ea288c34843bf32a76d4994fac059471fdc6b8"
+      "fingerprint": "2a86112957260f2a862e5ded0b3fe093c02ac80ed19eaffdda5052379bd5497a"
     },
     {
-      "exclusiveConstructiveRuntimeMs": 44503,
+      "exclusiveConstructiveRuntimeMs": 42656,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "ecdb19277a4522d07ab8bacd40ea288c34843bf32a76d4994fac059471fdc6b8",
+      "sessionFingerprint": "2a86112957260f2a862e5ded0b3fe093c02ac80ed19eaffdda5052379bd5497a",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -630,7 +630,7 @@
       },
       "terminalBlockerEvidenceComplete": true,
       "terminalBlockerEvidenceIncompleteAnchorCount": 0,
-      "terminalBlockerEvidenceFingerprint": "7f26ffe2a413142b817eced472cafe35aae6bcc7d4b222b6d622c84596115276",
+      "terminalBlockerEvidenceFingerprint": "8dad7bc64683a07081fe89b69772bc2b1601b2d6f2252b0b126c11d0c9937cfa",
       "terminalPrimaryBlockerCodeCounts": {
         "TASK_WINDOW_CONFLICT": 4
       },
@@ -825,7 +825,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "cae09f5e0d7f530cccdfebdc497fb2980da075874762f72c071dba80a1bcb176",
-          "attemptDiagnosticsFingerprint": "0f353a3d60f67914ca440ee38c439aebf081ebc55fa08b69e13f3e3912261c1b",
+          "attemptDiagnosticsFingerprint": "81f7f3576b5519e07ba8fa846a85ac4307f4acecb7ceaed5353eaa100b7369e9",
           "readOnly": true
         },
         {
@@ -1023,7 +1023,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "3fb2c23ddd90930eaa782a530a84685edf0dbec6eba2d01054802b15c9fa0765",
-          "attemptDiagnosticsFingerprint": "2101565aaeeee218d800921dd89b373ffe9010caf15a457a787f0c5ce8524371",
+          "attemptDiagnosticsFingerprint": "1c8a688d0189131096b87851c08e929cd4b06533ae83186c273df5864de3958c",
           "readOnly": true
         },
         {
@@ -1113,7 +1113,7 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
-          "attemptDiagnosticsFingerprint": "490b91705d4d3b6711d873f7f4c8d297c3379e2bfb0b1209dfee793e897bdf68",
+          "attemptDiagnosticsFingerprint": "f8dc363247b746f9c41553bb45c6b63b1e5a49678415b1a71c6c3c49b041a5bf",
           "readOnly": true
         },
         {
@@ -1165,14 +1165,14 @@
           "immutableConflictTaskIds": [],
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "0c164d4d6ff6e7f9f9bd7ac1a6613f06535595047136bcba6e03eabb67d1fd9f",
-          "attemptDiagnosticsFingerprint": "e9bb3e0ff8bbfecf9c241c36b679af446f425a797b5f3f250379b33ce6c233d5",
+          "attemptDiagnosticsFingerprint": "9d6e4ff565aa4db7bced13f795c39b10abe6edd3c29d7b8e6df814b1cfc61135",
           "readOnly": true
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 44280,
-        "assignmentsPerSecond": 3.749,
-        "exclusiveConstructiveRuntimeMs": 44503
+        "sessionRuntimeMs": 42430,
+        "assignmentsPerSecond": 3.912,
+        "exclusiveConstructiveRuntimeMs": 42656
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -1190,18 +1190,18 @@
       "productiveTasksRemaining": 4,
       "repairExecuted": true,
       "repairRoundCount": 1,
-      "repairAttemptCount": 32,
+      "repairAttemptCount": 3,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
-      "candidateEjectionSetCount": 6195,
+      "candidateEjectionSetCount": 3,
       "acceptedBlockedAnchorTaskIds": [],
       "acceptedEjectionTaskIds": [],
       "acceptedRepairDependencyClosureTaskIds": [],
       "productiveAssignmentDelta": 0,
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
-      "repairStopReason": "NO_CAUSAL_REPAIR_CANDIDATES",
-      "repairFingerprint": "d9b093ab2dc3eed46529f453d04c1036dfbfe6efc0fe1c8412d0e40d8f869d80",
+      "repairStopReason": "NO_VALID_REPAIR",
+      "repairFingerprint": "58b181dbb8705892ce28ab73f66b55173b8bc48bb9e1b252a11d0c30ff42e53d",
       "commitsExecuted": 0,
       "v4SeedUsed": false,
       "canonicalContextSource": "stage1-initial-construction-map",
@@ -1214,7 +1214,7 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "ecdb19277a4522d07ab8bacd40ea288c34843bf32a76d4994fac059471fdc6b8"
+      "fingerprint": "2a86112957260f2a862e5ded0b3fe093c02ac80ed19eaffdda5052379bd5497a"
     }
   ]
 }
