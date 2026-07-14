@@ -36,6 +36,7 @@ export interface AnchorPlacementEvidence {
   feasible: boolean;
   reasonCodes: readonly string[];
   resourceAlternativeIds: readonly number[][];
+  temporalCandidateFingerprint: string;
   fingerprint: string;
   readOnly: true;
 }
@@ -326,8 +327,16 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
     for (const items of perWindow) {
       const item = items[rank];
       if (!item) continue;
-      const key = `${item.candidate.startPlanned}|${item.candidate.endPlanned}|${item.candidate.windowIndex}`;
-      if (seenCandidates.has(key)) continue;
+      const key = `${item.candidate.startPlanned}|${item.candidate.endPlanned}`;
+      if (seenCandidates.has(key)) {
+        const existing = globalCandidates.find((existing) => existing.candidate.startPlanned === item.candidate.startPlanned && existing.candidate.endPlanned === item.candidate.endPlanned);
+        if (existing) {
+          const windowIndex = Math.min(existing.candidate.windowIndex, item.candidate.windowIndex);
+          const sourceKinds = [...new Set([...existing.candidate.sourceKinds, ...item.candidate.sourceKinds])].sort() as any;
+          existing.candidate = { ...existing.candidate, windowIndex, sourceKinds, fingerprint: createHash("sha256").update(stableStringify({ windowIndex, candidateRankWithinWindow: existing.candidate.candidateRankWithinWindow, sourceKinds, startPlanned: existing.candidate.startPlanned, endPlanned: existing.candidate.endPlanned, readOnly: true })).digest("hex") };
+        }
+        continue;
+      }
       seenCandidates.add(key);
       globalCandidates.push(item);
       if (globalCandidates.length >= maxBranches) break;
@@ -346,7 +355,8 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
       const blockers = [...closure.blockers];
       const provisional: CandidateAssignment[] = [];
       const makeEvidence = (feasible: boolean, reasonCodes: string[], resourceIds: number[][]): AnchorPlacementEvidence => {
-        const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), fingerprint: "", readOnly: true };
+        const temporalCandidateFingerprint = createHash("sha256").update(stableStringify({ windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned })).digest("hex");
+        const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), temporalCandidateFingerprint, fingerprint: "", readOnly: true };
         ev.fingerprint = createHash("sha256").update(stableStringify({ ...ev, fingerprint: undefined })).digest("hex");
         return ev;
       };

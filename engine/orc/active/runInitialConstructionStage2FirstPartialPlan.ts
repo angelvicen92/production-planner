@@ -5,6 +5,7 @@ import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
 import { initialConstructionSemanticIntegrityAudit } from "./runInitialConstructionStage1";
 import { materializeInitialConstructionAnchorAttempt } from "./materializeInitialConstructionAnchorAttempt";
+import { resolveInitialConstructionAnchorBranchLimit } from "./initialConstructionAnchorBranchLimit";
 
 const SAMPLE_LIMIT = 10;
 const CHECKED_FUTURE_DIMENSIONS = ["contestant_remaining_load", "fixed_resource_inventory"] as const;
@@ -34,7 +35,7 @@ function cap(flags: any) { return { originalInputOnly: true, v4PlanningRead: fal
 export function runInitialConstructionStage2FirstPartialPlan(args: { originInput: EngineInput; originOperationalState: OperationalState; stage1: any; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null }) {
   const audit = initialConstructionSemanticIntegrityAudit(args.stage1); const anchor = args.stage1.selectedAnchor; const hasSpace = (args.stage1.searchSpaces ?? []).some((space: any) => space.anchorTaskId === anchor?.anchorTaskId);
   if (args.stage1.planningMode !== "INITIAL_CONSTRUCTION" || !audit.coherent || !anchor || !hasSpace) return deepFreeze({ version: "INITIAL-CONSTRUCTION-STAGE2-FIRST-PARTIAL-PLAN-V3", executed: false, reason: "stage2_preconditions_not_met", selectedAnchorTaskId: anchor?.anchorTaskId ?? null, readOnly: true }) as any;
-  const maxBranches = Math.max(2, Math.min(2, args.reasoningBudget?.maxCandidates ?? 2));
+  const maxBranches = resolveInitialConstructionAnchorBranchLimit(args.reasoningBudget);
   const attempt = materializeInitialConstructionAnchorAttempt({ originInput: args.originInput, originOperationalState: args.originOperationalState, stage: args.stage1, anchor, maxBranches, reasoningBudget: args.reasoningBudget, createdAt: args.createdAt ?? null, requireFutureFeasibility: (branch) => preliminaryFutureFeasibility(args.originInput, branch) });
   const attempts = [...attempt.attempts].sort((a: any, b: any) => { const af = a.futureFeasibility?.status ?? "UNKNOWN", bf = b.futureFeasibility?.status ?? "UNKNOWN"; return futureRank(af) - futureRank(bf); });
   const selected = [...(attempt.selectable ?? [])].sort((a: any, b: any) => futureRank(a.futureFeasibility?.status ?? "UNKNOWN") - futureRank(b.futureFeasibility?.status ?? "UNKNOWN") || a.branch.branchId.localeCompare(b.branch.branchId))[0] ?? null;
