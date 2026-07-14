@@ -13,6 +13,7 @@ import type { InitialConstructionAnchorAttemptDiagnostics } from "./initialConst
 import { resolveInitialConstructionAnchorBranchLimit } from "./initialConstructionAnchorBranchLimit";
 import { resolveInitialConstructionAnchorExplorationBudget } from "./initialConstructionAnchorExplorationBudget";
 import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
+import { profileFromAnchorPlacementEvidence, type InitialConstructionRepairCandidateProfile } from "./initialConstructionRepairProblem";
 
 const SAMPLE_LIMIT = 10;
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -138,6 +139,17 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
   return diagnostics;
 }
 
+function buildRepairCandidateProfiles(anchorTaskId:number, built:any, provisionalTaskIds:readonly number[], immutableTaskIds:readonly number[]): InitialConstructionRepairCandidateProfile[] {
+  const byFp=new Map<string, InitialConstructionRepairCandidateProfile>();
+  for (const branch of built?.branches ?? []) {
+    const ev=branch.anchorPlacementEvidence; if(!ev) continue;
+    const profile=profileFromAnchorPlacementEvidence({blockedAnchorTaskId:anchorTaskId,evidence:ev,provisionalTaskIds,immutableTaskIds});
+    const prev=byFp.get(profile.temporalCandidateFingerprint);
+    if(!prev || (profile.repairable && !prev.repairable) || profile.fingerprint.localeCompare(prev.fingerprint)<0) byFp.set(profile.temporalCandidateFingerprint, profile);
+  }
+  return [...byFp.values()].sort((a,b)=>a.candidateRank-b.candidateRank||a.fingerprint.localeCompare(b.fingerprint));
+}
+
 export function materializeInitialConstructionAnchorAttempt(args: { originInput: EngineInput; originOperationalState: OperationalState; stage: any; anchor?: any | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; provisionallySatisfiedTaskIds?: readonly number[]; closureTaskIds?: readonly number[]; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null; requireFutureFeasibility?: (branch: InitialConstructionBranch) => any | null; canonicalContext?: InitialConstructionCanonicalContext | null }) {
   const canonicalContext = resolveInitialConstructionCanonicalContext({ input: args.originInput, stage1: args.stage, canonicalContext: args.canonicalContext });
   const anchorTaskId = Number(args.anchor?.anchorTaskId ?? args.stage?.selectedAnchor?.anchorTaskId ?? args.stage?.selectedAnchorTaskId);
@@ -180,8 +192,12 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
   selectable.sort((a, b) => (minutes(a.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) - (minutes(b.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) || a.branch.branchId.localeCompare(b.branch.branchId));
   const selected = selectable[0] ?? null;
   const diagnostics = buildAttemptDiagnostics(anchorTaskId, stage, built, attempts, hardValidBranchCount, anchorExplorationBudget);
+  const provisionalTaskIds = [...(args.baseProvisionalAssignments ?? [])].map((a:any)=>Number(a.taskId)).filter(Number.isFinite);
+  const immutableTaskIds = [...(args.originOperationalState.planning ?? [])].map((a:any)=>Number(a.taskId)).filter(Number.isFinite);
+  const repairCandidateProfiles = buildRepairCandidateProfiles(anchorTaskId, built, provisionalTaskIds, immutableTaskIds);
+  const repairCandidateProfilesFingerprint = createHash("sha256").update(stableStringify(repairCandidateProfiles.map((p)=>p.fingerprint))).digest("hex");
   const allAssigned = [...(args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] })), ...(args.baseProvisionalAssignments ?? [])];
   const dependencyBounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.originInput, taskId: anchorTaskId, assignments: allAssigned as any, provisionallySatisfiedTaskIds: args.provisionallySatisfiedTaskIds, canonicalContext });
   const dependencyEvidence = { dependencyTemporalBoundsVersion: "initial-construction-dependency-temporal-bounds-v1", assignedPrerequisiteBoundCount: dependencyBounds.assignedPrerequisiteTaskIds.length, assignedDependentBoundCount: dependencyBounds.assignedDependentTaskIds.length, dependencyBoundedTemporalCandidateCount: (built.branches ?? []).filter((b:any)=>b.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")).length, contradictoryDependencyBoundCount: dependencyBounds.hasContradictoryBounds ? 1 : 0, combinedDependencyPrecheckCount, combinedDependencyPrecheckRejectedCount, combinedDependencyPrecheckViolationCount, provisionallySatisfiedDependencyAudit: dependencyBounds.provisionallySatisfiedDependencyAudit, firstDependencyBoundAcceptedAnchorTaskId: (selectable ?? []).some((opt:any)=>opt.branch?.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")) ? anchorTaskId : null };
-  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, diagnostics: { ...diagnostics, ...dependencyEvidence }, ...dependencyEvidence, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
+  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, repairCandidateProfiles, repairCandidateProfileCount: repairCandidateProfiles.length, repairableCandidateProfileCount: repairCandidateProfiles.filter((p)=>p.repairable).length, unrepairableCandidateProfileCount: repairCandidateProfiles.filter((p)=>!p.repairable).length, candidateProfilesWithDependencyBoundBlockers: repairCandidateProfiles.filter((p)=>p.dependencyBoundSourceTaskIds.length>0).length, repairCandidateProfilesFingerprint, diagnostics: { ...diagnostics, ...dependencyEvidence, repairCandidateProfileCount: repairCandidateProfiles.length, repairableCandidateProfileCount: repairCandidateProfiles.filter((p)=>p.repairable).length, unrepairableCandidateProfileCount: repairCandidateProfiles.filter((p)=>!p.repairable).length, candidateProfilesWithDependencyBoundBlockers: repairCandidateProfiles.filter((p)=>p.dependencyBoundSourceTaskIds.length>0).length, repairCandidateProfilesFingerprint }, ...dependencyEvidence, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
 }
