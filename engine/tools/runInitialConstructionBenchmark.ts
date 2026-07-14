@@ -37,6 +37,25 @@ export interface InitialConstructionBenchmarkResult {
   combinedDependencyPrecheckViolationCount: number;
   contradictoryDependencyBoundCount: number;
   firstDependencyBoundAcceptedAnchorTaskId: number | null;
+
+  productiveAssignmentsReached: number;
+  productiveTasksRemaining: number;
+  repairExecuted: boolean;
+  repairRoundCount: number;
+  repairAttemptCount: number;
+  repairAcceptedCount: number;
+  acceptedPartialPlanBacktrackCount: number;
+  candidateEjectionSetCount: number;
+  acceptedBlockedAnchorTaskIds: number[];
+  acceptedEjectionTaskIds: number[];
+  acceptedRepairDependencyClosureTaskIds: number[];
+  productiveAssignmentDelta: number;
+  protectedAssignmentsModified: boolean;
+  outsideNeighborhoodAssignmentsModified: number;
+  repairStopReason: string | null;
+  repairFingerprint: string | null;
+  commitsExecuted: number;
+  v4SeedUsed: boolean;
   /** @deprecated use sessionFingerprint */
   fingerprint: string | null;
 }
@@ -49,6 +68,7 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark" });
   const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark" });
   const ended = performance.now();
+  const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   return {
     exclusiveConstructiveRuntimeMs: Math.round(ended - started),
     assignmentsReached: session.evidence?.finalCombinedAssignmentCount ?? stage2.selectedAssignmentCount ?? 0,
@@ -81,6 +101,24 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     combinedDependencyPrecheckViolationCount: session.evidence?.combinedDependencyPrecheckViolationCount ?? 0,
     contradictoryDependencyBoundCount: session.evidence?.contradictoryDependencyBoundCount ?? 0,
     firstDependencyBoundAcceptedAnchorTaskId: session.evidence?.firstDependencyBoundAcceptedAnchorTaskId ?? null,
+    productiveAssignmentsReached: session.evidence?.finalCombinedAssignmentCount ?? stage2.selectedAssignmentCount ?? 0,
+    productiveTasksRemaining: session.evidence?.productiveTasksRemaining ?? 0,
+    repairExecuted: repair.repairExecuted ?? repair.executed ?? false,
+    repairRoundCount: repair.repairRoundCount ?? 0,
+    repairAttemptCount: repair.repairAttemptCount ?? 0,
+    repairAcceptedCount: repair.repairAcceptedCount ?? 0,
+    acceptedPartialPlanBacktrackCount: repair.acceptedPartialPlanBacktrackCount ?? 0,
+    candidateEjectionSetCount: repair.candidateEjectionSetCount ?? 0,
+    acceptedBlockedAnchorTaskIds: repair.acceptedBlockedAnchorTaskIds ?? [],
+    acceptedEjectionTaskIds: repair.acceptedEjectionTaskIds ?? [],
+    acceptedRepairDependencyClosureTaskIds: repair.acceptedRepairDependencyClosureTaskIds ?? [],
+    productiveAssignmentDelta: repair.productiveAssignmentDelta ?? 0,
+    protectedAssignmentsModified: repair.protectedAssignmentsModified ?? false,
+    outsideNeighborhoodAssignmentsModified: repair.outsideNeighborhoodAssignmentsModified ?? 0,
+    repairStopReason: repair.repairLogicalStopReason ?? repair.stopReason ?? null,
+    repairFingerprint: repair.repairFingerprint ?? null,
+    commitsExecuted: repair.commitsExecuted ?? session.evidence?.commitsExecuted ?? 0,
+    v4SeedUsed: repair.v4SeedUsed ?? session.evidence?.v4SeedUsed ?? false,
     fingerprint: session.evidence?.sessionFingerprint ?? null,
   };
 }

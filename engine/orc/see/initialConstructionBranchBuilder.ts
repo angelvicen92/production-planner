@@ -39,6 +39,22 @@ export interface AnchorPlacementEvidence {
   reasonCodes: readonly string[];
   resourceAlternativeIds: readonly number[][];
   temporalCandidateFingerprint: string;
+  causalConflictEvidence?: AnchorPlacementCausalConflictEvidence;
+  fingerprint: string;
+  readOnly: true;
+}
+
+export interface AnchorPlacementCausalConflictEvidence {
+  taskWindowConflictDetails: readonly any[];
+  contestantConflictTaskIds: readonly number[];
+  spaceConflictTaskIds: readonly number[];
+  resourceConflictTaskIds: readonly number[];
+  protectedIntervalConflictIds: readonly string[];
+  dependencyLowerBoundTaskIds: readonly number[];
+  dependencyUpperBoundTaskIds: readonly number[];
+  causalConflictTaskIds: readonly number[];
+  evidenceComplete: boolean;
+  missingEvidenceFields: readonly string[];
   fingerprint: string;
   readOnly: true;
 }
@@ -382,16 +398,23 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
         branchEvaluationCount += 1;
         const blockers = [...closure.blockers];
         const provisional: CandidateAssignment[] = [];
-        const makeEvidence = (feasible: boolean, reasonCodes: string[], resourceIds: number[][]): AnchorPlacementEvidence => {
-          const temporalCandidateFingerprint = createHash("sha256").update(stableStringify({ absoluteTemporalIndex, windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned })).digest("hex");
-          const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: absoluteTemporalIndex, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), temporalCandidateFingerprint, fingerprint: "", readOnly: true };
+        const makeCausalEvidence = (feasibility: any | null): AnchorPlacementCausalConflictEvidence => {
+          const missing = feasibility ? [] : ["placement_feasibility_not_executed"];
+          const causalConflictTaskIds = [...new Set([...(feasibility?.contestantConflictTaskIds ?? []), ...(feasibility?.spaceConflictTaskIds ?? []), ...(feasibility?.resourceConflictTaskIds ?? []), ...(feasibility?.dependencyLowerBoundTaskIds ?? []), ...(feasibility?.dependencyUpperBoundTaskIds ?? []), ...(feasibility?.taskWindowConflictDetails ?? []).flatMap((d:any)=>d.conflictTaskIds ?? [])].map(Number).filter(Number.isFinite))].sort((a,b)=>a-b);
+          const ev: AnchorPlacementCausalConflictEvidence = { taskWindowConflictDetails: feasibility?.taskWindowConflictDetails ?? [], contestantConflictTaskIds: [...(feasibility?.contestantConflictTaskIds ?? [])].map(Number).sort((a,b)=>a-b), spaceConflictTaskIds: [...(feasibility?.spaceConflictTaskIds ?? [])].map(Number).sort((a,b)=>a-b), resourceConflictTaskIds: [...(feasibility?.resourceConflictTaskIds ?? [])].map(Number).sort((a,b)=>a-b), protectedIntervalConflictIds: [...(feasibility?.protectedIntervalConflictIds ?? [])].sort(), dependencyLowerBoundTaskIds: [...(feasibility?.dependencyLowerBoundTaskIds ?? [])].map(Number).sort((a,b)=>a-b), dependencyUpperBoundTaskIds: [...(feasibility?.dependencyUpperBoundTaskIds ?? [])].map(Number).sort((a,b)=>a-b), causalConflictTaskIds, evidenceComplete: !!feasibility, missingEvidenceFields: missing, fingerprint: "", readOnly: true };
           ev.fingerprint = createHash("sha256").update(stableStringify({ ...ev, fingerprint: undefined })).digest("hex");
           return ev;
         };
-        if (resourceAlternative.unsupported) { const evidence = makeEvidence(false, [resourceAlternative.unsupported.code], []); branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, [], evidence)); continue; }
+        const makeEvidence = (feasible: boolean, reasonCodes: string[], resourceIds: number[][], feasibility: any | null): AnchorPlacementEvidence => {
+          const temporalCandidateFingerprint = createHash("sha256").update(stableStringify({ absoluteTemporalIndex, windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned })).digest("hex");
+          const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: absoluteTemporalIndex, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), temporalCandidateFingerprint, causalConflictEvidence: makeCausalEvidence(feasibility), fingerprint: "", readOnly: true };
+          ev.fingerprint = createHash("sha256").update(stableStringify({ ...ev, fingerprint: undefined })).digest("hex");
+          return ev;
+        };
+        if (resourceAlternative.unsupported) { const evidence = makeEvidence(false, [resourceAlternative.unsupported.code], [], null); branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, [], evidence)); continue; }
         const anchorAssignment = { taskId: anchorId, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
         const anchorFeasibility = canPlace(args.input, args.originOperationalState, anchor, anchorAssignment, baseOccupied, tasks);
-        const placementEvidence = makeEvidence(anchorFeasibility.valid, anchorFeasibility.reasonCodes, [resourceAlternative.ids]);
+        const placementEvidence = makeEvidence(anchorFeasibility.valid, anchorFeasibility.reasonCodes, [resourceAlternative.ids], anchorFeasibility);
         if (!anchorFeasibility.valid) { const anchorBlockers = anchorFeasibility.reasonCodes.map((code) => ({ code, taskId: anchorId })); branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: anchorFeasibility.reasonCodes[0] ?? "ANCHOR_WINDOW_INFEASIBLE", blockers: [...blockers, ...anchorBlockers].slice(0, 10), evidence: [...blockers, ...anchorBlockers].slice(0, 5), unsupportedRequirementCodes: [], anchorPlacementEvidence: placementEvidence }); continue; }
         provisional.push(anchorAssignment);
         const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1), baseProvisionalAssignments: args.baseProvisionalAssignments }) : null;

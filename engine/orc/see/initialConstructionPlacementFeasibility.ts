@@ -5,6 +5,7 @@ import { resolveORCSpaceOccupancy, type ORCSpaceOccupancyMode } from "../state/s
 import { evaluateORCSpaceCapacitySemantics } from "../state/spaceCapacitySemantics";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
+import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
 
 type TaskLike = NonNullable<EngineInput["tasks"]>[number] & Record<string, unknown>;
 export type InitialConstructionPlacementReasonCode = "TASK_WINDOW_CONFLICT" | "PROTECTED_INTERVAL_CONFLICT" | "CONTESTANT_OVERLAP" | "SPACE_OVERLAP" | "RESOURCE_OVERLAP" | "DEPENDENCY_CONFLICT";
@@ -38,18 +39,9 @@ const overlaps = (a: { startPlanned?: string | null; endPlanned?: string | null;
 const entryOf = (a: CandidateAssignment) => ({ taskId: a.taskId, startPlanned: a.startPlanned ?? "", endPlanned: a.endPlanned ?? "", assignedResourceIds: a.resourceIds ?? [], spaceId: a.spaceId ?? null });
 const uniq = <T>(xs: T[]) => [...new Set(xs)];
 
-function dependencyIds(task: TaskLike, field: "lower" | "upper", tasks: Map<number, TaskLike>): number[] {
-  const id = Number(task.id);
-  if (field === "lower") return uniq([...(task.dependsOnTaskIds as any[] ?? []), ...(task.dependencyTaskIds as any[] ?? []), ...(task.prerequisiteTaskIds as any[] ?? []), ...((task.dependencies as any[] ?? []).map((d:any)=>Number(d?.taskId ?? d?.fromTaskId ?? d)))] .map(Number).filter(Number.isFinite));
-  const out: number[] = [];
-  for (const other of tasks.values()) {
-    const deps = dependencyIds(other, "lower", tasks);
-    if (deps.includes(id)) out.push(Number(other.id));
-  }
-  return uniq(out);
-}
-
 function resolveTaskWindowConflictDetails(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>) {
+  const graph = resolveORCTaskDependencyGraph([...(input.tasks ?? [])] as any);
+  const edgeByKey = new Map(graph.edges.map((e) => [`${e.fromTaskId}->${e.toTaskId}`, e]));
   const details: InitialConstructionPlacementFeasibility["taskWindowConflictDetails"] = [];
   const add = (kind: InitialConstructionTaskWindowConflictKind, conflictTaskIds: number[] = [], expected: any = null, actual: any = null) => details.push({ kind, taskId: Number(task.id), conflictTaskIds: uniq(conflictTaskIds), expected, actual, readOnly: true });
   const start = toMin(assignment.startPlanned), end = toMin(assignment.endPlanned), workStart = toMin(input.workDay?.start), workEnd = toMin(input.workDay?.end);
@@ -61,8 +53,8 @@ function resolveTaskWindowConflictDetails(input: EngineInput, task: TaskLike, as
   const fixedStart = toMin(String(task.fixedWindowStart ?? "")), fixedEnd = toMin(String(task.fixedWindowEnd ?? ""));
   if (fixedStart != null && start !== fixedStart) add("FIXED_START", [], task.fixedWindowStart, assignment.startPlanned);
   if (fixedEnd != null && end !== fixedEnd) add("FIXED_END", [], task.fixedWindowEnd, assignment.endPlanned);
-  for (const id of dependencyIds(task, "lower", tasks)) { const a = occupied.find(x=>Number(x.taskId)===id); if (a && toMin(a.endPlanned) != null && start != null && start < (toMin(a.endPlanned) as number)) add("DEPENDENCY_LOWER_BOUND", [id], a.endPlanned, assignment.startPlanned); }
-  for (const id of dependencyIds(task, "upper", tasks)) { const a = occupied.find(x=>Number(x.taskId)===id); if (a && toMin(a.startPlanned) != null && end != null && end > (toMin(a.startPlanned) as number)) add("DEPENDENCY_UPPER_BOUND", [id], a.startPlanned, assignment.endPlanned); }
+  for (const id of graph.prerequisitesByTaskId.get(Number(task.id)) ?? []) { const a = occupied.find(x=>Number(x.taskId)===id); const edge = edgeByKey.get(`${id}->${Number(task.id)}`); if (a && toMin(a.endPlanned) != null && start != null && start < (toMin(a.endPlanned) as number)) add("DEPENDENCY_LOWER_BOUND", [id], { prerequisiteTaskId:id, dependentTaskId:Number(task.id), sourceTypes:edge?.sourceTypes ?? [], expected:a.endPlanned }, assignment.startPlanned); }
+  for (const id of graph.dependentsByTaskId.get(Number(task.id)) ?? []) { const a = occupied.find(x=>Number(x.taskId)===id); const edge = edgeByKey.get(`${Number(task.id)}->${id}`); if (a && toMin(a.startPlanned) != null && end != null && end > (toMin(a.startPlanned) as number)) add("DEPENDENCY_UPPER_BOUND", [id], { prerequisiteTaskId:Number(task.id), dependentTaskId:id, sourceTypes:edge?.sourceTypes ?? [], expected:a.startPlanned }, assignment.endPlanned); }
   return details;
 }
 
