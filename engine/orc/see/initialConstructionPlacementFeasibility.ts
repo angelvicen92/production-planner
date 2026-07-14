@@ -5,7 +5,7 @@ import { resolveORCSpaceOccupancy, type ORCSpaceOccupancyMode } from "../state/s
 import { evaluateORCSpaceCapacitySemantics } from "../state/spaceCapacitySemantics";
 import { resolveORCTransportContract } from "../state/transportContractResolver";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
-import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
+import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 type TaskLike = NonNullable<EngineInput["tasks"]>[number] & Record<string, unknown>;
 export type InitialConstructionPlacementReasonCode = "TASK_WINDOW_CONFLICT" | "PROTECTED_INTERVAL_CONFLICT" | "CONTESTANT_OVERLAP" | "SPACE_OVERLAP" | "RESOURCE_OVERLAP" | "DEPENDENCY_CONFLICT";
@@ -39,9 +39,10 @@ const overlaps = (a: { startPlanned?: string | null; endPlanned?: string | null;
 const entryOf = (a: CandidateAssignment) => ({ taskId: a.taskId, startPlanned: a.startPlanned ?? "", endPlanned: a.endPlanned ?? "", assignedResourceIds: a.resourceIds ?? [], spaceId: a.spaceId ?? null });
 const uniq = <T>(xs: T[]) => [...new Set(xs)];
 
-function resolveTaskWindowConflictDetails(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>) {
-  const graph = resolveORCTaskDependencyGraph([...(input.tasks ?? [])] as any);
-  const edgeByKey = new Map(graph.edges.map((e) => [`${e.fromTaskId}->${e.toTaskId}`, e]));
+function resolveTaskWindowConflictDetails(input: EngineInput, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>, canonicalContext?: InitialConstructionCanonicalContext | null) {
+  const context = resolveInitialConstructionCanonicalContext({ input, canonicalContext });
+  const graph = context;
+  const edgeByKey = context.edgeByKey;
   const details: InitialConstructionPlacementFeasibility["taskWindowConflictDetails"] = [];
   const add = (kind: InitialConstructionTaskWindowConflictKind, conflictTaskIds: number[] = [], expected: any = null, actual: any = null) => details.push({ kind, taskId: Number(task.id), conflictTaskIds: uniq(conflictTaskIds), expected, actual, readOnly: true });
   const start = toMin(assignment.startPlanned), end = toMin(assignment.endPlanned), workStart = toMin(input.workDay?.start), workEnd = toMin(input.workDay?.end);
@@ -59,7 +60,7 @@ function resolveTaskWindowConflictDetails(input: EngineInput, task: TaskLike, as
 }
 
 
-export function evaluateInitialConstructionPlacementFeasibility(args: { input: EngineInput; originOperationalState: OperationalState; task: TaskLike; assignment: CandidateAssignment; occupiedAssignments: CandidateAssignment[]; tasks: Map<number, TaskLike> }): InitialConstructionPlacementFeasibility {
+export function evaluateInitialConstructionPlacementFeasibility(args: { input: EngineInput; originOperationalState: OperationalState; task: TaskLike; assignment: CandidateAssignment; occupiedAssignments: CandidateAssignment[]; tasks: Map<number, TaskLike>; canonicalContext?: InitialConstructionCanonicalContext | null }): InitialConstructionPlacementFeasibility {
   const reasonCodes: InitialConstructionPlacementReasonCode[] = [];
   const checkedDimensions = ["task_window", "protected_intervals", "contestant_occupancy", "space_occupancy", "resource_occupancy"];
   const transportContract = (args.originOperationalState.constraints as any)?.transportContract ?? resolveORCTransportContract(args.input as any);
@@ -68,7 +69,7 @@ export function evaluateInitialConstructionPlacementFeasibility(args: { input: E
   const role = resolveORCPlanningEntryOperationalRoleMetadata({ entry, task: args.task, mealWindow, transportContract });
   const contestantOccupiesTime = occupiesContestantTime({ task: args.task, entry, roleMetadata: role, mealWindow, transportContract });
   const occupancy = resolveORCSpaceOccupancy({ entry, task: args.task, roleMetadata: role, spaceConfig: args.originOperationalState.spaces, transportContract });
-  const taskWindowConflictDetails: InitialConstructionPlacementFeasibility["taskWindowConflictDetails"] = resolveTaskWindowConflictDetails(args.input, args.task, args.assignment, args.occupiedAssignments, args.tasks);
+  const taskWindowConflictDetails: InitialConstructionPlacementFeasibility["taskWindowConflictDetails"] = resolveTaskWindowConflictDetails(args.input, args.task, args.assignment, args.occupiedAssignments, args.tasks, args.canonicalContext);
   if (taskWindowConflictDetails.length) reasonCodes.push("TASK_WINDOW_CONFLICT");
   const dependencyLowerBoundTaskIds: number[] = uniq(taskWindowConflictDetails.filter((d: any)=>d.kind==="DEPENDENCY_LOWER_BOUND").flatMap((d: any)=>d.conflictTaskIds));
   const dependencyUpperBoundTaskIds: number[] = uniq(taskWindowConflictDetails.filter((d: any)=>d.kind==="DEPENDENCY_UPPER_BOUND").flatMap((d: any)=>d.conflictTaskIds));

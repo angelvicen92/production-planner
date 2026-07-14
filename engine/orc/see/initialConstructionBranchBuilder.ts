@@ -8,6 +8,7 @@ import { evaluateInitialConstructionPlacementFeasibility } from "./initialConstr
 import { generateInitialConstructionAnchorTemporalCandidates, type InitialConstructionAnchorTemporalCandidate } from "./initialConstructionAnchorTemporalCandidates";
 import { evaluateInitialConstructionCombinedDependencyCompatibility, resolveInitialConstructionDependencyTemporalBounds } from "./initialConstructionDependencyTemporalBounds";
 import { resolveInitialConstructionAnchorExplorationBudget } from "../active/initialConstructionAnchorExplorationBudget";
+import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 const protectedStatus = new Set(["done", "in_progress"]);
 
@@ -132,11 +133,13 @@ const overlaps = (left: { startPlanned?: string | null; endPlanned?: string | nu
 
 const taskMap = (input: EngineInput): Map<number, TaskLike> => new Map((input.tasks ?? []).map((task) => [Number(task.id), task as TaskLike]));
 
-function prereqMap(stage1: any): Map<number, number[]> {
+function prereqMap(stage1: any, canonicalContext?: InitialConstructionCanonicalContext | null): Map<number, number[]> {
+  if (canonicalContext) return new Map(canonicalContext.taskIds.map((id) => [id, [...(canonicalContext.prerequisitesByTaskId.get(id) ?? [])]]));
   return new Map((stage1.initialConstructionMap?.dependencyGraph?.nodes ?? []).map((node: any) => [Number(node.taskId), (node.directPrerequisiteTaskIds ?? []).map(Number).sort((a: number, b: number) => a - b)]));
 }
 
-function cycleSet(stage1: any): Set<number> {
+function cycleSet(stage1: any, canonicalContext?: InitialConstructionCanonicalContext | null): Set<number> {
+  if (canonicalContext) return new Set(canonicalContext.cycleTaskIds);
   return new Set((stage1.initialConstructionMap?.dependencyGraph?.nodes ?? []).filter((node: any) => node.inDependencyCycle).map((node: any) => Number(node.taskId)));
 }
 
@@ -144,10 +147,11 @@ function protectedFinish(task: TaskLike): number | null {
   return toMin(String(task.endPlanned ?? task.fixedWindowEnd ?? task.end ?? ""));
 }
 
-export function buildInitialConstructionClosure(args: { input: EngineInput; stage1: any; anchorTaskId: number }) {
-  const tasks = taskMap(args.input);
-  const prerequisites = prereqMap(args.stage1);
-  const cycles = cycleSet(args.stage1);
+export function buildInitialConstructionClosure(args: { input: EngineInput; stage1: any; anchorTaskId: number; canonicalContext?: InitialConstructionCanonicalContext | null }) {
+  const context = resolveInitialConstructionCanonicalContext({ input: args.input, stage1: args.stage1, canonicalContext: args.canonicalContext });
+  const tasks = new Map(context.tasksById as any) as Map<number, TaskLike>;
+  const prerequisites = prereqMap(args.stage1, context);
+  const cycles = cycleSet(args.stage1, context);
   const seen = new Set<number>();
   const order: number[] = [];
   const blockers: Blocker[] = [];
@@ -229,8 +233,8 @@ function taskProtectedIntervals(input: EngineInput, task: TaskLike) {
   });
 }
 
-function canPlace(input: EngineInput, originOperationalState: OperationalState, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>) {
-  return evaluateInitialConstructionPlacementFeasibility({ input, originOperationalState, task, assignment, occupiedAssignments: occupied, tasks });
+function canPlace(input: EngineInput, originOperationalState: OperationalState, task: TaskLike, assignment: CandidateAssignment, occupied: CandidateAssignment[], tasks: Map<number, TaskLike>, canonicalContext?: InitialConstructionCanonicalContext | null) {
+  return evaluateInitialConstructionPlacementFeasibility({ input, originOperationalState, task, assignment, occupiedAssignments: occupied, tasks, canonicalContext });
 }
 
 
@@ -256,7 +260,7 @@ function temporalCandidates(input: EngineInput, task: TaskLike, latestEnd: numbe
   return [...starts].filter((start) => start + duration <= latestEnd).sort((a, b) => b - a);
 }
 
-export function searchInitialConstructionClosureAssignments(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; closureTopologicalTaskIds: number[]; anchorAssignment: CandidateAssignment; branchWindow: { start: string; end: string }; reasoningBudget?: ReasoningBudgetProfile | null; tasks?: Map<number, TaskLike>; prerequisites?: Map<number, number[]>; baseProvisionalAssignments?: readonly CandidateAssignment[] }): { ok: boolean; assignments: CandidateAssignment[]; blockers: Blocker[]; evidence: AssignmentSearchEvidence } {
+export function searchInitialConstructionClosureAssignments(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; closureTopologicalTaskIds: number[]; anchorAssignment: CandidateAssignment; branchWindow: { start: string; end: string }; reasoningBudget?: ReasoningBudgetProfile | null; tasks?: Map<number, TaskLike>; prerequisites?: Map<number, number[]>; baseProvisionalAssignments?: readonly CandidateAssignment[]; canonicalContext?: InitialConstructionCanonicalContext | null }): { ok: boolean; assignments: CandidateAssignment[]; blockers: Blocker[]; evidence: AssignmentSearchEvidence } {
   const tasks = args.tasks ?? taskMap(args.input);
   const prerequisites = args.prerequisites ?? prereqMap(args.stage1);
   const baseOccupied: CandidateAssignment[] = [
@@ -286,7 +290,7 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
     const taskId = order[idx]; const task = tasks.get(taskId);
     if (!task) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "MISSING_TASK"); return null; }
     const dependentStarts = provisional.filter((assignment) => (prerequisites.get(assignment.taskId) ?? []).includes(taskId)).map((assignment) => toMin(assignment.startPlanned)).filter((v): v is number => v != null);
-    const bounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId, assignments: [...baseOccupied, ...provisional] });
+    const bounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId, assignments: [...baseOccupied, ...provisional], canonicalContext: args.canonicalContext });
     const latestBounds = [...dependentStarts, ...(bounds.latestEnd == null ? [] : [toMin(bounds.latestEnd)!])];
     if (!latestBounds.length) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "DEPENDENT_NOT_PLACED"); return null; }
     const earliest = bounds.earliestStart == null ? null : toMin(bounds.earliestStart);
@@ -305,7 +309,7 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
       for (const alt of alts) {
         if (alt.unsupported) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, alt.unsupported.code); continue; }
         const assignment = { ...base, resourceIds: alt.ids };
-        const feasibility = canPlace(args.input, args.originOperationalState, task, assignment, [...baseOccupied, ...provisional], tasks);
+        const feasibility = canPlace(args.input, args.originOperationalState, task, assignment, [...baseOccupied, ...provisional], tasks, args.canonicalContext);
         if (!feasibility.valid) {
           for (const code of feasibility.reasonCodes) addReason(metrics.deadEndReasonCounts, code);
           continue;
@@ -335,11 +339,12 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
   return { ok: !!found, assignments, blockers, evidence: makeSearchEvidence(assignments, { ...metrics, closureComplete: !!found }) };
 }
 
-export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; closureTaskIds?: readonly number[] }): InitialConstructionBranchBuilderResult {
+export function buildInitialConstructionBranches(args: { input: EngineInput; originOperationalState: OperationalState; stage1: any; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; closureTaskIds?: readonly number[]; canonicalContext?: InitialConstructionCanonicalContext | null }): InitialConstructionBranchBuilderResult {
+  const context = resolveInitialConstructionCanonicalContext({ input: args.input, stage1: args.stage1, canonicalContext: args.canonicalContext });
   const anchorId = Number(args.stage1.selectedAnchor?.anchorTaskId);
-  const originalClosure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId });
+  const originalClosure = buildInitialConstructionClosure({ input: args.input, stage1: args.stage1, anchorTaskId: anchorId, canonicalContext: context });
   const closure = args.closureTaskIds ? { closureTaskIds: [...args.closureTaskIds].map(Number), topologicalTaskOrder: [...args.closureTaskIds].map(Number), blockers: originalClosure.blockers.filter((b) => args.closureTaskIds?.includes(Number(b.taskId))) } : originalClosure;
-  const tasks = taskMap(args.input);
+  const tasks = new Map(context.tasksById as any) as Map<number, TaskLike>;
   const search = (args.stage1.searchSpaces ?? []).find((space: any) => Number(space.anchorTaskId) === anchorId);
   const budget = resolveInitialConstructionAnchorExplorationBudget({ reasoningBudget: args.reasoningBudget, maxBranches: args.maxBranches });
   const maxBranches = budget.maxBranchEvaluationsPerAnchor;
@@ -350,7 +355,7 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
   ];
   const anchor = tasks.get(anchorId);
   const windows = ((search?.provisionalWindows ?? []) as any[]).map((window, index) => ({ window, index }));
-  const anchorDependencyBounds = anchor ? resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId: anchorId, assignments: baseOccupied }) : null;
+  const anchorDependencyBounds = anchor ? resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId: anchorId, assignments: baseOccupied, canonicalContext: context }) : null;
   const perWindow = anchor ? windows.map(({ window, index }) => generateInitialConstructionAnchorTemporalCandidates({ input: args.input, anchorTask: anchor, provisionalWindow: window, provisionalAssignments: baseOccupied, originOperationalState: args.originOperationalState, maxCandidates: budget.maxTemporalCandidatesPerAnchor, windowIndex: index, dependencyTemporalBounds: anchorDependencyBounds }).map((candidate) => ({ window, candidate }))) : [];
   const globalCandidates: { window: any; candidate: InitialConstructionAnchorTemporalCandidate }[] = [];
   const seenCandidates = new Set<string>();
@@ -413,12 +418,12 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
         };
         if (resourceAlternative.unsupported) { const evidence = makeEvidence(false, [resourceAlternative.unsupported.code], [], null); branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, [], evidence)); continue; }
         const anchorAssignment = { taskId: anchorId, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
-        const anchorFeasibility = canPlace(args.input, args.originOperationalState, anchor, anchorAssignment, baseOccupied, tasks);
+        const anchorFeasibility = canPlace(args.input, args.originOperationalState, anchor, anchorAssignment, baseOccupied, tasks, context);
         const placementEvidence = makeEvidence(anchorFeasibility.valid, anchorFeasibility.reasonCodes, [resourceAlternative.ids], anchorFeasibility);
         if (!anchorFeasibility.valid) { const anchorBlockers = anchorFeasibility.reasonCodes.map((code) => ({ code, taskId: anchorId })); branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: anchorFeasibility.reasonCodes[0] ?? "ANCHOR_WINDOW_INFEASIBLE", blockers: [...blockers, ...anchorBlockers].slice(0, 10), evidence: [...blockers, ...anchorBlockers].slice(0, 5), unsupportedRequirementCodes: [], anchorPlacementEvidence: placementEvidence }); continue; }
         provisional.push(anchorAssignment);
-        const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1), baseProvisionalAssignments: args.baseProvisionalAssignments }) : null;
-        const combined = searchResult?.ok ? evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.input, baseAssignments: baseOccupied, branchAssignments: searchResult.assignments }) : null;
+        const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1, context), baseProvisionalAssignments: args.baseProvisionalAssignments, canonicalContext: context }) : null;
+        const combined = searchResult?.ok ? evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.input, baseAssignments: baseOccupied, branchAssignments: searchResult.assignments, canonicalContext: context }) : null;
         const dependencyBlockers = combined && !combined.compatible ? combined.violations.map((v:any)=>({ ...v, code:"DEPENDENCY_CONFLICT" })) : [];
         const ok = blockers.length === 0 && !!searchResult?.ok && dependencyBlockers.length === 0;
         const branch = materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? []), ...dependencyBlockers], searchResult?.assignments ?? provisional, searchResult?.evidence, placementEvidence);

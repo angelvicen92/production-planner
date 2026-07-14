@@ -4,6 +4,7 @@ import { buildOperationalStateFromEngineInput } from "../orc/adapters/fromEngine
 import { runInitialConstructionStage1 } from "../orc/active/runInitialConstructionStage1";
 import { runInitialConstructionStage2FirstPartialPlan } from "../orc/active/runInitialConstructionStage2FirstPartialPlan";
 import { runInitialConstructionIterativeSession } from "../orc/active/runInitialConstructionIterativeSession";
+import { buildInitialConstructionCanonicalContext } from "../orc/understanding/initialConstructionCanonicalContext";
 
 export interface InitialConstructionBenchmarkResult {
   exclusiveConstructiveRuntimeMs: number;
@@ -56,6 +57,16 @@ export interface InitialConstructionBenchmarkResult {
   repairFingerprint: string | null;
   commitsExecuted: number;
   v4SeedUsed: boolean;
+  canonicalContextSource: string | null;
+  canonicalContextFingerprint: string | null;
+  canonicalContextBuildCount: number;
+  dependencyGraphFallbackResolutionCount: number;
+  hotPathDependencyGraphResolutionCount: number;
+  preRepairAssignmentsReached: number;
+  preRepairAcceptedCycleCount: number;
+  preRepairAssignmentsFingerprint: string | null;
+  preRepairProductiveTasksRemaining: number;
+  preRepairStopReason: string | null;
   /** @deprecated use sessionFingerprint */
   fingerprint: string | null;
 }
@@ -65,8 +76,9 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const originOperationalState = buildOperationalStateFromEngineInput(originInput as any);
   const started = performance.now();
   const stage1 = runInitialConstructionStage1({ originInput, originOperationalState, createdAt: "benchmark" });
-  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark" });
-  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark" });
+  const canonical = buildInitialConstructionCanonicalContext({ input: originInput, stage1 });
+  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context });
+  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context });
   const ended = performance.now();
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   return {
@@ -119,6 +131,16 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     repairFingerprint: repair.repairFingerprint ?? null,
     commitsExecuted: repair.commitsExecuted ?? session.evidence?.commitsExecuted ?? 0,
     v4SeedUsed: repair.v4SeedUsed ?? session.evidence?.v4SeedUsed ?? false,
+    canonicalContextSource: session.evidence?.canonicalContextSource ?? null,
+    canonicalContextFingerprint: session.evidence?.canonicalContextFingerprint ?? null,
+    canonicalContextBuildCount: session.evidence?.canonicalContextBuildCount ?? 0,
+    dependencyGraphFallbackResolutionCount: session.evidence?.dependencyGraphFallbackResolutionCount ?? 0,
+    hotPathDependencyGraphResolutionCount: session.evidence?.hotPathDependencyGraphResolutionCount ?? 0,
+    preRepairAssignmentsReached: session.evidence?.preRepairAssignmentsReached ?? 0,
+    preRepairAcceptedCycleCount: session.evidence?.preRepairAcceptedCycleCount ?? 0,
+    preRepairAssignmentsFingerprint: session.evidence?.preRepairAssignmentsFingerprint ?? null,
+    preRepairProductiveTasksRemaining: session.evidence?.preRepairProductiveTasksRemaining ?? 0,
+    preRepairStopReason: session.evidence?.preRepairStopReason ?? null,
     fingerprint: session.evidence?.sessionFingerprint ?? null,
   };
 }

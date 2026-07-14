@@ -35,6 +35,7 @@ import { buildInitialConstructionSeedIndependenceAudit, runInitialConstructionSt
 import { runInitialConstructionStage2FirstPartialPlan } from "./runInitialConstructionStage2FirstPartialPlan";
 import { runInitialConstructionTwoCycleSession } from "./runInitialConstructionTwoCycleSession";
 import { runInitialConstructionIterativeSession } from "./runInitialConstructionIterativeSession";
+import { buildInitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 export type ORCActiveUsedEngine = "orc" | "orc_baseline_preserved" | "v4_fallback";
 export type ORCResultKind = "orc_changed_plan" | "orc_baseline_preserved" | "v4_fallback";
@@ -424,10 +425,11 @@ export function runORCActivePlanner(input: EngineInput, options: ORCActivePlanne
   const originOperationalState = buildOperationalStateFromEngineInput(originConstruction.input);
   const initialConstructionStage1 = runInitialConstructionStage1({ originInput: input, originOperationalState, cognitiveState: originOperationalState.cognitive as any, reasoningBudget: null, createdAt: null });
   const initialConstructionSeedIndependence = buildInitialConstructionSeedIndependenceAudit(initialConstructionStage1, true);
-  const initialConstructionStage2FirstPartialPlan = runInitialConstructionStage2FirstPartialPlan({ originInput: input, originOperationalState, stage1: initialConstructionStage1, reasoningBudget: null, createdAt: null });
+  const initialConstructionCanonical = buildInitialConstructionCanonicalContext({ input, stage1: initialConstructionStage1 });
+  const initialConstructionStage2FirstPartialPlan = runInitialConstructionStage2FirstPartialPlan({ originInput: input, originOperationalState, stage1: initialConstructionStage1, reasoningBudget: null, createdAt: null, canonicalContext: initialConstructionCanonical.context });
   const initialConstructionStage3 = runInitialConstructionStage3ResidualAnchorSelection({ originInput: input, originOperationalState, stage1: initialConstructionStage1, stage2: initialConstructionStage2FirstPartialPlan });
   const initialConstructionTwoCycleSession = runInitialConstructionTwoCycleSession({ originInput: input, originOperationalState, stage2: initialConstructionStage2FirstPartialPlan, stage3: initialConstructionStage3, reasoningBudget: null, createdAt: null });
-  const initialConstructionIterativeSession = runInitialConstructionIterativeSession({ originInput: input, originOperationalState, stage1: initialConstructionStage1, stage2: initialConstructionStage2FirstPartialPlan, reasoningBudget: null, createdAt: null });
+  const initialConstructionIterativeSession = runInitialConstructionIterativeSession({ originInput: input, originOperationalState, stage1: initialConstructionStage1, stage2: initialConstructionStage2FirstPartialPlan, reasoningBudget: null, createdAt: null, canonicalContext: initialConstructionCanonical.context });
   const v4 = generatePlanV4(input, options);
   const reportExecutionTimeMs = options.orcShadowResult !== undefined ? 0 : (v4.diagnostics.performance?.runtimeMs ?? 0);
   let seededInput: EngineInput | null = null;
