@@ -9,6 +9,7 @@ import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
 import type { InitialConstructionAnchorAttemptDiagnostics } from "./initialConstructionAnchorBlockerClassifier";
+import { resolveInitialConstructionAnchorBranchLimit } from "./initialConstructionAnchorBranchLimit";
 
 const SAMPLE_LIMIT = 10;
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -47,18 +48,24 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
   const unsupportedRequirementCodes = new Set<string>();
   let taskWindowConflictCount = 0, protectedIntervalConflictCount = 0, contestantOverlapConflictCount = 0, spaceOverlapConflictCount = 0, resourceOverlapConflictCount = 0, assignmentSearchBudgetExhaustedCount = 0;
   let anchorTemporalCandidateCount = 0, feasibleAnchorTemporalCandidateCount = 0, rejectedAnchorTemporalCandidateCount = 0, alternativeAnchorTemporalCandidateCount = 0, endAlignedCandidateRejectedCount = 0, alternativeCandidateReachedRecursiveSearchCount = 0;
+  const temporalByFingerprint = new Map<string, { feasible: boolean; rank: number; sourceKinds: readonly string[]; reachedRecursive: boolean }>();
   for (const branch of built?.branches ?? []) {
     inc(branchStatusCounts, String(branch.status ?? "unknown"));
     if (branch.rejectionReason) inc(branchRejectionReasonCounts, String(branch.rejectionReason));
     if (branch.anchorPlacementEvidence) {
-      anchorTemporalCandidateCount += 1;
-      if (branch.anchorPlacementEvidence.feasible) feasibleAnchorTemporalCandidateCount += 1; else rejectedAnchorTemporalCandidateCount += 1;
-      if (Number(branch.anchorPlacementEvidence.candidateRankWithinWindow) > 0) alternativeAnchorTemporalCandidateCount += 1;
-      if (Number(branch.anchorPlacementEvidence.candidateRankWithinWindow) > 0 && branch.searchEvidence) alternativeCandidateReachedRecursiveSearchCount += 1;
-      if ((branch.anchorPlacementEvidence.sourceKinds ?? []).includes("historical-end-aligned") && !branch.anchorPlacementEvidence.feasible) endAlignedCandidateRejectedCount += 1;
+      const fp = branch.anchorPlacementEvidence.temporalCandidateFingerprint ?? `${branch.anchorPlacementEvidence.windowIndex}|${branch.anchorPlacementEvidence.candidateRankWithinWindow}|${branch.anchorPlacementEvidence.startPlanned}|${branch.anchorPlacementEvidence.endPlanned}|${(branch.anchorPlacementEvidence.sourceKinds ?? []).join(",")}`;
+      const current = temporalByFingerprint.get(fp);
+      temporalByFingerprint.set(fp, { feasible: (current?.feasible ?? false) || !!branch.anchorPlacementEvidence.feasible, rank: Math.min(current?.rank ?? Number(branch.anchorPlacementEvidence.candidateRankWithinWindow), Number(branch.anchorPlacementEvidence.candidateRankWithinWindow)), sourceKinds: branch.anchorPlacementEvidence.sourceKinds ?? [], reachedRecursive: (current?.reachedRecursive ?? false) || !!branch.searchEvidence });
       for (const code of branch.anchorPlacementEvidence.reasonCodes ?? []) { inc(anchorPlacementReasonCounts, String(code)); inc(placementReasonCounts, String(code)); }
     }
     for (const code of branch.unsupportedRequirementCodes ?? []) unsupportedRequirementCodes.add(String(code));
+  }
+  anchorTemporalCandidateCount = temporalByFingerprint.size;
+  for (const candidate of temporalByFingerprint.values()) {
+    if (candidate.feasible) feasibleAnchorTemporalCandidateCount += 1; else rejectedAnchorTemporalCandidateCount += 1;
+    if (candidate.rank > 0) alternativeAnchorTemporalCandidateCount += 1;
+    if (candidate.rank > 0 && candidate.reachedRecursive) alternativeCandidateReachedRecursiveSearchCount += 1;
+    if ((candidate.sourceKinds ?? []).includes("historical-end-aligned") && !candidate.feasible) endAlignedCandidateRejectedCount += 1;
   }
   for (const attempt of attempts) {
     for (const [code, count] of Object.entries(attempt.deadEndReasonCounts ?? {})) inc(deadEndReasonCounts, String(code), Number(count) || 0);
@@ -100,7 +107,7 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
 export function materializeInitialConstructionAnchorAttempt(args: { originInput: EngineInput; originOperationalState: OperationalState; stage: any; anchor?: any | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; provisionallySatisfiedTaskIds?: readonly number[]; closureTaskIds?: readonly number[]; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null; requireFutureFeasibility?: (branch: InitialConstructionBranch) => any | null }) {
   const anchorTaskId = Number(args.anchor?.anchorTaskId ?? args.stage?.selectedAnchor?.anchorTaskId ?? args.stage?.selectedAnchorTaskId);
   const stage = { ...args.stage, selectedAnchor: args.anchor ?? args.stage?.selectedAnchor ?? { anchorTaskId }, selectedAnchorTaskId: anchorTaskId };
-  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: stage, maxBranches: args.maxBranches ?? 8, reasoningBudget: args.reasoningBudget, baseProvisionalAssignments: args.baseProvisionalAssignments, closureTaskIds: args.closureTaskIds });
+  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: stage, maxBranches: args.maxBranches ?? resolveInitialConstructionAnchorBranchLimit(args.reasoningBudget), reasoningBudget: args.reasoningBudget, baseProvisionalAssignments: args.baseProvisionalAssignments, closureTaskIds: args.closureTaskIds });
   const attempts: any[] = [];
   const selectable: any[] = [];
   let transformationsExecuted = 0, simulationsExecuted = 0, validationsExecuted = 0, hardValidBranchCount = 0;
