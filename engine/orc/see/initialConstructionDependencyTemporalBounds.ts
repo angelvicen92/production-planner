@@ -3,7 +3,7 @@ import type { EngineInput } from "../../types";
 import type { CandidateAssignment } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
-import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
+import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 type TaskLike = NonNullable<EngineInput["tasks"]>[number] & Record<string, unknown>;
 const min = (s?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(s ?? "")) ? Number(String(s).slice(0,2))*60+Number(String(s).slice(3)) : null;
@@ -19,9 +19,9 @@ export interface InitialConstructionDependencyTemporalBounds {
   hasContradictoryBounds: boolean; provisionallySatisfiedDependencyAudit: InitialConstructionProvisionallySatisfiedDependencyAudit; fingerprint: string; readOnly: true;
 }
 
-export function resolveInitialConstructionDependencyTemporalBounds(args: { input: EngineInput; taskId: number; assignments: readonly (CandidateAssignment | any)[]; tasks?: Map<number, TaskLike> | ReadonlyMap<number, TaskLike>; provisionallySatisfiedTaskIds?: readonly number[] }): InitialConstructionDependencyTemporalBounds {
+export function resolveInitialConstructionDependencyTemporalBounds(args: { input: EngineInput; taskId: number; assignments: readonly (CandidateAssignment | any)[]; tasks?: Map<number, TaskLike> | ReadonlyMap<number, TaskLike>; provisionallySatisfiedTaskIds?: readonly number[]; canonicalContext?: InitialConstructionCanonicalContext | null }): InitialConstructionDependencyTemporalBounds {
   const taskId = Number(args.taskId);
-  const graph = resolveORCTaskDependencyGraph((args.input.tasks ?? []) as any);
+  const graph = resolveInitialConstructionCanonicalContext({ input: args.input, canonicalContext: args.canonicalContext });
   const byTask = new Map<number, any>();
   for (const a of [...(args.assignments ?? [])].sort((a:any,b:any)=>Number(a.taskId)-Number(b.taskId)||String(a.startPlanned).localeCompare(String(b.startPlanned)))) if (!byTask.has(Number(a.taskId))) byTask.set(Number(a.taskId), a);
   const assignedIds = [...byTask.keys()].sort((a,b)=>a-b);
@@ -29,7 +29,7 @@ export function resolveInitialConstructionDependencyTemporalBounds(args: { input
   const declaredWithout = declared.filter((id)=>!byTask.has(id));
   const auditBase = { declaredSatisfiedTaskIds: declared, actuallyAssignedTaskIds: assignedIds, declaredWithoutAssignmentTaskIds: declaredWithout, coherent: declaredWithout.length === 0, readOnly: true as const };
   const audit = { ...auditBase, fingerprint: hash(auditBase) };
-  const edgeByKey = new Map(graph.edges.map((e)=>[`${e.fromTaskId}->${e.toTaskId}`, e]));
+  const edgeByKey = graph.edgeByKey;
   const missing = new Set<number>();
   const prereqBounds: InitialConstructionDependencyTimeBound[] = [];
   for (const id of graph.prerequisitesByTaskId.get(taskId) ?? []) {
@@ -50,16 +50,16 @@ export function resolveInitialConstructionDependencyTemporalBounds(args: { input
   return deepFreeze({ ...base, fingerprint: hash(base) }) as any;
 }
 
-export function evaluateInitialConstructionCombinedDependencyCompatibility(args: { input: EngineInput; baseAssignments?: readonly (CandidateAssignment|any)[]; branchAssignments?: readonly (CandidateAssignment|any)[] }) {
-  const graph = resolveORCTaskDependencyGraph((args.input.tasks ?? []) as any);
+export function evaluateInitialConstructionCombinedDependencyCompatibility(args: { input: EngineInput; baseAssignments?: readonly (CandidateAssignment|any)[]; branchAssignments?: readonly (CandidateAssignment|any)[]; canonicalContext?: InitialConstructionCanonicalContext | null }) {
+  const graph = resolveInitialConstructionCanonicalContext({ input: args.input, canonicalContext: args.canonicalContext });
   const byTask = new Map<number, any>();
   for (const a of [...(args.baseAssignments ?? []), ...(args.branchAssignments ?? [])]) byTask.set(Number(a.taskId), a);
   const violations: any[] = [];
-  for (const e of graph.edges) {
+  for (const e of graph.dependencyGraph.edges ?? []) {
     const pre = byTask.get(e.fromTaskId), dep = byTask.get(e.toTaskId); if (!pre || !dep) continue;
     const end = min(pre.endPlanned ?? pre.end), start = min(dep.startPlanned ?? dep.start); if (end == null || start == null) continue;
     if (end > start) violations.push({ code:"DEPENDENCY_CONFLICT", subtype:"COMBINED_DEPENDENCY_PRECHECK", prerequisiteTaskId:e.fromTaskId, dependentTaskId:e.toTaskId, prerequisiteEnd:hh(end), dependentStart:hh(start), sourceTypes:e.sourceTypes, readOnly:true });
   }
-  const base = { compatible: violations.length === 0, violationCount: violations.length, violations: violations.slice(0,10), checkedEdgeCount: graph.edges.filter(e=>byTask.has(e.fromTaskId)&&byTask.has(e.toTaskId)).length, readOnly:true as const };
+  const base = { compatible: violations.length === 0, violationCount: violations.length, violations: violations.slice(0,10), checkedEdgeCount: (graph.dependencyGraph.edges ?? []).filter((e:any)=>byTask.has(e.fromTaskId)&&byTask.has(e.toTaskId)).length, readOnly:true as const };
   return deepFreeze({ ...base, fingerprint: hash(base) }) as any;
 }

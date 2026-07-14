@@ -3,7 +3,7 @@ import type { EngineInput } from "../../types";
 import type { CandidateAssignment, OperationalState } from "../contracts";
 import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
-import { resolveORCTaskDependencyGraph } from "../state/dependencySemantics";
+import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 const uniq = (xs: readonly number[]) => [...new Set(xs.filter(Number.isFinite))].sort((a,b)=>a-b);
 const combinations = (items: number[], size: number): number[][] => {
@@ -16,7 +16,7 @@ const combinations = (items: number[], size: number): number[][] => {
   return out;
 };
 
-export interface InitialConstructionRepairEjectionSet { readonly ejectedTaskIds: readonly number[]; readonly repairDependencyClosureTaskIds: readonly number[]; readonly fingerprint: string; readonly readOnly: true }
+export interface InitialConstructionRepairEjectionSet { readonly ejectedTaskIds: readonly number[]; readonly repairDependencyClosureTaskIds: readonly number[]; readonly repairNeighborhoodTaskIds: readonly number[]; readonly repairNeighborhoodTopologicalTaskIds: readonly number[]; readonly repairNeighborhoodDependencyFingerprint: string; readonly fingerprint: string; readonly readOnly: true }
 export interface InitialConstructionRepairProblem {
   readonly residualFingerprint: string; readonly blockedAnchorTaskId: number; readonly blockedAnchorRank: number | null; readonly blockedAnchorClosureTaskIds: readonly number[];
   readonly directConflictTaskIds: readonly number[]; readonly dependencyConflictTaskIds: readonly number[]; readonly candidateEjectionSets: readonly InitialConstructionRepairEjectionSet[];
@@ -31,8 +31,8 @@ export function resolveInitialConstructionImmutableTaskIds(args: { input: Engine
   return uniq([...out]);
 }
 
-export function repairDependencyClosure(args: { input: EngineInput; seedTaskIds: readonly number[]; provisionalAssignmentTaskIds: readonly number[] }): number[] {
-  const graph = resolveORCTaskDependencyGraph((args.input.tasks ?? []) as any);
+export function repairDependencyClosure(args: { input: EngineInput; seedTaskIds: readonly number[]; provisionalAssignmentTaskIds: readonly number[]; canonicalContext?: InitialConstructionCanonicalContext | null }): number[] {
+  const graph = resolveInitialConstructionCanonicalContext({ input: args.input, canonicalContext: args.canonicalContext });
   const provisional = new Set(args.provisionalAssignmentTaskIds.map(Number));
   const closure = new Set(args.seedTaskIds.map(Number).filter((id)=>provisional.has(id)));
   let changed = true;
@@ -44,10 +44,11 @@ export function repairDependencyClosure(args: { input: EngineInput; seedTaskIds:
       }
     }
   }
-  return uniq([...closure]);
+  return graph.topologicalTaskIds.filter((id) => closure.has(id));
 }
 
-export function buildInitialConstructionRepairProblem(args: { input: EngineInput; originOperationalState: OperationalState; residualFingerprint: string; blockedAnchorTaskId: number; blockedAnchorRank?: number | null; blockedAnchorClosureTaskIds?: readonly number[]; terminalEvidence?: any; provisionalAssignments: readonly CandidateAssignment[]; protectedTaskIds?: readonly number[]; maxEjectedAssignments?: number; maxRepairNeighborhoodTasks?: number }): InitialConstructionRepairProblem {
+export function buildInitialConstructionRepairProblem(args: { input: EngineInput; originOperationalState: OperationalState; residualFingerprint: string; blockedAnchorTaskId: number; blockedAnchorRank?: number | null; blockedAnchorClosureTaskIds?: readonly number[]; terminalEvidence?: any; provisionalAssignments: readonly CandidateAssignment[]; protectedTaskIds?: readonly number[]; maxEjectedAssignments?: number; maxRepairNeighborhoodTasks?: number; canonicalContext?: InitialConstructionCanonicalContext | null }): InitialConstructionRepairProblem {
+  const canonicalContext = resolveInitialConstructionCanonicalContext({ input: args.input, canonicalContext: args.canonicalContext });
   const maxDepth = args.maxEjectedAssignments ?? 4;
   const maxNeighborhood = args.maxRepairNeighborhoodTasks ?? 12;
   const provisionalIds = uniq(args.provisionalAssignments.map(a=>Number(a.taskId)));
@@ -65,11 +66,13 @@ export function buildInitialConstructionRepairProblem(args: { input: EngineInput
   const candidateEjectionSets: InitialConstructionRepairEjectionSet[] = [];
   for (let depth=1; depth<=maxDepth; depth++) {
     for (const combo of combinations(related, depth)) {
-      const closure = repairDependencyClosure({ input: args.input, seedTaskIds: combo, provisionalAssignmentTaskIds: provisionalIds });
+      const closure = repairDependencyClosure({ input: args.input, seedTaskIds: combo, provisionalAssignmentTaskIds: provisionalIds, canonicalContext });
       const neighborhood = uniq([Number(args.blockedAnchorTaskId), ...(args.blockedAnchorClosureTaskIds ?? []), ...closure]);
+      const neighborhoodTopo = canonicalContext.topologicalTaskIds.filter((id) => neighborhood.includes(id));
+      const depFp = createHash("sha256").update(stableStringify({ edges: (canonicalContext.dependencyGraph.edges ?? []).filter((e:any) => neighborhood.includes(e.fromTaskId) && neighborhood.includes(e.toTaskId)) })).digest("hex");
       if (closure.length === 0 || neighborhood.length > maxNeighborhood || closure.some((id)=>immutableSet.has(id))) continue;
-      const fingerprint = createHash("sha256").update(stableStringify({ combo, closure })).digest("hex");
-      candidateEjectionSets.push({ ejectedTaskIds: combo, repairDependencyClosureTaskIds: closure, fingerprint, readOnly: true });
+      const fingerprint = createHash("sha256").update(stableStringify({ combo, closure, neighborhoodTopo, depFp })).digest("hex");
+      candidateEjectionSets.push({ ejectedTaskIds: combo, repairDependencyClosureTaskIds: closure, repairNeighborhoodTaskIds: neighborhood, repairNeighborhoodTopologicalTaskIds: neighborhoodTopo, repairNeighborhoodDependencyFingerprint: depFp, fingerprint, readOnly: true });
     }
   }
   const payload = { residualFingerprint: args.residualFingerprint, blockedAnchorTaskId: Number(args.blockedAnchorTaskId), direct, dep, sets: candidateEjectionSets.map(s=>({e:s.ejectedTaskIds,c:s.repairDependencyClosureTaskIds})) };

@@ -12,6 +12,7 @@ import { validateSimulatedStates } from "../validation/validationEngine";
 import type { InitialConstructionAnchorAttemptDiagnostics } from "./initialConstructionAnchorBlockerClassifier";
 import { resolveInitialConstructionAnchorBranchLimit } from "./initialConstructionAnchorBranchLimit";
 import { resolveInitialConstructionAnchorExplorationBudget } from "./initialConstructionAnchorExplorationBudget";
+import { resolveInitialConstructionCanonicalContext, type InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
 
 const SAMPLE_LIMIT = 10;
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -137,11 +138,12 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
   return diagnostics;
 }
 
-export function materializeInitialConstructionAnchorAttempt(args: { originInput: EngineInput; originOperationalState: OperationalState; stage: any; anchor?: any | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; provisionallySatisfiedTaskIds?: readonly number[]; closureTaskIds?: readonly number[]; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null; requireFutureFeasibility?: (branch: InitialConstructionBranch) => any | null }) {
+export function materializeInitialConstructionAnchorAttempt(args: { originInput: EngineInput; originOperationalState: OperationalState; stage: any; anchor?: any | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; provisionallySatisfiedTaskIds?: readonly number[]; closureTaskIds?: readonly number[]; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null; requireFutureFeasibility?: (branch: InitialConstructionBranch) => any | null; canonicalContext?: InitialConstructionCanonicalContext | null }) {
+  const canonicalContext = resolveInitialConstructionCanonicalContext({ input: args.originInput, stage1: args.stage, canonicalContext: args.canonicalContext });
   const anchorTaskId = Number(args.anchor?.anchorTaskId ?? args.stage?.selectedAnchor?.anchorTaskId ?? args.stage?.selectedAnchorTaskId);
   const stage = { ...args.stage, selectedAnchor: args.anchor ?? args.stage?.selectedAnchor ?? { anchorTaskId }, selectedAnchorTaskId: anchorTaskId };
   const anchorExplorationBudget = resolveInitialConstructionAnchorExplorationBudget({ reasoningBudget: args.reasoningBudget, maxBranches: args.maxBranches ?? resolveInitialConstructionAnchorBranchLimit(args.reasoningBudget) });
-  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: stage, maxBranches: anchorExplorationBudget.maxBranchEvaluationsPerAnchor, reasoningBudget: args.reasoningBudget, baseProvisionalAssignments: args.baseProvisionalAssignments, closureTaskIds: args.closureTaskIds });
+  const built = buildInitialConstructionBranches({ input: args.originInput, originOperationalState: args.originOperationalState, stage1: stage, maxBranches: anchorExplorationBudget.maxBranchEvaluationsPerAnchor, reasoningBudget: args.reasoningBudget, baseProvisionalAssignments: args.baseProvisionalAssignments, closureTaskIds: args.closureTaskIds, canonicalContext });
   const attempts: any[] = [];
   const selectable: any[] = [];
   let transformationsExecuted = 0, simulationsExecuted = 0, validationsExecuted = 0, hardValidBranchCount = 0;
@@ -155,7 +157,7 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
     const closureIntegrityOk = ev?.closureComplete === true && assignedIds.length === built.closureTaskIds.length && uniqueAssignedIds.size === built.closureTaskIds.length && assignedIds.every((taskId) => closureIds.has(taskId)) && built.closureTaskIds.every((taskId) => uniqueAssignedIds.has(taskId)) && !!ev?.assignmentSearchFingerprint;
     if (!closureIntegrityOk) { attempt.rejectionReason = "CLOSURE_ASSIGNMENT_INTEGRITY_FAILED"; attempts.push(attempt); continue; }
     const baseAssignments = (args.baseProvisionalAssignments ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.resourceIds ?? entry.assignedResourceIds ?? [])] }));
-    const depPrecheck = evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.originInput, baseAssignments, branchAssignments: branch.assignments });
+    const depPrecheck = evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.originInput, baseAssignments, branchAssignments: branch.assignments, canonicalContext });
     combinedDependencyPrecheckCount += 1;
     combinedDependencyPrecheckViolationCount += depPrecheck.violationCount;
     attempt.combinedDependencyPrecheck = depPrecheck;
@@ -179,7 +181,7 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
   const selected = selectable[0] ?? null;
   const diagnostics = buildAttemptDiagnostics(anchorTaskId, stage, built, attempts, hardValidBranchCount, anchorExplorationBudget);
   const allAssigned = [...(args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] })), ...(args.baseProvisionalAssignments ?? [])];
-  const dependencyBounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.originInput, taskId: anchorTaskId, assignments: allAssigned as any, provisionallySatisfiedTaskIds: args.provisionallySatisfiedTaskIds });
+  const dependencyBounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.originInput, taskId: anchorTaskId, assignments: allAssigned as any, provisionallySatisfiedTaskIds: args.provisionallySatisfiedTaskIds, canonicalContext });
   const dependencyEvidence = { dependencyTemporalBoundsVersion: "initial-construction-dependency-temporal-bounds-v1", assignedPrerequisiteBoundCount: dependencyBounds.assignedPrerequisiteTaskIds.length, assignedDependentBoundCount: dependencyBounds.assignedDependentTaskIds.length, dependencyBoundedTemporalCandidateCount: (built.branches ?? []).filter((b:any)=>b.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")).length, contradictoryDependencyBoundCount: dependencyBounds.hasContradictoryBounds ? 1 : 0, combinedDependencyPrecheckCount, combinedDependencyPrecheckRejectedCount, combinedDependencyPrecheckViolationCount, provisionallySatisfiedDependencyAudit: dependencyBounds.provisionallySatisfiedDependencyAudit, firstDependencyBoundAcceptedAnchorTaskId: (selectable ?? []).some((opt:any)=>opt.branch?.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")) ? anchorTaskId : null };
   return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, diagnostics: { ...diagnostics, ...dependencyEvidence }, ...dependencyEvidence, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
 }
