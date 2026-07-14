@@ -4,6 +4,7 @@ import type { CandidateAssignment, OperationalState, ReasoningBudgetProfile, Val
 import { deepFreeze } from "../immutability";
 import { stableStringify } from "../structuralEquality";
 import { buildInitialConstructionBranches, branchToCandidate, type InitialConstructionBranch } from "../see/initialConstructionBranchBuilder";
+import { evaluateInitialConstructionCombinedDependencyCompatibility, resolveInitialConstructionDependencyTemporalBounds } from "../see/initialConstructionDependencyTemporalBounds";
 import { composePartialPlans } from "../see/partialPlanComposer";
 import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
@@ -111,6 +112,7 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
   const attempts: any[] = [];
   const selectable: any[] = [];
   let transformationsExecuted = 0, simulationsExecuted = 0, validationsExecuted = 0, hardValidBranchCount = 0;
+  let combinedDependencyPrecheckCount = 0, combinedDependencyPrecheckRejectedCount = 0, combinedDependencyPrecheckViolationCount = 0;
 
   for (const branch of built.branches) {
     const ev = branch.searchEvidence;
@@ -119,6 +121,12 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
     const closureIds = new Set(built.closureTaskIds); const assignedIds = branch.assignments.map((assignment) => assignment.taskId); const uniqueAssignedIds = new Set(assignedIds);
     const closureIntegrityOk = ev?.closureComplete === true && assignedIds.length === built.closureTaskIds.length && uniqueAssignedIds.size === built.closureTaskIds.length && assignedIds.every((taskId) => closureIds.has(taskId)) && built.closureTaskIds.every((taskId) => uniqueAssignedIds.has(taskId)) && !!ev?.assignmentSearchFingerprint;
     if (!closureIntegrityOk) { attempt.rejectionReason = "CLOSURE_ASSIGNMENT_INTEGRITY_FAILED"; attempts.push(attempt); continue; }
+    const baseAssignments = (args.baseProvisionalAssignments ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.resourceIds ?? entry.assignedResourceIds ?? [])] }));
+    const depPrecheck = evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.originInput, baseAssignments, branchAssignments: branch.assignments });
+    combinedDependencyPrecheckCount += 1;
+    combinedDependencyPrecheckViolationCount += depPrecheck.violationCount;
+    attempt.combinedDependencyPrecheck = depPrecheck;
+    if (!depPrecheck.compatible) { attempt.rejectionReason = "DEPENDENCY_CONFLICT"; combinedDependencyPrecheckRejectedCount += 1; attempts.push(attempt); continue; }
     const candidate = branchToCandidate(branch);
     const partialPlanResult = composePartialPlans([candidate], { createdAt: args.createdAt ?? null, maxPartialPlans: 1 });
     const transformationResult = buildCandidateStates(args.originOperationalState, [candidate], { createdAt: args.createdAt ?? null, maxTransformations: 1 });
@@ -137,5 +145,8 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
   selectable.sort((a, b) => (minutes(a.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) - (minutes(b.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) || a.branch.branchId.localeCompare(b.branch.branchId));
   const selected = selectable[0] ?? null;
   const diagnostics = buildAttemptDiagnostics(anchorTaskId, stage, built, attempts, hardValidBranchCount);
-  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, diagnostics, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
+  const allAssigned = [...(args.originOperationalState.planning ?? []).map((entry: any) => ({ taskId: entry.taskId, startPlanned: entry.startPlanned, endPlanned: entry.endPlanned, spaceId: entry.spaceId ?? null, resourceIds: [...(entry.assignedResourceIds ?? [])] })), ...(args.baseProvisionalAssignments ?? [])];
+  const dependencyBounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.originInput, taskId: anchorTaskId, assignments: allAssigned as any, provisionallySatisfiedTaskIds: args.provisionallySatisfiedTaskIds });
+  const dependencyEvidence = { dependencyTemporalBoundsVersion: "initial-construction-dependency-temporal-bounds-v1", assignedPrerequisiteBoundCount: dependencyBounds.assignedPrerequisiteTaskIds.length, assignedDependentBoundCount: dependencyBounds.assignedDependentTaskIds.length, dependencyBoundedTemporalCandidateCount: (built.branches ?? []).filter((b:any)=>b.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")).length, dependencyLowerBoundRejectedCount: (built.branches ?? []).filter((b:any)=>b.rejectionReason === "DEPENDENCY_LOWER_BOUND").length, dependencyUpperBoundRejectedCount: (built.branches ?? []).filter((b:any)=>b.rejectionReason === "DEPENDENCY_UPPER_BOUND").length, contradictoryDependencyBoundCount: dependencyBounds.hasContradictoryBounds ? 1 : 0, combinedDependencyPrecheckCount, combinedDependencyPrecheckRejectedCount, combinedDependencyPrecheckViolationCount, provisionallySatisfiedDependencyAudit: dependencyBounds.provisionallySatisfiedDependencyAudit, firstDependencyBoundAcceptedAnchorTaskId: (built.branches ?? []).some((b:any)=>b.status === "candidate" && b.anchorPlacementEvidence?.sourceKinds?.some((s:string)=>s === "assigned-prerequisite-end" || s === "assigned-dependent-start")) ? anchorTaskId : null };
+  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, diagnostics: { ...diagnostics, ...dependencyEvidence }, ...dependencyEvidence, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
 }

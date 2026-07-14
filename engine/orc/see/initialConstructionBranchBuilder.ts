@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
 import { evaluateInitialConstructionPlacementFeasibility } from "./initialConstructionPlacementFeasibility";
 import { generateInitialConstructionAnchorTemporalCandidates, type InitialConstructionAnchorTemporalCandidate } from "./initialConstructionAnchorTemporalCandidates";
+import { evaluateInitialConstructionCombinedDependencyCompatibility, resolveInitialConstructionDependencyTemporalBounds } from "./initialConstructionDependencyTemporalBounds";
 
 const protectedStatus = new Set(["done", "in_progress"]);
 
@@ -258,8 +259,12 @@ export function searchInitialConstructionClosureAssignments(args: { input: Engin
     const taskId = order[idx]; const task = tasks.get(taskId);
     if (!task) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "MISSING_TASK"); return null; }
     const dependentStarts = provisional.filter((assignment) => (prerequisites.get(assignment.taskId) ?? []).includes(taskId)).map((assignment) => toMin(assignment.startPlanned)).filter((v): v is number => v != null);
-    if (!dependentStarts.length) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "DEPENDENT_NOT_PLACED"); return null; }
-    const candidates = temporalCandidates(args.input, task, Math.min(...dependentStarts), args.branchWindow, [...baseOccupied, ...provisional]);
+    const bounds = resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId, assignments: [...baseOccupied, ...provisional] });
+    const latestBounds = [...dependentStarts, ...(bounds.latestEnd == null ? [] : [toMin(bounds.latestEnd)!])];
+    if (!latestBounds.length) { metrics.failedTaskId = taskId; addReason(metrics.deadEndReasonCounts, "DEPENDENT_NOT_PLACED"); return null; }
+    const earliest = bounds.earliestStart == null ? null : toMin(bounds.earliestStart);
+    if (bounds.hasContradictoryBounds) addReason(metrics.deadEndReasonCounts, "DEPENDENCY_CONFLICT_CONTRADICTORY_BOUNDS");
+    const candidates = temporalCandidates(args.input, task, Math.min(...latestBounds), args.branchWindow, [...baseOccupied, ...provisional]).filter((start)=>earliest==null||start>=earliest);
     metrics.temporalCandidateCount += candidates.length;
     const viable: CandidateAssignment[] = [];
     for (const start of candidates) {
@@ -319,7 +324,8 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
 
   const anchor = tasks.get(anchorId);
   const windows = ((search?.provisionalWindows ?? []) as any[]).map((window, index) => ({ window, index }));
-  const perWindow = anchor ? windows.map(({ window, index }) => generateInitialConstructionAnchorTemporalCandidates({ input: args.input, anchorTask: anchor, provisionalWindow: window, provisionalAssignments: baseOccupied, originOperationalState: args.originOperationalState, maxCandidates: maxBranches, windowIndex: index }).map((candidate) => ({ window, candidate }))) : [];
+  const anchorDependencyBounds = anchor ? resolveInitialConstructionDependencyTemporalBounds({ input: args.input, taskId: anchorId, assignments: baseOccupied }) : null;
+  const perWindow = anchor ? windows.map(({ window, index }) => generateInitialConstructionAnchorTemporalCandidates({ input: args.input, anchorTask: anchor, provisionalWindow: window, provisionalAssignments: baseOccupied, originOperationalState: args.originOperationalState, maxCandidates: maxBranches, windowIndex: index, dependencyTemporalBounds: anchorDependencyBounds }).map((candidate) => ({ window, candidate }))) : [];
   const globalCandidates: { window: any; candidate: InitialConstructionAnchorTemporalCandidate }[] = [];
   const seenCandidates = new Set<string>();
   const maxRank = Math.max(0, ...perWindow.map((items) => items.length));
@@ -378,8 +384,10 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
       provisional.push(anchorAssignment);
 
       const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1), baseProvisionalAssignments: args.baseProvisionalAssignments }) : null;
-      const ok = blockers.length === 0 && !!searchResult?.ok;
-      branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? [])], searchResult?.assignments ?? provisional, searchResult?.evidence, placementEvidence));
+      const combined = searchResult?.ok ? evaluateInitialConstructionCombinedDependencyCompatibility({ input: args.input, baseAssignments: baseOccupied, branchAssignments: searchResult.assignments }) : null;
+      const dependencyBlockers = combined && !combined.compatible ? combined.violations.map((v:any)=>({ ...v, code:"DEPENDENCY_CONFLICT" })) : [];
+      const ok = blockers.length === 0 && !!searchResult?.ok && dependencyBlockers.length === 0;
+      branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? []), ...dependencyBlockers], searchResult?.assignments ?? provisional, searchResult?.evidence, placementEvidence));
     }
   }
 
