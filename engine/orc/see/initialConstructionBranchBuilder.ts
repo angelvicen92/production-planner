@@ -5,6 +5,7 @@ import { stableStringify } from "../structuralEquality";
 import { createHash } from "node:crypto";
 import { resolveInitialConstructionProtectedIntervalsForAnchor } from "./initialConstructionSearchSpace";
 import { evaluateInitialConstructionPlacementFeasibility } from "./initialConstructionPlacementFeasibility";
+import { generateInitialConstructionAnchorTemporalCandidates, type InitialConstructionAnchorTemporalCandidate } from "./initialConstructionAnchorTemporalCandidates";
 
 const protectedStatus = new Set(["done", "in_progress"]);
 
@@ -22,6 +23,21 @@ export interface InitialConstructionBranch {
   unsupportedRequirementCodes: string[];
   evidence: Blocker[];
   searchEvidence?: AssignmentSearchEvidence;
+  anchorPlacementEvidence?: AnchorPlacementEvidence;
+}
+
+export interface AnchorPlacementEvidence {
+  windowIndex: number;
+  candidateRankWithinWindow: number;
+  sourceKinds: readonly string[];
+  startPlanned: string;
+  endPlanned: string;
+  feasibilityChecked: boolean;
+  feasible: boolean;
+  reasonCodes: readonly string[];
+  resourceAlternativeIds: readonly number[][];
+  fingerprint: string;
+  readOnly: true;
 }
 
 export interface AssignmentSearchEvidence {
@@ -300,47 +316,68 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
   ];
   let sequence = 0;
 
-  for (const window of search?.provisionalWindows ?? []) {
+  const anchor = tasks.get(anchorId);
+  const windows = ((search?.provisionalWindows ?? []) as any[]).map((window, index) => ({ window, index }));
+  const perWindow = anchor ? windows.map(({ window, index }) => generateInitialConstructionAnchorTemporalCandidates({ input: args.input, anchorTask: anchor, provisionalWindow: window, provisionalAssignments: baseOccupied, originOperationalState: args.originOperationalState, maxCandidates: maxBranches, windowIndex: index }).map((candidate) => ({ window, candidate }))) : [];
+  const globalCandidates: { window: any; candidate: InitialConstructionAnchorTemporalCandidate }[] = [];
+  const seenCandidates = new Set<string>();
+  const maxRank = Math.max(0, ...perWindow.map((items) => items.length));
+  for (let rank = 0; rank < maxRank && globalCandidates.length < maxBranches; rank += 1) {
+    for (const items of perWindow) {
+      const item = items[rank];
+      if (!item) continue;
+      const key = `${item.candidate.startPlanned}|${item.candidate.endPlanned}|${item.candidate.windowIndex}`;
+      if (seenCandidates.has(key)) continue;
+      seenCandidates.add(key);
+      globalCandidates.push(item);
+      if (globalCandidates.length >= maxBranches) break;
+    }
+  }
+
+  for (const { window, candidate } of globalCandidates) {
     if (branches.length >= maxBranches) break;
-    const anchor = tasks.get(anchorId);
-    const windowEnd = toMin(window.end);
-    if (!anchor || windowEnd == null) continue;
-    const anchorEnd = toMin(String(anchor.fixedWindowEnd ?? "")) ?? windowEnd;
-    const anchorStart = toMin(String(anchor.fixedWindowStart ?? "")) ?? anchorEnd - durationOf(anchor);
-    const anchorResources = resourceAlternatives(args.input, anchor, baseOccupied, hh(anchorStart), hh(anchorEnd));
+    if (!anchor) continue;
+    const anchorResources = resourceAlternatives(args.input, anchor, baseOccupied, candidate.startPlanned, candidate.endPlanned);
 
     for (const resourceAlternative of anchorResources) {
+      if (branches.length >= maxBranches) break;
       sequence += 1;
       const branchId = `stage2-branch:${String(sequence).padStart(3, "0")}`;
       const blockers = [...closure.blockers];
       const provisional: CandidateAssignment[] = [];
+      const makeEvidence = (feasible: boolean, reasonCodes: string[], resourceIds: number[][]): AnchorPlacementEvidence => {
+        const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), fingerprint: "", readOnly: true };
+        ev.fingerprint = createHash("sha256").update(stableStringify({ ...ev, fingerprint: undefined })).digest("hex");
+        return ev;
+      };
 
       if (resourceAlternative.unsupported) {
-        branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, []));
+        const evidence = makeEvidence(false, [resourceAlternative.unsupported.code], []);
+        branches.push(rejectedBranch(branchId, resourceAlternative.unsupported, [], evidence));
         continue;
       }
 
-      const anchorAssignment = { taskId: anchorId, startPlanned: hh(anchorStart), endPlanned: hh(anchorEnd), spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
+      const anchorAssignment = { taskId: anchorId, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, spaceId: anchor.spaceId ?? null, resourceIds: resourceAlternative.ids };
       const anchorFeasibility = canPlace(args.input, args.originOperationalState, anchor, anchorAssignment, baseOccupied, tasks);
+      const placementEvidence = makeEvidence(anchorFeasibility.valid, anchorFeasibility.reasonCodes, [resourceAlternative.ids]);
       if (!anchorFeasibility.valid) {
         const anchorBlockers = anchorFeasibility.reasonCodes.map((code) => ({ code, taskId: anchorId }));
-        branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: anchorFeasibility.reasonCodes[0] ?? "ANCHOR_WINDOW_INFEASIBLE", blockers: [...blockers, ...anchorBlockers].slice(0, 10), evidence: [...blockers, ...anchorBlockers].slice(0, 5), unsupportedRequirementCodes: [] });
+        branches.push({ branchId, status: "closure-incomplete", assignments: [], rejectionReason: anchorFeasibility.reasonCodes[0] ?? "ANCHOR_WINDOW_INFEASIBLE", blockers: [...blockers, ...anchorBlockers].slice(0, 10), evidence: [...blockers, ...anchorBlockers].slice(0, 5), unsupportedRequirementCodes: [], anchorPlacementEvidence: placementEvidence });
         continue;
       }
       provisional.push(anchorAssignment);
 
       const searchResult = blockers.length === 0 ? searchInitialConstructionClosureAssignments({ input: args.input, originOperationalState: args.originOperationalState, stage1: args.stage1, closureTopologicalTaskIds: closure.topologicalTaskOrder, anchorAssignment, branchWindow: window, reasoningBudget: args.reasoningBudget, tasks, prerequisites: prereqMap(args.stage1), baseProvisionalAssignments: args.baseProvisionalAssignments }) : null;
       const ok = blockers.length === 0 && !!searchResult?.ok;
-      branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? [])], searchResult?.assignments ?? provisional, searchResult?.evidence));
-      if (branches.length >= maxBranches) break;
+      branches.push(materializeBranch(branchId, ok, [...blockers, ...(searchResult?.blockers ?? [])], searchResult?.assignments ?? provisional, searchResult?.evidence, placementEvidence));
     }
   }
 
-  const structuralFingerprint = createHash("sha256").update(stableStringify({ anchorId, closure: closure.closureTaskIds, branches: branches.map((branch) => ({ id: branch.branchId, status: branch.status, assignments: branch.assignments })) })).digest("hex");
+  const structuralFingerprint = createHash("sha256").update(stableStringify({ anchorId, closure: closure.closureTaskIds, branches: branches.map((branch) => ({ id: branch.branchId, status: branch.status, assignments: branch.assignments, anchorPlacementEvidence: branch.anchorPlacementEvidence ?? null })) })).digest("hex");
   return deepFreeze({ selectedAnchorTaskId: anchorId || null, closureTaskIds: closure.closureTaskIds, topologicalTaskOrder: closure.topologicalTaskOrder, branches, structuralFingerprint, readOnly: true }) as InitialConstructionBranchBuilderResult;
 }
 
-function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[], searchEvidence?: AssignmentSearchEvidence): InitialConstructionBranch {
+function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], provisional: CandidateAssignment[], searchEvidence?: AssignmentSearchEvidence, anchorPlacementEvidence?: AnchorPlacementEvidence): InitialConstructionBranch {
   const unsupportedCodes = [...new Set(blockers.filter((blocker) => blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT").map((blocker) => blocker.code))];
   return {
     branchId,
@@ -351,11 +388,12 @@ function materializeBranch(branchId: string, ok: boolean, blockers: Blocker[], p
     unsupportedRequirementCodes: unsupportedCodes,
     evidence: blockers.slice(0, 5),
     searchEvidence,
+    anchorPlacementEvidence,
   };
 }
 
-function rejectedBranch(branchId: string, blocker: Blocker, assignments: CandidateAssignment[]): InitialConstructionBranch {
-  return { branchId, status: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? "unsupported" : "closure-incomplete", assignments, rejectionReason: blocker.code, blockers: [blocker], unsupportedRequirementCodes: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? [blocker.code] : [], evidence: [blocker] };
+function rejectedBranch(branchId: string, blocker: Blocker, assignments: CandidateAssignment[], anchorPlacementEvidence?: AnchorPlacementEvidence): InitialConstructionBranch {
+  return { branchId, status: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? "unsupported" : "closure-incomplete", assignments, rejectionReason: blocker.code, blockers: [blocker], unsupportedRequirementCodes: blocker.code === "UNSUPPORTED_STAGE2_CONSTRUCTIVE_REQUIREMENT" ? [blocker.code] : [], evidence: [blocker], anchorPlacementEvidence };
 }
 
 export function branchToCandidate(branch: InitialConstructionBranch): Candidate {

@@ -43,15 +43,24 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
   const branchRejectionReasonCounts: Record<string, number> = {};
   const deadEndReasonCounts: Record<string, number> = {};
   const placementReasonCounts: Record<string, number> = {};
+  const anchorPlacementReasonCounts: Record<string, number> = {};
   const unsupportedRequirementCodes = new Set<string>();
   let taskWindowConflictCount = 0, protectedIntervalConflictCount = 0, contestantOverlapConflictCount = 0, spaceOverlapConflictCount = 0, resourceOverlapConflictCount = 0, assignmentSearchBudgetExhaustedCount = 0;
+  let anchorTemporalCandidateCount = 0, feasibleAnchorTemporalCandidateCount = 0, rejectedAnchorTemporalCandidateCount = 0, alternativeAnchorTemporalCandidateCount = 0, endAlignedCandidateRejectedCount = 0, alternativeCandidateReachedRecursiveSearchCount = 0;
   for (const branch of built?.branches ?? []) {
     inc(branchStatusCounts, String(branch.status ?? "unknown"));
     if (branch.rejectionReason) inc(branchRejectionReasonCounts, String(branch.rejectionReason));
+    if (branch.anchorPlacementEvidence) {
+      anchorTemporalCandidateCount += 1;
+      if (branch.anchorPlacementEvidence.feasible) feasibleAnchorTemporalCandidateCount += 1; else rejectedAnchorTemporalCandidateCount += 1;
+      if (Number(branch.anchorPlacementEvidence.candidateRankWithinWindow) > 0) alternativeAnchorTemporalCandidateCount += 1;
+      if (Number(branch.anchorPlacementEvidence.candidateRankWithinWindow) > 0 && branch.searchEvidence) alternativeCandidateReachedRecursiveSearchCount += 1;
+      if ((branch.anchorPlacementEvidence.sourceKinds ?? []).includes("historical-end-aligned") && !branch.anchorPlacementEvidence.feasible) endAlignedCandidateRejectedCount += 1;
+      for (const code of branch.anchorPlacementEvidence.reasonCodes ?? []) { inc(anchorPlacementReasonCounts, String(code)); inc(placementReasonCounts, String(code)); }
+    }
     for (const code of branch.unsupportedRequirementCodes ?? []) unsupportedRequirementCodes.add(String(code));
   }
   for (const attempt of attempts) {
-    if (attempt.rejectionReason) inc(branchRejectionReasonCounts, String(attempt.rejectionReason));
     for (const [code, count] of Object.entries(attempt.deadEndReasonCounts ?? {})) inc(deadEndReasonCounts, String(code), Number(count) || 0);
     for (const [code, count] of Object.entries(attempt.deadEndReasonCounts ?? {})) inc(placementReasonCounts, String(code), Number(count) || 0);
     taskWindowConflictCount += Number(attempt.taskWindowConflictCount ?? 0);
@@ -75,9 +84,11 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
     branchRejectionReasonCounts: Object.fromEntries(Object.entries(branchRejectionReasonCounts).sort()),
     deadEndReasonCounts: Object.fromEntries(Object.entries(deadEndReasonCounts).sort()),
     placementReasonCounts: Object.fromEntries(Object.entries(placementReasonCounts).sort()),
+    anchorPlacementReasonCounts: Object.fromEntries(Object.entries(anchorPlacementReasonCounts).sort()),
+    anchorTemporalCandidateCount, feasibleAnchorTemporalCandidateCount, rejectedAnchorTemporalCandidateCount, alternativeAnchorTemporalCandidateCount, endAlignedCandidateRejectedCount, alternativeCandidateReachedRecursiveSearchCount,
     taskWindowConflictCount, protectedIntervalConflictCount, contestantOverlapConflictCount, spaceOverlapConflictCount, resourceOverlapConflictCount, assignmentSearchBudgetExhaustedCount,
     unsupportedRequirementCodes: [...unsupportedRequirementCodes].sort(),
-    diagnosticsComplete: missing.length === 0,
+    diagnosticsComplete: missing.length === 0 && (built?.branches ?? []).every((branch: any) => !branch.rejectionReason || branch.anchorPlacementEvidence || branch.searchEvidence || (branch.blockers ?? []).length > 0),
     missingDiagnosticFields: missing.sort(),
     fingerprint: "",
     readOnly: true as const,
@@ -96,7 +107,7 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
 
   for (const branch of built.branches) {
     const ev = branch.searchEvidence;
-    const attempt: any = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null, closureComplete: ev?.closureComplete ?? null, placementAttemptCount: ev?.placementAttemptCount ?? 0, temporalCandidateCount: ev?.temporalCandidateCount ?? 0, resourceAlternativeCount: ev?.resourceAlternativeCount ?? 0, recursiveBacktrackCount: ev?.recursiveBacktrackCount ?? 0, temporalDecisionBacktrackCount: ev?.temporalDecisionBacktrackCount ?? 0, resourceDecisionBacktrackCount: ev?.resourceDecisionBacktrackCount ?? 0, backtrackEventsSample: ev?.backtrackEventsSample ?? [], repeatedStatePruneCount: ev?.repeatedStatePruneCount ?? 0, searchDepthReached: ev?.searchDepthReached ?? 0, budgetExhausted: ev?.budgetExhausted ?? false, deadEndReasonCounts: ev?.deadEndReasonCounts ?? {}, assignmentSearchFingerprint: ev?.assignmentSearchFingerprint ?? null, placementFeasibilityVersion: ev?.placementFeasibilityVersion ?? null, taskWindowConflictCount: ev?.taskWindowConflictCount ?? 0, protectedIntervalConflictCount: ev?.protectedIntervalConflictCount ?? 0, contestantOverlapConflictCount: ev?.contestantOverlapConflictCount ?? 0, spaceOverlapConflictCount: ev?.spaceOverlapConflictCount ?? 0, resourceOverlapConflictCount: ev?.resourceOverlapConflictCount ?? 0 };
+    const attempt: any = { branchId: branch.branchId, status: branch.status, assignmentCount: branch.assignments.length, rejectionReason: branch.rejectionReason ?? null, validation: null, partialPlanId: null, branchAssignmentsFingerprint: null, candidateAssignmentsFingerprint: null, simulatedAssignmentsFingerprint: null, lineageCoherent: null, closureComplete: ev?.closureComplete ?? null, placementAttemptCount: ev?.placementAttemptCount ?? 0, temporalCandidateCount: ev?.temporalCandidateCount ?? 0, resourceAlternativeCount: ev?.resourceAlternativeCount ?? 0, recursiveBacktrackCount: ev?.recursiveBacktrackCount ?? 0, temporalDecisionBacktrackCount: ev?.temporalDecisionBacktrackCount ?? 0, resourceDecisionBacktrackCount: ev?.resourceDecisionBacktrackCount ?? 0, backtrackEventsSample: ev?.backtrackEventsSample ?? [], repeatedStatePruneCount: ev?.repeatedStatePruneCount ?? 0, searchDepthReached: ev?.searchDepthReached ?? 0, budgetExhausted: ev?.budgetExhausted ?? false, deadEndReasonCounts: ev?.deadEndReasonCounts ?? {}, assignmentSearchFingerprint: ev?.assignmentSearchFingerprint ?? null, placementFeasibilityVersion: ev?.placementFeasibilityVersion ?? null, taskWindowConflictCount: ev?.taskWindowConflictCount ?? 0, protectedIntervalConflictCount: ev?.protectedIntervalConflictCount ?? 0, contestantOverlapConflictCount: ev?.contestantOverlapConflictCount ?? 0, spaceOverlapConflictCount: ev?.spaceOverlapConflictCount ?? 0, resourceOverlapConflictCount: ev?.resourceOverlapConflictCount ?? 0, anchorPlacementEvidence: branch.anchorPlacementEvidence ?? null };
     if (branch.status !== "candidate") { attempts.push(attempt); continue; }
     const closureIds = new Set(built.closureTaskIds); const assignedIds = branch.assignments.map((assignment) => assignment.taskId); const uniqueAssignedIds = new Set(assignedIds);
     const closureIntegrityOk = ev?.closureComplete === true && assignedIds.length === built.closureTaskIds.length && uniqueAssignedIds.size === built.closureTaskIds.length && assignedIds.every((taskId) => closureIds.has(taskId)) && built.closureTaskIds.every((taskId) => uniqueAssignedIds.has(taskId)) && !!ev?.assignmentSearchFingerprint;
