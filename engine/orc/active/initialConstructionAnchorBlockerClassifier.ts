@@ -30,6 +30,13 @@ export interface InitialConstructionAnchorAttemptDiagnostics {
   branchRejectionReasonCounts: Record<string, number>;
   deadEndReasonCounts: Record<string, number>;
   placementReasonCounts: Record<string, number>;
+  anchorPlacementReasonCounts: Record<string, number>;
+  anchorTemporalCandidateCount: number;
+  feasibleAnchorTemporalCandidateCount: number;
+  rejectedAnchorTemporalCandidateCount: number;
+  alternativeAnchorTemporalCandidateCount: number;
+  endAlignedCandidateRejectedCount: number;
+  alternativeCandidateReachedRecursiveSearchCount: number;
   taskWindowConflictCount: number;
   protectedIntervalConflictCount: number;
   contestantOverlapConflictCount: number;
@@ -68,7 +75,7 @@ function addValidationConflicts(codes: Set<InitialConstructionAnchorBlockerCode>
 }
 
 function conflictFrequency(code: InitialConstructionAnchorBlockerCode, diagnostics: Partial<InitialConstructionAnchorAttemptDiagnostics>): number {
-  const dead = diagnostics.deadEndReasonCounts ?? {};
+  const dead = diagnostics.placementReasonCounts ?? diagnostics.deadEndReasonCounts ?? {};
   if (code === "TASK_WINDOW_CONFLICT") return Number(diagnostics.taskWindowConflictCount ?? dead.TASK_WINDOW_CONFLICT ?? 0);
   if (code === "PROTECTED_INTERVAL_CONFLICT") return Number(diagnostics.protectedIntervalConflictCount ?? dead.PROTECTED_INTERVAL_CONFLICT ?? 0);
   if (code === "CONTESTANT_OVERLAP") return Number(diagnostics.contestantOverlapConflictCount ?? dead.CONTESTANT_OVERLAP ?? 0);
@@ -97,11 +104,12 @@ export function classifyInitialConstructionAnchorBlockers(args: { diagnostics: P
   if (searchSpaceEvidenceAvailable && (diagnostics.searchSpaceFound === false || (diagnostics.searchSpaceFound === true && diagnostics.provisionalWindowCount === 0))) codes.add("NO_SEARCH_SPACE");
   if ((diagnostics.unsupportedBranchCount ?? 0) > 0 || (diagnostics.unsupportedRequirementCodes?.length ?? 0) > 0 || /unsupported/i.test(String(args.terminalReason ?? ""))) codes.add("UNSUPPORTED_REQUIREMENT");
   if ((diagnostics.assignmentSearchBudgetExhaustedCount ?? 0) > 0 || /budget/i.test(String(args.terminalReason ?? ""))) codes.add("BUDGET_EXHAUSTED");
-  if ((diagnostics.taskWindowConflictCount ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.TASK_WINDOW_CONFLICT ?? 0) > 0) codes.add("TASK_WINDOW_CONFLICT");
-  if ((diagnostics.protectedIntervalConflictCount ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.PROTECTED_INTERVAL_CONFLICT ?? 0) > 0) codes.add("PROTECTED_INTERVAL_CONFLICT");
-  if ((diagnostics.contestantOverlapConflictCount ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.CONTESTANT_OVERLAP ?? 0) > 0) codes.add("CONTESTANT_OVERLAP");
-  if ((diagnostics.spaceOverlapConflictCount ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.SPACE_OVERLAP ?? 0) > 0) codes.add("SPACE_OVERLAP");
-  if ((diagnostics.resourceOverlapConflictCount ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.RESOURCE_OVERLAP ?? 0) > 0) codes.add("RESOURCE_OVERLAP");
+  const placement = diagnostics.placementReasonCounts ?? {};
+  if ((diagnostics.taskWindowConflictCount ?? 0) > 0 || (placement.TASK_WINDOW_CONFLICT ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.TASK_WINDOW_CONFLICT ?? 0) > 0) codes.add("TASK_WINDOW_CONFLICT");
+  if ((diagnostics.protectedIntervalConflictCount ?? 0) > 0 || (placement.PROTECTED_INTERVAL_CONFLICT ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.PROTECTED_INTERVAL_CONFLICT ?? 0) > 0) codes.add("PROTECTED_INTERVAL_CONFLICT");
+  if ((diagnostics.contestantOverlapConflictCount ?? 0) > 0 || (placement.CONTESTANT_OVERLAP ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.CONTESTANT_OVERLAP ?? 0) > 0) codes.add("CONTESTANT_OVERLAP");
+  if ((diagnostics.spaceOverlapConflictCount ?? 0) > 0 || (placement.SPACE_OVERLAP ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.SPACE_OVERLAP ?? 0) > 0) codes.add("SPACE_OVERLAP");
+  if ((diagnostics.resourceOverlapConflictCount ?? 0) > 0 || (placement.RESOURCE_OVERLAP ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.RESOURCE_OVERLAP ?? 0) > 0) codes.add("RESOURCE_OVERLAP");
   if ((diagnostics.deadEndReasonCounts?.DEPENDENCY_CONFLICT ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.DEPENDENCY_CYCLE_IN_CLOSURE ?? 0) > 0 || (diagnostics.deadEndReasonCounts?.MISSING_PREREQUISITE_TASK ?? 0) > 0) codes.add("DEPENDENCY_CONFLICT");
   if (String(args.terminalReason ?? "").startsWith("combined_INVALID") || args.combinedValidation?.result === "INVALID") { codes.add("COMBINED_INVALID"); addValidationConflicts(codes, args.combinedValidation); }
   if (diagnostics.searchSpaceFound === true && (diagnostics.provisionalWindowCount ?? 0) > 0 && (diagnostics.branchCount ?? 0) > 0 && (diagnostics.hardValidBranchCount ?? 0) === 0) codes.add("NO_HARD_VALID_BRANCH");
