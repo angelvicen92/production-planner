@@ -1,16 +1,15 @@
 {
-  "version": "PLAN-27-ORC-PROGRESSIVE-TEMPORAL-WIDENING-V1",
+  "version": "PLAN-27-ORC-CONFLICT-DIRECTED-REPAIR-V1",
   "deterministic": true,
-  "correctnessGatePassed": true,
-  "progressGatePassed": true,
+  "productiveConstructionCompleted": false,
   "runs": [
     {
-      "exclusiveConstructiveRuntimeMs": 55136,
+      "exclusiveConstructiveRuntimeMs": 60007,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "c39cfbe3f61eeef675b0a4fe0ba225c4a77e601cdbd8f4b244d8e9d4139e95eb",
+      "sessionFingerprint": "b80d8ac59120c45dcaffea3534f9cbda1b21b78b6b32a4f27f69bc0c48a9dccd",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -112,9 +111,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 54803,
-        "assignmentsPerSecond": 3.029,
-        "exclusiveConstructiveRuntimeMs": 55136
+        "sessionRuntimeMs": 59697,
+        "assignmentsPerSecond": 2.781,
+        "exclusiveConstructiveRuntimeMs": 60007
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -128,15 +127,15 @@
       "combinedDependencyPrecheckViolationCount": 0,
       "contradictoryDependencyBoundCount": 0,
       "firstDependencyBoundAcceptedAnchorTaskId": 341,
-      "fingerprint": "c39cfbe3f61eeef675b0a4fe0ba225c4a77e601cdbd8f4b244d8e9d4139e95eb"
+      "fingerprint": "b80d8ac59120c45dcaffea3534f9cbda1b21b78b6b32a4f27f69bc0c48a9dccd"
     },
     {
-      "exclusiveConstructiveRuntimeMs": 57375,
+      "exclusiveConstructiveRuntimeMs": 60697,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "c39cfbe3f61eeef675b0a4fe0ba225c4a77e601cdbd8f4b244d8e9d4139e95eb",
+      "sessionFingerprint": "b80d8ac59120c45dcaffea3534f9cbda1b21b78b6b32a4f27f69bc0c48a9dccd",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -238,9 +237,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 57056,
-        "assignmentsPerSecond": 2.909,
-        "exclusiveConstructiveRuntimeMs": 57375
+        "sessionRuntimeMs": 60374,
+        "assignmentsPerSecond": 2.75,
+        "exclusiveConstructiveRuntimeMs": 60697
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -254,7 +253,7 @@
       "combinedDependencyPrecheckViolationCount": 0,
       "contradictoryDependencyBoundCount": 0,
       "firstDependencyBoundAcceptedAnchorTaskId": 341,
-      "fingerprint": "c39cfbe3f61eeef675b0a4fe0ba225c4a77e601cdbd8f4b244d8e9d4139e95eb"
+      "fingerprint": "b80d8ac59120c45dcaffea3534f9cbda1b21b78b6b32a4f27f69bc0c48a9dccd"
     }
   ]
 }
