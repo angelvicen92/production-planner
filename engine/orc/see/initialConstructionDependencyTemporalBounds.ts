@@ -9,6 +9,7 @@ type TaskLike = NonNullable<EngineInput["tasks"]>[number] & Record<string, unkno
 const min = (s?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(s ?? "")) ? Number(String(s).slice(0,2))*60+Number(String(s).slice(3)) : null;
 const hh = (m: number): string => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
 const hash = (v: unknown): string => createHash("sha256").update(stableStringify(v)).digest("hex");
+const durationOf = (task: TaskLike | null | undefined): number => Number(task?.durationOverrideMin ?? task?.durationMin ?? task?.durationMinutes ?? task?.duration ?? 0) || 0;
 
 export interface InitialConstructionDependencyTimeBound { taskId: number; time: string; minutes: number; edge: { fromTaskId: number; toTaskId: number; sourceTypes: readonly string[] }; readOnly: true }
 export interface InitialConstructionProvisionallySatisfiedDependencyAudit { declaredSatisfiedTaskIds: number[]; actuallyAssignedTaskIds: number[]; declaredWithoutAssignmentTaskIds: number[]; coherent: boolean; fingerprint: string; readOnly: true }
@@ -43,7 +44,9 @@ export function resolveInitialConstructionDependencyTemporalBounds(args: { input
   prereqBounds.sort((a,b)=>a.taskId-b.taskId); depBounds.sort((a,b)=>a.taskId-b.taskId);
   const earliest = prereqBounds.length ? Math.max(...prereqBounds.map((b)=>b.minutes)) : null;
   const latest = depBounds.length ? Math.min(...depBounds.map((b)=>b.minutes)) : null;
-  const base = { earliestStart: earliest == null ? null : hh(earliest), latestEnd: latest == null ? null : hh(latest), assignedPrerequisiteTaskIds: prereqBounds.map((b)=>b.taskId), assignedDependentTaskIds: depBounds.map((b)=>b.taskId), prerequisiteFinishBounds: prereqBounds, dependentStartBounds: depBounds, missingAssignmentTimeTaskIds: [...missing].sort((a,b)=>a-b), hasContradictoryBounds: earliest != null && latest != null && earliest > latest, provisionallySatisfiedDependencyAudit: audit, readOnly: true as const };
+  const task = args.tasks?.get(taskId) ?? (args.input.tasks ?? []).find((t:any)=>Number(t.id)===taskId) as TaskLike | undefined;
+  const duration = durationOf(task);
+  const base = { earliestStart: earliest == null ? null : hh(earliest), latestEnd: latest == null ? null : hh(latest), assignedPrerequisiteTaskIds: prereqBounds.map((b)=>b.taskId), assignedDependentTaskIds: depBounds.map((b)=>b.taskId), prerequisiteFinishBounds: prereqBounds, dependentStartBounds: depBounds, missingAssignmentTimeTaskIds: [...missing].sort((a,b)=>a-b), hasContradictoryBounds: earliest != null && latest != null && earliest + duration > latest, provisionallySatisfiedDependencyAudit: audit, readOnly: true as const };
   return deepFreeze({ ...base, fingerprint: hash(base) }) as any;
 }
 

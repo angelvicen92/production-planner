@@ -25,6 +25,18 @@ export interface InitialConstructionBenchmarkResult {
   terminalDeadEndReasonCounts: Record<string, number>;
   terminalBlockedAnchorSample: unknown[];
   runtimeTelemetry: unknown;
+  widenedAnchorAttemptCount: number;
+  widenedAnchorAcceptedCount: number;
+  maxTemporalCandidatesScannedForAnyAnchor: number;
+  temporalCandidateBatchesExecuted: number;
+  branchEvaluationsAfterInitialBatch: number;
+  firstWidenedAcceptedAnchorTaskId: number | null;
+  dependencyBoundedTemporalCandidateCount: number;
+  combinedDependencyPrecheckCount: number;
+  combinedDependencyPrecheckRejectedCount: number;
+  combinedDependencyPrecheckViolationCount: number;
+  contradictoryDependencyBoundCount: number;
+  firstDependencyBoundAcceptedAnchorTaskId: number | null;
   /** @deprecated use sessionFingerprint */
   fingerprint: string | null;
 }
@@ -57,6 +69,18 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     terminalDeadEndReasonCounts: session.evidence?.terminalDeadEndReasonCounts ?? {},
     terminalBlockedAnchorSample: session.evidence?.terminalBlockedAnchorSample ?? [],
     runtimeTelemetry: { ...(session.evidence?.runtimeTelemetry ?? {}), exclusiveConstructiveRuntimeMs: Math.round(ended - started) },
+    widenedAnchorAttemptCount: session.evidence?.widenedAnchorAttemptCount ?? 0,
+    widenedAnchorAcceptedCount: session.evidence?.widenedAnchorAcceptedCount ?? 0,
+    maxTemporalCandidatesScannedForAnyAnchor: session.evidence?.maxTemporalCandidatesScannedForAnyAnchor ?? 0,
+    temporalCandidateBatchesExecuted: session.evidence?.temporalCandidateBatchesExecuted ?? 0,
+    branchEvaluationsAfterInitialBatch: session.evidence?.branchEvaluationsAfterInitialBatch ?? 0,
+    firstWidenedAcceptedAnchorTaskId: session.evidence?.firstWidenedAcceptedAnchorTaskId ?? null,
+    dependencyBoundedTemporalCandidateCount: session.evidence?.dependencyBoundedTemporalCandidateCount ?? 0,
+    combinedDependencyPrecheckCount: session.evidence?.combinedDependencyPrecheckCount ?? 0,
+    combinedDependencyPrecheckRejectedCount: session.evidence?.combinedDependencyPrecheckRejectedCount ?? 0,
+    combinedDependencyPrecheckViolationCount: session.evidence?.combinedDependencyPrecheckViolationCount ?? 0,
+    contradictoryDependencyBoundCount: session.evidence?.contradictoryDependencyBoundCount ?? 0,
+    firstDependencyBoundAcceptedAnchorTaskId: session.evidence?.firstDependencyBoundAcceptedAnchorTaskId ?? null,
     fingerprint: session.evidence?.sessionFingerprint ?? null,
   };
 }
