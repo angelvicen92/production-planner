@@ -1,0 +1,291 @@
+{
+  "exclusiveConstructiveRuntimeMs": 51806,
+  "assignmentsReached": 109,
+  "cycles": 59,
+  "stopReason": "NO_VIABLE_ANCHOR",
+  "budgetLimitReached": null,
+  "sessionFingerprint": "07c057b30cfab2a31f09092ce9510b263a770d99f2f5ffbe823031e2f92f2461",
+  "finalCombinedAssignmentsFingerprint": "602d0df9569ee0fc30e1445839c3afc2e1f8392e68c6eeee69d26d95aa42a7a8",
+  "finalValidationResult": "VALID",
+  "exactEligibleAnchorCountAtStop": 65,
+  "terminalAnchorsScanned": 65,
+  "allEligibleAnchorsExhausted": true,
+  "terminalBlockerCodeCounts": {
+    "TASK_WINDOW_CONFLICT": 64,
+    "CONTESTANT_OVERLAP": 58,
+    "SPACE_OVERLAP": 64,
+    "NO_HARD_VALID_BRANCH": 43,
+    "DEPENDENCY_CONFLICT": 22,
+    "COMBINED_INVALID": 22,
+    "RESOURCE_OVERLAP": 8,
+    "BUDGET_EXHAUSTED": 3,
+    "PROTECTED_INTERVAL_CONFLICT": 3
+  },
+  "terminalBlockerEvidenceComplete": true,
+  "terminalBlockerEvidenceIncompleteAnchorCount": 0,
+  "terminalBlockerEvidenceFingerprint": "eba189787bd3d4c38f7d3483018e153c1c7684e03378efeb59d33a91438b32d1",
+  "terminalPrimaryBlockerCodeCounts": {
+    "TASK_WINDOW_CONFLICT": 54,
+    "SPACE_OVERLAP": 8,
+    "BUDGET_EXHAUSTED": 3
+  },
+  "terminalDeadEndReasonCounts": {
+    "TASK_WINDOW_CONFLICT": 53,
+    "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED": 3,
+    "CONTESTANT_OVERLAP": 27,
+    "PROTECTED_INTERVAL_CONFLICT": 18,
+    "SPACE_OVERLAP": 204
+  },
+  "terminalBlockedAnchorSample": [
+    {
+      "rank": 1,
+      "anchorTaskId": 314,
+      "closureTaskCount": 5,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 4,
+      "branchCount": 8,
+      "candidateBranchCount": 0,
+      "closureIncompleteBranchCount": 8,
+      "hardValidBranchCount": 0,
+      "deadEndReasonCounts": {
+        "TASK_WINDOW_CONFLICT": 1
+      },
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "NO_HARD_VALID_BRANCH"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "0bf87912b1eebad88a9db5e69c1b46aef6ad85186e5cc2de88ea162f085fe67b"
+    },
+    {
+      "rank": 2,
+      "anchorTaskId": 307,
+      "closureTaskCount": 1,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 4,
+      "branchCount": 8,
+      "candidateBranchCount": 1,
+      "closureIncompleteBranchCount": 7,
+      "hardValidBranchCount": 1,
+      "deadEndReasonCounts": {},
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "DEPENDENCY_CONFLICT",
+        "COMBINED_INVALID"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "e448e39c9f9eadc8edf153fd6daa9497ef7585f9db09abaf7d0727dd005dc1d4"
+    },
+    {
+      "rank": 3,
+      "anchorTaskId": 310,
+      "closureTaskCount": 1,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 4,
+      "branchCount": 8,
+      "candidateBranchCount": 1,
+      "closureIncompleteBranchCount": 7,
+      "hardValidBranchCount": 1,
+      "deadEndReasonCounts": {},
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "DEPENDENCY_CONFLICT",
+        "COMBINED_INVALID"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "7f544638a0af579522714a481e80a873ab27cc0d4648a63c14458a9855a15214"
+    },
+    {
+      "rank": 4,
+      "anchorTaskId": 312,
+      "closureTaskCount": 1,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 4,
+      "branchCount": 8,
+      "candidateBranchCount": 1,
+      "closureIncompleteBranchCount": 7,
+      "hardValidBranchCount": 1,
+      "deadEndReasonCounts": {},
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "DEPENDENCY_CONFLICT",
+        "COMBINED_INVALID"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "11907cef357406163fd576642897dff79b95766b7313023d590c28c9edfafe0d"
+    },
+    {
+      "rank": 5,
+      "anchorTaskId": 505,
+      "closureTaskCount": 1,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 4,
+      "branchCount": 8,
+      "candidateBranchCount": 1,
+      "closureIncompleteBranchCount": 7,
+      "hardValidBranchCount": 1,
+      "deadEndReasonCounts": {},
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "DEPENDENCY_CONFLICT",
+        "COMBINED_INVALID"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "262f9b0d2dff084a396c2bb7806fe5a020bcf5f3dbacb0d3259476b521ffb87f"
+    },
+    {
+      "rank": 6,
+      "anchorTaskId": 395,
+      "closureTaskCount": 3,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 3,
+      "branchCount": 8,
+      "candidateBranchCount": 0,
+      "closureIncompleteBranchCount": 8,
+      "hardValidBranchCount": 0,
+      "deadEndReasonCounts": {
+        "TASK_WINDOW_CONFLICT": 1
+      },
+      "blockerCodes": [
+        "TASK_WINDOW_CONFLICT",
+        "SPACE_OVERLAP",
+        "RESOURCE_OVERLAP",
+        "NO_HARD_VALID_BRANCH"
+      ],
+      "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "67bdf8431341850d1425b732537e6e69ea10d8e415db746a8eb715a3629e02f2"
+    },
+    {
+      "rank": 7,
+      "anchorTaskId": 396,
+      "closureTaskCount": 1,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 3,
+      "branchCount": 8,
+      "candidateBranchCount": 1,
+      "closureIncompleteBranchCount": 7,
+      "hardValidBranchCount": 1,
+      "deadEndReasonCounts": {},
+      "blockerCodes": [
+        "SPACE_OVERLAP",
+        "RESOURCE_OVERLAP",
+        "DEPENDENCY_CONFLICT",
+        "COMBINED_INVALID"
+      ],
+      "primaryBlockerCode": "SPACE_OVERLAP",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "c674b46da6be40f07d46c75de4374de870bc9a1d925469ff8b012ac7d9009cd7"
+    },
+    {
+      "rank": 8,
+      "anchorTaskId": 335,
+      "closureTaskCount": 2,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 3,
+      "branchCount": 8,
+      "candidateBranchCount": 0,
+      "closureIncompleteBranchCount": 8,
+      "hardValidBranchCount": 0,
+      "deadEndReasonCounts": {
+        "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED": 1,
+        "CONTESTANT_OVERLAP": 7,
+        "PROTECTED_INTERVAL_CONFLICT": 6,
+        "SPACE_OVERLAP": 27,
+        "TASK_WINDOW_CONFLICT": 1
+      },
+      "blockerCodes": [
+        "BUDGET_EXHAUSTED",
+        "TASK_WINDOW_CONFLICT",
+        "PROTECTED_INTERVAL_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "RESOURCE_OVERLAP",
+        "NO_HARD_VALID_BRANCH"
+      ],
+      "primaryBlockerCode": "BUDGET_EXHAUSTED",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "1b1c6b83fc0969a85c4b31abd7be02750239a00fd4ae80a0a68b0d360ba8ab52"
+    },
+    {
+      "rank": 9,
+      "anchorTaskId": 345,
+      "closureTaskCount": 2,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 3,
+      "branchCount": 8,
+      "candidateBranchCount": 0,
+      "closureIncompleteBranchCount": 8,
+      "hardValidBranchCount": 0,
+      "deadEndReasonCounts": {
+        "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED": 1,
+        "CONTESTANT_OVERLAP": 8,
+        "PROTECTED_INTERVAL_CONFLICT": 6,
+        "SPACE_OVERLAP": 27,
+        "TASK_WINDOW_CONFLICT": 1
+      },
+      "blockerCodes": [
+        "BUDGET_EXHAUSTED",
+        "TASK_WINDOW_CONFLICT",
+        "PROTECTED_INTERVAL_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "RESOURCE_OVERLAP",
+        "NO_HARD_VALID_BRANCH"
+      ],
+      "primaryBlockerCode": "BUDGET_EXHAUSTED",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "eb266efd5a00a7d94ad462893d417731777ae7d96f26665017244267852cd541"
+    },
+    {
+      "rank": 10,
+      "anchorTaskId": 355,
+      "closureTaskCount": 2,
+      "searchSpaceFound": true,
+      "provisionalWindowCount": 3,
+      "branchCount": 8,
+      "candidateBranchCount": 0,
+      "closureIncompleteBranchCount": 8,
+      "hardValidBranchCount": 0,
+      "deadEndReasonCounts": {
+        "ASSIGNMENT_SEARCH_BUDGET_EXHAUSTED": 1,
+        "CONTESTANT_OVERLAP": 12,
+        "PROTECTED_INTERVAL_CONFLICT": 6,
+        "SPACE_OVERLAP": 27,
+        "TASK_WINDOW_CONFLICT": 1
+      },
+      "blockerCodes": [
+        "BUDGET_EXHAUSTED",
+        "TASK_WINDOW_CONFLICT",
+        "PROTECTED_INTERVAL_CONFLICT",
+        "CONTESTANT_OVERLAP",
+        "SPACE_OVERLAP",
+        "RESOURCE_OVERLAP",
+        "NO_HARD_VALID_BRANCH"
+      ],
+      "primaryBlockerCode": "BUDGET_EXHAUSTED",
+      "evidenceComplete": true,
+      "attemptDiagnosticsFingerprint": "955bc660bdf7b177c7d73a5b12f07db480c66f604b22516feafbf419d0ff9744"
+    }
+  ],
+  "runtimeTelemetry": {
+    "sessionRuntimeMs": 51581,
+    "assignmentsPerSecond": 2.036,
+    "exclusiveConstructiveRuntimeMs": 51806
+  },
+  "fingerprint": "07c057b30cfab2a31f09092ce9510b263a770d99f2f5ffbe823031e2f92f2461"
+}
