@@ -8,6 +8,7 @@ import { composePartialPlans } from "../see/partialPlanComposer";
 import { buildCandidateStates } from "../transformation/transformationEngine";
 import { simulateCandidateStates } from "../simulation/simulationEngine";
 import { validateSimulatedStates } from "../validation/validationEngine";
+import type { InitialConstructionAnchorAttemptDiagnostics } from "./initialConstructionAnchorBlockerClassifier";
 
 const SAMPLE_LIMIT = 10;
 const minutes = (value?: string | null): number | null => /^\d{2}:\d{2}$/.test(String(value ?? "")) ? Number(String(value).slice(0, 2)) * 60 + Number(String(value).slice(3)) : null;
@@ -25,8 +26,64 @@ function simulatedAssignmentsFor(state: OperationalState, branch: InitialConstru
   });
 }
 
-function validationSummary(validation: ValidationResult | null): { result: string; violatedConstraints: readonly string[] } {
-  return { result: validation?.result ?? "INVALID", violatedConstraints: (validation?.violatedConstraints ?? []).slice(0, SAMPLE_LIMIT) };
+function validationSummary(validation: ValidationResult | null): { result: string; violatedConstraints: readonly string[]; violationDetails: readonly unknown[] } {
+  return { result: validation?.result ?? "INVALID", violatedConstraints: (validation?.violatedConstraints ?? []).slice(0, SAMPLE_LIMIT), violationDetails: ((validation as any)?.violationDetails ?? []).slice(0, SAMPLE_LIMIT) };
+}
+
+const inc = (counts: Record<string, number>, key: string, by = 1): void => { counts[key] = (counts[key] ?? 0) + by; };
+
+function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, attempts: any[], hardValidBranchCount: number): InitialConstructionAnchorAttemptDiagnostics {
+  const missing: string[] = [];
+  const space = (stage?.searchSpaces ?? []).find((candidate: any) => Number(candidate?.anchorTaskId) === anchorTaskId) ?? null;
+  const searchSpaceFound = space != null;
+  if (!Array.isArray(stage?.searchSpaces)) missing.push("stage.searchSpaces");
+  const provisionalWindows = searchSpaceFound && Array.isArray(space?.provisionalWindows) ? space.provisionalWindows : searchSpaceFound && Array.isArray(space?.windows) ? space.windows : null;
+  if (searchSpaceFound && provisionalWindows == null) missing.push("searchSpace.provisionalWindows");
+  const branchStatusCounts: Record<string, number> = {};
+  const branchRejectionReasonCounts: Record<string, number> = {};
+  const deadEndReasonCounts: Record<string, number> = {};
+  const placementReasonCounts: Record<string, number> = {};
+  const unsupportedRequirementCodes = new Set<string>();
+  let taskWindowConflictCount = 0, protectedIntervalConflictCount = 0, contestantOverlapConflictCount = 0, spaceOverlapConflictCount = 0, resourceOverlapConflictCount = 0, assignmentSearchBudgetExhaustedCount = 0;
+  for (const branch of built?.branches ?? []) {
+    inc(branchStatusCounts, String(branch.status ?? "unknown"));
+    if (branch.rejectionReason) inc(branchRejectionReasonCounts, String(branch.rejectionReason));
+    for (const code of branch.unsupportedRequirementCodes ?? []) unsupportedRequirementCodes.add(String(code));
+  }
+  for (const attempt of attempts) {
+    if (attempt.rejectionReason) inc(branchRejectionReasonCounts, String(attempt.rejectionReason));
+    for (const [code, count] of Object.entries(attempt.deadEndReasonCounts ?? {})) inc(deadEndReasonCounts, String(code), Number(count) || 0);
+    for (const [code, count] of Object.entries(attempt.deadEndReasonCounts ?? {})) inc(placementReasonCounts, String(code), Number(count) || 0);
+    taskWindowConflictCount += Number(attempt.taskWindowConflictCount ?? 0);
+    protectedIntervalConflictCount += Number(attempt.protectedIntervalConflictCount ?? 0);
+    contestantOverlapConflictCount += Number(attempt.contestantOverlapConflictCount ?? 0);
+    spaceOverlapConflictCount += Number(attempt.spaceOverlapConflictCount ?? 0);
+    resourceOverlapConflictCount += Number(attempt.resourceOverlapConflictCount ?? 0);
+    if (attempt.budgetExhausted === true) assignmentSearchBudgetExhaustedCount += 1;
+  }
+  const diagnostics = {
+    anchorTaskId,
+    searchSpaceFound,
+    provisionalWindowCount: provisionalWindows == null ? 0 : provisionalWindows.length,
+    provisionalWindowsSample: (provisionalWindows ?? []).slice(0, SAMPLE_LIMIT),
+    branchCount: (built?.branches ?? []).length,
+    candidateBranchCount: (built?.branches ?? []).filter((branch: any) => branch.status === "candidate").length,
+    closureIncompleteBranchCount: (built?.branches ?? []).filter((branch: any) => branch.status === "closure-incomplete").length,
+    unsupportedBranchCount: (built?.branches ?? []).filter((branch: any) => branch.status === "unsupported").length,
+    hardValidBranchCount,
+    branchStatusCounts: Object.fromEntries(Object.entries(branchStatusCounts).sort()),
+    branchRejectionReasonCounts: Object.fromEntries(Object.entries(branchRejectionReasonCounts).sort()),
+    deadEndReasonCounts: Object.fromEntries(Object.entries(deadEndReasonCounts).sort()),
+    placementReasonCounts: Object.fromEntries(Object.entries(placementReasonCounts).sort()),
+    taskWindowConflictCount, protectedIntervalConflictCount, contestantOverlapConflictCount, spaceOverlapConflictCount, resourceOverlapConflictCount, assignmentSearchBudgetExhaustedCount,
+    unsupportedRequirementCodes: [...unsupportedRequirementCodes].sort(),
+    diagnosticsComplete: missing.length === 0,
+    missingDiagnosticFields: missing.sort(),
+    fingerprint: "",
+    readOnly: true as const,
+  };
+  diagnostics.fingerprint = createHash("sha256").update(stableStringify({ ...diagnostics, fingerprint: undefined })).digest("hex");
+  return diagnostics;
 }
 
 export function materializeInitialConstructionAnchorAttempt(args: { originInput: EngineInput; originOperationalState: OperationalState; stage: any; anchor?: any | null; baseProvisionalAssignments?: readonly CandidateAssignment[]; provisionallySatisfiedTaskIds?: readonly number[]; closureTaskIds?: readonly number[]; maxBranches?: number; reasoningBudget?: ReasoningBudgetProfile | null; createdAt?: string | null; requireFutureFeasibility?: (branch: InitialConstructionBranch) => any | null }) {
@@ -61,5 +118,6 @@ export function materializeInitialConstructionAnchorAttempt(args: { originInput:
   }
   selectable.sort((a, b) => (minutes(a.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) - (minutes(b.branch.assignments.find((assignment: any) => assignment.taskId === built.selectedAnchorTaskId)?.endPlanned) ?? 9999) || a.branch.branchId.localeCompare(b.branch.branchId));
   const selected = selectable[0] ?? null;
-  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, hardValidBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
+  const diagnostics = buildAttemptDiagnostics(anchorTaskId, stage, built, attempts, hardValidBranchCount);
+  return deepFreeze({ version: "MATERIALIZE-INITIAL-CONSTRUCTION-ANCHOR-ATTEMPT-V1", anchorTaskId, built, branches: built.branches, attempts, selectable, selected, diagnostics, hardValidBranchCount, attemptedBranchCount: built.branches.length, branchCount: diagnostics.branchCount, candidateBranchCount: diagnostics.candidateBranchCount, transformationsExecuted, simulationsExecuted, validationsExecuted, readOnly: true }) as any;
 }
