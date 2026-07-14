@@ -1,0 +1,778 @@
+{
+  "version": "PLAN-27-ORC-EXECUTABLE-CONFLICT-DIRECTED-REPAIR-V2",
+  "deterministic": false,
+  "productiveConstructionCompleted": false,
+  "runs": [
+    {
+      "exclusiveConstructiveRuntimeMs": 91433,
+      "assignmentsReached": 69,
+      "cycles": 26,
+      "stopReason": "BUDGET_EXHAUSTED",
+      "budgetLimitReached": "MAX_ELAPSED_MS",
+      "sessionFingerprint": "1f3bf8a75fe3df112dae9cfb1d6cd3a2c988e1db6a6260edb7e6365d712006c4",
+      "finalCombinedAssignmentsFingerprint": "7ff3c6e406bb8fc124642ff6805092587c76691fbfbcc7b37097538421e32e01",
+      "finalValidationResult": "VALID",
+      "exactEligibleAnchorCountAtStop": 94,
+      "terminalAnchorsScanned": 4,
+      "allEligibleAnchorsExhausted": false,
+      "terminalBlockerCodeCounts": {
+        "TASK_WINDOW_CONFLICT": 3,
+        "SPACE_OVERLAP": 2,
+        "NO_HARD_VALID_BRANCH": 3,
+        "CONTESTANT_OVERLAP": 2
+      },
+      "terminalBlockerEvidenceComplete": true,
+      "terminalBlockerEvidenceIncompleteAnchorCount": 0,
+      "terminalBlockerEvidenceFingerprint": "1f9070dfc05fbfe7a3967c8720df2b7682034e6c63b66a62ec2ba894e24e0b36",
+      "terminalPrimaryBlockerCodeCounts": {
+        "TASK_WINDOW_CONFLICT": 3
+      },
+      "terminalDeadEndReasonCounts": {},
+      "terminalBlockedAnchorSample": [
+        {
+          "rank": 1,
+          "anchorTaskId": 314,
+          "closureTaskIds": [
+            312,
+            314,
+            505
+          ],
+          "closureTaskCount": 3,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 6,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 6,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "SPACE_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:15-16:20",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:20-16:25",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [],
+          "spaceConflictTaskIds": [
+            212,
+            226
+          ],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            212,
+            226
+          ],
+          "repairableConflictTaskIds": [
+            212,
+            226
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "3b923b46cd828901d01f0f64919992e6c954cbcb8045d49689f4bd054ac116e2",
+          "attemptDiagnosticsFingerprint": "52a74aedb616fb3424f7a873713a64df34fac85f05bd32f7632b9cfd71f244ca",
+          "readOnly": true
+        },
+        {
+          "rank": 2,
+          "anchorTaskId": 312,
+          "closureTaskIds": [
+            312
+          ],
+          "closureTaskCount": 1,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 22,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 22,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "CONTESTANT_OVERLAP",
+            "SPACE_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:10-16:15",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:15-16:20",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:20-16:25",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "spaceConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272
+          ],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272,
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "repairableConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272,
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "9efd66f36b151e13dbfe2cde603ed267e7e863b4361cd72bb07831f370e1488e",
+          "attemptDiagnosticsFingerprint": "b80040135478601ea68e0a100e4cbb9411c15e87daee1fa8bc813207d0b4cbd1",
+          "readOnly": true
+        },
+        {
+          "rank": 3,
+          "anchorTaskId": 505,
+          "closureTaskIds": [
+            505
+          ],
+          "closureTaskCount": 1,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 15,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 15,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "CONTESTANT_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "spaceConflictTaskIds": [],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "repairableConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
+          "attemptDiagnosticsFingerprint": "490b91705d4d3b6711d873f7f4c8d297c3379e2bfb0b1209dfee793e897bdf68",
+          "readOnly": true
+        }
+      ],
+      "runtimeTelemetry": {
+        "sessionRuntimeMs": 90907,
+        "assignmentsPerSecond": 0.715,
+        "exclusiveConstructiveRuntimeMs": 91433
+      },
+      "widenedAnchorAttemptCount": 47,
+      "widenedAnchorAcceptedCount": 2,
+      "maxTemporalCandidatesScannedForAnyAnchor": 22,
+      "temporalCandidateBatchesExecuted": 159,
+      "branchEvaluationsAfterInitialBatch": 1031,
+      "firstWidenedAcceptedAnchorTaskId": 310,
+      "dependencyBoundedTemporalCandidateCount": 82,
+      "combinedDependencyPrecheckCount": 80,
+      "combinedDependencyPrecheckRejectedCount": 0,
+      "combinedDependencyPrecheckViolationCount": 0,
+      "contradictoryDependencyBoundCount": 0,
+      "firstDependencyBoundAcceptedAnchorTaskId": null,
+      "productiveAssignmentsReached": 69,
+      "productiveTasksRemaining": 94,
+      "repairExecuted": false,
+      "repairRoundCount": 0,
+      "repairAttemptCount": 0,
+      "repairAcceptedCount": 0,
+      "acceptedPartialPlanBacktrackCount": 0,
+      "candidateEjectionSetCount": 0,
+      "acceptedBlockedAnchorTaskIds": [],
+      "acceptedEjectionTaskIds": [],
+      "acceptedRepairDependencyClosureTaskIds": [],
+      "productiveAssignmentDelta": 0,
+      "protectedAssignmentsModified": false,
+      "outsideNeighborhoodAssignmentsModified": 0,
+      "repairStopReason": null,
+      "repairFingerprint": null,
+      "commitsExecuted": 0,
+      "v4SeedUsed": false,
+      "fingerprint": "1f3bf8a75fe3df112dae9cfb1d6cd3a2c988e1db6a6260edb7e6365d712006c4"
+    },
+    {
+      "exclusiveConstructiveRuntimeMs": 92285,
+      "assignmentsReached": 72,
+      "cycles": 27,
+      "stopReason": "BUDGET_EXHAUSTED",
+      "budgetLimitReached": "MAX_ELAPSED_MS",
+      "sessionFingerprint": "c50db1e99e7ddbbc2b93c619067dc330dd785780953192a55d6c7cd6c6c758b6",
+      "finalCombinedAssignmentsFingerprint": "b1c4f9071455080bf4c11e332a130540300436bbfd246dd99284bdd51b889b93",
+      "finalValidationResult": "VALID",
+      "exactEligibleAnchorCountAtStop": 91,
+      "terminalAnchorsScanned": 4,
+      "allEligibleAnchorsExhausted": false,
+      "terminalBlockerCodeCounts": {
+        "TASK_WINDOW_CONFLICT": 3,
+        "SPACE_OVERLAP": 2,
+        "NO_HARD_VALID_BRANCH": 3,
+        "CONTESTANT_OVERLAP": 2
+      },
+      "terminalBlockerEvidenceComplete": true,
+      "terminalBlockerEvidenceIncompleteAnchorCount": 0,
+      "terminalBlockerEvidenceFingerprint": "9f5cc763e6fb71955ca1e0bc0f0b54474cff9ed052e0585c210c49747740a297",
+      "terminalPrimaryBlockerCodeCounts": {
+        "TASK_WINDOW_CONFLICT": 3
+      },
+      "terminalDeadEndReasonCounts": {},
+      "terminalBlockedAnchorSample": [
+        {
+          "rank": 1,
+          "anchorTaskId": 314,
+          "closureTaskIds": [
+            312,
+            314,
+            505
+          ],
+          "closureTaskCount": 3,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 6,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 6,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "SPACE_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:15-16:20",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 314,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:20-16:25",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [],
+          "spaceConflictTaskIds": [
+            212,
+            226
+          ],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            212,
+            226
+          ],
+          "repairableConflictTaskIds": [
+            212,
+            226
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "3b923b46cd828901d01f0f64919992e6c954cbcb8045d49689f4bd054ac116e2",
+          "attemptDiagnosticsFingerprint": "52a74aedb616fb3424f7a873713a64df34fac85f05bd32f7632b9cfd71f244ca",
+          "readOnly": true
+        },
+        {
+          "rank": 2,
+          "anchorTaskId": 312,
+          "closureTaskIds": [
+            312
+          ],
+          "closureTaskCount": 1,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 23,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 23,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "CONTESTANT_OVERLAP",
+            "SPACE_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:10-16:15",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:15-16:20",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 312,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:20-16:25",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "spaceConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272,
+            282
+          ],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272,
+            282,
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "repairableConflictTaskIds": [
+            215,
+            224,
+            242,
+            252,
+            262,
+            272,
+            282,
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "c122c5708b80eb018ad908be345d134f95cebd3039d7b2ff69dc39f84fb75004",
+          "attemptDiagnosticsFingerprint": "60cfddd18008cebfb727a2fa7393ad541c3212068a2fd8d62b281eefd65410f2",
+          "readOnly": true
+        },
+        {
+          "rank": 3,
+          "anchorTaskId": 505,
+          "closureTaskIds": [
+            505
+          ],
+          "closureTaskCount": 1,
+          "searchSpaceFound": true,
+          "provisionalWindowCount": 4,
+          "branchCount": 15,
+          "candidateBranchCount": 0,
+          "closureIncompleteBranchCount": 15,
+          "hardValidBranchCount": 0,
+          "deadEndReasonCounts": {},
+          "blockerCodes": [
+            "TASK_WINDOW_CONFLICT",
+            "CONTESTANT_OVERLAP",
+            "NO_HARD_VALID_BRANCH"
+          ],
+          "primaryBlockerCode": "TASK_WINDOW_CONFLICT",
+          "evidenceComplete": true,
+          "taskWindowConflictDetails": [
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:25-16:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "18:25-18:30",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "15:30-15:35",
+              "readOnly": true
+            },
+            {
+              "kind": "OUTSIDE_AVAILABILITY",
+              "taskId": 505,
+              "conflictTaskIds": [],
+              "expected": "09:00-15:30",
+              "actual": "16:30-16:35",
+              "readOnly": true
+            }
+          ],
+          "contestantConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "spaceConflictTaskIds": [],
+          "resourceConflictTaskIds": [],
+          "dependencyLowerBoundTaskIds": [],
+          "dependencyUpperBoundTaskIds": [],
+          "protectedIntervalConflictIds": [],
+          "causalConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "repairableConflictTaskIds": [
+            307,
+            310,
+            315,
+            316,
+            504,
+            506
+          ],
+          "immutableConflictTaskIds": [],
+          "causalConflictEvidenceComplete": true,
+          "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
+          "attemptDiagnosticsFingerprint": "490b91705d4d3b6711d873f7f4c8d297c3379e2bfb0b1209dfee793e897bdf68",
+          "readOnly": true
+        }
+      ],
+      "runtimeTelemetry": {
+        "sessionRuntimeMs": 91812,
+        "assignmentsPerSecond": 0.741,
+        "exclusiveConstructiveRuntimeMs": 92285
+      },
+      "widenedAnchorAttemptCount": 50,
+      "widenedAnchorAcceptedCount": 2,
+      "maxTemporalCandidatesScannedForAnyAnchor": 23,
+      "temporalCandidateBatchesExecuted": 167,
+      "branchEvaluationsAfterInitialBatch": 1091,
+      "firstWidenedAcceptedAnchorTaskId": 310,
+      "dependencyBoundedTemporalCandidateCount": 85,
+      "combinedDependencyPrecheckCount": 85,
+      "combinedDependencyPrecheckRejectedCount": 0,
+      "combinedDependencyPrecheckViolationCount": 0,
+      "contradictoryDependencyBoundCount": 0,
+      "firstDependencyBoundAcceptedAnchorTaskId": null,
+      "productiveAssignmentsReached": 72,
+      "productiveTasksRemaining": 91,
+      "repairExecuted": false,
+      "repairRoundCount": 0,
+      "repairAttemptCount": 0,
+      "repairAcceptedCount": 0,
+      "acceptedPartialPlanBacktrackCount": 0,
+      "candidateEjectionSetCount": 0,
+      "acceptedBlockedAnchorTaskIds": [],
+      "acceptedEjectionTaskIds": [],
+      "acceptedRepairDependencyClosureTaskIds": [],
+      "productiveAssignmentDelta": 0,
+      "protectedAssignmentsModified": false,
+      "outsideNeighborhoodAssignmentsModified": 0,
+      "repairStopReason": null,
+      "repairFingerprint": null,
+      "commitsExecuted": 0,
+      "v4SeedUsed": false,
+      "fingerprint": "c50db1e99e7ddbbc2b93c619067dc330dd785780953192a55d6c7cd6c6c758b6"
+    }
+  ]
+}
