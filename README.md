@@ -1656,3 +1656,14 @@ Benchmark status for the active repository state: no plan-27 snapshot artifact i
 - The benchmark evidence records the assignments reached after the run, including dependency-bound counts and combined precheck rejection counts.
 - This change intentionally does not add backtracking between accepted PartialPlans.
 - This change does not commit planning, publish ORC output, modify public planning APIs, or use V4 as a seed.
+
+## ID 295 — Progressive Temporal Candidate Widening & Branch Budget Decoupling v1
+
+- The documented Plan 27 starting frontier for this change is 161 assignments, 72 accepted cycles, a final combined `VALID` PartialPlan, no commits, no V4 seed, and unchanged public planning publication.
+- Anchor exploration now separates temporal candidates from resource-branch evaluations: temporal candidates are produced from existing operational frontiers up to a centralized per-anchor cap, while resource alternatives are evaluated under a separate branch-evaluation budget.
+- The first temporal batch keeps the historical eight-candidate behavior. Widening only executes if that batch produces no selectable branch, then scans subsequent temporal frontiers without regenerating or retrying earlier intervals.
+- Resource alternatives are evaluated fairly by temporal/resource round: the first resource alternative for every temporal candidate in the batch is tried before the second alternative of any candidate can monopolize the budget.
+- Benchmark/session evidence now records widening attempts, widened acceptances, maximum temporal candidates scanned, batch counts, post-initial-batch branch evaluations, dependency-bound candidate counts, combined dependency precheck counts, contradictory bounds, and first dependency-bound accepted anchors.
+- No backtracking between already accepted PartialPlans is introduced by ID 295.
+- ID 295 does not commit planning, publish the ORC PartialPlan, change public planning APIs, modify V3/V4/fallback/baseline repair, or add a DB migration.
+- Benchmark result in this repository run: unit/type checks were executed locally; no Plan 27 snapshot artifact is included in the repo, so README does not claim a production Plan 27 benchmark number beyond the required starting frontier. Acceptance against the real Plan 27 snapshot must record the resulting assignments, remaining productive tasks, final validation, determinism, runtime under 60 seconds, honest terminal blockers, and zero commits.
