@@ -49,6 +49,11 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
   const anchorPlacementReasonCounts: Record<string, number> = {};
   const unsupportedRequirementCodes = new Set<string>();
   let taskWindowConflictCount = 0, protectedIntervalConflictCount = 0, contestantOverlapConflictCount = 0, spaceOverlapConflictCount = 0, resourceOverlapConflictCount = 0, assignmentSearchBudgetExhaustedCount = 0;
+  const taskWindowConflictDetails:any[] = [];
+  const contestantConflictTaskIds = new Set<number>(), spaceConflictTaskIds = new Set<number>(), resourceConflictTaskIds = new Set<number>(), dependencyLowerBoundTaskIds = new Set<number>(), dependencyUpperBoundTaskIds = new Set<number>(), causalConflictTaskIds = new Set<number>();
+  const protectedIntervalConflictIds = new Set<string>();
+  let causalConflictEvidenceIncompleteBranchCount = 0;
+  const causalFingerprints:string[] = [];
   let anchorTemporalCandidateCount = 0, feasibleAnchorTemporalCandidateCount = 0, rejectedAnchorTemporalCandidateCount = 0, alternativeAnchorTemporalCandidateCount = 0, endAlignedCandidateRejectedCount = 0, alternativeCandidateReachedRecursiveSearchCount = 0;
   const temporalByFingerprint = new Map<string, { feasible: boolean; rank: number; sourceKinds: readonly string[]; reachedRecursive: boolean }>();
   for (const branch of built?.branches ?? []) {
@@ -59,6 +64,19 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
       const current = temporalByFingerprint.get(fp);
       temporalByFingerprint.set(fp, { feasible: (current?.feasible ?? false) || !!branch.anchorPlacementEvidence.feasible, rank: Math.min(current?.rank ?? Number(branch.anchorPlacementEvidence.candidateRankWithinWindow), Number(branch.anchorPlacementEvidence.candidateRankWithinWindow)), sourceKinds: branch.anchorPlacementEvidence.sourceKinds ?? [], reachedRecursive: (current?.reachedRecursive ?? false) || !!branch.searchEvidence });
       for (const code of branch.anchorPlacementEvidence.reasonCodes ?? []) { inc(anchorPlacementReasonCounts, String(code)); inc(placementReasonCounts, String(code)); }
+      const cev = branch.anchorPlacementEvidence.causalConflictEvidence;
+      if (cev) {
+        causalFingerprints.push(cev.fingerprint);
+        if (!cev.evidenceComplete) causalConflictEvidenceIncompleteBranchCount += 1;
+        taskWindowConflictDetails.push(...(cev.taskWindowConflictDetails ?? []));
+        for (const id of cev.contestantConflictTaskIds ?? []) contestantConflictTaskIds.add(Number(id));
+        for (const id of cev.spaceConflictTaskIds ?? []) spaceConflictTaskIds.add(Number(id));
+        for (const id of cev.resourceConflictTaskIds ?? []) resourceConflictTaskIds.add(Number(id));
+        for (const id of cev.dependencyLowerBoundTaskIds ?? []) dependencyLowerBoundTaskIds.add(Number(id));
+        for (const id of cev.dependencyUpperBoundTaskIds ?? []) dependencyUpperBoundTaskIds.add(Number(id));
+        for (const id of cev.causalConflictTaskIds ?? []) if (Number(id)!==anchorTaskId) causalConflictTaskIds.add(Number(id));
+        for (const id of cev.protectedIntervalConflictIds ?? []) protectedIntervalConflictIds.add(String(id));
+      } else causalConflictEvidenceIncompleteBranchCount += 1;
     }
     for (const code of branch.unsupportedRequirementCodes ?? []) unsupportedRequirementCodes.add(String(code));
   }
@@ -96,6 +114,19 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
     anchorPlacementReasonCounts: Object.fromEntries(Object.entries(anchorPlacementReasonCounts).sort()),
     anchorExplorationBudget, temporalCandidateCountAvailable: built?.temporalCandidatesAvailable ?? anchorTemporalCandidateCount, temporalCandidateCountScanned: built?.temporalCandidatesScanned ?? anchorTemporalCandidateCount, temporalCandidateBatchCount: built?.temporalCandidateBatchCount ?? 1, temporalWideningObserved: Number(built?.temporalCandidateBatchCount ?? 1) > 1, initialBatchSelectableBranchCount: (built?.branches ?? []).filter((branch: any)=>branch.status === "candidate" && Number(branch.anchorPlacementEvidence?.candidateRankWithinWindow ?? 0) < Number(anchorExplorationBudget?.initialTemporalCandidateBatchSize ?? 8)).length, widenedBatchSelectableBranchCount: (built?.branches ?? []).filter((branch: any)=>branch.status === "candidate" && Number(branch.anchorPlacementEvidence?.candidateRankWithinWindow ?? 0) >= Number(anchorExplorationBudget?.initialTemporalCandidateBatchSize ?? 8)).length, branchEvaluationCount: built?.branchEvaluationCount ?? (built?.branches ?? []).length, resourceAlternativeRoundCount: built?.resourceAlternativeRoundCount ?? 0, firstSelectableTemporalCandidateIndex: (built?.branches ?? []).filter((branch:any)=>branch.status === "candidate").map((branch:any)=>Number(branch.anchorPlacementEvidence?.candidateRankWithinWindow)).filter(Number.isFinite).sort((a:number,b:number)=>a-b)[0] ?? null, unscannedTemporalCandidateCount: Math.max(0, Number(built?.temporalCandidatesAvailable ?? 0) - Number(built?.temporalCandidatesScanned ?? 0)), allConfiguredTemporalCandidatesExhausted: built?.allConfiguredTemporalCandidatesExhausted ?? true, anchorExplorationStopReason: built?.anchorExplorationStopReason ?? "NO_HARD_VALID_BRANCH", anchorExplorationFingerprint: built?.anchorExplorationFingerprint ?? null, anchorTemporalCandidateCount, feasibleAnchorTemporalCandidateCount, rejectedAnchorTemporalCandidateCount, alternativeAnchorTemporalCandidateCount, endAlignedCandidateRejectedCount, alternativeCandidateReachedRecursiveSearchCount,
     taskWindowConflictCount, protectedIntervalConflictCount, contestantOverlapConflictCount, spaceOverlapConflictCount, resourceOverlapConflictCount, assignmentSearchBudgetExhaustedCount,
+    taskWindowConflictDetails,
+    contestantConflictTaskIds: [...contestantConflictTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    spaceConflictTaskIds: [...spaceConflictTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    resourceConflictTaskIds: [...resourceConflictTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    protectedIntervalConflictIds: [...protectedIntervalConflictIds].sort(),
+    dependencyLowerBoundTaskIds: [...dependencyLowerBoundTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    dependencyUpperBoundTaskIds: [...dependencyUpperBoundTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    causalConflictTaskIds: [...causalConflictTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    repairableConflictTaskIds: [...causalConflictTaskIds].filter(Number.isFinite).sort((a,b)=>a-b),
+    immutableConflictTaskIds: [],
+    causalConflictEvidenceComplete: causalConflictEvidenceIncompleteBranchCount === 0,
+    causalConflictEvidenceIncompleteBranchCount,
+    causalConflictEvidenceFingerprint: createHash("sha256").update(stableStringify(causalFingerprints.sort())).digest("hex"),
     unsupportedRequirementCodes: [...unsupportedRequirementCodes].sort(),
     diagnosticsComplete: missing.length === 0 && (built?.branches ?? []).every((branch: any) => !branch.rejectionReason || branch.anchorPlacementEvidence || branch.searchEvidence || (branch.blockers ?? []).length > 0),
     missingDiagnosticFields: missing.sort(),
