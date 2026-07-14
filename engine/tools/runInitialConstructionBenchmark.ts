@@ -18,6 +18,12 @@ export interface InitialConstructionBenchmarkResult {
   terminalAnchorsScanned: number | null;
   allEligibleAnchorsExhausted: boolean | null;
   terminalBlockerCodeCounts: Record<string, number>;
+  terminalBlockerEvidenceComplete: boolean | null;
+  terminalBlockerEvidenceIncompleteAnchorCount: number | null;
+  terminalBlockerEvidenceFingerprint: string | null;
+  terminalPrimaryBlockerCodeCounts: Record<string, number>;
+  terminalDeadEndReasonCounts: Record<string, number>;
+  terminalBlockedAnchorSample: unknown[];
   runtimeTelemetry: unknown;
   /** @deprecated use sessionFingerprint */
   fingerprint: string | null;
@@ -44,6 +50,12 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     terminalAnchorsScanned: session.evidence?.terminalCycle?.anchorRanksScanned ?? null,
     allEligibleAnchorsExhausted: session.evidence?.terminalCycle?.allEligibleAnchorsExhausted ?? null,
     terminalBlockerCodeCounts: session.evidence?.terminalCycle?.terminalBlockerCodeCounts ?? {},
+    terminalBlockerEvidenceComplete: session.evidence?.terminalBlockerEvidenceComplete ?? null,
+    terminalBlockerEvidenceIncompleteAnchorCount: session.evidence?.terminalBlockerEvidenceIncompleteAnchorCount ?? null,
+    terminalBlockerEvidenceFingerprint: session.evidence?.terminalBlockerEvidenceFingerprint ?? null,
+    terminalPrimaryBlockerCodeCounts: session.evidence?.terminalPrimaryBlockerCodeCounts ?? {},
+    terminalDeadEndReasonCounts: session.evidence?.terminalDeadEndReasonCounts ?? {},
+    terminalBlockedAnchorSample: session.evidence?.terminalBlockedAnchorSample ?? [],
     runtimeTelemetry: { ...(session.evidence?.runtimeTelemetry ?? {}), exclusiveConstructiveRuntimeMs: Math.round(ended - started) },
     fingerprint: session.evidence?.sessionFingerprint ?? null,
   };

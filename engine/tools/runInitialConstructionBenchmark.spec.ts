@@ -9,5 +9,8 @@ test("isolated initial construction benchmark runs Stage 1, Stage 2, and iterati
   assert.ok(result.exclusiveConstructiveRuntimeMs >= 0);
   assert.ok(result.assignmentsReached >= 2);
   assert.ok(result.cycles <= 1);
+  assert.equal(typeof result.terminalBlockerEvidenceFingerprint === "string" || result.terminalBlockerEvidenceFingerprint === null, true);
+  assert.equal(typeof result.terminalPrimaryBlockerCodeCounts, "object");
+  assert.equal(Array.isArray(result.terminalBlockedAnchorSample), true);
   assert.ok(result.fingerprint);
 });
