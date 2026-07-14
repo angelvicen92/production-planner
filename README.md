@@ -1646,3 +1646,13 @@ Anchor placement evidence now exposes `temporalCandidateFingerprint`, which iden
 Historical Stage 2 tests were relaxed from accidental exact branch/placement counts to operational invariants: deterministic fingerprints, branch-attempt sums, no selected `INFEASIBLE` Future Feasibility branch, and retry counts equal to the actual rejected attempts before selection.
 
 Benchmark status for the active repository state: no plan-27 snapshot artifact is present in the repo, so this README does not claim that ID 292 is production-accepted for plan 27. The implemented benchmark path remains `engine/tools/runInitialConstructionBenchmark.ts`; acceptance still requires running it against the real plan-27 snapshot and recording the actual assignments, accepted cycles, final validation, alternative acceptance, runtime, replay determinism, zero commits, V4-seed absence, and public-planning parity.
+
+## ID 294 — Provisional Dependency Temporal Bounds & Combined Precheck v1
+
+- The ORC initial construction baseline remains the Plan 27 frontier of at least 109 assignments with a final combined `VALID` PartialPlan target.
+- Pending anchor and closure placement now propagates canonical dependency bounds from already assigned prerequisites and dependents: a new assignment starts after assigned prerequisite finishes and ends before assigned dependent starts.
+- A combined dependency precheck evaluates canonical edges across the base PartialPlan and branch delta before Transformation, Simulation, or Validation, so branches with known dependency conflicts are rejected early.
+- Late combined-validation dependency rejections are reduced by carrying causal edge evidence into constructive blockers instead of treating them as generic task-window conflicts.
+- The benchmark evidence records the assignments reached after the run, including dependency-bound counts and combined precheck rejection counts.
+- This change intentionally does not add backtracking between accepted PartialPlans.
+- This change does not commit planning, publish ORC output, modify public planning APIs, or use V4 as a seed.
