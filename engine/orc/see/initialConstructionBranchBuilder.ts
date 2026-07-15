@@ -33,6 +33,9 @@ export interface AnchorPlacementEvidence {
   windowIndex: number;
   candidateRankWithinWindow: number;
   sourceKinds: readonly string[];
+  frontierSources: readonly any[];
+  frontierSourceTaskIds: readonly number[];
+  dependencyBoundSourceTaskIds: readonly number[];
   startPlanned: string;
   endPlanned: string;
   feasibilityChecked: boolean;
@@ -412,7 +415,8 @@ export function buildInitialConstructionBranches(args: { input: EngineInput; ori
         };
         const makeEvidence = (feasible: boolean, reasonCodes: string[], resourceIds: number[][], feasibility: any | null): AnchorPlacementEvidence => {
           const temporalCandidateFingerprint = createHash("sha256").update(stableStringify({ absoluteTemporalIndex, windowIndex: candidate.windowIndex, candidateRankWithinWindow: candidate.candidateRankWithinWindow, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned })).digest("hex");
-          const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: absoluteTemporalIndex, sourceKinds: candidate.sourceKinds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), temporalCandidateFingerprint, causalConflictEvidence: makeCausalEvidence(feasibility), fingerprint: "", readOnly: true };
+          const frontierSources=[...(candidate.frontierSources??[])]; const frontierSourceTaskIds=[...new Set(frontierSources.map((s:any)=>Number(s.taskId)).filter(Number.isFinite))].sort((a,b)=>a-b); const dependencyBoundSourceTaskIds=[...new Set(frontierSources.filter((s:any)=>s.kind==="assigned-prerequisite-end"||s.kind==="assigned-dependent-start").map((s:any)=>Number(s.taskId)).filter(Number.isFinite))].sort((a,b)=>a-b);
+          const ev: AnchorPlacementEvidence = { windowIndex: candidate.windowIndex, candidateRankWithinWindow: absoluteTemporalIndex, sourceKinds: candidate.sourceKinds, frontierSources, frontierSourceTaskIds, dependencyBoundSourceTaskIds, startPlanned: candidate.startPlanned, endPlanned: candidate.endPlanned, feasibilityChecked: true, feasible, reasonCodes: [...reasonCodes].sort(), resourceAlternativeIds: resourceIds.map((ids) => [...ids].sort((a,b)=>a-b)).sort((a,b)=>stableStringify(a).localeCompare(stableStringify(b))), temporalCandidateFingerprint, causalConflictEvidence: makeCausalEvidence(feasibility), fingerprint: "", readOnly: true };
           ev.fingerprint = createHash("sha256").update(stableStringify({ ...ev, fingerprint: undefined })).digest("hex");
           return ev;
         };
