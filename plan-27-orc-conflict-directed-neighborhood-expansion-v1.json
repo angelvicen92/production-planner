@@ -1,17 +1,17 @@
 {
-  "version": "PLAN-27-ORC-EXECUTABLE-NEIGHBORHOOD-REPAIR-V1",
+  "version": "PLAN-27-ORC-CONFLICT-DIRECTED-NEIGHBORHOOD-EXPANSION-V1",
   "deterministic": true,
   "baselineGatePassed": true,
   "evidenceContractPassed": false,
   "productiveConstructionCompleted": false,
   "runs": [
     {
-      "exclusiveConstructiveRuntimeMs": 35122,
+      "exclusiveConstructiveRuntimeMs": 34484,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "8efe665d25814cfce135f96051c78369c6365cd0a2eba4e59b64e38082cd852d",
+      "sessionFingerprint": "58190f6a36d40d5a2e481b29bc7b0da76f659957759f25923b5091b41eea5175",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -25,7 +25,7 @@
       },
       "terminalBlockerEvidenceComplete": true,
       "terminalBlockerEvidenceIncompleteAnchorCount": 0,
-      "terminalBlockerEvidenceFingerprint": "dd384f7e3296218472890c47184a4db0a580d904c8343cf3c0713341dd0a8bf0",
+      "terminalBlockerEvidenceFingerprint": "c99036d82f55448606e8fb5e55961a13f0dafc748a158b28cdb98b0e42693899",
       "terminalPrimaryBlockerCodeCounts": {
         "TASK_WINDOW_CONFLICT": 4
       },
@@ -228,12 +228,15 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 226,
                 374
               ],
@@ -268,9 +271,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d8c1ea08047b3f340c20a816757e2a55ae5d81015bdf983611eac2a7bd8b1147",
+              "fingerprint": "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
               "readOnly": true
             },
             {
@@ -282,12 +291,15 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 344
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -321,9 +333,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "8db9f06779ada0d4500409ba2b475896bc15ba5af92b000fb2796c7ed2fc9d80",
+              "fingerprint": "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
               "readOnly": true
             },
             {
@@ -335,12 +353,16 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 235,
                 307,
                 353
@@ -371,16 +393,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                307,
                 394
               ],
               "repairableConflictTaskIds": [
+                307,
                 394
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "DEPENDENCY_BOUND_FRONTIER",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "45b7c5ce9ec82a771f0236ebcf0e6acf825629b06ba9d653328dc9b6993f6f28",
+              "fingerprint": "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
               "readOnly": true
             },
             {
@@ -392,11 +423,13 @@
               "endPlanned": "16:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 212,
                 384
               ],
@@ -431,9 +464,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "562bb1fe8e0ca24ea5dfbe0c2cbaf2494ecc83c090936d3b81002d3f2033ca5b",
+              "fingerprint": "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
               "readOnly": true
             },
             {
@@ -444,6 +483,7 @@
               "startPlanned": "15:35",
               "endPlanned": "15:40",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -480,9 +520,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "1071ac9bbaf3b60e1092eed9145a1eff6657e1ab2e6b627711bb302d82313cad",
+              "fingerprint": "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
               "readOnly": true
             },
             {
@@ -494,6 +540,8 @@
               "endPlanned": "16:40",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -531,9 +579,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d5bc1a84758e14e26cfb091acc649c90abcff068fb9ae0807fe56de457f38f55",
+              "fingerprint": "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
               "readOnly": true
             },
             {
@@ -545,6 +599,8 @@
               "endPlanned": "15:50",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -577,9 +633,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "3e7c03ab5e7b4ef725e280dd4fdb833f1bfc4659d076d1b796f2d421cea9f1ec",
+              "fingerprint": "5eda18722b7f7bd532f8009fb1ec8d86346968a10f1b8c9e09cbddcf8798e212",
               "readOnly": true
             },
             {
@@ -590,6 +652,7 @@
               "startPlanned": "16:40",
               "endPlanned": "16:45",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -626,9 +689,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "ec98f570f814be8a6310e5ae7c57202a3b9aaadc79b2ec10b1dbe510a02b34bf",
+              "fingerprint": "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
               "readOnly": true
             },
             {
@@ -640,6 +709,8 @@
               "endPlanned": "16:05",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -672,9 +743,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "3c37b1d261f0dfc11a559144f1a8e665998e40957d964d2e44fd8841e14bb118",
+              "fingerprint": "71e8449fc17c206895bb00264d41593df100cfef08e406471245e5b1ee83c843",
               "readOnly": true
             },
             {
@@ -685,6 +762,7 @@
               "startPlanned": "16:45",
               "endPlanned": "16:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -716,9 +794,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "95cb99655db4ac11dd7c1af6693627b58e8e270409c9aad7f9c31444c6dd75d4",
+              "fingerprint": "221b675fddc6987fdeaf2015d2cb21b4c7132ab73dbf87f274ffd378cc609113",
               "readOnly": true
             },
             {
@@ -730,6 +814,8 @@
               "endPlanned": "16:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -762,9 +848,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "ed85a78d1cd55f351df97466d7d35a2b5fd50dbba6282778822eaed5a5c66c01",
+              "fingerprint": "e3f56efd6edc319c5547c888185f13d2e398dce5121adb30333c76ab2c5f47db",
               "readOnly": true
             },
             {
@@ -775,6 +867,7 @@
               "startPlanned": "18:10",
               "endPlanned": "18:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -806,9 +899,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "ae0ab5d3ea4f29a74a31c5d24112a79b5fff9bd05b557dcdeec538dfa79b601b",
+              "fingerprint": "aa1adafa093d5e707ad286aac5e4d31de74e40f07e7360bb811cac68137240d2",
               "readOnly": true
             },
             {
@@ -819,6 +918,7 @@
               "startPlanned": "16:20",
               "endPlanned": "16:25",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -855,9 +955,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "5ea8c0f0e2206102b4064865c6d4780dfbd56a97f0d166b9b746673a49517871",
+              "fingerprint": "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
               "readOnly": true
             },
             {
@@ -868,6 +974,7 @@
               "startPlanned": "18:15",
               "endPlanned": "18:20",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -904,9 +1011,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d145b462365f8d30881c0808934eeaaee0573981e02c65cc9aa376ab3a0fffe8",
+              "fingerprint": "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
               "readOnly": true
             },
             {
@@ -918,6 +1031,8 @@
               "endPlanned": "18:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -955,9 +1070,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "a904ca8325ca9f9cc1d866d3f6773ebf77db63c6c8bb8673964906972b90c81e",
+              "fingerprint": "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
               "readOnly": true
             }
           ],
@@ -965,7 +1086,7 @@
           "repairableCandidateProfileCount": 10,
           "unrepairableCandidateProfileCount": 5,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "a226ddcc87ad0feefff95411513748f2440f06040aa090472ed7889421152515",
+          "repairCandidateProfilesFingerprint": "1fe8f189b7d36357e147475b89015b34cb49b5a70f72df775bcdf88284788730",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "cae09f5e0d7f530cccdfebdc497fb2980da075874762f72c071dba80a1bcb176",
           "attemptDiagnosticsFingerprint": "8c79626bb63e06f251712c423df0f960924b2a45a050076666ebf58b52155216",
@@ -1174,12 +1295,15 @@
               "endPlanned": "13:00",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "protected-interval-start",
                 "protected-interval-start",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 311
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -1208,9 +1332,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "ec7d307d76ba2f5a6e7269d98b2b3e09b6c0d9936ca16c482e0021b5ac41f169",
+              "fingerprint": "d59ebf67483b4ff4858045ccf5cfbc68a945400ac79261d068e7852ca5d4ca3f",
               "readOnly": true
             },
             {
@@ -1222,12 +1353,13 @@
               "endPlanned": "15:30",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP",
@@ -1254,9 +1386,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "979f74803d4927a150a858410cf761d5f86577018e38fea7a7ac1c451593193a",
+              "fingerprint": "b5a927045ec929d6d0d2b9b1c0c88fa142fcb1e7ba65a3db87934c5420b909ee",
               "readOnly": true
             },
             {
@@ -1268,12 +1407,15 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 215,
                 382
               ],
@@ -1308,9 +1450,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "b9aa36b45888c31ac13557c4966d97ec7a90a25b6766a42acde3af3f9b25a718",
+              "fingerprint": "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
               "readOnly": true
             },
             {
@@ -1322,12 +1470,15 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 332
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -1361,9 +1512,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "00847a03edcbfb254cc59fd87481e5ba020c0bc057ac413f36952057291341c5",
+              "fingerprint": "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
               "readOnly": true
             },
             {
@@ -1375,6 +1532,8 @@
               "endPlanned": "12:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -1396,16 +1555,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                313,
                 316
               ],
               "repairableConflictTaskIds": [
+                313,
                 316
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "25f3e482b51a651f7253e41bd9d201a2bc504748b56442d59c2f6373bb5df55a",
+              "fingerprint": "395cf90eb333f9e4b52aa752b6049d3ff90e0b1b6d394ef76543df4ad4cfcf87",
               "readOnly": true
             },
             {
@@ -1417,11 +1585,13 @@
               "endPlanned": "14:20",
               "sourceKinds": [
                 "protected-interval-end",
+                "protected-interval-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 262
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -1450,9 +1620,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "3f318b2c445945d701e16a3a69e1527986399ea415edbfb9f4f00f7c0ab81af2",
+              "fingerprint": "76c6f57c2e25f245e0ddc8a7d6c88cf4e0d5c39ce7c261589bc093f12da25ee6",
               "readOnly": true
             },
             {
@@ -1464,10 +1641,12 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 307,
                 392
               ],
@@ -1497,9 +1676,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "e4a70e931a2226e8a0db872f5a935edec92c6a26b2e2259f30cd5f577a41bd23",
+              "fingerprint": "1f6ea4774bfc1f01a6b93d653ae340f1002d0490ddce741bfbf565d4f5423a01",
               "readOnly": true
             },
             {
@@ -1511,10 +1696,11 @@
               "endPlanned": "16:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 372
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -1548,9 +1734,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "245433a266a65751fe67ec946540dad0dcb77e36bcc1f00196082eb05af0e041",
+              "fingerprint": "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
               "readOnly": true
             },
             {
@@ -1561,6 +1753,7 @@
               "startPlanned": "12:40",
               "endPlanned": "12:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1587,9 +1780,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "79c55f242f947ddcea2b538d6459de94976f34c20ab2e94e233b9c99cfd94d8e",
+              "fingerprint": "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
               "readOnly": true
             },
             {
@@ -1601,6 +1800,8 @@
               "endPlanned": "14:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1633,9 +1834,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "362a3428bd0087c7efa618c9b9c03f5c7e3e77a4476b577ff604f74d26d76024",
+              "fingerprint": "c525c9ddeb8da795400928b8678d10b5e229c78bdf5c6d57b222764be7ad63f1",
               "readOnly": true
             },
             {
@@ -1646,6 +1854,7 @@
               "startPlanned": "16:05",
               "endPlanned": "16:10",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1677,9 +1886,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "2060382dc3384d2f2c473ba881af0c9d91192a5b4192277684364885497eb7e0",
+              "fingerprint": "175a6f7cec160594505b2602152889362cc467f218b6dc1e3f536f604f1108ec",
               "readOnly": true
             },
             {
@@ -1690,6 +1905,7 @@
               "startPlanned": "16:35",
               "endPlanned": "16:40",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -1721,9 +1937,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "9d6039f16d00b8572dee2e0bc45299fa121e18ea48d98d10fe3733b2ad19261c",
+              "fingerprint": "f39bdbf8d39748ece2544dc4be153dd0fd81a84f7d10b87f8c790e69cb4fc67c",
               "readOnly": true
             },
             {
@@ -1734,6 +1956,7 @@
               "startPlanned": "12:45",
               "endPlanned": "12:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -1760,9 +1983,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "01327781f74eb828fc164a8c09fcc8e7fa9cd762595088940e7e4e30d5d5db09",
+              "fingerprint": "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
               "readOnly": true
             },
             {
@@ -1774,6 +2003,8 @@
               "endPlanned": "14:30",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1806,9 +2037,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "b91de4775e00f9b0d70c8f0a53c15e656db0eeff1be96bc0a89e0ef7894b4241",
+              "fingerprint": "a01001844d6ff2cadcf8aebef16f6e614d476116b7c9ca04e441b8cc52c178d2",
               "readOnly": true
             },
             {
@@ -1819,6 +2057,7 @@
               "startPlanned": "16:10",
               "endPlanned": "16:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1855,9 +2094,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "75e49015e3981f758dbd96166395916b3e394bd538a45eb4727dc06958367987",
+              "fingerprint": "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
               "readOnly": true
             },
             {
@@ -1868,6 +2113,7 @@
               "startPlanned": "18:05",
               "endPlanned": "18:10",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1899,9 +2145,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "8af73f00a14e12a6b942c74b27e23fe9b8ef2416dd05119521f172707af34bdd",
+              "fingerprint": "9dccfbc0447eb5df8d402d7ec381661c5316727beacea75074b877103c1d3077",
               "readOnly": true
             },
             {
@@ -1912,6 +2164,7 @@
               "startPlanned": "12:50",
               "endPlanned": "12:55",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1938,9 +2191,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "6273e5bde2eebdfc0612866dd7ab67fb6f56e54c8f9678f4a536c2cb49b53de5",
+              "fingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
               "readOnly": true
             },
             {
@@ -1952,6 +2211,8 @@
               "endPlanned": "14:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -1984,9 +2245,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "92d0c99cf9daa5d81e63264e527bb5ab27d3fed5fd71250e248d8e42e9cd76ce",
+              "fingerprint": "3b809cd9f28c1cfc3a7ea9a2b2f61b2f04771b50e0cb725fdc442eb4537d10da",
               "readOnly": true
             },
             {
@@ -1998,6 +2266,8 @@
               "endPlanned": "16:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2035,9 +2305,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "eefa3286b8487cbf32d4fa43a34817ff602d9c7ab4f32dc0d327672e0590880f",
+              "fingerprint": "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
               "readOnly": true
             },
             {
@@ -2048,6 +2324,7 @@
               "startPlanned": "18:10",
               "endPlanned": "18:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2084,9 +2361,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4cd753cf10c0a02427fe8059fa5b2efd7d7e513ba27bfa63c49fada643fb31b0",
+              "fingerprint": "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c",
               "readOnly": true
             },
             {
@@ -2098,6 +2381,8 @@
               "endPlanned": "14:40",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2130,9 +2415,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "a0da3c6cf1ab0d3b4b59a57730ac99287194bf41dfb1c02680fcd412ed724727",
+              "fingerprint": "78aedf54989280836499855c97393fb0640dff696f97bc8660c6845d75f3557f",
               "readOnly": true
             },
             {
@@ -2144,6 +2436,8 @@
               "endPlanned": "16:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2181,9 +2475,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "994b1ecf28b7fde77e448a3ec1660b39313c36f95da2c3ea4148bdcfdfded73f",
+              "fingerprint": "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
               "readOnly": true
             },
             {
@@ -2195,6 +2495,8 @@
               "endPlanned": "18:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2232,9 +2534,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "672e9b1337ea375df3260fb2002d4087a87534814efad68c52fa5151341c447a",
+              "fingerprint": "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
               "readOnly": true
             },
             {
@@ -2246,6 +2554,9 @@
               "endPlanned": "14:45",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2279,9 +2590,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "5d649a4e4ec5a14a38356e3d3d2da20c56b9508f83d87e9caca380315da87a33",
+              "fingerprint": "133c93ebcc7423db6b5ae98d7fbea4b3d13e6dfae782e77f243dfb431b7f873f",
               "readOnly": true
             }
           ],
@@ -2289,7 +2607,7 @@
           "repairableCandidateProfileCount": 20,
           "unrepairableCandidateProfileCount": 4,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "e9ed6ce9fa525a2a01b09338eb5204d72ed9b65a9ce685774e959f66045df2b7",
+          "repairCandidateProfilesFingerprint": "af4fc94fcd90fbb850793fe6390a1f6bf778dc9b7fd88c7477943a0cb6dd79ff",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "3fb2c23ddd90930eaa782a530a84685edf0dbec6eba2d01054802b15c9fa0765",
           "attemptDiagnosticsFingerprint": "47a101e1a5795601068da448c02faee291bcedd79af9ce70f1aa1dc20182009e",
@@ -2390,12 +2708,15 @@
               "endPlanned": "13:00",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "protected-interval-start",
                 "protected-interval-start",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 311
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -2419,9 +2740,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "91d99e4eb594b094b88fadb6f059d3cbea98e7aaae97549eb9b8becbd7bb5369",
+              "fingerprint": "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
               "readOnly": true
             },
             {
@@ -2433,12 +2760,13 @@
               "endPlanned": "15:30",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP"
@@ -2460,9 +2788,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "752c78308201907a29d7fdbd521e5bb065836da9aaf7b2560e7bc6ab08df1fde",
+              "fingerprint": "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
               "readOnly": true
             },
             {
@@ -2474,11 +2808,11 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -2505,9 +2839,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "719d2ea5e572b6753f645e6ed93aee3876964e8b6d073d58460ec01f01bb04a1",
+              "fingerprint": "09988acac52085493d3c88954fa3680dd5bdca4ea2faf78f29f73cd24fba653c",
               "readOnly": true
             },
             {
@@ -2519,12 +2859,13 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -2551,9 +2892,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "cdedad523e6543f46030ecf11d5dc4338f9ab50536b231a7600ae61e4953554b",
+              "fingerprint": "9da7a501b70b1c0633f76793eb26c0e638194b74b7fac9ceb29d1aec7a17b6f7",
               "readOnly": true
             },
             {
@@ -2565,6 +2912,8 @@
               "endPlanned": "12:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -2586,16 +2935,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                313,
                 316
               ],
               "repairableConflictTaskIds": [
+                313,
                 316
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "9c8a038ac44adec5195286a7584a0261165d09c2a55d86a76942192db9124432",
+              "fingerprint": "8a92810a018ef1ee0296b7d86e28f1846900bb3a715520aa2f500436ae83d7ed",
               "readOnly": true
             },
             {
@@ -2607,11 +2965,11 @@
               "endPlanned": "14:20",
               "sourceKinds": [
                 "protected-interval-end",
+                "protected-interval-end",
+                "window-start",
                 "window-start"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP"
@@ -2633,9 +2991,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "8f851dd982f14ccd7c44ee4ed16d0877b83cb31abf064fe547bb83f88f3cdd5d",
+              "fingerprint": "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
               "readOnly": true
             },
             {
@@ -2647,10 +3011,11 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 307
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -2679,9 +3044,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "d1d252cd52c083aad4c4a8eebfe2ad830bdd0582ca64802d5f3452abcd797b65",
+              "fingerprint": "be680f10ecd19c15dda10b3ce70977cbba58ad5f8325cc7dfb0beaa424f441b3",
               "readOnly": true
             },
             {
@@ -2692,11 +3063,10 @@
               "startPlanned": "16:30",
               "endPlanned": "16:35",
               "sourceKinds": [
+                "window-start",
                 "window-start"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -2723,9 +3093,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "a34ba3f8305a4deb5b49128b6920ffabc353f4827e3ea2fc77efbfab7cfecd77",
+              "fingerprint": "8147dfd6c2783eed28dfdf2eba274fd074183e3ab0c83ad08d8340050f8bd763",
               "readOnly": true
             },
             {
@@ -2736,6 +3112,7 @@
               "startPlanned": "12:40",
               "endPlanned": "12:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2762,9 +3139,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "10a09898b4ff9af9b1f75995a55f81718faad7643e9ac948905057d90f3dd566",
+              "fingerprint": "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
               "readOnly": true
             },
             {
@@ -2775,6 +3158,7 @@
               "startPlanned": "14:40",
               "endPlanned": "14:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2801,9 +3185,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "db9b2df16980b31b7b3e0cc9a006bb9720d446c5c4abab5436958d68f2b24791",
+              "fingerprint": "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
               "readOnly": true
             },
             {
@@ -2814,6 +3204,7 @@
               "startPlanned": "12:45",
               "endPlanned": "12:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -2840,9 +3231,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4430010c0802a5904f9c0ae595412798028e063c2c78066ba76a1fb64526016e",
+              "fingerprint": "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
               "readOnly": true
             },
             {
@@ -2853,6 +3250,7 @@
               "startPlanned": "14:45",
               "endPlanned": "14:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -2879,9 +3277,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "48dd6a940417c328e3e2dbef48e924e87d8350df7eacce3082564e0ad2a71b57",
+              "fingerprint": "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
               "readOnly": true
             },
             {
@@ -2892,6 +3296,7 @@
               "startPlanned": "15:10",
               "endPlanned": "15:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2918,9 +3323,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "7adebf7675da5bc6fb5241b763127cce8e54640ee6612afe2dd6d4438f734a9b",
+              "fingerprint": "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
               "readOnly": true
             },
             {
@@ -2932,6 +3343,8 @@
               "endPlanned": "15:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -2959,9 +3372,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "afad5ef8302c1a8a631b82c03bb23cb71f2222785773a43efc397b075108aec3",
+              "fingerprint": "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
               "readOnly": true
             },
             {
@@ -2972,6 +3391,7 @@
               "startPlanned": "15:20",
               "endPlanned": "15:25",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -2998,9 +3418,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "65b16429d63ba2eb2949112ce12f0302616607dfa6baa6eecaf625c238387c43",
+              "fingerprint": "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
               "readOnly": true
             }
           ],
@@ -3008,7 +3434,7 @@
           "repairableCandidateProfileCount": 11,
           "unrepairableCandidateProfileCount": 4,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "3b486aef1002464e5f71ca6bed81ff0068894c4840f615d191f28156944ba9ca",
+          "repairCandidateProfilesFingerprint": "e5253b26d5d1408dd222db04d4ac88999d9e7ca2402738f8712b2cb6c492f012",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
           "attemptDiagnosticsFingerprint": "713ddd0c0b2552f350222a3c2e0a257826a9aff428e6b4f5d8a45f42a41bbfeb",
@@ -3071,12 +3497,13 @@
               "endPlanned": "18:40",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -3103,9 +3530,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "6472d8dc832b7121c1aa7fe6bd5dab7dff4f2d04d5df4acf7907c096dc2bb5f3",
+              "fingerprint": "9d4af12e662c3fe1e7cc11333b961cdce2786a7b79479847ed8b69ec92f7f549",
               "readOnly": true
             },
             {
@@ -3117,11 +3550,14 @@
               "endPlanned": "18:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 322,
                 334
               ],
@@ -3147,23 +3583,31 @@
               "dependencyLowerBoundTaskIds": [],
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
-              "directCausalTaskIds": [],
-              "repairableConflictTaskIds": [],
-              "immutableConflictTaskIds": [],
-              "staticUnrepairableReasonCodes": [
-                "TASK_WINDOW_CONFLICT"
+              "directCausalTaskIds": [
+                322
               ],
-              "repairable": false,
+              "repairableConflictTaskIds": [
+                322
+              ],
+              "immutableConflictTaskIds": [],
+              "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
+              "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4d277506cc1f4c77a61dffbde893304a59704766cc32269ea9a07d26014d6018",
+              "fingerprint": "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
               "readOnly": true
             }
           ],
           "repairCandidateProfileCount": 2,
-          "repairableCandidateProfileCount": 0,
-          "unrepairableCandidateProfileCount": 2,
+          "repairableCandidateProfileCount": 1,
+          "unrepairableCandidateProfileCount": 1,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "42dd78b53e9d152dfa5442b1555952357dc4be946254295b8882d5e9e6c21bb5",
+          "repairCandidateProfilesFingerprint": "1d445a1997ad721377f02128b4de3c25a3338cb4265db257cfd76c3a2469e1c7",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "0c164d4d6ff6e7f9f9bd7ac1a6613f06535595047136bcba6e03eabb67d1fd9f",
           "attemptDiagnosticsFingerprint": "bf329e801355d4b3f9fd5b4a986b6e10e45ed2f99ee5fd098b734cd4a3ee6a62",
@@ -3171,9 +3615,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 34919,
-        "assignmentsPerSecond": 4.754,
-        "exclusiveConstructiveRuntimeMs": 35122
+        "sessionRuntimeMs": 34246,
+        "assignmentsPerSecond": 4.847,
+        "exclusiveConstructiveRuntimeMs": 34484
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -3194,7 +3638,7 @@
       "repairAttemptCount": 32,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
-      "candidateEjectionSetCount": 41,
+      "candidateEjectionSetCount": 42,
       "acceptedBlockedAnchorTaskIds": [],
       "acceptedEjectionTaskIds": [],
       "acceptedRepairDependencyClosureTaskIds": [],
@@ -3202,7 +3646,559 @@
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
       "repairStopReason": "NO_VALID_REPAIR",
-      "repairFingerprint": "cce7e2bbbd6ff28b98fb693f723e873b77b75313137b420368e892da1522ea26",
+      "repairFingerprint": "eecaedda29b396f745fcc32cbd65c1624c2587aa549a9186a9b0fd28cbaf3ba1",
+      "repairCandidateProfilesFingerprint": null,
+      "repairCandidateProfileCount": 42,
+      "repairableCandidateProfileCount": 42,
+      "candidateProfilesWithDependencyBoundBlockers": null,
+      "dependencyBoundSourceTaskIdsByAnchor": null,
+      "candidateProfilesByAnchor": {
+        "312": 20,
+        "314": 10,
+        "324": 1,
+        "505": 11
+      },
+      "candidateEjectionSetsByAnchor": {
+        "312": 20,
+        "314": 10,
+        "324": 1,
+        "505": 11
+      },
+      "repairQueueByRound": [
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+            "ejectionSetFingerprint": "5fc57dc8dc3521d63637b587193a85e34590c30a77018624a066d9112947c293"
+          },
+          {
+            "blockedAnchorTaskId": 324,
+            "candidateProfileFingerprint": "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
+            "ejectionSetFingerprint": "db4b641acbb90f0e3b217b7c443c23e64b01a029ed894cf8713fc7a79f3fd288"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
+            "ejectionSetFingerprint": "7231fda257779cc70dcef9a01e30ef8cabfde6cb82397e6e3c982afafd7c52f7"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
+            "ejectionSetFingerprint": "4f54c4af4ae8055ebe7cfee52ca1ed8e9ad38eb228dfd0d8ec99b3544d8b2752"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
+            "ejectionSetFingerprint": "b503ea4b4f7e612d82933a6659260520b7032a5defa89fed91145e7867ff1609"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
+            "ejectionSetFingerprint": "fc40a039951f5e7c39215f22cb3839710afd9b44576cd508b18d4f9de5bb1aee"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
+            "ejectionSetFingerprint": "daf58ff68361b799ef4254e01d7f009d6c7788694ed3a04705f66999c35bcb40"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
+            "ejectionSetFingerprint": "f19e8a10659abaf9648fdaa2ad0168660ca4eef34c3d8349a39eae5127f58b31"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
+            "ejectionSetFingerprint": "1e3b998312f2103c4d45331797e49d4a935257fde34636663cbb5ed745d9dfdf"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
+            "ejectionSetFingerprint": "2a1b093e7f6fb57f8fb4d0c4164d6760c1f01a916b1d69d67803a6319f8452f4"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
+            "ejectionSetFingerprint": "969b576cea3c32e18d65710f28c260b281611118a8936e37a563426ce95d31ab"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
+            "ejectionSetFingerprint": "9870e7fc68bc1e5ac9e61af44c81b89e639b529b0bb32461859c31d0d980b104"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
+            "ejectionSetFingerprint": "c114e69ee1fdb604a9483283b0ed8a479f976dfb5d004844ea7baf7323d0bea6"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
+            "ejectionSetFingerprint": "a3b9eab2ea614aaeab089ea3ab3221b9a92b478520e8d3182f9adb2f3538f725"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
+            "ejectionSetFingerprint": "dad246ad0eed9d077210d1b8050ebd31fcd163cb53d5e8d6d9117be58afe51b0"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
+            "ejectionSetFingerprint": "c949c8c6004f2dafd9fb246b00b95efe825b98464c94277eddf06816afbb8fd3"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
+            "ejectionSetFingerprint": "f62a1d3085ca526537243dc3a11950c4cafa6f416c3805b3554748223fc05de9"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
+            "ejectionSetFingerprint": "3712dee84fbf3cadc3458d52943964ad9f0f5e4ccb172d08813b17e9dc8cad0b"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
+            "ejectionSetFingerprint": "dd22fa7f63f38bbdc3294c3abab7d07d01d1f7374b414778c0e8a4e66c9eb3bd"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
+            "ejectionSetFingerprint": "039a0840764e1a6d05c6857a5195f805ca68bde0aaf4898b8c7e948e2a60f270"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
+            "ejectionSetFingerprint": "086752af1696cace2d62eae2909896c3bfbaf8a34240c62d56617d4daac21fcb"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
+            "ejectionSetFingerprint": "f0789f49eabbf24962cca11f9ebade412417e325d0c00401364019850a389010"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
+            "ejectionSetFingerprint": "4608cc345314fba90839f69ab89bf5cd0c6b41f67f89f7be7aa84e5b7e5d8344"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
+            "ejectionSetFingerprint": "625995d6e41fd277e1fa62d9c2e9803d266c0367dbbfcaf03bd100a492819eec"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
+            "ejectionSetFingerprint": "5832dde4c07ef72af7def165124936caad3b508015c636ab90ade710a8740ab9"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
+            "ejectionSetFingerprint": "fc96a96bebb30de526b052580b8fa6246f4d793f0f584ae98fe1338885c7e474"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
+            "ejectionSetFingerprint": "cbc759d37e07070b693615b54c97fc27a968b8c199bd651c2c1ea2f70a63632f"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
+            "ejectionSetFingerprint": "97d06952720719b259fe0585e0d5ebc486abf521c93b040bb96a84bde9064c0e"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
+            "ejectionSetFingerprint": "0b8b27027a0bed5916a2372e50a16718943545880d58ccefb2ef37c2d03a332e"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
+            "ejectionSetFingerprint": "625b397f995d8dd33750f6eb0975856ec6f8714438f65d648518400d5e8dbcbb"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
+            "ejectionSetFingerprint": "e214139cf0befcaef37c38493a9473fd580b75da4e038172546e3cbb72b6dae9"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c",
+            "ejectionSetFingerprint": "edb882c79463b6e777ea92a8d1136887908c9bb5db2e9186157fa418501f3bad"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "8a92810a018ef1ee0296b7d86e28f1846900bb3a715520aa2f500436ae83d7ed",
+            "ejectionSetFingerprint": "d9a614c5db70f63d3a2004e5d606754f7043624790e5ade96045ec41207923f0"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "a01001844d6ff2cadcf8aebef16f6e614d476116b7c9ca04e441b8cc52c178d2",
+            "ejectionSetFingerprint": "783c5d29f9f4f63a75a386e74b4dff3f59d443ce6690391092be034aa204dc48"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "d59ebf67483b4ff4858045ccf5cfbc68a945400ac79261d068e7852ca5d4ca3f",
+            "ejectionSetFingerprint": "37ff09ab6e5f576bf0f5b11ac0767c802b0e62972d2e0f0152b4010d50105856"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "c525c9ddeb8da795400928b8678d10b5e229c78bdf5c6d57b222764be7ad63f1",
+            "ejectionSetFingerprint": "4a46ec25a50ccbe0b2221d6bfe27a7f8984cf3f2a76c1d0bd8a9c3fb0bb6062d"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "78aedf54989280836499855c97393fb0640dff696f97bc8660c6845d75f3557f",
+            "ejectionSetFingerprint": "f64c5ecb39bd2c9d2d14bab955c49cdba92118b0f5b837dc98af1f43a63b2359"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "b5a927045ec929d6d0d2b9b1c0c88fa142fcb1e7ba65a3db87934c5420b909ee",
+            "ejectionSetFingerprint": "4cd7afbfb5642b7d94caffe294094b46a8ec0681b038821858a786218ea13080"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "133c93ebcc7423db6b5ae98d7fbea4b3d13e6dfae782e77f243dfb431b7f873f",
+            "ejectionSetFingerprint": "887c52d7e0b365c1eb8a3951250ec0fb487427a02c329aa22030fbdc6f245003"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "76c6f57c2e25f245e0ddc8a7d6c88cf4e0d5c39ce7c261589bc093f12da25ee6",
+            "ejectionSetFingerprint": "265558b8c8c2326e078b60b43bae2454887c0220c467120942869ac113016c51"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "3b809cd9f28c1cfc3a7ea9a2b2f61b2f04771b50e0cb725fdc442eb4537d10da",
+            "ejectionSetFingerprint": "08f95a7e1e591250a018618b1bca1f80c7a67d16927f7d5db17c1086e89b9d10"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "395cf90eb333f9e4b52aa752b6049d3ff90e0b1b6d394ef76543df4ad4cfcf87",
+            "ejectionSetFingerprint": "f8bb5aeaeebb5a971e3703881ae37cca85fbe2fc9f18ee99b62120235def6ec3"
+          }
+        ]
+      ],
+      "repairAttemptedAnchorIdsByRound": [
+        [
+          312,
+          324,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312
+        ]
+      ],
+      "repairAttemptedProfileFingerprintsByRound": [
+        [
+          "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
+          "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
+          "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
+          "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
+          "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
+          "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
+          "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
+          "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
+          "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
+          "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
+          "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
+          "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
+          "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
+          "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
+          "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
+          "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
+          "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
+          "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
+          "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
+          "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
+          "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
+          "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
+          "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
+          "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
+          "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
+          "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
+          "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
+          "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
+          "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
+          "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
+          "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c"
+        ]
+      ],
+      "roundRobinFairnessValid": true,
+      "repairNeighborhoodSessionCount": 32,
+      "repairNeighborhoodAcceptedCycleCount": 0,
+      "repairNeighborhoodAnchorAttemptCount": 32,
+      "repairNeighborhoodValidationCount": 32,
+      "repairNeighborhoodExpansionAttemptCount": 32,
+      "repairNeighborhoodExpansionAcceptedCount": 0,
+      "repairSearchNodeCount": 32,
+      "repairSearchNodePrunedCount": 0,
+      "maxRepairExpansionDepthObserved": 0,
+      "maxCumulativeEjectedAssignmentCount": 2,
+      "repairFailurePhaseCounts": {
+        "NEIGHBORHOOD_TASK_REINSERTION": 13,
+        "BLOCKED_ANCHOR_RECONSTRUCTION": 19
+      },
+      "repairAttemptStopReasonCounts": {
+        "NEIGHBORHOOD_REINSERTION_FAILED": 13,
+        "ANCHOR_RECONSTRUCTION_FAILED": 19
+      },
+      "failedTaskIds": [
+        307,
+        310,
+        312,
+        314,
+        315,
+        324,
+        504,
+        506
+      ],
+      "closureContractValid": true,
+      "nonPrerequisiteTaskIdsPassedAsClosure": [],
+      "protectedAssignmentIdsModified": [],
+      "outsideNeighborhoodAssignmentIdsModified": [],
+      "duplicateTaskIds": [],
+      "removedAssignmentIds": null,
+      "reinsertedAssignmentIds": null,
+      "modifiedNeighborhoodAssignmentIds": null,
+      "lostProductiveTaskIds": [],
+      "newlyAssignedProductiveTaskIds": [],
+      "finalProductiveAssignedTaskIds": [
+        209,
+        210,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        310,
+        311,
+        313,
+        315,
+        316,
+        317,
+        318,
+        320,
+        321,
+        322,
+        323,
+        325,
+        326,
+        327,
+        328,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        504,
+        506
+      ],
       "commitsExecuted": 0,
       "v4SeedUsed": false,
       "canonicalContextSource": "stage1-initial-construction-map",
@@ -3215,15 +4211,15 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "8efe665d25814cfce135f96051c78369c6365cd0a2eba4e59b64e38082cd852d"
+      "fingerprint": "58190f6a36d40d5a2e481b29bc7b0da76f659957759f25923b5091b41eea5175"
     },
     {
-      "exclusiveConstructiveRuntimeMs": 40338,
+      "exclusiveConstructiveRuntimeMs": 34100,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "8efe665d25814cfce135f96051c78369c6365cd0a2eba4e59b64e38082cd852d",
+      "sessionFingerprint": "58190f6a36d40d5a2e481b29bc7b0da76f659957759f25923b5091b41eea5175",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -3237,7 +4233,7 @@
       },
       "terminalBlockerEvidenceComplete": true,
       "terminalBlockerEvidenceIncompleteAnchorCount": 0,
-      "terminalBlockerEvidenceFingerprint": "dd384f7e3296218472890c47184a4db0a580d904c8343cf3c0713341dd0a8bf0",
+      "terminalBlockerEvidenceFingerprint": "c99036d82f55448606e8fb5e55961a13f0dafc748a158b28cdb98b0e42693899",
       "terminalPrimaryBlockerCodeCounts": {
         "TASK_WINDOW_CONFLICT": 4
       },
@@ -3440,12 +4436,15 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 226,
                 374
               ],
@@ -3480,9 +4479,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d8c1ea08047b3f340c20a816757e2a55ae5d81015bdf983611eac2a7bd8b1147",
+              "fingerprint": "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
               "readOnly": true
             },
             {
@@ -3494,12 +4499,15 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 344
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -3533,9 +4541,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "8db9f06779ada0d4500409ba2b475896bc15ba5af92b000fb2796c7ed2fc9d80",
+              "fingerprint": "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
               "readOnly": true
             },
             {
@@ -3547,12 +4561,16 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 235,
                 307,
                 353
@@ -3583,16 +4601,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                307,
                 394
               ],
               "repairableConflictTaskIds": [
+                307,
                 394
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "DEPENDENCY_BOUND_FRONTIER",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "45b7c5ce9ec82a771f0236ebcf0e6acf825629b06ba9d653328dc9b6993f6f28",
+              "fingerprint": "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
               "readOnly": true
             },
             {
@@ -3604,11 +4631,13 @@
               "endPlanned": "16:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 212,
                 384
               ],
@@ -3643,9 +4672,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "562bb1fe8e0ca24ea5dfbe0c2cbaf2494ecc83c090936d3b81002d3f2033ca5b",
+              "fingerprint": "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
               "readOnly": true
             },
             {
@@ -3656,6 +4691,7 @@
               "startPlanned": "15:35",
               "endPlanned": "15:40",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -3692,9 +4728,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "1071ac9bbaf3b60e1092eed9145a1eff6657e1ab2e6b627711bb302d82313cad",
+              "fingerprint": "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
               "readOnly": true
             },
             {
@@ -3706,6 +4748,8 @@
               "endPlanned": "16:40",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -3743,9 +4787,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d5bc1a84758e14e26cfb091acc649c90abcff068fb9ae0807fe56de457f38f55",
+              "fingerprint": "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
               "readOnly": true
             },
             {
@@ -3757,6 +4807,8 @@
               "endPlanned": "15:50",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -3789,9 +4841,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "3e7c03ab5e7b4ef725e280dd4fdb833f1bfc4659d076d1b796f2d421cea9f1ec",
+              "fingerprint": "5eda18722b7f7bd532f8009fb1ec8d86346968a10f1b8c9e09cbddcf8798e212",
               "readOnly": true
             },
             {
@@ -3802,6 +4860,7 @@
               "startPlanned": "16:40",
               "endPlanned": "16:45",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -3838,9 +4897,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "ec98f570f814be8a6310e5ae7c57202a3b9aaadc79b2ec10b1dbe510a02b34bf",
+              "fingerprint": "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
               "readOnly": true
             },
             {
@@ -3852,6 +4917,8 @@
               "endPlanned": "16:05",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -3884,9 +4951,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "3c37b1d261f0dfc11a559144f1a8e665998e40957d964d2e44fd8841e14bb118",
+              "fingerprint": "71e8449fc17c206895bb00264d41593df100cfef08e406471245e5b1ee83c843",
               "readOnly": true
             },
             {
@@ -3897,6 +4970,7 @@
               "startPlanned": "16:45",
               "endPlanned": "16:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -3928,9 +5002,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "95cb99655db4ac11dd7c1af6693627b58e8e270409c9aad7f9c31444c6dd75d4",
+              "fingerprint": "221b675fddc6987fdeaf2015d2cb21b4c7132ab73dbf87f274ffd378cc609113",
               "readOnly": true
             },
             {
@@ -3942,6 +5022,8 @@
               "endPlanned": "16:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -3974,9 +5056,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "ed85a78d1cd55f351df97466d7d35a2b5fd50dbba6282778822eaed5a5c66c01",
+              "fingerprint": "e3f56efd6edc319c5547c888185f13d2e398dce5121adb30333c76ab2c5f47db",
               "readOnly": true
             },
             {
@@ -3987,6 +5075,7 @@
               "startPlanned": "18:10",
               "endPlanned": "18:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4018,9 +5107,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "ae0ab5d3ea4f29a74a31c5d24112a79b5fff9bd05b557dcdeec538dfa79b601b",
+              "fingerprint": "aa1adafa093d5e707ad286aac5e4d31de74e40f07e7360bb811cac68137240d2",
               "readOnly": true
             },
             {
@@ -4031,6 +5126,7 @@
               "startPlanned": "16:20",
               "endPlanned": "16:25",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4067,9 +5163,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "5ea8c0f0e2206102b4064865c6d4780dfbd56a97f0d166b9b746673a49517871",
+              "fingerprint": "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
               "readOnly": true
             },
             {
@@ -4080,6 +5182,7 @@
               "startPlanned": "18:15",
               "endPlanned": "18:20",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4116,9 +5219,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "d145b462365f8d30881c0808934eeaaee0573981e02c65cc9aa376ab3a0fffe8",
+              "fingerprint": "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
               "readOnly": true
             },
             {
@@ -4130,6 +5239,8 @@
               "endPlanned": "18:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4167,9 +5278,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "a904ca8325ca9f9cc1d866d3f6773ebf77db63c6c8bb8673964906972b90c81e",
+              "fingerprint": "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
               "readOnly": true
             }
           ],
@@ -4177,7 +5294,7 @@
           "repairableCandidateProfileCount": 10,
           "unrepairableCandidateProfileCount": 5,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "a226ddcc87ad0feefff95411513748f2440f06040aa090472ed7889421152515",
+          "repairCandidateProfilesFingerprint": "1fe8f189b7d36357e147475b89015b34cb49b5a70f72df775bcdf88284788730",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "cae09f5e0d7f530cccdfebdc497fb2980da075874762f72c071dba80a1bcb176",
           "attemptDiagnosticsFingerprint": "8c79626bb63e06f251712c423df0f960924b2a45a050076666ebf58b52155216",
@@ -4386,12 +5503,15 @@
               "endPlanned": "13:00",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "protected-interval-start",
                 "protected-interval-start",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 311
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -4420,9 +5540,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "ec7d307d76ba2f5a6e7269d98b2b3e09b6c0d9936ca16c482e0021b5ac41f169",
+              "fingerprint": "d59ebf67483b4ff4858045ccf5cfbc68a945400ac79261d068e7852ca5d4ca3f",
               "readOnly": true
             },
             {
@@ -4434,12 +5561,13 @@
               "endPlanned": "15:30",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP",
@@ -4466,9 +5594,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "979f74803d4927a150a858410cf761d5f86577018e38fea7a7ac1c451593193a",
+              "fingerprint": "b5a927045ec929d6d0d2b9b1c0c88fa142fcb1e7ba65a3db87934c5420b909ee",
               "readOnly": true
             },
             {
@@ -4480,12 +5615,15 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 215,
                 382
               ],
@@ -4520,9 +5658,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "b9aa36b45888c31ac13557c4966d97ec7a90a25b6766a42acde3af3f9b25a718",
+              "fingerprint": "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
               "readOnly": true
             },
             {
@@ -4534,12 +5678,15 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "provisional-assignment-end",
                 "provisional-assignment-end",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 332
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -4573,9 +5720,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "00847a03edcbfb254cc59fd87481e5ba020c0bc057ac413f36952057291341c5",
+              "fingerprint": "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
               "readOnly": true
             },
             {
@@ -4587,6 +5740,8 @@
               "endPlanned": "12:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -4608,16 +5763,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                313,
                 316
               ],
               "repairableConflictTaskIds": [
+                313,
                 316
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "25f3e482b51a651f7253e41bd9d201a2bc504748b56442d59c2f6373bb5df55a",
+              "fingerprint": "395cf90eb333f9e4b52aa752b6049d3ff90e0b1b6d394ef76543df4ad4cfcf87",
               "readOnly": true
             },
             {
@@ -4629,11 +5793,13 @@
               "endPlanned": "14:20",
               "sourceKinds": [
                 "protected-interval-end",
+                "protected-interval-end",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 262
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -4662,9 +5828,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "3f318b2c445945d701e16a3a69e1527986399ea415edbfb9f4f00f7c0ab81af2",
+              "fingerprint": "76c6f57c2e25f245e0ddc8a7d6c88cf4e0d5c39ce7c261589bc093f12da25ee6",
               "readOnly": true
             },
             {
@@ -4676,10 +5849,12 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 307,
                 392
               ],
@@ -4709,9 +5884,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "e4a70e931a2226e8a0db872f5a935edec92c6a26b2e2259f30cd5f577a41bd23",
+              "fingerprint": "1f6ea4774bfc1f01a6b93d653ae340f1002d0490ddce741bfbf565d4f5423a01",
               "readOnly": true
             },
             {
@@ -4723,10 +5904,11 @@
               "endPlanned": "16:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 372
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -4760,9 +5942,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "245433a266a65751fe67ec946540dad0dcb77e36bcc1f00196082eb05af0e041",
+              "fingerprint": "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
               "readOnly": true
             },
             {
@@ -4773,6 +5961,7 @@
               "startPlanned": "12:40",
               "endPlanned": "12:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4799,9 +5988,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "79c55f242f947ddcea2b538d6459de94976f34c20ab2e94e233b9c99cfd94d8e",
+              "fingerprint": "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
               "readOnly": true
             },
             {
@@ -4813,6 +6008,8 @@
               "endPlanned": "14:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4845,9 +6042,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "362a3428bd0087c7efa618c9b9c03f5c7e3e77a4476b577ff604f74d26d76024",
+              "fingerprint": "c525c9ddeb8da795400928b8678d10b5e229c78bdf5c6d57b222764be7ad63f1",
               "readOnly": true
             },
             {
@@ -4858,6 +6062,7 @@
               "startPlanned": "16:05",
               "endPlanned": "16:10",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -4889,9 +6094,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "2060382dc3384d2f2c473ba881af0c9d91192a5b4192277684364885497eb7e0",
+              "fingerprint": "175a6f7cec160594505b2602152889362cc467f218b6dc1e3f536f604f1108ec",
               "readOnly": true
             },
             {
@@ -4902,6 +6113,7 @@
               "startPlanned": "16:35",
               "endPlanned": "16:40",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -4933,9 +6145,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "9d6039f16d00b8572dee2e0bc45299fa121e18ea48d98d10fe3733b2ad19261c",
+              "fingerprint": "f39bdbf8d39748ece2544dc4be153dd0fd81a84f7d10b87f8c790e69cb4fc67c",
               "readOnly": true
             },
             {
@@ -4946,6 +6164,7 @@
               "startPlanned": "12:45",
               "endPlanned": "12:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -4972,9 +6191,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "01327781f74eb828fc164a8c09fcc8e7fa9cd762595088940e7e4e30d5d5db09",
+              "fingerprint": "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
               "readOnly": true
             },
             {
@@ -4986,6 +6211,8 @@
               "endPlanned": "14:30",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5018,9 +6245,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "b91de4775e00f9b0d70c8f0a53c15e656db0eeff1be96bc0a89e0ef7894b4241",
+              "fingerprint": "a01001844d6ff2cadcf8aebef16f6e614d476116b7c9ca04e441b8cc52c178d2",
               "readOnly": true
             },
             {
@@ -5031,6 +6265,7 @@
               "startPlanned": "16:10",
               "endPlanned": "16:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5067,9 +6302,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "75e49015e3981f758dbd96166395916b3e394bd538a45eb4727dc06958367987",
+              "fingerprint": "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
               "readOnly": true
             },
             {
@@ -5080,6 +6321,7 @@
               "startPlanned": "18:05",
               "endPlanned": "18:10",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5111,9 +6353,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "8af73f00a14e12a6b942c74b27e23fe9b8ef2416dd05119521f172707af34bdd",
+              "fingerprint": "9dccfbc0447eb5df8d402d7ec381661c5316727beacea75074b877103c1d3077",
               "readOnly": true
             },
             {
@@ -5124,6 +6372,7 @@
               "startPlanned": "12:50",
               "endPlanned": "12:55",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5150,9 +6399,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "6273e5bde2eebdfc0612866dd7ab67fb6f56e54c8f9678f4a536c2cb49b53de5",
+              "fingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
               "readOnly": true
             },
             {
@@ -5164,6 +6419,8 @@
               "endPlanned": "14:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5196,9 +6453,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "92d0c99cf9daa5d81e63264e527bb5ab27d3fed5fd71250e248d8e42e9cd76ce",
+              "fingerprint": "3b809cd9f28c1cfc3a7ea9a2b2f61b2f04771b50e0cb725fdc442eb4537d10da",
               "readOnly": true
             },
             {
@@ -5210,6 +6474,8 @@
               "endPlanned": "16:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5247,9 +6513,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "eefa3286b8487cbf32d4fa43a34817ff602d9c7ab4f32dc0d327672e0590880f",
+              "fingerprint": "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
               "readOnly": true
             },
             {
@@ -5260,6 +6532,7 @@
               "startPlanned": "18:10",
               "endPlanned": "18:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5296,9 +6569,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4cd753cf10c0a02427fe8059fa5b2efd7d7e513ba27bfa63c49fada643fb31b0",
+              "fingerprint": "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c",
               "readOnly": true
             },
             {
@@ -5310,6 +6589,8 @@
               "endPlanned": "14:40",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5342,9 +6623,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "a0da3c6cf1ab0d3b4b59a57730ac99287194bf41dfb1c02680fcd412ed724727",
+              "fingerprint": "78aedf54989280836499855c97393fb0640dff696f97bc8660c6845d75f3557f",
               "readOnly": true
             },
             {
@@ -5356,6 +6644,8 @@
               "endPlanned": "16:25",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5393,9 +6683,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "994b1ecf28b7fde77e448a3ec1660b39313c36f95da2c3ea4148bdcfdfded73f",
+              "fingerprint": "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
               "readOnly": true
             },
             {
@@ -5407,6 +6703,8 @@
               "endPlanned": "18:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5444,9 +6742,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "672e9b1337ea375df3260fb2002d4087a87534814efad68c52fa5151341c447a",
+              "fingerprint": "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
               "readOnly": true
             },
             {
@@ -5458,6 +6762,9 @@
               "endPlanned": "14:45",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5491,9 +6798,16 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "SPACE_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "5d649a4e4ec5a14a38356e3d3d2da20c56b9508f83d87e9caca380315da87a33",
+              "fingerprint": "133c93ebcc7423db6b5ae98d7fbea4b3d13e6dfae782e77f243dfb431b7f873f",
               "readOnly": true
             }
           ],
@@ -5501,7 +6815,7 @@
           "repairableCandidateProfileCount": 20,
           "unrepairableCandidateProfileCount": 4,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "e9ed6ce9fa525a2a01b09338eb5204d72ed9b65a9ce685774e959f66045df2b7",
+          "repairCandidateProfilesFingerprint": "af4fc94fcd90fbb850793fe6390a1f6bf778dc9b7fd88c7477943a0cb6dd79ff",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "3fb2c23ddd90930eaa782a530a84685edf0dbec6eba2d01054802b15c9fa0765",
           "attemptDiagnosticsFingerprint": "47a101e1a5795601068da448c02faee291bcedd79af9ce70f1aa1dc20182009e",
@@ -5602,12 +6916,15 @@
               "endPlanned": "13:00",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "protected-interval-start",
                 "protected-interval-start",
                 "provisional-assignment-start",
+                "provisional-assignment-start",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
               "frontierSourceTaskIds": [
-                0,
                 311
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -5631,9 +6948,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "91d99e4eb594b094b88fadb6f059d3cbea98e7aaae97549eb9b8becbd7bb5369",
+              "fingerprint": "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
               "readOnly": true
             },
             {
@@ -5645,12 +6968,13 @@
               "endPlanned": "15:30",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP"
@@ -5672,9 +6996,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "752c78308201907a29d7fdbd521e5bb065836da9aaf7b2560e7bc6ab08df1fde",
+              "fingerprint": "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
               "readOnly": true
             },
             {
@@ -5686,11 +7016,11 @@
               "endPlanned": "16:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -5717,9 +7047,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "719d2ea5e572b6753f645e6ed93aee3876964e8b6d073d58460ec01f01bb04a1",
+              "fingerprint": "09988acac52085493d3c88954fa3680dd5bdca4ea2faf78f29f73cd24fba653c",
               "readOnly": true
             },
             {
@@ -5731,12 +7067,13 @@
               "endPlanned": "18:30",
               "sourceKinds": [
                 "historical-end-aligned",
+                "historical-end-aligned",
                 "window-end-minus-duration",
+                "window-end-minus-duration",
+                "workday-end-minus-duration",
                 "workday-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -5763,9 +7100,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "cdedad523e6543f46030ecf11d5dc4338f9ab50536b231a7600ae61e4953554b",
+              "fingerprint": "9da7a501b70b1c0633f76793eb26c0e638194b74b7fac9ceb29d1aec7a17b6f7",
               "readOnly": true
             },
             {
@@ -5777,6 +7120,8 @@
               "endPlanned": "12:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -5798,16 +7143,25 @@
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
               "directCausalTaskIds": [
+                313,
                 316
               ],
               "repairableConflictTaskIds": [
+                313,
                 316
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP",
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "9c8a038ac44adec5195286a7584a0261165d09c2a55d86a76942192db9124432",
+              "fingerprint": "8a92810a018ef1ee0296b7d86e28f1846900bb3a715520aa2f500436ae83d7ed",
               "readOnly": true
             },
             {
@@ -5819,11 +7173,11 @@
               "endPlanned": "14:20",
               "sourceKinds": [
                 "protected-interval-end",
+                "protected-interval-end",
+                "window-start",
                 "window-start"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "CONTESTANT_OVERLAP"
@@ -5845,9 +7199,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "8f851dd982f14ccd7c44ee4ed16d0877b83cb31abf064fe547bb83f88f3cdd5d",
+              "fingerprint": "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
               "readOnly": true
             },
             {
@@ -5859,10 +7219,11 @@
               "endPlanned": "15:35",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 307
               ],
               "dependencyBoundSourceTaskIds": [],
@@ -5891,9 +7252,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "d1d252cd52c083aad4c4a8eebfe2ad830bdd0582ca64802d5f3452abcd797b65",
+              "fingerprint": "be680f10ecd19c15dda10b3ce70977cbba58ad5f8325cc7dfb0beaa424f441b3",
               "readOnly": true
             },
             {
@@ -5904,11 +7271,10 @@
               "startPlanned": "16:30",
               "endPlanned": "16:35",
               "sourceKinds": [
+                "window-start",
                 "window-start"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -5935,9 +7301,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "a34ba3f8305a4deb5b49128b6920ffabc353f4827e3ea2fc77efbfab7cfecd77",
+              "fingerprint": "8147dfd6c2783eed28dfdf2eba274fd074183e3ab0c83ad08d8340050f8bd763",
               "readOnly": true
             },
             {
@@ -5948,6 +7320,7 @@
               "startPlanned": "12:40",
               "endPlanned": "12:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -5974,9 +7347,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "10a09898b4ff9af9b1f75995a55f81718faad7643e9ac948905057d90f3dd566",
+              "fingerprint": "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
               "readOnly": true
             },
             {
@@ -5987,6 +7366,7 @@
               "startPlanned": "14:40",
               "endPlanned": "14:45",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -6013,9 +7393,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "db9b2df16980b31b7b3e0cc9a006bb9720d446c5c4abab5436958d68f2b24791",
+              "fingerprint": "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
               "readOnly": true
             },
             {
@@ -6026,6 +7412,7 @@
               "startPlanned": "12:45",
               "endPlanned": "12:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -6052,9 +7439,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4430010c0802a5904f9c0ae595412798028e063c2c78066ba76a1fb64526016e",
+              "fingerprint": "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
               "readOnly": true
             },
             {
@@ -6065,6 +7458,7 @@
               "startPlanned": "14:45",
               "endPlanned": "14:50",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -6091,9 +7485,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "48dd6a940417c328e3e2dbef48e924e87d8350df7eacce3082564e0ad2a71b57",
+              "fingerprint": "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
               "readOnly": true
             },
             {
@@ -6104,6 +7504,7 @@
               "startPlanned": "15:10",
               "endPlanned": "15:15",
               "sourceKinds": [
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -6130,9 +7531,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "7adebf7675da5bc6fb5241b763127cce8e54640ee6612afe2dd6d4438f734a9b",
+              "fingerprint": "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
               "readOnly": true
             },
             {
@@ -6144,6 +7551,8 @@
               "endPlanned": "15:20",
               "sourceKinds": [
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-start",
                 "provisional-assignment-start"
               ],
               "frontierSourceTaskIds": [
@@ -6171,9 +7580,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "afad5ef8302c1a8a631b82c03bb23cb71f2222785773a43efc397b075108aec3",
+              "fingerprint": "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
               "readOnly": true
             },
             {
@@ -6184,6 +7599,7 @@
               "startPlanned": "15:20",
               "endPlanned": "15:25",
               "sourceKinds": [
+                "provisional-assignment-end",
                 "provisional-assignment-end"
               ],
               "frontierSourceTaskIds": [
@@ -6210,9 +7626,15 @@
               ],
               "immutableConflictTaskIds": [],
               "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "CONTESTANT_OVERLAP"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
               "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "65b16429d63ba2eb2949112ce12f0302616607dfa6baa6eecaf625c238387c43",
+              "fingerprint": "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
               "readOnly": true
             }
           ],
@@ -6220,7 +7642,7 @@
           "repairableCandidateProfileCount": 11,
           "unrepairableCandidateProfileCount": 4,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "3b486aef1002464e5f71ca6bed81ff0068894c4840f615d191f28156944ba9ca",
+          "repairCandidateProfilesFingerprint": "e5253b26d5d1408dd222db04d4ac88999d9e7ca2402738f8712b2cb6c492f012",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "687c9c37210175ecaa214a3ee95a14e1162f9414403e8bca05a4e8c7375ece96",
           "attemptDiagnosticsFingerprint": "713ddd0c0b2552f350222a3c2e0a257826a9aff428e6b4f5d8a45f42a41bbfeb",
@@ -6283,12 +7705,13 @@
               "endPlanned": "18:40",
               "sourceKinds": [
                 "availability-end-minus-duration",
+                "availability-end-minus-duration",
                 "historical-end-aligned",
+                "historical-end-aligned",
+                "window-end-minus-duration",
                 "window-end-minus-duration"
               ],
-              "frontierSourceTaskIds": [
-                0
-              ],
+              "frontierSourceTaskIds": [],
               "dependencyBoundSourceTaskIds": [],
               "reasonCodes": [
                 "TASK_WINDOW_CONFLICT"
@@ -6315,9 +7738,15 @@
               "staticUnrepairableReasonCodes": [
                 "TASK_WINDOW_CONFLICT"
               ],
+              "repairableReasonCodes": [],
+              "allHardBlockersRepairable": false,
+              "uncoveredBlockerReasonCodes": [
+                "TASK_WINDOW_CONFLICT"
+              ],
+              "uncoveredBlockerTaskIds": [],
               "repairable": false,
               "evidenceComplete": true,
-              "fingerprint": "6472d8dc832b7121c1aa7fe6bd5dab7dff4f2d04d5df4acf7907c096dc2bb5f3",
+              "fingerprint": "9d4af12e662c3fe1e7cc11333b961cdce2786a7b79479847ed8b69ec92f7f549",
               "readOnly": true
             },
             {
@@ -6329,11 +7758,14 @@
               "endPlanned": "18:35",
               "sourceKinds": [
                 "assigned-prerequisite-end",
+                "assigned-prerequisite-end",
                 "provisional-assignment-end",
+                "provisional-assignment-end",
+                "provisional-assignment-end",
+                "window-start",
                 "window-start"
               ],
               "frontierSourceTaskIds": [
-                0,
                 322,
                 334
               ],
@@ -6359,23 +7791,31 @@
               "dependencyLowerBoundTaskIds": [],
               "dependencyUpperBoundTaskIds": [],
               "protectedIntervalConflictIds": [],
-              "directCausalTaskIds": [],
-              "repairableConflictTaskIds": [],
-              "immutableConflictTaskIds": [],
-              "staticUnrepairableReasonCodes": [
-                "TASK_WINDOW_CONFLICT"
+              "directCausalTaskIds": [
+                322
               ],
-              "repairable": false,
+              "repairableConflictTaskIds": [
+                322
+              ],
+              "immutableConflictTaskIds": [],
+              "staticUnrepairableReasonCodes": [],
+              "repairableReasonCodes": [
+                "DEPENDENCY_BOUND_FRONTIER"
+              ],
+              "allHardBlockersRepairable": true,
+              "uncoveredBlockerReasonCodes": [],
+              "uncoveredBlockerTaskIds": [],
+              "repairable": true,
               "evidenceComplete": true,
-              "fingerprint": "4d277506cc1f4c77a61dffbde893304a59704766cc32269ea9a07d26014d6018",
+              "fingerprint": "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
               "readOnly": true
             }
           ],
           "repairCandidateProfileCount": 2,
-          "repairableCandidateProfileCount": 0,
-          "unrepairableCandidateProfileCount": 2,
+          "repairableCandidateProfileCount": 1,
+          "unrepairableCandidateProfileCount": 1,
           "candidateProfilesWithDependencyBoundBlockers": 1,
-          "repairCandidateProfilesFingerprint": "42dd78b53e9d152dfa5442b1555952357dc4be946254295b8882d5e9e6c21bb5",
+          "repairCandidateProfilesFingerprint": "1d445a1997ad721377f02128b4de3c25a3338cb4265db257cfd76c3a2469e1c7",
           "causalConflictEvidenceComplete": true,
           "causalConflictEvidenceFingerprint": "0c164d4d6ff6e7f9f9bd7ac1a6613f06535595047136bcba6e03eabb67d1fd9f",
           "attemptDiagnosticsFingerprint": "bf329e801355d4b3f9fd5b4a986b6e10e45ed2f99ee5fd098b734cd4a3ee6a62",
@@ -6383,9 +7823,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 40125,
-        "assignmentsPerSecond": 4.137,
-        "exclusiveConstructiveRuntimeMs": 40338
+        "sessionRuntimeMs": 33863,
+        "assignmentsPerSecond": 4.902,
+        "exclusiveConstructiveRuntimeMs": 34100
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -6406,7 +7846,7 @@
       "repairAttemptCount": 32,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
-      "candidateEjectionSetCount": 41,
+      "candidateEjectionSetCount": 42,
       "acceptedBlockedAnchorTaskIds": [],
       "acceptedEjectionTaskIds": [],
       "acceptedRepairDependencyClosureTaskIds": [],
@@ -6414,7 +7854,559 @@
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
       "repairStopReason": "NO_VALID_REPAIR",
-      "repairFingerprint": "cce7e2bbbd6ff28b98fb693f723e873b77b75313137b420368e892da1522ea26",
+      "repairFingerprint": "eecaedda29b396f745fcc32cbd65c1624c2587aa549a9186a9b0fd28cbaf3ba1",
+      "repairCandidateProfilesFingerprint": null,
+      "repairCandidateProfileCount": 42,
+      "repairableCandidateProfileCount": 42,
+      "candidateProfilesWithDependencyBoundBlockers": null,
+      "dependencyBoundSourceTaskIdsByAnchor": null,
+      "candidateProfilesByAnchor": {
+        "312": 20,
+        "314": 10,
+        "324": 1,
+        "505": 11
+      },
+      "candidateEjectionSetsByAnchor": {
+        "312": 20,
+        "314": 10,
+        "324": 1,
+        "505": 11
+      },
+      "repairQueueByRound": [
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+            "ejectionSetFingerprint": "5fc57dc8dc3521d63637b587193a85e34590c30a77018624a066d9112947c293"
+          },
+          {
+            "blockedAnchorTaskId": 324,
+            "candidateProfileFingerprint": "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
+            "ejectionSetFingerprint": "db4b641acbb90f0e3b217b7c443c23e64b01a029ed894cf8713fc7a79f3fd288"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
+            "ejectionSetFingerprint": "7231fda257779cc70dcef9a01e30ef8cabfde6cb82397e6e3c982afafd7c52f7"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
+            "ejectionSetFingerprint": "4f54c4af4ae8055ebe7cfee52ca1ed8e9ad38eb228dfd0d8ec99b3544d8b2752"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
+            "ejectionSetFingerprint": "b503ea4b4f7e612d82933a6659260520b7032a5defa89fed91145e7867ff1609"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
+            "ejectionSetFingerprint": "fc40a039951f5e7c39215f22cb3839710afd9b44576cd508b18d4f9de5bb1aee"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
+            "ejectionSetFingerprint": "daf58ff68361b799ef4254e01d7f009d6c7788694ed3a04705f66999c35bcb40"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
+            "ejectionSetFingerprint": "f19e8a10659abaf9648fdaa2ad0168660ca4eef34c3d8349a39eae5127f58b31"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
+            "ejectionSetFingerprint": "1e3b998312f2103c4d45331797e49d4a935257fde34636663cbb5ed745d9dfdf"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
+            "ejectionSetFingerprint": "2a1b093e7f6fb57f8fb4d0c4164d6760c1f01a916b1d69d67803a6319f8452f4"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
+            "ejectionSetFingerprint": "969b576cea3c32e18d65710f28c260b281611118a8936e37a563426ce95d31ab"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
+            "ejectionSetFingerprint": "9870e7fc68bc1e5ac9e61af44c81b89e639b529b0bb32461859c31d0d980b104"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
+            "ejectionSetFingerprint": "c114e69ee1fdb604a9483283b0ed8a479f976dfb5d004844ea7baf7323d0bea6"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
+            "ejectionSetFingerprint": "a3b9eab2ea614aaeab089ea3ab3221b9a92b478520e8d3182f9adb2f3538f725"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
+            "ejectionSetFingerprint": "dad246ad0eed9d077210d1b8050ebd31fcd163cb53d5e8d6d9117be58afe51b0"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
+            "ejectionSetFingerprint": "c949c8c6004f2dafd9fb246b00b95efe825b98464c94277eddf06816afbb8fd3"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
+            "ejectionSetFingerprint": "f62a1d3085ca526537243dc3a11950c4cafa6f416c3805b3554748223fc05de9"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
+            "ejectionSetFingerprint": "3712dee84fbf3cadc3458d52943964ad9f0f5e4ccb172d08813b17e9dc8cad0b"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
+            "ejectionSetFingerprint": "dd22fa7f63f38bbdc3294c3abab7d07d01d1f7374b414778c0e8a4e66c9eb3bd"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
+            "ejectionSetFingerprint": "039a0840764e1a6d05c6857a5195f805ca68bde0aaf4898b8c7e948e2a60f270"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
+            "ejectionSetFingerprint": "086752af1696cace2d62eae2909896c3bfbaf8a34240c62d56617d4daac21fcb"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
+            "ejectionSetFingerprint": "f0789f49eabbf24962cca11f9ebade412417e325d0c00401364019850a389010"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
+            "ejectionSetFingerprint": "4608cc345314fba90839f69ab89bf5cd0c6b41f67f89f7be7aa84e5b7e5d8344"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
+            "ejectionSetFingerprint": "625995d6e41fd277e1fa62d9c2e9803d266c0367dbbfcaf03bd100a492819eec"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
+            "ejectionSetFingerprint": "5832dde4c07ef72af7def165124936caad3b508015c636ab90ade710a8740ab9"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
+            "ejectionSetFingerprint": "fc96a96bebb30de526b052580b8fa6246f4d793f0f584ae98fe1338885c7e474"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
+            "ejectionSetFingerprint": "cbc759d37e07070b693615b54c97fc27a968b8c199bd651c2c1ea2f70a63632f"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
+            "ejectionSetFingerprint": "97d06952720719b259fe0585e0d5ebc486abf521c93b040bb96a84bde9064c0e"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
+            "ejectionSetFingerprint": "0b8b27027a0bed5916a2372e50a16718943545880d58ccefb2ef37c2d03a332e"
+          },
+          {
+            "blockedAnchorTaskId": 314,
+            "candidateProfileFingerprint": "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
+            "ejectionSetFingerprint": "625b397f995d8dd33750f6eb0975856ec6f8714438f65d648518400d5e8dbcbb"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
+            "ejectionSetFingerprint": "e214139cf0befcaef37c38493a9473fd580b75da4e038172546e3cbb72b6dae9"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c",
+            "ejectionSetFingerprint": "edb882c79463b6e777ea92a8d1136887908c9bb5db2e9186157fa418501f3bad"
+          },
+          {
+            "blockedAnchorTaskId": 505,
+            "candidateProfileFingerprint": "8a92810a018ef1ee0296b7d86e28f1846900bb3a715520aa2f500436ae83d7ed",
+            "ejectionSetFingerprint": "d9a614c5db70f63d3a2004e5d606754f7043624790e5ade96045ec41207923f0"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "a01001844d6ff2cadcf8aebef16f6e614d476116b7c9ca04e441b8cc52c178d2",
+            "ejectionSetFingerprint": "783c5d29f9f4f63a75a386e74b4dff3f59d443ce6690391092be034aa204dc48"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "d59ebf67483b4ff4858045ccf5cfbc68a945400ac79261d068e7852ca5d4ca3f",
+            "ejectionSetFingerprint": "37ff09ab6e5f576bf0f5b11ac0767c802b0e62972d2e0f0152b4010d50105856"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "c525c9ddeb8da795400928b8678d10b5e229c78bdf5c6d57b222764be7ad63f1",
+            "ejectionSetFingerprint": "4a46ec25a50ccbe0b2221d6bfe27a7f8984cf3f2a76c1d0bd8a9c3fb0bb6062d"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "78aedf54989280836499855c97393fb0640dff696f97bc8660c6845d75f3557f",
+            "ejectionSetFingerprint": "f64c5ecb39bd2c9d2d14bab955c49cdba92118b0f5b837dc98af1f43a63b2359"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "b5a927045ec929d6d0d2b9b1c0c88fa142fcb1e7ba65a3db87934c5420b909ee",
+            "ejectionSetFingerprint": "4cd7afbfb5642b7d94caffe294094b46a8ec0681b038821858a786218ea13080"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "133c93ebcc7423db6b5ae98d7fbea4b3d13e6dfae782e77f243dfb431b7f873f",
+            "ejectionSetFingerprint": "887c52d7e0b365c1eb8a3951250ec0fb487427a02c329aa22030fbdc6f245003"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "76c6f57c2e25f245e0ddc8a7d6c88cf4e0d5c39ce7c261589bc093f12da25ee6",
+            "ejectionSetFingerprint": "265558b8c8c2326e078b60b43bae2454887c0220c467120942869ac113016c51"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "3b809cd9f28c1cfc3a7ea9a2b2f61b2f04771b50e0cb725fdc442eb4537d10da",
+            "ejectionSetFingerprint": "08f95a7e1e591250a018618b1bca1f80c7a67d16927f7d5db17c1086e89b9d10"
+          }
+        ],
+        [
+          {
+            "blockedAnchorTaskId": 312,
+            "candidateProfileFingerprint": "395cf90eb333f9e4b52aa752b6049d3ff90e0b1b6d394ef76543df4ad4cfcf87",
+            "ejectionSetFingerprint": "f8bb5aeaeebb5a971e3703881ae37cca85fbe2fc9f18ee99b62120235def6ec3"
+          }
+        ]
+      ],
+      "repairAttemptedAnchorIdsByRound": [
+        [
+          312,
+          324,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312,
+          314,
+          505,
+          312
+        ]
+      ],
+      "repairAttemptedProfileFingerprintsByRound": [
+        [
+          "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
+          "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
+          "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
+          "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
+          "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
+          "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502",
+          "e7109b5345916181a98ec9eecafdb3ad6fdb6b47dbd0998435d6971aa18d204a",
+          "4ace800ad2970a60055620980aff047ff14cf9c47ade4e58af610348203927cf",
+          "b718abbc1f387a90d8534e5c8f2303a706ba5ebfe8ba4ab80bdfff893a47fe0c",
+          "56ff47b743e749d6271319871bb46eb1235675a976b5391fe31710f6d583f62c",
+          "cedaf3a01bcfb6fda7c367307b2437dabdc9abdd738de6e899d3cd15e359a909",
+          "76a44e47ff80cfc61e7ca110e06dc24556ae23009d5fa90ed940877231d1589e",
+          "19508d5597b1f97793d85d6207ba4cc6e0b6688eeb7bc1ab426148f20eaa59ed",
+          "02ea70aa68c7bb9e95dc67c0efc4d3e3c5ae5f21f730399eddc07d26d061b857",
+          "0d5e22686cdf015a18da04d3ff8febdc40fb1eaab784a78931035e13ca79a488",
+          "03cfbe02997e25e63b5d52c5fb54a0e3b4796b77c310fb08c4b2eb9792591b3a",
+          "47aabbd0f57eaf8e03df4b202752ab824d95857d9f8e5f4ea9476f62b1de340e",
+          "d4db7886b8fbc59953c78e787f1bcb4619782ac8252958a0b44c0bb5bf1c613b",
+          "afef0ca7f0e58ad7ce0e35afb3edd117c2931a3c7f2746eaa02582069fa6e5dc",
+          "b8b5a3966e9186e25bc653263c5fa7231da719304e2741e7860cc369efacbe62",
+          "a709133991524b494f3dfb9d16a4de05dcfd9578e2b4ba2ebbb9fdd4f1a4e2d4",
+          "b3e4e93426c9abb9d01130fedf370c5249e5d94a1a5c415ed77697da254fe5d3",
+          "d17339beaa1199970ce21e2f8e1355ea033cf6a70bf4977ed3cbe8c303d6b061",
+          "377cffc14ca7d7ecb612cf8af12d4ebe406fa3ca1db7380cadff749a4d338f26",
+          "4b858554ffe8bbada02514bdad8b38a9af2bc956a98ccd6dd237274d896c118e",
+          "67d0017e29ce2343b2fabd9666d1869f7de8d94b54a53095604febbe0f7154f4",
+          "8fc7f7f4d34f444bda42dc306a106c973efb1fcbb577ff944cef0640784c5731",
+          "2b87b2848c3dd4347044269577084fe5185f76d0a7eead01dfefd7a8672fdbb3",
+          "a9b33cde36617559553372813af361d8f0183823aeba14e6cd05a6a4ac021e4f",
+          "9de4a15742b5bb70c0dac129e1efda778afcd9b058009b695dcb5727820929a5",
+          "2ed1fed7e09f8f60693accfe6732c99696b4a68e4f464ad612e7fd5b2951dd1c"
+        ]
+      ],
+      "roundRobinFairnessValid": true,
+      "repairNeighborhoodSessionCount": 32,
+      "repairNeighborhoodAcceptedCycleCount": 0,
+      "repairNeighborhoodAnchorAttemptCount": 32,
+      "repairNeighborhoodValidationCount": 32,
+      "repairNeighborhoodExpansionAttemptCount": 32,
+      "repairNeighborhoodExpansionAcceptedCount": 0,
+      "repairSearchNodeCount": 32,
+      "repairSearchNodePrunedCount": 0,
+      "maxRepairExpansionDepthObserved": 0,
+      "maxCumulativeEjectedAssignmentCount": 2,
+      "repairFailurePhaseCounts": {
+        "NEIGHBORHOOD_TASK_REINSERTION": 13,
+        "BLOCKED_ANCHOR_RECONSTRUCTION": 19
+      },
+      "repairAttemptStopReasonCounts": {
+        "NEIGHBORHOOD_REINSERTION_FAILED": 13,
+        "ANCHOR_RECONSTRUCTION_FAILED": 19
+      },
+      "failedTaskIds": [
+        307,
+        310,
+        312,
+        314,
+        315,
+        324,
+        504,
+        506
+      ],
+      "closureContractValid": true,
+      "nonPrerequisiteTaskIdsPassedAsClosure": [],
+      "protectedAssignmentIdsModified": [],
+      "outsideNeighborhoodAssignmentIdsModified": [],
+      "duplicateTaskIds": [],
+      "removedAssignmentIds": null,
+      "reinsertedAssignmentIds": null,
+      "modifiedNeighborhoodAssignmentIds": null,
+      "lostProductiveTaskIds": [],
+      "newlyAssignedProductiveTaskIds": [],
+      "finalProductiveAssignedTaskIds": [
+        209,
+        210,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        310,
+        311,
+        313,
+        315,
+        316,
+        317,
+        318,
+        320,
+        321,
+        322,
+        323,
+        325,
+        326,
+        327,
+        328,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        504,
+        506
+      ],
       "commitsExecuted": 0,
       "v4SeedUsed": false,
       "canonicalContextSource": "stage1-initial-construction-map",
@@ -6427,7 +8419,7 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "8efe665d25814cfce135f96051c78369c6365cd0a2eba4e59b64e38082cd852d"
+      "fingerprint": "58190f6a36d40d5a2e481b29bc7b0da76f659957759f25923b5091b41eea5175"
     }
   ]
 }
