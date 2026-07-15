@@ -1,0 +1,262 @@
+{
+  "snapshot": {
+    "exportVersion": "optiplan-engine-scenario-v1",
+    "planId": 27,
+    "inputHash": "dbae5f5398d569625f8b1ad36ab00ac2f9dcb5e64c2c0fadb63fdbfb0c93a5b4",
+    "counts": {
+      "tasks": 219,
+      "pendingTasks": 219,
+      "protectedTasks": 0,
+      "locks": 0,
+      "planResourceItems": 13,
+      "spaces": 23,
+      "zones": 7,
+      "contestants": 19,
+      "dependencies": 1614
+    }
+  },
+  "preflight": {
+    "version": "ENGINE_INPUT_PREFLIGHT_V1",
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      {
+        "code": "MAIN_ZONE_FINISH_EARLY_DISABLED",
+        "severity": "warning",
+        "message": "Main-zone finish-early is disabled."
+      },
+      {
+        "code": "CONTESTANT_COMPACTNESS_DISABLED",
+        "severity": "warning",
+        "message": "Contestant compactness is disabled."
+      },
+      {
+        "code": "CONTESTANT_ZONE_STABILITY_DISABLED",
+        "severity": "warning",
+        "message": "Contestant zone stability is disabled."
+      }
+    ],
+    "facts": {
+      "tasks": 219,
+      "productiveTasks": 174,
+      "syntheticTasks": 26,
+      "pendingTasks": 219,
+      "protectedTasks": 0,
+      "contestants": 19,
+      "contestantsWithAvailability": 19,
+      "spaces": 23,
+      "knownSpaces": 23,
+      "usedSpaces": 23,
+      "zones": 7,
+      "knownZones": 7,
+      "usedZones": 7,
+      "resources": 13,
+      "locks": 0,
+      "dependencyEdgesByTaskId": 737,
+      "dependencyEdgesByTemplateId": 1225,
+      "tasksByTemplate": {
+        "Sodexo": 19,
+        "Ensayo (Lucía)": 8,
+        "Reality Entorno Ensayo": 1,
+        "Prueba Vocal Lucía": 8,
+        "Estilismo": 19,
+        "Croma": 19,
+        "Pasillo": 19,
+        "Redes": 19,
+        "Ensayo (Jose María)": 11,
+        "Estilismo Salida": 19,
+        "OUT": 19,
+        "Prueba vocal Jose María": 11,
+        "IN": 19,
+        "Totales 1": 1,
+        "Estrellas": 1,
+        "COMIDA": 26
+      },
+      "tasksBySpace": {
+        "0": 19,
+        "3": 20,
+        "4": 1,
+        "5": 1,
+        "8": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "31": 1,
+        "32": 1,
+        "33": 1,
+        "34": 2,
+        "35": 9,
+        "39": 20,
+        "40": 39,
+        "41": 12,
+        "42": 1,
+        "43": 20,
+        "44": 1,
+        "45": 2,
+        "46": 1,
+        "48": 21,
+        "49": 39,
+        "<none>": 3
+      },
+      "tasksByZone": {
+        "1": 21,
+        "2": 24,
+        "3": 25,
+        "11": 5,
+        "12": 3,
+        "13": 21,
+        "14": 98,
+        "<none>": 22
+      },
+      "tasksByOperationalKind": {
+        "productive_task": 174,
+        "contestant_meal": 19,
+        "synthetic_space_meal": 23,
+        "synthetic_itinerant_meal": 3
+      },
+      "meal": {
+        "contestantMealTasks": 19,
+        "syntheticSpaceMealTasks": 23,
+        "syntheticItinerantMealTasks": 3,
+        "otherMealTasks": 0,
+        "durationMinutesByKind": {
+          "contestant": [
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40,
+            40
+          ],
+          "synthetic_space": [
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75,
+            75
+          ],
+          "synthetic_itinerant": [
+            75,
+            75,
+            75
+          ]
+        },
+        "mealWindow": {
+          "start": "13:00",
+          "end": "16:30"
+        }
+      },
+      "mainZone": {
+        "zoneId": 1,
+        "spaceIds": [
+          48
+        ],
+        "productiveTaskCount": 20,
+        "productiveDurationMinutes": 315
+      }
+    },
+    "configuration": {
+      "mainZoneId": 1,
+      "prioritizeMainZone": true,
+      "mainZonePriorityLevel": 3,
+      "mainZoneKeepBusy": true,
+      "mainZoneFinishEarly": false,
+      "contestantCompactLevel": 0,
+      "contestantStayInZoneLevel": 0,
+      "groupingLevel": 3,
+      "groupingBySpaceAndTemplate": true,
+      "optimizerWeights": {
+        "arrivalDepartureGrouping": 3,
+        "contestantCompact": 0,
+        "contestantStayInZone": 0,
+        "contestantTotalSpan": 0,
+        "groupBySpaceActive": 10,
+        "groupBySpaceTemplateMatch": 10,
+        "mainZoneFinishEarly": 0,
+        "mainZoneKeepBusy": 10
+      },
+      "mealMode": "flexible_meal_window",
+      "mealWindow": {
+        "start": "13:00",
+        "end": "16:30"
+      },
+      "maxTemplateChangesByZoneId": {
+        "1": 4,
+        "2": 4,
+        "3": 4,
+        "11": 4,
+        "12": 4,
+        "13": 4,
+        "14": 4
+      }
+    }
+  },
+  "options": {
+    "engines": [
+      "orc"
+    ],
+    "repeat": 2,
+    "timeLimitMs": 300000,
+    "failFast": false
+  },
+  "executions": [
+    {
+      "engine": "orc",
+      "repetition": 1,
+      "executionStatus": "error",
+      "runtimeMs": 134698,
+      "errorCode": "INVALID_WORKER_OUTPUT",
+      "errorMessage": "Unexpected token 'o', \"overedBloc\"... is not valid JSON",
+      "compactPlanningPath": "plan-27-orc-compact-v41.json",
+      "compactPlanningIncluded": false
+    },
+    {
+      "engine": "orc",
+      "repetition": 2,
+      "executionStatus": "error",
+      "runtimeMs": 140044,
+      "errorCode": "INVALID_WORKER_OUTPUT",
+      "errorMessage": "Unexpected token 'o', \"overedBloc\"... is not valid JSON",
+      "compactPlanningPath": "plan-27-orc-compact-v41.json",
+      "compactPlanningIncluded": false
+    }
+  ],
+  "deterministic": null,
+  "completed": false,
+  "timedOutExecutions": 0,
+  "failedExecutions": 2,
+  "comparisonVersion": "REPLAY_OPERATIONAL_COMPARISON_V1",
+  "comparisons": []
+}
