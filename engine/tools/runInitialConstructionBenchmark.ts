@@ -55,6 +55,41 @@ export interface InitialConstructionBenchmarkResult {
   outsideNeighborhoodAssignmentsModified: number;
   repairStopReason: string | null;
   repairFingerprint: string | null;
+  repairCandidateProfilesFingerprint: string | null;
+  repairCandidateProfileCount: number | null;
+  repairableCandidateProfileCount: number | null;
+  candidateProfilesWithDependencyBoundBlockers: number | null;
+  dependencyBoundSourceTaskIdsByAnchor: unknown;
+  candidateProfilesByAnchor: unknown;
+  candidateEjectionSetsByAnchor: unknown;
+  repairQueueByRound: unknown[] | null;
+  repairAttemptedAnchorIdsByRound: unknown[] | null;
+  repairAttemptedProfileFingerprintsByRound: unknown[] | null;
+  roundRobinFairnessValid: boolean | null;
+  repairNeighborhoodSessionCount: number | null;
+  repairNeighborhoodAcceptedCycleCount: number | null;
+  repairNeighborhoodAnchorAttemptCount: number | null;
+  repairNeighborhoodValidationCount: number | null;
+  repairNeighborhoodExpansionAttemptCount: number | null;
+  repairNeighborhoodExpansionAcceptedCount: number | null;
+  repairSearchNodeCount: number | null;
+  repairSearchNodePrunedCount: number | null;
+  maxRepairExpansionDepthObserved: number | null;
+  maxCumulativeEjectedAssignmentCount: number | null;
+  repairFailurePhaseCounts: Record<string, number> | null;
+  repairAttemptStopReasonCounts: Record<string, number> | null;
+  failedTaskIds: number[] | null;
+  closureContractValid: boolean | null;
+  nonPrerequisiteTaskIdsPassedAsClosure: number[] | null;
+  protectedAssignmentIdsModified: number[] | null;
+  outsideNeighborhoodAssignmentIdsModified: number[] | null;
+  duplicateTaskIds: number[] | null;
+  removedAssignmentIds: number[] | null;
+  reinsertedAssignmentIds: number[] | null;
+  modifiedNeighborhoodAssignmentIds: number[] | null;
+  lostProductiveTaskIds: number[] | null;
+  newlyAssignedProductiveTaskIds: number[] | null;
+  finalProductiveAssignedTaskIds: number[] | null;
   commitsExecuted: number;
   v4SeedUsed: boolean;
   canonicalContextSource: string | null;
@@ -129,6 +164,41 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     outsideNeighborhoodAssignmentsModified: repair.outsideNeighborhoodAssignmentsModified ?? 0,
     repairStopReason: repair.repairLogicalStopReason ?? repair.stopReason ?? null,
     repairFingerprint: repair.repairFingerprint ?? null,
+    repairCandidateProfilesFingerprint: repair.repairCandidateProfilesFingerprint ?? null,
+    repairCandidateProfileCount: repair.repairCandidateProfileCount ?? null,
+    repairableCandidateProfileCount: repair.repairableCandidateProfileCount ?? null,
+    candidateProfilesWithDependencyBoundBlockers: repair.candidateProfilesWithDependencyBoundBlockers ?? null,
+    dependencyBoundSourceTaskIdsByAnchor: repair.dependencyBoundSourceTaskIdsByAnchor ?? null,
+    candidateProfilesByAnchor: repair.candidateProfilesByAnchor ?? null,
+    candidateEjectionSetsByAnchor: repair.candidateEjectionSetsByAnchor ?? null,
+    repairQueueByRound: repair.repairQueueByRound ?? null,
+    repairAttemptedAnchorIdsByRound: repair.repairAttemptedAnchorIdsByRound ?? null,
+    repairAttemptedProfileFingerprintsByRound: repair.repairAttemptedProfileFingerprintsByRound ?? null,
+    roundRobinFairnessValid: repair.roundRobinFairnessValid ?? null,
+    repairNeighborhoodSessionCount: repair.repairNeighborhoodSessionCount ?? null,
+    repairNeighborhoodAcceptedCycleCount: repair.repairNeighborhoodAcceptedCycleCount ?? null,
+    repairNeighborhoodAnchorAttemptCount: repair.repairNeighborhoodAnchorAttemptCount ?? null,
+    repairNeighborhoodValidationCount: repair.repairNeighborhoodValidationCount ?? null,
+    repairNeighborhoodExpansionAttemptCount: repair.repairNeighborhoodExpansionAttemptCount ?? null,
+    repairNeighborhoodExpansionAcceptedCount: repair.repairNeighborhoodExpansionAcceptedCount ?? null,
+    repairSearchNodeCount: repair.repairSearchNodeCount ?? null,
+    repairSearchNodePrunedCount: repair.repairSearchNodePrunedCount ?? null,
+    maxRepairExpansionDepthObserved: repair.maxRepairExpansionDepthObserved ?? null,
+    maxCumulativeEjectedAssignmentCount: repair.maxCumulativeEjectedAssignmentCount ?? null,
+    repairFailurePhaseCounts: repair.repairFailurePhaseCounts ?? null,
+    repairAttemptStopReasonCounts: repair.repairAttemptStopReasonCounts ?? null,
+    failedTaskIds: repair.failedTaskIds ?? null,
+    closureContractValid: repair.closureContractValid ?? null,
+    nonPrerequisiteTaskIdsPassedAsClosure: repair.nonPrerequisiteTaskIdsPassedAsClosure ?? null,
+    protectedAssignmentIdsModified: repair.protectedAssignmentIdsModified ?? null,
+    outsideNeighborhoodAssignmentIdsModified: repair.outsideNeighborhoodAssignmentIdsModified ?? null,
+    duplicateTaskIds: repair.duplicateTaskIds ?? null,
+    removedAssignmentIds: repair.removedAssignmentIds ?? null,
+    reinsertedAssignmentIds: repair.reinsertedAssignmentIds ?? null,
+    modifiedNeighborhoodAssignmentIds: repair.modifiedNeighborhoodAssignmentIds ?? null,
+    lostProductiveTaskIds: repair.lostProductiveTaskIds ?? null,
+    newlyAssignedProductiveTaskIds: repair.newlyAssignedProductiveTaskIds ?? null,
+    finalProductiveAssignedTaskIds: repair.finalProductiveAssignedTaskIds ?? null,
     commitsExecuted: repair.commitsExecuted ?? session.evidence?.commitsExecuted ?? 0,
     v4SeedUsed: repair.v4SeedUsed ?? session.evidence?.v4SeedUsed ?? false,
     canonicalContextSource: session.evidence?.canonicalContextSource ?? null,

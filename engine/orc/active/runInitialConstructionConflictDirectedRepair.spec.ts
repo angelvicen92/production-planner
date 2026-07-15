@@ -11,3 +11,11 @@ test("repair budget defaults are bounded and read-only safe by contract",()=>{
   assert.equal(b.maxRepairBranchEvaluations,128);
   assert.equal(b.maxRepairElapsedMs,30000);
 });
+
+test("repair budget includes bounded search-node expansion defaults",()=>{
+  const b=defaultInitialConstructionRepairBudget();
+  assert.equal(b.maxRepairSearchNodesPerAttempt,64);
+  assert.equal(b.maxRepairExpansionDepth,3);
+  assert.equal(b.maxRepairChildNodesPerFailure,8);
+  assert.equal(b.maxNeighborhoodPartialPlansVisited,128);
+});
