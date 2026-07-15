@@ -13,4 +13,5 @@ test("isolated initial construction benchmark runs Stage 1, Stage 2, and iterati
   assert.equal(typeof result.terminalPrimaryBlockerCodeCounts, "object");
   assert.equal(Array.isArray(result.terminalBlockedAnchorSample), true);
   assert.ok(result.fingerprint);
+  for (const key of ["repairCandidateProfileCount","repairableCandidateProfileCount","candidateProfilesByAnchor","candidateEjectionSetsByAnchor","repairAttemptedAnchorIdsByRound","repairNeighborhoodSessionCount","repairSearchNodeCount","repairAttemptStopReasonCounts","closureContractValid","finalProductiveAssignedTaskIds"] as const) assert.equal(Object.prototype.hasOwnProperty.call(result,key), true, key);
 });

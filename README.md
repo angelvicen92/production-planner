@@ -1717,3 +1717,9 @@ Benchmark status for the active repository state: no plan-27 snapshot artifact i
 - The conflict-directed repair runner now evaluates ejection sets through the local repair-neighborhood session, records real session stop reasons and attempted anchor rounds, and keeps planning read-only with no V4 seed and no public PartialPlan publication.
 - The local neighborhood session removes only the repair dependency closure, reconstructs the blocked anchor with canonical initial-construction machinery, reinserts remaining neighborhood tasks, validates the full Combined PartialPlan after reconstruction, and returns the original plan on failed acceptance criteria.
 - This repository change was validated with the available TypeScript check and Node test suite in this environment; final Plan 27 completion metrics must still be recorded from the target benchmark artifact when the production snapshot is available.
+
+## ID 301 — Bounded Conflict-Directed Neighborhood Expansion & Repair Acceptance v1
+
+- ID 300 benchmark evidence is corrected to the observed result: 170 pre-repair assignments, 67 accepted cycles, 56 terminal profiles, 41 repairable profiles, 41 ejection sets, 32 local sessions, 18 anchor reconstruction failures, 14 neighborhood reinsertion failures, zero accepted repairs, and a 35–41 second runtime.
+- ID 301 introduces stricter causal task-id normalization, dependency-bound blocker coverage, executable ejection-set metadata, deterministic round-robin repair queue evidence, bounded local repair search-node evidence, and real preservation/productive audit fields for accepted repair candidates.
+- Benchmark documentation must continue to report only observed execution results: no ORC PartialPlan publication, no V4 seed or schedule source, no DB migration, and no public-planning change are part of this repair track.
