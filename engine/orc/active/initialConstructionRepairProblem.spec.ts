@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildInitialConstructionRepairProblem } from "./initialConstructionRepairProblem";
+import { buildInitialConstructionRepairProblem, profileFromAnchorPlacementEvidence } from "./initialConstructionRepairProblem";
 
 const state:any={planning:[{taskId:99,startPlanned:"08:00",endPlanned:"08:30"}],constraints:{},availability:{},spaces:{}};
 
@@ -41,4 +41,27 @@ test("ejection set covers simultaneous space and dependency blockers completely"
   const p=buildInitialConstructionRepairProblem({input,originOperationalState:{planning:[],constraints:{},availability:{},spaces:{}},residualFingerprint:"r",blockedAnchorTaskId:3,terminalEvidence:{spaceConflictTaskIds:[1],dependencyBoundSourceTaskIds:[2],causalConflictEvidence:{spaceConflictTaskIds:[1],dependencyLowerBoundTaskIds:[2],evidenceComplete:true}},provisionalAssignments:[1,2].map(id=>({taskId:id,startPlanned:"08:00",endPlanned:"08:10",resourceIds:[]}))});
   assert.deepEqual(p.candidateEjectionSets.map(s=>s.ejectedTaskIds),[[1,2]]);
   assert.deepEqual(p.candidateEjectionSets[0].coveredBlockerTaskIds,[1,2]);
+});
+
+test("static availability window blocker remains non-executable despite reversible space blocker",()=>{
+  const p=buildInitialConstructionRepairProblem({input:{tasks:[{id:1,status:"pending"},{id:2,status:"pending"}]} as any,originOperationalState:{planning:[],constraints:{},availability:{},spaces:{}},residualFingerprint:"r",blockedAnchorTaskId:2,terminalEvidence:{spaceConflictTaskIds:[1],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",violatedBoundary:"availability"}],causalConflictEvidence:{spaceConflictTaskIds:[1],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",violatedBoundary:"availability"}],evidenceComplete:true}},provisionalAssignments:[{taskId:1,startPlanned:"08:00",endPlanned:"08:10",resourceIds:[]}]});
+  assert.equal(p.repairCandidateProfiles[0].repairable,false);
+  assert.ok(p.repairCandidateProfiles[0].uncoveredHardBlockerDimensions.includes("availability"));
+  assert.equal(p.candidateEjectionSets.length,0);
+});
+
+test("workday violation sourced by assigned prerequisite is shiftable and executable",()=>{
+  const p=buildInitialConstructionRepairProblem({input:{tasks:[{id:1,status:"pending"},{id:2,status:"pending",dependsOnTaskIds:[1]}]} as any,originOperationalState:{planning:[],constraints:{},availability:{},spaces:{}},residualFingerprint:"r",blockedAnchorTaskId:2,terminalEvidence:{frontierSources:[{kind:"assigned-prerequisite-end",taskId:1}],taskWindowConflictDetails:[{kind:"OUTSIDE_WORKDAY",violatedBoundary:"assigned-prerequisite-end",dependencyBoundSourceTaskIds:[1]}],causalConflictEvidence:{dependencyLowerBoundTaskIds:[1],taskWindowConflictDetails:[{kind:"OUTSIDE_WORKDAY",violatedBoundary:"assigned-prerequisite-end",dependencyBoundSourceTaskIds:[1]}],evidenceComplete:true}},provisionalAssignments:[{taskId:1,startPlanned:"18:00",endPlanned:"19:00",resourceIds:[]}]});
+  assert.equal(p.repairCandidateProfiles[0].windowConflictClassifications[0].dependencyBoundShiftable,true);
+  assert.equal(p.repairCandidateProfiles[0].repairable,true);
+  assert.deepEqual(p.candidateEjectionSets[0].ejectedTaskIds,[1]);
+});
+
+test("effective repair root dedupes temporal candidates with same executable state",()=>{
+  const input:any={tasks:[{id:1,status:"pending"},{id:2,status:"pending"},{id:3,status:"pending"}]};
+  const prof=(fp:string,rank:number)=>({temporalCandidateFingerprint:fp,candidateRank:rank,causalConflictEvidence:{spaceConflictTaskIds:[1],evidenceComplete:true},reasonCodes:["SPACE_OVERLAP"]});
+  const p=buildInitialConstructionRepairProblem({input,originOperationalState:{planning:[],constraints:{},availability:{},spaces:{}},residualFingerprint:"r",blockedAnchorTaskId:3,repairCandidateProfiles:[prof("a",2),prof("b",1)].map(e=>profileFromAnchorPlacementEvidence({blockedAnchorTaskId:3,evidence:e,provisionalTaskIds:[1],immutableTaskIds:[]})),terminalEvidence:{requireCandidateScopedProfiles:true},provisionalAssignments:[{taskId:1,startPlanned:"08:00",endPlanned:"08:10",resourceIds:[]}]});
+  assert.equal(p.effectiveRepairRootCount,1);
+  assert.equal(p.effectiveRepairRoots[0].supportingCandidateProfileFingerprints.length,2);
+  assert.equal(p.effectiveRepairRoots[0].representativeCandidateRank,1);
 });

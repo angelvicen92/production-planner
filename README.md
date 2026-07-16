@@ -1744,3 +1744,9 @@ Benchmark status for the active repository state: no plan-27 snapshot artifact i
 - Replay compaction now summarizes Initial Construction iterative repair evidence through counts, fingerprints, stop reasons, and bounded samples instead of duplicating all search nodes and large diagnostic objects. Oversized worker output is reported as `WORKER_OUTPUT_TOO_LARGE` instead of silently trimming stdout and parsing a suffix.
 - This repository change remains DB safe and read-only: no migrations, no public planning change, no V4 seed/incumbent/order/schedule source, no Stage 1/ranking/scoring/search-space/dependency/validation/fallback changes, and no planning commits are introduced.
 - Real Plan 27 final production metrics for ID 303 must be taken from the target benchmark snapshot. If the cumulative repair still does not complete 174 assignments there, the evidence must preserve the valid 170-assignment plan and report the real logical blocker rather than declaring success.
+
+- ID 304 — Causal Repair Root Portfolio: Hard-Blocker Coverage, Effective-State Dedupe & Terminal Ranking v1
+  - Documenta probes posteriores a ID 303: cuatro versus seis expulsiones, 12 versus 24 nodos y diversidad de 10 perfiles raíz.
+  - Todas las ejecuciones observadas mantuvieron 170 assignments; el root-diversity probe ejecutó 100 nodos y 555 hijos sin aceptación.
+  - Se detectaron perfiles estáticamente imposibles considerados reparables, raíces efectivas duplicadas y pérdida del ranking terminal antes del repair runner.
+  - Esta iteración clasifica blockers temporales por dimensión causal, deduplica raíces por estado efectivo y propaga el ranking terminal real sin modificar el planning público.
