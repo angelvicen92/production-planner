@@ -137,8 +137,8 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const started = performance.now();
   const stage1 = runInitialConstructionStage1({ originInput, originOperationalState, createdAt: "benchmark" });
   const canonical = buildInitialConstructionCanonicalContext({ input: originInput, stage1 });
-  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context });
-  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context });
+  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy: "critical_chain_retained_alternatives" });
+  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy: "critical_chain_retained_alternatives" });
   const ended = performance.now();
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   return {
