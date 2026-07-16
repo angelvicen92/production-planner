@@ -14,4 +14,8 @@ test("isolated initial construction benchmark runs Stage 1, Stage 2, and iterati
   assert.equal(Array.isArray(result.terminalBlockedAnchorSample), true);
   assert.ok(result.fingerprint);
   for (const key of ["repairCandidateProfileCount","repairableCandidateProfileCount","candidateProfilesByAnchor","candidateEjectionSetsByAnchor","repairAttemptedAnchorIdsByRound","repairNeighborhoodSessionCount","repairSearchNodeCount","repairExpansionChildNodeCount","anchorBranchBacktrackCount","searchNodeSequenceFingerprint","searchNodeTransitionFingerprint","searchNodeTransitionInvalidCount","cumulativeEjectionLimitRejectedCount","cumulativeNeighborhoodLimitRejectedCount","cumulativeClosureRemovalFailureCount","repairAttemptStopReasonCounts","closureContractValid","finalProductiveAssignedTaskIds"] as const) assert.equal(Object.prototype.hasOwnProperty.call(result,key), true, key);
+  for(const key of ["staticHardBlockerProfileCount","shiftableDependencyBoundProfileCount","uncoveredHardBlockerProfileCount","executableCandidateProfileCount","effectiveRepairRootCount","equivalentRepairRootDedupCount","effectiveRepairRootsByAnchor","terminalRankByAnchor","scheduledEffectiveRootFingerprintsByRound","repairAttemptedEffectiveRootFingerprintsByRound","duplicateEffectiveRootAttemptCount","effectiveRepairRootPortfolioFingerprint","rootRejectedReasonCounts","rootStaticWindowConflictCountsByAnchor","rootShiftableWindowConflictCountsByAnchor"] as const) {
+    assert.equal(Object.prototype.hasOwnProperty.call(result,key),true,key);
+    assert.notEqual(result[key],undefined,key);
+  }
 });

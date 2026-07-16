@@ -47,6 +47,21 @@ export interface InitialConstructionBenchmarkResult {
   repairAcceptedCount: number;
   acceptedPartialPlanBacktrackCount: number;
   candidateEjectionSetCount: number;
+  staticHardBlockerProfileCount:number;
+  shiftableDependencyBoundProfileCount:number;
+  uncoveredHardBlockerProfileCount:number;
+  executableCandidateProfileCount:number;
+  effectiveRepairRootCount:number;
+  equivalentRepairRootDedupCount:number;
+  effectiveRepairRootsByAnchor:Record<string,unknown[]>;
+  terminalRankByAnchor:Record<string,number>;
+  scheduledEffectiveRootFingerprintsByRound:string[][];
+  repairAttemptedEffectiveRootFingerprintsByRound:string[][];
+  duplicateEffectiveRootAttemptCount:number;
+  effectiveRepairRootPortfolioFingerprint:string|null;
+  rootRejectedReasonCounts:Record<string,number>;
+  rootStaticWindowConflictCountsByAnchor:Record<string,number>;
+  rootShiftableWindowConflictCountsByAnchor:Record<string,number>;
   acceptedBlockedAnchorTaskIds: number[];
   acceptedEjectionTaskIds: number[];
   acceptedRepairDependencyClosureTaskIds: number[];
@@ -166,6 +181,21 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     repairAcceptedCount: repair.repairAcceptedCount ?? 0,
     acceptedPartialPlanBacktrackCount: repair.acceptedPartialPlanBacktrackCount ?? 0,
     candidateEjectionSetCount: repair.candidateEjectionSetCount ?? 0,
+    staticHardBlockerProfileCount:repair.staticHardBlockerProfileCount??0,
+    shiftableDependencyBoundProfileCount:repair.shiftableDependencyBoundProfileCount??0,
+    uncoveredHardBlockerProfileCount:repair.uncoveredHardBlockerProfileCount??0,
+    executableCandidateProfileCount:repair.candidateEjectionSetCount??0,
+    effectiveRepairRootCount:repair.effectiveRepairRootCount??0,
+    equivalentRepairRootDedupCount:repair.equivalentRepairRootDedupCount??0,
+    effectiveRepairRootsByAnchor:repair.effectiveRepairRootsByAnchor??{},
+    terminalRankByAnchor:repair.terminalRankByAnchor??{},
+    scheduledEffectiveRootFingerprintsByRound:repair.scheduledEffectiveRootFingerprintsByRound??[],
+    repairAttemptedEffectiveRootFingerprintsByRound:repair.repairAttemptedEffectiveRootFingerprintsByRound??[],
+    duplicateEffectiveRootAttemptCount:repair.duplicateEffectiveRootAttemptCount??0,
+    effectiveRepairRootPortfolioFingerprint:repair.effectiveRepairRootPortfolioFingerprint??null,
+    rootRejectedReasonCounts:repair.rootRejectedReasonCounts??{},
+    rootStaticWindowConflictCountsByAnchor:repair.rootStaticWindowConflictCountsByAnchor??{},
+    rootShiftableWindowConflictCountsByAnchor:repair.rootShiftableWindowConflictCountsByAnchor??{},
     acceptedBlockedAnchorTaskIds: repair.acceptedBlockedAnchorTaskIds ?? [],
     acceptedEjectionTaskIds: repair.acceptedEjectionTaskIds ?? [],
     acceptedRepairDependencyClosureTaskIds: repair.acceptedRepairDependencyClosureTaskIds ?? [],

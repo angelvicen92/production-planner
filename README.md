@@ -1750,3 +1750,11 @@ Benchmark status for the active repository state: no plan-27 snapshot artifact i
   - Todas las ejecuciones observadas mantuvieron 170 assignments; el root-diversity probe ejecutó 100 nodos y 555 hijos sin aceptación.
   - Se detectaron perfiles estáticamente imposibles considerados reparables, raíces efectivas duplicadas y pérdida del ranking terminal antes del repair runner.
   - Esta iteración clasifica blockers temporales por dimensión causal, deduplica raíces por estado efectivo y propaga el ranking terminal real sin modificar el planning público.
+
+## ID 305 — ID 304 Acceptance Repair: Real Frontier Causality & Executable Root Portfolio v1
+
+- ID 304 is corrected against its observed Plan 27 result: it preserved 170 assignments and 67 accepted cycles, accepted zero repairs, incorrectly classified the 314 and 324 dependency-bound candidates as having no repairable profile, consumed 55/58 nodes across the compared runs, exceeded 90 seconds, produced structurally different runs, and omitted the root-portfolio contract from benchmark output.
+- Window conflicts are now associated with the concrete candidate interval and normalized frontier-source time. Only reversible provisional `assigned-prerequisite-end` and `assigned-dependent-start` sources that determine the effective candidate boundary can cover an availability or workday violation; unrelated and absent mobile sources remain static.
+- Repair problems merge candidate profiles by effective base state before emitting exactly one ejection set per root. Supporting profile/candidate fingerprints and the best representative rank are retained, while productive closure evidence uses the canonical residual productive classification.
+- The repair runner exports the complete compact root portfolio, terminal ranks, scheduled and actually attempted fingerprints, duplicate skips, causal classification counts, and root rejection evidence. Actual attempts are recorded only after a neighborhood session is started.
+- The focused regression suite verifies real-shape availability/workday evidence without causal metadata in the window detail, static and unrelated frontiers, effective-root deduplication, and the benchmark portfolio contract. Plan 27 completion is not claimed without a new observed production replay artifact.
