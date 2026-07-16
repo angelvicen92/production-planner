@@ -72,6 +72,16 @@ export interface InitialConstructionBenchmarkResult {
   repairNeighborhoodValidationCount: number | null;
   repairNeighborhoodExpansionAttemptCount: number | null;
   repairNeighborhoodExpansionAcceptedCount: number | null;
+  repairExpansionChildNodeCount: number | null;
+  anchorBranchBacktrackCount: number | null;
+  searchNodeSequenceFingerprint: string | null;
+  searchNodeTransitionFingerprint: string | null;
+  searchNodeTransitionInvalidCount: number | null;
+  cumulativeEjectionLimitRejectedCount: number | null;
+  cumulativeNeighborhoodLimitRejectedCount: number | null;
+  cumulativeClosureRemovalFailureCount: number | null;
+  searchNodeSampleFirst: unknown[] | null;
+  searchNodeSampleLast: unknown[] | null;
   repairSearchNodeCount: number | null;
   repairSearchNodePrunedCount: number | null;
   maxRepairExpansionDepthObserved: number | null;
@@ -181,6 +191,16 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     repairNeighborhoodValidationCount: repair.repairNeighborhoodValidationCount ?? null,
     repairNeighborhoodExpansionAttemptCount: repair.repairNeighborhoodExpansionAttemptCount ?? null,
     repairNeighborhoodExpansionAcceptedCount: repair.repairNeighborhoodExpansionAcceptedCount ?? null,
+    repairExpansionChildNodeCount: repair.repairExpansionChildNodeCount ?? null,
+    anchorBranchBacktrackCount: repair.anchorBranchBacktrackCount ?? null,
+    searchNodeSequenceFingerprint: repair.searchNodeSequenceFingerprint ?? null,
+    searchNodeTransitionFingerprint: repair.searchNodeTransitionFingerprint ?? null,
+    searchNodeTransitionInvalidCount: repair.searchNodeTransitionInvalidCount ?? 0,
+    cumulativeEjectionLimitRejectedCount: repair.cumulativeEjectionLimitRejectedCount ?? 0,
+    cumulativeNeighborhoodLimitRejectedCount: repair.cumulativeNeighborhoodLimitRejectedCount ?? 0,
+    cumulativeClosureRemovalFailureCount: repair.cumulativeClosureRemovalFailureCount ?? 0,
+    searchNodeSampleFirst: repair.searchNodeSampleFirst ?? [],
+    searchNodeSampleLast: repair.searchNodeSampleLast ?? [],
     repairSearchNodeCount: repair.repairSearchNodeCount ?? null,
     repairSearchNodePrunedCount: repair.repairSearchNodePrunedCount ?? null,
     maxRepairExpansionDepthObserved: repair.maxRepairExpansionDepthObserved ?? null,
