@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildInitialConstructionRepairProblem, profileFromAnchorPlacementEvidence } from "./initialConstructionRepairProblem";
+import { buildInitialConstructionRepairProblem, profileFromAnchorPlacementEvidence, projectInitialConstructionRepairTarget } from "./initialConstructionRepairProblem";
 
 const state:any={planning:[{taskId:99,startPlanned:"08:00",endPlanned:"08:30"}],constraints:{},availability:{},spaces:{}};
 
@@ -79,4 +79,18 @@ test("real availability evidence links a candidate boundary to its reversible pr
 test("unrelated and absent mobile frontiers leave real window conflicts static",()=>{
   const make=(frontierSources:any[])=>profileFromAnchorPlacementEvidence({blockedAnchorTaskId:3,provisionalTaskIds:[1,2],immutableTaskIds:[],evidence:{startPlanned:"15:30",endPlanned:"15:35",frontierSources,dependencyBoundSourceTaskIds:[1],causalConflictEvidence:{spaceConflictTaskIds:[2],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",expected:"09:00-15:30",actual:"15:30-15:35"}],evidenceComplete:true}}});
   for(const profile of [make([{kind:"assigned-prerequisite-end",taskId:1,time:"12:00"}]),make([])]) { assert.equal(profile.windowConflictCausalLinks[0].covered,false); assert.equal(profile.windowConflictCausalLinks[0].static,true); assert.equal(profile.repairable,false); }
+});
+
+test("availability projection replaces an obsolete original blocker with the blocker at the valid boundary",()=>{
+  const tasks:any[]=[{id:1,status:"pending",durationOverrideMin:5,spaceId:1},{id:2,status:"pending",durationOverrideMin:5,spaceId:1},{id:3,status:"pending",durationOverrideMin:5,spaceId:1,dependsOnTaskIds:[1],contestantId:7},{id:4,status:"pending",durationOverrideMin:10,spaceId:1}];
+  const input:any={tasks,workDay:{start:"09:00",end:"18:30"},contestantAvailabilityById:{7:{start:"09:00",end:"15:30"}},planResourceItems:[]};
+  const operational:any={planning:[],constraints:{},availability:{workDay:input.workDay},spaces:{parentById:{},capacityById:{1:1},concurrencyById:{1:1},exclusiveById:{},nameById:{1:"S"},priorityById:{}}};
+  const provisional:any[]=[{taskId:1,startPlanned:"15:25",endPlanned:"15:30",spaceId:2,resourceIds:[]},{taskId:2,startPlanned:"15:30",endPlanned:"15:35",spaceId:1,resourceIds:[]},{taskId:4,startPlanned:"15:20",endPlanned:"15:30",spaceId:1,resourceIds:[]}];
+  const profile=profileFromAnchorPlacementEvidence({blockedAnchorTaskId:3,provisionalTaskIds:[1,2,4],immutableTaskIds:[],evidence:{startPlanned:"15:30",endPlanned:"15:35",frontierSources:[{kind:"assigned-prerequisite-end",taskId:1,time:"15:30",boundary:"start"}],causalConflictEvidence:{spaceConflictTaskIds:[2],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",expected:"09:00-15:30",actual:"15:30-15:35"}],evidenceComplete:true}}});
+  const projection=projectInitialConstructionRepairTarget({input,originOperationalState:operational,candidateProfile:profile,blockedTask:tasks[2],provisionalAssignments:provisional,immutableTaskIds:[]});
+  assert.equal(projection?.projectedStart,"15:25"); assert.equal(projection?.projectedEnd,"15:30");
+  assert.deepEqual(projection?.mobileSourceTaskIds,[1]); assert.deepEqual(projection?.projectedTargetBlockerTaskIds,[4]);
+  assert.deepEqual(projection?.obsoleteOriginalCandidateBlockerTaskIds,[2]); assert.equal(projection?.projectedTargetValidAfterEjection,true); assert.equal(projection?.executable,true);
+  const problem=buildInitialConstructionRepairProblem({input,originOperationalState:operational,residualFingerprint:"r",blockedAnchorTaskId:3,repairCandidateProfiles:[profile],terminalEvidence:{requireCandidateScopedProfiles:true},provisionalAssignments:provisional});
+  assert.deepEqual(problem.candidateEjectionSets[0].ejectedTaskIds,[1,4]); assert.ok(!problem.candidateEjectionSets[0].ejectedTaskIds.includes(2));
 });
