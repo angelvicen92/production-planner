@@ -64,4 +64,19 @@ test("effective repair root dedupes temporal candidates with same executable sta
   assert.equal(p.effectiveRepairRootCount,1);
   assert.equal(p.effectiveRepairRoots[0].supportingCandidateProfileFingerprints.length,2);
   assert.equal(p.effectiveRepairRoots[0].representativeCandidateRank,1);
+  assert.equal(p.equivalentRepairRootDedupCount,1);
+  assert.equal(p.candidateEjectionSets.length,p.effectiveRepairRootCount);
+});
+
+test("real availability evidence links a candidate boundary to its reversible prerequisite",()=>{
+  const profile=profileFromAnchorPlacementEvidence({blockedAnchorTaskId:3,provisionalTaskIds:[1,2],immutableTaskIds:[],evidence:{startPlanned:"15:30",endPlanned:"15:35",frontierSources:[{kind:"assigned-prerequisite-end",taskId:1,time:"15:30",boundary:"start"}],dependencyBoundSourceTaskIds:[1],causalConflictEvidence:{spaceConflictTaskIds:[2],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",expected:"09:00-15:30",actual:"15:30-15:35"}],evidenceComplete:true}}});
+  assert.equal(profile.windowConflictCausalLinks[0].dependencyBoundShiftable,true);
+  assert.equal(profile.windowConflictCausalLinks[0].requiredShiftDirection,"earlier");
+  assert.deepEqual(profile.effectiveMobileFrontierSourceTaskIds,[1]);
+  assert.equal(profile.repairable,true);
+});
+
+test("unrelated and absent mobile frontiers leave real window conflicts static",()=>{
+  const make=(frontierSources:any[])=>profileFromAnchorPlacementEvidence({blockedAnchorTaskId:3,provisionalTaskIds:[1,2],immutableTaskIds:[],evidence:{startPlanned:"15:30",endPlanned:"15:35",frontierSources,dependencyBoundSourceTaskIds:[1],causalConflictEvidence:{spaceConflictTaskIds:[2],taskWindowConflictDetails:[{kind:"OUTSIDE_AVAILABILITY",expected:"09:00-15:30",actual:"15:30-15:35"}],evidenceComplete:true}}});
+  for(const profile of [make([{kind:"assigned-prerequisite-end",taskId:1,time:"12:00"}]),make([])]) { assert.equal(profile.windowConflictCausalLinks[0].covered,false); assert.equal(profile.windowConflictCausalLinks[0].static,true); assert.equal(profile.repairable,false); }
 });
