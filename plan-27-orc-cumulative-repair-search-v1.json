@@ -1,17 +1,17 @@
 {
-  "version": "PLAN-27-ORC-REAL-CONFLICT-DIRECTED-REPAIR-SEARCH-V1",
-  "deterministic": true,
+  "version": "PLAN-27-ORC-CUMULATIVE-REPAIR-SEARCH-V1",
   "baselineGatePassed": true,
-  "evidenceContractPassed": false,
+  "structuralDeterminism": false,
+  "cumulativeContractPassed": false,
   "productiveConstructionCompleted": false,
   "runs": [
     {
-      "exclusiveConstructiveRuntimeMs": 66886,
+      "exclusiveConstructiveRuntimeMs": 68658,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "0781b57c9ee6b00c6cb5256fc706f393ac0bcadad5f7898c3634f1836c3f754a",
+      "sessionFingerprint": "3bcc5b981a1eded7ff570a28881bc983073b7044907a6bc45631162bf3e9bb6c",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -3615,9 +3615,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 66667,
-        "assignmentsPerSecond": 2.49,
-        "exclusiveConstructiveRuntimeMs": 66886
+        "sessionRuntimeMs": 68423,
+        "assignmentsPerSecond": 2.426,
+        "exclusiveConstructiveRuntimeMs": 68658
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -3635,7 +3635,7 @@
       "productiveTasksRemaining": 4,
       "repairExecuted": true,
       "repairRoundCount": 1,
-      "repairAttemptCount": 7,
+      "repairAttemptCount": 2,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
       "candidateEjectionSetCount": 42,
@@ -3646,7 +3646,7 @@
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
       "repairStopReason": "NO_VALID_REPAIR",
-      "repairFingerprint": "6e1ccc8302e755a69adfe8459397c14c4af22052150891dc57422458233e9efe",
+      "repairFingerprint": "08bc0d504fec147dd0aa56f779dc2de0a38f51b3de49576117fd3accecb9c69a",
       "repairCandidateProfilesFingerprint": "48778941b174efd6d6b4191caf5f7fd0d223da4bca80ff061fba2655bb9a2cae",
       "repairCandidateProfileCount": 56,
       "repairableCandidateProfileCount": 56,
@@ -3932,55 +3932,231 @@
       "repairAttemptedAnchorIdsByRound": [
         [
           312,
-          324,
-          314,
-          505,
-          312,
-          314,
-          505
+          324
         ]
       ],
       "repairAttemptedProfileFingerprintsByRound": [
         [
           "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
-          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
-          "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
-          "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
-          "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
-          "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
-          "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502"
+          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae"
         ]
       ],
       "roundRobinFairnessValid": true,
-      "repairNeighborhoodSessionCount": 7,
+      "repairNeighborhoodSessionCount": 2,
       "repairNeighborhoodAcceptedCycleCount": 0,
-      "repairNeighborhoodAnchorAttemptCount": 424,
-      "repairNeighborhoodValidationCount": 502,
-      "repairNeighborhoodExpansionAttemptCount": 128,
+      "repairNeighborhoodAnchorAttemptCount": 352,
+      "repairNeighborhoodValidationCount": 448,
+      "repairNeighborhoodExpansionAttemptCount": 58,
       "repairNeighborhoodExpansionAcceptedCount": 0,
-      "repairSearchNodeCount": 200,
-      "repairSearchNodePrunedCount": 694,
+      "repairExpansionChildNodeCount": 108,
+      "anchorBranchBacktrackCount": 109,
+      "searchNodeSequenceFingerprint": "3fd723b34d60c7c0421563d21a816a62b67f833397dad448c223bf1629a9f14c",
+      "searchNodeTransitionFingerprint": "d3dfdcc6b85b38f23a38330f65e38445687432c70e49ba6ffa21a0896878590c",
+      "searchNodeTransitionInvalidCount": 0,
+      "cumulativeEjectionLimitRejectedCount": 336,
+      "cumulativeNeighborhoodLimitRejectedCount": 0,
+      "cumulativeClosureRemovalFailureCount": 0,
+      "searchNodeSampleFirst": [
+        {
+          "fingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "parentNodeFingerprint": null,
+          "depth": 0,
+          "cumulativeEjectedTaskIds": [
+            315
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315
+          ],
+          "failedTaskId": null,
+          "triggeringCandidateProfileFingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+          "transitionValid": null,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "8316040208787abacdaf5a03b822fcccfafd05605db171c3821c901fca444569",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            316
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            316
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "8df4824de34adb039075e59f5d86d809166bbaa7bc32210530671aa57fc4c7db",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "94bb9b2787b1c7a8814dfee0006281a3b73389c112cb2c55e4fc916e850fb17f",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            504
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            504
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "de2da4c15f0d94b7d95d47d5ef1542cdd7c079bb9dda6411d92610ca7f05cab3",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "6558d98a4056fdc61a53dd3dfbfcb2b69492092efa6518544f3e329b898bb896",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            335
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            334,
+            335
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "dcf36e1225ed8ea4944e96386d24c7b3c42d32e48e41685a3d7d02a490259781",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "8d26feca9a89bc5c2c2346f28a42bb4c0babd3c1e249ecf224e49e55d2a3e0ef",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            397
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            315,
+            397
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "1a8c92c1e634acb9fc06bb166f9fa9fc97115d4f233c8578dacbaa1d2d7bb68a",
+          "transitionValid": true,
+          "stopReason": null
+        }
+      ],
+      "searchNodeSampleLast": [
+        {
+          "fingerprint": "d975b031b2c4fb045582c8ebe4ae50968491311d97d474fa0f1261635709f8fa",
+          "parentNodeFingerprint": "0231f190b4ed87851bba0867d57d907adccbd34fb23a099701cbbff49ab22b4c",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            236,
+            322,
+            354
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            322,
+            354
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "58f6d3c002fc467c2d8928131e33cbfb7e09c59ffab1eb407a6a01dacadc3db3",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "054dbae06dac3ba77bca068d13e164ed4ae2c778bf905b1540f6db1b6f7a6bf7",
+          "parentNodeFingerprint": "791891a18261aa84e93f761ae340656c87936690e8f8bd1470702291ddb835cd",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            236,
+            322,
+            334
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            322,
+            334
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "0400404adfebd957edfbe9ddc30ce445474e2456b809f261efd0172aac398fb4",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "2029c92d410885242eb5399ba9f6c1a85f483392adc2a0d944c29d8747d92608",
+          "parentNodeFingerprint": "0231f190b4ed87851bba0867d57d907adccbd34fb23a099701cbbff49ab22b4c",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            322,
+            344,
+            354
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            322,
+            344,
+            354
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "e9a8863fdb65e0e62cd76b51729db8c7ba299690c3a84ae51e408355eaea16d2",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "2b06acbb5b011988a7c8b0e9088b4a7361c099ab3b93cad5b74d846c90060b6d",
+          "parentNodeFingerprint": "60f4a257a9c265133ff5949797139d1d17b131b826685c07fb4fd906e2e98945",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            236,
+            322,
+            344
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            322,
+            344
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "50fc193b1b053f2e094354a1d6282ab6af245186ccbe90521a8dd9f967398d55",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "ea4092a566ab1c38b1f3fc968ce22e640f2cd7791bb2d4ec1f13a4241b4a6112",
+          "parentNodeFingerprint": "791891a18261aa84e93f761ae340656c87936690e8f8bd1470702291ddb835cd",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            322,
+            334,
+            344
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            322,
+            334,
+            344
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "6fd9d7159664cd002434245136439e8fcc0b4f68ab015e61da81cdb915b6b126",
+          "transitionValid": true,
+          "stopReason": null
+        }
+      ],
+      "repairSearchNodeCount": 76,
+      "repairSearchNodePrunedCount": 409,
       "maxRepairExpansionDepthObserved": 3,
       "maxCumulativeEjectedAssignmentCount": 1,
       "repairFailurePhaseCounts": {
-        "NEIGHBORHOOD_TASK_REINSERTION": 3,
-        "BLOCKED_ANCHOR_RECONSTRUCTION": 3,
-        "DEADLINE": 1
+        "NEIGHBORHOOD_TASK_REINSERTION": 1,
+        "BLOCKED_ANCHOR_RECONSTRUCTION": 1
       },
       "repairAttemptStopReasonCounts": {
-        "MAX_REPAIR_EXPANSION_DEPTH": 5,
-        "NO_VALID_REPAIR": 1,
+        "MAX_REPAIR_SEARCH_NODES": 1,
         "REPAIR_DEADLINE_EXHAUSTED": 1
       },
       "failedTaskIds": [
         307,
-        310,
-        312,
-        314,
         315,
         324,
         504,
-        505,
         506
       ],
       "closureContractValid": true,
@@ -4177,15 +4353,15 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "0781b57c9ee6b00c6cb5256fc706f393ac0bcadad5f7898c3634f1836c3f754a"
+      "fingerprint": "3bcc5b981a1eded7ff570a28881bc983073b7044907a6bc45631162bf3e9bb6c"
     },
     {
-      "exclusiveConstructiveRuntimeMs": 61655,
+      "exclusiveConstructiveRuntimeMs": 67926,
       "assignmentsReached": 170,
       "cycles": 67,
       "stopReason": "NO_VIABLE_ANCHOR",
       "budgetLimitReached": null,
-      "sessionFingerprint": "0781b57c9ee6b00c6cb5256fc706f393ac0bcadad5f7898c3634f1836c3f754a",
+      "sessionFingerprint": "66b537c412450300161523e99550546e27dc6f6cc50cfe2c9fca8b5b5607802e",
       "finalCombinedAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "finalValidationResult": "VALID",
       "exactEligibleAnchorCountAtStop": 4,
@@ -7789,9 +7965,9 @@
         }
       ],
       "runtimeTelemetry": {
-        "sessionRuntimeMs": 61422,
-        "assignmentsPerSecond": 2.703,
-        "exclusiveConstructiveRuntimeMs": 61655
+        "sessionRuntimeMs": 67712,
+        "assignmentsPerSecond": 2.452,
+        "exclusiveConstructiveRuntimeMs": 67926
       },
       "widenedAnchorAttemptCount": 185,
       "widenedAnchorAcceptedCount": 14,
@@ -7809,7 +7985,7 @@
       "productiveTasksRemaining": 4,
       "repairExecuted": true,
       "repairRoundCount": 1,
-      "repairAttemptCount": 7,
+      "repairAttemptCount": 2,
       "repairAcceptedCount": 0,
       "acceptedPartialPlanBacktrackCount": 0,
       "candidateEjectionSetCount": 42,
@@ -7820,7 +7996,7 @@
       "protectedAssignmentsModified": false,
       "outsideNeighborhoodAssignmentsModified": 0,
       "repairStopReason": "NO_VALID_REPAIR",
-      "repairFingerprint": "6e1ccc8302e755a69adfe8459397c14c4af22052150891dc57422458233e9efe",
+      "repairFingerprint": "fafe9a9459cb7c6ab974cbc9e9d54d04524967fd9234284e8bece0e7a105d00f",
       "repairCandidateProfilesFingerprint": "48778941b174efd6d6b4191caf5f7fd0d223da4bca80ff061fba2655bb9a2cae",
       "repairCandidateProfileCount": 56,
       "repairableCandidateProfileCount": 56,
@@ -8106,54 +8282,227 @@
       "repairAttemptedAnchorIdsByRound": [
         [
           312,
-          324,
-          314,
-          505,
-          312,
-          314,
-          505
+          324
         ]
       ],
       "repairAttemptedProfileFingerprintsByRound": [
         [
           "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
-          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae",
-          "db09d064addffff883d78f248c7796fc5747d1f6dba4b64639deaf697d5a906d",
-          "db5da07f85a3aff7407da4d29719af29eee9ca3b2cc5e6f6924524e7a7e6fbea",
-          "51152e46b0f6c91d7edd58cb1bbd9c68bfa750a9801e57322170a81e60539010",
-          "a0772f6add6eaef62f2ebe9871420f909459c03f3bbfb727cdc49195d6a2d9bd",
-          "abf7320e2c5716d38e225891a8c5114a73813af9eb4b68be7116e2ffb4b16502"
+          "75f15f3eca4117c6eb02e42d649d22a724e12a393f0f4675518c4934f04f41ae"
         ]
       ],
       "roundRobinFairnessValid": true,
-      "repairNeighborhoodSessionCount": 7,
+      "repairNeighborhoodSessionCount": 2,
       "repairNeighborhoodAcceptedCycleCount": 0,
-      "repairNeighborhoodAnchorAttemptCount": 415,
-      "repairNeighborhoodValidationCount": 486,
-      "repairNeighborhoodExpansionAttemptCount": 128,
+      "repairNeighborhoodAnchorAttemptCount": 348,
+      "repairNeighborhoodValidationCount": 444,
+      "repairNeighborhoodExpansionAttemptCount": 54,
       "repairNeighborhoodExpansionAcceptedCount": 0,
-      "repairSearchNodeCount": 198,
-      "repairSearchNodePrunedCount": 694,
+      "repairExpansionChildNodeCount": 107,
+      "anchorBranchBacktrackCount": 109,
+      "searchNodeSequenceFingerprint": "4b4ea2f635a4dcda5443017b4d2a3d17a12e69cf79ce9c6262e8c64cb94b9da2",
+      "searchNodeTransitionFingerprint": "1fe5847b2ed5527672effd41b6cdb24fc12ed5c10cf080d14c886d4f2bf1976f",
+      "searchNodeTransitionInvalidCount": 0,
+      "cumulativeEjectionLimitRejectedCount": 332,
+      "cumulativeNeighborhoodLimitRejectedCount": 0,
+      "cumulativeClosureRemovalFailureCount": 0,
+      "searchNodeSampleFirst": [
+        {
+          "fingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "parentNodeFingerprint": null,
+          "depth": 0,
+          "cumulativeEjectedTaskIds": [
+            315
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315
+          ],
+          "failedTaskId": null,
+          "triggeringCandidateProfileFingerprint": "4dd5553f92e95af7e77df888863b3cffc7e8584978a602e9cdcd21fd972f1d6d",
+          "transitionValid": null,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "8316040208787abacdaf5a03b822fcccfafd05605db171c3821c901fca444569",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            316
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            316
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "8df4824de34adb039075e59f5d86d809166bbaa7bc32210530671aa57fc4c7db",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "94bb9b2787b1c7a8814dfee0006281a3b73389c112cb2c55e4fc916e850fb17f",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            504
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            504
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "de2da4c15f0d94b7d95d47d5ef1542cdd7c079bb9dda6411d92610ca7f05cab3",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "6558d98a4056fdc61a53dd3dfbfcb2b69492092efa6518544f3e329b898bb896",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            335
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            315,
+            334,
+            335
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "dcf36e1225ed8ea4944e96386d24c7b3c42d32e48e41685a3d7d02a490259781",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "8d26feca9a89bc5c2c2346f28a42bb4c0babd3c1e249ecf224e49e55d2a3e0ef",
+          "parentNodeFingerprint": "3a97d80c5b87c9f7eb4fa7f7af5526b96ea643bbc71219008535ac9976ebef86",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            315,
+            397
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            315,
+            397
+          ],
+          "failedTaskId": 315,
+          "triggeringCandidateProfileFingerprint": "1a8c92c1e634acb9fc06bb166f9fa9fc97115d4f233c8578dacbaa1d2d7bb68a",
+          "transitionValid": true,
+          "stopReason": null
+        }
+      ],
+      "searchNodeSampleLast": [
+        {
+          "fingerprint": "60f4a257a9c265133ff5949797139d1d17b131b826685c07fb4fd906e2e98945",
+          "parentNodeFingerprint": "8ed81185ec2184c77e60fb188adbedabc054135a28d62da594fbd9b754d674b0",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            236,
+            322
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            322
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "0400404adfebd957edfbe9ddc30ce445474e2456b809f261efd0172aac398fb4",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "4f94294c572610856f6c95b20417adb55bfee88d11ae3a682c54ea90136e8a0d",
+          "parentNodeFingerprint": "8ed81185ec2184c77e60fb188adbedabc054135a28d62da594fbd9b754d674b0",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            322,
+            344
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            322,
+            344
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "0e55d80154111e1eaa2027b1d6821b09f2858d0a2724224823c32186900f4cb4",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "3a546461c9723b33c375fa9d3a44f75487734be3aa62061d5993ca90ccc67da5",
+          "parentNodeFingerprint": "8ed81185ec2184c77e60fb188adbedabc054135a28d62da594fbd9b754d674b0",
+          "depth": 1,
+          "cumulativeEjectedTaskIds": [
+            320,
+            322,
+            384
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            320,
+            322,
+            384
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "410a8687e3c63bcddb9c0a6971b1fb38e1615e91d74aa70677a892fb0e41209c",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "9b0e0d530354f8c49ac1f9c58080d721352ac0b9fb88c95808330bbf04f0f15e",
+          "parentNodeFingerprint": "791891a18261aa84e93f761ae340656c87936690e8f8bd1470702291ddb835cd",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            322,
+            334,
+            354
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            322,
+            334,
+            354
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "5446449c7de071119ae99c75de6223d38eda5d54bddb584ea46667acdc7fcb1e",
+          "transitionValid": true,
+          "stopReason": null
+        },
+        {
+          "fingerprint": "d975b031b2c4fb045582c8ebe4ae50968491311d97d474fa0f1261635709f8fa",
+          "parentNodeFingerprint": "0231f190b4ed87851bba0867d57d907adccbd34fb23a099701cbbff49ab22b4c",
+          "depth": 2,
+          "cumulativeEjectedTaskIds": [
+            236,
+            322,
+            354
+          ],
+          "cumulativeRepairDependencyClosureTaskIds": [
+            236,
+            322,
+            354
+          ],
+          "failedTaskId": 324,
+          "triggeringCandidateProfileFingerprint": "58f6d3c002fc467c2d8928131e33cbfb7e09c59ffab1eb407a6a01dacadc3db3",
+          "transitionValid": true,
+          "stopReason": null
+        }
+      ],
+      "repairSearchNodeCount": 72,
+      "repairSearchNodePrunedCount": 401,
       "maxRepairExpansionDepthObserved": 3,
       "maxCumulativeEjectedAssignmentCount": 1,
       "repairFailurePhaseCounts": {
-        "NEIGHBORHOOD_TASK_REINSERTION": 4,
-        "BLOCKED_ANCHOR_RECONSTRUCTION": 3
+        "NEIGHBORHOOD_TASK_REINSERTION": 1,
+        "BLOCKED_ANCHOR_RECONSTRUCTION": 1
       },
       "repairAttemptStopReasonCounts": {
-        "MAX_REPAIR_EXPANSION_DEPTH": 5,
-        "NO_VALID_REPAIR": 1,
+        "MAX_REPAIR_SEARCH_NODES": 1,
         "REPAIR_DEADLINE_EXHAUSTED": 1
       },
       "failedTaskIds": [
         307,
-        310,
-        312,
-        314,
         315,
         324,
         504,
-        505,
         506
       ],
       "closureContractValid": true,
@@ -8350,7 +8699,7 @@
       "preRepairAssignmentsFingerprint": "5bf24be25b5ff04dab95b3bec1b934818bcd2299242a4b4d5a13b99cf14d2703",
       "preRepairProductiveTasksRemaining": 4,
       "preRepairStopReason": "NO_VIABLE_ANCHOR",
-      "fingerprint": "0781b57c9ee6b00c6cb5256fc706f393ac0bcadad5f7898c3634f1836c3f754a"
+      "fingerprint": "66b537c412450300161523e99550546e27dc6f6cc50cfe2c9fca8b5b5607802e"
     }
   ]
 }
