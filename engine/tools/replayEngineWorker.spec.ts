@@ -37,3 +37,15 @@ test("replay compact evidence exposes Initial Construction Stage 2 without full 
   assert.equal(compact?.branchesRejectedBeforeSelection, 0);
   assert.equal((compact?.capabilityAudit as any).recursiveAssignmentBacktrackingObserved, false);
 });
+import { compactInitialConstructionIterativeSession } from "./replayEngineWorker";
+
+test("compact iterative session bounds repair node samples under one megabyte",()=>{
+  const nodes=Array.from({length:220},(_,i)=>({fingerprint:`f${i}`,parentNodeFingerprint:i?`f${i-1}`:null,expansionDepth:i%4,cumulativeEjectedTaskIds:[1,2],cumulativeRepairDependencyClosureTaskIds:[1,2,3],triggeringFailedTaskId:2,triggeringCandidateProfileFingerprint:`p${i}`,huge:{blob:"x".repeat(10000)}}));
+  const compact=compactInitialConstructionIterativeSession({version:"iter",initialConstructionConflictDirectedRepair:{version:"repair",repairAttemptCount:1,repairSearchNodeCount:220,repairAttemptsByRound:[[{searchNodes:nodes,searchNodeCount:220,sessionFingerprint:"s"}]],repairFingerprint:"rf"}});
+  const json=JSON.stringify(compact);
+  assert.ok(Buffer.byteLength(json)<1_000_000);
+  const attempt=(compact as any).initialConstructionConflictDirectedRepair.repairAttemptSamples[0];
+  assert.equal(attempt.searchNodeSampleFirst.length,5);
+  assert.equal(attempt.searchNodeSampleLast.length,5);
+  assert.equal(JSON.stringify(attempt).includes("huge"),false);
+});
