@@ -12,6 +12,7 @@ import { validateSimulatedStates } from "../validation/validationEngine";
 import { materializeInitialConstructionAnchorAttempt, initialConstructionAssignmentFingerprint } from "./materializeInitialConstructionAnchorAttempt";
 import { evaluateInitialConstructionPartialPlanFutureFeasibility, type InitialConstructionCriticalChainPartialPlan } from "./initialConstructionPartialPlanFutureFeasibility";
 import type { InitialConstructionCanonicalContext } from "../understanding/initialConstructionCanonicalContext";
+import { selectInitialConstructionAnchors } from "../see/initialConstructionAnchorSelector";
 
 const digest=(value:any)=>createHash("sha256").update(stableStringify(value)).digest("hex");
 const normalize=(a:any)=>({taskId:Number(a.taskId),startPlanned:a.startPlanned??null,endPlanned:a.endPlanned??null,spaceId:a.spaceId??null,resourceIds:[...(a.resourceIds??a.assignedResourceIds??[])].map(Number).sort((x,y)=>x-y)});
@@ -26,24 +27,29 @@ export function expandInitialConstructionPartialPlanOnce(args:{originInput:Engin
  const pseudo={selectedAssignments:parentAssignments,selectedPartialPlanId:args.parentPartialPlan.partialPlanId,selectedValidationResult:"VALID"};
  const residualContext=buildInitialConstructionResidualContext({originInput:args.originInput,originOperationalState:args.originOperationalState,stage2:pseudo});
  const map=buildInitialConstructionMap({input:args.originInput,state:args.originOperationalState,planningMode:"INITIAL_CONSTRUCTION",provisionalAssignments:parentAssignments,provisionallyAssignedTaskIds:parentAssignments.map(a=>a.taskId)});
+ const canonicalAnchors:any[]=selectInitialConstructionAnchors({input:args.originInput,initialConstructionMap:map,maxAnchors:Number.MAX_SAFE_INTEGER});
+ const anchorsByTaskId=new Map(canonicalAnchors.map(anchor=>[Number(anchor.anchorTaskId),anchor]));
  const chains=[...(map.criticalChains??[])].slice(0,args.budget.maxCriticalChainsPerDecision);
  const children:any[]=[], hardInvalid:any[]=[], futureInfeasible:any[]=[], duplicates:any[]=[], frontierAudits:any[]=[];
- const local=new Set<string>(); let ordinal=args.createdOrdinal;
+ const local=new Set<string>(); let ordinal=args.createdOrdinal, searchSpacesBuilt=0, materializationAttempts=0, transformationsExecuted=0, simulationsExecuted=0, validationsExecuted=0;
  outer: for(const chain of chains){
   for(const executionTaskId of [...(chain.executableFrontierTaskIds??[])].slice(0,args.budget.maxExecutableFrontierTasksPerChain)){
    const full=[...(chain.topologicalPendingChainTaskIds??[])].map(Number); const minimal=[Number(executionTaskId)];
    const fullMaterialized=full.length===1&&full[0]===executionTaskId;
    frontierAudits.push({goalTaskId:chain.goalTaskId,executionTaskId,fullGoalPendingClosureTaskIds:full,minimalExecutionClosureTaskIds:minimal,fullGoalClosureMaterialized:fullMaterialized,executionClosureContractValid:full.includes(executionTaskId)&&minimal.length===1,inheritedCriticalitySourceTaskIds:chain.inheritedCriticalitySourceTaskIds??[]});
-   const anchor={anchorTaskId:executionTaskId,taskId:executionTaskId,allPrerequisiteTaskIds:[]};
+   const anchor=anchorsByTaskId.get(Number(executionTaskId));
+   if(!anchor){frontierAudits.push({goalTaskId:chain.goalTaskId,executionTaskId,code:"FRONTIER_TASK_WITHOUT_CANONICAL_ANCHOR",fullGoalPendingClosureTaskIds:full,minimalExecutionClosureTaskIds:minimal,executionClosureContractValid:false});continue;}
    const spaces=buildInitialConstructionSearchSpaces({input:args.originInput,anchors:[anchor] as any,initialConstructionMap:map,maxSearchSpaces:1,maxWindowsPerAnchor:20});
+   searchSpacesBuilt+=spaces.length;
    const stage={...args.stage1,selectedAnchor:anchor,selectedAnchorTaskId:executionTaskId,initialConstructionMap:map,searchSpaces:spaces};
    const attempt=materializeInitialConstructionAnchorAttempt({originInput:args.originInput,originOperationalState:args.originOperationalState,stage,anchor,baseProvisionalAssignments:parentAssignments,provisionallySatisfiedTaskIds:parentAssignments.map(a=>a.taskId),closureTaskIds:minimal,maxBranches:args.budget.maxRetainedChainBranches,reasoningBudget:args.reasoningBudget,createdAt:args.createdAt??null,canonicalContext:args.canonicalContext});
+   materializationAttempts++;
    for(const option of attempt.selectable??[]){
     const byId=new Map(parentAssignments.map(a=>[a.taskId,a])); for(const a of option.branch.assignments.map(normalize)) if(!byId.has(a.taskId)) byId.set(a.taskId,a);
     const combined=[...byId.values()].sort((a,b)=>a.taskId-b.taskId); const fp=initialConstructionAssignmentFingerprint(combined);
     if(combined.length===parentAssignments.length||local.has(fp)||args.caches?.seenAssignmentsFingerprints?.has(fp)){duplicates.push(fp);continue;} local.add(fp);
     const tr=buildCandidateStates(args.originOperationalState,[candidate(`retained:${ordinal}`,combined)],{createdAt:args.createdAt??null,maxTransformations:1});
-    const sim=simulateCandidateStates(args.originOperationalState,tr.candidateStates,{createdAt:args.createdAt??null,maxSimulations:1}); const validation=validateSimulatedStates(sim.simulatedStates,{createdAt:args.createdAt??null}).validationResults[0];
+    transformationsExecuted+=tr.candidateStates.length; const sim=simulateCandidateStates(args.originOperationalState,tr.candidateStates,{createdAt:args.createdAt??null,maxSimulations:1}); simulationsExecuted+=sim.simulatedStates.length; const validationResult=validateSimulatedStates(sim.simulatedStates,{createdAt:args.createdAt??null}); validationsExecuted+=validationResult.validationResults.length; const validation=validationResult.validationResults[0];
     if(validation?.result!=="VALID"){hardInvalid.push({assignmentsFingerprint:fp,validationResult:validation?.result??null});continue;}
     const childMap=buildInitialConstructionMap({input:args.originInput,state:args.originOperationalState,planningMode:"INITIAL_CONSTRUCTION",provisionalAssignments:combined,provisionallyAssignedTaskIds:combined.map(a=>a.taskId)});
     const childResidual=buildInitialConstructionResidualContext({originInput:args.originInput,originOperationalState:args.originOperationalState,stage2:{...pseudo,selectedAssignments:combined}});
@@ -55,6 +61,6 @@ export function expandInitialConstructionPartialPlanOnce(args:{originInput:Engin
    }
   }
  }
- const raw={parentPartialPlanId:args.parentPartialPlan.partialPlanId,parentAssignmentsFingerprint:args.parentPartialPlan.assignmentsFingerprint,residualContext,initialConstructionMap:map,anchorRanking:chains.map((c:any)=>c.goalTaskId),chainsConsidered:chains,frontierTasksConsidered:frontierAudits,hardValidChildren:children,hardInvalidChildren:hardInvalid,futureInfeasibleChildren:futureInfeasible,duplicateAssignmentsFingerprints:duplicates,diagnostics:{mapBuildCount:1+children.length+futureInfeasible.length,futureFeasibilityEvaluationCount:children.length+futureInfeasible.length},stopReason:children.length?"CHILDREN_GENERATED":"NO_VALID_CHILDREN"};
+ const raw={parentPartialPlanId:args.parentPartialPlan.partialPlanId,parentAssignmentsFingerprint:args.parentPartialPlan.assignmentsFingerprint,residualContext,initialConstructionMap:map,canonicalAnchors,anchorRanking:canonicalAnchors.map((a:any)=>a.anchorTaskId),chainsConsidered:chains,frontierTasksConsidered:frontierAudits,hardValidChildren:children,hardInvalidChildren:hardInvalid,futureInfeasibleChildren:futureInfeasible,duplicateAssignmentsFingerprints:duplicates,transformationsExecuted,simulationsExecuted,validationsExecuted,searchSpacesBuilt,materializationAttempts,hardValidChildCount:children.length,hardInvalidChildCount:hardInvalid.length,futureInfeasibleChildCount:futureInfeasible.length,duplicateChildCount:duplicates.length,diagnostics:{mapBuildCount:1+children.length+futureInfeasible.length,futureFeasibilityEvaluationCount:children.length+futureInfeasible.length},stopReason:children.length?"CHILDREN_GENERATED":"NO_VALID_CHILDREN"};
  return deepFreeze({...raw,fingerprint:digest({parent:raw.parentAssignmentsFingerprint,children:children.map(c=>c.assignmentsFingerprint),invalid:hardInvalid,duplicates}),readOnly:true}) as any;
 }
