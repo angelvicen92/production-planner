@@ -16,6 +16,7 @@ export interface InitialConstructionFutureFeasibility {
  readonly zeroPlausibleWindowTaskIds:readonly number[]; readonly criticalResourceCount:number;
  readonly criticalSpaceCount:number; readonly unservedMainFlowGoalTaskIds:readonly number[];
  readonly pendingLoadMinutes:number; readonly futureFreedom:number; readonly priorityKey:readonly number[];
+ readonly residualProductiveTaskCount:number;
  readonly fingerprint:string; readonly readOnly:true;
 }
 export const INITIAL_CONSTRUCTION_CRITICAL_CHAIN_SEARCH_DEFAULTS=deepFreeze({maxSuspendedPartialPlans:24,maxTotalConstructivePartialPlans:160,maxCriticalChainsPerDecision:2,maxExecutableFrontierTasksPerChain:2,maxRetainedChainBranches:3,maxChildrenPerDecision:5,maxCrossCycleBacktracks:32,maxElapsedMs:90000,readOnly:true});
@@ -40,6 +41,6 @@ export function evaluateInitialConstructionPartialPlanFutureFeasibility(args:{cr
  const risky=negative.length>0||zeroWindows.length>0||criticalResourceCount>0||criticalSpaceCount>0||unservedMain.length>0;
  const status=hardImpossible?"INFEASIBLE":risky?"RISKY":"FEASIBLE"; const feasible=status!=="INFEASIBLE";
  const negativeMagnitude=negative.reduce((n,id)=>n+Math.abs(Number(chains.find(c=>c.goalTaskId===id)?.chainSlackMinutes??0)),0);
- const raw={status,feasible,minimumRemainingChainSlackMinutes:slacks.length?Math.min(...slacks):null,negativeSlackGoalTaskIds:negative,zeroFrontierGoalTaskIds:zeroFrontier,zeroPlausibleWindowTaskIds:zeroWindows,criticalResourceCount,criticalSpaceCount,unservedMainFlowGoalTaskIds:unservedMain,pendingLoadMinutes,futureFreedom,priorityKey:[status==="FEASIBLE"?0:status==="RISKY"?1:2,negative.length,negativeMagnitude,zeroFrontier.length,zeroWindows.length,criticalResourceCount+criticalSpaceCount,args.residualProductiveTaskCount??chains.length,-futureFreedom]};
+ const residualProductiveTaskCount=args.residualProductiveTaskCount??chains.length; const raw={status,feasible,minimumRemainingChainSlackMinutes:slacks.length?Math.min(...slacks):null,negativeSlackGoalTaskIds:negative,zeroFrontierGoalTaskIds:zeroFrontier,zeroPlausibleWindowTaskIds:zeroWindows,criticalResourceCount,criticalSpaceCount,unservedMainFlowGoalTaskIds:unservedMain,pendingLoadMinutes,futureFreedom,residualProductiveTaskCount,priorityKey:[status==="FEASIBLE"?0:status==="RISKY"?1:2,negative.length,negativeMagnitude,zeroFrontier.length,zeroWindows.length,criticalResourceCount+criticalSpaceCount,residualProductiveTaskCount,-futureFreedom]};
  return deepFreeze({...raw,fingerprint:createHash("sha256").update(stableStringify(raw)).digest("hex"),readOnly:true}) as InitialConstructionFutureFeasibility;
 }

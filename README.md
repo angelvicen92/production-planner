@@ -1805,3 +1805,13 @@ la sesión single-path. El benchmark clasifica las tareas productivas desde la
 clasificación canónica y publica IDs asignados, residuales y no productivos, en lugar de
 equiparar assignments totales con producción. No se afirma aquí un resultado Plan 27
 nuevo: debe documentarse únicamente desde una ejecución observada del snapshot.
+
+### ID 310 — ID 309 Acceptance Repair: Executable Incremental Expansion & Real Frontier Validation v1
+
+La revisión de ID 309 reprodujo que el helper existía sin su spec obligatorio y que el
+benchmark fallaba antes del primer hijo: construía un anchor sintético incompatible con
+Search Space y omitía `transitivePrerequisiteTaskIds`. También ignoraba los presupuestos
+top-level y publicaba contadores y validación final no ejecutados. ID 310 resuelve cada
+tarea de frontera contra los anchors canónicos del selector, mantiene separado goal,
+ejecución y cierre mínimo, agrega los contadores reales y ejecuta la validación final.
+No se documenta un resultado de Plan 27 hasta disponer de una ejecución observada.
