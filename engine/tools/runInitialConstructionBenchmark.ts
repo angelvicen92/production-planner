@@ -145,7 +145,8 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const ended = performance.now();
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   const classification = resolveInitialConstructionOperationalClassification({input:originInput,state:originOperationalState,planningMode:"INITIAL_CONSTRUCTION",provisionalAssignments:[]});
-  const canonicalProductiveIds = [...(originInput.tasks??[]).filter((task:any)=>classification.role(task).countsAsWork).map((task:any)=>Number(task.id))].sort((a,b)=>a-b);
+  const universe = classification.taskUniverse;
+  const canonicalProductiveIds = [...universe.constructiveTargetTaskIds];
   const canonicalProductiveSet = new Set(canonicalProductiveIds);
   const finalAssignments = [...(originOperationalState.planning??[]),...(session.combinedPartialPlan?.assignments??[])];
   const finalProductiveAssignedTaskIds = [...new Set(finalAssignments.map((a:any)=>Number(a.taskId)).filter((id:number)=>canonicalProductiveSet.has(id)))].sort((a,b)=>a-b);
@@ -185,7 +186,13 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     combinedDependencyPrecheckViolationCount: session.evidence?.combinedDependencyPrecheckViolationCount ?? 0,
     contradictoryDependencyBoundCount: session.evidence?.contradictoryDependencyBoundCount ?? 0,
     firstDependencyBoundAcceptedAnchorTaskId: session.evidence?.firstDependencyBoundAcceptedAnchorTaskId ?? null,
+    strictProductiveWorkTaskCount: universe.strictProductiveWorkTaskIds.length,
+    strictProductiveWorkTaskIds: universe.strictProductiveWorkTaskIds,
+    transportArrivalTargetTaskCount: universe.transportArrivalTaskIds.length,
+    transportArrivalTargetTaskIds: universe.transportArrivalTaskIds,
     totalCanonicalProductiveTaskCount: canonicalProductiveIds.length,
+    canonicalConstructiveTargetTaskIds: canonicalProductiveIds,
+    canonicalConstructiveTargetFingerprint: universe.constructiveTargetFingerprint,
     finalProductiveAssignedTaskIds,
     productiveAssignmentsReached: finalProductiveAssignedTaskIds.length,
     productiveTasksRemaining: residualProductiveTaskIds.length,
@@ -256,15 +263,15 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     failedTaskIds: repair.failedTaskIds ?? null,
     closureContractValid: repair.closureContractValid ?? null,
     nonPrerequisiteTaskIdsPassedAsClosure: repair.nonPrerequisiteTaskIdsPassedAsClosure ?? null,
-    protectedAssignmentIdsModified: repair.protectedAssignmentIdsModified ?? null,
+    protectedAssignmentIdsModified: repair.protectedAssignmentIdsModified ?? session.evidence?.protectedAssignmentIdsModified ?? [],
     outsideNeighborhoodAssignmentIdsModified: repair.outsideNeighborhoodAssignmentIdsModified ?? null,
-    duplicateTaskIds: repair.duplicateTaskIds ?? null,
+    duplicateTaskIds: repair.duplicateTaskIds ?? session.evidence?.duplicateTaskIds ?? [],
     removedAssignmentIds: repair.removedAssignmentIds ?? null,
     reinsertedAssignmentIds: repair.reinsertedAssignmentIds ?? null,
     modifiedNeighborhoodAssignmentIds: repair.modifiedNeighborhoodAssignmentIds ?? null,
-    lostProductiveTaskIds: repair.lostProductiveTaskIds ?? null,
+    lostProductiveTaskIds: repair.lostProductiveTaskIds ?? [],
     newlyAssignedProductiveTaskIds: repair.newlyAssignedProductiveTaskIds ?? null,
-    finalProductiveAssignedTaskIds: repair.finalProductiveAssignedTaskIds ?? null,
+    finalProductiveAssignedTaskIds: repair.finalProductiveAssignedTaskIds ?? finalProductiveAssignedTaskIds,
     commitsExecuted: repair.commitsExecuted ?? session.evidence?.commitsExecuted ?? 0,
     v4SeedUsed: repair.v4SeedUsed ?? session.evidence?.v4SeedUsed ?? false,
     canonicalContextSource: session.evidence?.canonicalContextSource ?? null,
