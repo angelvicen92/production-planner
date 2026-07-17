@@ -7,6 +7,7 @@ import { runInitialConstructionIterativeSession } from "../orc/active/runInitial
 import { buildInitialConstructionCanonicalContext } from "../orc/understanding/initialConstructionCanonicalContext";
 
 export interface InitialConstructionBenchmarkResult {
+  [key: string]: unknown;
   exclusiveConstructiveRuntimeMs: number;
   assignmentsReached: number;
   cycles: number;
@@ -137,11 +138,14 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const started = performance.now();
   const stage1 = runInitialConstructionStage1({ originInput, originOperationalState, createdAt: "benchmark" });
   const canonical = buildInitialConstructionCanonicalContext({ input: originInput, stage1 });
-  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy: "critical_chain_retained_alternatives" });
-  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy: "critical_chain_retained_alternatives" });
+  const constructionSearchStrategy = reasoningBudget.constructionSearchStrategy === "critical_chain_retained_alternatives" ? "critical_chain_retained_alternatives" : "single_path";
+  const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy });
+  const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy });
   const ended = performance.now();
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   return {
+    ...(session.evidence ?? {}),
+    constructionSearchStrategy,
     exclusiveConstructiveRuntimeMs: Math.round(ended - started),
     assignmentsReached: session.evidence?.finalCombinedAssignmentCount ?? stage2.selectedAssignmentCount ?? 0,
     cycles: session.evidence?.acceptedCycleCount ?? 0,

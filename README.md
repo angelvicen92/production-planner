@@ -1771,3 +1771,15 @@ Benchmark status for the active repository state: no plan-27 snapshot artifact i
 ### ID 307: cadenas críticas en INITIAL_CONSTRUCTION
 
 La implementación anterior calculaba cierres de dependencias, pero ordenaba tareas de forma individual: no propagaba explícitamente la criticidad *downstream* hacia los prerrequisitos, la preferencia de tareas feeder estaba invertida y las alternativas hermanas se descartaban. ID 307 incorpora un mapa inmutable de cadenas críticas, slack de cadena, frontera ejecutable y evidencia de criticidad heredada; además, el benchmark selecciona de forma explícita la estrategia `critical_chain_retained_alternatives`, mientras el comportamiento público conserva `single_path` por defecto. La estrategia de cadenas no invoca la reparación terminal.
+
+### ID 308 — ID 307 Acceptance Repair: Executable Retained Alternatives & Cross-Cycle Backtracking v1
+
+ID 307 implementó el modelo de cadenas y corrigió la prioridad de feeders, pero dejó el
+evaluador de viabilidad futura desconectado: no conservaba alternativas, no hacía
+backtracking entre ciclos, faltaba el test dedicado y el benchmark no llegó a ejecutarse.
+
+ID 308 conecta la evaluación trivaluada (`FEASIBLE`, `RISKY`, `INFEASIBLE`) con las
+alternativas constructivas de Stage 2, conserva raíces hard-valid distintas y permite que
+la sesión abandone un camino sin salida y reconstruya mapa y ranking desde la siguiente
+alternativa suspendida. La estrategia permanece read-only: no usa V4, no hace commits y
+no invoca reparación terminal. El modo por defecto continúa siendo `single_path`.
