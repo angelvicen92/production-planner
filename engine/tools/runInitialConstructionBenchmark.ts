@@ -5,6 +5,7 @@ import { runInitialConstructionStage1 } from "../orc/active/runInitialConstructi
 import { runInitialConstructionStage2FirstPartialPlan } from "../orc/active/runInitialConstructionStage2FirstPartialPlan";
 import { runInitialConstructionIterativeSession } from "../orc/active/runInitialConstructionIterativeSession";
 import { buildInitialConstructionCanonicalContext } from "../orc/understanding/initialConstructionCanonicalContext";
+import { resolveInitialConstructionOperationalClassification } from "../orc/understanding/initialConstructionMap";
 
 export interface InitialConstructionBenchmarkResult {
   [key: string]: unknown;
@@ -143,6 +144,13 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy });
   const ended = performance.now();
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
+  const classification = resolveInitialConstructionOperationalClassification({input:originInput,state:originOperationalState,planningMode:"INITIAL_CONSTRUCTION",provisionalAssignments:[]});
+  const canonicalProductiveIds = [...(originInput.tasks??[]).filter((task:any)=>classification.role(task).countsAsWork).map((task:any)=>Number(task.id))].sort((a,b)=>a-b);
+  const canonicalProductiveSet = new Set(canonicalProductiveIds);
+  const finalAssignments = [...(originOperationalState.planning??[]),...(session.combinedPartialPlan?.assignments??[])];
+  const finalProductiveAssignedTaskIds = [...new Set(finalAssignments.map((a:any)=>Number(a.taskId)).filter((id:number)=>canonicalProductiveSet.has(id)))].sort((a,b)=>a-b);
+  const residualProductiveTaskIds = canonicalProductiveIds.filter(id=>!finalProductiveAssignedTaskIds.includes(id));
+  const nonProductiveAssignedTaskIds = [...new Set(finalAssignments.map((a:any)=>Number(a.taskId)).filter((id:number)=>!canonicalProductiveSet.has(id)))].sort((a,b)=>a-b);
   return {
     ...(session.evidence ?? {}),
     constructionSearchStrategy,
@@ -177,8 +185,12 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     combinedDependencyPrecheckViolationCount: session.evidence?.combinedDependencyPrecheckViolationCount ?? 0,
     contradictoryDependencyBoundCount: session.evidence?.contradictoryDependencyBoundCount ?? 0,
     firstDependencyBoundAcceptedAnchorTaskId: session.evidence?.firstDependencyBoundAcceptedAnchorTaskId ?? null,
-    productiveAssignmentsReached: session.evidence?.finalCombinedAssignmentCount ?? stage2.selectedAssignmentCount ?? 0,
-    productiveTasksRemaining: session.evidence?.productiveTasksRemaining ?? 0,
+    totalCanonicalProductiveTaskCount: canonicalProductiveIds.length,
+    finalProductiveAssignedTaskIds,
+    productiveAssignmentsReached: finalProductiveAssignedTaskIds.length,
+    productiveTasksRemaining: residualProductiveTaskIds.length,
+    residualProductiveTaskIds,
+    nonProductiveAssignedTaskIds,
     repairExecuted: repair.repairExecuted ?? repair.executed ?? false,
     repairRoundCount: repair.repairRoundCount ?? 0,
     repairAttemptCount: repair.repairAttemptCount ?? 0,

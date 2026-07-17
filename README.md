@@ -1783,3 +1783,25 @@ alternativas constructivas de Stage 2, conserva raíces hard-valid distintas y p
 la sesión abandone un camino sin salida y reconstruya mapa y ranking desde la siguiente
 alternativa suspendida. La estrategia permanece read-only: no usa V4, no hace commits y
 no invoca reparación terminal. El modo por defecto continúa siendo `single_path`.
+
+La ejecución observada de ID 308 demostró que ese contrato no se alcanzó: Stage 2
+entregó una sola raíz, no se retuvieron ni suspendieron alternativas, no hubo backtracking
+y sólo se hizo una evaluación de viabilidad futura. La implementación era un wrapper de
+la sesión greedy completa, agotó `MAX_ELAPSED_MS` en 91–92 segundos y sus métricas
+productivas se derivaban incorrectamente del total combinado de assignments.
+
+### ID 309 — Incremental Critical-Chain Frontier Executor & Honest Productive Evidence v1
+
+La estrategia retenida expande ahora exactamente un `PartialPlan` por transición. Para
+cada goal conserva la intención de cadena crítica, elige una tarea de su frontera
+ejecutable y materializa únicamente su cierre mínimo. Cada hijo atraviesa Search Space,
+Transformation, Simulation y Validation; los hermanos hard-valid se conservan en una
+frontera suspendida ordenada y se reanudan cuando el camino activo llega a un dead end.
+Mapa, ranking y Future Feasibility se reconstruyen desde los assignments de cada hijo.
+
+La evidencia distingue raíces, hijos generados, hermanos retenidos, expansiones,
+suspensiones, podas, dead ends y backtracks; además prueba que la estrategia no delega a
+la sesión single-path. El benchmark clasifica las tareas productivas desde la
+clasificación canónica y publica IDs asignados, residuales y no productivos, en lugar de
+equiparar assignments totales con producción. No se afirma aquí un resultado Plan 27
+nuevo: debe documentarse únicamente desde una ejecución observada del snapshot.
