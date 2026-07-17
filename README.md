@@ -1814,4 +1814,26 @@ Search Space y omitía `transitivePrerequisiteTaskIds`. También ignoraba los pr
 top-level y publicaba contadores y validación final no ejecutados. ID 310 resuelve cada
 tarea de frontera contra los anchors canónicos del selector, mantiene separado goal,
 ejecución y cierre mínimo, agrega los contadores reales y ejecuta la validación final.
-No se documenta un resultado de Plan 27 hasta disponer de una ejecución observada.
+El TypeError quedó corregido y los tests sintéticos quedaron superados, pero la ejecución
+observada de Plan 27 produjo sólo una raíz y cero hijos: las fronteras 210 y 220 no
+tenían anchor canónico, el target usado era 155 y el presupuesto 160 era
+matemáticamente insuficiente. No existe un artefacto aceptado de ID 310.
+
+### ID 311 — Canonical Initial-Construction Universe, Support Anchors & Feasible Frontier Budget v1
+
+Initial Construction dispone ahora de un resolver canónico, determinista y read-only
+que separa trabajo productivo estricto, arrivals, departures, placeholders sintéticos,
+target, soporte transitivo y universo ejecutable. El alias histórico `productiveTasks`
+representa exclusivamente el target constructivo de esta fase; el flujo principal
+continúa calculándose sólo con trabajo productivo estricto.
+
+El selector admite target y soporte como anchors por task ID, publica los goals que cada
+frontera alimenta y hereda la prioridad de la cadena más crítica. La expansión conserva
+separados goal y execution task, materializa únicamente la frontera y exporta el
+diagnóstico de anchors ausentes y de fronteras arrival/support.
+
+La búsqueda retenida separa los límites de PartialPlans expandidos (256) y generados
+(768), conserva el alias legado de generación y calcula el lower bound del camino activo
+sin ampliar silenciosamente presupuestos explícitos. Los tests observados del universo,
+mapa, selector, expansión y sesión retenida son deterministas y quedan superados. No se
+documenta un resultado nuevo de Plan 27 sin ejecutar su snapshot.

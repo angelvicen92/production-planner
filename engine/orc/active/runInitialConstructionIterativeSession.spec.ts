@@ -23,6 +23,7 @@ test("retained-alternatives budget gives explicit top-level values precedence",(
  const stage2=runInitialConstructionStage2FirstPartialPlan({originInput:input,originOperationalState:state,stage1,createdAt:"fixed"});
  const requested={maxElapsedMs:1234,maxSuspendedPartialPlans:7,maxTotalConstructivePartialPlans:11,maxCriticalChainsPerDecision:1,maxExecutableFrontierTasksPerChain:1,maxRetainedChainBranches:2,maxChildrenPerDecision:3,maxCrossCycleBacktracks:4};
  const r:any=runInitialConstructionIterativeSession({originInput:input,originOperationalState:state,stage1,stage2,reasoningBudget:{...requested,criticalChainRetainedAlternatives:{maxElapsedMs:9999,maxChildrenPerDecision:99}} as any,createdAt:"fixed",constructionSearchStrategy:"critical_chain_retained_alternatives"});
- assert.deepEqual(r.evidence.resolvedRetainedAlternativesBudget,requested);
- assert.deepEqual(r.budget,requested);
+ const expected={...requested,maxExpandedPartialPlans:256,maxGeneratedPartialPlans:11};
+ assert.deepEqual(r.evidence.resolvedRetainedAlternativesBudget,expected);
+ assert.deepEqual(r.budget,expected);
 });
