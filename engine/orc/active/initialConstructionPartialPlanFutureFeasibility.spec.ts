@@ -4,7 +4,7 @@ import { evaluateInitialConstructionPartialPlanFutureFeasibility as evaluate } f
 
 const chain=(goalTaskId:number, extra:any={})=>({goalTaskId,chainSlackMinutes:30,topologicalPendingChainTaskIds:[goalTaskId],executableFrontierTaskIds:[goalTaskId],pendingChainDurationMinutes:10,...extra});
 
-test("negative chain slack is infeasible",()=>assert.equal(evaluate({criticalChains:[chain(1,{chainSlackMinutes:-1})]}).status,"INFEASIBLE"));
+test("negative projected chain slack is risky, not hard infeasible",()=>assert.equal(evaluate({criticalChains:[chain(1,{chainSlackMinutes:-1})]}).status,"RISKY"));
 test("a pending chain without an executable frontier is infeasible",()=>assert.equal(evaluate({criticalChains:[chain(1,{executableFrontierTaskIds:[]})]}).status,"INFEASIBLE"));
 test("moderate pressure with remaining freedom is risky",()=>assert.equal(evaluate({criticalChains:[chain(1,{resourcePressure:1})]}).status,"RISKY"));
 test("multiple viable chains are feasible",()=>assert.equal(evaluate({criticalChains:[chain(2),chain(1)]}).status,"FEASIBLE"));
