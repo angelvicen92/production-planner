@@ -1863,3 +1863,37 @@ válidas retenidas, aplicar widening determinista de cadenas y fronteras, y sele
 siempre el mejor PartialPlan válido construido en lugar de volver automáticamente a la
 raíz. La evidencia de sesión exporta la raíz real, el comparador de mejor progreso,
 contadores de widening, agotamientos diferenciados y `falseDeadEndCount`.
+
+#### Observación posterior de ID 312 en Plan 27
+
+La medición posterior de ID 312 en Plan 27 dejó evidencia distinta del resultado esperado:
+`target=174`, trabajo productivo estricto `155`, arrivals `19` y fingerprint canónico
+correcto, pero sólo alcanzó 91 y 93 tareas asignadas en dos ejecuciones, con 81 y 83
+residuales, alrededor de 91 segundos de runtime, validación final `VALID` y un prefijo
+determinista de 91 decisiones. La diferencia final entre ejecuciones provino del corte
+temporal, no de una divergencia temprana del ranking.
+
+El hot path observado siguió siendo demasiado repetitivo: 174 cadenas críticas en raíz,
+pero sólo 19 fronteras ejecutables únicas; 2.802–2.918 materializaciones; más de 10.000
+branch evaluations; y miles de rechazos publicados como closure-incomplete. La
+no-regresión y el contrato de aceptación quedaron fallidos porque el motor materializaba
+repetidamente la misma tarea ejecutable para cada goal soportado.
+
+### ID 313 — Shared Critical-Frontier Aggregation & Single-Evaluation Expansion v1
+
+ID 313 cambia la unidad de expansión de Initial Construction retenido de apariciones de
+cadena crítica a acciones ejecutables únicas por `executionTaskId` dentro de cada
+PartialPlan padre. Las cadenas críticas siguen siendo la fuente cognitiva del portfolio,
+pero sus fronteras se agrupan antes de materializar: el candidato conserva goal primario,
+goals soportados, fingerprints/ranks de cadenas, criticidad heredada, fanout y presión
+máxima observada.
+
+La expansión construye un portfolio único, aplica widening sobre tareas ejecutables
+únicas, materializa cada `executionTaskId` como máximo una vez por padre, deduplica el
+fingerprint combinado antes de Transformation/Simulation/Validation/mapa hijo, y
+reconstruye mapa y Future Feasibility después de cada hijo aceptado. La evidencia separa
+rechazos de colocación del anchor, fallo real de cierre tras anchor válido, integridad de
+cierre, precheck de dependencias, hard validation y requisitos no soportados. También
+exporta conteos de ocurrencias de frontera, tareas únicas, duplicados evitados,
+portfolio fingerprint, tareas únicas escaneadas, materializaciones únicas y goals
+soportados por frontera materializada.

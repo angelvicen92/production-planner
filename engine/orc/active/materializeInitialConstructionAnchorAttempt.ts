@@ -99,6 +99,12 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
     resourceOverlapConflictCount += Number(attempt.resourceOverlapConflictCount ?? 0);
     if (attempt.budgetExhausted === true) assignmentSearchBudgetExhaustedCount += 1;
   }
+  const anchorPlacementRejectedBranchCount = (built?.branches ?? []).filter((branch: any) => branch.anchorPlacementEvidence?.feasible === false).length;
+  const closureSearchFailedBranchCount = (built?.branches ?? []).filter((branch: any) => branch.anchorPlacementEvidence?.feasible === true && branch.status === "closure-incomplete").length;
+  const closureAssignmentIntegrityRejectedCount = attempts.filter((attempt: any) => attempt.rejectionReason === "CLOSURE_ASSIGNMENT_INTEGRITY_FAILED").length;
+  const dependencyPrecheckRejectedBranchCount = attempts.filter((attempt: any) => attempt.rejectionReason === "DEPENDENCY_CONFLICT").length;
+  const hardValidationRejectedBranchCount = attempts.filter((attempt: any) => attempt.rejectionReason === "hard-invalid" || attempt.validation?.result === "INVALID").length;
+  const unsupportedBranchCount = (built?.branches ?? []).filter((branch: any) => branch.status === "unsupported").length;
   const diagnostics = {
     anchorTaskId,
     searchSpaceFound,
@@ -130,6 +136,7 @@ function buildAttemptDiagnostics(anchorTaskId: number, stage: any, built: any, a
     causalConflictEvidenceIncompleteBranchCount,
     causalConflictEvidenceFingerprint: createHash("sha256").update(stableStringify(causalFingerprints.sort())).digest("hex"),
     unsupportedRequirementCodes: [...unsupportedRequirementCodes].sort(),
+    anchorPlacementRejectedBranchCount, closureSearchFailedBranchCount, closureAssignmentIntegrityRejectedCount, dependencyPrecheckRejectedBranchCount, hardValidationRejectedBranchCount,
     diagnosticsComplete: missing.length === 0 && (built?.branches ?? []).every((branch: any) => !branch.rejectionReason || branch.anchorPlacementEvidence || branch.searchEvidence || (branch.blockers ?? []).length > 0),
     missingDiagnosticFields: missing.sort(),
     fingerprint: "",
