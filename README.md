@@ -1897,3 +1897,37 @@ cierre, precheck de dependencias, hard validation y requisitos no soportados. Ta
 exporta conteos de ocurrencias de frontera, tareas únicas, duplicados evitados,
 portfolio fingerprint, tareas únicas escaneadas, materializaciones únicas y goals
 soportados por frontera materializada.
+
+#### Resultado observado corregido de ID 313 en Plan 27
+
+La observación determinista posterior de ID 313 confirmó la agregación compartida correcta
+por `executionTaskId` y dejó `repeatedFrontierMaterializationCount = 0`, con 2.223
+materializaciones duplicadas evitadas. Sin embargo, el resultado observado fue insuficiente:
+60 tareas asignadas, 114 residuales, 200 PartialPlans expandidos, 569 hijos generados,
+353 podas por anchura, seis backtracks, runtime de 83–86 segundos y Validation final
+`VALID`. El contrato y la no-regresión quedaron fallidos, y el artefacto no exportó las
+métricas raíz exigidas por el contrato.
+
+### ID 314 — Bounded Best-K Suspended Frontier & Nearest Relevant Backtracking v1
+
+ID 314 reemplaza el rechazo ciego por capacidad en la frontera suspendida de
+`critical_chain_retained_alternatives` por una frontera Best-K determinista. Cada sibling
+se ofrece contra las alternativas suspendidas, se deduplica por fingerprint de
+asignaciones, se ordena con el comparador canónico existente y sólo se conserva si queda
+entre las mejores `K`; cuando la frontera está llena, una alternativa superior expulsa a
+la peor retenida y una peor se rechaza explícitamente como
+`WORSE_THAN_RETAINED_FRONTIER`.
+
+La reanudación tras dead end selecciona primero por calidad operativa canónica y sólo usa
+localidad entre alternativas equivalentes: mayor prefijo común con el camino fallido,
+menor distancia de backtracking, mayor profundidad y fingerprint determinista. La sesión
+exporta Evidence de ofertas, admisiones, reemplazos, expulsiones, rechazos por peor
+ranking, duplicados, fingerprints de frontera, auditoría de no expulsar la mejor
+alternativa, métricas de selección de backtracking y métricas raíz capturadas desde la
+primera expansión sin recalcular el portfolio.
+
+Resultados observados en tests de unidad: reemplazo con frontera llena, rechazo correcto,
+no rechazo ciego, invariancia ante orden de llegada, backtracking local, prioridad de la
+mejor alternativa global y retención de alternativas posteriores mejores en trayectorias
+largas quedan cubiertos de forma determinista. No se documenta aquí un nuevo resultado de
+Plan 27 end-to-end sin ejecutar su snapshot.

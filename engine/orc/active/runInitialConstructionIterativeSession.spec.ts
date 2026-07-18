@@ -27,3 +27,15 @@ test("retained-alternatives budget gives explicit top-level values precedence",(
  assert.deepEqual(r.evidence.resolvedRetainedAlternativesBudget,expected);
  assert.deepEqual(r.budget,expected);
 });
+
+test("retained alternatives session exports Best-K frontier and backtrack evidence",()=>{
+ const stage2=runInitialConstructionStage2FirstPartialPlan({originInput:input,originOperationalState:state,stage1,createdAt:"fixed"});
+ const r:any=runInitialConstructionIterativeSession({originInput:input,originOperationalState:state,stage1,stage2,reasoningBudget:{maxSuspendedPartialPlans:2,maxExpandedPartialPlans:4,maxGeneratedPartialPlans:12,maxChildrenPerDecision:3,maxCrossCycleBacktracks:4} as any,createdAt:"fixed",constructionSearchStrategy:"critical_chain_retained_alternatives"});
+ assert.equal(r.evidence.blindSuspendedFrontierRejectionCount,0);
+ assert.equal(r.evidence.bestRankedSuspendedAlternativeEvictedCount,0);
+ assert.equal(r.evidence.frontierAdmissionOrderInvariant,true);
+ assert.ok("suspendedFrontierOfferCount" in r.evidence);
+ assert.ok("backtrackSelectionFingerprint" in r.evidence);
+ assert.ok("rootChainFrontierOccurrenceCount" in r.evidence);
+ assert.equal(r.evidence.backtrackSelectionCount,r.evidence.crossCycleBacktrackCount);
+});
