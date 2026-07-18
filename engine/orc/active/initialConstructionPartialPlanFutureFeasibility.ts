@@ -19,7 +19,7 @@ export interface InitialConstructionFutureFeasibility {
  readonly residualProductiveTaskCount:number;
  readonly fingerprint:string; readonly readOnly:true;
 }
-export const INITIAL_CONSTRUCTION_CRITICAL_CHAIN_SEARCH_DEFAULTS=deepFreeze({maxSuspendedPartialPlans:24,maxExpandedPartialPlans:256,maxGeneratedPartialPlans:768,maxTotalConstructivePartialPlans:768,maxCriticalChainsPerDecision:2,maxExecutableFrontierTasksPerChain:2,maxRetainedChainBranches:3,maxChildrenPerDecision:5,maxCrossCycleBacktracks:32,maxElapsedMs:90000,readOnly:true});
+export const INITIAL_CONSTRUCTION_CRITICAL_CHAIN_SEARCH_DEFAULTS=deepFreeze({maxSuspendedPartialPlans:24,maxExpandedPartialPlans:256,maxGeneratedPartialPlans:768,maxTotalConstructivePartialPlans:768,maxCriticalChainsPerDecision:2,maxExecutableFrontierTasksPerChain:2,maxRetainedChainBranches:3,maxBranchEvaluationsPerFrontierTask:48,maxRetainedValidBranchesPerFrontierTask:3,initialCriticalChainBatchSize:2,maxCriticalChainRanksScannedPerExpansion:32,initialFrontierTaskBatchSize:2,maxFrontierTasksScannedPerChain:8,maxChildrenPerDecision:5,maxCrossCycleBacktracks:32,maxElapsedMs:90000,readOnly:true});
 
 /** A deterministic, structured (not weighted) feasibility projection used to
  * compare siblings and to prune a branch as soon as it destroys a chain. */

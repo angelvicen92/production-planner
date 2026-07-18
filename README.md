@@ -1837,3 +1837,29 @@ La búsqueda retenida separa los límites de PartialPlans expandidos (256) y gen
 sin ampliar silenciosamente presupuestos explícitos. Los tests observados del universo,
 mapa, selector, expansión y sesión retenida son deterministas y quedan superados. No se
 documenta un resultado nuevo de Plan 27 sin ejecutar su snapshot.
+
+### ID 312 — Retained Frontier Acceptance: Real Root, Progressive Widening & Best PartialPlan Selection v1
+
+La revisión de ID 311 dejó correcto el universo constructivo observado de Plan 27:
+`target=174`, trabajo productivo estricto `155`, arrivals `19` y fingerprint
+`509eb88e48a7403a09fe722edcd2b5dc6c0c1e42b79ce998663fbfc8ba738245`. También se
+observó que la búsqueda retenida sí generaba alternativas y backtracks
+(`constructivePartialPlanCount=6`, `expandedPartialPlanCount=6`,
+`generatedAlternativeCount=5`, `retainedAlternativeCount=3`,
+`suspendedFrontierPeak=3`, `crossCycleBacktrackCount=3`, `searchSpacesBuilt=20`,
+`materializationAttempts=20`) con validación final `VALID`.
+
+Ese artefacto no superó el contrato ni la no-regresión: seleccionaba erróneamente la
+raíz vacía porque su Future Feasibility se evaluaba con cadenas artificialmente vacías y
+residual cero. Por eso `productiveAssignmentsReached = 0` no representaba el mejor nodo
+realmente generado. Además, el truncamiento fijo a dos cadenas, dos fronteras y tres
+branches mezclaba cuota de retención con presupuesto de exploración y podía producir
+falsos dead ends.
+
+ID 312 corrige la estrategia `critical_chain_retained_alternatives` para construir la
+raíz exclusivamente desde el estado operativo protegido, recalcular mapa, residual y
+Future Feasibility reales, separar evaluaciones brutas de branches de alternativas
+válidas retenidas, aplicar widening determinista de cadenas y fronteras, y seleccionar
+siempre el mejor PartialPlan válido construido en lugar de volver automáticamente a la
+raíz. La evidencia de sesión exporta la raíz real, el comparador de mejor progreso,
+contadores de widening, agotamientos diferenciados y `falseDeadEndCount`.
