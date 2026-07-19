@@ -1,42 +1,396 @@
 #!/usr/bin/env bash
-set -u
+set -uo pipefail
+set +H
+
 OUTPUT="plan-27-orc-causal-checkpoint-reopen-v1.json"
 RUN_A="/tmp/plan-27-id318-run-a.json"
 RUN_B="/tmp/plan-27-id318-run-b.json"
 TMP_OUTPUT="/tmp/plan-27-id318-consolidated.json"
+
 rm -f "$OUTPUT" "$RUN_A" "$RUN_B" "$TMP_OUTPUT"
 trap 'rm -f "$RUN_A" "$RUN_B" "$TMP_OUTPUT"' EXIT
 
 failures=0
 checks_json='[]'
-add_check(){ local name="$1" status="$2"; checks_json=$(node -e 'const a=JSON.parse(process.argv[1]);a.push({name:process.argv[2],passed:process.argv[3]==="pass"});console.log(JSON.stringify(a))' "$checks_json" "$name" "$status"); }
-run_check(){ local name="$1"; shift; if "$@"; then add_check "$name" pass; else add_check "$name" fail; failures=$((failures+1)); fi }
 
-run_check "npm run check" npm run check
-run_check "id318 focal tests" npx tsx --test engine/orc/active/initialConstructionCausalDecisionCheckpoint.spec.ts engine/orc/active/conflictDirectedInitialConstructionBackjump.spec.ts
+add_check() {
+  local name="$1"
+  local status="$2"
+  checks_json=$(
+    node -e '
+      const checks = JSON.parse(process.argv[1]);
+      checks.push({
+        name: process.argv[2],
+        passed: process.argv[3] === "pass"
+      });
+      console.log(JSON.stringify(checks));
+    ' "$checks_json" "$name" "$status"
+  )
+}
+
+run_check() {
+  local name="$1"
+  shift
+  if "$@"; then
+    add_check "$name" pass
+  else
+    add_check "$name" fail
+    failures=$((failures + 1))
+  fi
+}
 
 SNAPSHOT="${PLAN27_SNAPSHOT:-${1:-local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json}}"
-BUDGET='{"constructionSearchStrategy":"critical_chain_retained_alternatives","criticalChainRetainedAlternatives":{"maxSuspendedPartialPlans":16,"maxExpandedPartialPlans":200,"maxGeneratedPartialPlans":600,"maxCrossCycleBacktracks":32,"maxElapsedMs":90000}}'
-if [[ -n "$SNAPSHOT" && -f "$SNAPSHOT" ]]; then
-  run_check "benchmark run A" npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_A"
-  run_check "benchmark run B" npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_B"
+
+# Presupuesto exacto utilizado por ID 317.
+BUDGET='{"constructionSearchStrategy":"critical_chain_retained_alternatives","maxElapsedMs":90000,"maxExpandedPartialPlans":200,"maxGeneratedPartialPlans":600,"maxSuspendedPartialPlans":16,"initialExecutableFrontierBatchSize":4,"maxExecutableFrontierTasksScannedPerExpansion":32,"maxBranchEvaluationsPerFrontierTask":48,"maxRetainedValidBranchesPerFrontierTask":3,"maxChildrenPerDecision":3,"maxCrossCycleBacktracks":32,"initialTemporalCandidateBatchSize":8,"maxTemporalCandidatesPerAnchor":24,"maxBranchEvaluationsPerAnchor":48}'
+
+run_check "npm run check" npm run check
+
+TEST_FILES=(
+  engine/orc/understanding/initialConstructionTaskUniverse.spec.ts
+  engine/orc/understanding/initialConstructionMap.spec.ts
+  engine/orc/understanding/initialConstructionExecutableFrontierPortfolio.spec.ts
+  engine/orc/see/initialConstructionAnchorSelector.spec.ts
+  engine/orc/see/initialConstructionBranchBuilder.spec.ts
+  engine/orc/active/initialConstructionAnchorBlockerClassifier.spec.ts
+  engine/orc/active/materializeInitialConstructionAnchorAttempt.spec.ts
+  engine/orc/active/expandInitialConstructionPartialPlanOnce.spec.ts
+  engine/orc/active/initialConstructionPartialPlanFutureFeasibility.spec.ts
+  engine/orc/active/initialConstructionSuspendedFrontier.spec.ts
+  engine/orc/active/conflictDirectedInitialConstructionBackjump.spec.ts
+  engine/orc/active/initialConstructionCausalDecisionCheckpoint.spec.ts
+  engine/orc/active/runInitialConstructionIterativeSession.spec.ts
+  engine/orc/transformation/transformationEngine.spec.ts
+  engine/orc/simulation/simulationEngine.spec.ts
+  engine/orc/validation/validationEngine.spec.ts
+  engine/tools/runInitialConstructionBenchmark.spec.ts
+)
+
+missing_test=0
+for file in "${TEST_FILES[@]}"; do
+  if [[ ! -f "$file" ]]; then
+    echo "ERROR: falta el test esperado: $file" >&2
+    missing_test=1
+  fi
+done
+
+if [[ "$missing_test" -eq 0 ]]; then
+  run_check "ORC focal regression suite" \
+    npx tsx --test --test-reporter=dot "${TEST_FILES[@]}"
 else
-  echo "PLAN27_SNAPSHOT or first argument must point to the Plan 27 snapshot" >&2
-  echo '{}' > "$RUN_A"; echo '{}' > "$RUN_B"; failures=$((failures+1)); add_check "benchmark inputs" fail
+  add_check "ORC focal regression suite" fail
+  failures=$((failures + 1))
+fi
+
+if [[ -f "$SNAPSHOT" ]]; then
+  run_check "benchmark run A" \
+    npx tsx engine/tools/runInitialConstructionBenchmark.ts \
+      "$SNAPSHOT" \
+      "$BUDGET" \
+      > "$RUN_A"
+
+  run_check "benchmark run B" \
+    npx tsx engine/tools/runInitialConstructionBenchmark.ts \
+      "$SNAPSHOT" \
+      "$BUDGET" \
+      > "$RUN_B"
+else
+  echo "ERROR: no existe el snapshot de Plan 27: $SNAPSHOT" >&2
+  echo '{}' > "$RUN_A"
+  echo '{}' > "$RUN_B"
+  add_check "benchmark inputs" fail
+  failures=$((failures + 1))
 fi
 
 node - "$RUN_A" "$RUN_B" "$TMP_OUTPUT" "$checks_json" <<'NODE'
-const fs=require('node:fs'); const [aPath,bPath,outPath,checksRaw]=process.argv.slice(2);
-const read=p=>{try{return JSON.parse(fs.readFileSync(p,'utf8')||'{}')}catch{return {}}};
-const a=read(aPath), b=read(bPath); const checks=JSON.parse(checksRaw);
-const budgetPassed = Number(a.totalExpansionWorkUnitCount??a.expandedPartialPlanCount??Infinity)<=200 && Number(a.generatedAlternativeCount??Infinity)<=600 && Number(a.suspendedFrontierPeak??Infinity)<=16 && Number(a.crossCycleBacktrackCount??Infinity)<=32 && Number(a.exclusiveConstructiveRuntimeMs??Infinity)<90000;
-const deterministic = JSON.stringify({fp:a.sessionFingerprint,sel:a.backtrackSelectionFingerprint,causal:a.causalEvidenceFingerprint})===JSON.stringify({fp:b.sessionFingerprint,sel:b.backtrackSelectionFingerprint,causal:b.causalEvidenceFingerprint});
-const id317=read('plan-27-orc-window-causal-attribution-v1.json');
-const contracts={deterministic,budgetPassed,checkpointResolved:Number(a.causalDecisionCheckpointResolvedCount??0)>0,causalAlternativeObserved:Number(a.existingCausalSiblingRecoveredCount??0)+Number(a.evictedCausalSiblingRecoveredCount??0)+Number(a.causalCheckpointReopenAcceptedCount??0)>0,totalExpansionWorkUnitCount:a.totalExpansionWorkUnitCount??null,expandedPartialPlanCount:a.expandedPartialPlanCount??null,generatedAlternativeCount:a.generatedAlternativeCount??null,suspendedFrontierPeak:a.suspendedFrontierPeak??null,crossCycleBacktrackCount:a.crossCycleBacktrackCount??null,exclusiveConstructiveRuntimeMs:a.exclusiveConstructiveRuntimeMs??null,productiveAssignmentsReached:a.productiveAssignmentsReached??null,productiveTasksRemaining:a.productiveTasksRemaining??null,baselineID317:{productiveAssignmentsReached:id317.productiveAssignmentsReached??null,productiveTasksRemaining:id317.productiveTasksRemaining??null,crossCycleBacktrackCount:id317.crossCycleBacktrackCount??null}};
-fs.writeFileSync(outPath, JSON.stringify({id:318,artifact:'plan-27-orc-causal-checkpoint-reopen-v1',checks,contracts,runA:a,runB:b},null,2));
-if(!deterministic||!budgetPassed||!contracts.checkpointResolved) process.exitCode=2;
+const fs = require("node:fs");
+
+const [runAPath, runBPath, outputPath, checksRaw] =
+  process.argv.slice(2);
+
+const read = path => {
+  try {
+    return JSON.parse(fs.readFileSync(path, "utf8") || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const a = read(runAPath);
+const b = read(runBPath);
+const checks = JSON.parse(checksRaw);
+
+const id317Artifact = read(
+  "plan-27-orc-window-causal-attribution-v1.json"
+);
+const id317 =
+  Array.isArray(id317Artifact.runs) && id317Artifact.runs.length
+    ? id317Artifact.runs[0]
+    : {};
+
+const stableEqual = (left, right) =>
+  JSON.stringify(left) === JSON.stringify(right);
+
+const budgetFields = [
+  "maxElapsedMs",
+  "maxSuspendedPartialPlans",
+  "maxExpandedPartialPlans",
+  "maxGeneratedPartialPlans",
+  "maxTotalConstructivePartialPlans",
+  "maxCriticalChainsPerDecision",
+  "maxExecutableFrontierTasksPerChain",
+  "maxRetainedChainBranches",
+  "maxChildrenPerDecision",
+  "maxCrossCycleBacktracks"
+];
+
+const normalizedBudget = run =>
+  Object.fromEntries(
+    budgetFields.map(key => [
+      key,
+      run?.resolvedRetainedAlternativesBudget?.[key] ?? null
+    ])
+  );
+
+const budgetA = normalizedBudget(a);
+const budgetB = normalizedBudget(b);
+const budget317 = normalizedBudget(id317);
+
+const sameBudgetAsID317 =
+  stableEqual(budgetA, budget317) &&
+  stableEqual(budgetB, budget317) &&
+  budgetA.maxChildrenPerDecision === 3 &&
+  budgetB.maxChildrenPerDecision === 3;
+
+const deterministic =
+  a.productiveAssignmentsReached ===
+    b.productiveAssignmentsReached &&
+  a.productiveTasksRemaining === b.productiveTasksRemaining &&
+  a.expandedPartialPlanCount === b.expandedPartialPlanCount &&
+  a.totalExpansionWorkUnitCount ===
+    b.totalExpansionWorkUnitCount &&
+  a.generatedAlternativeCount ===
+    b.generatedAlternativeCount &&
+  a.crossCycleBacktrackCount ===
+    b.crossCycleBacktrackCount &&
+  a.stopReason === b.stopReason &&
+  stableEqual(
+    a.finalProductiveAssignedTaskIds,
+    b.finalProductiveAssignedTaskIds
+  ) &&
+  stableEqual(
+    a.residualProductiveTaskIds,
+    b.residualProductiveTaskIds
+  ) &&
+  stableEqual(
+    a.selectedDecisionPath,
+    b.selectedDecisionPath
+  ) &&
+  stableEqual(
+    a.causalCheckpointSamples,
+    b.causalCheckpointSamples
+  ) &&
+  stableEqual(
+    a.causalSiblingRecoverySamples,
+    b.causalSiblingRecoverySamples
+  ) &&
+  a.finalAssignmentsFingerprint ===
+    b.finalAssignmentsFingerprint &&
+  a.backtrackSelectionFingerprint ===
+    b.backtrackSelectionFingerprint &&
+  a.causalEvidenceFingerprint ===
+    b.causalEvidenceFingerprint &&
+  a.partialPlanSequenceFingerprint ===
+    b.partialPlanSequenceFingerprint &&
+  a.partialPlanGraphFingerprint ===
+    b.partialPlanGraphFingerprint &&
+  a.sessionFingerprint === b.sessionFingerprint;
+
+const budgetPassedFor = run =>
+  Number(
+    run.totalExpansionWorkUnitCount ??
+      run.expandedPartialPlanCount ??
+      Infinity
+  ) <= 200 &&
+  Number(run.generatedAlternativeCount ?? Infinity) <= 600 &&
+  Number(run.suspendedFrontierPeak ?? Infinity) <= 16 &&
+  Number(run.crossCycleBacktrackCount ?? Infinity) <= 32 &&
+  Number(run.exclusiveConstructiveRuntimeMs ?? Infinity) < 90000;
+
+const budgetPassed =
+  budgetPassedFor(a) && budgetPassedFor(b);
+
+const checkpointResolved =
+  Number(a.causalDecisionCheckpointResolvedCount ?? 0) > 0 &&
+  Number(b.causalDecisionCheckpointResolvedCount ?? 0) > 0;
+
+const causalAlternativeObservedFor = run =>
+  Number(run.existingCausalSiblingRecoveredCount ?? 0) +
+    Number(run.evictedCausalSiblingRecoveredCount ?? 0) +
+    Number(run.causalCheckpointReopenAcceptedCount ?? 0) >
+  0;
+
+const causalAlternativeObserved =
+  causalAlternativeObservedFor(a) &&
+  causalAlternativeObservedFor(b);
+
+const baseline = {
+  productiveAssignmentsReached:
+    id317.productiveAssignmentsReached ?? null,
+  productiveTasksRemaining:
+    id317.productiveTasksRemaining ?? null,
+  crossCycleBacktrackCount:
+    id317.crossCycleBacktrackCount ?? null,
+  finalAssignmentsFingerprint:
+    id317.finalAssignmentsFingerprint ?? null
+};
+
+const nonRegressionPassed =
+  Number(a.productiveAssignmentsReached ?? -1) >=
+    Number(baseline.productiveAssignmentsReached ?? 32) &&
+  Number(b.productiveAssignmentsReached ?? -1) >=
+    Number(baseline.productiveAssignmentsReached ?? 32) &&
+  Number(a.productiveTasksRemaining ?? Infinity) <=
+    Number(baseline.productiveTasksRemaining ?? 142) &&
+  Number(b.productiveTasksRemaining ?? Infinity) <=
+    Number(baseline.productiveTasksRemaining ?? 142);
+
+const productiveConstructionImproved =
+  nonRegressionPassed &&
+  Number(a.productiveAssignmentsReached ?? 0) >
+    Number(baseline.productiveAssignmentsReached ?? 32) &&
+  Number(b.productiveAssignmentsReached ?? 0) >
+    Number(baseline.productiveAssignmentsReached ?? 32);
+
+const contracts = {
+  sameBudgetAsID317,
+  deterministic,
+  budgetPassed,
+  checkpointResolved,
+  causalAlternativeObserved,
+  nonRegressionPassed,
+  productiveConstructionImproved,
+  runA: {
+    resolvedBudget: budgetA,
+    productiveAssignmentsReached:
+      a.productiveAssignmentsReached ?? null,
+    productiveTasksRemaining:
+      a.productiveTasksRemaining ?? null,
+    expandedPartialPlanCount:
+      a.expandedPartialPlanCount ?? null,
+    totalExpansionWorkUnitCount:
+      a.totalExpansionWorkUnitCount ?? null,
+    generatedAlternativeCount:
+      a.generatedAlternativeCount ?? null,
+    suspendedFrontierPeak:
+      a.suspendedFrontierPeak ?? null,
+    crossCycleBacktrackCount:
+      a.crossCycleBacktrackCount ?? null,
+    exclusiveConstructiveRuntimeMs:
+      a.exclusiveConstructiveRuntimeMs ?? null,
+    stopReason: a.stopReason ?? null,
+    existingCausalSiblingRecoveredCount:
+      a.existingCausalSiblingRecoveredCount ?? null,
+    causalCheckpointReopenAcceptedCount:
+      a.causalCheckpointReopenAcceptedCount ?? null
+  },
+  runB: {
+    resolvedBudget: budgetB,
+    productiveAssignmentsReached:
+      b.productiveAssignmentsReached ?? null,
+    productiveTasksRemaining:
+      b.productiveTasksRemaining ?? null,
+    expandedPartialPlanCount:
+      b.expandedPartialPlanCount ?? null,
+    totalExpansionWorkUnitCount:
+      b.totalExpansionWorkUnitCount ?? null,
+    generatedAlternativeCount:
+      b.generatedAlternativeCount ?? null,
+    suspendedFrontierPeak:
+      b.suspendedFrontierPeak ?? null,
+    crossCycleBacktrackCount:
+      b.crossCycleBacktrackCount ?? null,
+    exclusiveConstructiveRuntimeMs:
+      b.exclusiveConstructiveRuntimeMs ?? null,
+    stopReason: b.stopReason ?? null,
+    existingCausalSiblingRecoveredCount:
+      b.existingCausalSiblingRecoveredCount ?? null,
+    causalCheckpointReopenAcceptedCount:
+      b.causalCheckpointReopenAcceptedCount ?? null
+  },
+  baselineID317: baseline
+};
+
+const result = {
+  id: 318,
+  artifact:
+    "plan-27-orc-causal-checkpoint-reopen-v1",
+  validationVersion:
+    "ID318-SAME-BUDGET-AS-ID317-V2",
+  checks,
+  contracts,
+  runA: a,
+  runB: b
+};
+
+fs.writeFileSync(
+  outputPath,
+  JSON.stringify(result, null, 2)
+);
+
+console.log(
+  JSON.stringify(
+    {
+      output:
+        "plan-27-orc-causal-checkpoint-reopen-v1.json",
+      sameBudgetAsID317,
+      deterministic,
+      budgetPassed,
+      checkpointResolved,
+      causalAlternativeObserved,
+      nonRegressionPassed,
+      productiveConstructionImproved,
+      baselineID317: baseline,
+      runA: contracts.runA,
+      runB: contracts.runB
+    },
+    null,
+    2
+  )
+);
+
+if (
+  !sameBudgetAsID317 ||
+  !deterministic ||
+  !budgetPassed ||
+  !checkpointResolved ||
+  !nonRegressionPassed
+) {
+  process.exitCode = 2;
+}
 NODE
+
 node_status=$?
-cp "$TMP_OUTPUT" "$OUTPUT"
-if [[ $node_status -ne 0 ]]; then failures=$((failures+1)); fi
-if [[ $failures -ne 0 ]]; then exit 1; fi
+
+if [[ -f "$TMP_OUTPUT" ]]; then
+  cp "$TMP_OUTPUT" "$OUTPUT"
+else
+  echo "ERROR: no se creó el consolidado temporal" >&2
+  failures=$((failures + 1))
+fi
+
+if [[ "$node_status" -ne 0 ]]; then
+  failures=$((failures + 1))
+fi
+
+echo
+if [[ -f "$OUTPUT" ]]; then
+  echo "Artefacto generado:"
+  ls -lh "$OUTPUT"
+else
+  echo "No se pudo generar $OUTPUT" >&2
+fi
+
+if [[ "$failures" -ne 0 ]]; then
+  exit 1
+fi
