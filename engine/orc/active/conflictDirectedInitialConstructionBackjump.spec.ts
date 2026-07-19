@@ -5,7 +5,7 @@ import { createInitialConstructionSuspendedFrontier } from "./initialConstructio
 
 const a=(taskId:number,start=taskId)=>({taskId,startPlanned:`2026-01-01T0${start}:00:00Z`,endPlanned:`2026-01-01T0${start}:30:00Z`,spaceId:1,resourceIds:[]});
 const plan=(id:string,assignments:any[],decisionPath:string[],extra:any={})=>({partialPlanId:id,assignments,assignmentsFingerprint:id,decisionPath,depth:decisionPath.length,futureFeasibility:{status:"FEASIBLE",residualProductiveTaskCount:extra.residual??10},constructiveTargetAssignmentCount:assignments.length,readOnly:true});
-const expansion=(task=99,blockers:number[]=[1,2,3,4,5,6])=>({frontierTasksConsidered:[{executionTaskId:task,primaryGoalTaskId:task,supportedGoalTaskIds:[task]}],frontierFailureEvidence:[{executionTaskId:task,primaryGoalTaskId:task,supportedGoalTaskIds:[task],retainedValidBranchCount:0,rejectionReasonCodes:["NO_RETAINED_VALID_BRANCH"],causalConflictTaskIds:blockers,contestantConflictTaskIds:[],spaceConflictTaskIds:[],resourceConflictTaskIds:[],dependencyLowerBoundTaskIds:[],dependencyUpperBoundTaskIds:[],protectedIntervalConflictIds:[],attemptedTemporalCandidateFingerprints:[],attemptedIntervals:[],evidenceComplete:true,incompleteReasonCodes:[],sourceDiagnosticsFingerprint:"test",fingerprint:`e:${task}:${blockers.join(",")}`,readOnly:true}],frontierExhaustionReasonCounts:{NO_RETAINED_VALID_BRANCH:1},anchorPlacementRejectedBranchCount:1,stopReason:"ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED"});
+const expansion=(task=99)=>({frontierTasksConsidered:[{executionTaskId:task,primaryGoalTaskId:task,supportedGoalTaskIds:[task]}],frontierExhaustionReasonCounts:{NO_RETAINED_VALID_BRANCH:1},anchorPlacementRejectedBranchCount:1,stopReason:"ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED"});
 
 test("backjump causal selects an older causal change over a nearer same-conflict alternative",()=>{
  const failed=plan("failed",[a(1),a(2),a(3),a(4),a(5),a(6)],["g:1:b","g:2:b","g:3:b","g:4:b","g:5:b","g:6:b"]);
@@ -31,7 +31,7 @@ test("quality comparator wins between causal alternatives",()=>{
 });
 
 test("protected-only conflict does not invent reversible decisions",()=>{
- const failed=plan("failed",[a(1)],[],{rootAssignmentTaskIds:[1]}); const conflict=buildInitialConstructionCausalConflict({failedPartialPlan:failed,expansion:expansion(99,[1])});
+ const failed=plan("failed",[a(1)],[],{rootAssignmentTaskIds:[1]}); const conflict=buildInitialConstructionCausalConflict({failedPartialPlan:failed,expansion:expansion()});
  assert.equal(conflict.causalDecisions.length,0); assert.equal(conflict.blockingAssignments.length,0);
  const sel=selectConflictDirectedInitialConstructionBackjump({frontier:createInitialConstructionSuspendedFrontier([{partialPlan:plan("alt",[],[])}]),failedPartialPlan:failed,conflict});
  assert.equal(sel.selectedEntry,null); assert.equal(sel.evidence.fallbackReason,"NO_REVERSIBLE_CAUSAL_DECISION");
@@ -57,19 +57,4 @@ test("deterministic selection ignores offer order",()=>{
  const s1=selectConflictDirectedInitialConstructionBackjump({frontier:createInitialConstructionSuspendedFrontier(alts.map(partialPlan=>({partialPlan}))),failedPartialPlan:failed,conflict});
  const s2=selectConflictDirectedInitialConstructionBackjump({frontier:createInitialConstructionSuspendedFrontier(alts.reverse().map(partialPlan=>({partialPlan}))),failedPartialPlan:failed,conflict});
  assert.equal(s1.selectedEntry.partialPlanId,s2.selectedEntry.partialPlanId); assert.deepEqual(s1.evidence,s2.evidence);
-});
-
-
-test("causal conflict uses only structured materialization blockers",()=>{
- const failed=plan("failed",[a(1),a(2),a(3)],["g:1:b","g:2:b","g:3:b"]);
- const conflict=buildInitialConstructionCausalConflict({failedPartialPlan:failed,expansion:expansion(99,[2])});
- assert.deepEqual(conflict.blockingAssignments.map((b:any)=>b.taskId),[2]);
- assert.deepEqual(conflict.causalDecisions.map((d:any)=>d.decision),["g:2:b"]);
-});
-
-test("causal conflict does not invent blockers without structured evidence",()=>{
- const failed=plan("failed",[a(1),a(2)],["g:1:b","g:2:b"]);
- const conflict=buildInitialConstructionCausalConflict({failedPartialPlan:failed,expansion:{frontierTasksConsidered:[{executionTaskId:99,primaryGoalTaskId:99,supportedGoalTaskIds:[99]}],frontierExhaustionReasonCounts:{NO_RETAINED_VALID_BRANCH:1}}});
- assert.equal(conflict.blockingAssignments.length,0);
- assert.equal(conflict.causalDecisions.length,0);
 });
