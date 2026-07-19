@@ -2034,3 +2034,12 @@ ID 319 añade una memoria causal in-memory, determinista y acotada para `INITIAL
 El ledger distingue outcomes activos, conflicto repetido, progreso seguido de repetición, conflicto diferente, frontera bloqueada resuelta, hard-invalid, future-infeasible, complete y fin de presupuesto. Los descendants de una branch agotada se filtran para ese conflicto sin mutar el grafo ni la frontera original, sin aplicar la prohibición a otros conflictos y sin consumir backtracks por transiciones descartadas antes de activarse. La Evidence publica contadores de intentos, outcomes, no-goods de branch, skips de subtree y muestras/fingerprints deterministas.
 
 Validar Plan 27 con `bash validate-id319-plan27.sh`; el script genera `plan-27-orc-causal-branch-outcome-memory-v1.json`, compara el presupuesto con `plan-27-orc-causal-checkpoint-reopen-v1.json`, ejecuta la batería ORC focal y comprueba determinismo y semántica mínima de outcomes/no-goods.
+
+### ID 320 — Truthful Causal Branch Outcome Classification and Enforced Subtree Pruning v1
+
+ID 320 corrige la memoria causal de ID 319 separando estrictamente outcome observado, registro de no-good y transición realmente omitida. `INITIAL_CONSTRUCTION` clasifica cada intento mediante un helper puro que compara el fingerprint causal original con el conflicto resultante, da prioridad a la frontera bloqueada resuelta, publica conflictos diferentes como avance y evita registrar no-goods cuando una branch sólo llega a otro conflicto.
+
+El ledger conserva invariants de fingerprints para outcomes repetidos y diferentes, registra no-goods sólo para branches que agotan el mismo conflicto, y mantiene separados los contadores de resolución y de pruning. Los filtros de transición publican Evidence de skips reales por fuente, y el cursor causal se construye cuando se resuelve un checkpoint para alimentar exclusiones deterministas de branches y candidatos ya observados.
+
+Validar Plan 27 con `bash validate-id320-plan27.sh`; el script genera `plan-27-orc-truthful-causal-branch-pruning-v1.json`, compara el presupuesto con `plan-27-orc-causal-checkpoint-reopen-v1.json`, ejecuta la batería ORC focal, corre dos benchmarks y valida determinismo, invariants de fingerprints y coherencia de skips reales.
+
