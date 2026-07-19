@@ -15,7 +15,7 @@ run_check(){ local name="$1"; shift; if "$@"; then add_check "$name" pass; else 
 run_check "npm run check" npm run check
 run_check "id318 focal tests" npx tsx --test engine/orc/active/initialConstructionCausalDecisionCheckpoint.spec.ts engine/orc/active/conflictDirectedInitialConstructionBackjump.spec.ts
 
-SNAPSHOT="${PLAN27_SNAPSHOT:-${1:-}}"
+SNAPSHOT="${PLAN27_SNAPSHOT:-${1:-local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json}}"
 BUDGET='{"constructionSearchStrategy":"critical_chain_retained_alternatives","criticalChainRetainedAlternatives":{"maxSuspendedPartialPlans":16,"maxExpandedPartialPlans":200,"maxGeneratedPartialPlans":600,"maxCrossCycleBacktracks":32,"maxElapsedMs":90000}}'
 if [[ -n "$SNAPSHOT" && -f "$SNAPSHOT" ]]; then
   run_check "benchmark run A" npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_A"
@@ -25,7 +25,7 @@ else
   echo '{}' > "$RUN_A"; echo '{}' > "$RUN_B"; failures=$((failures+1)); add_check "benchmark inputs" fail
 fi
 
-node <<'NODE' "$RUN_A" "$RUN_B" "$TMP_OUTPUT" "$checks_json"
+node - "$RUN_A" "$RUN_B" "$TMP_OUTPUT" "$checks_json" <<'NODE'
 const fs=require('node:fs'); const [aPath,bPath,outPath,checksRaw]=process.argv.slice(2);
 const read=p=>{try{return JSON.parse(fs.readFileSync(p,'utf8')||'{}')}catch{return {}}};
 const a=read(aPath), b=read(bPath); const checks=JSON.parse(checksRaw);
