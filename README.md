@@ -1931,3 +1931,31 @@ no rechazo ciego, invariancia ante orden de llegada, backtracking local, priorid
 mejor alternativa global y retención de alternativas posteriores mejores en trayectorias
 largas quedan cubiertos de forma determinista. No se documenta aquí un nuevo resultado de
 Plan 27 end-to-end sin ejecutar su snapshot.
+
+
+### ID 315 — Conflict-Directed Backjumping for Initial Construction v1
+
+ID 315 añade un selector puro y determinista de backjumping dirigido por conflicto para
+`critical_chain_retained_alternatives`, sin cambiar la política de admisión Best-K de ID
+314 ni ampliar presupuestos. Cuando una expansión termina en dead end, la sesión construye
+un contrato serializable de conflicto causal con tarea de frontera, goals críticos, razones
+normalizadas, asignaciones provisionales bloqueantes, decisiones del `decisionPath` que
+las introdujeron, profundidad causal más reciente y fingerprint estable. Si el bloqueo no
+puede atribuirse a una decisión reversible, se conserva el fallback seguro al selector
+legacy y se publica la razón.
+
+El nuevo evaluador compara cada alternativa suspendida contra el conflicto demostrado:
+marca asignaciones causales eliminadas o conservadas, decisiones causales cambiadas,
+conflictos idénticos, falta de historia causal suficiente y distancia de backjump. Sólo una
+alternativa que cambie demostrablemente una decisión causal puede ganar el selector
+conflict-directed; entre alternativas causales se prioriza la causa más reciente y después
+el comparador operacional canónico de ID 314. La sesión mantiene además no-goods
+in-memory, deterministas y acotados para conflictos equivalentes, limitados a evitar
+reanudaciones que reproduzcan exactamente el mismo conflicto y a producir Evidence.
+
+La Evidence de sesión exporta los contadores ID 315 de construcción de conflictos,
+conflictos con/sin decisión reversible, asignaciones y decisiones causales, intentos y
+aceptaciones de backjump, alternativas no causales o de mismo conflicto saltadas, media y
+máximo de distancia, no-goods registrados/hits, dead ends equivalentes evitados, muestras
+acotadas de conflictos/selecciones y fingerprint causal. No se documenta aquí completitud
+de Plan 27: debe verificarse con el benchmark real y su artefacto específico.

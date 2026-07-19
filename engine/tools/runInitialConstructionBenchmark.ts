@@ -43,6 +43,13 @@ export interface InitialConstructionBenchmarkResult {
 
   productiveAssignmentsReached: number;
   productiveTasksRemaining: number;
+  causalConflictBuildCount: number;
+  conflictDirectedBackjumpAcceptedCount: number;
+  conflictDirectedBackjumpUnavailableCount: number;
+  nogoodRegisteredCount: number;
+  nogoodHitCount: number;
+  repeatedEquivalentDeadEndAvoidedCount: number;
+  causalEvidenceFingerprint: string | null;
   repairExecuted: boolean;
   repairRoundCount: number;
   repairAttemptCount: number;
@@ -196,6 +203,13 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     finalProductiveAssignedTaskIds,
     productiveAssignmentsReached: finalProductiveAssignedTaskIds.length,
     productiveTasksRemaining: residualProductiveTaskIds.length,
+    causalConflictBuildCount: session.evidence?.causalConflictBuildCount ?? 0,
+    conflictDirectedBackjumpAcceptedCount: session.evidence?.conflictDirectedBackjumpAcceptedCount ?? 0,
+    conflictDirectedBackjumpUnavailableCount: session.evidence?.conflictDirectedBackjumpUnavailableCount ?? 0,
+    nogoodRegisteredCount: session.evidence?.nogoodRegisteredCount ?? 0,
+    nogoodHitCount: session.evidence?.nogoodHitCount ?? 0,
+    repeatedEquivalentDeadEndAvoidedCount: session.evidence?.repeatedEquivalentDeadEndAvoidedCount ?? 0,
+    causalEvidenceFingerprint: session.evidence?.causalEvidenceFingerprint ?? null,
     residualProductiveTaskIds,
     nonProductiveAssignedTaskIds,
     repairExecuted: repair.repairExecuted ?? repair.executed ?? false,
