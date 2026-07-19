@@ -1959,3 +1959,23 @@ aceptaciones de backjump, alternativas no causales o de mismo conflicto saltadas
 máximo de distancia, no-goods registrados/hits, dead ends equivalentes evitados, muestras
 acotadas de conflictos/selecciones y fingerprint causal. No se documenta aquí completitud
 de Plan 27: debe verificarse con el benchmark real y su artefacto específico.
+
+
+### ID 316 — Structured Causal Blocker Propagation and Effective Backjumping v1
+
+ID 316 corrige el núcleo causal de ID 315 para que los conflictos de construcción se
+formen sólo con blockers respaldados por Evidence estructurada de materialización. La
+ruta retained-frontier conserva `InitialConstructionFrontierFailureEvidence`, lineage
+inmutable de decisiones y un índice assignment→decisión; `decisionPath` queda sólo como
+telemetría compatible y deja de usarse como fuente causal. Si la Evidence está
+incompleta, el selector conflict-directed no inventa blockers ni usa todas las
+asignaciones activas como fallback: publica el déficit y retorna al selector legacy.
+
+El selector causal distingue blockers eliminados, modificados y conservados, separa
+cambios no bloqueantes (`CHANGES_ONLY_NON_BLOCKING_DECISIONS`), compara de forma
+read-only contra la selección legacy y emite contadores/muestras estructuradas para
+demostrar cuándo cambia o coincide con legacy. Los no-goods se registran sobre el
+fingerprint causal mínimo y el presupuesto de cross-cycle backtracks se evalúa antes de
+ejecutar la siguiente reanudación, de modo que `maxCrossCycleBacktracks = N` nunca puede
+producir `N + 1` backtracks. No se documenta mejora de Plan 27 sin adjuntar el artefacto
+real `plan-27-orc-structured-causal-backjump-v1.json`.

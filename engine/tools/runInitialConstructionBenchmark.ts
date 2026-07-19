@@ -44,6 +44,23 @@ export interface InitialConstructionBenchmarkResult {
   productiveAssignmentsReached: number;
   productiveTasksRemaining: number;
   causalConflictBuildCount: number;
+  structuredCausalConflictBuildCount: number;
+  structuredCausalConflictEvidenceCompleteCount: number;
+  structuredCausalConflictEvidenceIncompleteCount: number;
+  causalConflictAllActiveAssignmentsFallbackCount: number;
+  causalBlockerTaskIdUnsupportedByFailureEvidenceCount: number;
+  causalConflictTaskIdMissingFromActiveAssignmentsCount: number;
+  decisionLineageLookupCount: number;
+  decisionLineageLookupMissCount: number;
+  decisionPathStringParseCount: number;
+  conflictDirectedSelectionChangedLegacyChoiceCount: number;
+  conflictDirectedSelectionMatchedLegacyChoiceCount: number;
+  incompleteCausalEvidenceLegacyFallbackCount: number;
+  changesOnlyNonBlockingDecisionsSkippedCount: number;
+  causalBlockerAssignmentChangedCount: number;
+  causalBlockerAssignmentRemovedCount: number;
+  structuredCausalConflictSamples: unknown[];
+  structuredCausalBackjumpSamples: unknown[];
   conflictDirectedBackjumpAcceptedCount: number;
   conflictDirectedBackjumpUnavailableCount: number;
   nogoodRegisteredCount: number;
@@ -204,6 +221,23 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
     productiveAssignmentsReached: finalProductiveAssignedTaskIds.length,
     productiveTasksRemaining: residualProductiveTaskIds.length,
     causalConflictBuildCount: session.evidence?.causalConflictBuildCount ?? 0,
+    structuredCausalConflictBuildCount: session.evidence?.structuredCausalConflictBuildCount ?? 0,
+    structuredCausalConflictEvidenceCompleteCount: session.evidence?.structuredCausalConflictEvidenceCompleteCount ?? 0,
+    structuredCausalConflictEvidenceIncompleteCount: session.evidence?.structuredCausalConflictEvidenceIncompleteCount ?? 0,
+    causalConflictAllActiveAssignmentsFallbackCount: session.evidence?.causalConflictAllActiveAssignmentsFallbackCount ?? 0,
+    causalBlockerTaskIdUnsupportedByFailureEvidenceCount: session.evidence?.causalBlockerTaskIdUnsupportedByFailureEvidenceCount ?? 0,
+    causalConflictTaskIdMissingFromActiveAssignmentsCount: session.evidence?.causalConflictTaskIdMissingFromActiveAssignmentsCount ?? 0,
+    decisionLineageLookupCount: session.evidence?.decisionLineageLookupCount ?? 0,
+    decisionLineageLookupMissCount: session.evidence?.decisionLineageLookupMissCount ?? 0,
+    decisionPathStringParseCount: session.evidence?.decisionPathStringParseCount ?? 0,
+    conflictDirectedSelectionChangedLegacyChoiceCount: session.evidence?.conflictDirectedSelectionChangedLegacyChoiceCount ?? 0,
+    conflictDirectedSelectionMatchedLegacyChoiceCount: session.evidence?.conflictDirectedSelectionMatchedLegacyChoiceCount ?? 0,
+    incompleteCausalEvidenceLegacyFallbackCount: session.evidence?.incompleteCausalEvidenceLegacyFallbackCount ?? 0,
+    changesOnlyNonBlockingDecisionsSkippedCount: session.evidence?.changesOnlyNonBlockingDecisionsSkippedCount ?? 0,
+    causalBlockerAssignmentChangedCount: session.evidence?.causalBlockerAssignmentChangedCount ?? 0,
+    causalBlockerAssignmentRemovedCount: session.evidence?.causalBlockerAssignmentRemovedCount ?? 0,
+    structuredCausalConflictSamples: session.evidence?.structuredCausalConflictSamples ?? [],
+    structuredCausalBackjumpSamples: session.evidence?.structuredCausalBackjumpSamples ?? [],
     conflictDirectedBackjumpAcceptedCount: session.evidence?.conflictDirectedBackjumpAcceptedCount ?? 0,
     conflictDirectedBackjumpUnavailableCount: session.evidence?.conflictDirectedBackjumpUnavailableCount ?? 0,
     nogoodRegisteredCount: session.evidence?.nogoodRegisteredCount ?? 0,
