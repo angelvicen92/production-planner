@@ -2002,3 +2002,27 @@ contabilizar como dead end evitado un fallback legacy que sí se ejecuta.
 Validar Plan 27 con `bash validate-id317-plan27.sh`; el script genera
 `plan-27-orc-window-causal-attribution-v1.json` con las dos runs, determinismo,
 contratos técnicos, no regresión y clasificación de conflictos de ventana.
+
+### ID 318 — Conflict-Directed Decision Checkpoint Reopening v1
+
+ID 318 añade reapertura causal acotada para `INITIAL_CONSTRUCTION`: cuando la Evidence
+demuestra que una decisión reversible introdujo el blocker real y la frontera Best-K no
+contiene alternativas útiles, la sesión resuelve el checkpoint padre exacto mediante
+`parentPartialPlanId`, `decisionLineage`, `decisionId`, `decisionDepth`,
+`decisionBranchFingerprint` y fingerprints de assignments. El índice determinista del
+grafo permite consultar nodos por ID, fingerprint, parent, profundidad, decisión y branch
+sin parsear `decisionPath`.
+
+La recuperación causal revisa siblings ya generados —incluidos los expulsados de Best-K
+registrados en el archivo causal in-memory— y sólo acepta alternativas que cambian o
+eliminan el assignment blocker. Si no existe alternativa generada, la sesión reabre el
+checkpoint con el pipeline constructivo oficial a través de
+`expandInitialConstructionPartialPlanOnce()`, excluyendo la branch y los assignments que
+reproducen el conflicto y consumiendo presupuesto real con `totalExpansionWorkUnitCount`.
+
+La Evidence publica resolución de checkpoint, recuperación de siblings, reaperturas,
+exclusiones, no-goods realmente omitidos, supresión de fallback legacy equivalente y el
+stop reason `CAUSAL_DECISION_ALTERNATIVES_EXHAUSTED` cuando el checkpoint queda agotado.
+Validar Plan 27 con `bash validate-id318-plan27.sh`; el script genera
+`plan-27-orc-causal-checkpoint-reopen-v1.json` y conserva intactos los baselines ID 314 a
+ID 317.
