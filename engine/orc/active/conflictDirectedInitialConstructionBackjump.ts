@@ -33,11 +33,12 @@ export function buildInitialConstructionCausalConflict(args:{failedPartialPlan:a
  if(!reasons.length&&Number(args.expansion?.anchorPlacementRejectedBranchCount??0)>0) reasons.push("ANCHOR_PLACEMENT_REJECTED");
  if(!reasons.length&&Number(args.expansion?.rawClosureIncompleteBranchCount??0)>0) reasons.push("RAW_CLOSURE_INCOMPLETE");
  if(!reasons.length) reasons.push(String(args.expansion?.stopReason??"DEAD_END"));
- const blockedTaskIds=[...new Set(frontierTasks.map((f:any)=>Number(f.executionTaskId)).filter(Number.isFinite))].sort((a,b)=>a-b);
- const reversible=index.entries.filter((e:any)=>e.classification==="REVERSIBLE_PROVISIONAL");
- const blockers=reversible.map((e:any)=>({taskId:e.taskId,assignmentKey:e.assignmentKey,classification:e.classification,decision:e.decision,decisionDepth:e.decisionDepth,assignment:e.assignment,readOnly:true}));
+ const failureEvidence=[...(args.expansion?.frontierFailureEvidence??[])];
+ const blockedTaskIds=[...new Set((failureEvidence.length?failureEvidence:frontierTasks).map((f:any)=>Number(f.executionTaskId)).filter(Number.isFinite))].sort((a,b)=>a-b);
+ const evidencedBlockerTaskIds=[...new Set(failureEvidence.flatMap((e:any)=>[...(e.causalConflictTaskIds??[]),...(e.contestantConflictTaskIds??[]),...(e.spaceConflictTaskIds??[]),...(e.resourceConflictTaskIds??[]),...(e.dependencyLowerBoundTaskIds??[]),...(e.dependencyUpperBoundTaskIds??[])].map(Number)).filter(Number.isFinite))].sort((a,b)=>a-b);
+ const blockers=evidencedBlockerTaskIds.map((taskId:number)=>index.byTaskId[String(taskId)]).filter((e:any)=>e?.classification==="REVERSIBLE_PROVISIONAL").map((e:any)=>({taskId:e.taskId,assignmentKey:e.assignmentKey,classification:e.classification,decision:e.decision,decisionDepth:e.decisionDepth,assignment:e.assignment,readOnly:true}));
  const decisions:any[]=[...new Map<string,any>(blockers.filter((b:any)=>b.decision).map((b:any)=>[b.decision,{decision:b.decision,decisionDepth:b.decisionDepth,taskIds:blockers.filter((x:any)=>x.decision===b.decision).map((x:any)=>x.taskId).sort((a:any,b:any)=>a-b),readOnly:true}])).values()].sort((a:any,b:any)=>Number(b.decisionDepth)-Number(a.decisionDepth)||String(a.decision).localeCompare(String(b.decision)));
- const payload={frontierTaskId:Number(first.executionTaskId??blockedTaskIds[0]??null)||null,frontierTaskIds:blockedTaskIds,criticalGoalTaskIds:[...new Set(frontierTasks.flatMap((f:any)=>[f.primaryGoalTaskId,...(f.supportedGoalTaskIds??[])]).map(Number).filter(Number.isFinite))].sort((a,b)=>a-b),attemptedInterval:null,rejectionReasons:reasons,blockingAssignments:blockers,causalDecisions:decisions,mostRecentCausalDepth:decisions[0]?.decisionDepth??null};
+ const payload={frontierTaskId:Number(first.executionTaskId??blockedTaskIds[0]??null)||null,frontierTaskIds:blockedTaskIds,criticalGoalTaskIds:[...new Set(frontierTasks.flatMap((f:any)=>[f.primaryGoalTaskId,...(f.supportedGoalTaskIds??[])]).map(Number).filter(Number.isFinite))].sort((a,b)=>a-b),attemptedInterval:null,rejectionReasons:reasons,frontierFailureEvidenceFingerprints:failureEvidence.map((e:any)=>e.fingerprint).filter(Boolean).sort(),blockingAssignments:blockers,causalDecisions:decisions,mostRecentCausalDepth:decisions[0]?.decisionDepth??null};
  return deepFreeze({...payload,fingerprint:hash(payload),readOnly:true}) as any;
 }
 
