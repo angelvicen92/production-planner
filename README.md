@@ -2026,3 +2026,11 @@ stop reason `CAUSAL_DECISION_ALTERNATIVES_EXHAUSTED` cuando el checkpoint queda 
 Validar Plan 27 con `bash validate-id318-plan27.sh`; el script genera
 `plan-27-orc-causal-checkpoint-reopen-v1.json` y conserva intactos los baselines ID 314 a
 ID 317.
+
+### ID 319 — Conflict-Specific Causal Branch Outcome Memory v1
+
+ID 319 añade una memoria causal in-memory, determinista y acotada para `INITIAL_CONSTRUCTION`. La sesión identifica la branch directa bajo el checkpoint causal mediante `parentPartialPlanId` y lineage del grafo de `PartialPlan`, abre un intento por conflicto/checkpoint/decisión/branch antes de activar una alternativa, conserva el resultado operativo de la branch y registra no-goods específicos cuando el mismo subtree reproduce el conflicto exacto.
+
+El ledger distingue outcomes activos, conflicto repetido, progreso seguido de repetición, conflicto diferente, frontera bloqueada resuelta, hard-invalid, future-infeasible, complete y fin de presupuesto. Los descendants de una branch agotada se filtran para ese conflicto sin mutar el grafo ni la frontera original, sin aplicar la prohibición a otros conflictos y sin consumir backtracks por transiciones descartadas antes de activarse. La Evidence publica contadores de intentos, outcomes, no-goods de branch, skips de subtree y muestras/fingerprints deterministas.
+
+Validar Plan 27 con `bash validate-id319-plan27.sh`; el script genera `plan-27-orc-causal-branch-outcome-memory-v1.json`, compara el presupuesto con `plan-27-orc-causal-checkpoint-reopen-v1.json`, ejecuta la batería ORC focal y comprueba determinismo y semántica mínima de outcomes/no-goods.
