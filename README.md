@@ -1979,3 +1979,26 @@ fingerprint causal mínimo y el presupuesto de cross-cycle backtracks se evalúa
 ejecutar la siguiente reanudación, de modo que `maxCrossCycleBacktracks = N` nunca puede
 producir `N + 1` backtracks. No se documenta mejora de Plan 27 sin adjuntar el artefacto
 real `plan-27-orc-structured-causal-backjump-v1.json`.
+
+### ID 317 — Candidate-Level Window Conflict Causal Attribution v1
+
+ID 317 conserva Evidence temporal rechazada a nivel de candidato para cerrar la pérdida
+causal entre los candidatos generados por `initialConstructionBranchBuilder`, los perfiles
+`InitialConstructionRepairCandidateProfile`, la Evidence de fallo de frontera y el
+backjumping dirigido por conflicto. La materialización reutiliza
+`profileFromAnchorPlacementEvidence()` como clasificador único y publica muestras
+acotadas y deterministas de candidatos reparables, estáticos, inmutables e incompletos,
+además del candidato representativo elegido con preferencia por oportunidades reales de
+backjump.
+
+La Evidence completa de `TASK_WINDOW_CONFLICT` ahora exige una explicación estructurada:
+links shiftables respaldados por fuentes móviles y lineage, blockers inmutables, razones
+estáticas normalizadas o un motivo explícito de Evidence incompleta. El conflicto causal
+usa los `repairableConflictTaskIds` del candidato representativo y deja de fusionar
+blockers de candidatos incompatibles o frontier sources no demostrados. Los contadores de
+no-good separan coincidencias observadas de transiciones realmente omitidas, evitando
+contabilizar como dead end evitado un fallback legacy que sí se ejecuta.
+
+Validar Plan 27 con `bash validate-id317-plan27.sh`; el script genera
+`plan-27-orc-window-causal-attribution-v1.json` con las dos runs, determinismo,
+contratos técnicos, no regresión y clasificación de conflictos de ventana.
