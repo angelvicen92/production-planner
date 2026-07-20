@@ -71,12 +71,18 @@ add('causalActivationTransactionInvariantViolationCount = 0',Number(a.causalActi
 add('activePartialPlanAlreadyExpandedAtLoopEntryCount = 0',Number(a.activePartialPlanAlreadyExpandedAtLoopEntryCount||0)===0);
 add('prematureTerminationWithEligibleSuspendedFrontierCount = 0',Number(a.prematureTerminationWithEligibleSuspendedFrontierCount||0)===0);
 add('decisionPathStringParseCount = 0',Number(a.decisionPathStringParseCount||0)===0);
+add('causalActivationSourceClassificationMismatchCount = 0',Number(a.causalActivationSourceClassificationMismatchCount||0)===0);
+add('no premature ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED with suspended frontier',!(a.stopReason==='ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED'&&Number(a.suspendedPartialPlanCount||0)>0));
+add('protected assignments intact',a.protectedAssignmentsModified===false);
+add('duplicateTaskIds empty',Array.isArray(a.duplicateTaskIds)&&a.duplicateTaskIds.length===0);
+add('final validation passed',a.finalCombinedValidationResult===null||a.finalCombinedValidationResult==='VALID'||a.finalCombinedValidationResult==='valid');
 add('commit source sum equals total commits',commitSources(a)===Number(a.causalActivationTransactionCommitCount||0),{sourceSum:commitSources(a),commitCount:a.causalActivationTransactionCommitCount});
 add('skip reason sum equals skipped count',sum(a.causalActivationCandidateSkipReasonCounts)===Number(a.causalActivationCandidateSkippedCount||0),{reasonSum:sum(a.causalActivationCandidateSkipReasonCounts),skipped:a.causalActivationCandidateSkippedCount});
 add('progress not below ID318',Number(a.productiveAssignmentsReached)>=Number(base.productiveAssignmentsReached??38)&&Number(a.productiveTasksRemaining)<=Number(base.productiveTasksRemaining??136));
-const out={id:321,version:'plan-27-orc-causal-activation-transaction-v1',deterministic,checks,runs:[a,b],baselineId318:base,readOnly:true};
+const rejectedThenCommitted=Number(a.causalActivationCandidateSkippedCount||0)>0&&Number(a.causalActivationTransactionCommitCount||0)>0;
+const out={id:321,version:'plan-27-orc-causal-activation-transaction-v1',deterministic,checks,causalActivationExercise:{rejectedCandidateThenNextCandidateActivated:rejectedThenCommitted,internalRejectionsFollowedByCommitCount:rejectedThenCommitted?Number(a.causalActivationCandidateSkippedCount||0):0,sourcesInspected:{suspended:Number(a.causalActivationCollectedSuspendedCandidateCount||0),generated:Number(a.causalActivationCollectedGeneratedCandidateCount||0),archive:Number(a.causalActivationCollectedArchiveCandidateCount||0),reopen:Number(a.causalActivationCollectedReopenCandidateCount||0)},commitSources:{suspended:Number(a.causalActivationSuspendedFrontierCommitCount||0),generated:Number(a.causalActivationGeneratedGraphCommitCount||0),archive:Number(a.causalActivationArchiveCommitCount||0),reopen:Number(a.causalActivationCheckpointReopenCommitCount||0)}},runs:[a,b],baselineId318:base,readOnly:true};
 const failed=checks.filter(c=>!c.passed);
 fs.writeFileSync(outPath,JSON.stringify(out,null,2));
 if(failed.length){console.error(JSON.stringify(failed,null,2)); process.exit(1)}
 NODE
-cp "$TMP_OUTPUT" "$OUTPUT"
+mv "$TMP_OUTPUT" "$OUTPUT"
