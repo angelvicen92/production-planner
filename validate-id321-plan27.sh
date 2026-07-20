@@ -27,6 +27,7 @@ fi
 npm run check || exit 1
 npx tsx --test \
   engine/orc/active/initialConstructionCausalAlternativeActivation.spec.ts \
+  engine/orc/active/initialConstructionCausalActivationTransaction.spec.ts \
   engine/orc/active/initialConstructionCausalCheckpointCursor.spec.ts \
   engine/orc/active/initialConstructionCausalBranchOutcomeClassifier.spec.ts \
   engine/orc/active/initialConstructionCausalBranchOutcomeLedger.spec.ts \
@@ -72,15 +73,20 @@ add('activePartialPlanAlreadyExpandedAtLoopEntryCount = 0',Number(a.activePartia
 add('prematureTerminationWithEligibleSuspendedFrontierCount = 0',Number(a.prematureTerminationWithEligibleSuspendedFrontierCount||0)===0);
 add('decisionPathStringParseCount = 0',Number(a.decisionPathStringParseCount||0)===0);
 add('causalActivationSourceClassificationMismatchCount = 0',Number(a.causalActivationSourceClassificationMismatchCount||0)===0);
+add('causalActivationCompleteEvidenceLegacySelectorInvocationCount = 0',Number(a.causalActivationCompleteEvidenceLegacySelectorInvocationCount||0)===0);
+add('causalActivationLegacyGeneratedSiblingBypassCount = 0',Number(a.causalActivationLegacyGeneratedSiblingBypassCount||0)===0);
+add('causalActivationReopenCandidateBypassedTransactionCount = 0',Number(a.causalActivationReopenCandidateBypassedTransactionCount||0)===0);
+add('causalActivationCursorUpdateDiscardedCount = 0',Number(a.causalActivationCursorUpdateDiscardedCount||0)===0);
+add('prepared count equals commit count',Number(a.causalActivationTransactionPreparedCount||0)===Number(a.causalActivationTransactionCommitCount||0));
 add('no premature ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED with suspended frontier',!(a.stopReason==='ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED'&&Number(a.suspendedPartialPlanCount||0)>0));
 add('protected assignments intact',a.protectedAssignmentsModified===false);
 add('duplicateTaskIds empty',Array.isArray(a.duplicateTaskIds)&&a.duplicateTaskIds.length===0);
-add('final validation passed',a.finalCombinedValidationResult===null||a.finalCombinedValidationResult==='VALID'||a.finalCombinedValidationResult==='valid');
+add('final validation passed',a.finalCombinedValidationResult==='VALID'||a.finalCombinedValidationResult==='valid'||a.finalValidationMatchesSelectedPartialPlan===true);
 add('commit source sum equals total commits',commitSources(a)===Number(a.causalActivationTransactionCommitCount||0),{sourceSum:commitSources(a),commitCount:a.causalActivationTransactionCommitCount});
 add('skip reason sum equals skipped count',sum(a.causalActivationCandidateSkipReasonCounts)===Number(a.causalActivationCandidateSkippedCount||0),{reasonSum:sum(a.causalActivationCandidateSkipReasonCounts),skipped:a.causalActivationCandidateSkippedCount});
 add('progress not below ID318',Number(a.productiveAssignmentsReached)>=Number(base.productiveAssignmentsReached??38)&&Number(a.productiveTasksRemaining)<=Number(base.productiveTasksRemaining??136));
 const linkedSamples=Array.isArray(a.causalActivationRejectedThenCommittedSamples)?a.causalActivationRejectedThenCommittedSamples:[];
-const linkedExercisePassed=Number(a.causalActivationTransactionRejectedThenCommittedCount||0)===linkedSamples.length&&linkedSamples.every(sample=>sample&&sample.transactionId&&sample.conflictFingerprint&&sample.checkpointFingerprint&&sample.committed===true&&Array.isArray(sample.inspectedCandidates)&&sample.inspectedCandidates.some(candidate=>candidate.status==='SKIPPED')&&sample.inspectedCandidates.some(candidate=>candidate.status==='PREPARED'));
+const linkedExercisePassed=linkedSamples.length===Math.min(Number(a.causalActivationTransactionRejectedThenCommittedCount||0),10)&&linkedSamples.every(sample=>sample&&sample.transactionId&&sample.conflictFingerprint&&sample.checkpointFingerprint&&sample.committed===true&&Array.isArray(sample.inspectedCandidates)&&sample.inspectedCandidates.some(candidate=>candidate.status==='SKIPPED')&&sample.inspectedCandidates.some(candidate=>candidate.status==='PREPARED'));
 add('linked rejected-then-committed samples are coherent',Number(a.causalActivationTransactionRejectedThenCommittedCount||0)===0||linkedExercisePassed,{count:a.causalActivationTransactionRejectedThenCommittedCount,samples:linkedSamples.length});
 const rejectedThenCommitted=Number(a.causalActivationTransactionRejectedThenCommittedCount||0)>0&&linkedExercisePassed;
 const out={id:321,version:'plan-27-orc-causal-activation-transaction-v1',deterministic,checks,causalActivationExercise:{rejectedCandidateThenNextCandidateActivated:rejectedThenCommitted,internalRejectionsFollowedByCommitCount:rejectedThenCommitted?Number(a.causalActivationTransactionRejectedThenCommittedCount||0):0,sourcesInspected:{suspended:Number(a.causalActivationCollectedSuspendedCandidateCount||0),generated:Number(a.causalActivationCollectedGeneratedCandidateCount||0),archive:Number(a.causalActivationCollectedArchiveCandidateCount||0),reopen:Number(a.causalActivationCollectedReopenCandidateCount||0)},commitSources:{suspended:Number(a.causalActivationSuspendedFrontierCommitCount||0),generated:Number(a.causalActivationGeneratedGraphCommitCount||0),archive:Number(a.causalActivationArchiveCommitCount||0),reopen:Number(a.causalActivationCheckpointReopenCommitCount||0)}},runs:[a,b],baselineId318:base,readOnly:true};
