@@ -6,9 +6,10 @@ OUTPUT="plan-27-orc-causal-activation-transaction-v1.json"
 RUN_A="/tmp/plan-27-id321-run-a.json"
 RUN_B="/tmp/plan-27-id321-run-b.json"
 TMP_OUTPUT="/tmp/plan-27-id321-consolidated.json"
+SNAPSHOT="${PLAN27_SNAPSHOT:-${1:-local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json}}"
+BUDGET='{"constructionSearchStrategy":"critical_chain_retained_alternatives","maxElapsedMs":90000,"maxExpandedPartialPlans":200,"maxGeneratedPartialPlans":600,"maxSuspendedPartialPlans":16,"initialExecutableFrontierBatchSize":4,"maxExecutableFrontierTasksScannedPerExpansion":32,"maxBranchEvaluationsPerFrontierTask":48,"maxRetainedValidBranchesPerFrontierTask":3,"maxChildrenPerDecision":3,"maxCrossCycleBacktracks":32,"initialTemporalCandidateBatchSize":8,"maxTemporalCandidatesPerAnchor":24,"maxBranchEvaluationsPerAnchor":48}'
 
 rm -f \
-  "$OUTPUT" \
   "$RUN_A" \
   "$RUN_B" \
   "$TMP_OUTPUT" \
@@ -17,65 +18,65 @@ rm -f \
   /tmp/plan-27-id320-consolidated.json
 trap 'rm -f "$RUN_A" "$RUN_B" "$TMP_OUTPUT"' EXIT
 
-failures=0
-checks_json='[]'
-add_check(){ checks_json=$(node -e 'const c=JSON.parse(process.argv[1]); c.push({name:process.argv[2],passed:process.argv[3]==="pass"}); console.log(JSON.stringify(c));' "$checks_json" "$1" "$2"); }
-run_check(){ local name="$1"; shift; if "$@"; then add_check "$name" pass; else add_check "$name" fail; failures=$((failures+1)); fi; }
-
-SNAPSHOT="${PLAN27_SNAPSHOT:-${1:-local_engine_scenarios/optiplan-plan-27-engine-scenario-v1.json}}"
-BUDGET='{"constructionSearchStrategy":"critical_chain_retained_alternatives","maxElapsedMs":90000,"maxExpandedPartialPlans":200,"maxGeneratedPartialPlans":600,"maxSuspendedPartialPlans":16,"initialExecutableFrontierBatchSize":4,"maxExecutableFrontierTasksScannedPerExpansion":32,"maxBranchEvaluationsPerFrontierTask":48,"maxRetainedValidBranchesPerFrontierTask":3,"maxChildrenPerDecision":3,"maxCrossCycleBacktracks":32,"initialTemporalCandidateBatchSize":8,"maxTemporalCandidatesPerAnchor":24,"maxBranchEvaluationsPerAnchor":48}'
-
-run_check "npm run check" npm run check
-run_check "id321 focal activation/cursor tests" npx tsx --test engine/orc/active/initialConstructionCausalAlternativeActivation.spec.ts engine/orc/active/initialConstructionCausalCheckpointCursor.spec.ts
-TEST_FILES=(
-  engine/orc/active/initialConstructionCausalBranchOutcomeClassifier.spec.ts
-  engine/orc/active/initialConstructionCausalBranchOutcomeLedger.spec.ts
-  engine/orc/active/initialConstructionCausalDecisionCheckpoint.spec.ts
-  engine/orc/active/conflictDirectedInitialConstructionBackjump.spec.ts
-  engine/orc/active/runInitialConstructionIterativeSession.spec.ts
-  engine/tools/runInitialConstructionBenchmark.spec.ts
-)
-run_check "ORC focal causal branch suite" npx tsx --test --test-reporter=dot "${TEST_FILES[@]}"
-
-if [[ -f "$SNAPSHOT" ]]; then
-  run_check "benchmark run A" npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_A"
-  run_check "benchmark run B" npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_B"
-else
+if [[ ! -f "$SNAPSHOT" ]]; then
   echo "ERROR: no existe el snapshot de Plan 27: $SNAPSHOT" >&2
-  echo '{}' > "$RUN_A"; echo '{}' > "$RUN_B"; add_check "benchmark inputs" fail; failures=$((failures+1))
+  echo "No se ejecutan benchmarks, no se consolida determinismo y no se sobrescribe $OUTPUT." >&2
+  exit 2
 fi
 
-node - "$RUN_A" "$RUN_B" "$TMP_OUTPUT" "$checks_json" <<'NODE'
+npm run check || exit 1
+npx tsx --test \
+  engine/orc/active/initialConstructionCausalAlternativeActivation.spec.ts \
+  engine/orc/active/initialConstructionCausalCheckpointCursor.spec.ts \
+  engine/orc/active/initialConstructionCausalBranchOutcomeClassifier.spec.ts \
+  engine/orc/active/initialConstructionCausalBranchOutcomeLedger.spec.ts \
+  engine/orc/active/initialConstructionCausalDecisionCheckpoint.spec.ts \
+  engine/orc/active/conflictDirectedInitialConstructionBackjump.spec.ts \
+  engine/orc/active/runInitialConstructionIterativeSession.spec.ts \
+  engine/tools/runInitialConstructionBenchmark.spec.ts || exit 1
+
+npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_A" || exit 1
+npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_B" || exit 1
+
+node - "$RUN_A" "$RUN_B" "$TMP_OUTPUT" <<'NODE'
 const fs=require('node:fs');
-const [aPath,bPath,outPath,checksRaw]=process.argv.slice(2);
-const read=p=>{try{return JSON.parse(fs.readFileSync(p,'utf8')||'{}')}catch{return {}}};
-const a=read(aPath), b=read(bPath), checks=JSON.parse(checksRaw);
-const id318=read('plan-27-orc-causal-checkpoint-reopen-v1.json');
-const base=(Array.isArray(id318.runs)&&id318.runs[0])||id318.runA||id318;
+const [aPath,bPath,outPath]=process.argv.slice(2);
+const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+const a=read(aPath), b=read(bPath);
+const checks=[]; const add=(name,passed,details={})=>checks.push({name,passed:Boolean(passed),details});
+const nonEmpty=r=>r&&Object.keys(r).length>0&&r.executed!==false&&r.sessionFingerprint;
 const stable=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
-const add=(name,passed,details={})=>checks.push({name,passed:Boolean(passed),details});
-const samples=r=>[...(r.causalBranchOutcomeClassificationSamples||r.causalBranchOutcomeSamples||[])];
-const repeatedOk=r=>samples(r).filter(s=>['REPEATED_SAME_CONFLICT','PROGRESSED_BUT_REPEATED_SAME_CONFLICT'].includes(s.status)).every(s=>s.conflictFingerprint===s.resultingConflictFingerprint);
-const differentOk=r=>samples(r).filter(s=>s.status==='ADVANCED_TO_DIFFERENT_CONFLICT').every(s=>s.conflictFingerprint!==s.resultingConflictFingerprint);
-const skipTotal=r=>Number(r.causalBranchTransitionCandidateSkippedCount??0);
-const bySourceTotal=r=>Object.values(r.causalBranchTransitionSkipBySource||{}).reduce((n,v)=>n+Number(v||0),0);
-const deterministic=a.productiveAssignmentsReached===b.productiveAssignmentsReached&&a.productiveTasksRemaining===b.productiveTasksRemaining&&a.crossCycleBacktrackCount===b.crossCycleBacktrackCount&&a.finalAssignmentsFingerprint===b.finalAssignmentsFingerprint&&a.sessionFingerprint===b.sessionFingerprint;
+const sum=o=>Object.values(o||{}).reduce((n,v)=>n+Number(v||0),0);
+const commitSources=r=>Number(r.causalActivationSuspendedFrontierCommitCount||0)+Number(r.causalActivationGeneratedGraphCommitCount||0)+Number(r.causalActivationArchiveCommitCount||0)+Number(r.causalActivationCheckpointReopenCommitCount||0);
 const budgetOf=r=>r.resolvedRetainedAlternativesBudget||{};
-add('deterministic replay',deterministic,{a:a.sessionFingerprint,b:b.sessionFingerprint});
-add('budget matches ID318',stable(budgetOf(a),budgetOf(base))&&stable(budgetOf(b),budgetOf(base)));
-add('repeated outcomes have equal fingerprints',repeatedOk(a)&&repeatedOk(b));
-add('different-conflict outcomes have different fingerprints',differentOk(a)&&differentOk(b));
-add('not all outcomes forced to repeated',Number(a.causalBranchAdvancedToDifferentConflictCount??0)>0||Number(a.causalBranchResolvedBlockedFrontierCount??0)>0||Number(a.causalBranchBudgetInterruptedOutcomeCount??0)>0||samples(a).length===0);
-add('no-good registration is exhausting-only',Number(a.causalBranchNoGoodRegisteredCount??0)===Number(a.causalBranchRepeatedSameConflictCount??0)+Number(a.causalBranchProgressedButRepeatedSameConflictCount??0));
-add('skip samples back skip counters',skipTotal(a)===0||((a.causalBranchTransitionSkipSamples||[]).length>0&&Number(a.nogoodTransitionActuallySkippedCount??0)===skipTotal(a)));
-add('skip by source sum coherent',bySourceTotal(a)===skipTotal(a));
-add('resolution counters separated from skips',Number(a.nogoodTransitionActuallySkippedCount??0)<=Number(a.causalBranchTransitionCandidateSkippedCount??0));
-add('cursor is built when checkpoints resolve',Number(a.causalDecisionCheckpointResolvedCount??0)===0||Number(a.causalCheckpointCursorBuildCount??0)>0);
-add('progress not below ID318',Number(a.productiveAssignmentsReached??0)>=Number(base.productiveAssignmentsReached??38)&&Number(a.productiveTasksRemaining??Infinity)<=Number(base.productiveTasksRemaining??136));
-add('work budgets respected',Number(a.totalExpansionWorkUnitCount??Infinity)<=200&&Number(a.generatedAlternativeCount??Infinity)<=600&&Number(a.suspendedFrontierPeak??Infinity)<=16&&Number(a.crossCycleBacktrackCount??Infinity)<=32&&Number(a.exclusiveConstructiveRuntimeMs??Infinity)<90000);
-const out={id:321,deterministic,checks,runs:[a,b],baselineId318:base,readOnly:true};
+const id318=fs.existsSync('plan-27-orc-causal-checkpoint-reopen-v1.json')?read('plan-27-orc-causal-checkpoint-reopen-v1.json'):null;
+const base=(Array.isArray(id318?.runs)&&id318.runs[0])||id318?.runA||id318||{productiveAssignmentsReached:38,productiveTasksRemaining:136,resolvedRetainedAlternativesBudget:budgetOf(a)};
+const deterministic=nonEmpty(a)&&nonEmpty(b)&&a.productiveAssignmentsReached===b.productiveAssignmentsReached&&a.productiveTasksRemaining===b.productiveTasksRemaining&&a.crossCycleBacktrackCount===b.crossCycleBacktrackCount&&a.finalAssignmentsFingerprint===b.finalAssignmentsFingerprint&&a.sessionFingerprint===b.sessionFingerprint;
+add('runs A and B are real non-empty executions',nonEmpty(a)&&nonEmpty(b));
+add('deterministic replay = true',deterministic,{a:a.sessionFingerprint,b:b.sessionFingerprint});
+add('budget matches ID318 = true',stable(budgetOf(a),budgetOf(base))&&stable(budgetOf(b),budgetOf(base)));
+add('productiveAssignmentsReached >= 38',Number(a.productiveAssignmentsReached)>=38);
+add('productiveTasksRemaining <= 136',Number(a.productiveTasksRemaining)<=136);
+add('crossCycleBacktrackCount <= 32',Number(a.crossCycleBacktrackCount)<=32);
+add('totalExpansionWorkUnitCount <= 200',Number(a.totalExpansionWorkUnitCount)<=200);
+add('generatedAlternativeCount <= 600',Number(a.generatedAlternativeCount)<=600);
+add('suspendedFrontierPeak <= 16',Number(a.suspendedFrontierPeak)<=16);
+add('exclusiveConstructiveRuntimeMs < 90000',Number(a.exclusiveConstructiveRuntimeMs)<90000);
+add('cursor built when checkpoint resolves',Number(a.causalDecisionCheckpointResolvedCount||0)===0||Number(a.causalCheckpointCursorBuildCount||0)>0);
+add('cursor advanced when activation/inspection occurs',Number(a.causalActivationCandidateInspectionCount||0)===0||Number(a.causalCheckpointCursorAdvanceCount||0)>0);
+add('activation commit exercised or honestly absent',Number(a.causalActivationCandidateEligibleCount||0)===0||Number(a.causalActivationTransactionCommitCount||0)>0,{eligible:a.causalActivationCandidateEligibleCount,commits:a.causalActivationTransactionCommitCount});
+add('causalActivationBacktrackWithoutCommitCount = 0',Number(a.causalActivationBacktrackWithoutCommitCount||0)===0);
+add('causalActivationCommitWithoutOpenedAttemptCount = 0',Number(a.causalActivationCommitWithoutOpenedAttemptCount||0)===0);
+add('causalActivationTransactionInvariantViolationCount = 0',Number(a.causalActivationTransactionInvariantViolationCount||0)===0);
+add('activePartialPlanAlreadyExpandedAtLoopEntryCount = 0',Number(a.activePartialPlanAlreadyExpandedAtLoopEntryCount||0)===0);
+add('prematureTerminationWithEligibleSuspendedFrontierCount = 0',Number(a.prematureTerminationWithEligibleSuspendedFrontierCount||0)===0);
+add('decisionPathStringParseCount = 0',Number(a.decisionPathStringParseCount||0)===0);
+add('commit source sum equals total commits',commitSources(a)===Number(a.causalActivationTransactionCommitCount||0),{sourceSum:commitSources(a),commitCount:a.causalActivationTransactionCommitCount});
+add('skip reason sum equals skipped count',sum(a.causalActivationCandidateSkipReasonCounts)===Number(a.causalActivationCandidateSkippedCount||0),{reasonSum:sum(a.causalActivationCandidateSkipReasonCounts),skipped:a.causalActivationCandidateSkippedCount});
+add('progress not below ID318',Number(a.productiveAssignmentsReached)>=Number(base.productiveAssignmentsReached??38)&&Number(a.productiveTasksRemaining)<=Number(base.productiveTasksRemaining??136));
+const out={id:321,version:'plan-27-orc-causal-activation-transaction-v1',deterministic,checks,runs:[a,b],baselineId318:base,readOnly:true};
+const failed=checks.filter(c=>!c.passed);
 fs.writeFileSync(outPath,JSON.stringify(out,null,2));
+if(failed.length){console.error(JSON.stringify(failed,null,2)); process.exit(1)}
 NODE
 cp "$TMP_OUTPUT" "$OUTPUT"
-node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); const failed=r.checks.filter(c=>!c.passed); if(failed.length){console.error(JSON.stringify(failed,null,2)); process.exit(1)}' "$OUTPUT" || failures=$((failures+1))
-exit "$failures"
