@@ -2043,3 +2043,11 @@ El ledger conserva invariants de fingerprints para outcomes repetidos y diferent
 
 Validar Plan 27 con `bash validate-id320-plan27.sh`; el script genera `plan-27-orc-truthful-causal-branch-pruning-v1.json`, compara el presupuesto con `plan-27-orc-causal-checkpoint-reopen-v1.json`, ejecuta la batería ORC focal, corre dos benchmarks y valida determinismo, invariants de fingerprints y coherencia de skips reales.
 
+
+### ID 321 — Causal Alternative Activation Transaction and Real Checkpoint Cursor v1
+
+ID 321 convierte la activación causal de alternativas en una transición prepare/commit: la sesión intenta abrir el ledger antes de mutar `active`, retirar una entrada de la frontera o consumir backtrack. Los rechazos por intento duplicado o branch ya resuelta quedan como skips del bucle interno de candidatos, avanzan la Evidence/cursor y continúan con la siguiente alternativa disponible sin volver al bucle exterior con un dead end obsoleto.
+
+La iteración añade helpers focales para preparar activaciones inmutables y para construir/avanzar cursores causales por `(conflictFingerprint, checkpointFingerprint, causalDecisionId)`. El cursor conserva branches observadas, inspeccionadas, activadas, agotadas, assignments hijos y candidatos temporales evaluados, se reutiliza al reabrir checkpoints y publica contadores de build/advance/entry junto con muestras acotadas. La Evidence de sesión distingue deduplicación, candidatos ya expandidos, skips por cursor y no-goods reales, además de invariants para evitar backtracks sin commit, commits sin intento abierto, `active` ya expandido en la entrada del loop y terminaciones prematuras con frontera elegible.
+
+Validar Plan 27 con `bash validate-id321-plan27.sh`; el script genera `plan-27-orc-causal-activation-transaction-v1.json`, ejecuta TypeScript, la batería ORC focal con los tests nuevos de activación/cursor, dos benchmarks deterministas con el presupuesto de ID 318 y comprobaciones de cursor real, transición atómica y stop reason coherente.
