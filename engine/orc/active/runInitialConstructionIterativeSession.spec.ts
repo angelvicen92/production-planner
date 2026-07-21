@@ -39,3 +39,19 @@ test("retained alternatives session exports Best-K frontier and backtrack eviden
  assert.ok("rootChainFrontierOccurrenceCount" in r.evidence);
  assert.equal(r.evidence.backtrackSelectionCount,r.evidence.crossCycleBacktrackCount);
 });
+
+test("ID 321 retained alternatives exposes atomic activation invariants",()=>{
+ const stage2=runInitialConstructionStage2FirstPartialPlan({originInput:input,originOperationalState:state,stage1,createdAt:"fixed"});
+ const r:any=runInitialConstructionIterativeSession({originInput:input,originOperationalState:state,stage1,stage2,reasoningBudget:{maxSuspendedPartialPlans:2,maxExpandedPartialPlans:4,maxGeneratedPartialPlans:12,maxChildrenPerDecision:3,maxCrossCycleBacktracks:4} as any,createdAt:"fixed",constructionSearchStrategy:"critical_chain_retained_alternatives"});
+ const e=r.evidence;
+ const commitSources=Number(e.causalActivationSuspendedFrontierCommitCount??0)+Number(e.causalActivationGeneratedGraphCommitCount??0)+Number(e.causalActivationArchiveCommitCount??0)+Number(e.causalActivationCheckpointReopenCommitCount??0);
+ const skipReasons=Object.values(e.causalActivationCandidateSkipReasonCounts??{}).reduce((n:any,v:any)=>Number(n)+Number(v),0);
+ assert.equal(e.causalActivationBacktrackWithoutCommitCount,0);
+ assert.equal(e.causalActivationCommitWithoutOpenedAttemptCount,0);
+ assert.equal(e.causalActivationTransactionInvariantViolationCount,0);
+ assert.equal(e.activePartialPlanAlreadyExpandedAtLoopEntryCount,0);
+ assert.equal(e.prematureTerminationWithEligibleSuspendedFrontierCount,0);
+ assert.equal(e.decisionPathStringParseCount,0);
+ assert.equal(commitSources,e.causalActivationTransactionCommitCount);
+ assert.equal(skipReasons,e.causalActivationCandidateSkippedCount);
+});
