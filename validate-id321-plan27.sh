@@ -83,6 +83,11 @@ add('causalActivationDuplicatePreparePreventedCount >= 0',Number(a.causalActivat
 add('causalActivationCommitAttemptCount = accepted + rejected',Number(a.causalActivationCommitAttemptCount||0)===Number(a.causalActivationCommitAcceptedCount||0)+Number(a.causalActivationCommitRejectedCount||0));
 add('causalActivationCommitAcceptedCount = commit count',Number(a.causalActivationCommitAcceptedCount||0)===Number(a.causalActivationTransactionCommitCount||0));
 add('causalActivationCursorAdvanceDuplicatePreventedCount >= 0',Number(a.causalActivationCursorAdvanceDuplicatePreventedCount||0)>=0);
+add('causalActivationPreparedCursorPrematureActivationCount = 0',Number(a.causalActivationPreparedCursorPrematureActivationCount||0)===0);
+add('causalActivationCursorActivationWithoutCommitCount = 0',Number(a.causalActivationCursorActivationWithoutCommitCount||0)===0);
+add('causalActivationLedgerOpenAfterSourceValidationFailureCount = 0',Number(a.causalActivationLedgerOpenAfterSourceValidationFailureCount||0)===0);
+add('causalActivationArchiveCommitStateMismatchCount = 0',Number(a.causalActivationArchiveCommitStateMismatchCount||0)===0);
+add('cursor activation advance count equals commit count',Number(a.causalActivationCursorActivationAdvanceCount||0)===Number(a.causalActivationTransactionCommitCount||0));
 add('prepared count equals commit count',Number(a.causalActivationTransactionPreparedCount||0)===Number(a.causalActivationTransactionCommitCount||0));
 add('no premature ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED with suspended frontier',!(a.stopReason==='ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED'&&Number(a.suspendedPartialPlanCount||0)>0));
 add('protected assignments intact',a.protectedAssignmentsModified===false);

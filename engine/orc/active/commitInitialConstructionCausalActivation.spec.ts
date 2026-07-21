@@ -113,3 +113,45 @@ test("ID 321 commit rejects malformed prepared transaction without consuming bac
   assert.equal(result.backtrackConsumed, false);
   assert.equal(result.evidence.reason, "SUSPENDED_FRONTIER_ENTRY_NOT_FOUND");
 });
+
+test("ID 321 commit does not modify cursor-shaped external objects", () => {
+  const cursor = { fingerprint: "cursor", activatedDecisionBranchFingerprints: [] as string[] };
+  const result = commitInitialConstructionCausalActivation({
+    transaction: transaction("GENERATED_GRAPH", "C"),
+    currentActive: { partialPlanId: "A" },
+    suspendedFrontier: { entries: [] },
+    causalArchive: [],
+    readOnly: true,
+  });
+  assert.equal(result.committed, true);
+  assert.deepEqual(cursor.activatedDecisionBranchFingerprints, []);
+});
+
+test("ID 321 non-prepared transaction does not consume backtrack or transition", () => {
+  const notPrepared = { ...transaction("GENERATED_GRAPH", "C"), status: "NO_EXISTING_CAUSAL_CANDIDATE" } as InitialConstructionCausalActivationTransactionResult;
+  const result = commitInitialConstructionCausalActivation({
+    transaction: notPrepared,
+    currentActive: { partialPlanId: "A" },
+    suspendedFrontier: { entries: [] },
+    causalArchive: [],
+    readOnly: true,
+  });
+  assert.equal(result.committed, false);
+  assert.equal(result.backtrackConsumed, false);
+  assert.equal(result.transitionConsumed, false);
+  assert.equal(result.evidence.reason, "TRANSACTION_NOT_PREPARED");
+});
+
+test("ID 321 source mismatch rejects without consuming transition", () => {
+  const mismatched = { ...transaction("GENERATED_GRAPH", "C"), sourceCommit: { source: "SUSPENDED_FRONTIER", sourceEntryFingerprint: "C-fp", sourceEntryId: "C" } } as unknown as InitialConstructionCausalActivationTransactionResult;
+  const result = commitInitialConstructionCausalActivation({
+    transaction: mismatched,
+    currentActive: { partialPlanId: "A" },
+    suspendedFrontier: { entries: [{ partialPlanId: "C", assignmentsFingerprint: "C-fp" }] },
+    causalArchive: [],
+    readOnly: true,
+  });
+  assert.equal(result.committed, false);
+  assert.equal(result.transitionConsumed, false);
+  assert.equal(result.evidence.reason, "SOURCE_MISMATCH");
+});
