@@ -1,4 +1,5 @@
 import test from "node:test"; import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { buildOperationalStateFromEngineInput } from "../adapters/fromEngineInput";
 import { runInitialConstructionStage2FirstPartialPlan } from "./runInitialConstructionStage2FirstPartialPlan";
 import { runInitialConstructionIterativeSession } from "./runInitialConstructionIterativeSession";
@@ -54,4 +55,23 @@ test("ID 321 retained alternatives exposes atomic activation invariants",()=>{
  assert.equal(e.decisionPathStringParseCount,0);
  assert.equal(commitSources,e.causalActivationTransactionCommitCount);
  assert.equal(skipReasons,e.causalActivationCandidateSkippedCount);
+});
+
+test("ID 322 CHECKPOINT_REOPEN product wiring reuses one projection and one node collection",()=>{
+ const source=readFileSync(new URL("./runInitialConstructionIterativeSession.ts",import.meta.url),"utf8");
+ const start=source.indexOf("const reopenGraph=buildInitialConstructionPartialPlanGraphIndex(nodes)");
+ const end=source.indexOf("causalActivationTransactionAttemptCount++",start);
+ assert.ok(start>=0&&end>start);
+ const wiring=source.slice(start,end);
+ assert.equal((wiring.match(/const novelIds=/g)??[]).length,1);
+ assert.equal((wiring.match(/const reopenGraphNodes=/g)??[]).length,1);
+ assert.equal((wiring.match(/buildInitialConstructionCheckpointLocalCandidateProjection\(/g)??[]).length,1);
+ const projectionArgs=wiring.slice(wiring.indexOf("buildInitialConstructionCheckpointLocalCandidateProjection("),wiring.indexOf("const reopenCursorKey="));
+ assert.equal(projectionArgs.includes("checkpointProjection:"),false);
+ assert.equal(projectionArgs.includes("checkpointProjectionAccountedByCursor:"),false);
+ assert.equal(projectionArgs.includes("graphNodes:reopenGraphNodes"),true);
+ const transactionArgs=wiring.slice(wiring.indexOf("prepareInitialConstructionCausalActivationTransaction("));
+ assert.equal(transactionArgs.includes("checkpointProjection:reopenProjection"),true);
+ assert.equal(transactionArgs.includes("checkpointProjectionAccountedByCursor:false"),true);
+ assert.equal(transactionArgs.includes("graphNodes:reopenGraphNodes"),true);
 });
