@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { EngineOutput } from "../types";
 import type { EngineV3Input } from "./types";
-import { MAIN_STAGE_CP_SAT_SEGMENT_MAX_TASKS, runMainStageCpSatPilot, selectMainStageCpSatSegments, selectMainStageCpSatSubproblem, type MainStageCpSatSolver } from "./mainStageCpSatPilot";
+import { MAIN_STAGE_CP_SAT_SEGMENT_MAX_TASKS, isCpSatRuntimeUnavailable, runMainStageCpSatPilot, selectMainStageCpSatSegments, selectMainStageCpSatSubproblem, type MainStageCpSatSolver } from "./mainStageCpSatPilot";
 import { countContestantWindowViolations, countDependencyViolations } from "./metrics";
 
 const input: EngineV3Input = {
@@ -138,4 +138,47 @@ test("every CP-SAT segment respects the configured task limit", () => {
   assert.ok(selection.segments.length > 0);
   assert.ok(selection.segments.every((segment) => segment.taskIds.length <= 2));
   assert.equal(MAIN_STAGE_CP_SAT_SEGMENT_MAX_TASKS, 18);
+});
+
+
+test("CP-SAT runtime unavailable classifier recognizes only known optional runtime failures", () => {
+  assert.equal(isCpSatRuntimeUnavailable(["ortools_import_failed"]), true);
+  assert.equal(isCpSatRuntimeUnavailable(["python3_unavailable"]), true);
+  assert.equal(isCpSatRuntimeUnavailable(["cp_sat_script_missing"]), true);
+  assert.equal(isCpSatRuntimeUnavailable(["python_exit_status=2"]), false);
+});
+
+test("pilot uses deterministic fallback and preserves runtime Evidence when python3 is unavailable", () => {
+  const protectedWarmStart: EngineOutput = {
+    ...warmStart,
+    plannedTasks: [
+      ...warmStart.plannedTasks,
+      { taskId: 4, startPlanned: "11:00", endPlanned: "11:30" },
+      { taskId: 5, startPlanned: "09:00", endPlanned: "09:20" },
+      { taskId: 6, startPlanned: "10:30", endPlanned: "11:00" },
+    ],
+  };
+  const solver: MainStageCpSatSolver = () => ({
+    output: protectedWarmStart,
+    noOptimized: true,
+    quality: { improved: false, baselineScore: 10, optimizedScore: 10, objectiveDelta: 0, mainZoneGapMinutesDelta: 0, spaceSwitchesDelta: 0 },
+    degradations: [],
+    message: "python unavailable",
+    technicalDetails: ["python3_unavailable", "python_spawn_error_code=ENOENT"],
+  });
+
+  const result = runMainStageCpSatPilot(input, protectedWarmStart, solver);
+  assert.equal(result.meta.cpSatPilotAttempted, true);
+  assert.ok((result.meta.cpSatSegmentsAttempted ?? 0) > 0);
+  assert.equal(result.meta.cpSatPilotReason, "accepted");
+  assert.equal(countDependencyViolations(input, result.output), 0);
+  assert.equal(countContestantWindowViolations(input, result.output), 0);
+  for (const taskId of [4, 5, 6]) {
+    assert.deepEqual(
+      result.output.plannedTasks.find((row) => row.taskId === taskId),
+      protectedWarmStart.plannedTasks.find((row) => row.taskId === taskId),
+    );
+  }
+  assert.match(result.meta.cpSatSegmentImprovementSummary ?? "", /python3_unavailable/);
+  assert.match(result.meta.cpSatSegmentImprovementSummary ?? "", /deterministic_pilot_fallback/);
 });

@@ -80,6 +80,7 @@ const scoreWarmStart = (input: EngineV3Input, warmStart: EngineOutput) => {
 export type CpSatOptimizationOptions = {
   movableTaskIds?: number[];
   pilotMode?: boolean;
+  spawnPython?: typeof spawnSync;
 };
 
 export function optimizeWithCpSat(
@@ -118,14 +119,19 @@ export function optimizeWithCpSat(
     pilotMode: options.pilotMode ?? false,
   });
 
-  const py = spawnSync("python3", [SCRIPT_PATH], {
+  const spawnPython = options.spawnPython ?? spawnSync;
+  const py = spawnPython("python3", [SCRIPT_PATH], {
     input: payload,
     encoding: "utf-8",
     timeout: Math.max(5_000, Math.round(timeLimitSeconds * 1000) + 3_000),
   });
 
   if (py.error) {
-    return baselineResult("Error invocando CP-SAT; se conserva Fase A.", [String(py.error?.message || py.error)]);
+    const code = (py.error as NodeJS.ErrnoException).code;
+    const details = code === "ENOENT"
+      ? ["python3_unavailable", "python_spawn_error_code=ENOENT"]
+      : ["python_spawn_failed", code ? `python_spawn_error_code=${code}` : undefined].filter((detail): detail is string => Boolean(detail));
+    return baselineResult("Error invocando CP-SAT; se conserva Fase A.", details);
   }
 
   if (py.status !== 0) {
@@ -135,7 +141,7 @@ export function optimizeWithCpSat(
   }
 
   try {
-    const parsed = JSON.parse(py.stdout || "{}");
+    const parsed = JSON.parse(String(py.stdout || "{}"));
     if (!parsed || !parsed.output) {
       return baselineResult("Respuesta CP-SAT inválida; se conserva Fase A.", ["missing_output_in_cp_sat_response"]);
     }

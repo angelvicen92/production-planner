@@ -290,7 +290,16 @@ export const selectMainStageCpSatSegments = (
 
 const toHHMM = (minutes: number): string => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 
-const deterministicPilotFallback = (input: EngineV3Input, warmStart: EngineOutput, movableTaskIds: number[]): CpSatOptimizationResult => {
+const CP_SAT_RUNTIME_UNAVAILABLE_DETAILS = ["ortools_import_failed", "python3_unavailable", "cp_sat_script_missing"] as const;
+
+export const getCpSatRuntimeUnavailableDetails = (technicalDetails: readonly string[]): string[] => {
+  const details = new Set(technicalDetails);
+  return CP_SAT_RUNTIME_UNAVAILABLE_DETAILS.filter((detail) => details.has(detail));
+};
+
+export const isCpSatRuntimeUnavailable = (technicalDetails: readonly string[]): boolean => getCpSatRuntimeUnavailableDetails(technicalDetails).length > 0;
+
+const deterministicPilotFallback = (input: EngineV3Input, warmStart: EngineOutput, movableTaskIds: number[], runtimeUnavailableDetails: readonly string[] = []): CpSatOptimizationResult => {
   const taskById = new Map((input.tasks ?? []).map((task: any) => [Number(task.id), task]));
   const mainZoneId = Number(input.optimizerMainZoneId);
   const orderedIds = [...movableTaskIds].sort((a, b) => {
@@ -315,17 +324,13 @@ const deterministicPilotFallback = (input: EngineV3Input, warmStart: EngineOutpu
   return {
     output: candidate,
     quality: { improved: compareCandidateSolutions(input, candidate, warmStart) > 0, baselineScore: baseScore.mainStageGapMinutes, optimizedScore: candidateScore.mainStageGapMinutes, objectiveDelta: candidateScore.mainStageGapMinutes - baseScore.mainStageGapMinutes, mainZoneGapMinutesDelta: candidateScore.mainStageGapMinutes - baseScore.mainStageGapMinutes, spaceSwitchesDelta: candidateScore.coachSwitchPenalty - baseScore.coachSwitchPenalty },
-    degradations: [], message: "Fallback determinista acotado usado porque OR-Tools no está disponible.", technicalDetails: ["deterministic_pilot_fallback"],
+    degradations: [], message: "Fallback determinista acotado usado porque el runtime opcional de CP-SAT no está disponible.", technicalDetails: [...new Set([...runtimeUnavailableDetails, "deterministic_pilot_fallback"])],
   };
 };
 
 export type MainStageCpSatSolver = (input: EngineV3Input, warmStart: EngineOutput, timeLimitSeconds: number, movableTaskIds: number[]) => CpSatOptimizationResult;
 
-const defaultSolver: MainStageCpSatSolver = (input, warmStart, timeLimitSeconds, movableTaskIds) => {
-  const external = optimizeWithCpSat(input, warmStart, timeLimitSeconds, { movableTaskIds, pilotMode: true });
-  if (external.technicalDetails.includes("ortools_import_failed")) return deterministicPilotFallback(input, warmStart, movableTaskIds);
-  return external;
-};
+const defaultSolver: MainStageCpSatSolver = (input, warmStart, timeLimitSeconds, movableTaskIds) => optimizeWithCpSat(input, warmStart, timeLimitSeconds, { movableTaskIds, pilotMode: true });
 
 export const runMainStageCpSatPilot = (
   input: EngineV3Input,
@@ -355,17 +360,23 @@ export const runMainStageCpSatPilot = (
   const outcomes: string[] = [];
   for (const segment of selection.segments) {
     attempted += 1;
-    const optimized = solver(input, baseOutput, MAIN_STAGE_CP_SAT_PILOT_TIME_LIMIT_SECONDS, segment.taskIds);
+    const rawOptimized = solver(input, baseOutput, MAIN_STAGE_CP_SAT_PILOT_TIME_LIMIT_SECONDS, segment.taskIds);
+    const unavailableDetails = getCpSatRuntimeUnavailableDetails(rawOptimized.technicalDetails);
+    const usedDeterministicFallback = unavailableDetails.length > 0;
+    const optimized = usedDeterministicFallback
+      ? deterministicPilotFallback(input, baseOutput, segment.taskIds, unavailableDetails)
+      : rawOptimized;
     if (optimized.noOptimized) { outcomes.push(`${segment.kind}:${segment.reason}:solver_unavailable`); continue; }
     const errors = validateOptimizedCandidate(input, baseOutput, optimized.output);
     const candidateHardViolations = scoreCandidateSolution(input, optimized.output).hardConstraintViolations;
     if (candidateHardViolations > 0) errors.push(`HARD_CONSTRAINT_VIOLATIONS_${candidateHardViolations}`);
-    if (errors.length > 0) { outcomes.push(`${segment.kind}:${segment.reason}:candidate_validation_failed(${errors.join("|")})`); continue; }
-    if (compareCandidateSolutions(input, optimized.output, selectedOutput) <= 0) { outcomes.push(`${segment.kind}:${segment.reason}:candidate_not_better`); continue; }
+    const evidenceSuffix = usedDeterministicFallback ? `:${optimized.technicalDetails.join("|")}` : "";
+    if (errors.length > 0) { outcomes.push(`${segment.kind}:${segment.reason}:candidate_validation_failed(${errors.join("|")})${evidenceSuffix}`); continue; }
+    if (compareCandidateSolutions(input, optimized.output, selectedOutput) <= 0) { outcomes.push(`${segment.kind}:${segment.reason}:candidate_not_better${evidenceSuffix}`); continue; }
     selectedOutput = optimized.output;
     accepted += 1;
     bestKind = segment.kind;
-    outcomes.push(`${segment.kind}:${segment.reason}:accepted`);
+    outcomes.push(`${segment.kind}:${segment.reason}:accepted${evidenceSuffix}`);
   }
   const runtime = Math.max(0, Date.now() - started);
   const baseScore = scoreCandidateSolution(input, baseOutput);
