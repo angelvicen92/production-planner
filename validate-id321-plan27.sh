@@ -28,6 +28,7 @@ npm run check || exit 1
 npx tsx --test \
   engine/orc/active/initialConstructionCausalAlternativeActivation.spec.ts \
   engine/orc/active/initialConstructionCausalActivationTransaction.spec.ts \
+  engine/orc/active/commitInitialConstructionCausalActivation.spec.ts \
   engine/orc/active/initialConstructionCausalCheckpointCursor.spec.ts \
   engine/orc/active/initialConstructionCausalBranchOutcomeClassifier.spec.ts \
   engine/orc/active/initialConstructionCausalBranchOutcomeLedger.spec.ts \
@@ -77,6 +78,11 @@ add('causalActivationCompleteEvidenceLegacySelectorInvocationCount = 0',Number(a
 add('causalActivationLegacyGeneratedSiblingBypassCount = 0',Number(a.causalActivationLegacyGeneratedSiblingBypassCount||0)===0);
 add('causalActivationReopenCandidateBypassedTransactionCount = 0',Number(a.causalActivationReopenCandidateBypassedTransactionCount||0)===0);
 add('causalActivationCursorUpdateDiscardedCount = 0',Number(a.causalActivationCursorUpdateDiscardedCount||0)===0);
+add('causalActivationLedgerOpenAfterPreparedTransactionCount = 0',Number(a.causalActivationLedgerOpenAfterPreparedTransactionCount||0)===0);
+add('causalActivationDuplicatePreparePreventedCount >= 0',Number(a.causalActivationDuplicatePreparePreventedCount||0)>=0);
+add('causalActivationCommitAttemptCount = accepted + rejected',Number(a.causalActivationCommitAttemptCount||0)===Number(a.causalActivationCommitAcceptedCount||0)+Number(a.causalActivationCommitRejectedCount||0));
+add('causalActivationCommitAcceptedCount = commit count',Number(a.causalActivationCommitAcceptedCount||0)===Number(a.causalActivationTransactionCommitCount||0));
+add('causalActivationCursorAdvanceDuplicatePreventedCount >= 0',Number(a.causalActivationCursorAdvanceDuplicatePreventedCount||0)>=0);
 add('prepared count equals commit count',Number(a.causalActivationTransactionPreparedCount||0)===Number(a.causalActivationTransactionCommitCount||0));
 add('no premature ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED with suspended frontier',!(a.stopReason==='ALL_ELIGIBLE_FRONTIER_CANDIDATES_EXHAUSTED'&&Number(a.suspendedPartialPlanCount||0)>0));
 add('protected assignments intact',a.protectedAssignmentsModified===false);
