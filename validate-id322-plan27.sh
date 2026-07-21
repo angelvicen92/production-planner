@@ -12,7 +12,7 @@ trap 'rm -f "$RUN_A" "$RUN_B" "$TMP_OUTPUT"' EXIT
 if [[ ! -f "$SNAPSHOT" ]]; then echo "ERROR: no existe el snapshot de Plan 27: $SNAPSHOT" >&2; exit 2; fi
 npm run check || exit 1
 npx tsx --test engine/orc/active/initialConstructionCausalActivationTransaction.spec.ts engine/orc/active/runInitialConstructionIterativeSession.spec.ts engine/tools/runInitialConstructionBenchmark.spec.ts || exit 1
-npm test -- --runInBand || exit 1
+npm test || exit 1
 npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_A" || exit 1
 npx tsx engine/tools/runInitialConstructionBenchmark.ts "$SNAPSHOT" "$BUDGET" > "$RUN_B" || exit 1
 node - "$RUN_A" "$RUN_B" "$TMP_OUTPUT" <<'NODE'
