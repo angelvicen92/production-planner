@@ -167,6 +167,10 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   const stage2 = runInitialConstructionStage2FirstPartialPlan({ originInput, originOperationalState, stage1, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy });
   const session = runInitialConstructionIterativeSession({ originInput, originOperationalState, stage1, stage2, reasoningBudget: reasoningBudget as any, createdAt: "benchmark", canonicalContext: canonical.context, constructionSearchStrategy });
   const ended = performance.now();
+  const iterativeSessionExecuted = session.executed === true || session.evidence?.executed === true;
+  const iterativeSessionReason = session.reason ?? session.evidence?.stopReason ?? null;
+  const benchmarkOutcome = iterativeSessionExecuted ? "EXECUTED" : stage2?.executed === true && stage2?.selectedValidationResult !== "VALID" ? "STAGE2_GATE_REJECTED" : "SESSION_NOT_EXECUTED";
+  const benchmarkComparisonEligible = iterativeSessionExecuted;
   const repair = session.evidence?.initialConstructionConflictDirectedRepair ?? {};
   const classification = resolveInitialConstructionOperationalClassification({input:originInput,state:originOperationalState,planningMode:"INITIAL_CONSTRUCTION",provisionalAssignments:[]});
   const universe = classification.taskUniverse;
@@ -179,6 +183,18 @@ export function runInitialConstructionBenchmarkFromInput(input: any, reasoningBu
   return {
     ...(session.evidence ?? {}),
     constructionSearchStrategy,
+    stage2Executed: stage2?.executed === true,
+    stage2Reason: stage2?.reason ?? null,
+    stage2SelectedBranchId: stage2?.selectedBranchId ?? null,
+    stage2SelectedAssignmentCount: stage2?.selectedAssignmentCount ?? 0,
+    stage2SelectedValidationResult: stage2?.selectedValidationResult ?? null,
+    stage2SelectedFutureFeasibilityStatus: stage2?.selectedFutureFeasibilityStatus ?? null,
+    stage2HardValidBranchCount: stage2?.hardValidBranchCount ?? 0,
+    stage2FutureInfeasibleBranchCount: stage2?.futureInfeasibleBranchCount ?? 0,
+    iterativeSessionExecuted,
+    iterativeSessionReason,
+    benchmarkComparisonEligible,
+    benchmarkOutcome,
     exclusiveConstructiveRuntimeMs: Math.round(ended - started),
     assignmentsReached: session.evidence?.finalCombinedAssignmentCount ?? stage2.selectedAssignmentCount ?? 0,
     cycles: session.evidence?.acceptedCycleCount ?? 0,

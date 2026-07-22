@@ -27,3 +27,15 @@ test("isolated initial construction benchmark runs Stage 1, Stage 2, and iterati
     assert.notEqual(result[key],undefined,key);
   }
 });
+
+test("ID 323 benchmark classifies non-executed sessions honestly", () => {
+  const tiny:any={planId:1,workDay:{start:"09:00",end:"09:01"},contestantAvailabilityById:{1:{start:"09:00",end:"09:01"}},planResourceItems:[],tasks:[{id:1,planId:1,templateId:1,status:"pending",contestantId:1,spaceId:1,durationOverrideMin:120}]};
+  const result = runInitialConstructionBenchmarkFromInput(tiny, { maxAcceptedCycles: 1, maxBranchEvaluationsPerAnchor: 1 });
+  assert.equal(Object.prototype.hasOwnProperty.call(result,"benchmarkComparisonEligible"), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(result,"benchmarkOutcome"), true);
+  if (result.iterativeSessionExecuted === false) {
+    assert.equal(result.benchmarkComparisonEligible, false);
+    assert.ok(["STAGE2_GATE_REJECTED","SESSION_NOT_EXECUTED"].includes(String(result.benchmarkOutcome)));
+    assert.ok(result.iterativeSessionReason || result.stage2Reason || result.stage2SelectedValidationResult !== "VALID");
+  }
+});
