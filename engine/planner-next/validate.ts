@@ -1,33 +1,218 @@
-import type { PlannerNextProblem, ScheduledTask, ValidationSummary } from "./contracts";
+import type {
+  Person,
+  PlannerNextProblem,
+  ScheduledTask,
+  Space,
+  Task,
+  ValidationSummary,
+  Window,
+} from "./contracts";
 import { contains, overlaps } from "./time";
 
-export function preflight(p: PlannerNextProblem): string[] {
-  const reasons: string[] = [];
-  if (p.day.start >= p.day.end) reasons.push("INVALID_DAY");
-  if (p.mainFlow.continuity !== "REQUIRED") reasons.push("MAIN_FLOW_CONTINUITY_REQUIRED");
-  if (p.budget.bestK < 1 || p.budget.maxBacktracks < 0) reasons.push("INVALID_SEARCH_BUDGET");
-  const ids = (xs: {id:string}[]) => new Set(xs.map(x=>x.id));
-  if (ids(p.tasks).size !== p.tasks.length) reasons.push("DUPLICATE_TASK_ID");
-  const people=ids(p.participants), coaches=ids(p.coaches), spaces=ids(p.spaces), tasks=ids(p.tasks);
-  for (const t of p.tasks) if (!people.has(t.participantId)||!coaches.has(t.coachId)||!spaces.has(t.spaceId)||t.duration<=0||t.dependencies.some(d=>!tasks.has(d))) reasons.push("INVALID_TASK_REFERENCE");
-  if (!spaces.has(p.mainFlow.spaceId)) reasons.push("MISSING_MAIN_FLOW_SPACE");
-  return [...new Set(reasons)].sort();
+function hasDuplicateIds(items: Array<{ id: string }>): boolean {
+  return new Set(items.map(({ id }) => id)).size !== items.length;
 }
 
-export function validatePlan(p: PlannerNextProblem, scheduled: ScheduledTask[]): ValidationSummary {
-  let dependency=0, overlap=0, transition=0, availability=0, block=0;
-  const byId=new Map(scheduled.map(t=>[t.id,t])); const participants=new Map(p.participants.map(x=>[x.id,x])); const coaches=new Map(p.coaches.map(x=>[x.id,x])); const spaces=new Map(p.spaces.map(x=>[x.id,x]));
-  for (const t of scheduled) {
-    if (t.end-t.start!==t.duration || t.start<p.day.start || t.end>p.day.end || overlaps(t,p.protectedMeal) || !contains(participants.get(t.participantId)?.availability??[],t.start,t.end) || !contains(coaches.get(t.coachId)?.availability??[],t.start,t.end) || !contains(spaces.get(t.spaceId)?.availability??[],t.start,t.end)) availability++;
-    for (const d of t.dependencies) { const feeder=byId.get(d); if (!feeder || feeder.end>t.start) dependency++; }
+function invalidWindow(window: Window, day: Window): boolean {
+  return !Number.isFinite(window.start)
+    || !Number.isFinite(window.end)
+    || window.start >= window.end
+    || window.start < day.start
+    || window.end > day.end;
+}
+
+function validateAvailability(items: Array<Person | Space>, day: Window): boolean {
+  return items.some((item) =>
+    !Array.isArray(item.availability)
+    || item.availability.length === 0
+    || item.availability.some((window) => invalidWindow(window, day)),
+  );
+}
+
+/** Validates exactly the deliberately small contract supported by Planner Next. */
+export function preflight(problem: PlannerNextProblem): string[] {
+  const reasons = new Set<string>();
+  const day = problem.day;
+
+  if (!day || !Number.isFinite(day.start) || !Number.isFinite(day.end) || day.start >= day.end) {
+    reasons.add("INVALID_DAY");
   }
-  for (let i=0;i<scheduled.length;i++) for(let j=i+1;j<scheduled.length;j++) { const a=scheduled[i],b=scheduled[j]; if (!overlaps(a,b)) continue; if(a.participantId===b.participantId||a.coachId===b.coachId||a.spaceId===b.spaceId) overlap++; }
-  for (const field of ["participantId","coachId"] as const) {
-    const margin=field==="participantId"?p.participantTransitionMinutes:p.resourceTransitionMinutes;
-    const groups=new Map<string,ScheduledTask[]>(); for(const t of scheduled) groups.set(t[field],[...(groups.get(t[field])??[]),t]);
-    for(const list of groups.values()) { list.sort((a,b)=>a.start-b.start); for(let i=1;i<list.length;i++) if(list[i-1].spaceId!==list[i].spaceId && list[i].start-list[i-1].end<margin) transition++; }
+  const usableDay = day && Number.isFinite(day.start) && Number.isFinite(day.end) && day.start < day.end;
+  if (!problem.protectedMeal || !usableDay || invalidWindow(problem.protectedMeal, day)) {
+    reasons.add("INVALID_PROTECTED_MEAL");
   }
-  const mains=scheduled.filter(t=>t.kind==="main").sort((a,b)=>a.start-b.start); if(mains.length) { if(mains.at(-1)!.end!==p.mainFlow.preferredEnd) block++; for(let i=1;i<mains.length;i++) if(mains[i-1].end!==mains[i].start) block++; const runs:{key:string;n:number}[]=[]; for(const t of mains){const key=t.blockKey!; if(runs.at(-1)?.key===key) runs.at(-1)!.n++;else runs.push({key,n:1});} const counts=new Map<string,number>(); for(const r of runs){counts.set(r.key,(counts.get(r.key)??0)+1);if(r.n<p.mainFlow.minTasksPerBlock)block++;} if([...counts.values()].some(n=>n>p.mainFlow.maxBlocksByKey))block++; }
-  const reasonCodes:string[]=[]; if(scheduled.length!==p.tasks.length)reasonCodes.push("UNPLANNED_TASKS"); if(dependency)reasonCodes.push("DEPENDENCY_VIOLATION");if(overlap)reasonCodes.push("OVERLAP_VIOLATION");if(transition)reasonCodes.push("TRANSITION_VIOLATION");if(availability)reasonCodes.push("AVAILABILITY_VIOLATION");if(block)reasonCodes.push("BLOCK_VIOLATION");
-  return {hardValid:reasonCodes.length===0,dependencyViolationCount:dependency,overlapViolationCount:overlap,transitionViolationCount:transition,availabilityViolationCount:availability,blockViolationCount:block,reasonCodes};
+  const preferredEnd = problem.mainFlow?.preferredEnd;
+  if (!usableDay
+    || !Number.isFinite(preferredEnd)
+    || preferredEnd < day.start
+    || preferredEnd > day.end
+    || (problem.protectedMeal && preferredEnd > problem.protectedMeal.start)) {
+    reasons.add("INVALID_PREFERRED_END");
+  }
+  if (problem.mainFlow?.continuity !== "REQUIRED") {
+    reasons.add("UNSUPPORTED_CONTINUITY");
+  }
+
+  const budget = problem.budget;
+  if (!budget
+    || !Number.isInteger(budget.bestK) || budget.bestK <= 0
+    || !Number.isInteger(budget.maxBacktracks) || budget.maxBacktracks < 0
+    || !Number.isInteger(budget.maxPatterns) || budget.maxPatterns <= 0
+    || !Number.isInteger(budget.maxBranchExpansions) || budget.maxBranchExpansions <= 0) {
+    reasons.add("INVALID_SEARCH_BUDGET");
+  }
+  if (!Number.isFinite(problem.participantTransitionMinutes)
+    || problem.participantTransitionMinutes < 0
+    || !Number.isFinite(problem.resourceTransitionMinutes)
+    || problem.resourceTransitionMinutes < 0) {
+    reasons.add("INVALID_TRANSITION_MARGIN");
+  }
+
+  const participants = Array.isArray(problem.participants) ? problem.participants : [];
+  const coaches = Array.isArray(problem.coaches) ? problem.coaches : [];
+  const spaces = Array.isArray(problem.spaces) ? problem.spaces : [];
+  const tasks = Array.isArray(problem.tasks) ? problem.tasks : [];
+  if (hasDuplicateIds(participants)) reasons.add("DUPLICATE_PARTICIPANT_ID");
+  if (hasDuplicateIds(coaches)) reasons.add("DUPLICATE_COACH_ID");
+  if (hasDuplicateIds(spaces)) reasons.add("DUPLICATE_SPACE_ID");
+  if (hasDuplicateIds(tasks)) reasons.add("DUPLICATE_TASK_ID");
+  if (usableDay && validateAvailability([...participants, ...coaches, ...spaces], day)) {
+    reasons.add("INVALID_AVAILABILITY_WINDOW");
+  }
+
+  const participantIds = new Set(participants.map(({ id }) => id));
+  const coachIds = new Set(coaches.map(({ id }) => id));
+  const spaceIds = new Set(spaces.map(({ id }) => id));
+  const taskIds = new Set(tasks.map(({ id }) => id));
+  const mainSpaceId = problem.mainFlow?.spaceId;
+  if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
+
+  for (const task of tasks) {
+    if (task.kind !== "main" && task.kind !== "vocal") reasons.add("UNSUPPORTED_TASK_KIND");
+    if (!participantIds.has(task.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
+    if (!coachIds.has(task.coachId)) reasons.add("MISSING_COACH_REFERENCE");
+    if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
+    if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
+    if (!Array.isArray(task.dependencies)
+      || task.dependencies.some((dependencyId) => !taskIds.has(dependencyId))) {
+      reasons.add("MISSING_TASK_REFERENCE");
+    }
+    if (task.kind === "main" && task.spaceId !== mainSpaceId) reasons.add("INVALID_MAIN_FLOW_SPACE");
+    if (task.kind === "vocal" && task.spaceId === mainSpaceId) reasons.add("INVALID_VOCAL_SPACE");
+  }
+
+  for (const participant of participants) {
+    const own = tasks.filter((task) => task.participantId === participant.id);
+    const mains = own.filter((task) => task.kind === "main");
+    const vocals = own.filter((task) => task.kind === "vocal");
+    if (mains.length === 0) reasons.add("MISSING_MAIN_TASK");
+    if (vocals.length === 0) reasons.add("MISSING_FEEDER_TASK");
+    if (mains.length > 1) reasons.add("MULTIPLE_MAIN_TASKS_FOR_PARTICIPANT");
+    if (vocals.length > 1) reasons.add("MULTIPLE_VOCAL_TASKS_FOR_PARTICIPANT");
+    if (mains.length !== 1 || vocals.length !== 1) continue;
+    const main = mains[0];
+    const vocal = vocals[0];
+    if (!main || !vocal) continue;
+    if (!Array.isArray(main.dependencies) || !main.dependencies.includes(vocal.id)) {
+      reasons.add("MISSING_FEEDER_DEPENDENCY");
+    }
+    if (main.dependencies.length !== 1 || main.dependencies[0] !== vocal.id) {
+      reasons.add("UNSUPPORTED_MAIN_DEPENDENCIES");
+    }
+    if (main.coachId !== vocal.coachId) reasons.add("MAIN_FEEDER_COACH_MISMATCH");
+    if (!main.blockKey) reasons.add("MISSING_MAIN_BLOCK_KEY");
+    else if (main.blockKey !== main.coachId) reasons.add("INVALID_MAIN_BLOCK_KEY");
+  }
+
+  const mainDurations = new Set(tasks.filter(({ kind }) => kind === "main").map(({ duration }) => duration));
+  if (mainDurations.size > 1) reasons.add("UNSUPPORTED_MAIN_DURATION_MIX");
+  return [...reasons].sort();
+}
+
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[]): ValidationSummary {
+  let dependency = 0;
+  let overlap = 0;
+  let transition = 0;
+  let availability = 0;
+  let block = 0;
+  const byId = new Map(scheduled.map((task) => [task.id, task]));
+  const participants = new Map(problem.participants.map((item) => [item.id, item]));
+  const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
+  const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
+
+  for (const task of scheduled) {
+    const participant = participants.get(task.participantId);
+    const coach = coaches.get(task.coachId);
+    const space = spaces.get(task.spaceId);
+    if (task.end - task.start !== task.duration
+      || task.start < problem.day.start || task.end > problem.day.end
+      || overlaps(task, problem.protectedMeal)
+      || !participant || !contains(participant.availability, task.start, task.end)
+      || !coach || !contains(coach.availability, task.start, task.end)
+      || !space || !contains(space.availability, task.start, task.end)) availability += 1;
+    for (const dependencyId of task.dependencies) {
+      const feeder = byId.get(dependencyId);
+      if (!feeder || feeder.end > task.start) dependency += 1;
+    }
+  }
+  for (let first = 0; first < scheduled.length; first += 1) {
+    for (let second = first + 1; second < scheduled.length; second += 1) {
+      const a = scheduled[first];
+      const b = scheduled[second];
+      if (!a || !b || !overlaps(a, b)) continue;
+      if (a.participantId === b.participantId || a.coachId === b.coachId || a.spaceId === b.spaceId) overlap += 1;
+    }
+  }
+  for (const field of ["participantId", "coachId"] as const) {
+    const margin = field === "participantId" ? problem.participantTransitionMinutes : problem.resourceTransitionMinutes;
+    const groups = new Map<string, ScheduledTask[]>();
+    for (const task of scheduled) groups.set(task[field], [...(groups.get(task[field]) ?? []), task]);
+    for (const list of groups.values()) {
+      list.sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+      for (let index = 1; index < list.length; index += 1) {
+        const previous = list[index - 1];
+        const current = list[index];
+        if (previous && current && previous.spaceId !== current.spaceId && current.start - previous.end < margin) transition += 1;
+      }
+    }
+  }
+  const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
+  const lastMain = mains.at(-1);
+  if (mains.length > 0) {
+    if (!lastMain || lastMain.end !== problem.mainFlow.preferredEnd) block += 1;
+    for (let index = 1; index < mains.length; index += 1) {
+      const previous = mains[index - 1];
+      const current = mains[index];
+      if (!previous || !current || previous.end !== current.start) block += 1;
+    }
+    const runs: Array<{ key: string; count: number }> = [];
+    for (const task of mains) {
+      const key = task.blockKey ?? "";
+      const prior = runs.at(-1);
+      if (prior?.key === key) prior.count += 1;
+      else runs.push({ key, count: 1 });
+    }
+    const counts = new Map<string, number>();
+    for (const run of runs) {
+      counts.set(run.key, (counts.get(run.key) ?? 0) + 1);
+      if (run.count < problem.mainFlow.minTasksPerBlock) block += 1;
+    }
+    if ([...counts.values()].some((count) => count > problem.mainFlow.maxBlocksByKey)) block += 1;
+  }
+  const reasonCodes: string[] = [];
+  if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
+  if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
+  if (overlap) reasonCodes.push("OVERLAP_VIOLATION");
+  if (transition) reasonCodes.push("TRANSITION_VIOLATION");
+  if (availability) reasonCodes.push("AVAILABILITY_VIOLATION");
+  if (block) reasonCodes.push("BLOCK_VIOLATION");
+  return {
+    hardValid: reasonCodes.length === 0,
+    dependencyViolationCount: dependency,
+    overlapViolationCount: overlap,
+    transitionViolationCount: transition,
+    availabilityViolationCount: availability,
+    blockViolationCount: block,
+    reasonCodes,
+  };
 }
