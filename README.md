@@ -2094,3 +2094,11 @@ The public benchmark retains ID 323 fields and adds Stage 2 carrier/goal/closure
 Planner Next begins as an isolated vertical slice under `engine/planner-next`: V3, V4 and ORC remain frozen, and Planner Next is not imported by or integrated into any production route. This first cut covers only a continuous main flow and its vocal feeders; it makes no claim to plan the remainder of a production day. Further scope is blocked until the focal benchmark passes.
 
 Run `bash validate-next-001.sh`. On success it writes `planner-next-main-flow-vocal-v1.json` with completion and hard-validity, task totals, main-flow timing and gaps, coach block sequence/counts, violation counters, participant-presence bounds, bounded-search counters, runtime and deterministic plan fingerprint.
+
+### NEXT-002 — Contract Safety and Proven Backtracking
+
+NEXT-001 remains complete and hard-valid with all 16 tasks, a continuous 13:00–15:00 main flow, and its frozen `070b4d…6848b` fingerprint. No new domain capability is added yet: NEXT-002 first makes the focal input contract crash-safe and makes every search limit explicit.
+
+The small adversarial vocal scenario uses participant windows, dependencies, coaches, two vocal rooms, and the real 5/15-minute margins so that the highest-ranked complete main-flow alternatives cannot place every feeder. With backtracking enabled the next retained alternative completes all 16 tasks after 2 backtracks, with zero violations and a continuous flow ending at 15:00; with `maxBacktracks = 0`, search stops atomically with `BACKTRACK_BUDGET_EXHAUSTED`.
+
+Planner Next remains isolated and is not integrated into production or represented as a full-day planner. V3, V4 and ORC remain frozen. Run `bash validate-next-002.sh`; the accepted artifact `planner-next-core-backtracking-v1.json` records the baseline and adversarial fingerprints, logical budget metrics, deterministic reruns, and per-scenario runtimes below two seconds.

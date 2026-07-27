@@ -1,36 +1,327 @@
-import type { PlanMetrics, PlanResult, PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import type {
+  PlanMetrics,
+  PlanResult,
+  PlannerNextProblem,
+  ScheduledTask,
+  SearchStopReason,
+  Task,
+} from "./contracts";
 import { fingerprint } from "./fingerprint";
 import { contains, overlaps } from "./time";
 import { preflight, validatePlan } from "./validate";
 
-type MainAlternative={tasks:ScheduledTask[]; score:number; signature:string};
-const canonical=<T extends {id:string}>(xs:T[])=>[...xs].sort((a,b)=>a.id.localeCompare(b.id));
+interface MainAlternative {
+  tasks: ScheduledTask[];
+  score: number;
+  signature: string;
+}
 
-function patterns(mains:Task[], min:number, max:number):string[][] {
-  const counts=new Map<string,number>(); for(const t of mains)counts.set(t.blockKey!,(counts.get(t.blockKey!)??0)+1);
-  const keys=[...counts.keys()].sort(); const out:string[][]=[];
-  const rec=(remaining:Map<string,number>,runs:{key:string,n:number}[])=>{ const left=[...remaining.values()].reduce((a,b)=>a+b,0); if(!left){out.push(runs.flatMap(r=>Array(r.n).fill(r.key)));return;} for(const key of keys){const n=remaining.get(key)??0;if(!n||runs.at(-1)?.key===key||runs.filter(r=>r.key===key).length>=max)continue;for(let take=min;take<=n;take++){remaining.set(key,n-take);rec(remaining,[...runs,{key,n:take}]);remaining.set(key,n);}}};
-  const runCount=(p:string[])=>p.reduce((n,k,i)=>n+(i===0||p[i-1]!==k?1:0),0);rec(new Map(counts),[]); return out.sort((a,b)=>runCount(a)-runCount(b)||a.join("|").localeCompare(b.join("|"))).slice(0,24);
+interface Counters {
+  alternativesGenerated: number;
+  alternativesRetained: number;
+  branches: number;
+  backtracks: number;
+  patternsGenerated: number;
+  patternsEvaluated: number;
 }
-function freeFor(task:Task,start:number,p:PlannerNextProblem,placed:ScheduledTask[]):boolean {
-  const end=start+task.duration, person=p.participants.find(x=>x.id===task.participantId)!,coach=p.coaches.find(x=>x.id===task.coachId)!,space=p.spaces.find(x=>x.id===task.spaceId)!;
-  if(!contains(person.availability,start,end)||!contains(coach.availability,start,end)||!contains(space.availability,start,end)||overlaps({start,end},p.protectedMeal))return false;
-  return !placed.some(x=>{const sharedParticipant=x.participantId===task.participantId,sharedCoach=x.coachId===task.coachId;if(overlaps(x,{start,end})&&(sharedParticipant||sharedCoach||x.spaceId===task.spaceId))return true;if(x.spaceId===task.spaceId)return false;const margin=sharedCoach?p.resourceTransitionMinutes:sharedParticipant?p.participantTransitionMinutes:0;return margin>0&&((x.end<=start&&start-x.end<margin)||(end<=x.start&&x.start-end<margin));});
-}
-function placeFeeders(p:PlannerNextProblem,mains:ScheduledTask[]):ScheduledTask[]|null {
-  const placed=[...mains]; const feederByParticipant=new Map(p.tasks.filter(t=>t.kind==="vocal").map(t=>[t.participantId,t]));
-  for(const main of [...mains].sort((a,b)=>b.start-a.start||a.id.localeCompare(b.id))){const feeder=feederByParticipant.get(main.participantId)!;const deadline=main.start-Math.max(p.participantTransitionMinutes,p.resourceTransitionMinutes);let found:number|undefined;
-    for(let start=deadline-feeder.duration;start>=p.day.start;start-=5) if(freeFor(feeder,start,p,placed)){found=start;break;}
-    if(found===undefined)return null;placed.push({...feeder,start:found,end:found+feeder.duration});
-  } return placed;
-}
-function emptyMetrics(p:PlannerNextProblem,reasons:string[],runtimeMs:number,counters={generated:0,retained:0,branches:0,backtracks:0}):PlanMetrics {return {complete:false,hardValid:false,plannedTaskCount:0,unplannedTaskCount:p.tasks.length,mainFlowStart:null,mainFlowEnd:null,mainFlowGapMinutes:0,blockSequence:[],blockCountByKey:{},dependencyViolationCount:0,overlapViolationCount:0,transitionViolationCount:0,availabilityViolationCount:0,blockViolationCount:0,participantPresenceMinutesById:{},totalParticipantPresenceMinutes:0,maxParticipantPresenceMinutes:0,alternativesGenerated:counters.generated,alternativesRetained:counters.retained,branchesExplored:counters.branches,backtracks:counters.backtracks,runtimeMs,planFingerprint:fingerprint([]),reasonCodes:reasons};}
 
-export function planMainFlowAndFeeders(p:PlannerNextProblem):PlanResult {
-  const begun=performance.now(),pre=preflight(p);if(pre.length)return{complete:false,scheduledTasks:[],metrics:emptyMetrics(p,pre,performance.now()-begun)};
-  const mains=canonical(p.tasks.filter(t=>t.kind==="main")), duration=mains[0]?.duration??0,start=p.mainFlow.preferredEnd-mains.length*duration, pats=patterns(mains,p.mainFlow.minTasksPerBlock,p.mainFlow.maxBlocksByKey);let generated=0,branches=0,backtracks=0;const alternatives:MainAlternative[]=[];
-  for(const pattern of pats){let beam:MainAlternative[]=[{tasks:[],score:0,signature:""}];for(let pos=0;pos<mains.length&&beam.length;pos++){const next:MainAlternative[]=[];const slot=start+pos*duration;for(const state of beam)for(const task of mains){branches++;if(task.blockKey!==pattern[pos]||state.tasks.some(x=>x.id===task.id)||!freeFor(task,slot,p,state.tasks))continue;const feeder=p.tasks.find(x=>x.kind==="vocal"&&x.participantId===task.participantId)!;const deadline=slot-Math.max(p.participantTransitionMinutes,p.resourceTransitionMinutes);if(!p.participants.find(x=>x.id===task.participantId)!.availability.some(w=>w.start+feeder.duration<=deadline))continue;const loss=p.participants.find(x=>x.id===task.participantId)!.availability.filter(w=>w.start<=slot&&slot+duration<=w.end).reduce((n,w)=>n+Math.max(0,w.end-slot),0);const score=state.score+loss+Math.abs(mains.findIndex(x=>x.id===task.id)-pos);const tasks=[...state.tasks,{...task,start:slot,end:slot+duration}];next.push({tasks,score,signature:tasks.map(x=>x.id).join("|")});generated++;}beam=next.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,p.budget.bestK);}alternatives.push(...beam);}
-  const retained=alternatives.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,p.budget.bestK);
-  for(const alternative of retained){const all=placeFeeders(p,alternative.tasks);if(!all){backtracks++;if(backtracks>p.budget.maxBacktracks)break;continue;}const validation=validatePlan(p,all);if(!validation.hardValid){backtracks++;continue;}const ordered=[...all].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));const main=ordered.filter(t=>t.kind==="main"),runs:string[]=[];for(const t of main)if(runs.at(-1)!==t.blockKey)runs.push(t.blockKey!);const blockCountByKey:Record<string,number>={};for(const key of runs)blockCountByKey[key]=(blockCountByKey[key]??0)+1;const presence:Record<string,number>={};for(const id of canonical(p.participants).map(x=>x.id)){const own=ordered.filter(t=>t.participantId===id);presence[id]=Math.max(...own.map(t=>t.end))-Math.min(...own.map(t=>t.start));}const values=Object.values(presence);const metrics:PlanMetrics={...validation,complete:true,plannedTaskCount:all.length,unplannedTaskCount:0,mainFlowStart:main[0].start,mainFlowEnd:main.at(-1)!.end,mainFlowGapMinutes:main.slice(1).reduce((n,t,i)=>n+Math.max(0,t.start-main[i].end),0),blockSequence:runs,blockCountByKey,participantPresenceMinutesById:presence,totalParticipantPresenceMinutes:values.reduce((a,b)=>a+b,0),maxParticipantPresenceMinutes:Math.max(...values),alternativesGenerated:generated,alternativesRetained:retained.length,branchesExplored:branches,backtracks,runtimeMs:performance.now()-begun,planFingerprint:fingerprint(ordered)};return{complete:true,scheduledTasks:ordered,metrics};}
-  return{complete:false,scheduledTasks:[],metrics:emptyMetrics(p,["NO_COMPLETE_HARD_VALID_PLAN"],performance.now()-begun,{generated,retained:retained.length,branches,backtracks})};
+function canonical<T extends { id: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function generatePatterns(
+  mains: Task[],
+  minimumRun: number,
+  maximumRunsByKey: number,
+  maximumPatterns: number,
+): { patterns: string[][]; exhausted: boolean } {
+  const counts = new Map<string, number>();
+  for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
+  const keys = [...counts.keys()].sort();
+  const output: string[][] = [];
+  let exhausted = false;
+
+  function visit(remaining: Map<string, number>, runs: Array<{ key: string; count: number }>): void {
+    if (exhausted) return;
+    const left = [...remaining.values()].reduce((sum, count) => sum + count, 0);
+    if (left === 0) {
+      if (output.length >= maximumPatterns) {
+        exhausted = true;
+        return;
+      }
+      output.push(runs.flatMap((run) => Array(run.count).fill(run.key) as string[]));
+      return;
+    }
+    for (const key of keys) {
+      const available = remaining.get(key) ?? 0;
+      const sameAsPrevious = runs.at(-1)?.key === key;
+      const runsForKey = runs.filter((run) => run.key === key).length;
+      if (available === 0 || sameAsPrevious || runsForKey >= maximumRunsByKey) continue;
+      for (let take = minimumRun; take <= available; take += 1) {
+        remaining.set(key, available - take);
+        visit(remaining, [...runs, { key, count: take }]);
+        remaining.set(key, available);
+        if (exhausted) return;
+      }
+    }
+  }
+
+  visit(new Map(counts), []);
+  const runCount = (pattern: string[]): number => pattern.reduce(
+    (count, key, index) => count + (index === 0 || pattern[index - 1] !== key ? 1 : 0), 0,
+  );
+  output.sort((a, b) => runCount(a) - runCount(b) || a.join("|").localeCompare(b.join("|")));
+  return { patterns: output, exhausted };
+}
+
+function freeFor(task: Task, start: number, problem: PlannerNextProblem, placed: ScheduledTask[]): boolean {
+  const end = start + task.duration;
+  const participant = problem.participants.find(({ id }) => id === task.participantId);
+  const coach = problem.coaches.find(({ id }) => id === task.coachId);
+  const space = problem.spaces.find(({ id }) => id === task.spaceId);
+  if (!participant || !coach || !space) return false;
+  if (!contains(participant.availability, start, end)
+    || !contains(coach.availability, start, end)
+    || !contains(space.availability, start, end)
+    || overlaps({ start, end }, problem.protectedMeal)) return false;
+  return !placed.some((other) => {
+    const sharedParticipant = other.participantId === task.participantId;
+    const sharedCoach = other.coachId === task.coachId;
+    if (overlaps(other, { start, end })
+      && (sharedParticipant || sharedCoach || other.spaceId === task.spaceId)) return true;
+    if (other.spaceId === task.spaceId) return false;
+    const margin = sharedCoach
+      ? problem.resourceTransitionMinutes
+      : sharedParticipant ? problem.participantTransitionMinutes : 0;
+    return margin > 0 && (
+      (other.end <= start && start - other.end < margin)
+      || (end <= other.start && other.start - end < margin)
+    );
+  });
+}
+
+function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[]): ScheduledTask[] | null {
+  const placed = [...mains];
+  const feederByParticipant = new Map(
+    problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
+  );
+  const latestFirst = [...mains].sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
+  for (const main of latestFirst) {
+    const feeder = feederByParticipant.get(main.participantId);
+    if (!feeder) return null;
+    const deadline = main.start - Math.max(
+      problem.participantTransitionMinutes,
+      problem.resourceTransitionMinutes,
+    );
+    let selectedStart: number | undefined;
+    for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
+      if (freeFor(feeder, start, problem, placed)) {
+        selectedStart = start;
+        break;
+      }
+    }
+    if (selectedStart === undefined) return null;
+    placed.push({ ...feeder, start: selectedStart, end: selectedStart + feeder.duration });
+  }
+  return placed;
+}
+
+function emptyMetrics(
+  problem: PlannerNextProblem,
+  reasons: string[],
+  runtimeMs: number,
+  stopReason: SearchStopReason,
+  counters?: Partial<Counters>,
+): PlanMetrics {
+  return {
+    complete: false,
+    hardValid: false,
+    plannedTaskCount: 0,
+    unplannedTaskCount: Array.isArray(problem.tasks) ? problem.tasks.length : 0,
+    mainFlowStart: null,
+    mainFlowEnd: null,
+    mainFlowGapMinutes: 0,
+    blockSequence: [],
+    blockCountByKey: {},
+    dependencyViolationCount: 0,
+    overlapViolationCount: 0,
+    transitionViolationCount: 0,
+    availabilityViolationCount: 0,
+    blockViolationCount: 0,
+    participantPresenceMinutesById: {},
+    totalParticipantPresenceMinutes: 0,
+    maxParticipantPresenceMinutes: 0,
+    alternativesGenerated: counters?.alternativesGenerated ?? 0,
+    alternativesRetained: counters?.alternativesRetained ?? 0,
+    branchesExplored: counters?.branches ?? 0,
+    backtracks: counters?.backtracks ?? 0,
+    patternsGenerated: counters?.patternsGenerated ?? 0,
+    patternsEvaluated: counters?.patternsEvaluated ?? 0,
+    branchBudgetConsumed: counters?.branches ?? 0,
+    searchStopReason: stopReason,
+    runtimeMs,
+    planFingerprint: fingerprint([]),
+    reasonCodes: reasons,
+  };
+}
+
+function failure(
+  problem: PlannerNextProblem,
+  begun: number,
+  reason: SearchStopReason,
+  counters?: Partial<Counters>,
+): PlanResult {
+  return {
+    complete: false,
+    scheduledTasks: [],
+    metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
+  };
+}
+
+export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult {
+  const begun = performance.now();
+  const preflightReasons = preflight(problem);
+  if (preflightReasons.length > 0) {
+    return {
+      complete: false,
+      scheduledTasks: [],
+      metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
+    };
+  }
+
+  const mains = canonical(problem.tasks.filter(({ kind }) => kind === "main"));
+  const duration = mains[0]?.duration;
+  if (duration === undefined || mains.length === 0) {
+    return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN");
+  }
+  const mainStart = problem.mainFlow.preferredEnd - mains.length * duration;
+  const generatedPatterns = generatePatterns(
+    mains,
+    problem.mainFlow.minTasksPerBlock,
+    problem.mainFlow.maxBlocksByKey,
+    problem.budget.maxPatterns,
+  );
+  const counters: Counters = {
+    alternativesGenerated: 0,
+    alternativesRetained: 0,
+    branches: 0,
+    backtracks: 0,
+    patternsGenerated: generatedPatterns.patterns.length,
+    patternsEvaluated: 0,
+  };
+  if (generatedPatterns.exhausted) {
+    return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
+  }
+
+  const alternatives: MainAlternative[] = [];
+  for (const pattern of generatedPatterns.patterns) {
+    counters.patternsEvaluated += 1;
+    let beam: MainAlternative[] = [{ tasks: [], score: 0, signature: "" }];
+    for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
+      const next: MainAlternative[] = [];
+      const slot = mainStart + position * duration;
+      for (const state of beam) {
+        for (const task of mains) {
+          if (counters.branches >= problem.budget.maxBranchExpansions) {
+            return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
+          }
+          counters.branches += 1;
+          if (task.blockKey !== pattern[position]
+            || state.tasks.some(({ id }) => id === task.id)
+            || !freeFor(task, slot, problem, state.tasks)) continue;
+          const feeder = problem.tasks.find(
+            (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
+          );
+          const participant = problem.participants.find(({ id }) => id === task.participantId);
+          if (!feeder || !participant) continue;
+          const deadline = slot - Math.max(
+            problem.participantTransitionMinutes,
+            problem.resourceTransitionMinutes,
+          );
+          if (!participant.availability.some((window) => window.start + feeder.duration <= deadline)) continue;
+          const loss = participant.availability
+            .filter((window) => window.start <= slot && slot + duration <= window.end)
+            .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
+          const originalIndex = mains.findIndex(({ id }) => id === task.id);
+          const score = state.score + loss + Math.abs(originalIndex - position);
+          const tasks = [...state.tasks, { ...task, start: slot, end: slot + duration }];
+          next.push({ tasks, score, signature: tasks.map(({ id }) => id).join("|") });
+          counters.alternativesGenerated += 1;
+        }
+      }
+      beam = next
+        .sort((a, b) => a.score - b.score || a.signature.localeCompare(b.signature))
+        .slice(0, problem.budget.bestK);
+    }
+    alternatives.push(...beam);
+  }
+  const retained = alternatives
+    .sort((a, b) => a.score - b.score || a.signature.localeCompare(b.signature))
+    .slice(0, problem.budget.bestK);
+  counters.alternativesRetained = retained.length;
+
+  for (let index = 0; index < retained.length; index += 1) {
+    const alternative = retained[index];
+    if (!alternative) continue;
+    const all = placeFeeders(problem, alternative.tasks);
+    const validation = all ? validatePlan(problem, all) : null;
+    if (!all || !validation?.hardValid) {
+      const hasNext = index + 1 < retained.length;
+      if (!hasNext) break;
+      if (counters.backtracks >= problem.budget.maxBacktracks) {
+        return failure(problem, begun, "BACKTRACK_BUDGET_EXHAUSTED", counters);
+      }
+      counters.backtracks += 1;
+      continue;
+    }
+
+    const ordered = [...all].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+    const mainTasks = ordered.filter(({ kind }) => kind === "main");
+    const firstMain = mainTasks[0];
+    const lastMain = mainTasks.at(-1);
+    if (!firstMain || !lastMain) break;
+    const runs: string[] = [];
+    for (const task of mainTasks) {
+      const key = task.blockKey;
+      if (key && runs.at(-1) !== key) runs.push(key);
+    }
+    const blockCountByKey: Record<string, number> = {};
+    for (const key of runs) blockCountByKey[key] = (blockCountByKey[key] ?? 0) + 1;
+    const presence: Record<string, number> = {};
+    for (const id of canonical(problem.participants).map(({ id }) => id)) {
+      const own = ordered.filter(({ participantId }) => participantId === id);
+      if (own.length === 0) presence[id] = 0;
+      else presence[id] = Math.max(...own.map(({ end }) => end)) - Math.min(...own.map(({ start }) => start));
+    }
+    const values = Object.values(presence);
+    const metrics: PlanMetrics = {
+      ...validation,
+      complete: true,
+      plannedTaskCount: all.length,
+      unplannedTaskCount: 0,
+      mainFlowStart: firstMain.start,
+      mainFlowEnd: lastMain.end,
+      mainFlowGapMinutes: mainTasks.slice(1).reduce((total, task, mainIndex) => {
+        const previous = mainTasks[mainIndex];
+        return total + (previous ? Math.max(0, task.start - previous.end) : 0);
+      }, 0),
+      blockSequence: runs,
+      blockCountByKey,
+      participantPresenceMinutesById: presence,
+      totalParticipantPresenceMinutes: values.reduce((sum, value) => sum + value, 0),
+      maxParticipantPresenceMinutes: values.length > 0 ? Math.max(...values) : 0,
+      alternativesGenerated: counters.alternativesGenerated,
+      alternativesRetained: counters.alternativesRetained,
+      branchesExplored: counters.branches,
+      backtracks: counters.backtracks,
+      patternsGenerated: counters.patternsGenerated,
+      patternsEvaluated: counters.patternsEvaluated,
+      branchBudgetConsumed: counters.branches,
+      searchStopReason: "SOLUTION_FOUND",
+      runtimeMs: performance.now() - begun,
+      planFingerprint: fingerprint(ordered),
+    };
+    return { complete: true, scheduledTasks: ordered, metrics };
+  }
+  return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }
