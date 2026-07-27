@@ -1,0 +1,36 @@
+import type { PlanMetrics, PlanResult, PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import { fingerprint } from "./fingerprint";
+import { contains, overlaps } from "./time";
+import { preflight, validatePlan } from "./validate";
+
+type MainAlternative={tasks:ScheduledTask[]; score:number; signature:string};
+const canonical=<T extends {id:string}>(xs:T[])=>[...xs].sort((a,b)=>a.id.localeCompare(b.id));
+
+function patterns(mains:Task[], min:number, max:number):string[][] {
+  const counts=new Map<string,number>(); for(const t of mains)counts.set(t.blockKey!,(counts.get(t.blockKey!)??0)+1);
+  const keys=[...counts.keys()].sort(); const out:string[][]=[];
+  const rec=(remaining:Map<string,number>,runs:{key:string,n:number}[])=>{ const left=[...remaining.values()].reduce((a,b)=>a+b,0); if(!left){out.push(runs.flatMap(r=>Array(r.n).fill(r.key)));return;} for(const key of keys){const n=remaining.get(key)??0;if(!n||runs.at(-1)?.key===key||runs.filter(r=>r.key===key).length>=max)continue;for(let take=min;take<=n;take++){remaining.set(key,n-take);rec(remaining,[...runs,{key,n:take}]);remaining.set(key,n);}}};
+  const runCount=(p:string[])=>p.reduce((n,k,i)=>n+(i===0||p[i-1]!==k?1:0),0);rec(new Map(counts),[]); return out.sort((a,b)=>runCount(a)-runCount(b)||a.join("|").localeCompare(b.join("|"))).slice(0,24);
+}
+function freeFor(task:Task,start:number,p:PlannerNextProblem,placed:ScheduledTask[]):boolean {
+  const end=start+task.duration, person=p.participants.find(x=>x.id===task.participantId)!,coach=p.coaches.find(x=>x.id===task.coachId)!,space=p.spaces.find(x=>x.id===task.spaceId)!;
+  if(!contains(person.availability,start,end)||!contains(coach.availability,start,end)||!contains(space.availability,start,end)||overlaps({start,end},p.protectedMeal))return false;
+  return !placed.some(x=>{const sharedParticipant=x.participantId===task.participantId,sharedCoach=x.coachId===task.coachId;if(overlaps(x,{start,end})&&(sharedParticipant||sharedCoach||x.spaceId===task.spaceId))return true;if(x.spaceId===task.spaceId)return false;const margin=sharedCoach?p.resourceTransitionMinutes:sharedParticipant?p.participantTransitionMinutes:0;return margin>0&&((x.end<=start&&start-x.end<margin)||(end<=x.start&&x.start-end<margin));});
+}
+function placeFeeders(p:PlannerNextProblem,mains:ScheduledTask[]):ScheduledTask[]|null {
+  const placed=[...mains]; const feederByParticipant=new Map(p.tasks.filter(t=>t.kind==="vocal").map(t=>[t.participantId,t]));
+  for(const main of [...mains].sort((a,b)=>b.start-a.start||a.id.localeCompare(b.id))){const feeder=feederByParticipant.get(main.participantId)!;const deadline=main.start-Math.max(p.participantTransitionMinutes,p.resourceTransitionMinutes);let found:number|undefined;
+    for(let start=deadline-feeder.duration;start>=p.day.start;start-=5) if(freeFor(feeder,start,p,placed)){found=start;break;}
+    if(found===undefined)return null;placed.push({...feeder,start:found,end:found+feeder.duration});
+  } return placed;
+}
+function emptyMetrics(p:PlannerNextProblem,reasons:string[],runtimeMs:number,counters={generated:0,retained:0,branches:0,backtracks:0}):PlanMetrics {return {complete:false,hardValid:false,plannedTaskCount:0,unplannedTaskCount:p.tasks.length,mainFlowStart:null,mainFlowEnd:null,mainFlowGapMinutes:0,blockSequence:[],blockCountByKey:{},dependencyViolationCount:0,overlapViolationCount:0,transitionViolationCount:0,availabilityViolationCount:0,blockViolationCount:0,participantPresenceMinutesById:{},totalParticipantPresenceMinutes:0,maxParticipantPresenceMinutes:0,alternativesGenerated:counters.generated,alternativesRetained:counters.retained,branchesExplored:counters.branches,backtracks:counters.backtracks,runtimeMs,planFingerprint:fingerprint([]),reasonCodes:reasons};}
+
+export function planMainFlowAndFeeders(p:PlannerNextProblem):PlanResult {
+  const begun=performance.now(),pre=preflight(p);if(pre.length)return{complete:false,scheduledTasks:[],metrics:emptyMetrics(p,pre,performance.now()-begun)};
+  const mains=canonical(p.tasks.filter(t=>t.kind==="main")), duration=mains[0]?.duration??0,start=p.mainFlow.preferredEnd-mains.length*duration, pats=patterns(mains,p.mainFlow.minTasksPerBlock,p.mainFlow.maxBlocksByKey);let generated=0,branches=0,backtracks=0;const alternatives:MainAlternative[]=[];
+  for(const pattern of pats){let beam:MainAlternative[]=[{tasks:[],score:0,signature:""}];for(let pos=0;pos<mains.length&&beam.length;pos++){const next:MainAlternative[]=[];const slot=start+pos*duration;for(const state of beam)for(const task of mains){branches++;if(task.blockKey!==pattern[pos]||state.tasks.some(x=>x.id===task.id)||!freeFor(task,slot,p,state.tasks))continue;const feeder=p.tasks.find(x=>x.kind==="vocal"&&x.participantId===task.participantId)!;const deadline=slot-Math.max(p.participantTransitionMinutes,p.resourceTransitionMinutes);if(!p.participants.find(x=>x.id===task.participantId)!.availability.some(w=>w.start+feeder.duration<=deadline))continue;const loss=p.participants.find(x=>x.id===task.participantId)!.availability.filter(w=>w.start<=slot&&slot+duration<=w.end).reduce((n,w)=>n+Math.max(0,w.end-slot),0);const score=state.score+loss+Math.abs(mains.findIndex(x=>x.id===task.id)-pos);const tasks=[...state.tasks,{...task,start:slot,end:slot+duration}];next.push({tasks,score,signature:tasks.map(x=>x.id).join("|")});generated++;}beam=next.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,p.budget.bestK);}alternatives.push(...beam);}
+  const retained=alternatives.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,p.budget.bestK);
+  for(const alternative of retained){const all=placeFeeders(p,alternative.tasks);if(!all){backtracks++;if(backtracks>p.budget.maxBacktracks)break;continue;}const validation=validatePlan(p,all);if(!validation.hardValid){backtracks++;continue;}const ordered=[...all].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));const main=ordered.filter(t=>t.kind==="main"),runs:string[]=[];for(const t of main)if(runs.at(-1)!==t.blockKey)runs.push(t.blockKey!);const blockCountByKey:Record<string,number>={};for(const key of runs)blockCountByKey[key]=(blockCountByKey[key]??0)+1;const presence:Record<string,number>={};for(const id of canonical(p.participants).map(x=>x.id)){const own=ordered.filter(t=>t.participantId===id);presence[id]=Math.max(...own.map(t=>t.end))-Math.min(...own.map(t=>t.start));}const values=Object.values(presence);const metrics:PlanMetrics={...validation,complete:true,plannedTaskCount:all.length,unplannedTaskCount:0,mainFlowStart:main[0].start,mainFlowEnd:main.at(-1)!.end,mainFlowGapMinutes:main.slice(1).reduce((n,t,i)=>n+Math.max(0,t.start-main[i].end),0),blockSequence:runs,blockCountByKey,participantPresenceMinutesById:presence,totalParticipantPresenceMinutes:values.reduce((a,b)=>a+b,0),maxParticipantPresenceMinutes:Math.max(...values),alternativesGenerated:generated,alternativesRetained:retained.length,branchesExplored:branches,backtracks,runtimeMs:performance.now()-begun,planFingerprint:fingerprint(ordered)};return{complete:true,scheduledTasks:ordered,metrics};}
+  return{complete:false,scheduledTasks:[],metrics:emptyMetrics(p,["NO_COMPLETE_HARD_VALID_PLAN"],performance.now()-begun,{generated,retained:retained.length,branches,backtracks})};
+}
