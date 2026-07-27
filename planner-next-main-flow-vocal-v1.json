@@ -36,7 +36,7 @@
   "alternativesRetained": 5,
   "branchesExplored": 1576,
   "backtracks": 0,
-  "runtimeMs": 24.202494,
+  "runtimeMs": 19.03100799999993,
   "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
   "validation": {
     "benchmarkFingerprintMatched": true,
