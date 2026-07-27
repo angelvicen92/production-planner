@@ -1,0 +1,46 @@
+{
+  "hardValid": true,
+  "dependencyViolationCount": 0,
+  "overlapViolationCount": 0,
+  "transitionViolationCount": 0,
+  "availabilityViolationCount": 0,
+  "blockViolationCount": 0,
+  "reasonCodes": [],
+  "complete": true,
+  "plannedTaskCount": 16,
+  "unplannedTaskCount": 0,
+  "mainFlowStart": "13:00",
+  "mainFlowEnd": "15:00",
+  "mainFlowGapMinutes": 0,
+  "blockSequence": [
+    "coach-a",
+    "coach-b"
+  ],
+  "blockCountByKey": {
+    "coach-a": 1,
+    "coach-b": 1
+  },
+  "participantPresenceMinutesById": {
+    "participant-a": 90,
+    "participant-c": 90,
+    "participant-d": 90,
+    "participant-e": 90,
+    "participant-f": 90,
+    "participant-g": 90,
+    "participant-h": 90,
+    "participant-z": 90
+  },
+  "totalParticipantPresenceMinutes": 720,
+  "maxParticipantPresenceMinutes": 90,
+  "alternativesGenerated": 390,
+  "alternativesRetained": 5,
+  "branchesExplored": 1576,
+  "backtracks": 0,
+  "runtimeMs": 24.202494,
+  "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
+  "validation": {
+    "benchmarkFingerprintMatched": true,
+    "logicalMetricsMatched": true,
+    "runtimeBudgetMs": 2000
+  }
+}
