@@ -17,7 +17,7 @@
       "branchBudgetConsumed": 1576,
       "searchStopReason": "SOLUTION_FOUND",
       "violationCount": 0,
-      "runtimeMs": 24.66646099999997,
+      "runtimeMs": 15.84593799999999,
       "deterministic": true
     },
     "adversarial": {
@@ -36,7 +36,7 @@
       "branchBudgetConsumed": 2560,
       "searchStopReason": "SOLUTION_FOUND",
       "violationCount": 0,
-      "runtimeMs": 3.6484370000000013,
+      "runtimeMs": 6.586929999999995,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -57,7 +57,7 @@
       "branchBudgetConsumed": 2560,
       "searchStopReason": "BACKTRACK_BUDGET_EXHAUSTED",
       "violationCount": 0,
-      "runtimeMs": 2.9385050000000206,
+      "runtimeMs": 8.985210999999993,
       "deterministic": true
     }
   },
