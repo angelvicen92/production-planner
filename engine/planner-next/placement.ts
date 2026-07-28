@@ -1,6 +1,12 @@
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { contains, overlaps } from "./time";
 
+/** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
+export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
+  return problem.resources.find(({ id }) => id === resourceId)?.transitionMinutes
+    ?? problem.resourceTransitionMinutes;
+}
+
 /** The single hard-placement predicate used by every Planner Next phase. */
 export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[]): boolean {
   const end = start + task.duration;
@@ -15,11 +21,13 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   return !placed.some((other) => {
     const sharedParticipant = other.participantId === task.participantId;
     const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
-    const sharedResource = (task.requiredResourceIds ?? []).some((id) => (other.requiredResourceIds ?? []).includes(id));
+    const sharedResources = (task.requiredResourceIds ?? []).filter((id) => (other.requiredResourceIds ?? []).includes(id));
+    const sharedResource = sharedResources.length > 0;
     if (overlaps(other, { start, end }) && (sharedParticipant || sharedCoach || sharedResource || other.spaceId === task.spaceId)) return true;
     if (other.spaceId === task.spaceId) return false;
     const margin = Math.max(sharedParticipant ? problem.participantTransitionMinutes : 0,
-      sharedCoach || sharedResource ? problem.resourceTransitionMinutes : 0);
+      sharedCoach ? problem.resourceTransitionMinutes : 0,
+      ...sharedResources.map((id) => effectiveResourceTransitionMinutes(problem, id)));
     return margin > 0 && ((other.end <= start && start - other.end < margin) || (end <= other.start && other.start - end < margin));
   });
 }

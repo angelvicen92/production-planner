@@ -21,6 +21,7 @@ export interface Resource {
   id: string;
   availability: Window[];
   presencePreference: PreferenceLevel;
+  transitionMinutes?: number;
 }
 
 export interface Task {
@@ -104,6 +105,8 @@ export interface PlanMetrics extends ValidationSummary {
   maxParticipantPresenceMinutes: number;
   resourcePresenceMinutesById: Record<string, number>;
   resourceInternalGapMinutesById: Record<string, number>;
+  resourceMoveCountById: Record<string, number>;
+  resourceTransitionSlackMinutesById: Record<string, number>;
   totalResourcePresenceMinutes: number;
   maxResourcePresenceMinutes: number;
   alternativesGenerated: number;

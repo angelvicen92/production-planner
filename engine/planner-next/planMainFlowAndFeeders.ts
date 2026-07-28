@@ -7,7 +7,7 @@ import type {
   Task,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
-import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics } from "./resourcePresence";
+import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
 import { preflight, validatePlan } from "./validate";
 import { canPlaceTask } from "./placement";
 import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
@@ -134,6 +134,8 @@ function emptyMetrics(
     maxParticipantPresenceMinutes: 0,
     resourcePresenceMinutesById: {},
     resourceInternalGapMinutesById: {},
+    resourceMoveCountById: {},
+    resourceTransitionSlackMinutesById: {},
     totalResourcePresenceMinutes: 0,
     maxResourcePresenceMinutes: 0,
     alternativesGenerated: counters?.alternativesGenerated ?? 0,
@@ -294,6 +296,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     }
     const values = Object.values(presence);
     const resourcePresence = resourcePresenceMetrics(problem.resources, ordered);
+    const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const metrics: PlanMetrics = {
       ...validation,
@@ -313,6 +316,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       maxParticipantPresenceMinutes: values.length > 0 ? Math.max(...values) : 0,
       resourcePresenceMinutesById: resourcePresence.presenceMinutesById,
       resourceInternalGapMinutesById: resourcePresence.internalGapMinutesById,
+      resourceMoveCountById: resourceRoute.moveCountById,
+      resourceTransitionSlackMinutesById: resourceRoute.transitionSlackMinutesById,
       totalResourcePresenceMinutes: resourceValues.reduce((sum, value) => sum + value, 0),
       maxResourcePresenceMinutes: resourceValues.length > 0 ? Math.max(...resourceValues) : 0,
       alternativesGenerated: counters.alternativesGenerated,

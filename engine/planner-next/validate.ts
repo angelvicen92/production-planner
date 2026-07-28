@@ -9,6 +9,7 @@ import type {
   Window,
 } from "./contracts";
 import { contains, overlaps } from "./time";
+import { effectiveResourceTransitionMinutes } from "./placement";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -81,6 +82,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (hasDuplicateIds(tasks)) reasons.add("DUPLICATE_TASK_ID");
   if (hasDuplicateIds(resources)) reasons.add("DUPLICATE_RESOURCE_ID");
   if (resources.some(({ id }) => typeof id !== "string" || id.trim() === "")) reasons.add("INVALID_RESOURCE_CONTRACT");
+  if (resources.some(({ transitionMinutes }) => transitionMinutes !== undefined
+    && (typeof transitionMinutes !== "number" || !Number.isFinite(transitionMinutes)
+      || !Number.isInteger(transitionMinutes) || transitionMinutes < 0))) reasons.add("INVALID_RESOURCE_TRANSITION");
   if (usableDay && validateAvailability([...participants, ...coaches, ...spaces], day)) {
     reasons.add("INVALID_AVAILABILITY_WINDOW");
   }
@@ -220,11 +224,15 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       }
     }
   }
-  const byResource = new Map<string, ScheduledTask[]>();
-  for (const task of scheduled) for (const id of task.requiredResourceIds ?? []) byResource.set(id, [...(byResource.get(id) ?? []), task]);
-  for (const list of byResource.values()) {
-    list.sort((a,b) => a.start - b.start || a.id.localeCompare(b.id));
-    for (let index=1; index<list.length; index+=1) { const a=list[index-1], b=list[index]; if (a && b && a.spaceId !== b.spaceId && b.start-a.end < problem.resourceTransitionMinutes) resourceTransition += 1; }
+  for (let first = 0; first < scheduled.length; first += 1) {
+    for (let second = first + 1; second < scheduled.length; second += 1) {
+      const unorderedA = scheduled[first], unorderedB = scheduled[second];
+      if (!unorderedA || !unorderedB) continue;
+      const [a, b] = unorderedA.start <= unorderedB.start ? [unorderedA, unorderedB] : [unorderedB, unorderedA];
+      const shared = (a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
+      const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id)), 0);
+      if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin) resourceTransition += 1;
+    }
   }
   const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
   const lastMain = mains.at(-1);
