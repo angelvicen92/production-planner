@@ -8,8 +8,10 @@ import type {
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
 import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics } from "./resourcePresence";
-import { contains, overlaps } from "./time";
 import { preflight, validatePlan } from "./validate";
+import { canPlaceTask } from "./placement";
+import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
+import { participantPresenceSpan } from "./participantPresence";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -24,6 +26,7 @@ interface Counters {
   backtracks: number;
   patternsGenerated: number;
   patternsEvaluated: number;
+  auxiliaryBranches: number;
 }
 
 function canonical<T extends { id: string }>(items: T[]): T[] {
@@ -75,35 +78,6 @@ function generatePatterns(
   return { patterns: output, exhausted };
 }
 
-function freeFor(task: Task, start: number, problem: PlannerNextProblem, placed: ScheduledTask[]): boolean {
-  const end = start + task.duration;
-  const participant = problem.participants.find(({ id }) => id === task.participantId);
-  const coach = problem.coaches.find(({ id }) => id === task.coachId);
-  const space = problem.spaces.find(({ id }) => id === task.spaceId);
-  const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
-  if (!participant || !coach || !space) return false;
-  if (!contains(participant.availability, start, end)
-    || !contains(coach.availability, start, end)
-    || !contains(space.availability, start, end)
-    || overlaps({ start, end }, problem.protectedMeal)
-    || resources.some((resource) => !resource || !contains(resource.availability, start, end))) return false;
-  return !placed.some((other) => {
-    const sharedParticipant = other.participantId === task.participantId;
-    const sharedCoach = other.coachId === task.coachId;
-    if (overlaps(other, { start, end })
-      && (sharedParticipant || sharedCoach || other.spaceId === task.spaceId
-        || (task.requiredResourceIds ?? []).some((id) => (other.requiredResourceIds ?? []).includes(id)))) return true;
-    if (other.spaceId === task.spaceId) return false;
-    const margin = sharedCoach
-      ? problem.resourceTransitionMinutes
-      : sharedParticipant ? problem.participantTransitionMinutes : 0;
-    return margin > 0 && (
-      (other.end <= start && start - other.end < margin)
-      || (end <= other.start && other.start - end < margin)
-    );
-  });
-}
-
 function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[]): ScheduledTask[] | null {
   const placed = [...mains];
   const feederByParticipant = new Map(
@@ -119,7 +93,7 @@ function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[]): Sche
     );
     let selectedStart: number | undefined;
     for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      if (freeFor(feeder, start, problem, placed)) {
+      if (canPlaceTask(problem, feeder, start, placed)) {
         selectedStart = start;
         break;
       }
@@ -154,6 +128,7 @@ function emptyMetrics(
     blockViolationCount: 0,
     resourceAvailabilityViolationCount: 0,
     resourceOverlapViolationCount: 0,
+    resourceTransitionViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -171,6 +146,11 @@ function emptyMetrics(
     searchStopReason: stopReason,
     runtimeMs,
     planFingerprint: fingerprint([]),
+    auxiliaryTaskCount: Array.isArray(problem.tasks) ? problem.tasks.filter((x) => x?.kind === "auxiliary").length : 0,
+    auxiliaryPlannedTaskCount: 0,
+    auxiliaryBranchesExplored: counters?.auxiliaryBranches ?? 0,
+    auxiliarySelectionOrder: [],
+    auxiliaryCandidateCountWhenSelectedByTaskId: {},
     reasonCodes: reasons,
   };
 }
@@ -218,6 +198,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     backtracks: 0,
     patternsGenerated: generatedPatterns.patterns.length,
     patternsEvaluated: 0,
+    auxiliaryBranches: 0,
   };
   if (generatedPatterns.exhausted) {
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
@@ -238,7 +219,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           counters.branches += 1;
           if (task.blockKey !== pattern[position]
             || state.tasks.some(({ id }) => id === task.id)
-            || !freeFor(task, slot, problem, state.tasks)) continue;
+            || !canPlaceTask(problem, task, slot, state.tasks)) continue;
           const feeder = problem.tasks.find(
             (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
           );
@@ -279,7 +260,11 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   for (let index = 0; index < retained.length; index += 1) {
     const alternative = retained[index];
     if (!alternative) continue;
-    const all = placeFeeders(problem, alternative.tasks);
+    const core = placeFeeders(problem, alternative.tasks);
+    const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches)) : null;
+    if (auxiliary) counters.auxiliaryBranches += auxiliary.branches;
+    if (auxiliary?.exhausted) return failure(problem, begun, "AUXILIARY_BRANCH_BUDGET_EXHAUSTED", counters);
+    const all = auxiliary?.tasks ?? null;
     const validation = all ? validatePlan(problem, all) : null;
     if (!all || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
@@ -305,9 +290,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     for (const key of runs) blockCountByKey[key] = (blockCountByKey[key] ?? 0) + 1;
     const presence: Record<string, number> = {};
     for (const id of canonical(problem.participants).map(({ id }) => id)) {
-      const own = ordered.filter(({ participantId }) => participantId === id);
-      if (own.length === 0) presence[id] = 0;
-      else presence[id] = Math.max(...own.map(({ end }) => end)) - Math.min(...own.map(({ start }) => start));
+      presence[id] = participantPresenceSpan(id, ordered);
     }
     const values = Object.values(presence);
     const resourcePresence = resourcePresenceMetrics(problem.resources, ordered);
@@ -342,6 +325,11 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
       planFingerprint: fingerprint(ordered),
+      auxiliaryTaskCount: problem.tasks.filter((x) => x.kind === "auxiliary").length,
+      auxiliaryPlannedTaskCount: ordered.filter((x) => x.kind === "auxiliary").length,
+      auxiliaryBranchesExplored: counters.auxiliaryBranches,
+      auxiliarySelectionOrder: auxiliary?.selectionOrder ?? [],
+      auxiliaryCandidateCountWhenSelectedByTaskId: auxiliary?.candidateCounts ?? {},
     };
     return { complete: true, scheduledTasks: ordered, metrics };
   }

@@ -29,6 +29,7 @@
     "benchmark:planner-next:focal": "tsx engine/planner-next/benchmarks/runMainFlowVocalBenchmark.ts",
     "benchmark:planner-next:core": "tsx engine/planner-next/benchmarks/runPlannerNextCoreBenchmark.ts",
     "benchmark:planner-next:resource-presence": "tsx engine/planner-next/benchmarks/runPlannerNextResourcePresenceBenchmark.ts"
+    ,"benchmark:planner-next:auxiliary-scarcity": "tsx engine/planner-next/benchmarks/runPlannerNextAuxiliaryScarcityBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

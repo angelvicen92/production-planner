@@ -25,9 +25,9 @@ export interface Resource {
 
 export interface Task {
   id: string;
-  kind: "main" | "vocal";
+  kind: "main" | "vocal" | "auxiliary";
   participantId: string;
-  coachId: string;
+  coachId?: string;
   duration: number;
   spaceId: string;
   dependencies: string[];
@@ -60,6 +60,7 @@ export interface PlannerNextProblem {
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
   budget: SearchBudget;
+  auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
 }
 
 export interface ScheduledTask extends Task {
@@ -76,6 +77,7 @@ export interface ValidationSummary {
   blockViolationCount: number;
   resourceAvailabilityViolationCount: number;
   resourceOverlapViolationCount: number;
+  resourceTransitionViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -85,7 +87,8 @@ export type SearchStopReason =
   | "NO_COMPLETE_HARD_VALID_PLAN"
   | "PATTERN_BUDGET_EXHAUSTED"
   | "BRANCH_BUDGET_EXHAUSTED"
-  | "BACKTRACK_BUDGET_EXHAUSTED";
+  | "BACKTRACK_BUDGET_EXHAUSTED"
+  | "AUXILIARY_BRANCH_BUDGET_EXHAUSTED";
 
 export interface PlanMetrics extends ValidationSummary {
   complete: boolean;
@@ -113,6 +116,11 @@ export interface PlanMetrics extends ValidationSummary {
   searchStopReason: SearchStopReason;
   runtimeMs: number;
   planFingerprint: string;
+  auxiliaryTaskCount: number;
+  auxiliaryPlannedTaskCount: number;
+  auxiliaryBranchesExplored: number;
+  auxiliarySelectionOrder: string[];
+  auxiliaryCandidateCountWhenSelectedByTaskId: Record<string, number>;
 }
 
 export interface PlanResult {

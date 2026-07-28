@@ -1,0 +1,248 @@
+{
+  "version": "planner-next-auxiliary-scarcity-v1",
+  "scenarios": {
+    "baseline": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "totalParticipantPresenceMinutes": 720,
+      "participantPresenceMinutesById": {
+        "participant-a": 90,
+        "participant-c": 90,
+        "participant-d": 90,
+        "participant-e": 90,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 90,
+        "participant-z": 90
+      },
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 26.72804100000002,
+      "deterministic": true
+    },
+    "adversarial": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
+      "reasonCodes": [],
+      "backtracks": 2,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "totalParticipantPresenceMinutes": 945,
+      "participantPresenceMinutesById": {
+        "participant-a": 120,
+        "participant-c": 105,
+        "participant-d": 120,
+        "participant-e": 120,
+        "participant-f": 120,
+        "participant-g": 120,
+        "participant-h": 120,
+        "participant-z": 120
+      },
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 6.912273999999968,
+      "deterministic": true
+    },
+    "adversarialZeroBacktracks": {
+      "complete": false,
+      "hardValid": false,
+      "plannedTaskCount": 0,
+      "mainFlowStart": null,
+      "mainFlowEnd": null,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "reasonCodes": [
+        "BACKTRACK_BUDGET_EXHAUSTED"
+      ],
+      "backtracks": 0,
+      "searchStopReason": "BACKTRACK_BUDGET_EXHAUSTED",
+      "auxiliarySelectionOrder": [],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "totalParticipantPresenceMinutes": 0,
+      "participantPresenceMinutesById": {},
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 2.965146999999945,
+      "deterministic": true
+    },
+    "resourceOff": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "totalParticipantPresenceMinutes": 720,
+      "participantPresenceMinutesById": {
+        "participant-a": 90,
+        "participant-b": 90,
+        "participant-c": 90,
+        "participant-d": 90,
+        "participant-e": 90,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 90
+      },
+      "resourcePresenceMinutesById": {
+        "shared-production-resource": 120
+      },
+      "resourceInternalGapMinutesById": {
+        "shared-production-resource": 60
+      },
+      "violationCount": 0,
+      "runtimeMs": 22.37632500000001,
+      "deterministic": true
+    },
+    "resourceHigh": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "totalParticipantPresenceMinutes": 840,
+      "participantPresenceMinutesById": {
+        "participant-a": 120,
+        "participant-b": 90,
+        "participant-c": 90,
+        "participant-d": 120,
+        "participant-e": 120,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 120
+      },
+      "resourcePresenceMinutesById": {
+        "shared-production-resource": 60
+      },
+      "resourceInternalGapMinutesById": {
+        "shared-production-resource": 0
+      },
+      "violationCount": 0,
+      "runtimeMs": 14.932782000000032,
+      "deterministic": true
+    },
+    "auxiliaryOff": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 20,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [
+        "y-scarce-2",
+        "z-scarce-1",
+        "a-flexible-1",
+        "b-flexible-2"
+      ],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {
+        "y-scarce-2": 10,
+        "z-scarce-1": 7,
+        "a-flexible-1": 27,
+        "b-flexible-2": 73
+      },
+      "totalParticipantPresenceMinutes": 1295,
+      "participantPresenceMinutesById": {
+        "participant-a": 195,
+        "participant-c": 240,
+        "participant-d": 285,
+        "participant-e": 90,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 215,
+        "participant-z": 90
+      },
+      "resourcePresenceMinutesById": {
+        "limited-availability-resource": 30
+      },
+      "resourceInternalGapMinutesById": {
+        "limited-availability-resource": 0
+      },
+      "violationCount": 0,
+      "runtimeMs": 42.188045000000045,
+      "deterministic": true
+    },
+    "auxiliaryHigh": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 20,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [
+        "y-scarce-2",
+        "z-scarce-1",
+        "a-flexible-1",
+        "b-flexible-2"
+      ],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {
+        "y-scarce-2": 10,
+        "z-scarce-1": 5,
+        "a-flexible-1": 27,
+        "b-flexible-2": 73
+      },
+      "totalParticipantPresenceMinutes": 1005,
+      "participantPresenceMinutesById": {
+        "participant-a": 90,
+        "participant-c": 210,
+        "participant-d": 255,
+        "participant-e": 90,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 90,
+        "participant-z": 90
+      },
+      "resourcePresenceMinutesById": {
+        "limited-availability-resource": 30
+      },
+      "resourceInternalGapMinutesById": {
+        "limited-availability-resource": 0
+      },
+      "violationCount": 0,
+      "runtimeMs": 15.671013000000016,
+      "deterministic": true
+    }
+  },
+  "acceptance": {
+    "accepted": true,
+    "scarceFirst": true
+  }
+}
