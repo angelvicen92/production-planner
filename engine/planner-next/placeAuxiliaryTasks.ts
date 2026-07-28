@@ -12,6 +12,8 @@ export interface AuxiliaryPlacementResult {
 }
 type State = { placed: ScheduledTask[]; pending: Task[]; order: string[]; workOrder: string[]; counts: Record<string, number>; blockCounts: Record<string, number>; cost: number; futureMin: number; futureTotal: number; pathMin: number };
 type BlockCandidate = { tasks: ScheduledTask[]; cost: number };
+export interface BlockConstructionDiagnostics { startsExplored: number; expansions: number; completeCandidatesGenerated: number; maximumPartialStatesPerStart: number }
+export interface BlockConstructionResult { candidates: BlockCandidate[]; consumed: number; secondaryBranches: number; exhausted: boolean; diagnostics: BlockConstructionDiagnostics }
 
 export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: ScheduledTask[], branchAllowance: number): AuxiliaryPlacementResult {
   const required = new Set(requiredSecondarySpaces(problem).map(({ id }) => id));
@@ -51,7 +53,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
       const selected = choices[0];
       if (!selected || alternatives(selected) === 0) continue;
       if (selected.kind === "task") {
-        const scored = selected.starts.map((start) => scoreTask(problem, selected.task, start, state.placed)).sort(candidateOrder);
+        const scored = selected.starts.map((start) => scoreTask(problem, selected.task, start, state.placed)).sort(candidateOrder).slice(0, problem.budget.bestK);
         for (const candidate of scored) {
           if (branches >= branchAllowance) return failed(false, state);
           branches += 1;
@@ -63,7 +65,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         }
       }
     }
-    beam = next.sort((a, b) => a.cost - b.cost || (futurePruned > 0 ? b.futureMin - a.futureMin || b.futureTotal - a.futureTotal : 0) || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK);
+    beam = next.sort((a, b) => a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK);
   }
   const result = beam[0];
   return { tasks: result?.placed ?? null, branches, secondaryBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: result?.counts ?? {}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };
@@ -75,24 +77,39 @@ function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: Schedule
   return {count:generated.candidates.length,exhausted:generated.exhausted};
 }
 
-function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary: number, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1): { candidates: BlockCandidate[]; consumed: number; secondaryBranches: number; exhausted: boolean } {
-  let states: Array<{ tasks: ScheduledTask[]; remaining: Task[]; cost: number; start: number }> = [];
-  let consumed = 0, secondaryBranches = priorSecondary;
-  for (let start = problem.day.start; start < problem.day.end; start += 5) states.push({ tasks: [], remaining: tasks, cost: 0, start });
-  for (let depth = 0; depth < tasks.length; depth += 1) {
-    const next: typeof states = [];
-    for (const state of states) for (const task of state.remaining) {
-      if (consumed >= allowance) return { candidates: [], consumed, secondaryBranches, exhausted: true };
-      consumed += 1; secondaryBranches += 1;
-      const start = state.tasks.at(-1)?.end ?? state.start;
-      if (!canPlaceTask(problem, task, start, [...placed, ...state.tasks])) continue;
-      const scored = scoreTask(problem, task, start, [...placed, ...state.tasks]);
-      next.push({ tasks: [...state.tasks, scored.scheduled], remaining: state.remaining.filter(({ id }) => id !== task.id), cost: state.cost + scored.cost, start: state.start });
+export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary = 0, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1): BlockConstructionResult {
+  type Partial = { tasks: ScheduledTask[]; remaining: Task[]; cost: number; start: number };
+  const complete: BlockCandidate[] = [];
+  let consumed = 0, secondaryBranches = priorSecondary, startsExplored = 0, maximumPartialStatesPerStart = 0;
+  const diagnostics = (): BlockConstructionDiagnostics => ({ startsExplored, expansions: consumed, completeCandidatesGenerated: complete.length, maximumPartialStatesPerStart });
+  const finish = (exhausted: boolean): BlockConstructionResult => ({ candidates: complete, consumed, secondaryBranches, exhausted, diagnostics: diagnostics() });
+  const orderedTasks = [...tasks].sort((a,b)=>a.id.localeCompare(b.id));
+  for (let canonicalStart = problem.day.start; canonicalStart < problem.day.end; canonicalStart += 5) {
+    startsExplored += 1;
+    let states: Partial[] = [{ tasks: [], remaining: orderedTasks, cost: 0, start: canonicalStart }];
+    maximumPartialStatesPerStart = Math.max(maximumPartialStatesPerStart, states.length);
+    for (let depth = 0; depth < orderedTasks.length; depth += 1) {
+      const next: Partial[] = [];
+      for (const state of states) for (const task of state.remaining) {
+        if (consumed >= allowance) return finish(true);
+        consumed += 1;
+        if (mode === "SEARCH") secondaryBranches += 1;
+        const start = state.tasks.at(-1)?.end ?? state.start;
+        if (!canPlaceTask(problem, task, start, [...placed, ...state.tasks])) continue;
+        const scored = scoreTask(problem, task, start, [...placed, ...state.tasks]);
+        next.push({ tasks: [...state.tasks, scored.scheduled], remaining: state.remaining.filter(({ id }) => id !== task.id), cost: state.cost + scored.cost, start: state.start });
+      }
+      states = next.sort((a, b) => a.cost - b.cost || signature(a.tasks).localeCompare(signature(b.tasks))).slice(0, problem.budget.bestK);
+      maximumPartialStatesPerStart = Math.max(maximumPartialStatesPerStart, states.length);
+      if (!states.length) break;
     }
-    states = next.sort((a, b) => a.cost - b.cost || signature(a.tasks).localeCompare(signature(b.tasks)));
+    for (const state of states) if (state.remaining.length === 0) {
+      complete.push({tasks:state.tasks,cost:state.cost});
+      if (mode === "PROBE" && complete.length >= probeLimit) return finish(false);
+    }
   }
-  const complete = states.map(({ tasks: block, cost }) => ({ tasks: block, cost })).sort((a, b) => a.cost - b.cost || (b.tasks[0]?.start ?? 0) - (a.tasks[0]?.start ?? 0) || signature(a.tasks).localeCompare(signature(b.tasks)));
-  return { candidates: mode === "PROBE" ? complete.slice(0, probeLimit) : complete, consumed, secondaryBranches, exhausted: false };
+  complete.sort((a, b) => a.cost - b.cost || (b.tasks[0]?.start ?? 0) - (a.tasks[0]?.start ?? 0) || signature(a.tasks).localeCompare(signature(b.tasks)));
+  return finish(false);
 }
 function alternatives(choice: { starts?: number[]; candidates?: BlockCandidate[]; alternativeCount?: number }): number { return choice.starts?.length ?? choice.alternativeCount ?? choice.candidates?.length ?? 0; }
 function startsFor(problem: PlannerNextProblem, task: Task, placed: ScheduledTask[]): number[] { const starts: number[] = []; for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) if (canPlaceTask(problem, task, start, placed)) starts.push(start); return starts; }

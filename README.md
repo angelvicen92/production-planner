@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-future-feasibility-v1.json`.
+The current accepted artifact is `planner-next-bounded-future-feasibility-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2147,7 +2147,7 @@ No Totales-specific subsystem or type was created.
 `PREFERRED`, meal splitting, and setups remain out of scope.
 Planner Next remains isolated and is neither production-integrated nor a complete planner.
 Run `bash validate-next-006.sh`.
-The accepted artifact is `planner-next-future-feasibility-v1.json`.
+NEXT-006 produced `planner-next-long-secondary-block-v1.json`; that artifact was subsequently replaced by a later accepted iteration.
 
 
 ### NEXT-007 — Forward Feasibility for Structured Auxiliary Work
@@ -2160,3 +2160,15 @@ The adversarial scenario proves that the locally preferred candidate can be disc
 Planner Next remains isolated and is neither integrated nor a complete planner.
 Run `bash validate-next-007.sh`.
 The accepted artifact is `planner-next-future-feasibility-v1.json`.
+
+### NEXT-008 — Bounded and Truthful Future Feasibility
+No domain capability was added; setups remain out of scope.
+SEARCH keeps a Best-K bounded partial-state beam independently for every canonical start.
+PROBE shares that constructor but stops as soon as its requested alternative limit is reached.
+Individual and complete-block alternatives are counted truthfully up to Best-K.
+The adversarial scenario runs with `bestK = 1` and prunes its local winner before the global beam cut.
+The per-depth beam prevents factorial permutation enumeration.
+All auxiliary SEARCH and future PROBE expansion uses the same branch allowance.
+Planner Next remains isolated, not production-integrated, and not a complete planner.
+Run `bash validate-next-008.sh`.
+The accepted artifact is `planner-next-bounded-future-feasibility-v1.json`.
