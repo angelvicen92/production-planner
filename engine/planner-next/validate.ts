@@ -14,6 +14,7 @@ import { effectiveResourceTransitionMinutes } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setupTasks } from "./setupGrouping";
+import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -79,6 +80,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const spaces = Array.isArray(problem.spaces) ? problem.spaces : [];
   const tasks = Array.isArray(problem.tasks) ? problem.tasks : [];
   const resources = Array.isArray(problem.resources) ? problem.resources : [];
+  if (tasks.some(task=>task && Object.prototype.hasOwnProperty.call(task,"jointGroupId") && (typeof task.jointGroupId!=="string" || task.jointGroupId.trim()===""))) reasons.add("INVALID_JOINT_GROUP_ID");
   if (!Array.isArray(problem.resources)) reasons.add("INVALID_RESOURCE_CONTRACT");
   if (hasDuplicateIds(participants)) reasons.add("DUPLICATE_PARTICIPANT_ID");
   if (hasDuplicateIds(coaches)) reasons.add("DUPLICATE_COACH_ID");
@@ -177,6 +179,18 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!Array.isArray(task.dependencies) || task.dependencies.length > 0) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
+  for(const id of jointGroupIds(tasks)) {
+    const members=jointGroupMembers(tasks,id); const first=members[0];
+    if(members.length<2) reasons.add("JOINT_GROUP_TOO_SMALL");
+    if(members.some(t=>t.kind!=="auxiliary")) reasons.add("JOINT_GROUP_NON_AUXILIARY_UNSUPPORTED");
+    if(new Set(members.map(t=>t.participantId)).size!==members.length) reasons.add("JOINT_GROUP_DUPLICATE_PARTICIPANT");
+    if(first && members.some(t=>t.duration!==first.duration)) reasons.add("JOINT_GROUP_DURATION_MISMATCH");
+    if(first && members.some(t=>t.spaceId!==first.spaceId)) reasons.add("JOINT_GROUP_SPACE_MISMATCH");
+    if(first && members.some(t=>canonicalResourceIds(t).join("\0")!==canonicalResourceIds(first).join("\0"))) reasons.add("JOINT_GROUP_RESOURCE_MISMATCH");
+    if(first && members.some(t=>t.setupFamilyId!==first.setupFamilyId)) reasons.add("JOINT_GROUP_SETUP_MISMATCH");
+    const structured=members.some(t=>t.setupFamilyId!==undefined || spaces.find(s=>s.id===t.spaceId)?.secondaryContinuity==="REQUIRED" || spaces.find(s=>s.id===t.spaceId)?.setupPolicy!==undefined);
+    if(structured) reasons.add("JOINT_GROUP_IN_STRUCTURED_SPACE_UNSUPPORTED");
+  }
 
   for (const participant of participants) {
     const own = tasks.filter((task) => task.participantId === participant.id);
@@ -219,6 +233,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let secondaryContinuity = 0;
   let setup = 0;
   let setupPreparation = 0;
+  let jointGroup = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -249,8 +264,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const a = scheduled[first];
       const b = scheduled[second];
       if (!a || !b || !overlaps(a, b)) continue;
-      if (a.participantId === b.participantId || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId) overlap += 1;
-      if ((a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
+      const internal=synchronizedJointTasks(a,b) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===a.id) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===b.id);
+      if (!internal && (a.participantId === b.participantId || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId)) overlap += 1;
+      if (!internal && (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
     }
   }
   for (const field of ["participantId", "coachId"] as const) {
@@ -339,6 +355,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   setupPreparation += preparations.filter(item => !problem.spaces.some(space=>space.id===item.spaceId && space.setupPolicy?.preparationMinutesByFamily !== undefined)).length;
 
+  for(const id of jointGroupIds(problem.tasks)) {
+    const expected=jointGroupMembers(problem.tasks,id), actual=scheduled.filter(t=>t.jointGroupId===id), first=actual[0], expectedIds=new Set(expected.map(t=>t.id));
+    const invalid=actual.length!==expected.length || actual.some(t=>!expectedIds.has(t.id)) || expected.some(t=>scheduled.filter(s=>s.id===t.id).length!==1 || scheduled.find(s=>s.id===t.id)?.jointGroupId!==id)
+      || !first || actual.some(t=>t.start!==first.start || t.end!==first.end || t.spaceId!==first.spaceId || t.end-t.start!==first.end-first.start || t.setupFamilyId!==first.setupFamilyId || canonicalResourceIds(t).join("\0")!==canonicalResourceIds(first).join("\0")) || new Set(actual.map(t=>t.participantId)).size!==actual.length;
+    if(invalid) jointGroup+=1;
+  }
+
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -352,6 +375,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (secondaryContinuity) reasonCodes.push("SECONDARY_CONTINUITY_VIOLATION");
   if (setup) reasonCodes.push("SETUP_POLICY_VIOLATION");
   if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
+  if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -365,6 +389,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     secondaryContinuityViolationCount: secondaryContinuity,
     setupViolationCount: setup,
     setupPreparationViolationCount: setupPreparation,
+    jointGroupViolationCount: jointGroup,
     reasonCodes,
   };
 }

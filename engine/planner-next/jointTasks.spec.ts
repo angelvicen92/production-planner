@@ -1,0 +1,37 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { jointAuxiliaryTasksScenario } from "./scenarios/jointAuxiliaryTasksScenario";
+import { canPlaceJointGroup, jointGroupMembers, jointGroupStarts, synchronizedJointTasks } from "./jointTasks";
+import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
+import { preflight, validatePlan } from "./validate";
+
+test("places a joint auxiliary group atomically and visibly",()=>{
+ const problem=jointAuxiliaryTasksScenario(), snapshot=structuredClone(problem), result=planMainFlowAndFeeders(problem);
+ const members=result.scheduledTasks.filter(t=>t.jointGroupId==="shared-operation-1");
+ assert.equal(result.complete,true);assert.equal(result.metrics.hardValid,true);assert.equal(result.metrics.plannedTaskCount,26);assert.equal(members.length,2);
+ assert.ok(synchronizedJointTasks(members[0]!,members[1]!));assert.equal(result.metrics.resourcePresenceMinutesById["joint-resource"],20);assert.equal(result.metrics.resourceInternalGapMinutesById["joint-resource"],0);
+ assert.deepEqual(problem,snapshot);assert.deepEqual(result.metrics.auxiliaryWorkItemSelectionOrder.filter(x=>x==="joint:shared-operation-1"),["joint:shared-operation-1"]);
+});
+test("requires a common start and rejects external conflicts",()=>{
+ const problem=jointAuxiliaryTasksScenario(), group=jointGroupMembers(problem.tasks,"shared-operation-1");
+ problem.participants.find(p=>p.id==="participant-c")!.availability=[{start:600,end:620}];problem.participants.find(p=>p.id==="participant-z")!.availability=[{start:605,end:625}];
+ assert.deepEqual(jointGroupStarts(problem,group,[]),[]);const result=planMainFlowAndFeeders(problem);assert.equal(result.complete,false);assert.deepEqual(result.scheduledTasks,[]);assert.deepEqual(result.scheduledSetupPreparations,[]);
+ const base=jointAuxiliaryTasksScenario(), members=jointGroupMembers(base.tasks,"shared-operation-1"), start=570;
+ for(const external of [
+  {...base.tasks[0]!,id:"external-space",participantId:"participant-a",coachId:undefined,kind:"auxiliary" as const,spaceId:"joint-room",dependencies:[],requiredResourceIds:[],start,end:start+20},
+  {...base.tasks[0]!,id:"external-resource",participantId:"participant-a",coachId:undefined,kind:"auxiliary" as const,spaceId:"flexible-room",dependencies:[],requiredResourceIds:["joint-resource"],start,end:start+20},
+  {...base.tasks[0]!,id:"external-participant",participantId:"participant-c",coachId:undefined,kind:"auxiliary" as const,spaceId:"flexible-room",dependencies:[],requiredResourceIds:[],start,end:start+20},
+ ]) assert.equal(canPlaceJointGroup(base,members,start,[external]),false);
+});
+test("preflight joint group reason codes are deterministic",()=>{
+ const base=jointAuxiliaryTasksScenario();
+ const mutate=(fn:(p:ReturnType<typeof jointAuxiliaryTasksScenario>)=>void)=>{const p=jointAuxiliaryTasksScenario();fn(p);return preflight(p)};
+ assert.ok(mutate(p=>{(p.tasks.at(-1) as any).jointGroupId=" "}).includes("INVALID_JOINT_GROUP_ID"));
+ assert.ok(mutate(p=>p.tasks.pop()).includes("JOINT_GROUP_TOO_SMALL"));
+ assert.ok(mutate(p=>{p.tasks.at(-1)!.duration=25}).includes("JOINT_GROUP_DURATION_MISMATCH"));
+ assert.ok(mutate(p=>{p.tasks.at(-1)!.spaceId="flexible-room"}).includes("JOINT_GROUP_SPACE_MISMATCH"));
+ assert.ok(mutate(p=>{p.tasks.at(-1)!.requiredResourceIds=[]}).includes("JOINT_GROUP_RESOURCE_MISMATCH"));
+ assert.ok(mutate(p=>{p.tasks.at(-1)!.participantId=p.tasks.at(-2)!.participantId}).includes("JOINT_GROUP_DUPLICATE_PARTICIPANT"));
+ const valid=structuredClone(base);valid.tasks.at(-1)!.requiredResourceIds=["joint-resource"];assert.equal(preflight(valid).length,0);
+});
+test("validation reports a synchronized group once",()=>{const p=jointAuxiliaryTasksScenario(),r=planMainFlowAndFeeders(p),changed=structuredClone(r.scheduledTasks);changed.find(t=>t.id==="a-joint-member-2")!.start+=5;const v=validatePlan(p,changed,r.scheduledSetupPreparations);assert.equal(v.jointGroupViolationCount,1);assert.ok(v.reasonCodes.includes("JOINT_GROUP_VIOLATION"));});
