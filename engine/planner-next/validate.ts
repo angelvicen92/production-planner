@@ -10,6 +10,7 @@ import type {
 } from "./contracts";
 import { contains, overlaps } from "./time";
 import { effectiveResourceTransitionMinutes } from "./placement";
+import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -108,6 +109,16 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const resourceIds = new Set(resources.map(({ id }) => id));
   const mainSpaceId = problem.mainFlow?.spaceId;
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
+  for (const space of spaces) {
+    if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
+    if (space.secondaryContinuity !== "REQUIRED") continue;
+    const own = tasks.filter((task) => task?.spaceId === space.id);
+    const auxiliaryCount = own.filter((task) => task?.kind === "auxiliary").length;
+    if (space.id === mainSpaceId) reasons.add("REQUIRED_SECONDARY_ON_MAIN_FLOW_UNSUPPORTED");
+    if (own.some((task) => task?.kind !== "auxiliary")) reasons.add("REQUIRED_SECONDARY_WITH_NON_AUXILIARY_TASK");
+    if (auxiliaryCount === 0) reasons.add("REQUIRED_SECONDARY_SPACE_EMPTY");
+    else if (auxiliaryCount === 1) reasons.add("REQUIRED_SECONDARY_SPACE_TOO_SMALL");
+  }
 
   for (const task of tasks) {
     const requirements = task.requiredResourceIds;
@@ -177,6 +188,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let resourceAvailability = 0;
   let resourceOverlap = 0;
   let resourceTransition = 0;
+  let secondaryContinuity = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -257,6 +269,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     }
     if ([...counts.values()].some((count) => count > problem.mainFlow.maxBlocksByKey)) block += 1;
   }
+  for (const space of requiredSecondarySpaces(problem)) {
+    const expected = secondaryTasks(problem.tasks, space.id);
+    const actual = secondaryTasks(scheduled, space.id);
+    if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(actual)) secondaryContinuity += 1;
+  }
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -267,6 +284,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (resourceAvailability) reasonCodes.push("RESOURCE_AVAILABILITY_VIOLATION");
   if (resourceOverlap) reasonCodes.push("RESOURCE_OVERLAP_VIOLATION");
   if (resourceTransition) reasonCodes.push("RESOURCE_TRANSITION_VIOLATION");
+  if (secondaryContinuity) reasonCodes.push("SECONDARY_CONTINUITY_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -277,6 +295,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     resourceAvailabilityViolationCount: resourceAvailability,
     resourceOverlapViolationCount: resourceOverlap,
     resourceTransitionViolationCount: resourceTransition,
+    secondaryContinuityViolationCount: secondaryContinuity,
     reasonCodes,
   };
 }

@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-itinerant-units-v1.json`.
+The current accepted artifact is `planner-next-long-secondary-block-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2136,3 +2136,15 @@ Alternative team assignments and unit-specific meals do not exist yet.
 Planner Next remains isolated, is not production-integrated, and is not a complete planner.
 Run `bash validate-next-005.sh`.
 The accepted artifact is `planner-next-itinerant-units-v1.json`.
+
+### NEXT-006 — Long Tasks and Required Secondary Continuity
+Long tasks remain ordinary `auxiliary` tasks; continuity is a property of their space.
+A `REQUIRED` secondary space is constructed and published only as one complete block.
+The search selects that block by its complete alternatives, not input or identifier order.
+It does not automatically begin at the start of the day.
+Long work precedes flexible work when it has fewer valid alternatives.
+No Totales-specific subsystem or type was created.
+`PREFERRED`, meal splitting, and setups remain out of scope.
+Planner Next remains isolated and is neither production-integrated nor a complete planner.
+Run `bash validate-next-006.sh`.
+The accepted artifact is `planner-next-long-secondary-block-v1.json`.

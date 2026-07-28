@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-itinerant-units-v1",
+  "version": "planner-next-long-secondary-block-v1",
   "scenarios": {
     "baseline": {
       "complete": true,
@@ -14,6 +14,13 @@
       "searchStopReason": "SOLUTION_FOUND",
       "auxiliarySelectionOrder": [],
       "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "auxiliaryWorkItemSelectionOrder": [],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 720,
       "participantPresenceMinutesById": {
         "participant-a": 90,
@@ -30,7 +37,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 15.535344999999978,
+      "runtimeMs": 24.20254699999998,
       "deterministic": true
     },
     "adversarial": {
@@ -46,6 +53,13 @@
       "searchStopReason": "SOLUTION_FOUND",
       "auxiliarySelectionOrder": [],
       "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "auxiliaryWorkItemSelectionOrder": [],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 945,
       "participantPresenceMinutesById": {
         "participant-a": 120,
@@ -62,7 +76,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 6.815040999999951,
+      "runtimeMs": 10.178991999999994,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -80,6 +94,13 @@
       "searchStopReason": "BACKTRACK_BUDGET_EXHAUSTED",
       "auxiliarySelectionOrder": [],
       "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "auxiliaryWorkItemSelectionOrder": [],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 0,
       "participantPresenceMinutesById": {},
       "resourcePresenceMinutesById": {},
@@ -87,7 +108,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 4.970637000000011,
+      "runtimeMs": 2.7267009999999914,
       "deterministic": true
     },
     "resourceOff": {
@@ -103,6 +124,13 @@
       "searchStopReason": "SOLUTION_FOUND",
       "auxiliarySelectionOrder": [],
       "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "auxiliaryWorkItemSelectionOrder": [],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 720,
       "participantPresenceMinutesById": {
         "participant-a": 90,
@@ -127,7 +155,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 25.05343399999998,
+      "runtimeMs": 24.39859800000005,
       "deterministic": true
     },
     "resourceHigh": {
@@ -143,6 +171,13 @@
       "searchStopReason": "SOLUTION_FOUND",
       "auxiliarySelectionOrder": [],
       "auxiliaryCandidateCountWhenSelectedByTaskId": {},
+      "auxiliaryWorkItemSelectionOrder": [],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 840,
       "participantPresenceMinutesById": {
         "participant-a": 120,
@@ -167,7 +202,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 17.796363999999983,
+      "runtimeMs": 6.852123000000006,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -193,6 +228,18 @@
         "a-flexible-1": 27,
         "b-flexible-2": 73
       },
+      "auxiliaryWorkItemSelectionOrder": [
+        "task:y-scarce-2",
+        "task:z-scarce-1",
+        "task:a-flexible-1",
+        "task:b-flexible-2"
+      ],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 1295,
       "participantPresenceMinutesById": {
         "participant-a": 195,
@@ -217,7 +264,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 51.970012,
+      "runtimeMs": 40.86289399999998,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -243,6 +290,18 @@
         "a-flexible-1": 27,
         "b-flexible-2": 73
       },
+      "auxiliaryWorkItemSelectionOrder": [
+        "task:y-scarce-2",
+        "task:z-scarce-1",
+        "task:a-flexible-1",
+        "task:b-flexible-2"
+      ],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 1005,
       "participantPresenceMinutesById": {
         "participant-a": 90,
@@ -267,7 +326,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 24.583762000000036,
+      "runtimeMs": 16.312757000000033,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -297,6 +356,20 @@
         "unit-b-2": 59,
         "unit-b-3": 56
       },
+      "auxiliaryWorkItemSelectionOrder": [
+        "task:unit-a-1",
+        "task:unit-a-3",
+        "task:unit-a-2",
+        "task:unit-b-1",
+        "task:unit-b-2",
+        "task:unit-b-3"
+      ],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {},
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "secondaryBlockBranchesExplored": 0,
       "totalParticipantPresenceMinutes": 1870,
       "participantPresenceMinutesById": {
         "participant-a": 90,
@@ -396,7 +469,96 @@
         }
       },
       "parallel": true,
-      "runtimeMs": 216.66213200000004,
+      "runtimeMs": 271.87944000000005,
+      "deterministic": true
+    },
+    "longSecondaryBlock": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 22,
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "planFingerprint": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
+      "reasonCodes": [],
+      "backtracks": 0,
+      "searchStopReason": "SOLUTION_FOUND",
+      "auxiliarySelectionOrder": [
+        "z-long-1",
+        "x-long-3",
+        "w-long-4",
+        "y-long-2",
+        "a-flexible-short-1",
+        "b-flexible-short-2"
+      ],
+      "auxiliaryCandidateCountWhenSelectedByTaskId": {
+        "a-flexible-short-1": 74,
+        "b-flexible-short-2": 74
+      },
+      "auxiliaryWorkItemSelectionOrder": [
+        "space:long-form-room",
+        "task:a-flexible-short-1",
+        "task:b-flexible-short-2"
+      ],
+      "secondaryBlockCandidateCountWhenSelectedBySpaceId": {
+        "long-form-room": 11
+      },
+      "secondarySpaceStartById": {
+        "long-form-room": 740
+      },
+      "secondarySpaceEndById": {
+        "long-form-room": 860
+      },
+      "secondarySpaceGapMinutesById": {
+        "long-form-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "long-form-room": 1
+      },
+      "secondaryBlockBranchesExplored": 504,
+      "totalParticipantPresenceMinutes": 755,
+      "participantPresenceMinutesById": {
+        "participant-a": 90,
+        "participant-c": 90,
+        "participant-d": 125,
+        "participant-e": 90,
+        "participant-f": 90,
+        "participant-g": 90,
+        "participant-h": 90,
+        "participant-z": 90
+      },
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "resourceMoveCountById": {},
+      "resourceTransitionSlackMinutesById": {},
+      "violationCount": 0,
+      "secondaryBlockView": {
+        "taskIds": [
+          "z-long-1",
+          "x-long-3",
+          "w-long-4",
+          "y-long-2"
+        ],
+        "participantIds": [
+          "participant-c",
+          "participant-e",
+          "participant-f",
+          "participant-d"
+        ],
+        "start": 740,
+        "end": 860,
+        "gaps": [
+          0,
+          0,
+          0
+        ],
+        "blockSpanMinutes": 120,
+        "flexibleTaskStarts": {
+          "a-flexible-short-1": 800,
+          "b-flexible-short-2": 815
+        }
+      },
+      "runtimeMs": 77.99571199999991,
       "deterministic": true
     }
   },

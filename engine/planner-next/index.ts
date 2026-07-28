@@ -6,3 +6,4 @@ export * from "./resourcePresence";
 export * from "./placement";
 export * from "./participantPresence";
 export * from "./placeAuxiliaryTasks";
+export * from "./secondaryContinuity";

@@ -30,7 +30,8 @@
     "benchmark:planner-next:core": "tsx engine/planner-next/benchmarks/runPlannerNextCoreBenchmark.ts",
     "benchmark:planner-next:resource-presence": "tsx engine/planner-next/benchmarks/runPlannerNextResourcePresenceBenchmark.ts",
     "benchmark:planner-next:auxiliary-scarcity": "tsx engine/planner-next/benchmarks/runPlannerNextAuxiliaryScarcityBenchmark.ts",
-    "benchmark:planner-next:itinerant-units": "tsx engine/planner-next/benchmarks/runPlannerNextItinerantUnitsBenchmark.ts"
+    "benchmark:planner-next:itinerant-units": "tsx engine/planner-next/benchmarks/runPlannerNextItinerantUnitsBenchmark.ts",
+    "benchmark:planner-next:long-secondary-block": "tsx engine/planner-next/benchmarks/runPlannerNextLongSecondaryBlockBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
