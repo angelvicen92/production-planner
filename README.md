@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-branch-local-ranking-v1.json`.
+The current accepted artifact is `planner-next-branch-local-ranking-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2178,8 +2178,11 @@ The accepted artifact is `planner-next-bounded-future-feasibility-v1.json`.
 No domain capability was added, and setups remain out of scope.
 Global pruning metrics no longer modify ranking; states compare only their own accumulated cost and canonical signature.
 Future Feasibility still prunes zero-alternative work, while positive freedom remains Evidence only.
-The metamorphic benchmark proves that pruning in an isolated region does not alter an independent region.
+The metamorphic region uses participants, spaces, and resources disjoint from the original region, with no cross-region relationships.
+No hard-valid individual position is discarded merely because the beam is full: Future Feasibility runs before Best-K retention.
+The metamorphic benchmark proves that pruning in the structurally isolated region does not alter the original region.
+All ten historical baseline fingerprints remain intact.
 Bounded SEARCH and early PROBE remain intact.
 Planner Next remains isolated, not production-integrated, and not a complete planner.
 Run `bash validate-next-009.sh`.
-The accepted artifact is `planner-next-branch-local-ranking-v1.json`.
+The corrected accepted artifact is `planner-next-branch-local-ranking-v2.json`.

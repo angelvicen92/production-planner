@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail
-artifact=planner-next-branch-local-ranking-v1.json
-failed=planner-next-branch-local-ranking-v1.failed.json
+artifact=planner-next-branch-local-ranking-v2.json
+failed=planner-next-branch-local-ranking-v2.failed.json
 tmp1=$(mktemp); tmp2=$(mktemp); trap 'rm -f "$tmp1" "$tmp2"' EXIT
-fail(){ printf '{"version":"planner-next-branch-local-ranking-v1","accepted":false,"reason":%s}\n' "$(node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' "$1")" > "$failed"; echo "$1" >&2; exit 1; }
+fail(){ printf '{"version":"planner-next-branch-local-ranking-v2","accepted":false,"reason":%s}\n' "$(node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' "$1")" > "$failed"; echo "$1" >&2; exit 1; }
 npm run check || fail 'npm run check failed'
 npx tsx --test engine/planner-next/*.spec.ts || fail 'Planner Next tests failed'
 npm test || fail 'full test suite failed'
@@ -19,7 +19,7 @@ const names=['baseline','adversarial','adversarialZeroBacktracks','resourceOff',
 if(JSON.stringify(Object.keys(a.scenarios))!==JSON.stringify(names))reject('benchmark does not contain the twelve ordered scenarios');
 const expected=a.acceptance.frozenFingerprints;
 for(const [name,fingerprint] of Object.entries(expected))if(a.scenarios[name]?.planFingerprint!==fingerprint)reject(`fingerprint mismatch for ${name}`);
-const h=a.branchHistoryInvariance;if(!h.projectionsEqual||!h.originalWorkItemOrderEqual||!h.isolatedTasksPlanned||h.isolatedFuturePrunes<1||h.isolatedTopLocalPrunes<1)reject('branch-history invariance evidence is incorrect');if(!Object.keys(h.isolatedBlockers).every(k=>h.isolatedTaskIds.some(id=>k===`task:${id}`)))reject('non-isolated blocker recorded');const variant=a.scenarios.branchHistoryIsolatedPruning;if(!variant.complete||!variant.hardValid||variant.plannedTaskCount!==22||variant.violationCount!==0)reject('isolated variant invalid');const historical=a.scenarios.futureFeasibility,bounded=a.scenarios.boundedFutureFeasibility,e=bounded.boundedEvidence,c=a.boundedBlockConstruction;
+const h=a.branchHistoryInvariance;if(!h.regionStructurallyIndependent||!h.participantsDisjoint||!h.spacesDisjoint||!h.resourcesDisjoint||!h.dependenciesDisjoint||!h.coachesDisjoint)reject('isolated region is not structurally independent');if(!h.projectionsEqual||!h.originalWorkItemOrderEqual||!h.originalParticipantPresenceEqual||!h.originalAuxiliaryCandidateCountsEqual||!h.originalResourcePresenceEqual||!h.isolatedTasksPlanned||h.isolatedFuturePrunes<1||h.isolatedTopLocalPrunes<1)reject('branch-history invariance evidence is incorrect');if(JSON.stringify(Object.keys(h.isolatedBlockers))!==JSON.stringify(['task:isolated-scarce-task']))reject('isolated blocker evidence is incorrect');const variant=a.scenarios.branchHistoryIsolatedPruning;if(!variant.complete||!variant.hardValid||variant.plannedTaskCount!==22||variant.violationCount!==0)reject('isolated variant invalid');const historical=a.scenarios.futureFeasibility,bounded=a.scenarios.boundedFutureFeasibility,e=bounded.boundedEvidence,c=a.boundedBlockConstruction;
 if(historical.bestK!==5||bounded.bestK!==1||e.bestK!==1||c.bestK!==1)reject('NEXT-007/NEXT-008 Best-K evidence is incorrect');
 if(e.topLocalCandidateFeasible!==false||!e.topLocalCandidateBlockers.includes('task:scarce-window-task'))reject('top local candidate blocker evidence is incorrect');
 if(e.secondLocalCandidateFeasible!==true||!e.acceptedBlockIsViableAlternative)reject('viable local alternative evidence is incorrect');
@@ -33,4 +33,4 @@ for(const [name,x] of Object.entries(a.scenarios)){
 }
 NODE
 ) || fail "${reason:-benchmark validation failed}"
-cp "$tmp1" "$artifact"; rm -f "$failed" planner-next-bounded-future-feasibility-v1.json planner-next-future-feasibility-v1.json
+cp "$tmp1" "$artifact"; rm -f "$failed" planner-next-branch-local-ranking-v1.json planner-next-bounded-future-feasibility-v1.json planner-next-future-feasibility-v1.json
