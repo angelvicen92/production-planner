@@ -4,6 +4,7 @@ import { participantPresenceIncrement } from "./participantPresence";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { assessFutureFeasibility, type FutureBudget } from "./futureFeasibility";
+import { eligibleSetupTasks } from "./setupGrouping";
 
 export interface AuxiliaryPlacementResult {
   tasks: ScheduledTask[] | null; branches: number; secondaryBranches: number; exhausted: boolean;
@@ -96,7 +97,10 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
     maximumPartialStatesPerStart = Math.max(maximumPartialStatesPerStart, states.length);
     for (let depth = 0; depth < orderedTasks.length; depth += 1) {
       const next: Partial[] = [];
-      for (const state of states) for (const task of state.remaining) {
+      for (const state of states) for (const task of (() => {
+        const policy = problem.spaces.find((space) => space.id === taskSpace(tasks))?.setupPolicy;
+        return policy ? eligibleSetupTasks(state.remaining, policy.familyOrder) : state.remaining;
+      })()) {
         if (consumed >= allowance) return finish(true);
         consumed += 1;
         if (mode === "SEARCH") secondaryBranches += 1;
@@ -117,6 +121,7 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
   complete.sort((a, b) => a.cost - b.cost || (b.tasks[0]?.start ?? 0) - (a.tasks[0]?.start ?? 0) || signature(a.tasks).localeCompare(signature(b.tasks)));
   return finish(false);
 }
+function taskSpace(tasks: Task[]): string | undefined { return tasks[0]?.spaceId; }
 function alternatives(choice: { starts?: number[]; candidates?: BlockCandidate[]; alternativeCount?: number }): number { return choice.starts?.length ?? choice.alternativeCount ?? choice.candidates?.length ?? 0; }
 function startsFor(problem: PlannerNextProblem, task: Task, placed: ScheduledTask[]): number[] { const starts: number[] = []; for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) if (canPlaceTask(problem, task, start, placed)) starts.push(start); return starts; }
 function scoreTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[]) { const scheduled = { ...task, start, end: start + task.duration }; const participantCost = participantPresenceIncrement(task.participantId, placed, scheduled) * presencePreferenceWeight(problem.auxiliaryPolicy?.participantPresencePreference ?? "OFF"); const resourceCost = (task.requiredResourceIds ?? []).reduce((sum, id) => { const resource = problem.resources.find((x) => x.id === id); return sum + resourcePresenceIncrement(id, placed, scheduled) * presencePreferenceWeight(resource?.presencePreference ?? "OFF"); }, 0); return { scheduled, cost: participantCost + resourceCost }; }

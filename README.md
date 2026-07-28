@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-branch-local-ranking-v2.json`.
+The current accepted artifact is `planner-next-setup-grouping-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2185,4 +2185,15 @@ All ten historical baseline fingerprints remain intact.
 Bounded SEARCH and early PROBE remain intact.
 Planner Next remains isolated, not production-integrated, and not a complete planner.
 Run `bash validate-next-009.sh`.
-The corrected accepted artifact is `planner-next-branch-local-ranking-v2.json`.
+The corrected historical artifact was `planner-next-branch-local-ranking-v2.json` and is carried forward by REPO-002.
+
+### NEXT-010 — Explicit Setup Family Grouping
+Planner Next returns to functional block development; tasks remain `auxiliary`.
+`setupFamilyId` groups a family's tasks and production supplies explicit `familyOrder`.
+`reentry: FORBIDDEN` prevents alternation after a family has been left.
+The planner still chooses participant order within each family.
+No setup preparation is inserted and setup order is not selected automatically.
+General search was not changed and no budget was increased.
+Planner Next remains isolated, not production-integrated, and not a complete planner.
+Run `bash validate-next-010.sh`.
+The accepted artifact is `planner-next-setup-grouping-v1.json`.
