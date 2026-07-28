@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-joint-auxiliary-tasks-v1",
+  "version": "planner-next-joint-auxiliary-tasks-v2",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -36,7 +36,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 39.81500999999997,
+      "runtimeMs": 24.743132000000003,
       "deterministic": true
     },
     "adversarial": {
@@ -74,7 +74,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 14.17242299999998,
+      "runtimeMs": 13.45409699999999,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -112,7 +112,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 3.11353900000006,
+      "runtimeMs": 3.0812970000000064,
       "deterministic": true
     },
     "resourceOff": {
@@ -150,7 +150,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 21.876997999999958,
+      "runtimeMs": 18.643597,
       "deterministic": true
     },
     "resourceHigh": {
@@ -188,7 +188,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 11.842495999999983,
+      "runtimeMs": 7.840814000000023,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -248,7 +248,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 39.39529899999991,
+      "runtimeMs": 44.131493999999975,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -308,7 +308,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 19.197542999999996,
+      "runtimeMs": 14.13405899999998,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -378,7 +378,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 1446.48691,
+      "runtimeMs": 1041.937838,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -453,7 +453,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 249.29128100000025,
+      "runtimeMs": 172.1834859999999,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -530,7 +530,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 26.990618000000268,
+      "runtimeMs": 20.026724000000286,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -607,7 +607,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 6.197752999999921,
+      "runtimeMs": 5.416049999999814,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
@@ -756,7 +756,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 26.902110999999877,
+      "runtimeMs": 20.26558299999988,
       "deterministic": true
     },
     "setupGrouping": {
@@ -851,7 +851,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 30.809401999999864,
+      "runtimeMs": 24.617836000000352,
       "deterministic": true
     },
     "setupPreparation": {
@@ -946,7 +946,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 25.77013100000022,
+      "runtimeMs": 18.26254599999993,
       "deterministic": true,
       "scheduledSetupPreparations": [
         {
@@ -1020,14 +1020,14 @@
       "plannedTaskCount": 26,
       "planFingerprint": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa",
       "logicalMetrics": {
-        "branchesExplored": 12333,
-        "branchBudgetConsumed": 12333,
+        "branchesExplored": 14101,
+        "branchBudgetConsumed": 14101,
         "branchBudgetMaximum": 300000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 10757,
+        "auxiliaryBranchesExplored": 12525,
         "secondaryBlockBranchesExplored": 955,
         "futureFeasibilityChecks": 278,
-        "futureFeasibilityBranchesExplored": 9427,
+        "futureFeasibilityBranchesExplored": 11195,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
@@ -1114,7 +1114,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 83.85365000000002,
+      "runtimeMs": 31.07891600000039,
       "deterministic": true,
       "members": [
         {
@@ -1148,8 +1148,28 @@
       "jointGroupCount": 1,
       "jointScheduledTaskCount": 2,
       "jointGroupViolationCount": 0,
-      "branches": 12333,
+      "branches": 14101,
       "fingerprint": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa"
+    }
+  },
+  "jointFutureFeasibilityEvidence": {
+    "shortBudget": {
+      "exhausted": true,
+      "feasible": false,
+      "branchesConsumed": 2,
+      "budgetRemaining": 0
+    },
+    "bestK": {
+      "exhausted": false,
+      "feasible": true,
+      "branchesConsumed": 9,
+      "budgetRemaining": 991,
+      "assessment": {
+        "key": "joint:shared-operation-1",
+        "kind": "joint",
+        "alternativeCount": 3,
+        "feasible": true
+      }
     }
   },
   "setupEvidence": {
@@ -1567,6 +1587,7 @@
   },
   "acceptance": {
     "accepted": true,
+    "jointFutureFeasibilityBudgetAccepted": true,
     "jointAuxiliaryTasksAccepted": true,
     "setupPreparationAccepted": true,
     "historicalRegressionIntact": true,
