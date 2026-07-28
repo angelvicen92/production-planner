@@ -29,7 +29,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 29.046609999999987
+      "runtimeMs": 15.877242999999993
     },
     "adversarial": {
       "complete": true,
@@ -59,7 +59,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 5.516285000000039
+      "runtimeMs": 10.659019
     },
     "adversarialZeroBacktracks": {
       "complete": false,
@@ -89,7 +89,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 5.572015999999962
+      "runtimeMs": 5.87739000000002
     },
     "resourceOff": {
       "complete": true,
@@ -119,7 +119,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 28.879151999999976
+      "runtimeMs": 20.209865000000036
     },
     "resourceHigh": {
       "complete": true,
@@ -149,7 +149,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 20.993337999999994
+      "runtimeMs": 20.293004999999994
     },
     "auxiliaryOff": {
       "complete": true,
@@ -201,7 +201,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 67.33598399999994
+      "runtimeMs": 64.18905099999995
     },
     "auxiliaryHigh": {
       "complete": true,
@@ -253,7 +253,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 36.85737899999992
+      "runtimeMs": 31.53367400000002
     },
     "itinerantUnits": {
       "complete": true,
@@ -315,7 +315,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 495.76795900000013
+      "runtimeMs": 304.261261
     },
     "longSecondaryBlock": {
       "complete": true,
@@ -382,7 +382,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 156.72801299999992
+      "runtimeMs": 151.82663500000012
     },
     "futureFeasibility": {
       "complete": true,
@@ -451,7 +451,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 51.12241999999969
+      "runtimeMs": 65.70003199999996
     }
   },
   "acceptance": {
