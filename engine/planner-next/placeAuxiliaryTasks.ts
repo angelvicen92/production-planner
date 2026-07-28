@@ -62,11 +62,6 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         for (const candidate of scored) {
           if (branches >= branchAllowance) return failed(false, state);
           branches += 1;
-          if (next.length >= problem.budget.bestK) {
-            const provisional = { cost: state.cost + candidate.cost, placed: [...state.placed, candidate.scheduled] };
-            const retained = next[problem.budget.bestK - 1]!;
-            if (compareAuxiliaryStates(provisional, retained) >= 0) continue;
-          }
           if (!forward([candidate.scheduled], candidate.cost, selected.key, selected.task.id, state, next, selected.starts.length, undefined, scored[0] === candidate)) return failed(false, state);
         }
         next.splice(0, next.length, ...next.sort(compareAuxiliaryStates).slice(0, problem.budget.bestK));

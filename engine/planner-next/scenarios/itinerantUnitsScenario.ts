@@ -32,6 +32,6 @@ export function itinerantUnitsScenario(): PlannerNextProblem {
   problem.tasks.push(...auxiliary);
   problem.auxiliaryPolicy = { participantPresencePreference: "OFF" };
   problem.budget.bestK = 20;
-  problem.budget.maxBranchExpansions = 200_000;
+  problem.budget.maxBranchExpansions = 300_000;
   return problem;
 }

@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-branch-local-ranking-v1",
+  "version": "planner-next-branch-local-ranking-v2",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -32,7 +32,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 16.354198999999994,
+      "runtimeMs": 33.631140000000016,
       "deterministic": true
     },
     "adversarial": {
@@ -66,7 +66,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 9.594551999999965,
+      "runtimeMs": 5.3953710000000115,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -100,7 +100,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 3.5414650000000165,
+      "runtimeMs": 3.138243999999986,
       "deterministic": true
     },
     "resourceOff": {
@@ -134,7 +134,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 13.332045999999991,
+      "runtimeMs": 31.372054999999932,
       "deterministic": true
     },
     "resourceHigh": {
@@ -168,7 +168,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 12.134521000000007,
+      "runtimeMs": 10.729345999999964,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -178,14 +178,14 @@
       "plannedTaskCount": 20,
       "planFingerprint": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
       "logicalMetrics": {
-        "branchesExplored": 3290,
-        "branchBudgetConsumed": 3290,
+        "branchesExplored": 5075,
+        "branchBudgetConsumed": 5075,
         "branchBudgetMaximum": 50000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 1714,
+        "auxiliaryBranchesExplored": 3499,
         "secondaryBlockBranchesExplored": 0,
-        "futureFeasibilityChecks": 35,
-        "futureFeasibilityBranchesExplored": 1176,
+        "futureFeasibilityChecks": 173,
+        "futureFeasibilityBranchesExplored": 2961,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
@@ -224,7 +224,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 26.078219999999988,
+      "runtimeMs": 38.39147600000001,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -234,14 +234,14 @@
       "plannedTaskCount": 20,
       "planFingerprint": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
       "logicalMetrics": {
-        "branchesExplored": 3238,
-        "branchBudgetConsumed": 3238,
+        "branchesExplored": 5075,
+        "branchBudgetConsumed": 5075,
         "branchBudgetMaximum": 50000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 1662,
+        "auxiliaryBranchesExplored": 3499,
         "secondaryBlockBranchesExplored": 0,
-        "futureFeasibilityChecks": 27,
-        "futureFeasibilityBranchesExplored": 1124,
+        "futureFeasibilityChecks": 173,
+        "futureFeasibilityBranchesExplored": 2961,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
@@ -280,7 +280,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 9.278104000000042,
+      "runtimeMs": 17.799892999999997,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -290,14 +290,14 @@
       "plannedTaskCount": 22,
       "planFingerprint": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
       "logicalMetrics": {
-        "branchesExplored": 34193,
-        "branchBudgetConsumed": 34193,
-        "branchBudgetMaximum": 200000,
+        "branchesExplored": 285317,
+        "branchBudgetConsumed": 285317,
+        "branchBudgetMaximum": 300000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 29305,
+        "auxiliaryBranchesExplored": 280429,
         "secondaryBlockBranchesExplored": 0,
-        "futureFeasibilityChecks": 387,
-        "futureFeasibilityBranchesExplored": 23537,
+        "futureFeasibilityChecks": 4732,
+        "futureFeasibilityBranchesExplored": 274661,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
@@ -346,7 +346,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 192.03482599999995,
+      "runtimeMs": 1210.70239,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -356,14 +356,14 @@
       "plannedTaskCount": 22,
       "planFingerprint": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
       "logicalMetrics": {
-        "branchesExplored": 26389,
-        "branchBudgetConsumed": 26389,
+        "branchesExplored": 55609,
+        "branchBudgetConsumed": 55609,
         "branchBudgetMaximum": 500000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 21501,
+        "auxiliaryBranchesExplored": 50721,
         "secondaryBlockBranchesExplored": 2375,
-        "futureFeasibilityChecks": 424,
-        "futureFeasibilityBranchesExplored": 16180,
+        "futureFeasibilityChecks": 1865,
+        "futureFeasibilityBranchesExplored": 45400,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
@@ -417,7 +417,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 91.470685,
+      "runtimeMs": 202.3495600000001,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -427,14 +427,14 @@
       "plannedTaskCount": 22,
       "planFingerprint": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
       "logicalMetrics": {
-        "branchesExplored": 13899,
-        "branchBudgetConsumed": 13899,
+        "branchesExplored": 13909,
+        "branchBudgetConsumed": 13909,
         "branchBudgetMaximum": 800000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 12323,
+        "auxiliaryBranchesExplored": 12333,
         "secondaryBlockBranchesExplored": 1689,
-        "futureFeasibilityChecks": 143,
-        "futureFeasibilityBranchesExplored": 10257,
+        "futureFeasibilityChecks": 145,
+        "futureFeasibilityBranchesExplored": 10267,
         "futureInfeasibleCandidatesPruned": 39,
         "futureTopRankedCandidatesPruned": 1,
         "futureBlockerCountByWorkItemKey": {
@@ -490,7 +490,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 28.103747,
+      "runtimeMs": 26.75881900000013,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -563,7 +563,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 7.754413000000113,
+      "runtimeMs": 6.920818999999938,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
@@ -648,16 +648,16 @@
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 22,
-      "planFingerprint": "0d9020f69edda1205df487a9aea381311e70be41f9b5f0387e4b18499367844c",
+      "planFingerprint": "aef95b559bd99cf69e506ba36e81639df299a70a0ebbd51cffa13cb0ef72b64f",
       "logicalMetrics": {
-        "branchesExplored": 3847,
-        "branchBudgetConsumed": 3847,
+        "branchesExplored": 6956,
+        "branchBudgetConsumed": 6956,
         "branchBudgetMaximum": 50000,
         "backtracks": 0,
-        "auxiliaryBranchesExplored": 2271,
+        "auxiliaryBranchesExplored": 5380,
         "secondaryBlockBranchesExplored": 0,
-        "futureFeasibilityChecks": 40,
-        "futureFeasibilityBranchesExplored": 1708,
+        "futureFeasibilityChecks": 198,
+        "futureFeasibilityBranchesExplored": 4817,
         "futureInfeasibleCandidatesPruned": 1,
         "futureTopRankedCandidatesPruned": 1,
         "futureBlockerCountByWorkItemKey": {
@@ -708,7 +708,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 15.970229999999901,
+      "runtimeMs": 25.267621999999847,
       "deterministic": true
     }
   },
@@ -1008,6 +1008,86 @@
       "task:b-flexible-2"
     ],
     "originalWorkItemOrderEqual": true,
+    "originalParticipantIds": [
+      "participant-a",
+      "participant-c",
+      "participant-d",
+      "participant-e",
+      "participant-f",
+      "participant-g",
+      "participant-h",
+      "participant-z"
+    ],
+    "isolatedParticipantIds": [
+      "isolated-choice-participant",
+      "isolated-scarce-participant"
+    ],
+    "participantsDisjoint": true,
+    "originalSpaceIds": [
+      "fixed-auxiliary-space",
+      "flexible-auxiliary-space",
+      "main-stage",
+      "vocal-room-a",
+      "vocal-room-b"
+    ],
+    "isolatedSpaceIds": [
+      "isolated-space-a",
+      "isolated-space-b"
+    ],
+    "spacesDisjoint": true,
+    "originalResourceIds": [
+      "limited-availability-resource"
+    ],
+    "isolatedResourceIds": [
+      "isolated-resource"
+    ],
+    "resourcesDisjoint": true,
+    "isolatedDependencyIds": [],
+    "dependenciesDisjoint": true,
+    "isolatedCoachIds": [],
+    "coachesDisjoint": true,
+    "regionStructurallyIndependent": true,
+    "originalParticipantPresenceControl": {
+      "participant-a": 195,
+      "participant-c": 240,
+      "participant-d": 285,
+      "participant-e": 90,
+      "participant-f": 90,
+      "participant-g": 90,
+      "participant-h": 215,
+      "participant-z": 90
+    },
+    "originalParticipantPresenceVariant": {
+      "participant-a": 195,
+      "participant-c": 240,
+      "participant-d": 285,
+      "participant-e": 90,
+      "participant-f": 90,
+      "participant-g": 90,
+      "participant-h": 215,
+      "participant-z": 90
+    },
+    "originalParticipantPresenceEqual": true,
+    "originalAuxiliaryCandidateCountsControl": {
+      "a-flexible-1": 27,
+      "b-flexible-2": 73,
+      "y-scarce-2": 10,
+      "z-scarce-1": 7
+    },
+    "originalAuxiliaryCandidateCountsVariant": {
+      "a-flexible-1": 27,
+      "b-flexible-2": 73,
+      "y-scarce-2": 10,
+      "z-scarce-1": 7
+    },
+    "originalAuxiliaryCandidateCountsEqual": true,
+    "originalResourcePresenceControl": {
+      "limited-availability-resource": 30
+    },
+    "originalResourcePresenceVariant": {
+      "limited-availability-resource": 30
+    },
+    "originalResourcePresenceEqual": true,
     "isolatedTaskIds": [
       "isolated-choice-task",
       "isolated-scarce-task"

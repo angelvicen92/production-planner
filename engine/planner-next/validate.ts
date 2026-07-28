@@ -155,6 +155,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     const own = tasks.filter((task) => task.participantId === participant.id);
     const mains = own.filter((task) => task.kind === "main");
     const vocals = own.filter((task) => task.kind === "vocal");
+    if (mains.length === 0 && vocals.length === 0 && own.every((task) => task.kind === "auxiliary")) continue;
     if (mains.length === 0) reasons.add("MISSING_MAIN_TASK");
     if (vocals.length === 0) reasons.add("MISSING_FEEDER_TASK");
     if (mains.length > 1) reasons.add("MULTIPLE_MAIN_TASKS_FOR_PARTICIPANT");
