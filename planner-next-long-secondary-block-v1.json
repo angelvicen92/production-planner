@@ -37,7 +37,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 24.20254699999998,
+      "runtimeMs": 15.73957200000001,
       "deterministic": true
     },
     "adversarial": {
@@ -76,7 +76,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 10.178991999999994,
+      "runtimeMs": 8.361595000000023,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -108,7 +108,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 2.7267009999999914,
+      "runtimeMs": 5.023091999999963,
       "deterministic": true
     },
     "resourceOff": {
@@ -155,7 +155,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 24.39859800000005,
+      "runtimeMs": 18.316611000000023,
       "deterministic": true
     },
     "resourceHigh": {
@@ -202,7 +202,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 6.852123000000006,
+      "runtimeMs": 17.880818000000033,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -264,7 +264,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 40.86289399999998,
+      "runtimeMs": 48.29652200000004,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -326,7 +326,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 16.312757000000033,
+      "runtimeMs": 20.295470000000023,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -469,7 +469,7 @@
         }
       },
       "parallel": true,
-      "runtimeMs": 271.87944000000005,
+      "runtimeMs": 239.91031699999996,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -558,7 +558,7 @@
           "b-flexible-short-2": 815
         }
       },
-      "runtimeMs": 77.99571199999991,
+      "runtimeMs": 101.36692000000005,
       "deterministic": true
     }
   },
