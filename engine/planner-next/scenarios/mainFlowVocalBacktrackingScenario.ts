@@ -48,6 +48,7 @@ export function mainFlowVocalBacktrackingScenario(): PlannerNextProblem {
   return {
     day,
     protectedMeal: { start: hm("15:00"), end: hm("16:00") },
+    resources: [],
     spaces: [
       { id: "main-stage", availability: allDay },
       { id: "vocal-room-a", availability: allDay },

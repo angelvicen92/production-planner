@@ -15,6 +15,14 @@ export interface Space {
   availability: Window[];
 }
 
+export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
+
+export interface Resource {
+  id: string;
+  availability: Window[];
+  presencePreference: PreferenceLevel;
+}
+
 export interface Task {
   id: string;
   kind: "main" | "vocal";
@@ -24,6 +32,7 @@ export interface Task {
   spaceId: string;
   dependencies: string[];
   blockKey?: string;
+  requiredResourceIds?: string[];
 }
 
 export interface SearchBudget {
@@ -37,6 +46,7 @@ export interface PlannerNextProblem {
   day: Window;
   protectedMeal: Window;
   spaces: Space[];
+  resources: Resource[];
   participants: Person[];
   coaches: Person[];
   tasks: Task[];
@@ -64,6 +74,8 @@ export interface ValidationSummary {
   transitionViolationCount: number;
   availabilityViolationCount: number;
   blockViolationCount: number;
+  resourceAvailabilityViolationCount: number;
+  resourceOverlapViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -87,6 +99,10 @@ export interface PlanMetrics extends ValidationSummary {
   participantPresenceMinutesById: Record<string, number>;
   totalParticipantPresenceMinutes: number;
   maxParticipantPresenceMinutes: number;
+  resourcePresenceMinutesById: Record<string, number>;
+  resourceInternalGapMinutesById: Record<string, number>;
+  totalResourcePresenceMinutes: number;
+  maxResourcePresenceMinutes: number;
   alternativesGenerated: number;
   alternativesRetained: number;
   branchesExplored: number;
