@@ -1,6 +1,7 @@
 import type {
   Person,
   PlannerNextProblem,
+  ScheduledSetupPreparation,
   ScheduledTask,
   Space,
   Resource,
@@ -11,6 +12,7 @@ import type {
 import { contains, overlaps } from "./time";
 import { effectiveResourceTransitionMinutes } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setupTasks } from "./setupGrouping";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
@@ -117,6 +119,15 @@ export function preflight(problem: PlannerNextProblem): string[] {
       const order = Array.isArray(policy?.familyOrder) ? policy.familyOrder.filter((x): x is string => typeof x === "string") : [];
       if (new Set(order).size !== order.length) reasons.add("DUPLICATE_SETUP_FAMILY");
       if (policy?.reentry !== "FORBIDDEN") reasons.add("UNSUPPORTED_SETUP_REENTRY");
+      if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) {
+        const record = (policy as { preparationMinutesByFamily?: unknown }).preparationMinutesByFamily;
+        const plain = record !== null && typeof record === "object" && !Array.isArray(record) && Object.getPrototypeOf(record) === Object.prototype;
+        if (!plain) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        else {
+          const entries = Object.entries(record as Record<string, unknown>);
+          if (entries.length !== order.length || entries.some(([family, value]) => !order.includes(family) || typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value) || value <= 0) || order.some(family => !Object.prototype.hasOwnProperty.call(record, family))) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        }
+      }
       if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
       if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
       const own = tasks.filter((task) => task?.spaceId === space.id);
@@ -196,7 +207,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[]): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = []): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -207,6 +218,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let resourceTransition = 0;
   let secondaryContinuity = 0;
   let setup = 0;
+  let setupPreparation = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -290,7 +302,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);
     const actual = secondaryTasks(scheduled, space.id);
-    if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(actual)) secondaryContinuity += 1;
+    const occupations = spaceOccupations(actual, preparations, space.id);
+    if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(occupations)) secondaryContinuity += 1;
   }
   for (const space of setupSpaces(problem)) {
     const expected = setupTasks(problem.tasks, space.id), actual = setupTasks(scheduled, space.id);
@@ -301,6 +314,31 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1);
     if (invalid) setup += 1;
   }
+  for (const space of setupSpaces(problem).filter(candidate => candidate.setupPolicy?.preparationMinutesByFamily !== undefined)) {
+    const policy = space.setupPolicy!;
+    const record = policy.preparationMinutesByFamily!;
+    const ownTasks = setupTasks(scheduled, space.id);
+    const ownPreparations = preparations.filter(item => item.spaceId === space.id);
+    const occupied = spaceOccupations(scheduled, preparations, space.id);
+    for (let index = 0; index < policy.familyOrder.length; index += 1) {
+      const family = policy.familyOrder[index]!;
+      const matches = ownPreparations.filter(item => item.setupFamilyId === family);
+      const preparation = matches[0];
+      const familyTasks = ownTasks.filter(task => task.setupFamilyId === family).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const previousTasks = index === 0 ? [] : ownTasks.filter(task=>task.setupFamilyId===policy.familyOrder[index-1]).sort((a,b)=>a.end-b.end||a.id.localeCompare(b.id));
+      const invalid = matches.length !== 1 || !preparation || preparation.entryIndex !== 1 || preparation.id !== setupPreparationId(space.id,family,1)
+        || preparation.kind !== "setup-preparation" || preparation.duration !== record[family] || preparation.end-preparation.start !== preparation.duration
+        || !preparationWithinDay(problem,preparation) || !preparationWithinAvailability(space.availability,preparation) || !preparationAvoidsMeal(problem.protectedMeal,preparation)
+        || !preparationAvoidsOccupations(preparation,occupied) || !familyTasks[0] || preparation.end !== familyTasks[0].start
+        || (index === 0 ? preparation.start !== occupied[0]?.start : preparation.start !== previousTasks.at(-1)?.end);
+      if (invalid) setupPreparation += 1;
+    }
+    const extras = ownPreparations.filter(item=>!policy.familyOrder.includes(item.setupFamilyId));
+    setupPreparation += extras.length;
+    if (setupPreparationSequence(ownPreparations).some((family,index)=>family!==policy.familyOrder[index])) setupPreparation += setupPreparation === 0 ? 1 : 0;
+  }
+  setupPreparation += preparations.filter(item => !problem.spaces.some(space=>space.id===item.spaceId && space.setupPolicy?.preparationMinutesByFamily !== undefined)).length;
+
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -313,6 +351,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (resourceTransition) reasonCodes.push("RESOURCE_TRANSITION_VIOLATION");
   if (secondaryContinuity) reasonCodes.push("SECONDARY_CONTINUITY_VIOLATION");
   if (setup) reasonCodes.push("SETUP_POLICY_VIOLATION");
+  if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -325,6 +364,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     resourceTransitionViolationCount: resourceTransition,
     secondaryContinuityViolationCount: secondaryContinuity,
     setupViolationCount: setup,
+    setupPreparationViolationCount: setupPreparation,
     reasonCodes,
   };
 }

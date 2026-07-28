@@ -2,6 +2,7 @@ import type {
   PlanMetrics,
   PlanResult,
   PlannerNextProblem,
+  ScheduledSetupPreparation,
   ScheduledTask,
   SearchStopReason,
   Task,
@@ -13,6 +14,7 @@ import { canPlaceTask } from "./placement";
 import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
 import { participantPresenceSpan } from "./participantPresence";
 import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryStart, secondaryTasks } from "./secondaryContinuity";
+import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 
 interface MainAlternative {
@@ -135,6 +137,7 @@ function emptyMetrics(
     resourceTransitionViolationCount: 0,
     secondaryContinuityViolationCount: 0,
     setupViolationCount: 0,
+    setupPreparationViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -167,6 +170,7 @@ function emptyMetrics(
     secondarySpaceGapMinutesById: {},
     secondarySpaceBlockCountById: {},
     setupFamilySequenceBySpaceId: {}, setupBlockCountBySpaceAndFamily: {}, setupSwitchCountBySpaceId: {},
+    setupPreparationCount: 0, setupPreparationMinutesBySpaceId: {}, setupPreparationCountBySpaceAndFamily: {}, setupPreparationSequenceBySpaceId: {},
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -181,6 +185,7 @@ function failure(
   return {
     complete: false,
     scheduledTasks: [],
+    scheduledSetupPreparations: [],
     metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
   };
 }
@@ -192,6 +197,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     return {
       complete: false,
       scheduledTasks: [],
+      scheduledSetupPreparations: [],
       metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
     };
   }
@@ -286,7 +292,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     if (auxiliary?.secondaryExhausted) return failure(problem, begun, "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED", counters);
     if (auxiliary?.exhausted) return failure(problem, begun, "AUXILIARY_BRANCH_BUDGET_EXHAUSTED", counters);
     const all = auxiliary?.tasks ?? null;
-    const validation = all ? validatePlan(problem, all) : null;
+    const preparations = auxiliary?.preparations ?? [];
+    const validation = all ? validatePlan(problem, all, preparations) : null;
     if (!all || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
       if (!hasNext) break;
@@ -318,7 +325,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const secondaryStartById: Record<string, number | null> = {}, secondaryEndById: Record<string, number | null> = {}, secondaryGapsById: Record<string, number> = {}, secondaryBlocksById: Record<string, number> = {};
-    for (const space of requiredSecondarySpaces(problem)) { const tasks = secondaryTasks(ordered, space.id); secondaryStartById[space.id] = secondaryStart(tasks); secondaryEndById[space.id] = secondaryEnd(tasks); secondaryGapsById[space.id] = secondaryGapMinutes(tasks); secondaryBlocksById[space.id] = secondaryBlockCount(tasks); }
+    for (const space of requiredSecondarySpaces(problem)) { const tasks = secondaryTasks(ordered, space.id); const occupations = spaceOccupations(tasks, preparations, space.id); secondaryStartById[space.id] = secondaryStart(occupations); secondaryEndById[space.id] = secondaryEnd(occupations); secondaryGapsById[space.id] = secondaryGapMinutes(occupations); secondaryBlocksById[space.id] = secondaryBlockCount(occupations); }
     const metrics: PlanMetrics = {
       ...validation,
       complete: true,
@@ -350,7 +357,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       branchBudgetConsumed: counters.branches,
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
-      planFingerprint: fingerprint(ordered),
+      planFingerprint: fingerprint(ordered, preparations),
       auxiliaryTaskCount: problem.tasks.filter((x) => x.kind === "auxiliary").length,
       auxiliaryPlannedTaskCount: ordered.filter((x) => x.kind === "auxiliary").length,
       auxiliaryBranchesExplored: counters.auxiliaryBranches,
@@ -366,9 +373,13 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       setupFamilySequenceBySpaceId: Object.fromEntries(setupSpaces(problem).map((space) => [space.id, setupFamilySequence(setupTasks(ordered, space.id))])),
       setupBlockCountBySpaceAndFamily: Object.fromEntries(setupSpaces(problem).flatMap((space) => Object.entries(setupBlockCounts(setupTasks(ordered, space.id))).map(([family, count]) => [`${space.id}|${family}`, count]))),
       setupSwitchCountBySpaceId: Object.fromEntries(setupSpaces(problem).map((space) => [space.id, setupSwitchCount(setupTasks(ordered, space.id))])),
+      setupPreparationCount: preparations.length,
+      setupPreparationMinutesBySpaceId: setupPreparationMinutesBySpace(preparations),
+      setupPreparationCountBySpaceAndFamily: setupPreparationCounts(preparations),
+      setupPreparationSequenceBySpaceId: Object.fromEntries(setupSpaces(problem).filter(space=>space.setupPolicy?.preparationMinutesByFamily).map(space=>[space.id,setupPreparationSequence(preparations.filter(p=>p.spaceId===space.id))])),
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
-    return { complete: true, scheduledTasks: ordered, metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }

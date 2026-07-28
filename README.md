@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-setup-grouping-v1.json`.
+The current accepted artifact is `planner-next-setup-preparation-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2197,3 +2197,13 @@ General search was not changed and no budget was increased.
 Planner Next remains isolated, not production-integrated, and not a complete planner.
 Run `bash validate-next-010.sh`.
 The accepted artifact is `planner-next-setup-grouping-v1.json`.
+
+### NEXT-011 — Generated Setup Preparations
+Planner Next adds a real operational capability: setup preparation duration belongs to the incoming family.
+One generated preparation precedes the first task of every configured family; it has no contestant.
+It occupies only the space and does not reserve task resources.
+Tasks and preparations form one continuous operational occupation.
+NEXT-010 scenarios without preparation remain unchanged, and reentry remains forbidden.
+Preparation-specific resources remain out of scope; Planner Next remains isolated and is not product-integrated.
+Validate with `bash validate-next-011.sh`.
+The accepted artifact is `planner-next-setup-preparation-v1.json`.
