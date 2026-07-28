@@ -13,7 +13,10 @@ export interface Person {
 export interface Space {
   id: string;
   availability: Window[];
+  secondaryContinuity?: SecondaryContinuity;
 }
+
+export type SecondaryContinuity = "OFF" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
 
@@ -79,6 +82,7 @@ export interface ValidationSummary {
   resourceAvailabilityViolationCount: number;
   resourceOverlapViolationCount: number;
   resourceTransitionViolationCount: number;
+  secondaryContinuityViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -89,7 +93,8 @@ export type SearchStopReason =
   | "PATTERN_BUDGET_EXHAUSTED"
   | "BRANCH_BUDGET_EXHAUSTED"
   | "BACKTRACK_BUDGET_EXHAUSTED"
-  | "AUXILIARY_BRANCH_BUDGET_EXHAUSTED";
+  | "AUXILIARY_BRANCH_BUDGET_EXHAUSTED"
+  | "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED";
 
 export interface PlanMetrics extends ValidationSummary {
   complete: boolean;
@@ -124,6 +129,13 @@ export interface PlanMetrics extends ValidationSummary {
   auxiliaryBranchesExplored: number;
   auxiliarySelectionOrder: string[];
   auxiliaryCandidateCountWhenSelectedByTaskId: Record<string, number>;
+  secondaryBlockBranchesExplored: number;
+  auxiliaryWorkItemSelectionOrder: string[];
+  secondaryBlockCandidateCountWhenSelectedBySpaceId: Record<string, number>;
+  secondarySpaceStartById: Record<string, Minute | null>;
+  secondarySpaceEndById: Record<string, Minute | null>;
+  secondarySpaceGapMinutesById: Record<string, number>;
+  secondarySpaceBlockCountById: Record<string, number>;
 }
 
 export interface PlanResult {
