@@ -7,6 +7,7 @@ import type {
   Task,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
+import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics } from "./resourcePresence";
 import { contains, overlaps } from "./time";
 import { preflight, validatePlan } from "./validate";
 
@@ -79,16 +80,19 @@ function freeFor(task: Task, start: number, problem: PlannerNextProblem, placed:
   const participant = problem.participants.find(({ id }) => id === task.participantId);
   const coach = problem.coaches.find(({ id }) => id === task.coachId);
   const space = problem.spaces.find(({ id }) => id === task.spaceId);
+  const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((resource) => resource.id === id));
   if (!participant || !coach || !space) return false;
   if (!contains(participant.availability, start, end)
     || !contains(coach.availability, start, end)
     || !contains(space.availability, start, end)
-    || overlaps({ start, end }, problem.protectedMeal)) return false;
+    || overlaps({ start, end }, problem.protectedMeal)
+    || resources.some((resource) => !resource || !contains(resource.availability, start, end))) return false;
   return !placed.some((other) => {
     const sharedParticipant = other.participantId === task.participantId;
     const sharedCoach = other.coachId === task.coachId;
     if (overlaps(other, { start, end })
-      && (sharedParticipant || sharedCoach || other.spaceId === task.spaceId)) return true;
+      && (sharedParticipant || sharedCoach || other.spaceId === task.spaceId
+        || (task.requiredResourceIds ?? []).some((id) => (other.requiredResourceIds ?? []).includes(id)))) return true;
     if (other.spaceId === task.spaceId) return false;
     const margin = sharedCoach
       ? problem.resourceTransitionMinutes
@@ -148,9 +152,15 @@ function emptyMetrics(
     transitionViolationCount: 0,
     availabilityViolationCount: 0,
     blockViolationCount: 0,
+    resourceAvailabilityViolationCount: 0,
+    resourceOverlapViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
+    resourcePresenceMinutesById: {},
+    resourceInternalGapMinutesById: {},
+    totalResourcePresenceMinutes: 0,
+    maxResourcePresenceMinutes: 0,
     alternativesGenerated: counters?.alternativesGenerated ?? 0,
     alternativesRetained: counters?.alternativesRetained ?? 0,
     branchesExplored: counters?.branches ?? 0,
@@ -243,8 +253,14 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             .filter((window) => window.start <= slot && slot + duration <= window.end)
             .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
           const originalIndex = mains.findIndex(({ id }) => id === task.id);
-          const score = state.score + loss + Math.abs(originalIndex - position);
-          const tasks = [...state.tasks, { ...task, start: slot, end: slot + duration }];
+          const scheduledTask = { ...task, start: slot, end: slot + duration };
+          const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
+            const resource = problem.resources.find(({ id }) => id === resourceId);
+            return sum + (resource ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
+              * presencePreferenceWeight(resource.presencePreference) : 0);
+          }, 0);
+          const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
+          const tasks = [...state.tasks, scheduledTask];
           next.push({ tasks, score, signature: tasks.map(({ id }) => id).join("|") });
           counters.alternativesGenerated += 1;
         }
@@ -294,6 +310,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       else presence[id] = Math.max(...own.map(({ end }) => end)) - Math.min(...own.map(({ start }) => start));
     }
     const values = Object.values(presence);
+    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered);
+    const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const metrics: PlanMetrics = {
       ...validation,
       complete: true,
@@ -310,6 +328,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       participantPresenceMinutesById: presence,
       totalParticipantPresenceMinutes: values.reduce((sum, value) => sum + value, 0),
       maxParticipantPresenceMinutes: values.length > 0 ? Math.max(...values) : 0,
+      resourcePresenceMinutesById: resourcePresence.presenceMinutesById,
+      resourceInternalGapMinutesById: resourcePresence.internalGapMinutesById,
+      totalResourcePresenceMinutes: resourceValues.reduce((sum, value) => sum + value, 0),
+      maxResourcePresenceMinutes: resourceValues.length > 0 ? Math.max(...resourceValues) : 0,
       alternativesGenerated: counters.alternativesGenerated,
       alternativesRetained: counters.alternativesRetained,
       branchesExplored: counters.branches,

@@ -1,0 +1,123 @@
+{
+  "version": "planner-next-resource-presence-v1",
+  "scenarios": {
+    "baseline": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "unplannedTaskCount": 0,
+      "mainFlowStart": "13:00",
+      "mainFlowEnd": "15:00",
+      "mainFlowGapMinutes": 0,
+      "reasonCodes": [],
+      "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
+      "backtracks": 0,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 1576,
+      "searchStopReason": "SOLUTION_FOUND",
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 28.058321999999976,
+      "deterministic": true
+    },
+    "adversarial": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "unplannedTaskCount": 0,
+      "mainFlowStart": "13:00",
+      "mainFlowEnd": "15:00",
+      "mainFlowGapMinutes": 0,
+      "reasonCodes": [],
+      "planFingerprint": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
+      "backtracks": 2,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 2560,
+      "searchStopReason": "SOLUTION_FOUND",
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 4.419127000000003,
+      "deterministic": true
+    },
+    "adversarialZeroBacktracks": {
+      "complete": false,
+      "hardValid": false,
+      "plannedTaskCount": 0,
+      "unplannedTaskCount": 16,
+      "mainFlowStart": null,
+      "mainFlowEnd": null,
+      "mainFlowGapMinutes": 0,
+      "reasonCodes": [
+        "BACKTRACK_BUDGET_EXHAUSTED"
+      ],
+      "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "backtracks": 0,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 2560,
+      "searchStopReason": "BACKTRACK_BUDGET_EXHAUSTED",
+      "resourcePresenceMinutesById": {},
+      "resourceInternalGapMinutesById": {},
+      "violationCount": 0,
+      "runtimeMs": 4.417153000000042,
+      "deterministic": true
+    },
+    "resourceOff": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "unplannedTaskCount": 0,
+      "mainFlowStart": "13:00",
+      "mainFlowEnd": "15:00",
+      "mainFlowGapMinutes": 0,
+      "reasonCodes": [],
+      "planFingerprint": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
+      "backtracks": 0,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 5616,
+      "searchStopReason": "SOLUTION_FOUND",
+      "resourcePresenceMinutesById": {
+        "shared-production-resource": 120
+      },
+      "resourceInternalGapMinutesById": {
+        "shared-production-resource": 60
+      },
+      "violationCount": 0,
+      "runtimeMs": 17.898836000000017,
+      "deterministic": true
+    },
+    "resourceHigh": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "unplannedTaskCount": 0,
+      "mainFlowStart": "13:00",
+      "mainFlowEnd": "15:00",
+      "mainFlowGapMinutes": 0,
+      "reasonCodes": [],
+      "planFingerprint": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
+      "backtracks": 0,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 5616,
+      "searchStopReason": "SOLUTION_FOUND",
+      "resourcePresenceMinutesById": {
+        "shared-production-resource": 60
+      },
+      "resourceInternalGapMinutesById": {
+        "shared-production-resource": 0
+      },
+      "violationCount": 0,
+      "runtimeMs": 20.07258300000001,
+      "deterministic": true
+    }
+  },
+  "acceptance": {
+    "accepted": true
+  }
+}

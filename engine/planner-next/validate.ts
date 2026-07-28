@@ -3,6 +3,7 @@ import type {
   PlannerNextProblem,
   ScheduledTask,
   Space,
+  Resource,
   Task,
   ValidationSummary,
   Window,
@@ -21,7 +22,7 @@ function invalidWindow(window: Window, day: Window): boolean {
     || window.end > day.end;
 }
 
-function validateAvailability(items: Array<Person | Space>, day: Window): boolean {
+function validateAvailability(items: Array<Person | Space | Resource>, day: Window): boolean {
   return items.some((item) =>
     !Array.isArray(item.availability)
     || item.availability.length === 0
@@ -72,22 +73,44 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const coaches = Array.isArray(problem.coaches) ? problem.coaches : [];
   const spaces = Array.isArray(problem.spaces) ? problem.spaces : [];
   const tasks = Array.isArray(problem.tasks) ? problem.tasks : [];
+  const resources = Array.isArray(problem.resources) ? problem.resources : [];
+  if (!Array.isArray(problem.resources)) reasons.add("INVALID_RESOURCE_CONTRACT");
   if (hasDuplicateIds(participants)) reasons.add("DUPLICATE_PARTICIPANT_ID");
   if (hasDuplicateIds(coaches)) reasons.add("DUPLICATE_COACH_ID");
   if (hasDuplicateIds(spaces)) reasons.add("DUPLICATE_SPACE_ID");
   if (hasDuplicateIds(tasks)) reasons.add("DUPLICATE_TASK_ID");
+  if (hasDuplicateIds(resources)) reasons.add("DUPLICATE_RESOURCE_ID");
+  if (resources.some(({ id }) => typeof id !== "string" || id.trim() === "")) reasons.add("INVALID_RESOURCE_CONTRACT");
   if (usableDay && validateAvailability([...participants, ...coaches, ...spaces], day)) {
     reasons.add("INVALID_AVAILABILITY_WINDOW");
+  }
+  if (usableDay && resources.some((resource) => !Array.isArray(resource.availability)
+    || resource.availability.length === 0
+    || resource.availability.some((window) => invalidWindow(window, day)))) {
+    reasons.add("INVALID_RESOURCE_AVAILABILITY");
+  }
+  const preferenceLevels = new Set(["OFF", "LOW", "MEDIUM", "HIGH", "MAXIMUM"]);
+  if (resources.some(({ presencePreference }) => !preferenceLevels.has(presencePreference))) {
+    reasons.add("INVALID_RESOURCE_PREFERENCE");
   }
 
   const participantIds = new Set(participants.map(({ id }) => id));
   const coachIds = new Set(coaches.map(({ id }) => id));
   const spaceIds = new Set(spaces.map(({ id }) => id));
   const taskIds = new Set(tasks.map(({ id }) => id));
+  const resourceIds = new Set(resources.map(({ id }) => id));
   const mainSpaceId = problem.mainFlow?.spaceId;
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
 
   for (const task of tasks) {
+    const requirements = task.requiredResourceIds;
+    if (requirements !== undefined && !Array.isArray(requirements)) {
+      reasons.add("INVALID_RESOURCE_CONTRACT");
+    } else if (Array.isArray(requirements)) {
+      if (new Set(requirements).size !== requirements.length) reasons.add("DUPLICATE_TASK_RESOURCE_REQUIREMENT");
+      if (requirements.some((id) => typeof id !== "string" || !resourceIds.has(id))) reasons.add("MISSING_RESOURCE_REFERENCE");
+      if (task.kind === "vocal" && requirements.length > 0) reasons.add("UNSUPPORTED_FEEDER_RESOURCE_REQUIREMENT");
+    }
     if (task.kind !== "main" && task.kind !== "vocal") reasons.add("UNSUPPORTED_TASK_KIND");
     if (!participantIds.has(task.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
     if (!coachIds.has(task.coachId)) reasons.add("MISSING_COACH_REFERENCE");
@@ -135,10 +158,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let transition = 0;
   let availability = 0;
   let block = 0;
+  let resourceAvailability = 0;
+  let resourceOverlap = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
   const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
+  const resources = new Map(problem.resources.map((item) => [item.id, item]));
 
   for (const task of scheduled) {
     const participant = participants.get(task.participantId);
@@ -150,6 +176,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || !participant || !contains(participant.availability, task.start, task.end)
       || !coach || !contains(coach.availability, task.start, task.end)
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
+    for (const resourceId of task.requiredResourceIds ?? []) {
+      const resource = resources.get(resourceId);
+      if (!resource || !contains(resource.availability, task.start, task.end)) resourceAvailability += 1;
+    }
     for (const dependencyId of task.dependencies) {
       const feeder = byId.get(dependencyId);
       if (!feeder || feeder.end > task.start) dependency += 1;
@@ -161,6 +191,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const b = scheduled[second];
       if (!a || !b || !overlaps(a, b)) continue;
       if (a.participantId === b.participantId || a.coachId === b.coachId || a.spaceId === b.spaceId) overlap += 1;
+      if ((a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
     }
   }
   for (const field of ["participantId", "coachId"] as const) {
@@ -206,6 +237,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (transition) reasonCodes.push("TRANSITION_VIOLATION");
   if (availability) reasonCodes.push("AVAILABILITY_VIOLATION");
   if (block) reasonCodes.push("BLOCK_VIOLATION");
+  if (resourceAvailability) reasonCodes.push("RESOURCE_AVAILABILITY_VIOLATION");
+  if (resourceOverlap) reasonCodes.push("RESOURCE_OVERLAP_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -213,6 +246,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     transitionViolationCount: transition,
     availabilityViolationCount: availability,
     blockViolationCount: block,
+    resourceAvailabilityViolationCount: resourceAvailability,
+    resourceOverlapViolationCount: resourceOverlap,
     reasonCodes,
   };
 }

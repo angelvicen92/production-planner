@@ -27,7 +27,8 @@
     "replay:engine-scenario": "tsx engine/tools/replayEngineScenario.ts",
     "benchmark:orc:initial-construction": "tsx engine/tools/runInitialConstructionBenchmark.ts",
     "benchmark:planner-next:focal": "tsx engine/planner-next/benchmarks/runMainFlowVocalBenchmark.ts",
-    "benchmark:planner-next:core": "tsx engine/planner-next/benchmarks/runPlannerNextCoreBenchmark.ts"
+    "benchmark:planner-next:core": "tsx engine/planner-next/benchmarks/runPlannerNextCoreBenchmark.ts",
+    "benchmark:planner-next:resource-presence": "tsx engine/planner-next/benchmarks/runPlannerNextResourcePresenceBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

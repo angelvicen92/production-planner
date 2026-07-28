@@ -2108,6 +2108,17 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-core-backtracking-v1.json`.
+The current accepted artifact is `planner-next-resource-presence-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
+
+### NEXT-003 — Shared Resource Presence Compaction
+
+Planner Next adds exact shared resources for main tasks, with availability and temporal exclusivity.
+The generic preference compacts first-start-to-last-end presence without making it a hard rule.
+In the accepted scenario OFF leaves a 120-minute span; HIGH produces 60 minutes with no internal gap.
+This is deliberately not complete resource support: alternatives, quantities and substitution remain out of scope.
+Reality, Presentadora, Totales and setups have not been added.
+Planner Next remains isolated and is neither production-integrated nor a complete planner.
+Run `bash validate-next-003.sh`.
+The accepted artifact is `planner-next-resource-presence-v1.json` and replaces the NEXT-002 artifact.
