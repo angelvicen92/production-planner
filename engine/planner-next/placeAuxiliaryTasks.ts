@@ -11,6 +11,11 @@ export interface AuxiliaryPlacementResult {
   candidateCounts: Record<string, number>; blockCandidateCounts: Record<string, number>; futureExhausted: boolean; futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
 }
 type State = { placed: ScheduledTask[]; pending: Task[]; order: string[]; workOrder: string[]; counts: Record<string, number>; blockCounts: Record<string, number>; cost: number; futureMin: number; futureTotal: number; pathMin: number };
+export type AuxiliaryStateRankingInput = Pick<State, "placed" | "cost">;
+
+export function compareAuxiliaryStates(a: AuxiliaryStateRankingInput, b: AuxiliaryStateRankingInput): number {
+  return a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed));
+}
 type BlockCandidate = { tasks: ScheduledTask[]; cost: number };
 export interface BlockConstructionDiagnostics { startsExplored: number; expansions: number; completeCandidatesGenerated: number; maximumPartialStatesPerStart: number }
 export interface BlockConstructionResult { candidates: BlockCandidate[]; consumed: number; secondaryBranches: number; exhausted: boolean; diagnostics: BlockConstructionDiagnostics }
@@ -57,24 +62,21 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         for (const candidate of scored) {
           if (branches >= branchAllowance) return failed(false, state);
           branches += 1;
-          // Once the global beam already contains Best-K proven-feasible states, a
-          // strictly lower-ranked state cannot enter it. Account for the candidate,
-          // but avoid an observationally irrelevant future probe.
-          if (futurePruned === 0 && next.length >= problem.budget.bestK) {
-            const rank = { cost: state.cost + candidate.cost, signature: signature([...state.placed, candidate.scheduled]) };
+          if (next.length >= problem.budget.bestK) {
+            const provisional = { cost: state.cost + candidate.cost, placed: [...state.placed, candidate.scheduled] };
             const retained = next[problem.budget.bestK - 1]!;
-            if (rank.cost > retained.cost || (rank.cost === retained.cost && rank.signature >= signature(retained.placed))) continue;
+            if (compareAuxiliaryStates(provisional, retained) >= 0) continue;
           }
           if (!forward([candidate.scheduled], candidate.cost, selected.key, selected.task.id, state, next, selected.starts.length, undefined, scored[0] === candidate)) return failed(false, state);
-          if (futurePruned === 0) next.splice(0, next.length, ...next.sort((a, b) => a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK));
         }
+        next.splice(0, next.length, ...next.sort(compareAuxiliaryStates).slice(0, problem.budget.bestK));
       } else {
         for (const candidate of selected.candidates) {
           if (!forward(candidate.tasks, candidate.cost, selected.key, undefined, state, next, undefined, { spaceId: selected.spaceId, count: selected.candidates.length }, selected.candidates[0] === candidate)) return failed(false, state);
         }
       }
     }
-    beam = next.sort((a, b) => a.cost - b.cost || (futurePruned > 0 ? b.futureMin - a.futureMin || b.futureTotal - a.futureTotal : 0) || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK);
+    beam = next.sort(compareAuxiliaryStates).slice(0, problem.budget.bestK);
   }
   const result = beam[0];
   return { tasks: result?.placed ?? null, branches, secondaryBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: result?.counts ?? {}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };
