@@ -15,6 +15,8 @@ import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setupTasks } from "./setupGrouping";
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
+import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
+import { canPlaceTask } from "./placement";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -158,11 +160,18 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (requirements.some((id) => typeof id !== "string" || !resourceIds.has(id))) reasons.add("MISSING_RESOURCE_REFERENCE");
       if (task.kind === "vocal" && requirements.length > 0) reasons.add("UNSUPPORTED_FEEDER_RESOURCE_REQUIREMENT");
     }
-    if (task.kind !== "main" && task.kind !== "vocal" && task.kind !== "auxiliary") reasons.add("UNSUPPORTED_TASK_KIND");
-    if (!participantIds.has(task.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
+    if (task.kind !== "main" && task.kind !== "vocal" && task.kind !== "auxiliary" && task.kind !== "technical") reasons.add("UNSUPPORTED_TASK_KIND");
+    if (task.kind === "technical") {
+      if (hasOwnTechnicalField(task, "participantId")) reasons.add("TECHNICAL_PARTICIPANT_UNSUPPORTED");
+      if (hasOwnTechnicalField(task, "coachId")) reasons.add("TECHNICAL_COACH_UNSUPPORTED");
+      if (!Array.isArray(task.dependencies) || task.dependencies.length !== 0) reasons.add("TECHNICAL_DEPENDENCY_UNSUPPORTED");
+      if (hasOwnTechnicalField(task, "blockKey") || hasOwnTechnicalField(task, "setupFamilyId") || hasOwnTechnicalField(task, "jointGroupId")) reasons.add("TECHNICAL_GROUPING_UNSUPPORTED");
+      const technicalSpace = spaces.find((space) => space.id === task.spaceId);
+      if (task.spaceId === mainSpaceId || technicalSpace?.secondaryContinuity === "REQUIRED" || technicalSpace?.setupPolicy !== undefined) reasons.add("TECHNICAL_IN_STRUCTURED_SPACE_UNSUPPORTED");
+    } else if (!participantIds.has(task.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
     if (task.kind === "main" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("MAIN_COACH_REQUIRED");
     if (task.kind === "vocal" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("VOCAL_COACH_REQUIRED");
-    if (task.kind !== "auxiliary" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("MISSING_COACH_REFERENCE");
+    if (task.kind !== "auxiliary" && task.kind !== "technical" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("MISSING_COACH_REFERENCE");
     if (task.kind === "auxiliary" && task.coachId !== undefined) reasons.add("AUXILIARY_COACH_UNSUPPORTED");
     if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
     if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
@@ -235,6 +244,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let setup = 0;
   let setupPreparation = 0;
   let jointGroup = 0;
+  let technicalOperation = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -248,7 +258,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if (task.end - task.start !== task.duration
       || task.start < problem.day.start || task.end > problem.day.end
       || overlaps(task, problem.protectedMeal)
-      || !participant || !contains(participant.availability, task.start, task.end)
+      || (task.kind !== "technical" && (!participant || !contains(participant.availability, task.start, task.end)))
       || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
     for (const resourceId of task.requiredResourceIds ?? []) {
@@ -266,7 +276,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const b = scheduled[second];
       if (!a || !b || !overlaps(a, b)) continue;
       const internal=synchronizedJointTasks(a,b) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===a.id) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===b.id);
-      if (!internal && (a.participantId === b.participantId || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId)) overlap += 1;
+      const sharedParticipant = a.participantId !== undefined && b.participantId !== undefined && a.participantId === b.participantId;
+      if (!internal && (sharedParticipant || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId)) overlap += 1;
       if (!internal && (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
     }
   }
@@ -378,6 +389,23 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   jointGroup=invalidGroupIds.size;
 
+  const invalidTechnicalIds = new Set<string>();
+  const expectedTechnical = technicalTasks(problem.tasks);
+  const expectedTechnicalIds = new Set(expectedTechnical.map(({ id }) => id));
+  for (const expected of expectedTechnical) {
+    const matches = scheduled.filter(({ id }) => id === expected.id);
+    const actual = matches[0];
+    if (matches.length !== 1 || !actual || !technicalIdentityMatches(expected, actual)
+      || !canPlaceTask(problem, expected, actual?.start ?? Number.NaN, scheduled.filter(({ id }) => id !== expected.id))) invalidTechnicalIds.add(expected.id);
+  }
+  for (const actual of scheduled.filter(({ kind }) => kind === "technical")) {
+    if (!expectedTechnicalIds.has(actual.id) || problem.tasks.find(({ id }) => id === actual.id)?.kind !== "technical") invalidTechnicalIds.add(actual.id);
+  }
+  for (const expected of problem.tasks.filter(({ kind }) => kind !== "technical")) {
+    if (scheduled.find(({ id }) => id === expected.id)?.kind === "technical") invalidTechnicalIds.add(expected.id);
+  }
+  technicalOperation = invalidTechnicalIds.size;
+
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -392,6 +420,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (setup) reasonCodes.push("SETUP_POLICY_VIOLATION");
   if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
   if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
+  if (technicalOperation) reasonCodes.push("TECHNICAL_OPERATION_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -406,6 +435,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     setupViolationCount: setup,
     setupPreparationViolationCount: setupPreparation,
     jointGroupViolationCount: jointGroup,
-    reasonCodes,
+    technicalOperationViolationCount: technicalOperation,
+    reasonCodes: reasonCodes.sort(),
   };
 }

@@ -29,19 +29,30 @@ export interface Resource {
   transitionMinutes?: number;
 }
 
-export interface Task {
+interface BaseTask {
   id: string;
-  kind: "main" | "vocal" | "auxiliary";
-  participantId: string;
-  coachId?: string;
   duration: number;
   spaceId: string;
   dependencies: string[];
-  blockKey?: string;
   requiredResourceIds?: string[];
+}
+export interface ParticipantTask extends BaseTask {
+  kind: "main" | "vocal" | "auxiliary";
+  participantId: string;
+  coachId?: string;
+  blockKey?: string;
   setupFamilyId?: string;
   jointGroupId?: string;
 }
+export interface TechnicalTask extends BaseTask {
+  kind: "technical";
+  participantId?: never;
+  coachId?: never;
+  blockKey?: never;
+  setupFamilyId?: never;
+  jointGroupId?: never;
+}
+export type Task = ParticipantTask | TechnicalTask;
 
 export interface SearchBudget {
   bestK: number;
@@ -71,10 +82,10 @@ export interface PlannerNextProblem {
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
 }
 
-export interface ScheduledTask extends Task {
+export type ScheduledTask = Task & {
   start: Minute;
   end: Minute;
-}
+};
 export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
 
 export interface ValidationSummary {
@@ -91,6 +102,7 @@ export interface ValidationSummary {
   setupViolationCount: number;
   setupPreparationViolationCount: number;
   jointGroupViolationCount: number;
+  technicalOperationViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -164,6 +176,11 @@ export interface PlanMetrics extends ValidationSummary {
   jointGroupStartById: Record<string, Minute | null>;
   jointGroupEndById: Record<string, Minute | null>;
   jointGroupParticipantIdsById: Record<string, string[]>;
+  technicalOperationCount: number;
+  technicalOperationPlannedCount: number;
+  technicalOperationCandidateCountWhenSelectedById: Record<string, number>;
+  technicalOperationStartById: Record<string, Minute | null>;
+  technicalOperationEndById: Record<string, Minute | null>;
 }
 
 export interface PlanResult {

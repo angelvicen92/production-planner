@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-joint-auxiliary-tasks-v2",
+  "version": "planner-next-technical-operation-v1",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -36,7 +36,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 24.743132000000003,
+      "runtimeMs": 48.101260000000025,
       "deterministic": true
     },
     "adversarial": {
@@ -74,7 +74,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 13.45409699999999,
+      "runtimeMs": 11.868358999999941,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -112,7 +112,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 3.0812970000000064,
+      "runtimeMs": 3.095195999999987,
       "deterministic": true
     },
     "resourceOff": {
@@ -150,7 +150,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 18.643597,
+      "runtimeMs": 19.859366000000023,
       "deterministic": true
     },
     "resourceHigh": {
@@ -188,7 +188,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 7.840814000000023,
+      "runtimeMs": 11.973965999999905,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -248,7 +248,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 44.131493999999975,
+      "runtimeMs": 49.60367800000006,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -308,7 +308,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 14.13405899999998,
+      "runtimeMs": 21.170362999999952,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -378,7 +378,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 1041.937838,
+      "runtimeMs": 1565.830445,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -453,7 +453,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 172.1834859999999,
+      "runtimeMs": 284.6089069999998,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -530,7 +530,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 20.026724000000286,
+      "runtimeMs": 34.36472499999945,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -607,7 +607,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 5.416049999999814,
+      "runtimeMs": 9.47176600000057,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
@@ -756,7 +756,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 20.26558299999988,
+      "runtimeMs": 28.1516959999999,
       "deterministic": true
     },
     "setupGrouping": {
@@ -851,7 +851,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 24.617836000000352,
+      "runtimeMs": 31.834493999999722,
       "deterministic": true
     },
     "setupPreparation": {
@@ -946,7 +946,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 18.26254599999993,
+      "runtimeMs": 28.476263000000472,
       "deterministic": true,
       "scheduledSetupPreparations": [
         {
@@ -1114,7 +1114,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 31.07891600000039,
+      "runtimeMs": 88.89584599999944,
       "deterministic": true,
       "members": [
         {
@@ -1150,6 +1150,43 @@
       "jointGroupViolationCount": 0,
       "branches": 14101,
       "fingerprint": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa"
+    },
+    "technicalOperation": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 27,
+      "taskId": "technical-camera-positioning",
+      "kind": "technical",
+      "start": 540,
+      "end": 560,
+      "duration": 20,
+      "spaceId": "technical-room",
+      "resourceIds": [
+        "technical-unit"
+      ],
+      "candidateCount": 3,
+      "workItemSelectionOrder": [
+        "task:technical-camera-positioning",
+        "space:setup-room",
+        "joint:shared-operation-1",
+        "task:flexible-task-1",
+        "task:flexible-task-2"
+      ],
+      "technicalResourcePresence": 20,
+      "technicalResourceInternalGap": 0,
+      "technicalOperationCount": 1,
+      "technicalOperationPlannedCount": 1,
+      "technicalOperationViolationCount": 0,
+      "originalProjectionEqual": true,
+      "participantPresenceEqual": true,
+      "inputUnchanged": true,
+      "fingerprint": "9f7f153973f414a7b48dbe92f41872794b3335a896cba9f2175b3200e3ff5cf3",
+      "branches": 33071,
+      "branchBudgetConsumed": 33071,
+      "branchBudgetMaximum": 300000,
+      "runtimeMs": 217.13037500000064,
+      "deterministic": true,
+      "violationCount": 0
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -1602,6 +1639,7 @@
       "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
       "futureFeasibility": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
       "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20"
-    }
+    },
+    "technicalOperationAccepted": true
   }
 }
