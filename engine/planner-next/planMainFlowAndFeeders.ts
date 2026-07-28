@@ -29,6 +29,7 @@ interface Counters {
   patternsEvaluated: number;
   auxiliaryBranches: number;
   secondaryBranches: number;
+  futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
 }
 
 function canonical<T extends { id: string }>(items: T[]): T[] {
@@ -163,6 +164,7 @@ function emptyMetrics(
     secondarySpaceEndById: {},
     secondarySpaceGapMinutesById: {},
     secondarySpaceBlockCountById: {},
+    futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
 }
@@ -211,7 +213,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     patternsGenerated: generatedPatterns.patterns.length,
     patternsEvaluated: 0,
     auxiliaryBranches: 0,
-    secondaryBranches: 0,
+    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0,
   };
   if (generatedPatterns.exhausted) {
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
@@ -275,8 +277,9 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     if (!alternative) continue;
     const core = placeFeeders(problem, alternative.tasks);
     const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches)) : null;
-    if (auxiliary) counters.auxiliaryBranches += auxiliary.branches;
-    if (auxiliary) counters.secondaryBranches += auxiliary.secondaryBranches;
+    if (auxiliary) { counters.auxiliaryBranches += auxiliary.branches; counters.branches += auxiliary.branches; }
+    if (auxiliary) { counters.secondaryBranches += auxiliary.secondaryBranches; counters.futureChecks += auxiliary.futureChecks; counters.futureBranches += auxiliary.futureBranches; counters.futurePruned += auxiliary.futurePruned; counters.futureTopPruned += auxiliary.futureTopPruned; counters.acceptedMinimum = auxiliary.acceptedMinimum; for (const [key,value] of Object.entries(auxiliary.blockers)) counters.blockers[key]=(counters.blockers[key]??0)+value; }
+    if (auxiliary?.futureExhausted) return failure(problem, begun, "FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED", counters);
     if (auxiliary?.secondaryExhausted) return failure(problem, begun, "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED", counters);
     if (auxiliary?.exhausted) return failure(problem, begun, "AUXILIARY_BRANCH_BUDGET_EXHAUSTED", counters);
     const all = auxiliary?.tasks ?? null;
@@ -357,6 +360,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       secondarySpaceEndById: secondaryEndById,
       secondarySpaceGapMinutesById: secondaryGapsById,
       secondarySpaceBlockCountById: secondaryBlocksById,
+      futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
     return { complete: true, scheduledTasks: ordered, metrics };
   }

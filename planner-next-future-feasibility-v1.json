@@ -1,0 +1,470 @@
+{
+  "version": "planner-next-future-feasibility-v1",
+  "scenarios": {
+    "baseline": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 1576,
+        "branchBudgetConsumed": 1576,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 0,
+        "futureFeasibilityBranchesExplored": 0,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 0
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [],
+      "auxiliary": {},
+      "violationCount": 0,
+      "runtimeMs": 29.046609999999987
+    },
+    "adversarial": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "planFingerprint": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 2560,
+        "branchBudgetConsumed": 2560,
+        "backtracks": 2,
+        "futureFeasibilityChecks": 0,
+        "futureFeasibilityBranchesExplored": 0,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 0
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [],
+      "auxiliary": {},
+      "violationCount": 0,
+      "runtimeMs": 5.516285000000039
+    },
+    "adversarialZeroBacktracks": {
+      "complete": false,
+      "hardValid": false,
+      "plannedTaskCount": 0,
+      "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 2560,
+        "branchBudgetConsumed": 2560,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 0,
+        "futureFeasibilityBranchesExplored": 0,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 0
+      },
+      "mainFlowStart": null,
+      "mainFlowEnd": null,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [],
+      "auxiliary": {},
+      "violationCount": 0,
+      "runtimeMs": 5.572015999999962
+    },
+    "resourceOff": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "planFingerprint": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 5616,
+        "branchBudgetConsumed": 5616,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 0,
+        "futureFeasibilityBranchesExplored": 0,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 0
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [],
+      "auxiliary": {},
+      "violationCount": 0,
+      "runtimeMs": 28.879151999999976
+    },
+    "resourceHigh": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 16,
+      "planFingerprint": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 5616,
+        "branchBudgetConsumed": 5616,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 0,
+        "futureFeasibilityBranchesExplored": 0,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 0
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [],
+      "auxiliary": {},
+      "violationCount": 0,
+      "runtimeMs": 20.993337999999994
+    },
+    "auxiliaryOff": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 20,
+      "planFingerprint": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 4171,
+        "branchBudgetConsumed": 4171,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 173,
+        "futureFeasibilityBranchesExplored": 2057,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [
+        "task:y-scarce-2",
+        "task:z-scarce-1",
+        "task:a-flexible-1",
+        "task:b-flexible-2"
+      ],
+      "auxiliary": {
+        "y-scarce-2": {
+          "start": 540,
+          "end": 555
+        },
+        "z-scarce-1": {
+          "start": 555,
+          "end": 570
+        },
+        "a-flexible-1": {
+          "start": 1000,
+          "end": 1005
+        },
+        "b-flexible-2": {
+          "start": 1005,
+          "end": 1010
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 67.33598399999994
+    },
+    "auxiliaryHigh": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 20,
+      "planFingerprint": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 4171,
+        "branchBudgetConsumed": 4171,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 173,
+        "futureFeasibilityBranchesExplored": 2057,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [
+        "task:y-scarce-2",
+        "task:z-scarce-1",
+        "task:a-flexible-1",
+        "task:b-flexible-2"
+      ],
+      "auxiliary": {
+        "y-scarce-2": {
+          "start": 570,
+          "end": 585
+        },
+        "z-scarce-1": {
+          "start": 585,
+          "end": 600
+        },
+        "b-flexible-2": {
+          "start": 815,
+          "end": 820
+        },
+        "a-flexible-1": {
+          "start": 830,
+          "end": 835
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 36.85737899999992
+    },
+    "itinerantUnits": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 22,
+      "planFingerprint": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 31005,
+        "branchBudgetConsumed": 31005,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 4732,
+        "futureFeasibilityBranchesExplored": 20349,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {},
+      "secondarySpaceEndById": {},
+      "secondarySpaceGapMinutesById": {},
+      "secondarySpaceBlockCountById": {},
+      "workItemSelectionOrder": [
+        "task:unit-a-1",
+        "task:unit-a-3",
+        "task:unit-a-2",
+        "task:unit-b-1",
+        "task:unit-b-2",
+        "task:unit-b-3"
+      ],
+      "auxiliary": {
+        "unit-a-2": {
+          "start": 540,
+          "end": 555
+        },
+        "unit-b-1": {
+          "start": 540,
+          "end": 555
+        },
+        "unit-a-1": {
+          "start": 555,
+          "end": 570
+        },
+        "unit-b-2": {
+          "start": 575,
+          "end": 590
+        },
+        "unit-a-3": {
+          "start": 580,
+          "end": 595
+        },
+        "unit-b-3": {
+          "start": 590,
+          "end": 605
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 495.76795900000013
+    },
+    "longSecondaryBlock": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 22,
+      "planFingerprint": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 12611,
+        "branchBudgetConsumed": 12611,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 1901,
+        "futureFeasibilityBranchesExplored": 2342,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {
+        "long-form-room": 740
+      },
+      "secondarySpaceEndById": {
+        "long-form-room": 860
+      },
+      "secondarySpaceGapMinutesById": {
+        "long-form-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "long-form-room": 1
+      },
+      "workItemSelectionOrder": [
+        "space:long-form-room",
+        "task:a-flexible-short-1",
+        "task:b-flexible-short-2"
+      ],
+      "auxiliary": {
+        "z-long-1": {
+          "start": 740,
+          "end": 770
+        },
+        "x-long-3": {
+          "start": 770,
+          "end": 800
+        },
+        "a-flexible-short-1": {
+          "start": 800,
+          "end": 805
+        },
+        "w-long-4": {
+          "start": 800,
+          "end": 830
+        },
+        "b-flexible-short-2": {
+          "start": 815,
+          "end": 820
+        },
+        "y-long-2": {
+          "start": 830,
+          "end": 860
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 156.72801299999992
+    },
+    "futureFeasibility": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 22,
+      "planFingerprint": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
+      "deterministic": true,
+      "logicalMetrics": {
+        "branchesExplored": 25559,
+        "branchBudgetConsumed": 25559,
+        "backtracks": 0,
+        "futureFeasibilityChecks": 428,
+        "futureFeasibilityBranchesExplored": 21171,
+        "futureInfeasibleCandidatesPruned": 64,
+        "futureTopRankedCandidatesPruned": 1,
+        "futureBlockerCountByWorkItemKey": {
+          "task:scarce-window-task": 64
+        },
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {
+        "constrained-block-room": 770
+      },
+      "secondarySpaceEndById": {
+        "constrained-block-room": 890
+      },
+      "secondarySpaceGapMinutesById": {
+        "constrained-block-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "constrained-block-room": 1
+      },
+      "workItemSelectionOrder": [
+        "space:constrained-block-room",
+        "task:scarce-window-task",
+        "task:flexible-short-task"
+      ],
+      "auxiliary": {
+        "scarce-window-task": {
+          "start": 740,
+          "end": 755
+        },
+        "long-block-3": {
+          "start": 770,
+          "end": 800
+        },
+        "long-block-1": {
+          "start": 800,
+          "end": 830
+        },
+        "flexible-short-task": {
+          "start": 815,
+          "end": 820
+        },
+        "long-block-2": {
+          "start": 830,
+          "end": 860
+        },
+        "long-block-4": {
+          "start": 860,
+          "end": 890
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 51.12241999999969
+    }
+  },
+  "acceptance": {
+    "accepted": true,
+    "frozenFingerprints": {
+      "baseline": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
+      "adversarial": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
+      "resourceOff": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
+      "resourceHigh": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
+      "auxiliaryOff": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
+      "auxiliaryHigh": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
+      "itinerantUnits": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
+      "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa"
+    }
+  }
+}
