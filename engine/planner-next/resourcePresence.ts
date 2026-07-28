@@ -1,4 +1,5 @@
-import type { PreferenceLevel, Resource, ScheduledTask } from "./contracts";
+import type { PlannerNextProblem, PreferenceLevel, Resource, ScheduledTask } from "./contracts";
+import { effectiveResourceTransitionMinutes } from "./placement";
 
 /** Small fixed weights keep NEXT-003 explicit; callers cannot supply arbitrary numeric weights. */
 const PRESENCE_WEIGHTS: Record<PreferenceLevel, number> = {
@@ -7,6 +8,28 @@ const PRESENCE_WEIGHTS: Record<PreferenceLevel, number> = {
 
 export function presencePreferenceWeight(level: PreferenceLevel): number {
   return PRESENCE_WEIGHTS[level];
+}
+
+export function resourceRouteMetrics(problem: PlannerNextProblem, tasks: ScheduledTask[]): {
+  moveCountById: Record<string, number>;
+  transitionSlackMinutesById: Record<string, number>;
+} {
+  const moveCountById: Record<string, number> = {};
+  const transitionSlackMinutesById: Record<string, number> = {};
+  for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
+    const own = tasks.filter((task) => (task.requiredResourceIds ?? []).includes(resource.id))
+      .sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
+    let moves = 0, slack = 0;
+    for (let index = 1; index < own.length; index += 1) {
+      const previous = own[index - 1], current = own[index];
+      if (!previous || !current || previous.spaceId === current.spaceId) continue;
+      moves += 1;
+      slack += Math.max(0, current.start - previous.end - effectiveResourceTransitionMinutes(problem, resource.id));
+    }
+    moveCountById[resource.id] = moves;
+    transitionSlackMinutesById[resource.id] = slack;
+  }
+  return { moveCountById, transitionSlackMinutesById };
 }
 
 export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledTask[]): {

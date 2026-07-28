@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-resource-presence-v1.json`.
+The current accepted artifact is `planner-next-itinerant-units-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2122,5 +2122,17 @@ Reality, Presentadora, Totales and setups have not been added.
 Planner Next remains isolated and is neither production-integrated nor a complete planner.
 Run `bash validate-next-003.sh`.
 The accepted artifact is `planner-next-resource-presence-v1.json` and replaces the NEXT-002 artifact.
-# NEXT-004 — Dynamic Scarcity for Auxiliary Tasks
+### NEXT-004 — Dynamic Scarcity for Auxiliary Tasks
 Planner Next adds auxiliary tasks outside the main flow. Criticality emerges from the number of currently valid positions, never from a hardcoded name priority. Participant presence preference HIGH reduces total presence versus OFF, while exact resources and cross-space transitions remain hard constraints. Planner Next remains isolated and is not productively integrated. Continuous secondary blocks, Totales, setups, technical operations, and complete planning are not yet supported. Validate with `bash validate-next-004.sh`; the accepted artifact is `planner-next-auxiliary-scarcity-v1.json`.
+
+
+### NEXT-005 — Itinerant Units Through Exact Resources
+No Reality-specific or team subsystem was created; an itinerant unit uses the existing exact resources.
+Auxiliary tasks simultaneously consume their unit, camera, and sound resources.
+Transition margins are configurable per resource, with the existing global margin as fallback.
+Two independent units can work in parallel, while a shared resource remains exclusive.
+Consecutive tasks in the same space add no transition margin.
+Alternative team assignments and unit-specific meals do not exist yet.
+Planner Next remains isolated, is not production-integrated, and is not a complete planner.
+Run `bash validate-next-005.sh`.
+The accepted artifact is `planner-next-itinerant-units-v1.json`.
