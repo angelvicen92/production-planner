@@ -17,7 +17,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
       if (budget.remaining === 0) return result(assessments, before, budget, true);
       budget.remaining -= 1;
-      if (canPlaceTask(problem, task, start, placed)) { count += 1; if (count >= 1) break; }
+      if (canPlaceTask(problem, task, start, placed)) { count += 1; if (count >= problem.budget.bestK) break; }
     }
     assessments.push({ key: `task:${task.id}`, kind: "task", alternativeCount: count, feasible: count > 0 });
   }

@@ -18,6 +18,6 @@ export function secondaryFutureFeasibilityScenario(): PlannerNextProblem {
     {id:"flexible-short-task",kind:"auxiliary",participantId:"participant-h",duration:5,spaceId:"flexible-room",dependencies:[]},
   );
   problem.tasks.push(...auxiliary); problem.auxiliaryPolicy={participantPresencePreference:"HIGH"};
-  problem.budget={...problem.budget,bestK:5,maxBranchExpansions:800_000};
+  problem.budget={...problem.budget,bestK:1,maxBranchExpansions:800_000};
   return problem;
 }
