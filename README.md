@@ -2159,14 +2159,15 @@ All probes consume the existing explicit global branch budget.
 The adversarial scenario proves that the locally preferred candidate can be discarded.
 Planner Next remains isolated and is neither integrated nor a complete planner.
 Run `bash validate-next-007.sh`.
-The accepted artifact is `planner-next-future-feasibility-v1.json`.
+Its historical Best-K 5 evidence remains frozen and is carried forward by the latest accepted artifact.
 
 ### NEXT-008 — Bounded and Truthful Future Feasibility
 No domain capability was added; setups remain out of scope.
 SEARCH keeps a Best-K bounded partial-state beam independently for every canonical start.
 PROBE shares that constructor but stops as soon as its requested alternative limit is reached.
 Individual and complete-block alternatives are counted truthfully up to Best-K.
-The adversarial scenario runs with `bestK = 1` and prunes its local winner before the global beam cut.
+NEXT-007 retains its frozen historical scenario with `bestK = 5`; NEXT-008 adds a separate algorithmic benchmark variant with `bestK = 1` that prunes its local winner before the global beam cut.
+No historical baseline was silently replaced: the bounded constructor was accepted only after every NEXT-001 through NEXT-007 fingerprint, including NEXT-004 OFF, was restored.
 The per-depth beam prevents factorial permutation enumeration.
 All auxiliary SEARCH and future PROBE expansion uses the same branch allowance.
 Planner Next remains isolated, not production-integrated, and not a complete planner.

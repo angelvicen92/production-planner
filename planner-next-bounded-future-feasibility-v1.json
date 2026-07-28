@@ -1,16 +1,19 @@
 {
-  "version": "planner-next-future-feasibility-v1",
+  "version": "planner-next-bounded-future-feasibility-v1",
   "scenarios": {
     "baseline": {
+      "bestK": 5,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 16,
       "planFingerprint": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
-      "deterministic": true,
       "logicalMetrics": {
         "branchesExplored": 1576,
         "branchBudgetConsumed": 1576,
+        "branchBudgetMaximum": 10000,
         "backtracks": 0,
+        "auxiliaryBranchesExplored": 0,
+        "secondaryBlockBranchesExplored": 0,
         "futureFeasibilityChecks": 0,
         "futureFeasibilityBranchesExplored": 0,
         "futureInfeasibleCandidatesPruned": 0,
@@ -29,18 +32,22 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 15.877242999999993
+      "runtimeMs": 41.39434799999992,
+      "deterministic": true
     },
     "adversarial": {
+      "bestK": 10,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 16,
       "planFingerprint": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
-      "deterministic": true,
       "logicalMetrics": {
         "branchesExplored": 2560,
         "branchBudgetConsumed": 2560,
+        "branchBudgetMaximum": 20000,
         "backtracks": 2,
+        "auxiliaryBranchesExplored": 0,
+        "secondaryBlockBranchesExplored": 0,
         "futureFeasibilityChecks": 0,
         "futureFeasibilityBranchesExplored": 0,
         "futureInfeasibleCandidatesPruned": 0,
@@ -59,18 +66,22 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 10.659019
+      "runtimeMs": 11.890952999999968,
+      "deterministic": true
     },
     "adversarialZeroBacktracks": {
+      "bestK": 10,
       "complete": false,
       "hardValid": false,
       "plannedTaskCount": 0,
       "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "deterministic": true,
       "logicalMetrics": {
         "branchesExplored": 2560,
         "branchBudgetConsumed": 2560,
+        "branchBudgetMaximum": 20000,
         "backtracks": 0,
+        "auxiliaryBranchesExplored": 0,
+        "secondaryBlockBranchesExplored": 0,
         "futureFeasibilityChecks": 0,
         "futureFeasibilityBranchesExplored": 0,
         "futureInfeasibleCandidatesPruned": 0,
@@ -89,18 +100,22 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 5.87739000000002
+      "runtimeMs": 4.777297999999973,
+      "deterministic": true
     },
     "resourceOff": {
+      "bestK": 20,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 16,
       "planFingerprint": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
-      "deterministic": true,
       "logicalMetrics": {
         "branchesExplored": 5616,
         "branchBudgetConsumed": 5616,
+        "branchBudgetMaximum": 50000,
         "backtracks": 0,
+        "auxiliaryBranchesExplored": 0,
+        "secondaryBlockBranchesExplored": 0,
         "futureFeasibilityChecks": 0,
         "futureFeasibilityBranchesExplored": 0,
         "futureInfeasibleCandidatesPruned": 0,
@@ -119,18 +134,22 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 20.209865000000036
+      "runtimeMs": 61.506124,
+      "deterministic": true
     },
     "resourceHigh": {
+      "bestK": 20,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 16,
       "planFingerprint": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
-      "deterministic": true,
       "logicalMetrics": {
         "branchesExplored": 5616,
         "branchBudgetConsumed": 5616,
+        "branchBudgetMaximum": 50000,
         "backtracks": 0,
+        "auxiliaryBranchesExplored": 0,
+        "secondaryBlockBranchesExplored": 0,
         "futureFeasibilityChecks": 0,
         "futureFeasibilityBranchesExplored": 0,
         "futureInfeasibleCandidatesPruned": 0,
@@ -149,24 +168,28 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 20.293004999999994
+      "runtimeMs": 17.60655500000007,
+      "deterministic": true
     },
     "auxiliaryOff": {
+      "bestK": 5,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 20,
       "planFingerprint": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
-      "deterministic": true,
       "logicalMetrics": {
-        "branchesExplored": 4171,
-        "branchBudgetConsumed": 4171,
+        "branchesExplored": 3101,
+        "branchBudgetConsumed": 3101,
+        "branchBudgetMaximum": 50000,
         "backtracks": 0,
-        "futureFeasibilityChecks": 173,
-        "futureFeasibilityBranchesExplored": 2057,
+        "auxiliaryBranchesExplored": 1525,
+        "secondaryBlockBranchesExplored": 0,
+        "futureFeasibilityChecks": 29,
+        "futureFeasibilityBranchesExplored": 987,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
-        "acceptedPathMinimumFutureAlternativeCount": 1
+        "acceptedPathMinimumFutureAlternativeCount": 5
       },
       "mainFlowStart": 780,
       "mainFlowEnd": 900,
@@ -201,24 +224,28 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 64.18905099999995
+      "runtimeMs": 69.70239200000015,
+      "deterministic": true
     },
     "auxiliaryHigh": {
+      "bestK": 5,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 20,
       "planFingerprint": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
-      "deterministic": true,
       "logicalMetrics": {
-        "branchesExplored": 4171,
-        "branchBudgetConsumed": 4171,
+        "branchesExplored": 3112,
+        "branchBudgetConsumed": 3112,
+        "branchBudgetMaximum": 50000,
         "backtracks": 0,
-        "futureFeasibilityChecks": 173,
-        "futureFeasibilityBranchesExplored": 2057,
+        "auxiliaryBranchesExplored": 1536,
+        "secondaryBlockBranchesExplored": 0,
+        "futureFeasibilityChecks": 23,
+        "futureFeasibilityBranchesExplored": 998,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
-        "acceptedPathMinimumFutureAlternativeCount": 1
+        "acceptedPathMinimumFutureAlternativeCount": 5
       },
       "mainFlowStart": 780,
       "mainFlowEnd": 900,
@@ -253,24 +280,28 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 31.53367400000002
+      "runtimeMs": 21.248350999999957,
+      "deterministic": true
     },
     "itinerantUnits": {
+      "bestK": 20,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 22,
       "planFingerprint": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
-      "deterministic": true,
       "logicalMetrics": {
-        "branchesExplored": 31005,
-        "branchBudgetConsumed": 31005,
+        "branchesExplored": 28593,
+        "branchBudgetConsumed": 28593,
+        "branchBudgetMaximum": 200000,
         "backtracks": 0,
-        "futureFeasibilityChecks": 4732,
-        "futureFeasibilityBranchesExplored": 20349,
+        "auxiliaryBranchesExplored": 23705,
+        "secondaryBlockBranchesExplored": 0,
+        "futureFeasibilityChecks": 289,
+        "futureFeasibilityBranchesExplored": 17937,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
-        "acceptedPathMinimumFutureAlternativeCount": 1
+        "acceptedPathMinimumFutureAlternativeCount": 20
       },
       "mainFlowStart": 780,
       "mainFlowEnd": 900,
@@ -315,24 +346,28 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 304.261261
+      "runtimeMs": 480.4603129999998,
+      "deterministic": true
     },
     "longSecondaryBlock": {
+      "bestK": 20,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 22,
       "planFingerprint": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
-      "deterministic": true,
       "logicalMetrics": {
-        "branchesExplored": 12611,
-        "branchBudgetConsumed": 12611,
+        "branchesExplored": 26209,
+        "branchBudgetConsumed": 26209,
+        "branchBudgetMaximum": 500000,
         "backtracks": 0,
-        "futureFeasibilityChecks": 1901,
-        "futureFeasibilityBranchesExplored": 2342,
+        "auxiliaryBranchesExplored": 21321,
+        "secondaryBlockBranchesExplored": 2375,
+        "futureFeasibilityChecks": 415,
+        "futureFeasibilityBranchesExplored": 16000,
         "futureInfeasibleCandidatesPruned": 0,
         "futureTopRankedCandidatesPruned": 0,
         "futureBlockerCountByWorkItemKey": {},
-        "acceptedPathMinimumFutureAlternativeCount": 1
+        "acceptedPathMinimumFutureAlternativeCount": 20
       },
       "mainFlowStart": 780,
       "mainFlowEnd": 900,
@@ -382,24 +417,28 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 151.82663500000012
+      "runtimeMs": 204.798546,
+      "deterministic": true
     },
     "futureFeasibility": {
+      "bestK": 5,
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 22,
       "planFingerprint": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
-      "deterministic": true,
       "logicalMetrics": {
-        "branchesExplored": 25559,
-        "branchBudgetConsumed": 25559,
+        "branchesExplored": 13909,
+        "branchBudgetConsumed": 13909,
+        "branchBudgetMaximum": 800000,
         "backtracks": 0,
-        "futureFeasibilityChecks": 428,
-        "futureFeasibilityBranchesExplored": 21171,
-        "futureInfeasibleCandidatesPruned": 64,
+        "auxiliaryBranchesExplored": 12333,
+        "secondaryBlockBranchesExplored": 1689,
+        "futureFeasibilityChecks": 145,
+        "futureFeasibilityBranchesExplored": 10267,
+        "futureInfeasibleCandidatesPruned": 39,
         "futureTopRankedCandidatesPruned": 1,
         "futureBlockerCountByWorkItemKey": {
-          "task:scarce-window-task": 64
+          "task:scarce-window-task": 39
         },
         "acceptedPathMinimumFutureAlternativeCount": 1
       },
@@ -451,8 +490,172 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 65.70003199999996
+      "runtimeMs": 68.13476100000025,
+      "deterministic": true
+    },
+    "boundedFutureFeasibility": {
+      "bestK": 1,
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 22,
+      "planFingerprint": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20",
+      "logicalMetrics": {
+        "branchesExplored": 2910,
+        "branchBudgetConsumed": 2910,
+        "branchBudgetMaximum": 800000,
+        "backtracks": 0,
+        "auxiliaryBranchesExplored": 2542,
+        "secondaryBlockBranchesExplored": 761,
+        "futureFeasibilityChecks": 30,
+        "futureFeasibilityBranchesExplored": 1706,
+        "futureInfeasibleCandidatesPruned": 9,
+        "futureTopRankedCandidatesPruned": 1,
+        "futureBlockerCountByWorkItemKey": {
+          "task:scarce-window-task": 9
+        },
+        "acceptedPathMinimumFutureAlternativeCount": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "secondarySpaceStartById": {
+        "constrained-block-room": 770
+      },
+      "secondarySpaceEndById": {
+        "constrained-block-room": 890
+      },
+      "secondarySpaceGapMinutesById": {
+        "constrained-block-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "constrained-block-room": 1
+      },
+      "workItemSelectionOrder": [
+        "space:constrained-block-room",
+        "task:scarce-window-task",
+        "task:flexible-short-task"
+      ],
+      "auxiliary": {
+        "scarce-window-task": {
+          "start": 740,
+          "end": 755
+        },
+        "long-block-2": {
+          "start": 770,
+          "end": 800
+        },
+        "long-block-4": {
+          "start": 800,
+          "end": 830
+        },
+        "flexible-short-task": {
+          "start": 815,
+          "end": 820
+        },
+        "long-block-1": {
+          "start": 830,
+          "end": 860
+        },
+        "long-block-3": {
+          "start": 860,
+          "end": 890
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 9.890075000000252,
+      "deterministic": true,
+      "boundedEvidence": {
+        "bestK": 1,
+        "orderedLocalCandidateSignatures": [
+          "long-block-3@715|long-block-1@745|long-block-2@775|long-block-4@805",
+          "long-block-3@710|long-block-1@740|long-block-2@770|long-block-4@800",
+          "long-block-2@700|long-block-4@730|long-block-1@760|long-block-3@790",
+          "long-block-2@695|long-block-4@725|long-block-1@755|long-block-3@785",
+          "long-block-2@765|long-block-4@795|long-block-1@825|long-block-3@855",
+          "long-block-2@690|long-block-4@720|long-block-1@750|long-block-3@780",
+          "long-block-2@770|long-block-4@800|long-block-1@830|long-block-3@860",
+          "long-block-2@775|long-block-4@805|long-block-1@835|long-block-3@865",
+          "long-block-1@640|long-block-2@670|long-block-3@700|long-block-4@730",
+          "long-block-1@635|long-block-2@665|long-block-3@695|long-block-4@725",
+          "long-block-1@630|long-block-2@660|long-block-3@690|long-block-4@720",
+          "long-block-1@625|long-block-2@655|long-block-3@685|long-block-4@715",
+          "long-block-1@620|long-block-2@650|long-block-3@680|long-block-4@710",
+          "long-block-1@615|long-block-2@645|long-block-3@675|long-block-4@705",
+          "long-block-1@610|long-block-2@640|long-block-3@670|long-block-4@700",
+          "long-block-1@605|long-block-2@635|long-block-3@665|long-block-4@695",
+          "long-block-1@600|long-block-2@630|long-block-3@660|long-block-4@690",
+          "long-block-1@595|long-block-2@625|long-block-3@655|long-block-4@685",
+          "long-block-1@590|long-block-2@620|long-block-3@650|long-block-4@680",
+          "long-block-1@585|long-block-2@615|long-block-3@645|long-block-4@675",
+          "long-block-1@580|long-block-2@610|long-block-3@640|long-block-4@670",
+          "long-block-1@575|long-block-2@605|long-block-3@635|long-block-4@665",
+          "long-block-1@570|long-block-2@600|long-block-3@630|long-block-4@660",
+          "long-block-1@565|long-block-2@595|long-block-3@625|long-block-4@655",
+          "long-block-1@560|long-block-2@590|long-block-3@620|long-block-4@650",
+          "long-block-1@555|long-block-2@585|long-block-3@615|long-block-4@645",
+          "long-block-1@550|long-block-2@580|long-block-3@610|long-block-4@640",
+          "long-block-1@545|long-block-2@575|long-block-3@605|long-block-4@635",
+          "long-block-1@540|long-block-2@570|long-block-3@600|long-block-4@630"
+        ],
+        "topLocalCandidateSignature": "long-block-3@715|long-block-1@745|long-block-2@775|long-block-4@805",
+        "topLocalCandidateFeasible": false,
+        "topLocalCandidateBlockers": [
+          "task:scarce-window-task"
+        ],
+        "secondLocalCandidateSignature": "long-block-2@770|long-block-4@800|long-block-1@830|long-block-3@860",
+        "secondLocalCandidateFeasible": true,
+        "acceptedBlockSignature": "long-block-2@770|long-block-4@800|long-block-1@830|long-block-3@860",
+        "acceptedBlockIsViableAlternative": true,
+        "alternativeCounts": {
+          "top": [
+            {
+              "key": "task:flexible-short-task",
+              "kind": "task",
+              "alternativeCount": 1,
+              "feasible": true
+            },
+            {
+              "key": "task:scarce-window-task",
+              "kind": "task",
+              "alternativeCount": 0,
+              "feasible": false
+            }
+          ],
+          "second": [
+            {
+              "key": "task:flexible-short-task",
+              "kind": "task",
+              "alternativeCount": 1,
+              "feasible": true
+            },
+            {
+              "key": "task:scarce-window-task",
+              "kind": "task",
+              "alternativeCount": 1,
+              "feasible": true
+            }
+          ]
+        },
+        "branchBudget": {
+          "consumed": 2910,
+          "maximum": 800000
+        }
+      }
     }
+  },
+  "boundedBlockConstruction": {
+    "taskCount": 4,
+    "bestK": 1,
+    "startCount": 96,
+    "searchBranches": 761,
+    "probeBranchesLimit1": 10,
+    "probeBranchesLimitBestK": 10,
+    "completeCandidatesGenerated": 29,
+    "maximumPartialStatesPerStart": 1,
+    "polynomialUpperBound": 960,
+    "withinBound": true,
+    "deterministic": true
   },
   "acceptance": {
     "accepted": true,
@@ -464,7 +667,9 @@
       "auxiliaryOff": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
       "auxiliaryHigh": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
       "itinerantUnits": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
-      "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa"
+      "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
+      "futureFeasibility": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
+      "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20"
     }
   }
 }

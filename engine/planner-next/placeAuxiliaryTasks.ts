@@ -53,11 +53,20 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
       const selected = choices[0];
       if (!selected || alternatives(selected) === 0) continue;
       if (selected.kind === "task") {
-        const scored = selected.starts.map((start) => scoreTask(problem, selected.task, start, state.placed)).sort(candidateOrder).slice(0, problem.budget.bestK);
+        const scored = selected.starts.map((start) => scoreTask(problem, selected.task, start, state.placed)).sort(candidateOrder);
         for (const candidate of scored) {
           if (branches >= branchAllowance) return failed(false, state);
           branches += 1;
+          // Once the global beam already contains Best-K proven-feasible states, a
+          // strictly lower-ranked state cannot enter it. Account for the candidate,
+          // but avoid an observationally irrelevant future probe.
+          if (futurePruned === 0 && next.length >= problem.budget.bestK) {
+            const rank = { cost: state.cost + candidate.cost, signature: signature([...state.placed, candidate.scheduled]) };
+            const retained = next[problem.budget.bestK - 1]!;
+            if (rank.cost > retained.cost || (rank.cost === retained.cost && rank.signature >= signature(retained.placed))) continue;
+          }
           if (!forward([candidate.scheduled], candidate.cost, selected.key, selected.task.id, state, next, selected.starts.length, undefined, scored[0] === candidate)) return failed(false, state);
+          if (futurePruned === 0) next.splice(0, next.length, ...next.sort((a, b) => a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK));
         }
       } else {
         for (const candidate of selected.candidates) {
@@ -65,7 +74,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         }
       }
     }
-    beam = next.sort((a, b) => a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK);
+    beam = next.sort((a, b) => a.cost - b.cost || (futurePruned > 0 ? b.futureMin - a.futureMin || b.futureTotal - a.futureTotal : 0) || signature(a.placed).localeCompare(signature(b.placed))).slice(0, problem.budget.bestK);
   }
   const result = beam[0];
   return { tasks: result?.placed ?? null, branches, secondaryBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: result?.counts ?? {}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };

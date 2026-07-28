@@ -9,11 +9,28 @@ npx tsx --test engine/planner-next/*.spec.ts || fail 'Planner Next tests failed'
 npm test || fail 'full test suite failed'
 npm run --silent benchmark:planner-next:bounded-future-feasibility > "$tmp1" || fail 'first benchmark failed'
 npm run --silent benchmark:planner-next:bounded-future-feasibility > "$tmp2" || fail 'second benchmark failed'
-node - "$tmp1" "$tmp2" <<'NODE' || fail 'benchmark acceptance or determinism failed'
+reason=$(node - "$tmp1" "$tmp2" <<'NODE'
 const fs=require('fs'),[a,b]=process.argv.slice(2).map(p=>JSON.parse(fs.readFileSync(p)));
+const reject=message=>{process.stdout.write(message);process.exit(1)};
 const clean=x=>JSON.parse(JSON.stringify(x,(k,v)=>k==='runtimeMs'?undefined:v));
-if(!a.acceptance.accepted||JSON.stringify(clean(a))!==JSON.stringify(clean(b)))process.exit(1);
-if(a.scenarios.futureFeasibility.boundedEvidence.bestK!==1||!a.boundedBlockConstruction.withinBound||!a.boundedBlockConstruction.deterministic)process.exit(1);
-for(const x of Object.values(a.scenarios)){if(x.runtimeMs>=2000||x.logicalMetrics.branchBudgetConsumed>x.logicalMetrics.branchBudgetConsumed+1)process.exit(1)}
+if(!a.acceptance.accepted||!b.acceptance.accepted)reject('benchmark acceptance.accepted is false');
+if(JSON.stringify(clean(a))!==JSON.stringify(clean(b)))reject('benchmark logical outputs differ between runs');
+const names=['baseline','adversarial','adversarialZeroBacktracks','resourceOff','resourceHigh','auxiliaryOff','auxiliaryHigh','itinerantUnits','longSecondaryBlock','futureFeasibility','boundedFutureFeasibility'];
+if(JSON.stringify(Object.keys(a.scenarios))!==JSON.stringify(names))reject('benchmark does not contain the eleven ordered scenarios');
+const expected=a.acceptance.frozenFingerprints;
+for(const [name,fingerprint] of Object.entries(expected))if(a.scenarios[name]?.planFingerprint!==fingerprint)reject(`fingerprint mismatch for ${name}`);
+const historical=a.scenarios.futureFeasibility,bounded=a.scenarios.boundedFutureFeasibility,e=bounded.boundedEvidence,c=a.boundedBlockConstruction;
+if(historical.bestK!==5||bounded.bestK!==1||e.bestK!==1||c.bestK!==1)reject('NEXT-007/NEXT-008 Best-K evidence is incorrect');
+if(e.topLocalCandidateFeasible!==false||!e.topLocalCandidateBlockers.includes('task:scarce-window-task'))reject('top local candidate blocker evidence is incorrect');
+if(e.secondLocalCandidateFeasible!==true||!e.acceptedBlockIsViableAlternative)reject('viable local alternative evidence is incorrect');
+if(!bounded.complete||!bounded.hardValid||bounded.plannedTaskCount!==22||bounded.violationCount!==0)reject('bounded scenario completion or validity evidence is incorrect');
+if(!c.withinBound||!c.deterministic||c.maximumPartialStatesPerStart>1||c.searchBranches>c.polynomialUpperBound||c.probeBranchesLimit1>=c.searchBranches||c.probeBranchesLimitBestK>c.searchBranches||c.completeCandidatesGenerated<2)reject('bounded construction or early PROBE evidence is incorrect');
+for(const [name,x] of Object.entries(a.scenarios)){
+ const m=x.logicalMetrics;
+ if(x.runtimeMs>=2000)reject(`${name} runtime reached two seconds`);
+ if(m.branchBudgetConsumed>m.branchBudgetMaximum)reject(`${name} exceeded its branch budget`);
+ if(m.secondaryBlockBranchesExplored+m.futureFeasibilityBranchesExplored>m.auxiliaryBranchesExplored)reject(`${name} has incoherent auxiliary branch counters`);
+}
 NODE
+) || fail "${reason:-benchmark validation failed}"
 cp "$tmp1" "$artifact"; rm -f "$failed" planner-next-future-feasibility-v1.json
