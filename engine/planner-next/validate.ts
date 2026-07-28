@@ -183,6 +183,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     const members=jointGroupMembers(tasks,id); const first=members[0];
     if(members.length<2) reasons.add("JOINT_GROUP_TOO_SMALL");
     if(members.some(t=>t.kind!=="auxiliary")) reasons.add("JOINT_GROUP_NON_AUXILIARY_UNSUPPORTED");
+    if(members.some(t=>t.coachId!==undefined)) reasons.add("JOINT_GROUP_COACH_UNSUPPORTED");
     if(new Set(members.map(t=>t.participantId)).size!==members.length) reasons.add("JOINT_GROUP_DUPLICATE_PARTICIPANT");
     if(first && members.some(t=>t.duration!==first.duration)) reasons.add("JOINT_GROUP_DURATION_MISMATCH");
     if(first && members.some(t=>t.spaceId!==first.spaceId)) reasons.add("JOINT_GROUP_SPACE_MISMATCH");
@@ -355,12 +356,27 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   setupPreparation += preparations.filter(item => !problem.spaces.some(space=>space.id===item.spaceId && space.setupPolicy?.preparationMinutesByFamily !== undefined)).length;
 
-  for(const id of jointGroupIds(problem.tasks)) {
-    const expected=jointGroupMembers(problem.tasks,id), actual=scheduled.filter(t=>t.jointGroupId===id), first=actual[0], expectedIds=new Set(expected.map(t=>t.id));
-    const invalid=actual.length!==expected.length || actual.some(t=>!expectedIds.has(t.id)) || expected.some(t=>scheduled.filter(s=>s.id===t.id).length!==1 || scheduled.find(s=>s.id===t.id)?.jointGroupId!==id)
-      || !first || actual.some(t=>t.start!==first.start || t.end!==first.end || t.spaceId!==first.spaceId || t.end-t.start!==first.end-first.start || t.setupFamilyId!==first.setupFamilyId || canonicalResourceIds(t).join("\0")!==canonicalResourceIds(first).join("\0")) || new Set(actual.map(t=>t.participantId)).size!==actual.length;
-    if(invalid) jointGroup+=1;
+  const originalById=new Map(problem.tasks.map(task=>[task.id,task]));
+  const expectedJointGroupIdByTaskId=new Map(problem.tasks.map(task=>[task.id,task.jointGroupId]));
+  const expectedGroupIds=new Set(jointGroupIds(problem.tasks));
+  const scheduledGroupIds=new Set(scheduled.flatMap(task=>task.jointGroupId===undefined?[]:[task.jointGroupId]));
+  const invalidGroupIds=new Set<string>();
+  for(const task of scheduled){
+    const expected=expectedJointGroupIdByTaskId.get(task.id), original=originalById.get(task.id);
+    if(!original || task.jointGroupId!==expected){
+      if(expected!==undefined)invalidGroupIds.add(expected);
+      if(task.jointGroupId!==undefined)invalidGroupIds.add(task.jointGroupId);
+    }
   }
+  for(const id of [...new Set([...expectedGroupIds,...scheduledGroupIds])].sort()){
+    const expected=jointGroupMembers(problem.tasks,id), actual=scheduled.filter(task=>task.jointGroupId===id), first=actual[0], expectedIds=new Set(expected.map(task=>task.id));
+    const invalid=!expectedGroupIds.has(id)||actual.length!==expected.length||actual.some(task=>!expectedIds.has(task.id))
+      ||expected.some(task=>scheduled.filter(item=>item.id===task.id).length!==1||scheduled.find(item=>item.id===task.id)?.jointGroupId!==id)
+      ||!first||actual.some(task=>task.start!==first.start||task.end!==first.end||task.spaceId!==first.spaceId||task.end-task.start!==first.end-first.start||task.setupFamilyId!==first.setupFamilyId||canonicalResourceIds(task).join("\0")!==canonicalResourceIds(first).join("\0"))
+      ||new Set(actual.map(task=>task.participantId)).size!==actual.length;
+    if(invalid)invalidGroupIds.add(id);
+  }
+  jointGroup=invalidGroupIds.size;
 
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
