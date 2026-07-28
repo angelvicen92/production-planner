@@ -33,7 +33,8 @@
     "benchmark:planner-next:itinerant-units": "tsx engine/planner-next/benchmarks/runPlannerNextItinerantUnitsBenchmark.ts",
     "benchmark:planner-next:long-secondary-block": "tsx engine/planner-next/benchmarks/runPlannerNextLongSecondaryBlockBenchmark.ts",
     "benchmark:planner-next:future-feasibility": "tsx engine/planner-next/benchmarks/runPlannerNextFutureFeasibilityBenchmark.ts",
-    "benchmark:planner-next:bounded-future-feasibility": "tsx engine/planner-next/benchmarks/runPlannerNextBoundedFutureFeasibilityBenchmark.ts"
+    "benchmark:planner-next:bounded-future-feasibility": "tsx engine/planner-next/benchmarks/runPlannerNextBoundedFutureFeasibilityBenchmark.ts",
+    "benchmark:planner-next:branch-local-ranking": "tsx engine/planner-next/benchmarks/runPlannerNextBranchLocalRankingBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
