@@ -93,6 +93,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (resources.some(({ presencePreference }) => !preferenceLevels.has(presencePreference))) {
     reasons.add("INVALID_RESOURCE_PREFERENCE");
   }
+  const auxiliaries = tasks.filter((task) => task?.kind === "auxiliary");
+  if (auxiliaries.length > 0 && !problem.auxiliaryPolicy) reasons.add("MISSING_AUXILIARY_POLICY");
+  if (problem.auxiliaryPolicy && !preferenceLevels.has(problem.auxiliaryPolicy.participantPresencePreference)) reasons.add("INVALID_AUXILIARY_POLICY");
 
   const participantIds = new Set(participants.map(({ id }) => id));
   const coachIds = new Set(coaches.map(({ id }) => id));
@@ -111,9 +114,12 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (requirements.some((id) => typeof id !== "string" || !resourceIds.has(id))) reasons.add("MISSING_RESOURCE_REFERENCE");
       if (task.kind === "vocal" && requirements.length > 0) reasons.add("UNSUPPORTED_FEEDER_RESOURCE_REQUIREMENT");
     }
-    if (task.kind !== "main" && task.kind !== "vocal") reasons.add("UNSUPPORTED_TASK_KIND");
+    if (task.kind !== "main" && task.kind !== "vocal" && task.kind !== "auxiliary") reasons.add("UNSUPPORTED_TASK_KIND");
     if (!participantIds.has(task.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
-    if (!coachIds.has(task.coachId)) reasons.add("MISSING_COACH_REFERENCE");
+    if (task.kind === "main" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("MAIN_COACH_REQUIRED");
+    if (task.kind === "vocal" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("VOCAL_COACH_REQUIRED");
+    if (task.kind !== "auxiliary" && (!task.coachId || !coachIds.has(task.coachId))) reasons.add("MISSING_COACH_REFERENCE");
+    if (task.kind === "auxiliary" && task.coachId !== undefined) reasons.add("AUXILIARY_COACH_UNSUPPORTED");
     if (!spaceIds.has(task.spaceId)) reasons.add("MISSING_SPACE_REFERENCE");
     if (!Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_TASK_DURATION");
     if (!Array.isArray(task.dependencies)
@@ -122,6 +128,12 @@ export function preflight(problem: PlannerNextProblem): string[] {
     }
     if (task.kind === "main" && task.spaceId !== mainSpaceId) reasons.add("INVALID_MAIN_FLOW_SPACE");
     if (task.kind === "vocal" && task.spaceId === mainSpaceId) reasons.add("INVALID_VOCAL_SPACE");
+    if (task.kind === "auxiliary") {
+      if (!task.participantId || !participantIds.has(task.participantId) || !task.spaceId || !spaceIds.has(task.spaceId)
+        || !Number.isFinite(task.duration) || task.duration <= 0) reasons.add("INVALID_AUXILIARY_TASK");
+      if (task.blockKey !== undefined) reasons.add("AUXILIARY_BLOCK_KEY_UNSUPPORTED");
+      if (!Array.isArray(task.dependencies) || task.dependencies.length > 0) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
+    }
   }
 
   for (const participant of participants) {
@@ -160,6 +172,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let block = 0;
   let resourceAvailability = 0;
   let resourceOverlap = 0;
+  let resourceTransition = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -168,13 +181,13 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
 
   for (const task of scheduled) {
     const participant = participants.get(task.participantId);
-    const coach = coaches.get(task.coachId);
+    const coach = task.coachId === undefined ? undefined : coaches.get(task.coachId);
     const space = spaces.get(task.spaceId);
     if (task.end - task.start !== task.duration
       || task.start < problem.day.start || task.end > problem.day.end
       || overlaps(task, problem.protectedMeal)
       || !participant || !contains(participant.availability, task.start, task.end)
-      || !coach || !contains(coach.availability, task.start, task.end)
+      || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
     for (const resourceId of task.requiredResourceIds ?? []) {
       const resource = resources.get(resourceId);
@@ -190,14 +203,14 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const a = scheduled[first];
       const b = scheduled[second];
       if (!a || !b || !overlaps(a, b)) continue;
-      if (a.participantId === b.participantId || a.coachId === b.coachId || a.spaceId === b.spaceId) overlap += 1;
+      if (a.participantId === b.participantId || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId) overlap += 1;
       if ((a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))) resourceOverlap += 1;
     }
   }
   for (const field of ["participantId", "coachId"] as const) {
     const margin = field === "participantId" ? problem.participantTransitionMinutes : problem.resourceTransitionMinutes;
     const groups = new Map<string, ScheduledTask[]>();
-    for (const task of scheduled) groups.set(task[field], [...(groups.get(task[field]) ?? []), task]);
+    for (const task of scheduled) { const value = task[field]; if (value !== undefined) groups.set(value, [...(groups.get(value) ?? []), task]); }
     for (const list of groups.values()) {
       list.sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
       for (let index = 1; index < list.length; index += 1) {
@@ -206,6 +219,12 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
         if (previous && current && previous.spaceId !== current.spaceId && current.start - previous.end < margin) transition += 1;
       }
     }
+  }
+  const byResource = new Map<string, ScheduledTask[]>();
+  for (const task of scheduled) for (const id of task.requiredResourceIds ?? []) byResource.set(id, [...(byResource.get(id) ?? []), task]);
+  for (const list of byResource.values()) {
+    list.sort((a,b) => a.start - b.start || a.id.localeCompare(b.id));
+    for (let index=1; index<list.length; index+=1) { const a=list[index-1], b=list[index]; if (a && b && a.spaceId !== b.spaceId && b.start-a.end < problem.resourceTransitionMinutes) resourceTransition += 1; }
   }
   const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
   const lastMain = mains.at(-1);
@@ -239,6 +258,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (block) reasonCodes.push("BLOCK_VIOLATION");
   if (resourceAvailability) reasonCodes.push("RESOURCE_AVAILABILITY_VIOLATION");
   if (resourceOverlap) reasonCodes.push("RESOURCE_OVERLAP_VIOLATION");
+  if (resourceTransition) reasonCodes.push("RESOURCE_TRANSITION_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -248,6 +268,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     blockViolationCount: block,
     resourceAvailabilityViolationCount: resourceAvailability,
     resourceOverlapViolationCount: resourceOverlap,
+    resourceTransitionViolationCount: resourceTransition,
     reasonCodes,
   };
 }

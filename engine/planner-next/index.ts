@@ -3,3 +3,6 @@ export * from "./time";
 export * from "./validate";
 export * from "./planMainFlowAndFeeders";
 export * from "./resourcePresence";
+export * from "./placement";
+export * from "./participantPresence";
+export * from "./placeAuxiliaryTasks";

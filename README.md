@@ -2122,3 +2122,5 @@ Reality, Presentadora, Totales and setups have not been added.
 Planner Next remains isolated and is neither production-integrated nor a complete planner.
 Run `bash validate-next-003.sh`.
 The accepted artifact is `planner-next-resource-presence-v1.json` and replaces the NEXT-002 artifact.
+# NEXT-004 — Dynamic Scarcity for Auxiliary Tasks
+Planner Next adds auxiliary tasks outside the main flow. Criticality emerges from the number of currently valid positions, never from a hardcoded name priority. Participant presence preference HIGH reduces total presence versus OFF, while exact resources and cross-space transitions remain hard constraints. Planner Next remains isolated and is not productively integrated. Continuous secondary blocks, Totales, setups, technical operations, and complete planning are not yet supported. Validate with `bash validate-next-004.sh`; the accepted artifact is `planner-next-auxiliary-scarcity-v1.json`.

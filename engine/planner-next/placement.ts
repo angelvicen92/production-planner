@@ -1,0 +1,25 @@
+import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import { contains, overlaps } from "./time";
+
+/** The single hard-placement predicate used by every Planner Next phase. */
+export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[]): boolean {
+  const end = start + task.duration;
+  const participant = problem.participants.find((x) => x.id === task.participantId);
+  const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
+  const space = problem.spaces.find((x) => x.id === task.spaceId);
+  const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
+  if (!participant || !space || (task.coachId !== undefined && !coach)) return false;
+  if (start < problem.day.start || end > problem.day.end || overlaps({ start, end }, problem.protectedMeal)
+    || !contains(participant.availability, start, end) || (coach && !contains(coach.availability, start, end))
+    || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
+  return !placed.some((other) => {
+    const sharedParticipant = other.participantId === task.participantId;
+    const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
+    const sharedResource = (task.requiredResourceIds ?? []).some((id) => (other.requiredResourceIds ?? []).includes(id));
+    if (overlaps(other, { start, end }) && (sharedParticipant || sharedCoach || sharedResource || other.spaceId === task.spaceId)) return true;
+    if (other.spaceId === task.spaceId) return false;
+    const margin = Math.max(sharedParticipant ? problem.participantTransitionMinutes : 0,
+      sharedCoach || sharedResource ? problem.resourceTransitionMinutes : 0);
+    return margin > 0 && ((other.end <= start && start - other.end < margin) || (end <= other.start && other.start - end < margin));
+  });
+}
