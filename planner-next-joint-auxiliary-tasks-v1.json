@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-setup-preparation-v1",
+  "version": "planner-next-joint-auxiliary-tasks-v1",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -36,7 +36,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 26.80949400000003,
+      "runtimeMs": 39.81500999999997,
       "deterministic": true
     },
     "adversarial": {
@@ -74,7 +74,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 6.787869999999998,
+      "runtimeMs": 14.17242299999998,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -112,7 +112,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 6.54182099999997,
+      "runtimeMs": 3.11353900000006,
       "deterministic": true
     },
     "resourceOff": {
@@ -150,7 +150,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 20.587140999999974,
+      "runtimeMs": 21.876997999999958,
       "deterministic": true
     },
     "resourceHigh": {
@@ -188,7 +188,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 11.724198999999999,
+      "runtimeMs": 11.842495999999983,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -248,7 +248,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 38.6619740000001,
+      "runtimeMs": 39.39529899999991,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -308,7 +308,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 19.759415999999987,
+      "runtimeMs": 19.197542999999996,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -378,7 +378,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 1343.11742,
+      "runtimeMs": 1446.48691,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -453,7 +453,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 206.18990099999974,
+      "runtimeMs": 249.29128100000025,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -530,7 +530,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 26.78704199999993,
+      "runtimeMs": 26.990618000000268,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -607,7 +607,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 7.118234999999913,
+      "runtimeMs": 6.197752999999921,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
@@ -756,7 +756,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 37.09595300000001,
+      "runtimeMs": 26.902110999999877,
       "deterministic": true
     },
     "setupGrouping": {
@@ -851,7 +851,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 34.918533000000025,
+      "runtimeMs": 30.809401999999864,
       "deterministic": true
     },
     "setupPreparation": {
@@ -946,7 +946,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 43.01668900000004,
+      "runtimeMs": 25.77013100000022,
       "deterministic": true,
       "scheduledSetupPreparations": [
         {
@@ -1012,6 +1012,144 @@
         "setupPreparation": 0,
         "setup": 0
       }
+    },
+    "jointAuxiliaryTasks": {
+      "bestK": 5,
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 26,
+      "planFingerprint": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa",
+      "logicalMetrics": {
+        "branchesExplored": 12333,
+        "branchBudgetConsumed": 12333,
+        "branchBudgetMaximum": 300000,
+        "backtracks": 0,
+        "auxiliaryBranchesExplored": 10757,
+        "secondaryBlockBranchesExplored": 955,
+        "futureFeasibilityChecks": 278,
+        "futureFeasibilityBranchesExplored": 9427,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 5
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {
+        "setup-room": [
+          "family-a",
+          "family-b",
+          "family-c"
+        ]
+      },
+      "setupBlockCountBySpaceAndFamily": {
+        "setup-room|family-a": 1,
+        "setup-room|family-b": 1,
+        "setup-room|family-c": 1
+      },
+      "setupSwitchCountBySpaceId": {
+        "setup-room": 2
+      },
+      "secondarySpaceStartById": {
+        "setup-room": 660
+      },
+      "secondarySpaceEndById": {
+        "setup-room": 780
+      },
+      "secondarySpaceGapMinutesById": {
+        "setup-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "setup-room": 1
+      },
+      "workItemSelectionOrder": [
+        "space:setup-room",
+        "joint:shared-operation-1",
+        "task:flexible-task-1",
+        "task:flexible-task-2"
+      ],
+      "auxiliary": {
+        "a-joint-member-2": {
+          "start": 610,
+          "end": 630
+        },
+        "z-joint-member-1": {
+          "start": 610,
+          "end": 630
+        },
+        "flexible-task-2": {
+          "start": 635,
+          "end": 640
+        },
+        "b-family-a-task-1": {
+          "start": 670,
+          "end": 685
+        },
+        "x-family-a-task-2": {
+          "start": 685,
+          "end": 700
+        },
+        "z-family-b-task-2": {
+          "start": 715,
+          "end": 730
+        },
+        "c-family-b-task-1": {
+          "start": 730,
+          "end": 745
+        },
+        "a-family-c-task-1": {
+          "start": 750,
+          "end": 765
+        },
+        "y-family-c-task-2": {
+          "start": 765,
+          "end": 780
+        },
+        "flexible-task-1": {
+          "start": 830,
+          "end": 835
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 83.85365000000002,
+      "deterministic": true,
+      "members": [
+        {
+          "id": "a-joint-member-2",
+          "participantId": "participant-c",
+          "start": 610,
+          "end": 630,
+          "duration": 20,
+          "spaceId": "joint-room",
+          "resourceIds": [
+            "joint-resource"
+          ],
+          "jointGroupId": "shared-operation-1"
+        },
+        {
+          "id": "z-joint-member-1",
+          "participantId": "participant-z",
+          "start": 610,
+          "end": 630,
+          "duration": 20,
+          "spaceId": "joint-room",
+          "resourceIds": [
+            "joint-resource"
+          ],
+          "jointGroupId": "shared-operation-1"
+        }
+      ],
+      "candidateCount": 9,
+      "resourcePresence": 20,
+      "resourceInternalGap": 0,
+      "jointGroupCount": 1,
+      "jointScheduledTaskCount": 2,
+      "jointGroupViolationCount": 0,
+      "branches": 12333,
+      "fingerprint": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa"
     }
   },
   "setupEvidence": {
@@ -1429,6 +1567,7 @@
   },
   "acceptance": {
     "accepted": true,
+    "jointAuxiliaryTasksAccepted": true,
     "setupPreparationAccepted": true,
     "historicalRegressionIntact": true,
     "frozenFingerprints": {

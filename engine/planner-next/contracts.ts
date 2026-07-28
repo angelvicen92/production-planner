@@ -40,6 +40,7 @@ export interface Task {
   blockKey?: string;
   requiredResourceIds?: string[];
   setupFamilyId?: string;
+  jointGroupId?: string;
 }
 
 export interface SearchBudget {
@@ -89,6 +90,7 @@ export interface ValidationSummary {
   secondaryContinuityViolationCount: number;
   setupViolationCount: number;
   setupPreparationViolationCount: number;
+  jointGroupViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -156,6 +158,12 @@ export interface PlanMetrics extends ValidationSummary {
   setupPreparationMinutesBySpaceId: Record<string, number>;
   setupPreparationCountBySpaceAndFamily: Record<string, number>;
   setupPreparationSequenceBySpaceId: Record<string, string[]>;
+  jointGroupCount: number;
+  jointScheduledTaskCount: number;
+  jointGroupCandidateCountWhenSelectedById: Record<string, number>;
+  jointGroupStartById: Record<string, Minute | null>;
+  jointGroupEndById: Record<string, Minute | null>;
+  jointGroupParticipantIdsById: Record<string, string[]>;
 }
 
 export interface PlanResult {

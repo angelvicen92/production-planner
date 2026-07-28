@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-setup-preparation-v1.json`.
+The current accepted artifact is `planner-next-joint-auxiliary-tasks-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2207,3 +2207,13 @@ NEXT-010 scenarios without preparation remain unchanged, and reentry remains for
 Preparation-specific resources remain out of scope; Planner Next remains isolated and is not product-integrated.
 Validate with `bash validate-next-011.sh`.
 The accepted artifact is `planner-next-setup-preparation-v1.json`.
+
+### NEXT-012 — Synchronized Joint Auxiliary Tasks
+Planner Next adds a real operational capability: `jointGroupId` links compatible auxiliary tasks without a new `Task.kind`.
+The group is selected and placed as one operation, while every task remains visible in its participant agenda.
+All members share start, end, and space; common resources are consumed once.
+Synchronized internal overlaps are valid, while every external conflict remains hard.
+Groups in `REQUIRED` spaces or setups remain out of scope, and no general synchronization engine was added.
+Search budgets were not increased; Planner Next remains isolated and is not production-integrated or complete.
+Validate with `bash validate-next-012.sh`.
+The accepted artifact is `planner-next-joint-auxiliary-tasks-v1.json`.

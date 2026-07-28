@@ -1,8 +1,9 @@
 import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { jointGroupIds, jointGroupMembers, jointGroupStarts, jointWorkItemKey } from "./jointTasks";
 
-export interface FutureWorkItemAssessment { key: string; kind: "task" | "space"; alternativeCount: number; feasible: boolean }
+export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space"; alternativeCount: number; feasible: boolean }
 export interface FutureFeasibilityAssessment { feasible: boolean; blockingWorkItemKeys: string[]; minimumAlternativeCount: number; totalAlternativeCount: number; assessments: FutureWorkItemAssessment[]; branchesConsumed: number; exhausted: boolean }
 export interface FutureBudget { remaining: number }
 export type BlockProbe = (tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number) => { count: number; exhausted: boolean };
@@ -12,7 +13,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
   const before = budget.remaining;
   const required = new Set(requiredSecondarySpaces(problem).map(x => x.id));
   const assessments: FutureWorkItemAssessment[] = [];
-  for (const task of [...pending].filter(t => !required.has(t.spaceId)).sort((a,b)=>a.id.localeCompare(b.id))) {
+  for (const task of [...pending].filter(t => !required.has(t.spaceId) && t.jointGroupId === undefined).sort((a,b)=>a.id.localeCompare(b.id))) {
     let count = 0;
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
       if (budget.remaining === 0) return result(assessments, before, budget, true);
@@ -20,6 +21,11 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
       if (canPlaceTask(problem, task, start, placed)) { count += 1; if (count >= problem.budget.bestK) break; }
     }
     assessments.push({ key: `task:${task.id}`, kind: "task", alternativeCount: count, feasible: count > 0 });
+  }
+  for(const id of jointGroupIds(pending)) {
+    const members=jointGroupMembers(pending,id); let count=0;
+    for(const start of jointGroupStarts(problem,members,placed,problem.budget.bestK)) { void start; if(budget.remaining===0)return result(assessments,before,budget,true); budget.remaining-=1; count+=1; }
+    assessments.push({key:jointWorkItemKey(id),kind:"joint",alternativeCount:count,feasible:count>0});
   }
   const spaceIds = [...new Set(pending.filter(t => required.has(t.spaceId)).map(t => t.spaceId))].sort();
   for (const spaceId of spaceIds) {

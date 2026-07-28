@@ -42,8 +42,10 @@ export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledT
     const own = tasks.filter((task) => (task.requiredResourceIds ?? []).includes(resource.id))
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
     const span = own.length === 0 ? 0 : Math.max(...own.map(({ end }) => end)) - Math.min(...own.map(({ start }) => start));
+    let occupied=0, end=-Infinity;
+    for(const task of own){ if(task.start>=end) occupied+=task.end-task.start; else if(task.end>end) occupied+=task.end-end; end=Math.max(end,task.end); }
     presenceMinutesById[resource.id] = span;
-    internalGapMinutesById[resource.id] = span - own.reduce((sum, task) => sum + task.duration, 0);
+    internalGapMinutesById[resource.id] = span - occupied;
   }
   return { presenceMinutesById, internalGapMinutesById };
 }
