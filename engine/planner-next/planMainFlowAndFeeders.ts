@@ -16,6 +16,7 @@ import { participantPresenceSpan } from "./participantPresence";
 import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryStart, secondaryTasks } from "./secondaryContinuity";
 import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
+import { technicalMetrics } from "./technicalOperations";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -139,6 +140,7 @@ function emptyMetrics(
     setupViolationCount: 0,
     setupPreparationViolationCount: 0,
     jointGroupViolationCount: 0,
+    technicalOperationViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -173,6 +175,8 @@ function emptyMetrics(
     setupFamilySequenceBySpaceId: {}, setupBlockCountBySpaceAndFamily: {}, setupSwitchCountBySpaceId: {},
     setupPreparationCount: 0, setupPreparationMinutesBySpaceId: {}, setupPreparationCountBySpaceAndFamily: {}, setupPreparationSequenceBySpaceId: {},
     jointGroupCount:0,jointScheduledTaskCount:0,jointGroupCandidateCountWhenSelectedById:{},jointGroupStartById:{},jointGroupEndById:{},jointGroupParticipantIdsById:{},
+    technicalOperationCount: Array.isArray(problem.tasks) ? problem.tasks.filter((task) => task?.kind === "technical").length : 0,
+    technicalOperationPlannedCount: 0, technicalOperationCandidateCountWhenSelectedById: {}, technicalOperationStartById: {}, technicalOperationEndById: {},
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -385,6 +389,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       jointGroupStartById:Object.fromEntries([...new Set(problem.tasks.map(t=>t.jointGroupId).filter((x):x is string=>Boolean(x)))].sort().map(id=>[id,ordered.find(t=>t.jointGroupId===id)?.start??null])),
       jointGroupEndById:Object.fromEntries([...new Set(problem.tasks.map(t=>t.jointGroupId).filter((x):x is string=>Boolean(x)))].sort().map(id=>[id,ordered.find(t=>t.jointGroupId===id)?.end??null])),
       jointGroupParticipantIdsById:Object.fromEntries([...new Set(problem.tasks.map(t=>t.jointGroupId).filter((x):x is string=>Boolean(x)))].sort().map(id=>[id,problem.tasks.filter(t=>t.jointGroupId===id).map(t=>t.participantId).sort()])),
+      ...technicalMetrics(problem.tasks, ordered),
+      technicalOperationCandidateCountWhenSelectedById: auxiliary?.technicalCandidateCounts ?? {},
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
     return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, metrics };

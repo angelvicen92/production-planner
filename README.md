@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-joint-auxiliary-tasks-v2.json`.
+The current accepted artifact is `planner-next-technical-operation-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2221,3 +2221,13 @@ Search budgets were not increased; Planner Next remains isolated and is not prod
 The operational NEXT-012 fingerprint remains `4ecc2330…fde7aa`.
 Validate with `bash validate-next-012.sh`.
 The corrected artifact is `planner-next-joint-auxiliary-tasks-v2.json`.
+
+### NEXT-013 — Participant-Free Technical Operations
+Planner Next now has a real operational capability: `Task` accepts `kind: technical`.
+A technical operation needs no participant and occupies its exact space and optional resources.
+It participates in dynamic difficulty and Future Feasibility without changing participant presence.
+Space and resource conflicts and resource transitions remain hard constraints.
+Technical chains remain out of scope, and no phase engine was added.
+Search budgets were not increased, and Planner Next remains isolated from production.
+Validate with `./validate-next-013.sh`.
+The accepted artifact is `planner-next-technical-operation-v1.json`.

@@ -14,12 +14,12 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
-  if (!participant || !space || (task.coachId !== undefined && !coach)) return false;
+  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach)) return false;
   if (start < problem.day.start || end > problem.day.end || overlaps({ start, end }, problem.protectedMeal)
-    || !contains(participant.availability, start, end) || (coach && !contains(coach.availability, start, end))
+    || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
   return !placed.some((other) => {
-    const sharedParticipant = other.participantId === task.participantId;
+    const sharedParticipant = other.participantId !== undefined && task.participantId !== undefined && other.participantId === task.participantId;
     const sharedCoach = task.coachId !== undefined && other.coachId === task.coachId;
     const sharedResources = (task.requiredResourceIds ?? []).filter((id) => (other.requiredResourceIds ?? []).includes(id));
     const sharedResource = sharedResources.length > 0;

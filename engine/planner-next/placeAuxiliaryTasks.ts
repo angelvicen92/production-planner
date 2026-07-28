@@ -11,7 +11,7 @@ import { jointGroupIds, jointGroupMembers, jointGroupStarts, jointResources, joi
 export interface AuxiliaryPlacementResult {
   tasks: ScheduledTask[] | null; preparations: ScheduledSetupPreparation[]; branches: number; secondaryBranches: number; exhausted: boolean;
   secondaryExhausted: boolean; selectionOrder: string[]; workItemSelectionOrder: string[];
-  candidateCounts: Record<string, number>; blockCandidateCounts: Record<string, number>; futureExhausted: boolean; futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
+  candidateCounts: Record<string, number>; technicalCandidateCounts: Record<string, number>; blockCandidateCounts: Record<string, number>; futureExhausted: boolean; futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
   jointCandidateCounts: Record<string,number>;
 }
 type State = { placed: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; pending: Task[]; order: string[]; workOrder: string[]; counts: Record<string, number>; jointCounts:Record<string,number>; blockCounts: Record<string, number>; cost: number; futureMin: number; futureTotal: number; pathMin: number };
@@ -26,12 +26,13 @@ export interface BlockConstructionResult { candidates: BlockCandidate[]; consume
 
 export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: ScheduledTask[], branchAllowance: number): AuxiliaryPlacementResult {
   const required = new Set(requiredSecondarySpaces(problem).map(({ id }) => id));
-  let beam: State[] = [{ placed: initial, preparations: [], pending: problem.tasks.filter((x) => x.kind === "auxiliary"), order: [], workOrder: [], counts: {}, jointCounts:{}, blockCounts: {}, cost: 0, futureMin: 0, futureTotal: 0, pathMin: Number.POSITIVE_INFINITY }];
+  let beam: State[] = [{ placed: initial, preparations: [], pending: problem.tasks.filter((x) => x.kind === "auxiliary" || x.kind === "technical"), order: [], workOrder: [], counts: {}, jointCounts:{}, blockCounts: {}, cost: 0, futureMin: 0, futureTotal: 0, pathMin: Number.POSITIVE_INFINITY }];
   // branches is the shared logical total; secondaryBranches and futureBranches classify disjoint probes.
   let branches = 0, secondaryBranches = 0, futureChecks = 0, futureBranches = 0, futurePruned = 0, futureTopPruned = 0;
   const blockers: Record<string, number> = {};
   let futureExhausted = false;
-  const failed = (secondaryExhausted: boolean, state?: State): AuxiliaryPlacementResult => ({ tasks: null, preparations: [], branches, secondaryBranches, exhausted: !secondaryExhausted, secondaryExhausted, selectionOrder: state?.order ?? [], workItemSelectionOrder: state?.workOrder ?? [], candidateCounts: state?.counts ?? {}, jointCandidateCounts:state?.jointCounts??{}, blockCandidateCounts: state?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: 0 });
+  const countsFor = (state: State | undefined, kind: "auxiliary" | "technical") => Object.fromEntries(Object.entries(state?.counts ?? {}).filter(([id]) => problem.tasks.find((task) => task.id === id)?.kind === kind));
+  const failed = (secondaryExhausted: boolean, state?: State): AuxiliaryPlacementResult => ({ tasks: null, preparations: [], branches, secondaryBranches, exhausted: !secondaryExhausted, secondaryExhausted, selectionOrder: state?.order ?? [], workItemSelectionOrder: state?.workOrder ?? [], candidateCounts: countsFor(state, "auxiliary"), technicalCandidateCounts: countsFor(state, "technical"), jointCandidateCounts:state?.jointCounts??{}, blockCandidateCounts: state?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: 0 });
   function forward(added: ScheduledTask[], addedPreparations: ScheduledSetupPreparation[], addedCost: number, key: string, taskId: string | undefined, state: State, next: State[], taskCount?: number, block?: {spaceId:string; count:number}, top = false, joint?:{id:string;count:number}): boolean {
     const ids = new Set(added.map(x=>x.id)); const placed = [...state.placed, ...added]; const pending = state.pending.filter(x=>!ids.has(x.id));
     let min=0,total=0;
@@ -82,7 +83,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
     beam = next.sort(compareAuxiliaryStates).slice(0, problem.budget.bestK);
   }
   const result = beam[0];
-  return { tasks: result?.placed ?? null, preparations: result?.preparations ?? [], branches, secondaryBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: result?.counts ?? {}, jointCandidateCounts:result?.jointCounts??{}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };
+  return { tasks: result?.placed ?? null, preparations: result?.preparations ?? [], branches, secondaryBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: countsFor(result, "auxiliary"), technicalCandidateCounts: countsFor(result, "technical"), jointCandidateCounts:result?.jointCounts??{}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };
 }
 
 function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number): {count:number; exhausted:boolean} {
