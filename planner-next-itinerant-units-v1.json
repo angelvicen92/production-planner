@@ -30,7 +30,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 20.58272999999997,
+      "runtimeMs": 15.535344999999978,
       "deterministic": true
     },
     "adversarial": {
@@ -62,7 +62,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 3.6034380000000397,
+      "runtimeMs": 6.815040999999951,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -87,7 +87,7 @@
       "resourceMoveCountById": {},
       "resourceTransitionSlackMinutesById": {},
       "violationCount": 0,
-      "runtimeMs": 2.5697299999999927,
+      "runtimeMs": 4.970637000000011,
       "deterministic": true
     },
     "resourceOff": {
@@ -127,7 +127,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 20.763999000000013,
+      "runtimeMs": 25.05343399999998,
       "deterministic": true
     },
     "resourceHigh": {
@@ -167,7 +167,7 @@
         "shared-production-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 12.507624999999962,
+      "runtimeMs": 17.796363999999983,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -217,7 +217,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 31.806744999999978,
+      "runtimeMs": 51.970012,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -267,7 +267,7 @@
         "limited-availability-resource": 0
       },
       "violationCount": 0,
-      "runtimeMs": 12.88771300000002,
+      "runtimeMs": 24.583762000000036,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -396,7 +396,7 @@
         }
       },
       "parallel": true,
-      "runtimeMs": 305.72468800000007,
+      "runtimeMs": 216.66213200000004,
       "deterministic": true
     }
   },
