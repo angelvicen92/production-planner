@@ -14,8 +14,9 @@ export interface Space {
   id: string;
   availability: Window[];
   secondaryContinuity?: SecondaryContinuity;
-  setupPolicy?: { familyOrder: string[]; reentry: "FORBIDDEN" };
+  setupPolicy?: SetupPolicy;
 }
+export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; preparationMinutesByFamily?: Record<string, number> }
 
 export type SecondaryContinuity = "OFF" | "REQUIRED";
 
@@ -73,6 +74,7 @@ export interface ScheduledTask extends Task {
   start: Minute;
   end: Minute;
 }
+export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
 
 export interface ValidationSummary {
   hardValid: boolean;
@@ -86,6 +88,7 @@ export interface ValidationSummary {
   resourceTransitionViolationCount: number;
   secondaryContinuityViolationCount: number;
   setupViolationCount: number;
+  setupPreparationViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -149,10 +152,15 @@ export interface PlanMetrics extends ValidationSummary {
   setupFamilySequenceBySpaceId: Record<string, string[]>;
   setupBlockCountBySpaceAndFamily: Record<string, number>;
   setupSwitchCountBySpaceId: Record<string, number>;
+  setupPreparationCount: number;
+  setupPreparationMinutesBySpaceId: Record<string, number>;
+  setupPreparationCountBySpaceAndFamily: Record<string, number>;
+  setupPreparationSequenceBySpaceId: Record<string, string[]>;
 }
 
 export interface PlanResult {
   complete: boolean;
   scheduledTasks: ScheduledTask[];
+  scheduledSetupPreparations: ScheduledSetupPreparation[];
   metrics: PlanMetrics;
 }

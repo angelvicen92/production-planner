@@ -35,7 +35,8 @@
     "benchmark:planner-next:future-feasibility": "tsx engine/planner-next/benchmarks/runPlannerNextFutureFeasibilityBenchmark.ts",
     "benchmark:planner-next:bounded-future-feasibility": "tsx engine/planner-next/benchmarks/runPlannerNextBoundedFutureFeasibilityBenchmark.ts",
     "benchmark:planner-next:branch-local-ranking": "tsx engine/planner-next/benchmarks/runPlannerNextBranchLocalRankingBenchmark.ts",
-    "benchmark:planner-next:setup-grouping": "tsx engine/planner-next/benchmarks/runPlannerNextSetupGroupingBenchmark.ts"
+    "benchmark:planner-next:setup-grouping": "tsx engine/planner-next/benchmarks/runPlannerNextSetupGroupingBenchmark.ts",
+    "benchmark:planner-next:setup-preparation": "tsx engine/planner-next/benchmarks/runPlannerNextSetupPreparationBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
