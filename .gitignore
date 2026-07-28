@@ -11,3 +11,9 @@ vite.config.ts.*
 engine/v4/benchmarks/latest-result.json
 
 local_engine_scenarios/
+
+# Historical ORC artifacts are not part of the current operational state.
+# Failed artifacts are kept locally for diagnostics only.
+# Only the latest accepted Planner Next artifact is versioned.
+/plan-27-orc-*.json
+/planner-next-*.failed.json

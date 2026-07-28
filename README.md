@@ -2102,3 +2102,12 @@ NEXT-001 remains complete and hard-valid with all 16 tasks, a continuous 13:00â€
 The small adversarial vocal scenario uses participant windows, dependencies, coaches, two vocal rooms, and the real 5/15-minute margins so that the highest-ranked complete main-flow alternatives cannot place every feeder. With backtracking enabled the next retained alternative completes all 16 tasks after 2 backtracks, with zero violations and a continuous flow ending at 15:00; with `maxBacktracks = 0`, search stops atomically with `BACKTRACK_BUDGET_EXHAUSTED`.
 
 Planner Next remains isolated and is not integrated into production or represented as a full-day planner. V3, V4 and ORC remain frozen. Run `bash validate-next-002.sh`; the accepted artifact `planner-next-core-backtracking-v1.json` records the baseline and adversarial fingerprints, logical budget metrics, deterministic reruns, and per-scenario runtimes below two seconds.
+
+### REPO-002 â€” Legacy ORC Closure and Artifact Policy
+
+The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
+V3 remains the production fallback, while V4 and ORC are frozen.
+Planner Next continues in isolation and is not integrated into production.
+The current accepted artifact is `planner-next-core-backtracking-v1.json`.
+The closure record is available at `docs/history/legacy-orc-closure.md`.
+Only the latest accepted Planner Next artifact will be retained in version control.
