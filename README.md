@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-long-secondary-block-v1.json`.
+The current accepted artifact is `planner-next-future-feasibility-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2147,4 +2147,16 @@ No Totales-specific subsystem or type was created.
 `PREFERRED`, meal splitting, and setups remain out of scope.
 Planner Next remains isolated and is neither production-integrated nor a complete planner.
 Run `bash validate-next-006.sh`.
-The accepted artifact is `planner-next-long-secondary-block-v1.json`.
+The accepted artifact is `planner-next-future-feasibility-v1.json`.
+
+
+### NEXT-007 — Forward Feasibility for Structured Auxiliary Work
+No new domain capability was added; search was consolidated before introducing setups.
+A provisional placement is pruned when it leaves any remaining work item without alternatives.
+The bounded check covers individual auxiliary tasks and complete `REQUIRED` secondary blocks.
+Future Feasibility remains search-only and is not part of final validation.
+All probes consume the existing explicit global branch budget.
+The adversarial scenario proves that the locally preferred candidate can be discarded.
+Planner Next remains isolated and is neither integrated nor a complete planner.
+Run `bash validate-next-007.sh`.
+The accepted artifact is `planner-next-future-feasibility-v1.json`.

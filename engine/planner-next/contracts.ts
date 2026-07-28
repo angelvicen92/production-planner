@@ -94,7 +94,8 @@ export type SearchStopReason =
   | "BRANCH_BUDGET_EXHAUSTED"
   | "BACKTRACK_BUDGET_EXHAUSTED"
   | "AUXILIARY_BRANCH_BUDGET_EXHAUSTED"
-  | "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED";
+  | "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED"
+  | "FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED";
 
 export interface PlanMetrics extends ValidationSummary {
   complete: boolean;
@@ -130,6 +131,12 @@ export interface PlanMetrics extends ValidationSummary {
   auxiliarySelectionOrder: string[];
   auxiliaryCandidateCountWhenSelectedByTaskId: Record<string, number>;
   secondaryBlockBranchesExplored: number;
+  futureFeasibilityChecks: number;
+  futureFeasibilityBranchesExplored: number;
+  futureInfeasibleCandidatesPruned: number;
+  futureTopRankedCandidatesPruned: number;
+  futureBlockerCountByWorkItemKey: Record<string, number>;
+  acceptedPathMinimumFutureAlternativeCount: number;
   auxiliaryWorkItemSelectionOrder: string[];
   secondaryBlockCandidateCountWhenSelectedBySpaceId: Record<string, number>;
   secondarySpaceStartById: Record<string, Minute | null>;
