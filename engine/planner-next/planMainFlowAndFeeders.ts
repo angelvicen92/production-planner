@@ -13,6 +13,7 @@ import { canPlaceTask } from "./placement";
 import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
 import { participantPresenceSpan } from "./participantPresence";
 import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryStart, secondaryTasks } from "./secondaryContinuity";
+import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -133,6 +134,7 @@ function emptyMetrics(
     resourceOverlapViolationCount: 0,
     resourceTransitionViolationCount: 0,
     secondaryContinuityViolationCount: 0,
+    setupViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -164,6 +166,7 @@ function emptyMetrics(
     secondarySpaceEndById: {},
     secondarySpaceGapMinutesById: {},
     secondarySpaceBlockCountById: {},
+    setupFamilySequenceBySpaceId: {}, setupBlockCountBySpaceAndFamily: {}, setupSwitchCountBySpaceId: {},
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -360,6 +363,9 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       secondarySpaceEndById: secondaryEndById,
       secondarySpaceGapMinutesById: secondaryGapsById,
       secondarySpaceBlockCountById: secondaryBlocksById,
+      setupFamilySequenceBySpaceId: Object.fromEntries(setupSpaces(problem).map((space) => [space.id, setupFamilySequence(setupTasks(ordered, space.id))])),
+      setupBlockCountBySpaceAndFamily: Object.fromEntries(setupSpaces(problem).flatMap((space) => Object.entries(setupBlockCounts(setupTasks(ordered, space.id))).map(([family, count]) => [`${space.id}|${family}`, count]))),
+      setupSwitchCountBySpaceId: Object.fromEntries(setupSpaces(problem).map((space) => [space.id, setupSwitchCount(setupTasks(ordered, space.id))])),
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
     return { complete: true, scheduledTasks: ordered, metrics };

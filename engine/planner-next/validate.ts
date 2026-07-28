@@ -11,6 +11,7 @@ import type {
 import { contains, overlaps } from "./time";
 import { effectiveResourceTransitionMinutes } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
+import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setupTasks } from "./setupGrouping";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -110,6 +111,20 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const mainSpaceId = problem.mainFlow?.spaceId;
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
+    if (space.setupPolicy !== undefined) {
+      const policy = space.setupPolicy as { familyOrder?: unknown; reentry?: unknown };
+      if (!policy || typeof policy !== "object" || !Array.isArray(policy.familyOrder) || policy.familyOrder.length === 0 || policy.familyOrder.some((x) => typeof x !== "string" || x.length === 0)) reasons.add("INVALID_SETUP_POLICY");
+      const order = Array.isArray(policy?.familyOrder) ? policy.familyOrder.filter((x): x is string => typeof x === "string") : [];
+      if (new Set(order).size !== order.length) reasons.add("DUPLICATE_SETUP_FAMILY");
+      if (policy?.reentry !== "FORBIDDEN") reasons.add("UNSUPPORTED_SETUP_REENTRY");
+      if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
+      if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
+      const own = tasks.filter((task) => task?.spaceId === space.id);
+      if (own.some((task) => task.kind !== "auxiliary")) reasons.add("SETUP_WITH_NON_AUXILIARY_TASK");
+      if (own.some((task) => typeof task.setupFamilyId !== "string" || task.setupFamilyId.length === 0)) reasons.add("MISSING_SETUP_FAMILY");
+      if (own.some((task) => typeof task.setupFamilyId === "string" && !order.includes(task.setupFamilyId))) reasons.add("UNKNOWN_SETUP_FAMILY");
+      if (order.some((family) => !own.some((task) => task.setupFamilyId === family))) reasons.add("EMPTY_SETUP_FAMILY");
+    }
     if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
     if (space.secondaryContinuity !== "REQUIRED") continue;
     const own = tasks.filter((task) => task?.spaceId === space.id);
@@ -121,6 +136,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
 
   for (const task of tasks) {
+    if (task.setupFamilyId !== undefined && !spaces.find((space) => space.id === task.spaceId)?.setupPolicy) reasons.add("SETUP_FAMILY_OUTSIDE_SETUP_SPACE");
     const requirements = task.requiredResourceIds;
     if (requirements !== undefined && !Array.isArray(requirements)) {
       reasons.add("INVALID_RESOURCE_CONTRACT");
@@ -190,6 +206,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let resourceOverlap = 0;
   let resourceTransition = 0;
   let secondaryContinuity = 0;
+  let setup = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -275,6 +292,15 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const actual = secondaryTasks(scheduled, space.id);
     if (actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id)) || !hasRequiredSecondaryContinuity(actual)) secondaryContinuity += 1;
   }
+  for (const space of setupSpaces(problem)) {
+    const expected = setupTasks(problem.tasks, space.id), actual = setupTasks(scheduled, space.id);
+    const policy = space.setupPolicy!;
+    const invalid = actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id))
+      || actual.some((task) => !task.setupFamilyId || task.spaceId !== space.id)
+      || !followsSetupOrder(actual, policy.familyOrder) || hasSetupReentry(actual)
+      || policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1);
+    if (invalid) setup += 1;
+  }
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -286,6 +312,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (resourceOverlap) reasonCodes.push("RESOURCE_OVERLAP_VIOLATION");
   if (resourceTransition) reasonCodes.push("RESOURCE_TRANSITION_VIOLATION");
   if (secondaryContinuity) reasonCodes.push("SECONDARY_CONTINUITY_VIOLATION");
+  if (setup) reasonCodes.push("SETUP_POLICY_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -297,6 +324,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     resourceOverlapViolationCount: resourceOverlap,
     resourceTransitionViolationCount: resourceTransition,
     secondaryContinuityViolationCount: secondaryContinuity,
+    setupViolationCount: setup,
     reasonCodes,
   };
 }

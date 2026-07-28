@@ -14,6 +14,7 @@ export interface Space {
   id: string;
   availability: Window[];
   secondaryContinuity?: SecondaryContinuity;
+  setupPolicy?: { familyOrder: string[]; reentry: "FORBIDDEN" };
 }
 
 export type SecondaryContinuity = "OFF" | "REQUIRED";
@@ -37,6 +38,7 @@ export interface Task {
   dependencies: string[];
   blockKey?: string;
   requiredResourceIds?: string[];
+  setupFamilyId?: string;
 }
 
 export interface SearchBudget {
@@ -83,6 +85,7 @@ export interface ValidationSummary {
   resourceOverlapViolationCount: number;
   resourceTransitionViolationCount: number;
   secondaryContinuityViolationCount: number;
+  setupViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -143,6 +146,9 @@ export interface PlanMetrics extends ValidationSummary {
   secondarySpaceEndById: Record<string, Minute | null>;
   secondarySpaceGapMinutesById: Record<string, number>;
   secondarySpaceBlockCountById: Record<string, number>;
+  setupFamilySequenceBySpaceId: Record<string, string[]>;
+  setupBlockCountBySpaceAndFamily: Record<string, number>;
+  setupSwitchCountBySpaceId: Record<string, number>;
 }
 
 export interface PlanResult {

@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-branch-local-ranking-v2",
+  "version": "planner-next-setup-grouping-v1",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -25,6 +25,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -32,7 +36,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 23.33330000000001,
+      "runtimeMs": 27.416788999999994,
       "deterministic": true
     },
     "adversarial": {
@@ -59,6 +63,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -66,7 +74,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 7.9695030000000315,
+      "runtimeMs": 4.747072000000003,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -93,6 +101,10 @@
       "mainFlowEnd": null,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -100,7 +112,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 4.613602000000014,
+      "runtimeMs": 8.841038999999967,
       "deterministic": true
     },
     "resourceOff": {
@@ -127,6 +139,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -134,7 +150,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 22.866998999999964,
+      "runtimeMs": 28.63253199999997,
       "deterministic": true
     },
     "resourceHigh": {
@@ -161,6 +177,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -168,7 +188,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 28.005338999999992,
+      "runtimeMs": 14.130214999999964,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -195,6 +215,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -224,7 +248,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 44.680665999999974,
+      "runtimeMs": 39.76715300000001,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -251,6 +275,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -280,7 +308,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 18.004128000000037,
+      "runtimeMs": 17.410758999999985,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -307,6 +335,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -346,7 +378,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 1307.439628,
+      "runtimeMs": 1283.29119,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -373,6 +405,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {
         "long-form-room": 740
       },
@@ -417,7 +453,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 249.15089399999988,
+      "runtimeMs": 216.1443059999997,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -446,6 +482,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {
         "constrained-block-room": 770
       },
@@ -490,7 +530,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 31.790988000000198,
+      "runtimeMs": 27.08282199999985,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -519,6 +559,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {
         "constrained-block-room": 770
       },
@@ -563,7 +607,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 13.622111000000132,
+      "runtimeMs": 8.907016000000112,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
@@ -669,6 +713,10 @@
       "mainFlowEnd": 900,
       "mainFlowGapMinutes": 0,
       "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {},
+      "setupBlockCountBySpaceAndFamily": {},
+      "setupSwitchCountBySpaceId": {},
       "secondarySpaceStartById": {},
       "secondarySpaceEndById": {},
       "secondarySpaceGapMinutesById": {},
@@ -708,9 +756,129 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 37.659087,
+      "runtimeMs": 28.23996500000021,
+      "deterministic": true
+    },
+    "setupGrouping": {
+      "bestK": 5,
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 24,
+      "planFingerprint": "ce38430a30274f3369f34b75f855ed0e94b7bd74acf5f82415de2e9bfa50ea7d",
+      "logicalMetrics": {
+        "branchesExplored": 10919,
+        "branchBudgetConsumed": 10919,
+        "branchBudgetMaximum": 300000,
+        "backtracks": 0,
+        "auxiliaryBranchesExplored": 9343,
+        "secondaryBlockBranchesExplored": 1058,
+        "futureFeasibilityChecks": 260,
+        "futureFeasibilityBranchesExplored": 7925,
+        "futureInfeasibleCandidatesPruned": 0,
+        "futureTopRankedCandidatesPruned": 0,
+        "futureBlockerCountByWorkItemKey": {},
+        "acceptedPathMinimumFutureAlternativeCount": 5
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 900,
+      "mainFlowGapMinutes": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupFamilySequenceBySpaceId": {
+        "setup-room": [
+          "family-a",
+          "family-b",
+          "family-c"
+        ]
+      },
+      "setupBlockCountBySpaceAndFamily": {
+        "setup-room|family-a": 1,
+        "setup-room|family-b": 1,
+        "setup-room|family-c": 1
+      },
+      "setupSwitchCountBySpaceId": {
+        "setup-room": 2
+      },
+      "secondarySpaceStartById": {
+        "setup-room": 685
+      },
+      "secondarySpaceEndById": {
+        "setup-room": 775
+      },
+      "secondarySpaceGapMinutesById": {
+        "setup-room": 0
+      },
+      "secondarySpaceBlockCountById": {
+        "setup-room": 1
+      },
+      "workItemSelectionOrder": [
+        "space:setup-room",
+        "task:flexible-task-1",
+        "task:flexible-task-2"
+      ],
+      "auxiliary": {
+        "b-family-a-task-1": {
+          "start": 685,
+          "end": 700
+        },
+        "x-family-a-task-2": {
+          "start": 700,
+          "end": 715
+        },
+        "z-family-b-task-2": {
+          "start": 715,
+          "end": 730
+        },
+        "c-family-b-task-1": {
+          "start": 730,
+          "end": 745
+        },
+        "flexible-task-2": {
+          "start": 740,
+          "end": 745
+        },
+        "a-family-c-task-1": {
+          "start": 745,
+          "end": 760
+        },
+        "y-family-c-task-2": {
+          "start": 760,
+          "end": 775
+        },
+        "flexible-task-1": {
+          "start": 830,
+          "end": 835
+        }
+      },
+      "violationCount": 0,
+      "runtimeMs": 43.24427799999967,
       "deterministic": true
     }
+  },
+  "setupEvidence": {
+    "familySequence": {
+      "setup-room": [
+        "family-a",
+        "family-b",
+        "family-c"
+      ]
+    },
+    "blockCounts": {
+      "setup-room|family-a": 1,
+      "setup-room|family-b": 1,
+      "setup-room|family-c": 1
+    },
+    "switches": {
+      "setup-room": 2
+    },
+    "continuity": {
+      "setup-room": 0
+    },
+    "workItemSelectionOrder": [
+      "space:setup-room",
+      "task:flexible-task-1",
+      "task:flexible-task-2"
+    ]
   },
   "boundedBlockConstruction": {
     "taskCount": 4,
