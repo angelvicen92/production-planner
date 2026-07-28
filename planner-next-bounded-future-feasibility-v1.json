@@ -32,7 +32,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 41.39434799999992,
+      "runtimeMs": 15.90166800000003,
       "deterministic": true
     },
     "adversarial": {
@@ -66,7 +66,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 11.890952999999968,
+      "runtimeMs": 5.765920999999992,
       "deterministic": true
     },
     "adversarialZeroBacktracks": {
@@ -100,7 +100,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 4.777297999999973,
+      "runtimeMs": 5.809001999999964,
       "deterministic": true
     },
     "resourceOff": {
@@ -134,7 +134,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 61.506124,
+      "runtimeMs": 19.27576099999999,
       "deterministic": true
     },
     "resourceHigh": {
@@ -168,7 +168,7 @@
       "workItemSelectionOrder": [],
       "auxiliary": {},
       "violationCount": 0,
-      "runtimeMs": 17.60655500000007,
+      "runtimeMs": 15.26349300000004,
       "deterministic": true
     },
     "auxiliaryOff": {
@@ -224,7 +224,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 69.70239200000015,
+      "runtimeMs": 35.41753600000004,
       "deterministic": true
     },
     "auxiliaryHigh": {
@@ -280,7 +280,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 21.248350999999957,
+      "runtimeMs": 13.316628000000037,
       "deterministic": true
     },
     "itinerantUnits": {
@@ -346,7 +346,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 480.4603129999998,
+      "runtimeMs": 211.07149399999997,
       "deterministic": true
     },
     "longSecondaryBlock": {
@@ -417,7 +417,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 204.798546,
+      "runtimeMs": 116.17617600000005,
       "deterministic": true
     },
     "futureFeasibility": {
@@ -490,7 +490,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 68.13476100000025,
+      "runtimeMs": 38.967604000000165,
       "deterministic": true
     },
     "boundedFutureFeasibility": {
@@ -563,7 +563,7 @@
         }
       },
       "violationCount": 0,
-      "runtimeMs": 9.890075000000252,
+      "runtimeMs": 9.84118199999989,
       "deterministic": true,
       "boundedEvidence": {
         "bestK": 1,
