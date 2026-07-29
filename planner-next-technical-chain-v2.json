@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-technical-chain-v1",
+  "version": "planner-next-technical-chain-v2",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -1307,7 +1307,7 @@
       "branchBudgetConsumed": 53730,
       "branchBudgetMaximum": 300000,
       "fingerprint": "daacd49a1279bb6f14607f36a642b3c347af7e10b7540011dfe0efbd79e58bb9",
-      "runtimeMs": 531.7515849999999,
+      "runtimeMs": 176.04581600000006,
       "deterministic": true,
       "violationCount": 0
     }
@@ -1745,6 +1745,69 @@
     },
     "deterministic": true
   },
+  "technicalChainConstructorEvidence": {
+    "searchConsumed": 360,
+    "searchCandidateCount": 2,
+    "probeLimit1Consumed": 96,
+    "probeLimit1CandidateCount": 1,
+    "probeLimit2Consumed": 185,
+    "probeLimit2CandidateCount": 2,
+    "slotCount": 96,
+    "chainLength": 2,
+    "bestK": 5,
+    "polynomialUpperBound": 576,
+    "maximumPartialStatesPerDepth": 3,
+    "withinBound": true,
+    "probeLimit1StopsEarly": true,
+    "probeLimit2WithinSearch": true,
+    "deterministic": true
+  },
+  "technicalChainFutureFeasibilityEvidence": {
+    "bestK": {
+      "feasible": true,
+      "blockingWorkItemKeys": [],
+      "minimumAlternativeCount": 2,
+      "totalAlternativeCount": 2,
+      "assessments": [
+        {
+          "key": "technical-chain:technical-chain-positioning",
+          "kind": "technical-chain",
+          "alternativeCount": 2,
+          "feasible": true
+        }
+      ],
+      "branchesConsumed": 360,
+      "exhausted": false
+    },
+    "blocker": {
+      "feasible": false,
+      "blockingWorkItemKeys": [
+        "technical-chain:technical-chain-positioning"
+      ],
+      "minimumAlternativeCount": 0,
+      "totalAlternativeCount": 0,
+      "assessments": [
+        {
+          "key": "technical-chain:technical-chain-positioning",
+          "kind": "technical-chain",
+          "alternativeCount": 0,
+          "feasible": false
+        }
+      ],
+      "branchesConsumed": 93,
+      "exhausted": false
+    },
+    "shortBudget": {
+      "feasible": false,
+      "blockingWorkItemKeys": [],
+      "minimumAlternativeCount": 0,
+      "totalAlternativeCount": 0,
+      "assessments": [],
+      "branchesConsumed": 1,
+      "exhausted": true,
+      "budgetRemaining": 0
+    }
+  },
   "acceptance": {
     "accepted": true,
     "jointFutureFeasibilityBudgetAccepted": true,
@@ -1764,6 +1827,9 @@
       "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20"
     },
     "technicalOperationAccepted": true,
-    "technicalChainAccepted": true
+    "technicalChainAccepted": true,
+    "technicalChainConstructorAccepted": true,
+    "technicalChainFutureFeasibilityAccepted": true,
+    "technicalChainValidationAccepted": true
   }
 }

@@ -411,11 +411,33 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if (scheduled.find(({ id }) => id === expected.id)?.kind === "technical") invalidTechnicalIds.add(expected.id);
   }
   technicalOperation = invalidTechnicalIds.size;
+  const expectedById=new Map(problem.tasks.map(task=>[task.id,task]));
+  const scheduledById=new Map(scheduled.map(task=>[task.id,task]));
+  const scheduledCountById=new Map<string,number>();
+  for(const task of scheduled)scheduledCountById.set(task.id,(scheduledCountById.get(task.id)??0)+1);
+  const invalidTechnicalChainRootIds=new Set<string>();
   for(const chain of getTechnicalChains(problem.tasks)) {
-    let invalid=false;
-    for(let i=0;i<chain.length;i++){const expected=chain[i]!,matches=scheduled.filter(t=>t.id===expected.id),actual=matches[0];if(matches.length!==1||!actual||!technicalIdentityMatches(expected,actual))invalid=true;if(i===0&&expected.dependencies.length!==0)invalid=true;if(i>0){const prior=chain[i-1]!;if(expected.dependencies.length!==1||expected.dependencies[0]!==prior.id||!actual||scheduled.find(t=>t.id===prior.id)!.end>actual.start)invalid=true;}}
-    if(invalid)technicalChain+=1;
+    const rootTaskId=chain[0]?.id;if(!rootTaskId)continue;let invalid=false;
+    const memberIds=new Set(chain.map(task=>task.id));
+    for(let i=0;i<chain.length;i++){
+      const expected=chain[i]!,actual=scheduledById.get(expected.id),prior=i>0?chain[i-1]:undefined;
+      if(scheduledCountById.get(expected.id)!==1||!actual||actual.kind!=="technical"||!technicalIdentityMatches(expected,actual))invalid=true;
+      if(!prior){if(expected.dependencies.length!==0)invalid=true;}
+      else {
+        if(expected.dependencies.length!==1||expected.dependencies[0]!==prior.id)invalid=true;
+        const predecessor=scheduledById.get(prior.id);
+        if(!predecessor||!actual)invalid=true;
+        else if(predecessor.end>actual.start)invalid=true;
+      }
+    }
+    for(const actual of scheduled.filter(task=>task.kind==="technical"&&!memberIds.has(task.id))){
+      const dependencies=Array.isArray(actual.dependencies)?actual.dependencies:[];
+      if(dependencies.some(id=>memberIds.has(id))||chain.some(member=>member.dependencies.includes(actual.id)))invalid=true;
+    }
+    for(const member of chain){const actual=scheduledById.get(member.id);if(actual&&actual.dependencies.some(id=>!memberIds.has(id)&&!expectedById.has(id)))invalid=true;}
+    if(invalid)invalidTechnicalChainRootIds.add(rootTaskId);
   }
+  technicalChain=[...invalidTechnicalChainRootIds].sort().length;
 
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
