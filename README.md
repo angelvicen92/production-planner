@@ -2299,3 +2299,14 @@ La regresión de los veinte escenarios históricos se verifica canónicamente me
 El plan de 38 tareas, los presupuestos y el fingerprint `76f52d…e4fc` permanecen intactos.
 Esto no representa la integración de Planner Next ni la resolución completa del Ensayo A2.
 Artefacto corregido: `planner-next-focal-a2-feeder-closure-v2.json`; validar con `./validate-focal-a2-002.sh`.
+
+### FOCAL-A2-003 — Band Presence Baseline
+The current REPO-002 artifact is `planner-next-focal-a2-band-baseline-v1.json`.
+The real corpus records 13 Band rehearsals and 6 instrument rehearsals as independent attributes.
+Band is projected through the generic resource contract; vocal tasks never consume it.
+The original focal benchmark remains passed without an algorithm change.
+The human reference has four Band blocks, while the frozen plan has six.
+Both plans have a 345-minute chronological presence interval.
+The current model does not prioritize block count or discount the authorized meal correctly.
+It expresses neither REQUIRED presence nor instrument setup in the main flow.
+This artifact is diagnostic: it does not mean that the Band benchmark is passed.
