@@ -6,6 +6,7 @@ import type {
   ScheduledTask,
   SearchStopReason,
   Task,
+  ScheduledSpaceMeal,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
 import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
@@ -18,11 +19,13 @@ import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparatio
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 import { technicalMetrics } from "./technicalOperations";
 import { getTechnicalChains } from "./technicalChains";
+import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
   score: number;
   signature: string;
+  timeline?: MainFlowTimeline;
 }
 
 interface Counters {
@@ -86,7 +89,7 @@ function generatePatterns(
   return { patterns: output, exhausted };
 }
 
-function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[]): ScheduledTask[] | null {
+function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
   const placed = [...mains];
   const feederByParticipant = new Map(
     problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
@@ -101,7 +104,7 @@ function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[]): Sche
     );
     let selectedStart: number | undefined;
     for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      if (canPlaceTask(problem, feeder, start, placed)) {
+      if (canPlaceTask(problem, feeder, start, placed, scheduledSpaceMeals)) {
         selectedStart = start;
         break;
       }
@@ -127,6 +130,7 @@ function emptyMetrics(
     mainFlowStart: null,
     mainFlowEnd: null,
     mainFlowGapMinutes: 0,
+    mainFlowMealStart:null,mainFlowMealEnd:null,mainFlowMorningTaskCount:0,mainFlowAfternoonTaskCount:0,mainFlowSelectedSplitIndex:null,mainFlowTimelineCandidateCount:0,mainFlowAllMorningAlternativeCount:0,mainFlowSplitAlternativeCount:0,
     blockSequence: [],
     blockCountByKey: {},
     dependencyViolationCount: 0,
@@ -144,6 +148,7 @@ function emptyMetrics(
     technicalOperationViolationCount: 0,
     technicalChainViolationCount: 0,
     spaceMealViolationCount:0,
+    mainFlowMealViolationCount:0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -221,6 +226,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN");
   }
   const mainStart = problem.mainFlow.preferredEnd - mains.length * duration;
+  const withMeal = hasMainFlowMeal(problem);
+  let timelineCandidateCount = 0;
   const generatedPatterns = generatePatterns(
     mains,
     problem.mainFlow.minTasksPerBlock,
@@ -244,10 +251,14 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   const alternatives: MainAlternative[] = [];
   for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
-    let beam: MainAlternative[] = [{ tasks: [], score: 0, signature: "" }];
+    const timelines: Array<MainFlowTimeline | undefined> = withMeal
+      ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
+    timelineCandidateCount += timelines.length;
+    for (const timeline of timelines) {
+    let beam: MainAlternative[] = [{ tasks: [], score: 0, signature: "", timeline }];
     for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
       const next: MainAlternative[] = [];
-      const slot = mainStart + position * duration;
+      const slot = timeline?.slots[position] ?? mainStart + position * duration;
       for (const state of beam) {
         for (const task of mains) {
           if (counters.branches >= problem.budget.maxBranchExpansions) {
@@ -256,7 +267,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           counters.branches += 1;
           if (task.blockKey !== pattern[position]
             || state.tasks.some(({ id }) => id === task.id)
-            || !canPlaceTask(problem, task, slot, state.tasks)) continue;
+            || !canPlaceTask(problem, task, slot, state.tasks, timeline ? [timeline.meal] : [])) continue;
           const feeder = problem.tasks.find(
             (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
           );
@@ -279,7 +290,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           }, 0);
           const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
           const tasks = [...state.tasks, scheduledTask];
-          next.push({ tasks, score, signature: tasks.map(({ id }) => id).join("|") });
+          next.push({ tasks, score, signature: tasks.map(({ id }) => id).join("|"), timeline });
           counters.alternativesGenerated += 1;
         }
       }
@@ -288,17 +299,20 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
         .slice(0, problem.budget.bestK);
     }
     alternatives.push(...beam);
+    }
   }
-  const retained = alternatives
-    .sort((a, b) => a.score - b.score || a.signature.localeCompare(b.signature))
-    .slice(0, problem.budget.bestK);
+  const feederClosedAlternatives = withMeal ? alternatives.filter(a=>placeFeeders(problem,a.tasks,a.timeline?[a.timeline.meal]:[])!==null) : alternatives;
+  const retained = withMeal
+    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK)])).values()].flat()
+    : alternatives.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK);
   counters.alternativesRetained = retained.length;
 
   for (let index = 0; index < retained.length; index += 1) {
     const alternative = retained[index];
     if (!alternative) continue;
-    const core = placeFeeders(problem, alternative.tasks);
-    const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches)) : null;
+    const initialMeals = alternative.timeline ? [alternative.timeline.meal] : [];
+    const core = placeFeeders(problem, alternative.tasks, initialMeals);
+    const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches), initialMeals) : null;
     if (auxiliary) { counters.auxiliaryBranches += auxiliary.branches; counters.branches += auxiliary.branches; }
     if (auxiliary) { counters.secondaryBranches += auxiliary.secondaryBranches; counters.futureChecks += auxiliary.futureChecks; counters.futureBranches += auxiliary.futureBranches; counters.futurePruned += auxiliary.futurePruned; counters.futureTopPruned += auxiliary.futureTopPruned; counters.acceptedMinimum = auxiliary.acceptedMinimum; for (const [key,value] of Object.entries(auxiliary.blockers)) counters.blockers[key]=(counters.blockers[key]??0)+value; }
     if (auxiliary?.futureExhausted) return failure(problem, begun, "FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED", counters);
@@ -347,10 +361,12 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       unplannedTaskCount: 0,
       mainFlowStart: firstMain.start,
       mainFlowEnd: lastMain.end,
-      mainFlowGapMinutes: mainTasks.slice(1).reduce((total, task, mainIndex) => {
-        const previous = mainTasks[mainIndex];
-        return total + (previous ? Math.max(0, task.start - previous.end) : 0);
-      }, 0),
+      mainFlowGapMinutes: mainTasks.slice(1).reduce((total, task, mainIndex) => { const previous=mainTasks[mainIndex]; const gap=previous?Math.max(0,task.start-previous.end):0; return total+(alternative.timeline&&previous?.end===alternative.timeline.meal.start&&task.start===alternative.timeline.meal.end?0:gap); },0),
+      mainFlowMealStart:alternative.timeline?.meal.start??null,mainFlowMealEnd:alternative.timeline?.meal.end??null,
+      mainFlowMorningTaskCount:alternative.timeline?.morningTaskCount??mainTasks.length,mainFlowAfternoonTaskCount:alternative.timeline?.afternoonTaskCount??0,
+      mainFlowSelectedSplitIndex:alternative.timeline?.splitIndex??null,mainFlowTimelineCandidateCount:timelineCandidateCount,
+      mainFlowAllMorningAlternativeCount:feederClosedAlternatives.filter(a=>a.timeline?.afternoonTaskCount===0).length,
+      mainFlowSplitAlternativeCount:feederClosedAlternatives.filter(a=>(a.timeline?.afternoonTaskCount??0)>0).length,
       blockSequence: runs,
       blockCountByKey,
       participantPresenceMinutesById: presence,

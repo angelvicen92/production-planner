@@ -26,9 +26,9 @@ export type BlockCandidate = { tasks: ScheduledTask[]; preparations: ScheduledSe
 export interface BlockConstructionDiagnostics { startsExplored: number; expansions: number; completeCandidatesGenerated: number; maximumPartialStatesPerStart: number; mealAttemptsExplored?:number; completeCandidatesWithMeal?:number }
 export interface BlockConstructionResult { candidates: BlockCandidate[]; consumed: number; secondaryBranches: number; exhausted: boolean; diagnostics: BlockConstructionDiagnostics }
 
-export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: ScheduledTask[], branchAllowance: number): AuxiliaryPlacementResult {
+export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: ScheduledTask[], branchAllowance: number, initialMeals: ScheduledSpaceMeal[] = []): AuxiliaryPlacementResult {
   const required = new Set(requiredSecondarySpaces(problem).map(({ id }) => id));
-  let beam: State[] = [{ placed: initial, preparations: [], meals:[], pending: problem.tasks.filter((x) => x.kind === "auxiliary" || x.kind === "technical"), order: [], workOrder: [], counts: {}, mealCounts:{}, jointCounts:{}, chainCounts:{}, blockCounts: {}, cost: 0, futureMin: 0, futureTotal: 0, pathMin: Number.POSITIVE_INFINITY }];
+  let beam: State[] = [{ placed: initial, preparations: [], meals:[...initialMeals], pending: problem.tasks.filter((x) => x.kind === "auxiliary" || x.kind === "technical"), order: [], workOrder: [], counts: {}, mealCounts:{}, jointCounts:{}, chainCounts:{}, blockCounts: {}, cost: 0, futureMin: 0, futureTotal: 0, pathMin: Number.POSITIVE_INFINITY }];
   // branches is the shared logical total; secondaryBranches and futureBranches classify disjoint probes.
   let branches = 0, secondaryBranches = 0, technicalChainBranches=0, spaceMealBranches=0, futureChecks = 0, futureBranches = 0, futurePruned = 0, futureTopPruned = 0;
   const blockers: Record<string, number> = {};
