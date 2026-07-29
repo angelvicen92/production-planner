@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-technical-operation-v1",
+  "version": "planner-next-technical-chain-v1",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -1187,6 +1187,129 @@
       "runtimeMs": 217.13037500000064,
       "deterministic": true,
       "violationCount": 0
+    },
+    "technicalChain": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 29,
+      "rootStandaloneStartCount": 3,
+      "rootStandaloneStarts": [
+        540,
+        545,
+        550
+      ],
+      "completeChainCandidateCount": 2,
+      "completeCandidates": [
+        [
+          {
+            "id": "technical-chain-positioning",
+            "start": 545,
+            "end": 565
+          },
+          {
+            "id": "technical-chain-camera-test",
+            "start": 570,
+            "end": 585
+          }
+        ],
+        [
+          {
+            "id": "technical-chain-positioning",
+            "start": 540,
+            "end": 560
+          },
+          {
+            "id": "technical-chain-camera-test",
+            "start": 570,
+            "end": 585
+          }
+        ]
+      ],
+      "chainRootId": "technical-chain-positioning",
+      "workItemKey": "technical-chain:technical-chain-positioning",
+      "workItemSelectionOrder": [
+        "technical-chain:technical-chain-positioning",
+        "task:technical-camera-positioning",
+        "space:setup-room",
+        "joint:shared-operation-1",
+        "task:flexible-task-1",
+        "task:flexible-task-2"
+      ],
+      "selectionOrder": [
+        "technical-chain-positioning",
+        "technical-chain-camera-test",
+        "technical-camera-positioning",
+        "b-family-a-task-1",
+        "x-family-a-task-2",
+        "z-family-b-task-2",
+        "c-family-b-task-1",
+        "a-family-c-task-1",
+        "y-family-c-task-2",
+        "a-joint-member-2",
+        "z-joint-member-1",
+        "flexible-task-1",
+        "flexible-task-2"
+      ],
+      "members": [
+        "technical-chain-positioning",
+        "technical-chain-camera-test"
+      ],
+      "dependencies": {
+        "technical-chain-positioning": [],
+        "technical-chain-camera-test": [
+          "technical-chain-positioning"
+        ]
+      },
+      "scheduledMembers": [
+        {
+          "id": "technical-chain-positioning",
+          "start": 545,
+          "end": 565,
+          "spaceId": "technical-chain-room-a",
+          "resourceIds": [
+            "technical-chain-unit"
+          ]
+        },
+        {
+          "id": "technical-chain-camera-test",
+          "start": 570,
+          "end": 585,
+          "spaceId": "technical-chain-room-b",
+          "resourceIds": [
+            "technical-chain-unit"
+          ]
+        }
+      ],
+      "transitionMinutes": 5,
+      "technicalOperationCount": 3,
+      "technicalOperationPlannedCount": 3,
+      "technicalChainCount": 1,
+      "technicalChainPlannedCount": 1,
+      "technicalChainScheduledTaskCount": 2,
+      "technicalChainBranchesExplored": 360,
+      "technicalChainViolationCount": 0,
+      "technicalOperationViolationCount": 0,
+      "dependencyViolationCount": 0,
+      "resourcePresence": 40,
+      "resourceInternalGap": 5,
+      "originalProjectionEqual": true,
+      "participantPresenceEqual": true,
+      "setupPreparationsEqual": true,
+      "jointOperationEqual": true,
+      "existingTechnicalOperationEqual": true,
+      "constructorDiagnostics": {
+        "startsExplored": 93,
+        "expansions": 360,
+        "completeCandidatesGenerated": 2,
+        "maximumPartialStatesPerDepth": 3
+      },
+      "inputUnchanged": true,
+      "branchBudgetConsumed": 53730,
+      "branchBudgetMaximum": 300000,
+      "fingerprint": "daacd49a1279bb6f14607f36a642b3c347af7e10b7540011dfe0efbd79e58bb9",
+      "runtimeMs": 531.7515849999999,
+      "deterministic": true,
+      "violationCount": 0
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -1640,6 +1763,7 @@
       "futureFeasibility": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
       "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20"
     },
-    "technicalOperationAccepted": true
+    "technicalOperationAccepted": true,
+    "technicalChainAccepted": true
   }
 }

@@ -2,8 +2,9 @@ import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey } from "./jointTasks";
+import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
 
-export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space"; alternativeCount: number; feasible: boolean }
+export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space" | "technical-chain"; alternativeCount: number; feasible: boolean }
 export interface FutureFeasibilityAssessment { feasible: boolean; blockingWorkItemKeys: string[]; minimumAlternativeCount: number; totalAlternativeCount: number; assessments: FutureWorkItemAssessment[]; branchesConsumed: number; exhausted: boolean }
 export interface FutureBudget { remaining: number }
 export type BlockProbe = (tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number) => { count: number; exhausted: boolean };
@@ -13,7 +14,9 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
   const before = budget.remaining;
   const required = new Set(requiredSecondarySpaces(problem).map(x => x.id));
   const assessments: FutureWorkItemAssessment[] = [];
-  for (const task of [...pending].filter(t => !required.has(t.spaceId) && t.jointGroupId === undefined).sort((a,b)=>a.id.localeCompare(b.id))) {
+  const chains=getTechnicalChains(pending), chainIds=new Set(chains.flat().map(t=>t.id));
+  for(const chain of chains){const generated=generateTechnicalChainCandidates(problem,chain,placed,budget.remaining,"PROBE",problem.budget.bestK);budget.remaining-=generated.consumed;if(generated.exhausted)return result(assessments,before,budget,true);const root=chain[0]!;assessments.push({key:technicalChainWorkItemKey(root.id),kind:"technical-chain",alternativeCount:generated.candidates.length,feasible:generated.candidates.length>0});}
+  for (const task of [...pending].filter(t => !chainIds.has(t.id) && !required.has(t.spaceId) && t.jointGroupId === undefined).sort((a,b)=>a.id.localeCompare(b.id))) {
     let count = 0;
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
       if (budget.remaining === 0) return result(assessments, before, budget, true);
