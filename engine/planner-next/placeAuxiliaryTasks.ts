@@ -7,7 +7,7 @@ import { assessFutureFeasibility, type FutureBudget } from "./futureFeasibility"
 import { eligibleSetupTasks } from "./setupGrouping";
 import { createSetupPreparation, preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationDuration, spaceOccupations } from "./setupPreparation";
 import { jointGroupIds, jointGroupMembers, jointGroupStarts, jointResources, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { createScheduledSpaceMeal, pendingSpaceMealIds, spaceMealCandidateStarts, spaceMealPolicy } from "./spaceMeals";
+import { canPlaceSpaceMeal, createScheduledSpaceMeal, isRequiredBlockMealSpace, pendingSpaceMealIds, spaceMealCandidateStarts, spaceMealPolicy } from "./spaceMeals";
 import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainProductiveDuration, technicalChainResourceIds, technicalChainWorkItemKey } from "./technicalChains";
 
 export interface AuxiliaryPlacementResult {
@@ -22,8 +22,8 @@ export type AuxiliaryStateRankingInput = Pick<State, "placed" | "cost">;
 export function compareAuxiliaryStates(a: AuxiliaryStateRankingInput, b: AuxiliaryStateRankingInput): number {
   return a.cost - b.cost || signature(a.placed).localeCompare(signature(b.placed));
 }
-type BlockCandidate = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; cost: number };
-export interface BlockConstructionDiagnostics { startsExplored: number; expansions: number; completeCandidatesGenerated: number; maximumPartialStatesPerStart: number }
+export type BlockCandidate = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; meals:ScheduledSpaceMeal[]; cost: number };
+export interface BlockConstructionDiagnostics { startsExplored: number; expansions: number; completeCandidatesGenerated: number; maximumPartialStatesPerStart: number; mealAttemptsExplored?:number; completeCandidatesWithMeal?:number }
 export interface BlockConstructionResult { candidates: BlockCandidate[]; consumed: number; secondaryBranches: number; exhausted: boolean; diagnostics: BlockConstructionDiagnostics }
 
 export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: ScheduledTask[], branchAllowance: number): AuxiliaryPlacementResult {
@@ -35,12 +35,12 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
   let futureExhausted = false;
   const countsFor = (state: State | undefined, kind: "auxiliary" | "technical") => Object.fromEntries(Object.entries(state?.counts ?? {}).filter(([id]) => problem.tasks.find((task) => task.id === id)?.kind === kind));
   const failed = (secondaryExhausted: boolean, state?: State): AuxiliaryPlacementResult => ({ tasks: null, preparations: [], meals:[], branches, secondaryBranches, technicalChainBranches, spaceMealBranches, exhausted: !secondaryExhausted, secondaryExhausted, selectionOrder: state?.order ?? [], workItemSelectionOrder: state?.workOrder ?? [], candidateCounts: countsFor(state, "auxiliary"), technicalCandidateCounts: countsFor(state, "technical"), technicalChainCandidateCounts:state?.chainCounts??{}, jointCandidateCounts:state?.jointCounts??{}, mealCandidateCounts:state?.mealCounts??{}, blockCandidateCounts: state?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: 0 });
-  function forward(added: ScheduledTask[], addedPreparations: ScheduledSetupPreparation[], addedCost: number, key: string, taskId: string | undefined, state: State, next: State[], taskCount?: number, block?: {spaceId:string; count:number}, top = false, joint?:{id:string;count:number},chain?:{id:string;count:number}): boolean {
-    const ids = new Set(added.map(x=>x.id)); const placed = [...state.placed, ...added]; const meals=state.meals; const pending = state.pending.filter(x=>!ids.has(x.id));
+  function forward(added: ScheduledTask[], addedPreparations: ScheduledSetupPreparation[], addedCost: number, key: string, taskId: string | undefined, state: State, next: State[], taskCount?: number, block?: {spaceId:string; count:number}, top = false, joint?:{id:string;count:number},chain?:{id:string;count:number},addedMeals:ScheduledSpaceMeal[]=[]): boolean {
+    const ids = new Set(added.map(x=>x.id)); const placed = [...state.placed, ...added]; const meals=[...state.meals,...addedMeals]; const pending = state.pending.filter(x=>!ids.has(x.id));
     let min=0,total=0;
     if (pending.length || pendingSpaceMealIds(problem,meals).length) {
       futureChecks += 1; const budget: FutureBudget = { remaining: branchAllowance - branches };
-      const assessment = assessFutureFeasibility(problem, placed, pending, budget, (tasks, p, b, limit) => probeBlock(problem, tasks, p, b, limit), meals);
+      const assessment = assessFutureFeasibility(problem, placed, pending, budget, (tasks, p, b, limit) => probeBlock(problem, tasks, p, b, limit, meals,(secondary,meal)=>{secondaryBranches+=secondary;spaceMealBranches+=meal}), meals);
       branches += assessment.branchesConsumed; futureBranches += assessment.branchesConsumed;
       if (assessment.exhausted) { futureExhausted = true; return false; }
       if (!assessment.feasible) { futurePruned += 1; if(top) futureTopPruned += 1; for(const blocker of assessment.blockingWorkItemKeys) blockers[blocker]=(blockers[blocker]??0)+1; return true; }
@@ -59,8 +59,9 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
       const blocks: Array<{ kind: "space"; key: string; duration: number; resources: number; spaceId: string; candidates: BlockCandidate[]; alternativeCount: number }> = [];
       for (const spaceId of [...new Set(state.pending.filter((task) => required.has(task.spaceId)).map(({ spaceId }) => spaceId))].sort()) {
         const tasks = secondaryTasks(state.pending, spaceId);
-        const generated = generateBlockCandidates(problem, tasks, state.placed, branchAllowance - branches, secondaryBranches);
+        const generated = generateBlockCandidates(problem, tasks, state.placed, branchAllowance - branches, secondaryBranches,"SEARCH",1,state.meals);
         secondaryBranches = generated.secondaryBranches;
+        spaceMealBranches += generated.diagnostics.mealAttemptsExplored ?? 0;
         branches += generated.consumed;
         if (generated.exhausted) return failed(true, state);
         blocks.push({ kind: "space", key: `space:${spaceId}`, duration: tasks.reduce((sum, task) => sum + task.duration, 0), resources: tasks.reduce((sum, task) => sum + (task.requiredResourceIds?.length ?? 0), 0), spaceId, candidates: generated.candidates, alternativeCount: Math.min(generated.candidates.length, problem.budget.bestK) });
@@ -78,7 +79,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         }
         next.splice(0, next.length, ...next.sort(compareAuxiliaryStates).slice(0, problem.budget.bestK));
       } else if(selected.kind==="meal") {
-        for(const start of selected.starts){if(branches>=branchAllowance)return failed(false,state);branches+=1;spaceMealBranches+=1;const meal=createScheduledSpaceMeal(selected.spaceId,start,selected.duration);const ns={...state,meals:[...state.meals,meal],workOrder:[...state.workOrder,selected.key],mealCounts:{...state.mealCounts,[selected.spaceId]:selected.starts.length}};let min=0,total=0;const pendingMeals=pendingSpaceMealIds(problem,ns.meals);if(state.pending.length||pendingMeals.length){futureChecks+=1;const budget={remaining:branchAllowance-branches};const a=assessFutureFeasibility(problem,state.placed,state.pending,budget,(tasks,p,b,l)=>probeBlock(problem,tasks,p,b,l),ns.meals);branches+=a.branchesConsumed;futureBranches+=a.branchesConsumed;if(a.exhausted){futureExhausted=true;return failed(false,state)}if(!a.feasible){futurePruned+=1;for(const blocker of a.blockingWorkItemKeys)blockers[blocker]=(blockers[blocker]??0)+1;continue}min=a.minimumAlternativeCount;total=a.totalAlternativeCount}next.push({...ns,futureMin:min,futureTotal:total,pathMin:state.pending.length||pendingMeals.length?Math.min(state.pathMin,min):state.pathMin})}
+        for(const start of selected.starts){if(branches>=branchAllowance)return failed(false,state);branches+=1;spaceMealBranches+=1;const meal=createScheduledSpaceMeal(selected.spaceId,start,selected.duration);const ns={...state,meals:[...state.meals,meal],workOrder:[...state.workOrder,selected.key],mealCounts:{...state.mealCounts,[selected.spaceId]:selected.starts.length}};let min=0,total=0;const pendingMeals=pendingSpaceMealIds(problem,ns.meals);if(state.pending.length||pendingMeals.length){futureChecks+=1;const budget={remaining:branchAllowance-branches};const a=assessFutureFeasibility(problem,state.placed,state.pending,budget,(tasks,p,b,l)=>probeBlock(problem,tasks,p,b,l,ns.meals,(secondary,mealAttempts)=>{secondaryBranches+=secondary;spaceMealBranches+=mealAttempts}),ns.meals);branches+=a.branchesConsumed;futureBranches+=a.branchesConsumed;if(a.exhausted){futureExhausted=true;return failed(false,state)}if(!a.feasible){futurePruned+=1;for(const blocker of a.blockingWorkItemKeys)blockers[blocker]=(blockers[blocker]??0)+1;continue}min=a.minimumAlternativeCount;total=a.totalAlternativeCount}next.push({...ns,futureMin:min,futureTotal:total,pathMin:state.pending.length||pendingMeals.length?Math.min(state.pathMin,min):state.pathMin})}
         next.splice(0,next.length,...next.sort(compareAuxiliaryStates).slice(0,problem.budget.bestK));
       } else if(selected.kind==="joint") {
         for(const start of selected.starts){if(branches>=branchAllowance)return failed(false,state);branches+=1;const added=scheduleJointGroup(selected.tasks,start);const cost=scoreJoint(problem,added,state.placed);if(!forward(added,[],cost,selected.key,undefined,state,next,undefined,undefined,selected.starts[0]===start,{id:selected.id,count:selected.starts.length}))return failed(false,state);}
@@ -88,7 +89,7 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
         next.splice(0,next.length,...next.sort(compareAuxiliaryStates).slice(0,problem.budget.bestK));
       } else {
         for (const candidate of selected.candidates) {
-          if (!forward(candidate.tasks, candidate.preparations, candidate.cost, selected.key, undefined, state, next, undefined, { spaceId: selected.spaceId, count: selected.candidates.length }, selected.candidates[0] === candidate)) return failed(false, state);
+          if (!forward(candidate.tasks, candidate.preparations, candidate.cost, selected.key, undefined, state, next, undefined, { spaceId: selected.spaceId, count: selected.candidates.length }, selected.candidates[0] === candidate,undefined,undefined,candidate.meals)) return failed(false, state);
         }
       }
     }
@@ -98,13 +99,16 @@ export function placeAuxiliaryTasks(problem: PlannerNextProblem, initial: Schedu
   return { tasks: result?.placed ?? null, preparations: result?.preparations ?? [], meals:result?.meals??[], branches, secondaryBranches, technicalChainBranches, spaceMealBranches, exhausted: false, secondaryExhausted: false, selectionOrder: result?.order ?? [], workItemSelectionOrder: result?.workOrder ?? [], candidateCounts: countsFor(result, "auxiliary"), technicalCandidateCounts: countsFor(result, "technical"), technicalChainCandidateCounts:result?.chainCounts??{}, jointCandidateCounts:result?.jointCounts??{}, mealCandidateCounts:result?.mealCounts??{}, blockCandidateCounts: result?.blockCounts ?? {}, futureExhausted, futureChecks, futureBranches, futurePruned, futureTopPruned, blockers, acceptedMinimum: result && Number.isFinite(result.pathMin) ? result.pathMin : 0 };
 }
 
-function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number): {count:number; exhausted:boolean} {
-  const generated = generateBlockCandidates(problem,tasks,placed,budget.remaining,0,"PROBE",limit);
+function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number, meals:ScheduledSpaceMeal[]=[], classify?:(secondary:number,meal:number)=>void): {count:number; exhausted:boolean} {
+  const generated = generateBlockCandidates(problem,tasks,placed,budget.remaining,0,"PROBE",limit,meals);
+  classify?.(generated.secondaryBranches,generated.diagnostics.mealAttemptsExplored??0);
   budget.remaining -= generated.consumed;
   return {count:generated.candidates.length,exhausted:generated.exhausted};
 }
 
-export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary = 0, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1): BlockConstructionResult {
+export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary = 0, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1, existingMeals:ScheduledSpaceMeal[]=[]): BlockConstructionResult {
+  const spaceId=taskSpace(tasks);
+  if(spaceId&&isRequiredBlockMealSpace(problem,spaceId))return generateRequiredMealBlockCandidates(problem,tasks,placed,allowance,priorSecondary,mode,probeLimit,existingMeals);
   type Partial = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; remaining: Task[]; cost: number; start: number };
   const complete: BlockCandidate[] = [];
   let consumed = 0, secondaryBranches = priorSecondary, startsExplored = 0, maximumPartialStatesPerStart = 0;
@@ -140,13 +144,38 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
       if (!states.length) break;
     }
     for (const state of states) if (state.remaining.length === 0) {
-      complete.push({tasks:state.tasks,preparations:state.preparations,cost:state.cost});
+      complete.push({tasks:state.tasks,preparations:state.preparations,meals:[],cost:state.cost});
       if (mode === "PROBE" && complete.length >= probeLimit) return finish(false);
     }
   }
   complete.sort((a, b) => a.cost - b.cost || (b.tasks[0]?.start ?? 0) - (a.tasks[0]?.start ?? 0) || signature(a.tasks).localeCompare(signature(b.tasks)));
   return finish(false);
 }
+
+function generateRequiredMealBlockCandidates(problem:PlannerNextProblem,tasks:Task[],placed:ScheduledTask[],allowance:number,priorSecondary:number,mode:"SEARCH"|"PROBE",probeLimit:number,existingMeals:ScheduledSpaceMeal[]):BlockConstructionResult{
+  type Partial={tasks:ScheduledTask[];preparations:ScheduledSetupPreparation[];meals:ScheduledSpaceMeal[];remaining:Task[];mealPlaced:boolean;cost:number;cursor:number};
+  const spaceId=taskSpace(tasks)! , policy=spaceMealPolicy(problem,spaceId)! , ordered=[...tasks].sort((a,b)=>a.id.localeCompare(b.id)),complete:BlockCandidate[]=[];
+  let consumed=0,secondaryBranches=priorSecondary,startsExplored=0,maximumPartialStatesPerStart=0,mealAttemptsExplored=0;
+  const diagnostics=():BlockConstructionDiagnostics=>({startsExplored,expansions:consumed,completeCandidatesGenerated:complete.length,maximumPartialStatesPerStart,mealAttemptsExplored,completeCandidatesWithMeal:complete.length});
+  const finish=(exhausted:boolean):BlockConstructionResult=>({candidates:complete.sort(blockCandidateOrder).slice(0,problem.budget.bestK),consumed,secondaryBranches,exhausted,diagnostics:diagnostics()});
+  const stateSignature=(s:Partial)=>`${signature(s.tasks)}|${s.meals.map(m=>`${m.id}:${m.start}-${m.end}`).sort().join("|")}|${s.cursor}|${s.mealPlaced}`;
+  for(let canonicalStart=problem.day.start;canonicalStart<problem.day.end;canonicalStart+=5){
+    startsExplored+=1;const totalDuration=ordered.reduce((sum,task)=>sum+task.duration,policy.duration),space=problem.spaces.find(candidate=>candidate.id===spaceId);if(!space?.availability.some(window=>window.start<=canonicalStart&&canonicalStart+totalDuration<=window.end))continue;let states:Partial[]=[{tasks:[],preparations:[],meals:[],remaining:ordered,mealPlaced:false,cost:0,cursor:canonicalStart}];maximumPartialStatesPerStart=Math.max(maximumPartialStatesPerStart,states.length);
+    for(let depth=0;depth<ordered.length+1;depth+=1){const next:Partial[]=[];
+      for(const state of states){const operations:Array<["task",Task]|["meal",undefined]>=[];for(const task of state.remaining)operations.push(["task",task]);if(!state.mealPlaced)operations.push(["meal",undefined]);
+        operations.sort((a,b)=>a[0].localeCompare(b[0])||(a[1]?.id??"").localeCompare(b[1]?.id??""));
+        for(const [kind,task] of operations){if(consumed>=allowance)return finish(true);consumed+=1;secondaryBranches+=1;
+          if(kind==="meal"){mealAttemptsExplored+=1;if(!canPlaceSpaceMeal(problem,spaceId,state.cursor,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const meal=createScheduledSpaceMeal(spaceId,state.cursor,policy.duration);next.push({...state,meals:[meal],mealPlaced:true,cursor:meal.end});continue;}
+          const start=state.cursor;if(!task||!canPlaceTask(problem,task,start,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const scored=scoreTask(problem,task,start,[...placed,...state.tasks]);next.push({...state,tasks:[...state.tasks,scored.scheduled],remaining:state.remaining.filter(x=>x.id!==task.id),cost:state.cost+scored.cost,cursor:scored.scheduled.end});
+        }
+      }
+      states=next.sort((a,b)=>a.cost-b.cost||stateSignature(a).localeCompare(stateSignature(b))).slice(0,problem.budget.bestK);maximumPartialStatesPerStart=Math.max(maximumPartialStatesPerStart,states.length);if(!states.length)break;
+    }
+    for(const state of states)if(!state.remaining.length&&state.mealPlaced&&state.meals.length===1){complete.push({tasks:state.tasks,preparations:[],meals:state.meals,cost:state.cost});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
+  }
+  return finish(false);
+}
+function blockCandidateOrder(a:BlockCandidate,b:BlockCandidate):number{return a.cost-b.cost||`${signature(a.tasks)}|${a.meals.map(m=>`${m.id}:${m.start}-${m.end}`).sort().join("|")}`.localeCompare(`${signature(b.tasks)}|${b.meals.map(m=>`${m.id}:${m.start}-${m.end}`).sort().join("|")}`)}
 function taskSpace(tasks: Task[]): string | undefined { return tasks[0]?.spaceId; }
 function alternatives(choice: { starts?: number[]; candidates?: BlockCandidate[]; alternativeCount?: number }): number { return choice.starts?.length ?? choice.alternativeCount ?? choice.candidates?.length ?? 0; }
 function startsFor(problem: PlannerNextProblem, task: Task, placed: ScheduledTask[], meals:ScheduledSpaceMeal[]=[]): number[] { const starts: number[] = []; for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) if (canPlaceTask(problem, task, start, placed,meals)) starts.push(start); return starts; }

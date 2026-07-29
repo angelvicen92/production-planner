@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-space-meal-v2.json`.
+The current accepted artifact is `planner-next-required-space-meal-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2256,3 +2256,15 @@ The frozen 620–640 operational meal plan and NEXT-015 fingerprint remain intac
 Only ordinary spaces are supported; contestant and resource meals remain out of scope.
 Transport remains pending a domain contract, no search budget was increased, and Planner Next remains isolated.
 The corrected artifact is `planner-next-space-meal-v2.json`; validate it with `./validate-next-015.sh`.
+
+### NEXT-016 — Meals Inside REQUIRED Secondary Blocks
+NEXT-016 adds a real operational capability: a meal can occupy a `REQUIRED` secondary block.
+Tasks and the explicit meal are constructed and published as one atomic operational unit.
+The meal is an occupation, not a gap or a second block.
+The work item remains `space:<spaceId>`; no separate `meal:<spaceId>` work item is created.
+Ordinary NEXT-015 meals remain unchanged.
+Main-flow meals and spaces with setup policies remain out of scope.
+Contestant and resource meals also remain pending.
+No search budget was increased, and Planner Next remains isolated from production.
+The accepted artifact is `planner-next-required-space-meal-v1.json`.
+Validate it with `./validate-next-016.sh`.

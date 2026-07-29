@@ -6,7 +6,10 @@ export const spaceMealPolicy=(problem:PlannerNextProblem,id:string):SpaceMealPol
 export const spaceMealId=(spaceId:string):string=>`space-meal:${spaceId}:1`;
 export const createScheduledSpaceMeal=(spaceId:string,start:number,duration:number):ScheduledSpaceMeal=>({id:spaceMealId(spaceId),kind:"space-meal",spaceId,entryIndex:1,duration,start,end:start+duration});
 export const sortedSpaceMeals=(meals:ScheduledSpaceMeal[])=>[...meals].sort((a,b)=>a.spaceId.localeCompare(b.spaceId)||a.start-b.start||a.id.localeCompare(b.id));
-export const pendingSpaceMealIds=(problem:PlannerNextProblem,meals:ScheduledSpaceMeal[])=>spacesWithMealPolicy(problem).map(s=>s.id).filter(id=>!meals.some(m=>m.spaceId===id));
+export const isRequiredBlockMealSpace=(problem:PlannerNextProblem,spaceId:string)=>problem.spaces.some(s=>s.id===spaceId&&s.secondaryContinuity==="REQUIRED"&&s.mealPolicy!==undefined);
+export const independentSpaceMealIds=(problem:PlannerNextProblem,meals:ScheduledSpaceMeal[])=>spacesWithMealPolicy(problem).map(s=>s.id).filter(id=>!isRequiredBlockMealSpace(problem,id)&&!meals.some(m=>m.spaceId===id));
+export const requiredBlockMealSpaceIds=(problem:PlannerNextProblem,meals:ScheduledSpaceMeal[])=>spacesWithMealPolicy(problem).map(s=>s.id).filter(id=>isRequiredBlockMealSpace(problem,id)&&!meals.some(m=>m.spaceId===id));
+export const pendingSpaceMealIds=independentSpaceMealIds;
 export const spaceMealWithinDay=(problem:PlannerNextProblem,m:Pick<ScheduledSpaceMeal,"start"|"end">)=>m.start>=problem.day.start&&m.end<=problem.day.end;
 export const spaceMealWithinWindow=(p:SpaceMealPolicy,m:Pick<ScheduledSpaceMeal,"start"|"end">)=>m.start>=p.window.start&&m.end<=p.window.end;
 export const spaceMealWithinAvailability=(space:Space,m:Pick<ScheduledSpaceMeal,"start"|"end">)=>contains(space.availability,m.start,m.end);
