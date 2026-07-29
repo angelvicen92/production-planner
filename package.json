@@ -42,7 +42,8 @@
     "benchmark:planner-next:technical-chain": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalChainBenchmark.ts",
     "benchmark:planner-next:space-meal": "tsx engine/planner-next/benchmarks/runPlannerNextSpaceMealBenchmark.ts",
     "benchmark:planner-next:required-space-meal": "tsx engine/planner-next/benchmarks/runPlannerNextRequiredSpaceMealBenchmark.ts",
-    "benchmark:planner-next:main-flow-meal": "tsx engine/planner-next/benchmarks/runPlannerNextMainFlowMealBenchmark.ts"
+    "benchmark:planner-next:main-flow-meal": "tsx engine/planner-next/benchmarks/runPlannerNextMainFlowMealBenchmark.ts",
+    "benchmark:planner-next:focal-a2": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Benchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
