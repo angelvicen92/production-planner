@@ -156,6 +156,12 @@ export interface PlanMetrics extends ValidationSummary {
   patternsGenerated: number;
   patternsEvaluated: number;
   branchBudgetConsumed: number;
+  feederClosureFallbackUsed: boolean;
+  feederClosureBranchesExplored: number;
+  feederClosureCompleteCandidateCount: number;
+  feederClosureMaximumPartialStates: number;
+  feederClosureSelectedOrder: string[];
+  feederClosureZeroAlternativeTaskIds: string[];
   searchStopReason: SearchStopReason;
   runtimeMs: number;
   planFingerprint: string;

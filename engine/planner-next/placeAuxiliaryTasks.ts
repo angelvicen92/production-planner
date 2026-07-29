@@ -1,5 +1,6 @@
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
+import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { participantPresenceIncrement } from "./participantPresence";
 import { presencePreferenceWeight, resourcePresenceIncrement } from "./resourcePresence";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
@@ -134,7 +135,7 @@ export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task
         const preparation = duration === undefined ? undefined : createSetupPreparation(task.spaceId, task.setupFamilyId!, 1, duration, state.tasks.at(-1)?.end ?? state.start);
         const start = preparation?.end ?? state.tasks.at(-1)?.end ?? state.start;
         const space = problem.spaces.find((candidate) => candidate.id === task.spaceId);
-        if (preparation && (!space || !preparationWithinDay(problem, preparation) || !preparationWithinAvailability(space.availability, preparation) || !preparationAvoidsMeal(problem.protectedMeal, preparation) || !preparationAvoidsOccupations(preparation, spaceOccupations([...placed, ...state.tasks], state.preparations, task.spaceId)))) continue;
+        if (preparation && (!space || !preparationWithinDay(problem, preparation) || !preparationWithinAvailability(space.availability, preparation) || !occupationAvoidsProtectedMeal(problem,preparation.spaceId,preparation.start,preparation.end) || !preparationAvoidsOccupations(preparation, spaceOccupations([...placed, ...state.tasks], state.preparations, task.spaceId)))) continue;
         if (!canPlaceTask(problem, task, start, [...placed, ...state.tasks])) continue;
         const scored = scoreTask(problem, task, start, [...placed, ...state.tasks]);
         next.push({ tasks: [...state.tasks, scored.scheduled], preparations: preparation ? [...state.preparations, preparation] : state.preparations, remaining: state.remaining.filter(({ id }) => id !== task.id), cost: state.cost + scored.cost, start: state.start });
