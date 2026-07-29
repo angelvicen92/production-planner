@@ -110,6 +110,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (resources.some(({ presencePreference }) => !preferenceLevels.has(presencePreference))) {
     reasons.add("INVALID_RESOURCE_PREFERENCE");
   }
+  if (resources.some((resource) => resource.presenceConcentrationPolicy !== undefined
+    && resource.presenceConcentrationPolicy !== "OFF"
+    && resource.presenceConcentrationPolicy !== "PREFERRED")) reasons.add("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY");
   const auxiliaries = tasks.filter((task) => task?.kind === "auxiliary");
   if (auxiliaries.length > 0 && !problem.auxiliaryPolicy) reasons.add("MISSING_AUXILIARY_POLICY");
   if (problem.auxiliaryPolicy && !preferenceLevels.has(problem.auxiliaryPolicy.participantPresencePreference)) reasons.add("INVALID_AUXILIARY_POLICY");
@@ -117,6 +120,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const participantIds = new Set(participants.map(({ id }) => id));
   const coachIds = new Set(coaches.map(({ id }) => id));
   const spaceIds = new Set(spaces.map(({ id }) => id));
+  if (resources.some((resource) => resource.assignedSpaceId !== undefined
+    && (typeof resource.assignedSpaceId !== "string" || !spaceIds.has(resource.assignedSpaceId)))) {
+    reasons.add("MISSING_RESOURCE_ASSIGNED_SPACE_REFERENCE");
+  }
   const taskIds = new Set(tasks.map(({ id }) => id));
   const resourceIds = new Set(resources.map(({ id }) => id));
   const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));

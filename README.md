@@ -2310,3 +2310,9 @@ Both plans have a 345-minute chronological presence interval.
 The current model does not prioritize block count or discount the authorized meal correctly.
 It expresses neither REQUIRED presence nor instrument setup in the main flow.
 This artifact is diagnostic: it does not mean that the Band benchmark is passed.
+
+### FOCAL-A2-004 — Preferred Continuous Resource Presence
+
+Planner Next now supports the opt-in resource contract `presenceConcentrationPolicy: "OFF" | "PREFERRED"` plus an optional `assignedSpaceId`. An absent policy and `OFF` preserve historical ranking; `PREFERRED` remains soft and lexicographically minimizes operational blocks, presence span, and internal gaps after hard feasibility. Overlapping and contiguous task occupations form one block, and a scheduled meal in the assigned space joins surrounding occupations without adding productive minutes or counting as an internal gap.
+
+On Focal A2, `CURRENT_OFF` remains frozen at fingerprint `76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc` and 64,558 branches. `CURRENT_PREFERRED` schedules all 38 tasks with Band presence `[4, 330, 60]`, 75 authorized meal minutes, 2,345 total participant-presence minutes, a 155-minute maximum, and a 360-minute main-flow makespan. This resolves `AUTHORIZED_SPACE_MEAL_COUNTED_AS_RESOURCE_GAP` and `RESOURCE_PRESENCE_SCORING_IGNORES_BLOCK_COUNT_PRIORITY`. Instrument representation, hard validation of required presence, and full `OFF / PREFERRED / REQUIRED` expressivity remain pending. The active evidence is `planner-next-focal-a2-band-preferred-v1.json`; validate it with `./validate-focal-a2-004.sh current`.

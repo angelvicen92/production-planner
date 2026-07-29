@@ -23,11 +23,14 @@ export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; prep
 export type SecondaryContinuity = "OFF" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
+export type PresenceConcentrationPolicy = "OFF" | "PREFERRED";
 
 export interface Resource {
   id: string;
   availability: Window[];
   presencePreference: PreferenceLevel;
+  presenceConcentrationPolicy?: PresenceConcentrationPolicy;
+  assignedSpaceId?: string;
   transitionMinutes?: number;
 }
 
@@ -145,6 +148,8 @@ export interface PlanMetrics extends ValidationSummary {
   maxParticipantPresenceMinutes: number;
   resourcePresenceMinutesById: Record<string, number>;
   resourceInternalGapMinutesById: Record<string, number>;
+  resourceOperationalBlockCountById: Record<string, number>;
+  resourceAuthorizedMealMinutesById: Record<string, number>;
   resourceMoveCountById: Record<string, number>;
   resourceTransitionSlackMinutesById: Record<string, number>;
   totalResourcePresenceMinutes: number;

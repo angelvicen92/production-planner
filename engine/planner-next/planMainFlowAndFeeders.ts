@@ -9,7 +9,7 @@ import type {
   ScheduledSpaceMeal,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
-import { presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
+import { evaluateResourcePresence, presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
 import { preflight, validatePlan } from "./validate";
 import { canPlaceTask } from "./placement";
 import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
@@ -31,6 +31,31 @@ interface MainAlternative {
   feeders?: ScheduledTask[];
   feederScore?: number;
   feederSelectedOrder?: string[];
+  preferredPresenceTuple?: [number, number, number];
+  participantScore?: number;
+  feederClosable?: boolean;
+}
+
+function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative): [number, number, number] {
+  const meals = alternative.timeline ? [alternative.timeline.meal] : [];
+  return problem.resources.filter((resource) => resource.presenceConcentrationPolicy === "PREFERRED")
+    .reduce<[number, number, number]>((total, resource) => {
+      const tuple = evaluateResourcePresence(resource, alternative.tasks, meals).preferredLexicographicTuple;
+      const weight = presencePreferenceWeight(resource.presencePreference);
+      return [total[0] + tuple[0] * weight, total[1] + tuple[1] * weight, total[2] + tuple[2] * weight];
+    }, [0, 0, 0]);
+}
+
+function compareAlternatives(a: MainAlternative, b: MainAlternative, preferred: boolean): number {
+  const historical = a.score - b.score;
+  if (!preferred || a.tasks.length !== b.tasks.length || a.tasks.length === 0) {
+    return historical || a.signature.localeCompare(b.signature);
+  }
+  if (a.feederClosable !== b.feederClosable) return a.feederClosable ? -1 : 1;
+  const left = a.preferredPresenceTuple ?? [0, 0, 0];
+  const right = b.preferredPresenceTuple ?? [0, 0, 0];
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2]
+    || historical || a.signature.localeCompare(b.signature);
 }
 
 interface Counters {
@@ -167,6 +192,8 @@ function emptyMetrics(
     maxParticipantPresenceMinutes: 0,
     resourcePresenceMinutesById: {},
     resourceInternalGapMinutesById: {},
+    resourceOperationalBlockCountById: {},
+    resourceAuthorizedMealMinutesById: {},
     resourceMoveCountById: {},
     resourceTransitionSlackMinutesById: {},
     totalResourcePresenceMinutes: 0,
@@ -223,6 +250,8 @@ function failure(
 
 export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult {
   const begun = performance.now();
+  const hasPreferredPresence = Array.isArray(problem.resources)
+    && problem.resources.some((resource) => resource.presenceConcentrationPolicy === "PREFERRED");
   const preflightReasons = preflight(problem);
   if (preflightReasons.length > 0) {
     return {
@@ -269,7 +298,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
     timelineCandidateCount += timelines.length;
     for (const timeline of timelines) {
-    let beam: MainAlternative[] = [{ tasks: [], score: 0, signature: "", timeline }];
+    let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline }];
     for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
       const next: MainAlternative[] = [];
       const slot = timeline?.slots[position] ?? mainStart + position * duration;
@@ -299,17 +328,38 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           const scheduledTask = { ...task, start: slot, end: slot + duration };
           const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
             const resource = problem.resources.find(({ id }) => id === resourceId);
-            return sum + (resource ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
+            return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED" ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
               * presencePreferenceWeight(resource.presencePreference) : 0);
           }, 0);
           const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
           const tasks = [...state.tasks, scheduledTask];
-          next.push({ tasks, score, signature: tasks.map(({ id }) => id).join("|"), timeline });
+          const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.map(({ id }) => id).join("|"), timeline };
+          if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
+          if (hasPreferredPresence) {
+            candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
+          }
+          if (hasPreferredPresence && position === mains.length - 2) {
+            const finalSlot = timeline?.slots[position + 1] ?? mainStart + (position + 1) * duration;
+            const completions = mains.filter((remaining) => remaining.blockKey === pattern[position + 1]
+              && !tasks.some(({ id }) => id === remaining.id)
+              && canPlaceTask(problem, remaining, finalSlot, tasks, timeline ? [timeline.meal] : []))
+              .map((remaining) => [...tasks, { ...remaining, start: finalSlot, end: finalSlot + duration }]);
+            const closable = completions.filter((completion) => tryGreedyFeederClosure(problem, completion, timeline ? [timeline.meal] : []) !== null);
+            if (closable.length > 0) {
+              candidate.feederClosable = true;
+              candidate.preferredPresenceTuple = closable.map((completion) => preferredPresenceTuple(problem, { ...candidate, tasks: completion }))
+                .sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2])[0];
+            } else candidate.feederClosable = false;
+          }
+          if (hasPreferredPresence && position === mains.length - 1) {
+            candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
+          }
+          next.push(candidate);
           counters.alternativesGenerated += 1;
         }
       }
       beam = next
-        .sort((a, b) => a.score - b.score || a.signature.localeCompare(b.signature))
+        .sort((a, b) => compareAlternatives(a, b, hasPreferredPresence))
         .slice(0, problem.budget.bestK);
     }
     alternatives.push(...beam);
@@ -333,8 +383,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,feederSelectedOrder:candidate.selectedFeederOrder,signature:`${alternative.signature}|${candidate.signature}`});
   }
   const retained = withMeal
-    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK)])).values()].flat()
-    : alternatives.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK);
+    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence)).slice(0,problem.budget.bestK)])).values()].flat()
+    : alternatives.sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence)).slice(0,problem.budget.bestK);
   counters.alternativesRetained = retained.length;
 
   for (let index = 0; index < retained.length; index += 1) {
@@ -379,7 +429,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       presence[id] = participantPresenceSpan(id, ordered);
     }
     const values = Object.values(presence);
-    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered);
+    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered, meals);
     const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const secondaryStartById: Record<string, number | null> = {}, secondaryEndById: Record<string, number | null> = {}, secondaryGapsById: Record<string, number> = {}, secondaryBlocksById: Record<string, number> = {};
@@ -404,6 +454,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       maxParticipantPresenceMinutes: values.length > 0 ? Math.max(...values) : 0,
       resourcePresenceMinutesById: resourcePresence.presenceMinutesById,
       resourceInternalGapMinutesById: resourcePresence.internalGapMinutesById,
+      resourceOperationalBlockCountById: resourcePresence.operationalBlockCountById,
+      resourceAuthorizedMealMinutesById: resourcePresence.authorizedMealMinutesById,
       resourceMoveCountById: resourceRoute.moveCountById,
       resourceTransitionSlackMinutesById: resourceRoute.transitionSlackMinutesById,
       totalResourcePresenceMinutes: resourceValues.reduce((sum, value) => sum + value, 0),
