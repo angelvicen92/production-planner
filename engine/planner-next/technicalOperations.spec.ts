@@ -5,6 +5,7 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { canPlaceTask } from "./placement";
 import { jointAuxiliaryTasksScenario } from "./scenarios/jointAuxiliaryTasksScenario";
 import { technicalOperationScenario } from "./scenarios/technicalOperationScenario";
+import { technicalChainScenario } from "./scenarios/technicalChainScenario";
 import { preflight, validatePlan } from "./validate";
 
 const operation = (overrides: Record<string, unknown> = {}): Task => ({ id: "technical-camera-positioning", kind: "technical", duration: 20, spaceId: "technical-room", dependencies: [], requiredResourceIds: ["technical-unit"], ...overrides } as Task);
@@ -55,4 +56,23 @@ test("final validation counts one violation per affected technical id", () => {
   assert.equal(validatePlan(problem, changed, result.scheduledSetupPreparations).technicalOperationViolationCount, 1);
   const unknown = operation({ id: "unknown", spaceId: "other-room", requiredResourceIds: [] }) as ScheduledTask; problem.spaces.push({ id: "other-room", availability: [{ start: 540, end: 570 }] }); (unknown as any).start = 540; (unknown as any).end = 560;
   assert.equal(validatePlan(problem, [...result.scheduledTasks, unknown], result.scheduledSetupPreparations).technicalOperationViolationCount, 1);
+});
+
+test("technical-chain validation is crash-safe and counts one violation per root",()=>{
+  const base=technicalChainScenario(),planned=planMainFlowAndFeeders(base),tasks=planned.scheduledTasks,preparations=planned.scheduledSetupPreparations;
+  const rootId="technical-chain-positioning",successorId="technical-chain-camera-test",check=(changed:ScheduledTask[])=>assert.doesNotThrow(()=>{const summary=validatePlan(base,changed,preparations);assert.equal(summary.technicalChainViolationCount,1);return summary;});
+  const without=(...ids:string[])=>tasks.filter(t=>!ids.includes(t.id));
+  check(without(rootId));check(without(successorId));check(without(rootId,successorId));
+  for(const id of [rootId,successorId]){const member=tasks.find(t=>t.id===id)!;check([...tasks,structuredClone(member)]);}
+  const mutate=(id:string,change:(task:ScheduledTask)=>void)=>tasks.map(t=>{const copy=structuredClone(t);if(copy.id===id)change(copy);return copy;});
+  check(mutate(successorId,t=>{t.dependencies=[];}));check(mutate(successorId,t=>{t.dependencies=["technical-camera-positioning"];}));
+  check(mutate(rootId,t=>{t.dependencies=[successorId];}));check(mutate(successorId,t=>{t.dependencies=[rootId,rootId];}));
+  check(mutate(successorId,t=>{t.start=540;t.end=555;}));check(mutate(successorId,t=>{t.start=500;t.end=515;}));
+  check(mutate(successorId,t=>{(t as any).kind="auxiliary";}));check(mutate(successorId,t=>{(t as any).participantId="participant-a";}));
+  check(mutate(successorId,t=>{t.requiredResourceIds=[];}));check(mutate(successorId,t=>{t.spaceId="technical-chain-room-a";}));
+  const unknown={...tasks.find(t=>t.id===successorId)!,id:"unknown-chain-member",dependencies:[successorId]};check([...tasks,unknown]);
+  const many=mutate(successorId,t=>{t.dependencies=[];(t as any).kind="auxiliary";t.start=500;t.end=515;});assert.equal(validatePlan(base,[...many,many.find(t=>t.id===rootId)!],preparations).technicalChainViolationCount,1);
+  assert.equal(validatePlan(base,tasks,preparations).technicalChainViolationCount,0);
+  const normal=validatePlan(base,tasks,preparations),reversed=validatePlan(base,[...tasks].reverse(),preparations);assert.equal(reversed.technicalChainViolationCount,normal.technicalChainViolationCount);assert.equal(reversed.dependencyViolationCount,normal.dependencyViolationCount);assert.equal(reversed.technicalOperationViolationCount,normal.technicalOperationViolationCount);
+  const snapshot=structuredClone(tasks);validatePlan(base,tasks,preparations);assert.deepEqual(tasks,snapshot);
 });

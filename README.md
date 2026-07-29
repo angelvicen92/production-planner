@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-technical-chain-v1.json`.
+The current accepted artifact is `planner-next-technical-chain-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2239,6 +2239,9 @@ The planner selects, evaluates, and places the complete chain as one atomic work
 Every technical operation remains individually visible with its own space, resources, duration, and dependencies.
 Space availability, resource availability, overlap, transition, and meal constraints remain hard.
 Future Feasibility probes complete chain candidates rather than isolated members.
+PROBE stops as soon as its complete-candidate limit is reached, reducing real work rather than only truncating output.
+Validation is crash-safe when a root, predecessor, or successor is absent and reports one violation per invalid chain.
 Independent NEXT-013 operations remain unchanged, and no phase engine was introduced.
 No search budget was increased, and Planner Next remains isolated from production.
-The accepted artifact is `planner-next-technical-chain-v1.json`; validate it with `./validate-next-014.sh`.
+The NEXT-014 schedule and fingerprint remain frozen.
+The corrected artifact is `planner-next-technical-chain-v2.json`; validate it with `./validate-next-014.sh`.
