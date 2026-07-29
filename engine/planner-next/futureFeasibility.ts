@@ -1,16 +1,17 @@
-import type { PlannerNextProblem, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey } from "./jointTasks";
+import { pendingSpaceMealIds, spaceMealCandidateStarts } from "./spaceMeals";
 import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
 
-export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space" | "technical-chain"; alternativeCount: number; feasible: boolean }
+export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space" | "technical-chain" | "space-meal"; alternativeCount: number; feasible: boolean }
 export interface FutureFeasibilityAssessment { feasible: boolean; blockingWorkItemKeys: string[]; minimumAlternativeCount: number; totalAlternativeCount: number; assessments: FutureWorkItemAssessment[]; branchesConsumed: number; exhausted: boolean }
 export interface FutureBudget { remaining: number }
 export type BlockProbe = (tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number) => { count: number; exhausted: boolean };
 
 /** A bounded, search-only forward check. It neither validates nor scores a finished plan. */
-export function assessFutureFeasibility(problem: PlannerNextProblem, placed: ScheduledTask[], pending: Task[], budget: FutureBudget, probeBlock: BlockProbe): FutureFeasibilityAssessment {
+export function assessFutureFeasibility(problem: PlannerNextProblem, placed: ScheduledTask[], pending: Task[], budget: FutureBudget, probeBlock: BlockProbe, scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): FutureFeasibilityAssessment {
   const before = budget.remaining;
   const required = new Set(requiredSecondarySpaces(problem).map(x => x.id));
   const assessments: FutureWorkItemAssessment[] = [];
@@ -21,7 +22,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
       if (budget.remaining === 0) return result(assessments, before, budget, true);
       budget.remaining -= 1;
-      if (canPlaceTask(problem, task, start, placed)) { count += 1; if (count >= problem.budget.bestK) break; }
+      if (canPlaceTask(problem, task, start, placed,scheduledSpaceMeals)) { count += 1; if (count >= problem.budget.bestK) break; }
     }
     assessments.push({ key: `task:${task.id}`, kind: "task", alternativeCount: count, feasible: count > 0 });
   }
@@ -41,6 +42,7 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
     if (probe.exhausted) return result(assessments, before, budget, true);
     assessments.push({ key: `space:${spaceId}`, kind: "space", alternativeCount: probe.count, feasible: probe.count > 0 });
   }
+  for(const spaceId of pendingSpaceMealIds(problem,scheduledSpaceMeals)){let count=0;for(const start of spaceMealCandidateStarts(problem,spaceId,placed,scheduledSpaceMeals)){if(budget.remaining===0)return result(assessments,before,budget,true);budget.remaining-=1;count+=1;if(count>=problem.budget.bestK)break}assessments.push({key:`meal:${spaceId}`,kind:"space-meal",alternativeCount:count,feasible:count>0});}
   return result(assessments, before, budget, false);
 }
 function result(assessments: FutureWorkItemAssessment[], before: number, budget: FutureBudget, exhausted: boolean): FutureFeasibilityAssessment {

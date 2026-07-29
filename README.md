@@ -2245,3 +2245,11 @@ Independent NEXT-013 operations remain unchanged, and no phase engine was introd
 No search budget was increased, and Planner Next remains isolated from production.
 The NEXT-014 schedule and fingerprint remain frozen.
 The corrected artifact is `planner-next-technical-chain-v2.json`; validate it with `./validate-next-014.sh`.
+
+### NEXT-015 — Explicit Space Meal Occupation
+NEXT-015 adds a real operational capability configured by `window` and `duration` and exposed in `PlanResult`.
+The meal blocks only its ordinary space, belongs to no contestant, and consumes no resource in this first version.
+It participates in dynamic difficulty and Future Feasibility and counts as occupation rather than a gap.
+Only ordinary spaces are supported; contestant and resource meals remain out of scope.
+Transport remains pending a domain contract, no search budget was increased, and Planner Next remains isolated.
+The accepted artifact is `planner-next-space-meal-v1.json`; validate it with `./validate-next-015.sh`.

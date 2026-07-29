@@ -2,6 +2,7 @@ import type {
   Person,
   PlannerNextProblem,
   ScheduledSetupPreparation,
+  ScheduledSpaceMeal,
   ScheduledTask,
   Space,
   Resource,
@@ -17,6 +18,7 @@ import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setu
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
 import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
 import { canPlaceTask } from "./placement";
+import { createScheduledSpaceMeal, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
@@ -119,6 +121,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const mainSpaceId = problem.mainFlow?.spaceId;
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
+    if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Array.from({length:Math.max(0,Math.floor(((w!.end as number)-(w!.start as number)-duration)/5)+1)},(_,i)=>(w!.start as number)+i*5).some(start=>start+duration<=(w!.end as number));const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId||space.secondaryContinuity==="REQUIRED"||space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="auxiliary"||t.jointGroupId!==undefined||t.setupFamilyId!==undefined||!Array.isArray(t.dependencies)||t.dependencies.length>0||t.coachId!==undefined))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}
     if (space.setupPolicy !== undefined) {
       const policy = space.setupPolicy as { familyOrder?: unknown; reentry?: unknown };
       if (!policy || typeof policy !== "object" || !Array.isArray(policy.familyOrder) || policy.familyOrder.length === 0 || policy.familyOrder.some((x) => typeof x !== "string" || x.length === 0)) reasons.add("INVALID_SETUP_POLICY");
@@ -236,7 +239,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = []): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[]): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -251,6 +254,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let jointGroup = 0;
   let technicalOperation = 0;
   let technicalChain = 0;
+  let spaceMeal = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -439,6 +443,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   }
   technicalChain=[...invalidTechnicalChainRootIds].sort().length;
 
+  const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
+
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -455,6 +461,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
   if (technicalOperation) reasonCodes.push("TECHNICAL_OPERATION_VIOLATION");
   if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
+  if (spaceMeal) reasonCodes.push("SPACE_MEAL_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -471,6 +478,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     jointGroupViolationCount: jointGroup,
     technicalOperationViolationCount: technicalOperation,
     technicalChainViolationCount: technicalChain,
+    spaceMealViolationCount:spaceMeal,
     reasonCodes: reasonCodes.sort(),
   };
 }

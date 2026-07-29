@@ -143,6 +143,7 @@ function emptyMetrics(
     jointGroupViolationCount: 0,
     technicalOperationViolationCount: 0,
     technicalChainViolationCount: 0,
+    spaceMealViolationCount:0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -180,6 +181,7 @@ function emptyMetrics(
     technicalOperationCount: Array.isArray(problem.tasks) ? problem.tasks.filter((task) => task?.kind === "technical").length : 0,
     technicalOperationPlannedCount: 0, technicalOperationCandidateCountWhenSelectedById: {}, technicalOperationStartById: {}, technicalOperationEndById: {},
     technicalChainCount:0,technicalChainPlannedCount:0,technicalChainScheduledTaskCount:0,technicalChainCandidateCountWhenSelectedByRootId:{},technicalChainTaskIdsByRootId:{},technicalChainStartByRootId:{},technicalChainEndByRootId:{},technicalChainBranchesExplored:0,
+    spaceMealCount:Array.isArray(problem.spaces)?problem.spaces.filter(x=>x?.mealPolicy!==undefined).length:0,spaceMealPlannedCount:0,spaceMealCandidateCountWhenSelectedBySpaceId:{},spaceMealStartBySpaceId:{},spaceMealEndBySpaceId:{},spaceMealMinutesBySpaceId:{},spaceMealBranchesExplored:0,
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -195,6 +197,7 @@ function failure(
     complete: false,
     scheduledTasks: [],
     scheduledSetupPreparations: [],
+    scheduledSpaceMeals: [],
     metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
   };
 }
@@ -207,6 +210,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       complete: false,
       scheduledTasks: [],
       scheduledSetupPreparations: [],
+      scheduledSpaceMeals: [],
       metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
     };
   }
@@ -302,7 +306,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     if (auxiliary?.exhausted) return failure(problem, begun, "AUXILIARY_BRANCH_BUDGET_EXHAUSTED", counters);
     const all = auxiliary?.tasks ?? null;
     const preparations = auxiliary?.preparations ?? [];
-    const validation = all ? validatePlan(problem, all, preparations) : null;
+    const meals=auxiliary?.meals??[];
+    const validation = all ? validatePlan(problem, all, preparations,meals) : null;
     if (!all || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
       if (!hasNext) break;
@@ -366,7 +371,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       branchBudgetConsumed: counters.branches,
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
-      planFingerprint: fingerprint(ordered, preparations),
+      planFingerprint: fingerprint(ordered, preparations,meals),
       auxiliaryTaskCount: problem.tasks.filter((x) => x.kind === "auxiliary").length,
       auxiliaryPlannedTaskCount: ordered.filter((x) => x.kind === "auxiliary").length,
       auxiliaryBranchesExplored: counters.auxiliaryBranches,
@@ -402,9 +407,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       technicalChainStartByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,ordered.find(t=>t.id===c[0]!.id)?.start??null])),
       technicalChainEndByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,ordered.find(t=>t.id===c.at(-1)!.id)?.end??null])),
       technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
+      spaceMealCount:problem.spaces.filter(s=>s.mealPolicy!==undefined).length,spaceMealPlannedCount:meals.length,spaceMealCandidateCountWhenSelectedBySpaceId:auxiliary?.mealCandidateCounts??{},spaceMealStartBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.start])),spaceMealEndBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.end])),spaceMealMinutesBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.duration])),spaceMealBranchesExplored:auxiliary?.spaceMealBranches??0,
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }
