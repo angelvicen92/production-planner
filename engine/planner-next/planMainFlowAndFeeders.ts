@@ -20,12 +20,16 @@ import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, s
 import { technicalMetrics } from "./technicalOperations";
 import { getTechnicalChains } from "./technicalChains";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
+import { hasExplicitMainFlowMeal } from "./spaceMeals";
+import { closeFeeders } from "./feederClosure";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
   score: number;
   signature: string;
   timeline?: MainFlowTimeline;
+  feeders?: ScheduledTask[];
+  feederScore?: number;
 }
 
 interface Counters {
@@ -89,7 +93,7 @@ function generatePatterns(
   return { patterns: output, exhausted };
 }
 
-function placeFeeders(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
+export function tryGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
   const placed = [...mains];
   const feederByParticipant = new Map(
     problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
@@ -165,6 +169,7 @@ function emptyMetrics(
     patternsGenerated: counters?.patternsGenerated ?? 0,
     patternsEvaluated: counters?.patternsEvaluated ?? 0,
     branchBudgetConsumed: counters?.branches ?? 0,
+    feederClosureFallbackUsed:false,feederClosureBranchesExplored:0,feederClosureCompleteCandidateCount:0,feederClosureMaximumPartialStates:0,feederClosureSelectedOrder:[],feederClosureZeroAlternativeTaskIds:[],
     searchStopReason: stopReason,
     runtimeMs,
     planFingerprint: fingerprint([]),
@@ -301,7 +306,24 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     alternatives.push(...beam);
     }
   }
-  const feederClosedAlternatives = withMeal ? alternatives.filter(a=>placeFeeders(problem,a.tasks,a.timeline?[a.timeline.meal]:[])!==null) : alternatives;
+  let feederFallbackUsed=false,feederBranches=0,feederCompleteCount=0,feederMaximumStates=0;
+  const feederSelectedOrder:string[]=[],feederZeroIds:string[]=[];
+  const feederClosedAlternatives:MainAlternative[]=[];
+  for(const alternative of alternatives){
+    const meals=alternative.timeline?[alternative.timeline.meal]:[];
+    const greedy=tryGreedyFeederClosure(problem,alternative.tasks,meals);
+    if(greedy){feederClosedAlternatives.push({...alternative,feeders:greedy.filter(t=>t.kind==="vocal"),feederScore:greedy.filter(t=>t.kind==="vocal").reduce((sum,f)=>sum+(alternative.tasks.find(m=>m.participantId===f.participantId)?.end??f.end)-f.start,0)});continue}
+    if(!hasExplicitMainFlowMeal(problem))continue;
+    feederFallbackUsed=true;
+    const closure=closeFeeders(problem,alternative.tasks,meals,Math.max(0,problem.budget.maxBranchExpansions-counters.branches));
+    feederBranches+=closure.diagnostics.consumed;counters.branches+=closure.diagnostics.consumed;
+    feederCompleteCount+=closure.diagnostics.completeClosuresGenerated;
+    feederMaximumStates=Math.max(feederMaximumStates,closure.diagnostics.maximumPartialStates);
+    for(const id of closure.diagnostics.selectedFeederOrder)if(!feederSelectedOrder.includes(id))feederSelectedOrder.push(id);
+    for(const id of closure.diagnostics.zeroAlternativeFeederIds)if(!feederZeroIds.includes(id))feederZeroIds.push(id);
+    if(closure.diagnostics.exhausted)return failure(problem,begun,"BRANCH_BUDGET_EXHAUSTED",counters);
+    for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,signature:`${alternative.signature}|${candidate.signature}`});
+  }
   const retained = withMeal
     ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK)])).values()].flat()
     : alternatives.sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK);
@@ -311,7 +333,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     const alternative = retained[index];
     if (!alternative) continue;
     const initialMeals = alternative.timeline ? [alternative.timeline.meal] : [];
-    const core = placeFeeders(problem, alternative.tasks, initialMeals);
+    const core = alternative.feeders ? [...alternative.tasks,...alternative.feeders] : tryGreedyFeederClosure(problem,alternative.tasks,initialMeals);
     const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches), initialMeals) : null;
     if (auxiliary) { counters.auxiliaryBranches += auxiliary.branches; counters.branches += auxiliary.branches; }
     if (auxiliary) { counters.secondaryBranches += auxiliary.secondaryBranches; counters.futureChecks += auxiliary.futureChecks; counters.futureBranches += auxiliary.futureBranches; counters.futurePruned += auxiliary.futurePruned; counters.futureTopPruned += auxiliary.futureTopPruned; counters.acceptedMinimum = auxiliary.acceptedMinimum; for (const [key,value] of Object.entries(auxiliary.blockers)) counters.blockers[key]=(counters.blockers[key]??0)+value; }
@@ -385,6 +407,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       patternsGenerated: counters.patternsGenerated,
       patternsEvaluated: counters.patternsEvaluated,
       branchBudgetConsumed: counters.branches,
+      feederClosureFallbackUsed:feederFallbackUsed,feederClosureBranchesExplored:feederBranches,feederClosureCompleteCandidateCount:feederFallbackUsed?feederCompleteCount:1,feederClosureMaximumPartialStates:feederMaximumStates,feederClosureSelectedOrder:feederSelectedOrder,feederClosureZeroAlternativeTaskIds:[...feederZeroIds].sort(),
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
       planFingerprint: fingerprint(ordered, preparations,meals),

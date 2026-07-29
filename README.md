@@ -2288,3 +2288,11 @@ No algorithm or search budget was changed; the artifact is a reproducible diagno
 `currentPlannerMeetsFocalBenchmark` is `false`; the next change must respond to this evidence.
 Planner Next remains isolated from production.
 Artifact: `planner-next-focal-a2-baseline-v1.json`; validate with `./validate-focal-a2-001.sh`.
+
+### FOCAL-A2-002 — Focal A2 Feeder Closure
+Planner Next supera el primer benchmark focal real: comida de Plató 7 local al espacio y salas vocales activas.
+El greedy permanece como fast path; al fallar, una búsqueda acotada resuelve primero el feeder más restringido.
+No se publican cierres parciales ni se aumentan presupuestos; se planifican las 38 tareas.
+Se conserva la estructura humana y `currentPlannerMeetsFocalBenchmark` es `true`.
+El resto de operaciones A2 queda fuera de alcance y Planner Next continúa aislado.
+Artefacto: `planner-next-focal-a2-feeder-closure-v1.json`; validar con `./validate-focal-a2-002.sh`.

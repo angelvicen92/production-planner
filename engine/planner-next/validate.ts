@@ -11,6 +11,7 @@ import type {
   Window,
 } from "./contracts";
 import { contains, overlaps } from "./time";
+import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { effectiveResourceTransitionMinutes } from "./placement";
 import { hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
@@ -268,7 +269,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const space = spaces.get(task.spaceId);
     if (task.end - task.start !== task.duration
       || task.start < problem.day.start || task.end > problem.day.end
-      || overlaps(task, problem.protectedMeal)
+      || !occupationAvoidsProtectedMeal(problem,task.spaceId,task.start,task.end)
       || (task.kind !== "technical" && (!participant || !contains(participant.availability, task.start, task.end)))
       || (task.coachId !== undefined && (!coach || !contains(coach.availability, task.start, task.end)))
       || !space || !contains(space.availability, task.start, task.end)) availability += 1;
@@ -375,7 +376,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const previousTasks = index === 0 ? [] : ownTasks.filter(task=>task.setupFamilyId===policy.familyOrder[index-1]).sort((a,b)=>a.end-b.end||a.id.localeCompare(b.id));
       const invalid = matches.length !== 1 || !preparation || preparation.entryIndex !== 1 || preparation.id !== setupPreparationId(space.id,family,1)
         || preparation.kind !== "setup-preparation" || preparation.duration !== record[family] || preparation.end-preparation.start !== preparation.duration
-        || !preparationWithinDay(problem,preparation) || !preparationWithinAvailability(space.availability,preparation) || !preparationAvoidsMeal(problem.protectedMeal,preparation)
+        || !preparationWithinDay(problem,preparation) || !preparationWithinAvailability(space.availability,preparation) || !occupationAvoidsProtectedMeal(problem,preparation.spaceId,preparation.start,preparation.end)
         || !preparationAvoidsOccupations(preparation,occupied) || !familyTasks[0] || preparation.end !== familyTasks[0].start
         || (index === 0 ? preparation.start !== occupied[0]?.start : preparation.start !== previousTasks.at(-1)?.end);
       if (invalid) setupPreparation += 1;
