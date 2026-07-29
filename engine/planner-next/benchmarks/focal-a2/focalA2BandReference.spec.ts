@@ -1,6 +1,199 @@
-import assert from "node:assert/strict";import test from "node:test";import {focalA2Problem} from "./focalA2Problem";import {comparePreferredPresence,evaluateContinuousResourcePresence} from "./evaluateContinuousResourcePresence";import {FOCAL_A2_BAND_RESOURCE_ID,focalA2BandMeal,focalA2ParticipantRequirementProfiles,projectFocalA2BandProblem,projectRequirement,referenceBandPresence} from "./focalA2BandReference";
-test("canonical corpus records independent Band and instrument flags",()=>{const p=focalA2ParticipantRequirementProfiles;assert.equal(p.length,19);assert.equal(new Set(p.map(x=>x.participantId)).size,19);assert.ok(p.every(x=>focalA2Problem().participants.some(y=>y.id===x.participantId)));assert.equal(p.filter(x=>x.requiresBand).length,13);assert.equal(p.filter(x=>x.usesInstrument).length,6);assert.equal(p.filter(x=>x.requiresBand&&x.usesInstrument).length,0);assert.equal(p.filter(x=>!x.requiresBand&&!x.usesInstrument).length,0);assert.deepEqual(p.filter(x=>x.usesInstrument).map(x=>x.participantId),["moises-salazar-ramirez","angel-gonzalez","julio-gomez","lina-isabel-garcia-salcedo","marta-fonrali","pere-portero"]);});
-test("four combinations project independently",()=>{assert.deepEqual(projectRequirement({participantId:"n",requiresBand:false,usesInstrument:false}),{participantId:"n",requiredResourceIds:[],instrumentSetupRequired:false});assert.deepEqual(projectRequirement({participantId:"b",requiresBand:true,usesInstrument:false}),{participantId:"b",requiredResourceIds:[FOCAL_A2_BAND_RESOURCE_ID],instrumentSetupRequired:false});assert.equal(projectRequirement({participantId:"i",requiresBand:false,usesInstrument:true}).instrumentSetupRequired,true);assert.deepEqual(projectRequirement({participantId:"x",requiresBand:true,usesInstrument:true},["old"]).requiredResourceIds,["old",FOCAL_A2_BAND_RESOURCE_ID]);});
-test("Band projection is pure, main-only and preserves requirements",()=>{const original=focalA2Problem(),before=structuredClone(original),off=projectFocalA2BandProblem("CURRENT_OFF"),maximum=projectFocalA2BandProblem("CURRENT_MAXIMUM");assert.deepEqual(original,before);assert.equal(off.resources.at(-1)?.presencePreference,"OFF");assert.equal(maximum.resources.at(-1)?.presencePreference,"MAXIMUM");assert.deepEqual(off.resources.at(-1)?.availability,[{start:675,end:1035}]);assert.equal(off.tasks.filter(x=>x.kind==="main"&&x.requiredResourceIds?.includes(FOCAL_A2_BAND_RESOURCE_ID)).length,13);assert.equal(off.tasks.filter(x=>x.kind==="vocal"&&x.requiredResourceIds?.includes(FOCAL_A2_BAND_RESOURCE_ID)).length,0);});
-test("oracle covers empty, overlap, meal, REQUIRED, ordering and immutability",()=>{assert.deepEqual(evaluateContinuousResourcePresence([],null,"OFF").preferredLexicographicTuple,[0,0,0]);const input=[{id:"b",start:630,end:645},{id:"a",start:600,end:630}],copy=structuredClone(input);const one=evaluateContinuousResourcePresence(input,null,"REQUIRED");assert.equal(one.operationalBlockCount,1);assert.equal(one.requiredPolicySatisfied,true);assert.deepEqual(input,copy);assert.deepEqual(evaluateContinuousResourcePresence([...input].reverse(),null,"REQUIRED"),one);const split=evaluateContinuousResourcePresence([{id:"a",start:600,end:615},{id:"b",start:630,end:645}],null,"REQUIRED");assert.equal(split.requiredPolicySatisfied,false);const meal=evaluateContinuousResourcePresence([{id:"a",start:825,end:840},{id:"b",start:915,end:930}],focalA2BandMeal,"PREFERRED");assert.equal(meal.operationalBlockCount,1);assert.equal(meal.internalGapMinutes,0);assert.equal(meal.authorizedMealMinutesInsideSpan,75);assert.equal(meal.crossesAuthorizedMeal,true);assert.ok(comparePreferredPresence(one,split)<0);});
-test("human reference derives four blocks and canonical tuple",()=>{const m=referenceBandPresence();assert.equal(m.requiredTaskCount,13);assert.equal(m.plannedTaskCount,13);assert.equal(m.presenceStart,675);assert.equal(m.presenceEnd,1020);assert.equal(m.presenceSpanMinutes,345);assert.equal(m.requiredTaskMinutes,195);assert.equal(m.authorizedMealMinutesInsideSpan,75);assert.equal(m.internalGapMinutes,75);assert.equal(m.operationalBlockCount,4);assert.equal(m.crossesAuthorizedMeal,true);assert.deepEqual(m.preferredLexicographicTuple,[4,345,75]);assert.deepEqual(m.operationalBlocks.map(x=>x.taskIds.length),[1,1,5,6]);});
+import assert from "node:assert/strict";
+import test from "node:test";
+import { focalA2Problem } from "./focalA2Problem";
+import {
+  comparePreferredPresence,
+  evaluateContinuousResourcePresence,
+} from "./evaluateContinuousResourcePresence";
+import {
+  FOCAL_A2_BAND_RESOURCE_ID,
+  focalA2BandMeal,
+  focalA2ParticipantRequirementProfiles,
+  projectFocalA2BandProblem,
+  projectRequirement,
+  referenceBandPresence,
+} from "./focalA2BandReference";
+test("canonical corpus records independent Band and instrument flags", () => {
+  const p = focalA2ParticipantRequirementProfiles;
+  assert.equal(p.length, 19);
+  assert.equal(new Set(p.map((x) => x.participantId)).size, 19);
+  assert.ok(
+    p.every((x) =>
+      focalA2Problem().participants.some((y) => y.id === x.participantId),
+    ),
+  );
+  assert.equal(p.filter((x) => x.requiresBand).length, 13);
+  assert.equal(p.filter((x) => x.usesInstrument).length, 6);
+  assert.equal(p.filter((x) => x.requiresBand && x.usesInstrument).length, 0);
+  assert.equal(p.filter((x) => !x.requiresBand && !x.usesInstrument).length, 0);
+  assert.deepEqual(
+    p.filter((x) => x.usesInstrument).map((x) => x.participantId),
+    [
+      "moises-salazar-ramirez",
+      "angel-gonzalez",
+      "julio-gomez",
+      "lina-isabel-garcia-salcedo",
+      "marta-fonrali",
+      "pere-portero",
+    ],
+  );
+});
+test("four combinations project independently", () => {
+  assert.deepEqual(
+    projectRequirement({
+      participantId: "n",
+      requiresBand: false,
+      usesInstrument: false,
+    }),
+    {
+      participantId: "n",
+      requiredResourceIds: [],
+      instrumentSetupRequired: false,
+    },
+  );
+  assert.deepEqual(
+    projectRequirement({
+      participantId: "b",
+      requiresBand: true,
+      usesInstrument: false,
+    }),
+    {
+      participantId: "b",
+      requiredResourceIds: [FOCAL_A2_BAND_RESOURCE_ID],
+      instrumentSetupRequired: false,
+    },
+  );
+  assert.equal(
+    projectRequirement({
+      participantId: "i",
+      requiresBand: false,
+      usesInstrument: true,
+    }).instrumentSetupRequired,
+    true,
+  );
+  assert.deepEqual(
+    projectRequirement(
+      { participantId: "x", requiresBand: true, usesInstrument: true },
+      ["old"],
+    ).requiredResourceIds,
+    ["old", FOCAL_A2_BAND_RESOURCE_ID],
+  );
+});
+test("Band projection is pure, main-only and preserves requirements", () => {
+  const original = focalA2Problem(),
+    before = structuredClone(original),
+    off = projectFocalA2BandProblem("CURRENT_OFF"),
+    maximum = projectFocalA2BandProblem("CURRENT_MAXIMUM");
+  assert.deepEqual(original, before);
+  assert.equal(off.resources.at(-1)?.presencePreference, "OFF");
+  assert.equal(maximum.resources.at(-1)?.presencePreference, "MAXIMUM");
+  assert.deepEqual(off.resources.at(-1)?.availability, [
+    { start: 675, end: 1035 },
+  ]);
+  assert.equal(
+    off.tasks.filter(
+      (x) =>
+        x.kind === "main" &&
+        x.requiredResourceIds?.includes(FOCAL_A2_BAND_RESOURCE_ID),
+    ).length,
+    13,
+  );
+  assert.equal(
+    off.tasks.filter(
+      (x) =>
+        x.kind === "vocal" &&
+        x.requiredResourceIds?.includes(FOCAL_A2_BAND_RESOURCE_ID),
+    ).length,
+    0,
+  );
+});
+test("oracle covers empty, overlap, meal, REQUIRED, ordering and immutability", () => {
+  assert.deepEqual(
+    evaluateContinuousResourcePresence([], null, "OFF")
+      .preferredLexicographicTuple,
+    [0, 0, 0],
+  );
+  const input = [
+      { id: "b", start: 630, end: 645 },
+      { id: "a", start: 600, end: 630 },
+    ],
+    copy = structuredClone(input);
+  const one = evaluateContinuousResourcePresence(input, null, "REQUIRED");
+  assert.equal(one.operationalBlockCount, 1);
+  assert.equal(one.requiredPolicySatisfied, true);
+  assert.deepEqual(input, copy);
+  assert.deepEqual(
+    evaluateContinuousResourcePresence([...input].reverse(), null, "REQUIRED"),
+    one,
+  );
+  const split = evaluateContinuousResourcePresence(
+    [
+      { id: "a", start: 600, end: 615 },
+      { id: "b", start: 630, end: 645 },
+    ],
+    null,
+    "REQUIRED",
+  );
+  assert.equal(split.requiredPolicySatisfied, false);
+  const meal = evaluateContinuousResourcePresence(
+    [
+      { id: "a", start: 825, end: 840 },
+      { id: "b", start: 915, end: 930 },
+    ],
+    focalA2BandMeal,
+    "PREFERRED",
+  );
+  assert.equal(meal.operationalBlockCount, 1);
+  assert.equal(meal.internalGapMinutes, 0);
+  assert.equal(meal.authorizedMealMinutesInsideSpan, 75);
+  assert.equal(meal.crossesAuthorizedMeal, true);
+  assert.ok(comparePreferredPresence(one, split) < 0);
+});
+test("human reference derives four blocks and canonical tuple", () => {
+  const m = referenceBandPresence();
+  assert.equal(m.requiredTaskCount, 13);
+  assert.equal(m.plannedTaskCount, 13);
+  assert.equal(m.presenceStart, 675);
+  assert.equal(m.presenceEnd, 1020);
+  assert.equal(m.presenceSpanMinutes, 345);
+  assert.equal(m.requiredTaskMinutes, 195);
+  assert.equal(m.authorizedMealMinutesInsideSpan, 75);
+  assert.equal(m.internalGapMinutes, 75);
+  assert.equal(m.operationalBlockCount, 4);
+  assert.equal(m.crossesAuthorizedMeal, true);
+  assert.deepEqual(m.preferredLexicographicTuple, [4, 345, 75]);
+  assert.deepEqual(
+    m.operationalBlocks.map((x) => x.taskIds.length),
+    [1, 1, 5, 6],
+  );
+});
+
+import { focalTaskSpan } from "./focalA2BandReference";
+
+test("focalTaskSpan handles empty and singleton inputs", () => {
+  assert.deepEqual(focalTaskSpan([]), {
+    start: null,
+    end: null,
+    spanMinutes: 0,
+  });
+  assert.deepEqual(focalTaskSpan([{ start: 600, end: 615 }]), {
+    start: 600,
+    end: 615,
+    spanMinutes: 15,
+  });
+});
+
+test("focalTaskSpan derives an unordered span without mutation", () => {
+  const tasks = [
+    { start: 900, end: 930 },
+    { start: 585, end: 600 },
+    { start: 1020, end: 1035 },
+  ];
+  const snapshot = structuredClone(tasks);
+  assert.deepEqual(focalTaskSpan(tasks), {
+    start: 585,
+    end: 1035,
+    spanMinutes: 450,
+  });
+  assert.deepEqual(tasks, snapshot);
+});

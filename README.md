@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-feeder-closure-v2.json`.
+The current accepted artifact is `planner-next-focal-a2-band-preferred-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2301,18 +2301,14 @@ Esto no representa la integración de Planner Next ni la resolución completa de
 Artefacto corregido: `planner-next-focal-a2-feeder-closure-v2.json`; validar con `./validate-focal-a2-002.sh`.
 
 ### FOCAL-A2-003 — Band Presence Baseline
-The current REPO-002 artifact is `planner-next-focal-a2-band-baseline-v1.json`.
-The real corpus records 13 Band rehearsals and 6 instrument rehearsals as independent attributes.
-Band is projected through the generic resource contract; vocal tasks never consume it.
-The original focal benchmark remains passed without an algorithm change.
-The human reference has four Band blocks, while the frozen plan has six.
-Both plans have a 345-minute chronological presence interval.
-The current model does not prioritize block count or discount the authorized meal correctly.
-It expresses neither REQUIRED presence nor instrument setup in the main flow.
-This artifact is diagnostic: it does not mean that the Band benchmark is passed.
+The FOCAL-A2-003 baseline is historical and is transported through the FOCAL-A2-004 v2 manifest.
+It records the independent Band and instrument requirements without claiming the full Band benchmark passed.
 
 ### FOCAL-A2-004 — Preferred Continuous Resource Presence
-
-Planner Next now supports the opt-in resource contract `presenceConcentrationPolicy: "OFF" | "PREFERRED"` plus an optional `assignedSpaceId`. An absent policy and `OFF` preserve historical ranking; `PREFERRED` remains soft and lexicographically minimizes operational blocks, presence span, and internal gaps after hard feasibility. Overlapping and contiguous task occupations form one block, and a scheduled meal in the assigned space joins surrounding occupations without adding productive minutes or counting as an internal gap.
-
-On Focal A2, `CURRENT_OFF` remains frozen at fingerprint `76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc` and 64,558 branches. `CURRENT_PREFERRED` schedules all 38 tasks with Band presence `[4, 330, 60]`, 75 authorized meal minutes, 2,345 total participant-presence minutes, a 155-minute maximum, and a 360-minute main-flow makespan. This resolves `AUTHORIZED_SPACE_MEAL_COUNTED_AS_RESOURCE_GAP` and `RESOURCE_PRESENCE_SCORING_IGNORES_BLOCK_COUNT_PRIORITY`. Instrument representation, hard validation of required presence, and full `OFF / PREFERRED / REQUIRED` expressivity remain pending. The active evidence is `planner-next-focal-a2-band-preferred-v1.json`; validate it with `./validate-focal-a2-004.sh current`.
+Planner Next supports opt-in `OFF | PREFERRED`; absence and `OFF` preserve history, while PREFERRED remains soft.
+CURRENT_PREFERRED keeps all 38 tasks and Band `[4, 330, 60]`; the assigned-space meal joins blocks and contributes 75 chronological minutes.
+Participant presence remains 2,345 total and 155 maximum; main-flow span is 360 minutes, while focal makespan is 450 minutes.
+CURRENT_OFF remains frozen at `76f52d…e4fc`, 64,558 branches, and Band `[6, 345, 75]`.
+The authorized-meal gap and block-count-priority gaps are resolved; REQUIRED presence and main-flow instruments remain pending.
+The accepted artifact is `planner-next-focal-a2-band-preferred-v2.json`, protected by its historical manifest.
+Validate fresh execution, publication integrity, and idempotence with `./validate-focal-a2-004.sh current`.
