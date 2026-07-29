@@ -40,7 +40,8 @@
     "benchmark:planner-next:joint-auxiliary-tasks": "tsx engine/planner-next/benchmarks/runPlannerNextJointAuxiliaryTasksBenchmark.ts",
     "benchmark:planner-next:technical-operation": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalOperationBenchmark.ts",
     "benchmark:planner-next:technical-chain": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalChainBenchmark.ts",
-    "benchmark:planner-next:space-meal": "tsx engine/planner-next/benchmarks/runPlannerNextSpaceMealBenchmark.ts"
+    "benchmark:planner-next:space-meal": "tsx engine/planner-next/benchmarks/runPlannerNextSpaceMealBenchmark.ts",
+    "benchmark:planner-next:required-space-meal": "tsx engine/planner-next/benchmarks/runPlannerNextRequiredSpaceMealBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
