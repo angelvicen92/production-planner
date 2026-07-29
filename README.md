@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-technical-chain-v2.json`.
+The current accepted artifact is `planner-next-space-meal-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2249,7 +2249,10 @@ The corrected artifact is `planner-next-technical-chain-v2.json`; validate it wi
 ### NEXT-015 — Explicit Space Meal Occupation
 NEXT-015 adds a real operational capability configured by `window` and `duration` and exposed in `PlanResult`.
 The meal blocks only its ordinary space, belongs to no contestant, and consumes no resource in this first version.
-It participates in dynamic difficulty and Future Feasibility and counts as occupation rather than a gap.
+Future Feasibility consumes one budget branch for every potential canonical position examined, including invalid positions.
+Historical Evidence is restored and checked canonically against its source fixture.
+The benchmark and failure-safe, idempotent validator run without the removed technical-chain root artifact.
+The frozen 620–640 operational meal plan and NEXT-015 fingerprint remain intact.
 Only ordinary spaces are supported; contestant and resource meals remain out of scope.
 Transport remains pending a domain contract, no search budget was increased, and Planner Next remains isolated.
-The accepted artifact is `planner-next-space-meal-v1.json`; validate it with `./validate-next-015.sh`.
+The corrected artifact is `planner-next-space-meal-v2.json`; validate it with `./validate-next-015.sh`.
