@@ -1,7 +1,7 @@
 {
-  "manifestVersion": "focal-a2-band-preferred-historical-manifest-v1",
-  "sourceArtifactVersion": "planner-next-focal-a2-band-baseline-v1",
-  "sourceArtifactSha256": "ec9fe14b4e6ca87feda757011a99dff6df7a03181f47d75721314211420b3cff",
+  "manifestVersion": "focal-a2-band-preferred-v2-historical-manifest-v1",
+  "sourceArtifactVersion": "planner-next-focal-a2-band-preferred-v1",
+  "sourceArtifactSha256": "7fd88672d8dd2f6a9c1312df5dd73c49f40779621d971285680e025ef394a7dc",
   "scenarioDigests": {
     "baseline": "02da2ec655fc829364c18cb849dba14a34c3d21b5fe27383b6e3540806762c86",
     "adversarial": "8abdddbbd4f55dfe37f09fc7fc07ede512f9bf3dd25c7866f0807dd5c2b6a300",
@@ -23,7 +23,9 @@
     "spaceMeal": "3d2e54230d36d39777c431eb9228e6e8191ee77ed62fc2728c7fa1d8fec61a36",
     "requiredSpaceMeal": "09663767a43ea1245214dc0f90aa1931bf24193bea2b988302e2e0f43a20c3a0",
     "mainFlowMeal": "ee9c51c6d16ac9868efb89c2ae6e4b7b45e1217fdfc58232a1a57a78c92a7020",
-    "focalA2": "2fe9f1b7e5497a81acb924a803f3d6a69132b44ac7ed67031d91a1253aa43aee"
+    "focalA2": "2fe9f1b7e5497a81acb924a803f3d6a69132b44ac7ed67031d91a1253aa43aee",
+    "focalA2BandAudit": "b8cc0fa04ec55d05c989d3227a778ec34653aeced6de8f8840164f411dfc7116",
+    "focalA2BandPreferredAudit": "31ddb4eda75d92fed36cc0314c6ad11fddd2428e210a4e6ea8bcb00fe5ff699a"
   },
   "evidenceDigests": {
     "jointFutureFeasibilityEvidence": "d89baf7bddb81aaec8ae7a044fb5d58352494579a68ed62e6a54d83974c81b4e",
@@ -35,62 +37,54 @@
     "spaceMealFutureFeasibilityEvidence": "38698e22e7084d876a7a33a0ce2833c671900c94fa3e1d531651ec55d5fad015",
     "requiredSpaceMealFutureFeasibilityEvidence": "961f214d9c759b0277cb75a0166a6d9b7f26fe81969472ed8c1debd165cd4987",
     "requiredSpaceMealProbeEvidence": "021fbdb1c368a01a36b06b2478fe2c6cff278269dda53883e1aaf482c18c578c",
-    "mainFlowMealStrategyEvidence": "b67b8a5f5bdeb2242829ad22ba781c1a6fcc6bf7ffbccbeb158acd42715d3852"
+    "mainFlowMealStrategyEvidence": "b67b8a5f5bdeb2242829ad22ba781c1a6fcc6bf7ffbccbeb158acd42715d3852",
+    "sourceDocuments": "7265991e77c289950ddaeb697d0dd6b52a8cf45fe1fbff43e98702f52016f052",
+    "focalReference": "52fb313a8129f7550046331ab0c193a4e6ea7916006c32ebc12b5c1d4fad9106",
+    "referenceValidation": "76a1693c4283076bd4cb4d7c2cfcefad8ae44ecf42024e2455f39e4940051f8b",
+    "plannerInputProjection": "c6856bd462ee20bda007493614622eff65bb537132b01f763fd901f486c4e17e",
+    "expressibilityAudit": "6cd3284c6c6885f298dbd21367a924e19f74255c1ff005ffbb157b7cc09076f4",
+    "currentPlannerRun": "00309e8bcc6486fe427cb8f9b323935f963e9ff6025d2acaf8ff706ed4d528f0",
+    "comparison": "da094a390a3e6c1085436c6e09ce1a8c10a94747828b4b7fd04a42a42d8f6d99",
+    "assumptionRegister": "263af95d8b7157476e7b4601cb819a51f4bc62e4df0c4f06a5aaff5008a912e5",
+    "focalA2ResolutionEvidence": "1afe81c68b8dcceb7a546da79ad6c7f1796c416b949cb436a9306ba543202e1a",
+    "participantRequirementProfiles": "d5abae2263f31ff3d19a267770467c068efc64597abe468e059093cef6782b55",
+    "combinationMatrixEvidence": "670e96095d7cf2dc94760def9441113d3db817029dac356195066c7793329157",
+    "referenceBandPresence": "1cab4cf739404b064072892938c0e2c9f8862c251f7527d7001d7235103ec0df",
+    "acceptedFocalPlanBandPresence": "160d929f2a23fc369648d10b6a5a411a62ad84b8adb8577b9ac66b6926a9dea8",
+    "currentGenericResourceRuns": "09d9a013e3a15870a95d076bc076f7209733f633bc31797b19ff497221a24c1f"
   },
-  "focalA2FrozenDigest": "2fe9f1b7e5497a81acb924a803f3d6a69132b44ac7ed67031d91a1253aa43aee",
   "frozenFingerprints": {
-    "baseline": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
-    "adversarial": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
-    "adversarialZeroBacktracks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "resourceOff": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
-    "resourceHigh": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
-    "auxiliaryOff": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
-    "auxiliaryHigh": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
-    "itinerantUnits": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
-    "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
-    "futureFeasibility": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
-    "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20",
-    "branchHistoryIsolatedPruning": "aef95b559bd99cf69e506ba36e81639df299a70a0ebbd51cffa13cb0ef72b64f",
-    "setupGrouping": "ce38430a30274f3369f34b75f855ed0e94b7bd74acf5f82415de2e9bfa50ea7d",
-    "setupPreparation": "25f340adbd07a4968340688fae413541dbd61779a3e0f17be5bd52f17e301905",
     "jointAuxiliaryTasks": "4ecc23301acb7406643159020f124b408e79c61a6c4e4c3605faf5b470fde7aa",
     "technicalOperation": "9f7f153973f414a7b48dbe92f41872794b3335a896cba9f2175b3200e3ff5cf3",
     "technicalChain": "daacd49a1279bb6f14607f36a642b3c347af7e10b7540011dfe0efbd79e58bb9",
     "spaceMeal": "2a2d3673496a042b66567422d01859cc28aefdec34ea7528b5a0675e7499e647",
     "requiredSpaceMeal": "deefc694a142b8d35ebd20cbda15f5fb9d786ef3c43fa8519d50fe5817cda3b9",
-    "mainFlowMeal": "f79d651afa3c5ee7bdbb253d1a1b330a5e427a4eae0edb8c244aa91963bf971f",
-    "focalA2": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc"
+    "mainFlowMeal": "f79d651afa3c5ee7bdbb253d1a1b330a5e427a4eae0edb8c244aa91963bf971f"
   },
   "frozenBranchBudgets": {
-    "baseline": 1576,
-    "adversarial": 2560,
-    "adversarialZeroBacktracks": 2560,
-    "resourceOff": 5616,
-    "resourceHigh": 5616,
-    "auxiliaryOff": 5075,
-    "auxiliaryHigh": 5075,
-    "itinerantUnits": 285317,
-    "longSecondaryBlock": 55609,
-    "futureFeasibility": 13909,
-    "boundedFutureFeasibility": 2910,
-    "branchHistoryIsolatedPruning": 6956,
-    "setupGrouping": 10919,
-    "setupPreparation": 9250,
     "jointAuxiliaryTasks": 14101,
     "technicalOperation": 33071,
-    "technicalChain": 53730,
-    "spaceMeal": 66237,
     "requiredSpaceMeal": 95247,
-    "mainFlowMeal": 101445,
-    "focalA2": 64558
+    "mainFlowMeal": 101445
   },
-  "frozenFocal": {
+  "frozenCurrentOff": {
     "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
     "branches": 64558,
-    "feederClosureBranches": 48959,
     "taskCount": 38,
-    "totalPresence": 2345,
-    "maxPresence": 215,
-    "makespan": 450
+    "totalParticipantPresenceMinutes": 2345,
+    "maxParticipantPresenceMinutes": 215,
+    "focalMakespanMinutes": 450,
+    "bandTuple": [6, 345, 75]
+  },
+  "frozenPreferredPlan": {
+    "fingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+    "branches": 15599,
+    "taskCount": 38,
+    "bandTuple": [4, 330, 60],
+    "authorizedMealMinutes": 75,
+    "totalParticipantPresenceMinutes": 2345,
+    "maxParticipantPresenceMinutes": 155,
+    "mainFlowSpanMinutes": 360,
+    "focalMakespanMinutes": 450
   }
 }
