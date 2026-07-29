@@ -103,6 +103,7 @@ export interface ValidationSummary {
   setupPreparationViolationCount: number;
   jointGroupViolationCount: number;
   technicalOperationViolationCount: number;
+  technicalChainViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -181,6 +182,14 @@ export interface PlanMetrics extends ValidationSummary {
   technicalOperationCandidateCountWhenSelectedById: Record<string, number>;
   technicalOperationStartById: Record<string, Minute | null>;
   technicalOperationEndById: Record<string, Minute | null>;
+  technicalChainCount: number;
+  technicalChainPlannedCount: number;
+  technicalChainScheduledTaskCount: number;
+  technicalChainCandidateCountWhenSelectedByRootId: Record<string, number>;
+  technicalChainTaskIdsByRootId: Record<string, string[]>;
+  technicalChainStartByRootId: Record<string, Minute | null>;
+  technicalChainEndByRootId: Record<string, Minute | null>;
+  technicalChainBranchesExplored: number;
 }
 
 export interface PlanResult {

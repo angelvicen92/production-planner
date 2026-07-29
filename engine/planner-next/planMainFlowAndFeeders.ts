@@ -17,6 +17,7 @@ import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGa
 import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 import { technicalMetrics } from "./technicalOperations";
+import { getTechnicalChains } from "./technicalChains";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -141,6 +142,7 @@ function emptyMetrics(
     setupPreparationViolationCount: 0,
     jointGroupViolationCount: 0,
     technicalOperationViolationCount: 0,
+    technicalChainViolationCount: 0,
     participantPresenceMinutesById: {},
     totalParticipantPresenceMinutes: 0,
     maxParticipantPresenceMinutes: 0,
@@ -177,6 +179,7 @@ function emptyMetrics(
     jointGroupCount:0,jointScheduledTaskCount:0,jointGroupCandidateCountWhenSelectedById:{},jointGroupStartById:{},jointGroupEndById:{},jointGroupParticipantIdsById:{},
     technicalOperationCount: Array.isArray(problem.tasks) ? problem.tasks.filter((task) => task?.kind === "technical").length : 0,
     technicalOperationPlannedCount: 0, technicalOperationCandidateCountWhenSelectedById: {}, technicalOperationStartById: {}, technicalOperationEndById: {},
+    technicalChainCount:0,technicalChainPlannedCount:0,technicalChainScheduledTaskCount:0,technicalChainCandidateCountWhenSelectedByRootId:{},technicalChainTaskIdsByRootId:{},technicalChainStartByRootId:{},technicalChainEndByRootId:{},technicalChainBranchesExplored:0,
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -391,6 +394,14 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       jointGroupParticipantIdsById:Object.fromEntries([...new Set(problem.tasks.map(t=>t.jointGroupId).filter((x):x is string=>Boolean(x)))].sort().map(id=>[id,problem.tasks.filter(t=>t.jointGroupId===id).map(t=>t.participantId).sort()])),
       ...technicalMetrics(problem.tasks, ordered),
       technicalOperationCandidateCountWhenSelectedById: auxiliary?.technicalCandidateCounts ?? {},
+      technicalChainCount:getTechnicalChains(problem.tasks).length,
+      technicalChainPlannedCount:getTechnicalChains(problem.tasks).filter(chain=>chain.every(t=>ordered.some(x=>x.id===t.id))).length,
+      technicalChainScheduledTaskCount:getTechnicalChains(problem.tasks).flat().filter(t=>ordered.some(x=>x.id===t.id)).length,
+      technicalChainCandidateCountWhenSelectedByRootId:auxiliary?.technicalChainCandidateCounts??{},
+      technicalChainTaskIdsByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,c.map(t=>t.id)])),
+      technicalChainStartByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,ordered.find(t=>t.id===c[0]!.id)?.start??null])),
+      technicalChainEndByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,ordered.find(t=>t.id===c.at(-1)!.id)?.end??null])),
+      technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
     return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, metrics };

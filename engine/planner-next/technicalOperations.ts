@@ -2,6 +2,7 @@ import type { ScheduledTask, Task } from "./contracts";
 export const technicalTasks = (tasks: Task[]): Task[] => tasks.filter((task) => task.kind === "technical");
 export const technicalTaskIds = (tasks: Task[]): string[] => technicalTasks(tasks).map(({ id }) => id).sort();
 export const canonicalTechnicalResourceIds = (task: Pick<Task, "requiredResourceIds">): string[] => [...(task.requiredResourceIds ?? [])].sort();
+export const canonicalTechnicalDependencies = (task: Pick<Task, "dependencies">): string[] => [...task.dependencies].sort();
 export const hasOwnTechnicalField = (task: object, field: "participantId" | "coachId" | "blockKey" | "setupFamilyId" | "jointGroupId"): boolean => Object.prototype.hasOwnProperty.call(task, field);
 export function technicalIdentityMatches(expected: Task, actual: ScheduledTask): boolean {
   return actual.id === expected.id && actual.kind === "technical"
@@ -9,7 +10,7 @@ export function technicalIdentityMatches(expected: Task, actual: ScheduledTask):
     && !hasOwnTechnicalField(actual, "setupFamilyId") && !hasOwnTechnicalField(actual, "jointGroupId") && actual.spaceId === expected.spaceId
     && actual.duration === expected.duration && actual.end - actual.start === expected.duration
     && JSON.stringify(canonicalTechnicalResourceIds(actual)) === JSON.stringify(canonicalTechnicalResourceIds(expected))
-    && Array.isArray(actual.dependencies) && actual.dependencies.length === 0;
+    && Array.isArray(actual.dependencies) && JSON.stringify(canonicalTechnicalDependencies(actual)) === JSON.stringify(canonicalTechnicalDependencies(expected));
 }
 export function technicalMetrics(expected: Task[], scheduled: ScheduledTask[]) {
   const ids = technicalTaskIds(expected);

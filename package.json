@@ -38,7 +38,8 @@
     "benchmark:planner-next:setup-grouping": "tsx engine/planner-next/benchmarks/runPlannerNextSetupGroupingBenchmark.ts",
     "benchmark:planner-next:setup-preparation": "tsx engine/planner-next/benchmarks/runPlannerNextSetupPreparationBenchmark.ts",
     "benchmark:planner-next:joint-auxiliary-tasks": "tsx engine/planner-next/benchmarks/runPlannerNextJointAuxiliaryTasksBenchmark.ts",
-    "benchmark:planner-next:technical-operation": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalOperationBenchmark.ts"
+    "benchmark:planner-next:technical-operation": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalOperationBenchmark.ts",
+    "benchmark:planner-next:technical-chain": "tsx engine/planner-next/benchmarks/runPlannerNextTechnicalChainBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

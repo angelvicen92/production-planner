@@ -17,6 +17,7 @@ import { followsSetupOrder, hasSetupReentry, setupBlockCounts, setupSpaces, setu
 import { canonicalResourceIds, jointGroupIds, jointGroupMembers, synchronizedJointTasks } from "./jointTasks";
 import { hasOwnTechnicalField, technicalIdentityMatches, technicalTasks } from "./technicalOperations";
 import { canPlaceTask } from "./placement";
+import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -114,6 +115,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const spaceIds = new Set(spaces.map(({ id }) => id));
   const taskIds = new Set(tasks.map(({ id }) => id));
   const resourceIds = new Set(resources.map(({ id }) => id));
+  const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));
   const mainSpaceId = problem.mainFlow?.spaceId;
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
@@ -164,7 +166,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (task.kind === "technical") {
       if (hasOwnTechnicalField(task, "participantId")) reasons.add("TECHNICAL_PARTICIPANT_UNSUPPORTED");
       if (hasOwnTechnicalField(task, "coachId")) reasons.add("TECHNICAL_COACH_UNSUPPORTED");
-      if (!Array.isArray(task.dependencies) || task.dependencies.length !== 0) reasons.add("TECHNICAL_DEPENDENCY_UNSUPPORTED");
+      const deps=(task as {dependencies?:unknown}).dependencies;
+      if (!Array.isArray(deps) || deps.some(id=>typeof id!=="string"||id.trim()===""||!taskIds.has(id)||!technicalIds.has(id)) || (Array.isArray(deps)&&new Set(deps).size!==deps.length)) reasons.add("TECHNICAL_DEPENDENCY_UNSUPPORTED");
       if (hasOwnTechnicalField(task, "blockKey") || hasOwnTechnicalField(task, "setupFamilyId") || hasOwnTechnicalField(task, "jointGroupId")) reasons.add("TECHNICAL_GROUPING_UNSUPPORTED");
       const technicalSpace = spaces.find((space) => space.id === task.spaceId);
       if (task.spaceId === mainSpaceId || technicalSpace?.secondaryContinuity === "REQUIRED" || technicalSpace?.setupPolicy !== undefined) reasons.add("TECHNICAL_IN_STRUCTURED_SPACE_UNSUPPORTED");
@@ -188,6 +191,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
       if (!Array.isArray(task.dependencies) || task.dependencies.length > 0) reasons.add("AUXILIARY_DEPENDENCY_UNSUPPORTED");
     }
   }
+  if (technicalChainHasBranching(tasks)) reasons.add("TECHNICAL_CHAIN_BRANCHING_UNSUPPORTED");
+  if (technicalChainHasCycle(tasks)) reasons.add("TECHNICAL_CHAIN_CYCLE");
   for(const id of jointGroupIds(tasks)) {
     const members=jointGroupMembers(tasks,id); const first=members[0];
     if(members.length<2) reasons.add("JOINT_GROUP_TOO_SMALL");
@@ -245,6 +250,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let setupPreparation = 0;
   let jointGroup = 0;
   let technicalOperation = 0;
+  let technicalChain = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -405,6 +411,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if (scheduled.find(({ id }) => id === expected.id)?.kind === "technical") invalidTechnicalIds.add(expected.id);
   }
   technicalOperation = invalidTechnicalIds.size;
+  for(const chain of getTechnicalChains(problem.tasks)) {
+    let invalid=false;
+    for(let i=0;i<chain.length;i++){const expected=chain[i]!,matches=scheduled.filter(t=>t.id===expected.id),actual=matches[0];if(matches.length!==1||!actual||!technicalIdentityMatches(expected,actual))invalid=true;if(i===0&&expected.dependencies.length!==0)invalid=true;if(i>0){const prior=chain[i-1]!;if(expected.dependencies.length!==1||expected.dependencies[0]!==prior.id||!actual||scheduled.find(t=>t.id===prior.id)!.end>actual.start)invalid=true;}}
+    if(invalid)technicalChain+=1;
+  }
 
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
@@ -421,6 +432,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (setupPreparation) reasonCodes.push("SETUP_PREPARATION_VIOLATION");
   if (jointGroup) reasonCodes.push("JOINT_GROUP_VIOLATION");
   if (technicalOperation) reasonCodes.push("TECHNICAL_OPERATION_VIOLATION");
+  if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
@@ -436,6 +448,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     setupPreparationViolationCount: setupPreparation,
     jointGroupViolationCount: jointGroup,
     technicalOperationViolationCount: technicalOperation,
+    technicalChainViolationCount: technicalChain,
     reasonCodes: reasonCodes.sort(),
   };
 }
