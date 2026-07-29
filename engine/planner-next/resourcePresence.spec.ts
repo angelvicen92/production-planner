@@ -5,6 +5,37 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { evaluateResourcePresence, resourcePresenceMetrics } from "./resourcePresence";
 import { mainFlowResourcePresenceScenario } from "./scenarios/mainFlowResourcePresenceScenario";
 import { validatePlan } from "./validate";
+import { advanceRequiredResourceStates } from "./planMainFlowAndFeeders";
+
+test("REQUIRED state rejects re-entry without mutating independent resources", () => {
+  const initial = { a: "NOT_STARTED", b: "NOT_STARTED" } as const;
+  const active = advanceRequiredResourceStates(initial, ["a", "b"]);
+  assert.deepEqual(active, { a: "ACTIVE", b: "ACTIVE" });
+  const closedA = advanceRequiredResourceStates(active!, ["b"]);
+  assert.deepEqual(closedA, { a: "CLOSED", b: "ACTIVE" });
+  assert.equal(advanceRequiredResourceStates(closedA!, ["a", "b"]), null);
+  assert.deepEqual(initial, { a: "NOT_STARTED", b: "NOT_STARTED" });
+});
+
+test("REQUIRED presence treats only the assigned-space meal as an authorized bridge", () => {
+  const resource = { id: "r", availability: [{ start: 0, end: 200 }], presencePreference: "MAXIMUM" as const,
+    presenceConcentrationPolicy: "REQUIRED" as const, assignedSpaceId: "main" };
+  const tasks = [
+    { id: "a", kind: "main", participantId: "p1", coachId: "c", blockKey: "c", duration: 15,
+      spaceId: "main", dependencies: [], requiredResourceIds: ["r"], start: 0, end: 15 },
+    { id: "b", kind: "main", participantId: "p2", coachId: "c", blockKey: "c", duration: 15,
+      spaceId: "main", dependencies: [], requiredResourceIds: ["r"], start: 90, end: 105 },
+  ] as ScheduledTask[];
+  const authorized = evaluateResourcePresence(resource, tasks,
+    [{ id: "meal", kind: "space-meal", spaceId: "main", entryIndex: 1, duration: 75, start: 15, end: 90 }]);
+  assert.deepEqual(authorized.preferredLexicographicTuple, [1, 105, 0]);
+  assert.equal(authorized.crossesAuthorizedMeal, true);
+  assert.equal(authorized.requiredPolicySatisfied, true);
+  const foreign = evaluateResourcePresence(resource, tasks,
+    [{ id: "meal", kind: "space-meal", spaceId: "other", entryIndex: 1, duration: 75, start: 15, end: 90 }]);
+  assert.equal(foreign.operationalBlockCount, 2);
+  assert.equal(foreign.requiredPolicySatisfied, false);
+});
 
 test("HIGH compacts shared-resource main tasks while OFF remains separated", () => {
   const offProblem = mainFlowResourcePresenceScenario("OFF");

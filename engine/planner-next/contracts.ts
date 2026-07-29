@@ -23,7 +23,7 @@ export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; prep
 export type SecondaryContinuity = "OFF" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
-export type PresenceConcentrationPolicy = "OFF" | "PREFERRED";
+export type PresenceConcentrationPolicy = "OFF" | "PREFERRED" | "REQUIRED";
 
 export interface Resource {
   id: string;

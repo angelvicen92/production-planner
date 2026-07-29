@@ -41,6 +41,8 @@ export interface ContinuousResourcePresence {
   internalGapMinutes: number;
   operationalBlockCount: number;
   preferredLexicographicTuple: [number, number, number];
+  crossesAuthorizedMeal: boolean;
+  requiredPolicySatisfied: boolean;
 }
 
 interface Interval { id: string; start: number; end: number }
@@ -68,7 +70,7 @@ export function evaluateResourcePresence(
   if (taskUnion.length === 0) return {
     presenceStart: null, presenceEnd: null, presenceSpanMinutes: 0, productiveTaskMinutes: 0,
     authorizedMealMinutes: 0, internalGapMinutes: 0, operationalBlockCount: 0,
-    preferredLexicographicTuple: [0, 0, 0],
+    preferredLexicographicTuple: [0, 0, 0], crossesAuthorizedMeal: false, requiredPolicySatisfied: true,
   };
   const presenceStart = taskUnion[0]!.start;
   const presenceEnd = taskUnion.at(-1)!.end;
@@ -90,6 +92,8 @@ export function evaluateResourcePresence(
     presenceStart, presenceEnd, presenceSpanMinutes, productiveTaskMinutes, authorizedMealMinutes,
     internalGapMinutes, operationalBlockCount,
     preferredLexicographicTuple: [operationalBlockCount, presenceSpanMinutes, internalGapMinutes],
+    crossesAuthorizedMeal: authorizedMealMinutes > 0,
+    requiredPolicySatisfied: resource.presenceConcentrationPolicy !== "REQUIRED" || operationalBlockCount === 1,
   };
 }
 

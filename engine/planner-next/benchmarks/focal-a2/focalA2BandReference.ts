@@ -30,7 +30,8 @@ export type ContinuousResourceReferencePolicy = {
 export type CurrentBandMode =
   | "CURRENT_OFF"
   | "CURRENT_MAXIMUM"
-  | "CURRENT_PREFERRED";
+  | "CURRENT_PREFERRED"
+  | "CURRENT_REQUIRED";
 const instruments: Record<string, string> = {
   "moises-salazar-ramirez": "SOLO A PIANO",
   "angel-gonzalez": "GUITARRA",
@@ -94,9 +95,9 @@ export function projectFocalA2BandProblem(
         id: FOCAL_A2_BAND_RESOURCE_ID,
         availability: [{ start: 675, end: 1035 }],
         presencePreference: mode === "CURRENT_OFF" ? "OFF" : "MAXIMUM",
-        ...(mode === "CURRENT_PREFERRED"
+        ...(mode === "CURRENT_PREFERRED" || mode === "CURRENT_REQUIRED"
           ? {
-              presenceConcentrationPolicy: "PREFERRED" as const,
+              presenceConcentrationPolicy: mode === "CURRENT_REQUIRED" ? "REQUIRED" as const : "PREFERRED" as const,
               assignedSpaceId: "main-stage",
             }
           : {}),

@@ -22,6 +22,7 @@ import { canPlaceTask } from "./placement";
 import { createScheduledSpaceMeal, spaceMealAvoidsMeals, spaceMealAvoidsTasks, spaceMealId, spaceMealWithinAvailability, spaceMealWithinDay, spaceMealWithinWindow, spacesWithMealPolicy } from "./spaceMeals";
 import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
+import { evaluateResourcePresence } from "./resourcePresence";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -112,7 +113,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
   if (resources.some((resource) => resource.presenceConcentrationPolicy !== undefined
     && resource.presenceConcentrationPolicy !== "OFF"
-    && resource.presenceConcentrationPolicy !== "PREFERRED")) reasons.add("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY");
+    && resource.presenceConcentrationPolicy !== "PREFERRED"
+    && resource.presenceConcentrationPolicy !== "REQUIRED")) reasons.add("INVALID_RESOURCE_PRESENCE_CONCENTRATION_POLICY");
   const auxiliaries = tasks.filter((task) => task?.kind === "auxiliary");
   if (auxiliaries.length > 0 && !problem.auxiliaryPolicy) reasons.add("MISSING_AUXILIARY_POLICY");
   if (problem.auxiliaryPolicy && !preferenceLevels.has(problem.auxiliaryPolicy.participantPresencePreference)) reasons.add("INVALID_AUXILIARY_POLICY");
@@ -480,6 +482,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
   if (spaceMeal) reasonCodes.push("SPACE_MEAL_VIOLATION");
   if (mainFlowMeal) reasonCodes.push("MAIN_FLOW_MEAL_VIOLATION");
+  for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
+    if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
+    const presence = evaluateResourcePresence(resource, scheduled, meals);
+    if (!presence.requiredPolicySatisfied) reasonCodes.push(`RESOURCE_REQUIRED_PRESENCE_VIOLATION:${resource.id}`);
+  }
   return {
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
