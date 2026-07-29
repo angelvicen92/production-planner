@@ -162,6 +162,7 @@ export interface PlanMetrics extends ValidationSummary {
   feederClosureMaximumPartialStates: number;
   feederClosureSelectedOrder: string[];
   feederClosureZeroAlternativeTaskIds: string[];
+  feederClosureRejectedStateBlockerIds: string[];
   searchStopReason: SearchStopReason;
   runtimeMs: number;
   planFingerprint: string;

@@ -30,6 +30,7 @@ interface MainAlternative {
   timeline?: MainFlowTimeline;
   feeders?: ScheduledTask[];
   feederScore?: number;
+  feederSelectedOrder?: string[];
 }
 
 interface Counters {
@@ -93,30 +94,38 @@ function generatePatterns(
   return { patterns: output, exhausted };
 }
 
-export function tryGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
+export interface GreedyFeederClosureResult { complete:boolean; scheduledTasks:ScheduledTask[]; scheduledFeeders:ScheduledTask[]; attemptedFeederIds:string[]; placedFeederIds:string[]; blockingFeederId:string|null; blockingMainTaskId:string|null; attemptedStartCountByFeederId:Record<string,number> }
+export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): GreedyFeederClosureResult {
   const placed = [...mains];
+  const attemptedFeederIds:string[]=[],placedFeederIds:string[]=[];const attemptedStartCountByFeederId:Record<string,number>={};
   const feederByParticipant = new Map(
     problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
   );
   const latestFirst = [...mains].sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
   for (const main of latestFirst) {
     const feeder = feederByParticipant.get(main.participantId);
-    if (!feeder) return null;
+    if (!feeder) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
+    attemptedFeederIds.push(feeder.id);attemptedStartCountByFeederId[feeder.id]=0;
     const deadline = main.start - Math.max(
       problem.participantTransitionMinutes,
       problem.resourceTransitionMinutes,
     );
     let selectedStart: number | undefined;
     for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
+      attemptedStartCountByFeederId[feeder.id] += 1;
       if (canPlaceTask(problem, feeder, start, placed, scheduledSpaceMeals)) {
         selectedStart = start;
         break;
       }
     }
-    if (selectedStart === undefined) return null;
+    if (selectedStart === undefined) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:feeder.id,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
     placed.push({ ...feeder, start: selectedStart, end: selectedStart + feeder.duration });
+    placedFeederIds.push(feeder.id);
   }
-  return placed;
+  return {complete:true,scheduledTasks:placed,scheduledFeeders:placed.filter(t=>t.kind==="vocal"),attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:null,attemptedStartCountByFeederId};
+}
+export function tryGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
+  const diagnosis=diagnoseGreedyFeederClosure(problem,mains,scheduledSpaceMeals);return diagnosis.complete?diagnosis.scheduledTasks:null;
 }
 
 function emptyMetrics(
@@ -169,7 +178,7 @@ function emptyMetrics(
     patternsGenerated: counters?.patternsGenerated ?? 0,
     patternsEvaluated: counters?.patternsEvaluated ?? 0,
     branchBudgetConsumed: counters?.branches ?? 0,
-    feederClosureFallbackUsed:false,feederClosureBranchesExplored:0,feederClosureCompleteCandidateCount:0,feederClosureMaximumPartialStates:0,feederClosureSelectedOrder:[],feederClosureZeroAlternativeTaskIds:[],
+    feederClosureFallbackUsed:false,feederClosureBranchesExplored:0,feederClosureCompleteCandidateCount:0,feederClosureMaximumPartialStates:0,feederClosureSelectedOrder:[],feederClosureZeroAlternativeTaskIds:[],feederClosureRejectedStateBlockerIds:[],
     searchStopReason: stopReason,
     runtimeMs,
     planFingerprint: fingerprint([]),
@@ -307,7 +316,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     }
   }
   let feederFallbackUsed=false,feederBranches=0,feederCompleteCount=0,feederMaximumStates=0;
-  const feederSelectedOrder:string[]=[],feederZeroIds:string[]=[];
+  const feederRejectedIds:string[]=[];
   const feederClosedAlternatives:MainAlternative[]=[];
   for(const alternative of alternatives){
     const meals=alternative.timeline?[alternative.timeline.meal]:[];
@@ -319,10 +328,9 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     feederBranches+=closure.diagnostics.consumed;counters.branches+=closure.diagnostics.consumed;
     feederCompleteCount+=closure.diagnostics.completeClosuresGenerated;
     feederMaximumStates=Math.max(feederMaximumStates,closure.diagnostics.maximumPartialStates);
-    for(const id of closure.diagnostics.selectedFeederOrder)if(!feederSelectedOrder.includes(id))feederSelectedOrder.push(id);
-    for(const id of closure.diagnostics.zeroAlternativeFeederIds)if(!feederZeroIds.includes(id))feederZeroIds.push(id);
+    for(const id of closure.diagnostics.rejectedStateBlockerIds)if(!feederRejectedIds.includes(id))feederRejectedIds.push(id);
     if(closure.diagnostics.exhausted)return failure(problem,begun,"BRANCH_BUDGET_EXHAUSTED",counters);
-    for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,signature:`${alternative.signature}|${candidate.signature}`});
+    for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,feederSelectedOrder:candidate.selectedFeederOrder,signature:`${alternative.signature}|${candidate.signature}`});
   }
   const retained = withMeal
     ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>a.score-b.score||a.signature.localeCompare(b.signature)).slice(0,problem.budget.bestK)])).values()].flat()
@@ -407,7 +415,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       patternsGenerated: counters.patternsGenerated,
       patternsEvaluated: counters.patternsEvaluated,
       branchBudgetConsumed: counters.branches,
-      feederClosureFallbackUsed:feederFallbackUsed,feederClosureBranchesExplored:feederBranches,feederClosureCompleteCandidateCount:feederFallbackUsed?feederCompleteCount:1,feederClosureMaximumPartialStates:feederMaximumStates,feederClosureSelectedOrder:feederSelectedOrder,feederClosureZeroAlternativeTaskIds:[...feederZeroIds].sort(),
+      feederClosureFallbackUsed:feederFallbackUsed,feederClosureBranchesExplored:feederBranches,feederClosureCompleteCandidateCount:feederFallbackUsed?feederCompleteCount:1,feederClosureMaximumPartialStates:feederMaximumStates,feederClosureSelectedOrder:alternative.feederSelectedOrder??[],feederClosureZeroAlternativeTaskIds:[],feederClosureRejectedStateBlockerIds:[...feederRejectedIds].sort(),
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
       planFingerprint: fingerprint(ordered, preparations,meals),

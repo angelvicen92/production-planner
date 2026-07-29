@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-focal-a2-feeder-closure-v1",
+  "version": "planner-next-focal-a2-feeder-closure-v2",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -2819,6 +2819,8 @@
           "coach-lucia": 2,
           "coach-jose-maria": 2
         },
+        "focalStart": 585,
+        "focalEnd": 1035,
         "focalMakespanMinutes": 450,
         "totalParticipantPresenceMinutes": 2345,
         "maxParticipantPresenceMinutes": 230,
@@ -2881,6 +2883,97 @@
           }
         ]
       },
+      "generatedPlanValidation": {
+        "hardValid": true,
+        "hardViolationCount": 0,
+        "violations": [],
+        "participantCount": 19,
+        "taskCount": 38,
+        "vocalTaskCount": 19,
+        "mainTaskCount": 19,
+        "dependencyCount": 19,
+        "plannedTaskCount": 38,
+        "mainFlowStart": 675,
+        "mainFlowEnd": 1035,
+        "mainFlowMealStart": 840,
+        "mainFlowMealEnd": 915,
+        "mainFlowMorningTaskCount": 11,
+        "mainFlowAfternoonTaskCount": 8,
+        "mainFlowGapMinutes": 0,
+        "mainFlowBlockSequence": [
+          "coach-lucia",
+          "coach-jose-maria",
+          "coach-lucia",
+          "coach-jose-maria"
+        ],
+        "blockCountByKey": {
+          "coach-lucia": 2,
+          "coach-jose-maria": 2
+        },
+        "focalStart": 585,
+        "focalEnd": 1035,
+        "focalMakespanMinutes": 450,
+        "totalParticipantPresenceMinutes": 2345,
+        "maxParticipantPresenceMinutes": 215,
+        "deterministic": true,
+        "globalProtectedMealConflicts": [
+          {
+            "id": "vocal-eva-martin-fernandez",
+            "kind": "vocal",
+            "participantId": "eva-martin-fernandez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 840,
+            "end": 855
+          },
+          {
+            "id": "vocal-noa-marcos-diez",
+            "kind": "vocal",
+            "participantId": "noa-marcos-diez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 855,
+            "end": 870
+          },
+          {
+            "id": "vocal-marta-fonrali",
+            "kind": "vocal",
+            "participantId": "marta-fonrali",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 870,
+            "end": 885
+          },
+          {
+            "id": "vocal-adrian-darrel",
+            "kind": "vocal",
+            "participantId": "adrian-darrel",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 885,
+            "end": 900
+          },
+          {
+            "id": "vocal-daniel-hernan-barres",
+            "kind": "vocal",
+            "participantId": "daniel-hernan-barres",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 900,
+            "end": 915
+          }
+        ]
+      },
       "currentPlannerRun": {
         "first": {
           "complete": true,
@@ -2895,7 +2988,7 @@
           "alternativesGenerated": 3865,
           "alternativesRetained": 2,
           "backtracks": 0,
-          "runtimeMs": 272.30346600000007,
+          "runtimeMs": 153.84244999999999,
           "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
           "reasonCodes": [],
           "inputUnchanged": true
@@ -2913,7 +3006,7 @@
           "alternativesGenerated": 3865,
           "alternativesRetained": 2,
           "backtracks": 0,
-          "runtimeMs": 107.23911199999998,
+          "runtimeMs": 59.280628999999976,
           "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
           "reasonCodes": [],
           "inputUnchanged": true
@@ -2931,7 +3024,7 @@
           "alternativesGenerated": 3865,
           "alternativesRetained": 2,
           "backtracks": 0,
-          "runtimeMs": 99.37113900000008,
+          "runtimeMs": 65.32296599999995,
           "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
           "reasonCodes": [],
           "inputUnchanged": true
@@ -3044,13 +3137,14 @@
           "vocal-julio-gomez",
           "vocal-lina-isabel-garcia-salcedo"
         ],
-        "feederClosureZeroAlternativeTaskIds": [
+        "feederClosureZeroAlternativeTaskIds": [],
+        "feederClosureRejectedStateBlockerIds": [
           "vocal-carmen-maria-saborido",
           "vocal-claudia-torrent",
           "vocal-lina-isabel-garcia-salcedo"
         ],
         "searchStopReason": "SOLUTION_FOUND",
-        "runtimeMs": 272.30346600000007,
+        "runtimeMs": 153.84244999999999,
         "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
         "auxiliaryTaskCount": 0,
         "auxiliaryPlannedTaskCount": 0,
@@ -3613,12 +3707,61 @@
           "resolved": true
         },
         "legacyGreedyClosure": {
-          "attempted": true,
           "complete": false,
-          "blockingTaskId": "vocal-jose-javier-cuenca",
-          "zeroAlternativeTaskIds": [
+          "scheduledTasks": [],
+          "scheduledFeeders": [],
+          "attemptedFeederIds": [
+            "vocal-adrian-darrel",
+            "vocal-daniel-hernan-barres",
+            "vocal-pere-portero",
+            "vocal-nela-garcia",
+            "vocal-claudia-torrent",
+            "vocal-eva-martin-fernandez",
+            "vocal-noa-marcos-diez",
+            "vocal-marta-fonrali",
+            "vocal-luis-belda",
+            "vocal-linet-varela",
+            "vocal-lina-isabel-garcia-salcedo",
+            "vocal-gisela-montserrat",
+            "vocal-julio-gomez",
+            "vocal-naomi-ines-carretero",
             "vocal-jose-javier-cuenca"
           ],
+          "placedFeederIds": [
+            "vocal-adrian-darrel",
+            "vocal-daniel-hernan-barres",
+            "vocal-pere-portero",
+            "vocal-nela-garcia",
+            "vocal-claudia-torrent",
+            "vocal-eva-martin-fernandez",
+            "vocal-noa-marcos-diez",
+            "vocal-marta-fonrali",
+            "vocal-luis-belda",
+            "vocal-linet-varela",
+            "vocal-lina-isabel-garcia-salcedo",
+            "vocal-gisela-montserrat",
+            "vocal-julio-gomez",
+            "vocal-naomi-ines-carretero"
+          ],
+          "blockingFeederId": "vocal-jose-javier-cuenca",
+          "blockingMainTaskId": "main-jose-javier-cuenca",
+          "attemptedStartCountByFeederId": {
+            "vocal-adrian-darrel": 13,
+            "vocal-daniel-hernan-barres": 13,
+            "vocal-pere-portero": 13,
+            "vocal-nela-garcia": 13,
+            "vocal-claudia-torrent": 13,
+            "vocal-eva-martin-fernandez": 13,
+            "vocal-noa-marcos-diez": 13,
+            "vocal-marta-fonrali": 13,
+            "vocal-luis-belda": 23,
+            "vocal-linet-varela": 23,
+            "vocal-lina-isabel-garcia-salcedo": 23,
+            "vocal-gisela-montserrat": 23,
+            "vocal-julio-gomez": 23,
+            "vocal-naomi-ines-carretero": 23,
+            "vocal-jose-javier-cuenca": 34
+          },
           "noPartialPublished": true
         },
         "boundedFeederClosure": {
@@ -3648,8 +3791,23 @@
             "vocal-julio-gomez",
             "vocal-lina-isabel-garcia-salcedo"
           ],
+          "rejectedStateBlockerIds": [
+            "vocal-carmen-maria-saborido",
+            "vocal-claudia-torrent",
+            "vocal-lina-isabel-garcia-salcedo"
+          ],
+          "acceptedPathZeroAlternativeTaskIds": [],
           "totalParticipantPresenceMinutes": 2345,
           "deterministic": true
+        },
+        "focalSpanEvidence": {
+          "referenceStart": 585,
+          "referenceEnd": 1035,
+          "referenceMakespan": 450,
+          "plannerStart": 585,
+          "plannerEnd": 1035,
+          "plannerMakespan": 450,
+          "delta": 0
         },
         "resolvedGapCodes": [
           "GLOBAL_PROTECTED_MEAL_BLOCKS_SPACE_LOCAL_WORK",
@@ -4203,49 +4361,20 @@
     }
   },
   "acceptance": {
-    "accepted": true,
-    "jointFutureFeasibilityBudgetAccepted": true,
-    "jointAuxiliaryTasksAccepted": true,
-    "setupPreparationAccepted": true,
-    "historicalRegressionIntact": true,
-    "frozenFingerprints": {
-      "baseline": "070b4d4a2259b629b8e818fd6e34ea4bba63c05f87d60b4b5f4cbfc7b1b6848b",
-      "adversarial": "dbd3d669a6fd2121bab29f6372d974366661399d797baf5df9eac2b28592176f",
-      "resourceOff": "94a29319aa0cd1d91eb42c38b2fdf5b118e8b67a6aa9fc4f5370a5edcd47baea",
-      "resourceHigh": "e66cde36ff46933d1383321dbdb9d97f1dfb8f67e7c4c383f9e3f684f7108b82",
-      "auxiliaryOff": "47fbb0653150918250be0b3b423b4a57c7ff20af48ad2943570e672b9d11b4f8",
-      "auxiliaryHigh": "c936b716e7e70594ba0390c43b5032caa4d6f745ef276883c413d0c5f8fbce12",
-      "itinerantUnits": "eed9c26041aba86398c0c898940f5dfd9cf0d5571209cadaafd8ce49ac55e9e3",
-      "longSecondaryBlock": "0ef512d872eaf904c61e464b90cd9e5f8bacf194a1ead1cdfdcbad043117b9aa",
-      "futureFeasibility": "d975d3a4dd8b070bc964a42b026d1c1d00cae16762fab166c6e26a6686a58798",
-      "boundedFutureFeasibility": "0b9d019238a779e92f522c26c3902143a585e564a728acda3f81b0df9483ad20"
-    },
-    "technicalOperationAccepted": true,
-    "technicalChainAccepted": true,
-    "technicalChainConstructorAccepted": true,
-    "technicalChainFutureFeasibilityAccepted": true,
-    "technicalChainValidationAccepted": true,
-    "spaceMealAccepted": true,
-    "spaceMealFutureFeasibilityAccepted": true,
-    "historicalEvidenceRestored": true,
-    "requiredSpaceMealAccepted": true,
-    "requiredSpaceMealFutureFeasibilityAccepted": true,
-    "requiredSpaceMealProbeAccepted": true,
-    "mainFlowMealAccepted": true,
-    "mainFlowMealStrategyAccepted": true,
-    "mainFlowMealValidationAccepted": true,
     "artifactAccepted": true,
     "focalCorpusAccepted": true,
     "referenceScheduleHardValid": true,
-    "currentPlannerRunRecorded": true,
-    "modelGapConfirmed": true,
-    "currentPlannerMeetsFocalBenchmark": true,
-    "acceptedMeaning": "Planner Next passes the focal A2 vocal and Plató 7 benchmark; broader A2 operations remain out of scope",
     "spaceLocalMealSemanticsAccepted": true,
     "boundedFeederClosureAccepted": true,
     "focalPlanHardValid": true,
     "focalOperationalStructureAccepted": true,
-    "focalPresenceAccepted": true
+    "focalPresenceAccepted": true,
+    "focalMakespanAccepted": true,
+    "focalEvidenceTruthful": true,
+    "historicalRegressionIntact": true,
+    "currentPlannerMeetsFocalBenchmark": true,
+    "acceptedMeaning": "Planner Next passes the focal A2 vocal and Plató 7 benchmark; broader A2 operations remain out of scope",
+    "accepted": true
   },
   "requiredSpaceMealFutureFeasibilityEvidence": {
     "valid": {
@@ -5090,6 +5219,8 @@
       "coach-lucia": 2,
       "coach-jose-maria": 2
     },
+    "focalStart": 585,
+    "focalEnd": 1035,
     "focalMakespanMinutes": 450,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 230,
@@ -5854,7 +5985,7 @@
       "alternativesGenerated": 3865,
       "alternativesRetained": 2,
       "backtracks": 0,
-      "runtimeMs": 272.30346600000007,
+      "runtimeMs": 153.84244999999999,
       "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
       "reasonCodes": [],
       "inputUnchanged": true
@@ -5872,7 +6003,7 @@
       "alternativesGenerated": 3865,
       "alternativesRetained": 2,
       "backtracks": 0,
-      "runtimeMs": 107.23911199999998,
+      "runtimeMs": 59.280628999999976,
       "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
       "reasonCodes": [],
       "inputUnchanged": true
@@ -5890,7 +6021,7 @@
       "alternativesGenerated": 3865,
       "alternativesRetained": 2,
       "backtracks": 0,
-      "runtimeMs": 99.37113900000008,
+      "runtimeMs": 65.32296599999995,
       "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
       "reasonCodes": [],
       "inputUnchanged": true
@@ -5904,6 +6035,7 @@
     "plannerTaskCount": 38,
     "plannerComplete": true,
     "plannerHardValid": true,
+    "independentPlannerHardValid": true,
     "mainFlowStructure": {
       "start": 675,
       "end": 1035,
@@ -5944,9 +6076,13 @@
         "pere-portero": 90
       }
     },
-    "makespan": 435,
+    "makespan": {
+      "reference": 450,
+      "planner": 450,
+      "delta": 0
+    },
     "branches": 64558,
-    "runtimeMs": 272.30346600000007,
+    "runtimeMs": 153.84244999999999,
     "resolvedModelGaps": [
       "GLOBAL_PROTECTED_MEAL_BLOCKS_SPACE_LOCAL_WORK",
       "GREEDY_FEEDER_CLOSURE_MISSES_FEASIBLE_ASSIGNMENT"
@@ -5980,12 +6116,61 @@
       "resolved": true
     },
     "legacyGreedyClosure": {
-      "attempted": true,
       "complete": false,
-      "blockingTaskId": "vocal-jose-javier-cuenca",
-      "zeroAlternativeTaskIds": [
+      "scheduledTasks": [],
+      "scheduledFeeders": [],
+      "attemptedFeederIds": [
+        "vocal-adrian-darrel",
+        "vocal-daniel-hernan-barres",
+        "vocal-pere-portero",
+        "vocal-nela-garcia",
+        "vocal-claudia-torrent",
+        "vocal-eva-martin-fernandez",
+        "vocal-noa-marcos-diez",
+        "vocal-marta-fonrali",
+        "vocal-luis-belda",
+        "vocal-linet-varela",
+        "vocal-lina-isabel-garcia-salcedo",
+        "vocal-gisela-montserrat",
+        "vocal-julio-gomez",
+        "vocal-naomi-ines-carretero",
         "vocal-jose-javier-cuenca"
       ],
+      "placedFeederIds": [
+        "vocal-adrian-darrel",
+        "vocal-daniel-hernan-barres",
+        "vocal-pere-portero",
+        "vocal-nela-garcia",
+        "vocal-claudia-torrent",
+        "vocal-eva-martin-fernandez",
+        "vocal-noa-marcos-diez",
+        "vocal-marta-fonrali",
+        "vocal-luis-belda",
+        "vocal-linet-varela",
+        "vocal-lina-isabel-garcia-salcedo",
+        "vocal-gisela-montserrat",
+        "vocal-julio-gomez",
+        "vocal-naomi-ines-carretero"
+      ],
+      "blockingFeederId": "vocal-jose-javier-cuenca",
+      "blockingMainTaskId": "main-jose-javier-cuenca",
+      "attemptedStartCountByFeederId": {
+        "vocal-adrian-darrel": 13,
+        "vocal-daniel-hernan-barres": 13,
+        "vocal-pere-portero": 13,
+        "vocal-nela-garcia": 13,
+        "vocal-claudia-torrent": 13,
+        "vocal-eva-martin-fernandez": 13,
+        "vocal-noa-marcos-diez": 13,
+        "vocal-marta-fonrali": 13,
+        "vocal-luis-belda": 23,
+        "vocal-linet-varela": 23,
+        "vocal-lina-isabel-garcia-salcedo": 23,
+        "vocal-gisela-montserrat": 23,
+        "vocal-julio-gomez": 23,
+        "vocal-naomi-ines-carretero": 23,
+        "vocal-jose-javier-cuenca": 34
+      },
       "noPartialPublished": true
     },
     "boundedFeederClosure": {
@@ -6015,12 +6200,34 @@
         "vocal-julio-gomez",
         "vocal-lina-isabel-garcia-salcedo"
       ],
+      "rejectedStateBlockerIds": [
+        "vocal-carmen-maria-saborido",
+        "vocal-claudia-torrent",
+        "vocal-lina-isabel-garcia-salcedo"
+      ],
+      "acceptedPathZeroAlternativeTaskIds": [],
       "totalParticipantPresenceMinutes": 2345,
       "deterministic": true
+    },
+    "focalSpanEvidence": {
+      "referenceStart": 585,
+      "referenceEnd": 1035,
+      "referenceMakespan": 450,
+      "plannerStart": 585,
+      "plannerEnd": 1035,
+      "plannerMakespan": 450,
+      "delta": 0
     },
     "resolvedGapCodes": [
       "GLOBAL_PROTECTED_MEAL_BLOCKS_SPACE_LOCAL_WORK",
       "GREEDY_FEEDER_CLOSURE_MISSES_FEASIBLE_ASSIGNMENT"
     ]
+  },
+  "historicalRegressionEvidence": {
+    "scenarioDigestMismatchIds": [],
+    "evidenceDigestMismatchIds": [],
+    "fingerprintMismatchIds": [],
+    "branchBudgetMismatchIds": [],
+    "intact": true
   }
 }

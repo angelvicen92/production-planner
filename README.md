@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-required-space-meal-v2.json`.
+The current accepted artifact is `planner-next-focal-a2-feeder-closure-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2268,7 +2268,7 @@ Ordinary NEXT-015 meals remain unchanged.
 Main-flow meals and spaces with setup policies remain out of scope.
 Contestant and resource meals also remain pending.
 No search budget was increased, and Planner Next remains isolated from production.
-The corrected artifact is `planner-next-required-space-meal-v2.json`.
+The historical corrected artifact was `planner-next-required-space-meal-v2.json`.
 Validate it with `./validate-next-016.sh`.
 
 ### NEXT-017 — Main Flow Meal Split
@@ -2277,7 +2277,7 @@ When that is not hard-feasible, it splits morning/afternoon only between blocks;
 The meal is an explicit `ScheduledSpaceMeal`, is not a task or auxiliary work item, and does not count as a gap.
 Feeders and resources remain hard constraints, and no search budget was increased.
 Exact alignment with `protectedMeal` is a temporary limitation; multiple meal positions remain out of scope.
-The historical result is carried by `planner-next-focal-a2-baseline-v1.json`.
+The historical NEXT-017 result is carried forward inside the current focal artifact.
 
 ### FOCAL-A2-001 — Real A2 Reconstruction Baseline
 Functional expansion stopped for the first real human benchmark: 19 contestants, vocal work, and Plató 7.
@@ -2290,9 +2290,12 @@ Planner Next remains isolated from production.
 Artifact: `planner-next-focal-a2-baseline-v1.json`; validate with `./validate-focal-a2-001.sh`.
 
 ### FOCAL-A2-002 — Focal A2 Feeder Closure
-Planner Next supera el primer benchmark focal real: comida de Plató 7 local al espacio y salas vocales activas.
-El greedy permanece como fast path; al fallar, una búsqueda acotada resuelve primero el feeder más restringido.
-No se publican cierres parciales ni se aumentan presupuestos; se planifican las 38 tareas.
-Se conserva la estructura humana y `currentPlannerMeetsFocalBenchmark` es `true`.
-El resto de operaciones A2 queda fuera de alcance y Planner Next continúa aislado.
-Artefacto: `planner-next-focal-a2-feeder-closure-v1.json`; validar con `./validate-focal-a2-002.sh`.
+Planner Next supera el primer benchmark focal real, manteniéndose aislado de producción.
+La Evidence del fallo greedy se deriva de la ejecución real y conserva el fast path.
+El orden publicado por el cierre acotado pertenece exclusivamente al camino aceptado.
+Los blockers de estados descartados se publican por separado y el camino aceptado no tiene blockers.
+El makespan focal derivado es 450 minutos, de 09:45 a 17:15.
+La regresión de los veinte escenarios históricos se verifica canónicamente mediante un manifest compacto.
+El plan de 38 tareas, los presupuestos y el fingerprint `76f52d…e4fc` permanecen intactos.
+Esto no representa la integración de Planner Next ni la resolución completa del Ensayo A2.
+Artefacto corregido: `planner-next-focal-a2-feeder-closure-v2.json`; validar con `./validate-focal-a2-002.sh`.
