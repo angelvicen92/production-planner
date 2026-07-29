@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-required-space-meal-v2",
+  "version": "planner-next-main-flow-meal-v1",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -2306,6 +2306,490 @@
       "runtimeMs": 793.7880769999999,
       "determinism": true,
       "violationCount": 0
+    },
+    "mainFlowMeal": {
+      "complete": true,
+      "hardValid": true,
+      "plannedTaskCount": 35,
+      "mainTasks": [
+        {
+          "id": "main-participant-c",
+          "kind": "main",
+          "participantId": "participant-c",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-c"
+          ],
+          "blockKey": "coach-a",
+          "start": 780,
+          "end": 795
+        },
+        {
+          "id": "main-participant-z",
+          "kind": "main",
+          "participantId": "participant-z",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-z"
+          ],
+          "blockKey": "coach-a",
+          "start": 795,
+          "end": 810
+        },
+        {
+          "id": "main-participant-d",
+          "kind": "main",
+          "participantId": "participant-d",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-d"
+          ],
+          "blockKey": "coach-a",
+          "start": 810,
+          "end": 825
+        },
+        {
+          "id": "main-participant-e",
+          "kind": "main",
+          "participantId": "participant-e",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-e"
+          ],
+          "blockKey": "coach-a",
+          "start": 825,
+          "end": 840
+        },
+        {
+          "id": "main-participant-f",
+          "kind": "main",
+          "participantId": "participant-f",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-f"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 900,
+          "end": 915
+        },
+        {
+          "id": "main-participant-g",
+          "kind": "main",
+          "participantId": "participant-g",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-g"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 915,
+          "end": 930
+        },
+        {
+          "id": "main-participant-h",
+          "kind": "main",
+          "participantId": "participant-h",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-h"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 930,
+          "end": 945
+        },
+        {
+          "id": "main-participant-a",
+          "kind": "main",
+          "participantId": "participant-a",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-a"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 945,
+          "end": 960
+        }
+      ],
+      "vocalFeeders": [
+        {
+          "id": "vocal-participant-c",
+          "kind": "vocal",
+          "participantId": "participant-c",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "vocal-room-a",
+          "dependencies": [],
+          "start": 705,
+          "end": 720
+        },
+        {
+          "id": "vocal-participant-z",
+          "kind": "vocal",
+          "participantId": "participant-z",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "vocal-room-a",
+          "dependencies": [],
+          "start": 720,
+          "end": 735
+        },
+        {
+          "id": "vocal-participant-d",
+          "kind": "vocal",
+          "participantId": "participant-d",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "vocal-room-a",
+          "dependencies": [],
+          "start": 735,
+          "end": 750
+        },
+        {
+          "id": "vocal-participant-e",
+          "kind": "vocal",
+          "participantId": "participant-e",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "vocal-room-a",
+          "dependencies": [],
+          "start": 750,
+          "end": 765
+        },
+        {
+          "id": "vocal-participant-f",
+          "kind": "vocal",
+          "participantId": "participant-f",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "vocal-room-b",
+          "dependencies": [],
+          "start": 780,
+          "end": 795
+        },
+        {
+          "id": "vocal-participant-g",
+          "kind": "vocal",
+          "participantId": "participant-g",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "vocal-room-b",
+          "dependencies": [],
+          "start": 795,
+          "end": 810
+        },
+        {
+          "id": "vocal-participant-h",
+          "kind": "vocal",
+          "participantId": "participant-h",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "vocal-room-b",
+          "dependencies": [],
+          "start": 810,
+          "end": 825
+        },
+        {
+          "id": "vocal-participant-a",
+          "kind": "vocal",
+          "participantId": "participant-a",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "vocal-room-b",
+          "dependencies": [],
+          "start": 825,
+          "end": 840
+        }
+      ],
+      "scheduledSpaceMeals": [
+        {
+          "id": "space-meal:main-stage:1",
+          "kind": "space-meal",
+          "spaceId": "main-stage",
+          "entryIndex": 1,
+          "duration": 60,
+          "start": 840,
+          "end": 900
+        },
+        {
+          "id": "space-meal:meal-room:1",
+          "kind": "space-meal",
+          "spaceId": "meal-room",
+          "entryIndex": 1,
+          "duration": 20,
+          "start": 620,
+          "end": 640
+        },
+        {
+          "id": "space-meal:required-meal-room:1",
+          "kind": "space-meal",
+          "spaceId": "required-meal-room",
+          "entryIndex": 1,
+          "duration": 20,
+          "start": 700,
+          "end": 720
+        }
+      ],
+      "mainMeal": {
+        "id": "space-meal:main-stage:1",
+        "kind": "space-meal",
+        "spaceId": "main-stage",
+        "entryIndex": 1,
+        "duration": 60,
+        "start": 840,
+        "end": 900
+      },
+      "morningTasks": [
+        {
+          "id": "main-participant-c",
+          "kind": "main",
+          "participantId": "participant-c",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-c"
+          ],
+          "blockKey": "coach-a",
+          "start": 780,
+          "end": 795
+        },
+        {
+          "id": "main-participant-z",
+          "kind": "main",
+          "participantId": "participant-z",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-z"
+          ],
+          "blockKey": "coach-a",
+          "start": 795,
+          "end": 810
+        },
+        {
+          "id": "main-participant-d",
+          "kind": "main",
+          "participantId": "participant-d",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-d"
+          ],
+          "blockKey": "coach-a",
+          "start": 810,
+          "end": 825
+        },
+        {
+          "id": "main-participant-e",
+          "kind": "main",
+          "participantId": "participant-e",
+          "coachId": "coach-a",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-e"
+          ],
+          "blockKey": "coach-a",
+          "start": 825,
+          "end": 840
+        }
+      ],
+      "afternoonTasks": [
+        {
+          "id": "main-participant-f",
+          "kind": "main",
+          "participantId": "participant-f",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-f"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 900,
+          "end": 915
+        },
+        {
+          "id": "main-participant-g",
+          "kind": "main",
+          "participantId": "participant-g",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-g"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 915,
+          "end": 930
+        },
+        {
+          "id": "main-participant-h",
+          "kind": "main",
+          "participantId": "participant-h",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-h"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 930,
+          "end": 945
+        },
+        {
+          "id": "main-participant-a",
+          "kind": "main",
+          "participantId": "participant-a",
+          "coachId": "coach-b",
+          "duration": 15,
+          "spaceId": "main-stage",
+          "dependencies": [
+            "vocal-participant-a"
+          ],
+          "blockKey": "coach-b",
+          "requiredResourceIds": [
+            "afternoon-main-unit"
+          ],
+          "start": 945,
+          "end": 960
+        }
+      ],
+      "blockKeys": [
+        "coach-a",
+        "coach-a",
+        "coach-a",
+        "coach-a",
+        "coach-b",
+        "coach-b",
+        "coach-b",
+        "coach-b"
+      ],
+      "blockSequence": [
+        "coach-a",
+        "coach-b"
+      ],
+      "blockCountByKey": {
+        "coach-a": 1,
+        "coach-b": 1
+      },
+      "mainFlowStart": 780,
+      "mainFlowEnd": 960,
+      "mainFlowGapMinutes": 0,
+      "morningTaskCount": 4,
+      "afternoonTaskCount": 4,
+      "splitIndex": 4,
+      "timelineCandidateCount": 18,
+      "allMorningAlternativeCount": 0,
+      "splitAlternativeCount": 5,
+      "afternoonResourcePresence": 60,
+      "afternoonResourceInternalGap": 0,
+      "dependencyEvidence": [
+        {
+          "id": "vocal-participant-c",
+          "end": 720,
+          "mainStart": 780
+        },
+        {
+          "id": "vocal-participant-z",
+          "end": 735,
+          "mainStart": 795
+        },
+        {
+          "id": "vocal-participant-d",
+          "end": 750,
+          "mainStart": 810
+        },
+        {
+          "id": "vocal-participant-e",
+          "end": 765,
+          "mainStart": 825
+        },
+        {
+          "id": "vocal-participant-f",
+          "end": 795,
+          "mainStart": 900
+        },
+        {
+          "id": "vocal-participant-g",
+          "end": 810,
+          "mainStart": 915
+        },
+        {
+          "id": "vocal-participant-h",
+          "end": 825,
+          "mainStart": 930
+        },
+        {
+          "id": "vocal-participant-a",
+          "end": 840,
+          "mainStart": 945
+        }
+      ],
+      "workItemOrder": [
+        "meal:meal-room",
+        "technical-chain:technical-chain-positioning",
+        "task:meal-room-task-a",
+        "task:meal-room-task-b",
+        "task:technical-camera-positioning",
+        "space:setup-room",
+        "space:required-meal-room",
+        "joint:shared-operation-1",
+        "task:flexible-task-1",
+        "task:flexible-task-2"
+      ],
+      "mainMealWorkItemAbsent": true,
+      "inputUnchanged": true,
+      "fingerprint": "f79d651afa3c5ee7bdbb253d1a1b330a5e427a4eae0edb8c244aa91963bf971f",
+      "branches": 101445,
+      "backtracks": 0,
+      "alternativesGenerated": 305,
+      "alternativesRetained": 5,
+      "patternsGenerated": 6,
+      "patternsEvaluated": 6,
+      "branchBudgetConsumed": 101445,
+      "branchBudgetMaximum": 300000,
+      "runtimeMs": 920.957155,
+      "determinism": true,
+      "violationCount": 0
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -2880,7 +3364,10 @@
     "historicalEvidenceRestored": true,
     "requiredSpaceMealAccepted": true,
     "requiredSpaceMealFutureFeasibilityAccepted": true,
-    "requiredSpaceMealProbeAccepted": true
+    "requiredSpaceMealProbeAccepted": true,
+    "mainFlowMealAccepted": true,
+    "mainFlowMealStrategyAccepted": true,
+    "mainFlowMealValidationAccepted": true
   },
   "requiredSpaceMealFutureFeasibilityEvidence": {
     "valid": {
@@ -2950,6 +3437,41 @@
     "probeBestKWithinSearch": true,
     "firstCandidateEqual": true,
     "firstTwoCandidatesEqual": true,
+    "deterministic": true
+  },
+  "mainFlowMealStrategyEvidence": {
+    "allMorning": {
+      "attempted": true,
+      "alternativeCount": 0,
+      "feasible": false
+    },
+    "split": {
+      "attemptedCutIndexes": [
+        4
+      ],
+      "feasibleCutIndexes": [
+        4
+      ],
+      "selectedCutIndex": 4
+    },
+    "selected": {
+      "morningTaskCount": 4,
+      "afternoonTaskCount": 4,
+      "mealStart": 840,
+      "mealEnd": 900,
+      "cutAtBlockBoundary": true,
+      "feedersValid": true
+    },
+    "allMorningControl": {
+      "feasible": true,
+      "selected": true,
+      "afternoonTaskCount": 0
+    },
+    "atomicFailure": {
+      "complete": false,
+      "publishedTaskCount": 0,
+      "publishedMealCount": 0
+    },
     "deterministic": true
   }
 }

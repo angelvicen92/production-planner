@@ -108,6 +108,7 @@ export interface ValidationSummary {
   technicalOperationViolationCount: number;
   technicalChainViolationCount: number;
   spaceMealViolationCount: number;
+  mainFlowMealViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -129,6 +130,14 @@ export interface PlanMetrics extends ValidationSummary {
   mainFlowStart: Minute | null;
   mainFlowEnd: Minute | null;
   mainFlowGapMinutes: number;
+  mainFlowMealStart: Minute | null;
+  mainFlowMealEnd: Minute | null;
+  mainFlowMorningTaskCount: number;
+  mainFlowAfternoonTaskCount: number;
+  mainFlowSelectedSplitIndex: number | null;
+  mainFlowTimelineCandidateCount: number;
+  mainFlowAllMorningAlternativeCount: number;
+  mainFlowSplitAlternativeCount: number;
   blockSequence: string[];
   blockCountByKey: Record<string, number>;
   participantPresenceMinutesById: Record<string, number>;

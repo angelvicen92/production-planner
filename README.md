@@ -2270,3 +2270,11 @@ Contestant and resource meals also remain pending.
 No search budget was increased, and Planner Next remains isolated from production.
 The corrected artifact is `planner-next-required-space-meal-v2.json`.
 Validate it with `./validate-next-016.sh`.
+
+### NEXT-017 — Main Flow Meal Split
+NEXT-017 adds a real operational capability while Planner Next remains isolated: it first tries to finish the main flow before lunch.
+When that is not hard-feasible, it splits morning/afternoon only between blocks; both stretches retain `REQUIRED` continuity.
+The meal is an explicit `ScheduledSpaceMeal`, is not a task or auxiliary work item, and does not count as a gap.
+Feeders and resources remain hard constraints, and no search budget was increased.
+Exact alignment with `protectedMeal` is a temporary limitation; multiple meal positions remain out of scope.
+The accepted artifact is `planner-next-main-flow-meal-v1.json`; validate it with `./validate-next-017.sh`.
