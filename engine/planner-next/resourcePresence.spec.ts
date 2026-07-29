@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
-import { resourcePresenceMetrics } from "./resourcePresence";
+import { evaluateResourcePresence, resourcePresenceMetrics } from "./resourcePresence";
 import { mainFlowResourcePresenceScenario } from "./scenarios/mainFlowResourcePresenceScenario";
 import { validatePlan } from "./validate";
 
@@ -29,8 +29,32 @@ test("HIGH compacts shared-resource main tasks while OFF remains separated", () 
 test("resource presence helpers include unused resources without mutation", () => {
   const resources = [{ id: "unused", availability: [{ start: 0, end: 10 }], presencePreference: "OFF" as const }];
   const before = JSON.stringify(resources);
-  assert.deepEqual(resourcePresenceMetrics(resources, []), { presenceMinutesById: { unused: 0 }, internalGapMinutesById: { unused: 0 } });
+  assert.deepEqual(resourcePresenceMetrics(resources, []), {
+    presenceMinutesById: { unused: 0 }, internalGapMinutesById: { unused: 0 },
+    operationalBlockCountById: { unused: 0 }, authorizedMealMinutesById: { unused: 0 },
+  });
   assert.equal(JSON.stringify(resources), before);
+});
+
+test("authorized space meals join operational occupations without becoming productive time", () => {
+  const resource = { id: "resource", availability: [{ start: 800, end: 950 }], presencePreference: "MAXIMUM" as const, assignedSpaceId: "space" };
+  const tasks = [
+    { id: "before", kind: "main" as const, participantId: "p1", coachId: "c", blockKey: "x", duration: 15, spaceId: "space", dependencies: [], requiredResourceIds: ["resource"], start: 825, end: 840 },
+    { id: "after", kind: "main" as const, participantId: "p2", coachId: "c", blockKey: "x", duration: 15, spaceId: "space", dependencies: [], requiredResourceIds: ["resource"], start: 915, end: 930 },
+  ];
+  const meal = { id: "meal", kind: "space-meal" as const, spaceId: "space", entryIndex: 0, duration: 75, start: 840, end: 915 };
+  const before = JSON.stringify({ resource, tasks, meal });
+  assert.deepEqual(evaluateResourcePresence(resource, tasks, [meal]), {
+    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
+    authorizedMealMinutes: 75, internalGapMinutes: 0, operationalBlockCount: 1,
+    preferredLexicographicTuple: [1, 105, 0],
+  });
+  assert.deepEqual(evaluateResourcePresence(resource, tasks, [{ ...meal, spaceId: "other" }]), {
+    presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
+    authorizedMealMinutes: 0, internalGapMinutes: 75, operationalBlockCount: 2,
+    preferredLexicographicTuple: [2, 105, 75],
+  });
+  assert.equal(JSON.stringify({ resource, tasks, meal }), before);
 });
 
 test("resource preflight errors are explicit and crash-safe", () => {
