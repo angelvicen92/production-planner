@@ -15,7 +15,9 @@ export interface Space {
   availability: Window[];
   secondaryContinuity?: SecondaryContinuity;
   setupPolicy?: SetupPolicy;
+  mealPolicy?: SpaceMealPolicy;
 }
+export interface SpaceMealPolicy { window: Window; duration: Minute }
 export interface SetupPolicy { familyOrder: string[]; reentry: "FORBIDDEN"; preparationMinutesByFamily?: Record<string, number> }
 
 export type SecondaryContinuity = "OFF" | "REQUIRED";
@@ -87,6 +89,7 @@ export type ScheduledTask = Task & {
   end: Minute;
 };
 export interface ScheduledSetupPreparation { id:string; kind:"setup-preparation"; spaceId:string; setupFamilyId:string; entryIndex:number; duration:number; start:Minute; end:Minute }
+export interface ScheduledSpaceMeal { id:string; kind:"space-meal"; spaceId:string; entryIndex:number; duration:Minute; start:Minute; end:Minute }
 
 export interface ValidationSummary {
   hardValid: boolean;
@@ -104,6 +107,7 @@ export interface ValidationSummary {
   jointGroupViolationCount: number;
   technicalOperationViolationCount: number;
   technicalChainViolationCount: number;
+  spaceMealViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -190,11 +194,13 @@ export interface PlanMetrics extends ValidationSummary {
   technicalChainStartByRootId: Record<string, Minute | null>;
   technicalChainEndByRootId: Record<string, Minute | null>;
   technicalChainBranchesExplored: number;
+  spaceMealCount:number; spaceMealPlannedCount:number; spaceMealCandidateCountWhenSelectedBySpaceId:Record<string,number>; spaceMealStartBySpaceId:Record<string,Minute>; spaceMealEndBySpaceId:Record<string,Minute>; spaceMealMinutesBySpaceId:Record<string,number>; spaceMealBranchesExplored:number;
 }
 
 export interface PlanResult {
   complete: boolean;
   scheduledTasks: ScheduledTask[];
   scheduledSetupPreparations: ScheduledSetupPreparation[];
+  scheduledSpaceMeals: ScheduledSpaceMeal[];
   metrics: PlanMetrics;
 }
