@@ -1,5 +1,5 @@
 {
-  "version": "planner-next-required-space-meal-v1",
+  "version": "planner-next-required-space-meal-v2",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -1788,7 +1788,7 @@
             "completeCandidatesWithMeal": 5
           }
         },
-        "probe": {
+        "probeLimit1": {
           "candidates": [
             {
               "tasks": [
@@ -1848,16 +1848,445 @@
               "cost": 320
             }
           ],
+          "consumed": 47,
+          "secondaryBranches": 47,
+          "exhausted": false,
+          "diagnostics": {
+            "startsExplored": 25,
+            "expansions": 47,
+            "completeCandidatesGenerated": 1,
+            "maximumPartialStatesPerStart": 5,
+            "mealAttemptsExplored": 10,
+            "completeCandidatesWithMeal": 1
+          }
+        },
+        "probeLimit2": {
+          "candidates": [
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            },
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            }
+          ],
+          "consumed": 48,
+          "secondaryBranches": 48,
+          "exhausted": false,
+          "diagnostics": {
+            "startsExplored": 25,
+            "expansions": 48,
+            "completeCandidatesGenerated": 2,
+            "maximumPartialStatesPerStart": 5,
+            "mealAttemptsExplored": 10,
+            "completeCandidatesWithMeal": 2
+          }
+        },
+        "probeBestK": {
+          "candidates": [
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            },
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            },
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            },
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            },
+            {
+              "tasks": [
+                {
+                  "id": "required-meal-task-a",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-a",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 660,
+                  "end": 680
+                },
+                {
+                  "id": "required-meal-task-c",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-c",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 680,
+                  "end": 700
+                },
+                {
+                  "id": "required-meal-task-d",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-d",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 720,
+                  "end": 740
+                },
+                {
+                  "id": "required-meal-task-b",
+                  "kind": "auxiliary",
+                  "participantId": "required-meal-participant-b",
+                  "duration": 20,
+                  "spaceId": "required-meal-room",
+                  "dependencies": [],
+                  "start": 740,
+                  "end": 760
+                }
+              ],
+              "preparations": [],
+              "meals": [
+                {
+                  "id": "space-meal:required-meal-room:1",
+                  "kind": "space-meal",
+                  "spaceId": "required-meal-room",
+                  "entryIndex": 1,
+                  "duration": 20,
+                  "start": 700,
+                  "end": 720
+                }
+              ],
+              "cost": 320
+            }
+          ],
           "consumed": 51,
           "secondaryBranches": 51,
           "exhausted": false,
           "diagnostics": {
             "startsExplored": 25,
             "expansions": 51,
-            "completeCandidatesGenerated": 1,
+            "completeCandidatesGenerated": 5,
             "maximumPartialStatesPerStart": 5,
             "mealAttemptsExplored": 10,
-            "completeCandidatesWithMeal": 1
+            "completeCandidatesWithMeal": 5
           }
         }
       },
@@ -1874,7 +2303,7 @@
       "branches": 95247,
       "branchBudgetConsumed": 95247,
       "branchBudgetMaximum": 300000,
-      "runtimeMs": 1439.1197009999998,
+      "runtimeMs": 793.7880769999999,
       "determinism": true,
       "violationCount": 0
     }
@@ -2450,7 +2879,8 @@
     "spaceMealFutureFeasibilityAccepted": true,
     "historicalEvidenceRestored": true,
     "requiredSpaceMealAccepted": true,
-    "requiredSpaceMealFutureFeasibilityAccepted": true
+    "requiredSpaceMealFutureFeasibilityAccepted": true,
+    "requiredSpaceMealProbeAccepted": true
   },
   "requiredSpaceMealFutureFeasibilityEvidence": {
     "valid": {
@@ -2505,5 +2935,21 @@
       "exhausted": true,
       "budgetRemaining": 0
     }
+  },
+  "requiredSpaceMealProbeEvidence": {
+    "searchConsumed": 51,
+    "searchCandidateCount": 5,
+    "probeLimit1Consumed": 47,
+    "probeLimit1CandidateCount": 1,
+    "probeLimit2Consumed": 48,
+    "probeLimit2CandidateCount": 2,
+    "probeBestKConsumed": 51,
+    "probeBestKCandidateCount": 5,
+    "probeLimit1StopsEarly": true,
+    "probeLimit2WithinSearch": true,
+    "probeBestKWithinSearch": true,
+    "firstCandidateEqual": true,
+    "firstTwoCandidatesEqual": true,
+    "deterministic": true
   }
 }

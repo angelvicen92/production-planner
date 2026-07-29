@@ -157,7 +157,7 @@ function generateRequiredMealBlockCandidates(problem:PlannerNextProblem,tasks:Ta
   const spaceId=taskSpace(tasks)! , policy=spaceMealPolicy(problem,spaceId)! , ordered=[...tasks].sort((a,b)=>a.id.localeCompare(b.id)),complete:BlockCandidate[]=[];
   let consumed=0,secondaryBranches=priorSecondary,startsExplored=0,maximumPartialStatesPerStart=0,mealAttemptsExplored=0;
   const diagnostics=():BlockConstructionDiagnostics=>({startsExplored,expansions:consumed,completeCandidatesGenerated:complete.length,maximumPartialStatesPerStart,mealAttemptsExplored,completeCandidatesWithMeal:complete.length});
-  const finish=(exhausted:boolean):BlockConstructionResult=>({candidates:complete.sort(blockCandidateOrder).slice(0,problem.budget.bestK),consumed,secondaryBranches,exhausted,diagnostics:diagnostics()});
+  const finish=(exhausted:boolean):BlockConstructionResult=>({candidates:complete.sort(blockCandidateOrder).slice(0,mode==="PROBE"?probeLimit:problem.budget.bestK),consumed,secondaryBranches,exhausted,diagnostics:diagnostics()});
   const stateSignature=(s:Partial)=>`${signature(s.tasks)}|${s.meals.map(m=>`${m.id}:${m.start}-${m.end}`).sort().join("|")}|${s.cursor}|${s.mealPlaced}`;
   for(let canonicalStart=problem.day.start;canonicalStart<problem.day.end;canonicalStart+=5){
     startsExplored+=1;const totalDuration=ordered.reduce((sum,task)=>sum+task.duration,policy.duration),space=problem.spaces.find(candidate=>candidate.id===spaceId);if(!space?.availability.some(window=>window.start<=canonicalStart&&canonicalStart+totalDuration<=window.end))continue;let states:Partial[]=[{tasks:[],preparations:[],meals:[],remaining:ordered,mealPlaced:false,cost:0,cursor:canonicalStart}];maximumPartialStatesPerStart=Math.max(maximumPartialStatesPerStart,states.length);
@@ -165,13 +165,15 @@ function generateRequiredMealBlockCandidates(problem:PlannerNextProblem,tasks:Ta
       for(const state of states){const operations:Array<["task",Task]|["meal",undefined]>=[];for(const task of state.remaining)operations.push(["task",task]);if(!state.mealPlaced)operations.push(["meal",undefined]);
         operations.sort((a,b)=>a[0].localeCompare(b[0])||(a[1]?.id??"").localeCompare(b[1]?.id??""));
         for(const [kind,task] of operations){if(consumed>=allowance)return finish(true);consumed+=1;secondaryBranches+=1;
-          if(kind==="meal"){mealAttemptsExplored+=1;if(!canPlaceSpaceMeal(problem,spaceId,state.cursor,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const meal=createScheduledSpaceMeal(spaceId,state.cursor,policy.duration);next.push({...state,meals:[meal],mealPlaced:true,cursor:meal.end});continue;}
-          const start=state.cursor;if(!task||!canPlaceTask(problem,task,start,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const scored=scoreTask(problem,task,start,[...placed,...state.tasks]);next.push({...state,tasks:[...state.tasks,scored.scheduled],remaining:state.remaining.filter(x=>x.id!==task.id),cost:state.cost+scored.cost,cursor:scored.scheduled.end});
+          let candidate:Partial;
+          if(kind==="meal"){mealAttemptsExplored+=1;if(!canPlaceSpaceMeal(problem,spaceId,state.cursor,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const meal=createScheduledSpaceMeal(spaceId,state.cursor,policy.duration);candidate={...state,meals:[meal],mealPlaced:true,cursor:meal.end};}
+          else {const start=state.cursor;if(!task||!canPlaceTask(problem,task,start,[...placed,...state.tasks],[...existingMeals,...state.meals]))continue;const scored=scoreTask(problem,task,start,[...placed,...state.tasks]);candidate={...state,tasks:[...state.tasks,scored.scheduled],remaining:state.remaining.filter(x=>x.id!==task.id),cost:state.cost+scored.cost,cursor:scored.scheduled.end};}
+          if(!candidate.remaining.length&&candidate.mealPlaced&&candidate.meals.length===1){complete.push({tasks:candidate.tasks,preparations:[],meals:candidate.meals,cost:candidate.cost});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
+          else next.push(candidate);
         }
       }
       states=next.sort((a,b)=>a.cost-b.cost||stateSignature(a).localeCompare(stateSignature(b))).slice(0,problem.budget.bestK);maximumPartialStatesPerStart=Math.max(maximumPartialStatesPerStart,states.length);if(!states.length)break;
     }
-    for(const state of states)if(!state.remaining.length&&state.mealPlaced&&state.meals.length===1){complete.push({tasks:state.tasks,preparations:[],meals:state.meals,cost:state.cost});if(mode==="PROBE"&&complete.length>=probeLimit)return finish(false);}
   }
   return finish(false);
 }
