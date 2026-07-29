@@ -2277,4 +2277,14 @@ When that is not hard-feasible, it splits morning/afternoon only between blocks;
 The meal is an explicit `ScheduledSpaceMeal`, is not a task or auxiliary work item, and does not count as a gap.
 Feeders and resources remain hard constraints, and no search budget was increased.
 Exact alignment with `protectedMeal` is a temporary limitation; multiple meal positions remain out of scope.
-The accepted artifact is `planner-next-main-flow-meal-v1.json`; validate it with `./validate-next-017.sh`.
+The historical result is carried by `planner-next-focal-a2-baseline-v1.json`.
+
+### FOCAL-A2-001 — Real A2 Reconstruction Baseline
+Functional expansion stopped for the first real human benchmark: 19 contestants, vocal work, and Plató 7.
+The human reference is hard-valid, including the 14:00–15:15 main-stage meal, but Planner Next does not yet pass.
+Global `protectedMeal` prevents five valid vocal-room tasks during the Plató meal.
+No algorithm or search budget was changed; the artifact is a reproducible diagnostic baseline.
+`accepted` means the baseline is valid, not that the focal benchmark passed.
+`currentPlannerMeetsFocalBenchmark` is `false`; the next change must respond to this evidence.
+Planner Next remains isolated from production.
+Artifact: `planner-next-focal-a2-baseline-v1.json`; validate with `./validate-focal-a2-001.sh`.
