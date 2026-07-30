@@ -65,6 +65,15 @@ export interface SearchBudget {
   maxPatterns: number;
   maxBranchExpansions: number;
 }
+export interface AnchoredClosure {
+  id: string;
+  anchorTaskId: string;
+  beforeTaskIds: string[];
+  afterTaskIds: string[];
+  adjacency: "REQUIRED";
+  spaceSource: "ANCHOR_SPACE";
+  participantSource: "ANCHOR_PARTICIPANT";
+}
 
 export interface PlannerNextProblem {
   day: Window;
@@ -85,6 +94,7 @@ export interface PlannerNextProblem {
   resourceTransitionMinutes: number;
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
+  anchoredClosures?: AnchoredClosure[];
 }
 
 export type ScheduledTask = Task & {
@@ -216,6 +226,8 @@ export interface PlanMetrics extends ValidationSummary {
   technicalChainEndByRootId: Record<string, Minute | null>;
   technicalChainBranchesExplored: number;
   spaceMealCount:number; spaceMealPlannedCount:number; spaceMealCandidateCountWhenSelectedBySpaceId:Record<string,number>; spaceMealStartBySpaceId:Record<string,Minute>; spaceMealEndBySpaceId:Record<string,Minute>; spaceMealMinutesBySpaceId:Record<string,number>; spaceMealBranchesExplored:number;
+  anchoredClosureCount:number; anchoredClosurePlannedCount:number; anchoredSegmentCount:number; anchoredSegmentPlannedCount:number; anchoredClosureCandidateCount:number;
+  anchoredClosureStartById:Record<string,Minute|null>; anchoredClosureEndById:Record<string,Minute|null>; anchoredClosureAnchorTaskIdById:Record<string,string>; anchoredClosureBeforeTaskIdsById:Record<string,string[]>; anchoredClosureAfterTaskIdsById:Record<string,string[]>; anchoredClosureResourceIdsById:Record<string,string[]>; anchoredClosureAdjacencySatisfiedById:Record<string,boolean>;
 }
 
 export interface PlanResult {

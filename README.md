@@ -2344,3 +2344,15 @@ The accepted artifact is `planner-next-focal-a2-itinerant-unit-audit-v3.json`.
 `./validate-focal-a2-008.sh legacy` publishes it atomically from verified v2 history.
 `./validate-focal-a2-008.sh current` regenerates it using v3 alone and checks idempotence.
 After publication this is the single Planner Next artifact at the repository root.
+### FOCAL-A2-009 — Main-Flow Anchor Wrapping
+
+Planner Next accepts a generic `anchoredClosures` contract for REQUIRED before/anchor/after work items.
+Every segment is a real auxiliary task; the existing main anchor keeps its identity and duration.
+Configured participant, space, adjacency, and explicit resource requirements are validated before search.
+Variable operational durations keep each closure indivisible around the protected meal.
+Feeders use the first before segment as the participant deadline, and auxiliary placement skips preplaced IDs.
+Main-flow continuity observes segments while coach block accounting remains main-only.
+The Focal projection combines nine standalone operations with three wraps and 53 real tasks.
+The fresh benchmark is `npm run benchmark:planner-next:focal-a2-main-anchor-wrapping`.
+Auxiliary anchors remain deliberately unsupported for a later evidence-driven iteration.
+This work is isolated to Planner Next and does not alter the database or production integration.

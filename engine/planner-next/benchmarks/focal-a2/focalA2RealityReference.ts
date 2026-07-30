@@ -147,3 +147,17 @@ export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
 }
 
 export const projectFocalA2RealityProblem = projectStandaloneFocalA2RealityProblem;
+
+export function projectCombinedFocalA2ItinerantProblem():PlannerNextProblem{
+  const problem=projectStandaloneFocalA2RealityProblem();
+  const wraps=wrappedOperations;
+  for(const operation of wraps){
+    const anchor=problem.tasks.find(task=>task.id===operation.anchorTaskId)!;
+    const unit=itinerantUnitProfiles.find(candidate=>candidate.id===operation.unitId)!;
+    const requiredResourceIds=[...new Set([...(anchor.requiredResourceIds??[]),...unit.memberResourceIds])].sort();
+    anchor.requiredResourceIds=requiredResourceIds;
+    problem.tasks.push({id:`${operation.id}-before`,kind:"auxiliary",participantId:operation.participantId,duration:operation.before.duration,spaceId:anchor.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds]},{id:`${operation.id}-after`,kind:"auxiliary",participantId:operation.participantId,duration:operation.after.duration,spaceId:anchor.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds]});
+  }
+  problem.anchoredClosures=wraps.map(operation=>({id:operation.id,anchorTaskId:operation.anchorTaskId,beforeTaskIds:[`${operation.id}-before`],afterTaskIds:[`${operation.id}-after`],adjacency:"REQUIRED",spaceSource:"ANCHOR_SPACE",participantSource:"ANCHOR_PARTICIPANT"}));
+  return problem;
+}
