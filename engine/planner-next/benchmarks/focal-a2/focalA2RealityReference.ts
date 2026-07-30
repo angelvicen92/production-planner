@@ -1,5 +1,7 @@
 import type { ParticipantTask, PlannerNextProblem, Window } from "../../contracts";
 import { projectFocalA2BandProblem } from "./focalA2BandReference";
+import { focalA2HumanItinerantReference } from "./focalA2HumanItinerantReference";
+import { focalA2RealityAuxiliaryPolicy, focalA2RealityParticipantAvailabilityOverrides } from "./focalA2RealityOperationalConfiguration";
 
 export interface ItinerantUnitProfile {
   id: string;
@@ -13,7 +15,6 @@ interface OperationInformation {
   unitId: string;
   participantId: string;
   annotations?: string[];
-  humanReference: { start: number; end: number };
   location: string;
 }
 
@@ -50,14 +51,14 @@ export const itinerantUnitProfiles: ItinerantUnitProfile[] = [
 
 const standalone = (
   id: string, participantId: string, unitId: string, duration: number,
-  start: number, spaceId: string, location: string, annotations: string[] = [],
+  _start: number, spaceId: string, location: string, annotations: string[] = [],
 ): StandaloneItinerantOperationProfile => ({
   id, type: "STANDALONE", unitId, participantId, duration, spaceId, location,
-  annotations, humanReference: { start, end: start + duration },
+  annotations,
 });
 
 const wrap = (
-  id: string, participantId: string, unitId: string, start: number,
+  id: string, participantId: string, unitId: string, _start: number,
   _spaceId: string, annotations: string[] = [],
 ): WrappedItinerantOperationProfile => ({
   id, type: "ANCHORED_ACCOMPANIMENT", unitId, participantId,
@@ -65,7 +66,6 @@ const wrap = (
   before: { duration: 15, spaceId: "reality-location-stage" },
   after: { duration: 15, spaceId: "reality-location-stage" },
   adjacency: "REQUIRED", internalTransition:"INCLUDED", resourceContinuity:"REQUIRED", location: "PLATÓ", annotations,
-  humanReference: { start, end: start + 45 },
 });
 
 const A = "reality-unit-morning-a";
@@ -104,7 +104,7 @@ export const realityReferenceValidation = {
   wrappedAfterSegmentCount: wrappedOperations.length,
   wrappedAnchorCount: new Set(wrappedOperations.map((operation) => operation.anchorTaskId)).size,
   totalItinerantResourceMinutes: itinerantOperationProfiles.reduce(
-    (total, operation) => total + (operation.type === "STANDALONE" ? operation.duration : operation.humanReference.end - operation.humanReference.start), 0,
+    (total, operation) => total + (operation.type === "STANDALONE" ? operation.duration : 45), 0,
   ),
   projectedTaskCountWhenSupported: 53,
 };
@@ -120,26 +120,24 @@ export const realityResourceAvailability: Record<string, Array<{ start: number; 
   "reality-sound-2": [{ start: 675, end: 810 }],
 };
 
-export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
+export function projectStandaloneFocalA2RealityProblem(
+  operationalCorpus: ItinerantOperationProfile[] = itinerantOperationProfiles,
+): PlannerNextProblem {
   const problem = projectFocalA2BandProblem("CURRENT_PREFERRED");
-  const minimumEnd: Record<string, number> = {
-    "linet-varela": 1050, "carmen-maria-saborido": 1065, "eva-martin-fernandez": 1080,
-  };
+  const selectedStandalone = operationalCorpus.filter((operation): operation is StandaloneItinerantOperationProfile => operation.type === "STANDALONE");
   return {
     ...problem,
     day: { ...problem.day, end: 1080 },
-    // The source has no policy, while Planner Next preflight requires one. OFF is
-    // the neutral policy and is recorded by the audit rather than used to ease availability.
-    auxiliaryPolicy: problem.auxiliaryPolicy ?? { participantPresencePreference: "OFF" },
+    auxiliaryPolicy: { ...focalA2RealityAuxiliaryPolicy },
     spaces: [...problem.spaces, ...spaces],
     resources: [...problem.resources, ...memberIds.map((id) => ({
       id, availability: realityResourceAvailability[id]!.map((window) => ({ ...window })), presencePreference: "OFF" as const, transitionMinutes: 0,
     }))],
     participants: problem.participants.map((participant) => ({
       ...participant,
-      availability: participant.availability.map((window) => ({ ...window, end: Math.max(window.end, minimumEnd[participant.id] ?? window.end) })),
+      availability: participant.availability.map(window => ({ ...window, end: Math.max(window.end, ({"linet-varela":1050,"carmen-maria-saborido":1065,"eva-martin-fernandez":1080} as Record<string,number>)[participant.id] ?? window.end) })),
     })),
-    tasks: [...problem.tasks, ...standaloneOperations.map((operation): ParticipantTask => ({
+    tasks: [...problem.tasks, ...selectedStandalone.map((operation): ParticipantTask => ({
       id: operation.id, kind: "auxiliary", participantId: operation.participantId,
       duration: operation.duration, spaceId: operation.spaceId, dependencies: [],
       requiredResourceIds: [...itinerantUnitProfiles.find((unit) => unit.id === operation.unitId)!.memberResourceIds],
@@ -150,9 +148,9 @@ export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
 
 export const projectFocalA2RealityProblem = projectStandaloneFocalA2RealityProblem;
 
-export function projectCombinedFocalA2ItinerantProblem():PlannerNextProblem{
-  const problem=projectStandaloneFocalA2RealityProblem();
-  const wraps=wrappedOperations;
+export function projectCombinedFocalA2ItinerantProblem(operationalCorpus:ItinerantOperationProfile[]=itinerantOperationProfiles):PlannerNextProblem{
+  const problem=projectStandaloneFocalA2RealityProblem(operationalCorpus);
+  const wraps=operationalCorpus.filter((operation):operation is WrappedItinerantOperationProfile=>operation.type==="ANCHORED_ACCOMPANIMENT");
   for(const operation of wraps){
     const anchor=problem.tasks.find(task=>task.id===operation.anchorTaskId)!;
     const unit=itinerantUnitProfiles.find(candidate=>candidate.id===operation.unitId)!;
@@ -163,3 +161,6 @@ export function projectCombinedFocalA2ItinerantProblem():PlannerNextProblem{
   problem.anchoredAccompaniments=wraps.map(operation=>({id:operation.id,anchorTaskId:operation.anchorTaskId,beforeTaskIds:[`${operation.id}-before`],afterTaskIds:[`${operation.id}-after`],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED"}));
   return problem;
 }
+
+// Exported only for external comparison/evidence; projection functions never consult it.
+export { focalA2HumanItinerantReference };

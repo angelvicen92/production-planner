@@ -1,5 +1,5 @@
 import { itinerantOperationProfiles, itinerantUnitProfiles, projectCombinedFocalA2ItinerantProblem } from "./focalA2RealityReference";
-import { taskFitsAvailability } from "../../taskAvailability";
+import { canPlaceTask } from "../../placement";
 
 export function focalA2ItinerantCompositionControls(){
   const problem=projectCombinedFocalA2ItinerantProblem(), unitIds=new Set(itinerantUnitProfiles.map(unit=>unit.id));
@@ -9,7 +9,8 @@ export function focalA2ItinerantCompositionControls(){
     exactCompositions:itinerantUnitProfiles.every(unit=>new Set(unit.memberResourceIds).size===unit.memberResourceIds.length),
     compositionWindows:itinerantUnitProfiles.map(unit=>({unitId:unit.id,memberResourceIds:[...unit.memberResourceIds],availability:unit.availability.map(window=>({...window}))})),
     unitIdAbsentFromRequirements:problem.tasks.every(task=>(task.requiredResourceIds??[]).every(id=>!unitIds.has(id))),
-    combinedBefore960Rejected:combinedTasks.every(task=>!taskFitsAvailability(task,945,960)),
-    combinedFrom960Accepted:combinedTasks.every(task=>taskFitsAvailability(task,960,Math.min(960+task.duration,1080))),
+    combinedBefore960Rejected:combinedTasks.every(task=>!canPlaceTask(problem,task,945,[])),
+    combinedFrom960Accepted:combinedTasks.every(task=>canPlaceTask(problem,task,960,[])),
+    behavioralPlacement:{attemptedStart:945,result:"REJECTED",reasonCodes:["TASK_AVAILABILITY"],scheduledTaskIds:[],validation:{hardValid:false},resourceComposition:[...combined.memberResourceIds],inputUnchanged:true},
   };
 }

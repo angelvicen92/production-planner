@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { canonical } from "./runPlannerNextFocalA2RequiredAuditBenchmark";
+import { inspectProtectedHistoricalSubstrate } from "./focal-a2/focalA2ProtectedHistoricalSubstrate";
 
 const manifest = () => JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2BandSemanticsV4HistoricalManifest.json", "utf8"));
-const output = JSON.parse(readFileSync("planner-next-focal-a2-itinerant-unit-audit-v3.json", "utf8"));
+const output = JSON.parse(readFileSync("planner-next-focal-a2-itinerant-spec08-foundation-v2.json", "utf8"));
+
+const substrate = () => inspectProtectedHistoricalSubstrate(output, manifest());
 
 test("v4 withdraws the false gap and carries all 25 historical scenarios", () => {
   const historicalScenarioIds = Object.keys(manifest().scenarioDigests);
+  assert.ok(substrate().passed);
   assert.equal(historicalScenarioIds.length, 25);
-  assert.ok(historicalScenarioIds.every((id) => output.scenarios[id] !== undefined));
+  assert.ok(historicalScenarioIds.every((id) => substrate().scenarios[id] !== undefined));
   assert.ok(output.scenarios.focalA2InstrumentMetadataSemantics);
-  assert.equal(output.historicalEvidence.withdrawalEvidence.status, "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION");
+  assert.equal(substrate().evidence.withdrawalEvidence.status, "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION");
 });
 
 test("three metadata variants project and plan identically", () => {
