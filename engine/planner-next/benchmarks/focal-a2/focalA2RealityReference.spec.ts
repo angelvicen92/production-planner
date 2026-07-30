@@ -13,7 +13,7 @@ test("generic itinerant contract separates standalone and wrapped operations", (
     wrappedBeforeSegmentCount: 3, wrappedAfterSegmentCount: 3, wrappedAnchorCount: 3,
     totalItinerantResourceMinutes: 375, projectedTaskCountWhenSupported: 53,
   });
-  const wrapped = itinerantOperationProfiles.filter((operation) => operation.type === "WRAP_ANCHOR");
+  const wrapped = itinerantOperationProfiles.filter((operation) => operation.type === "ANCHORED_ACCOMPANIMENT");
   assert.deepEqual(wrapped.map((operation) => operation.participantId).sort(), ["cristina-zuloaga", "jose-javier-cuenca", "julio-gomez"]);
   assert.ok(wrapped.every((operation) => operation.before.duration === 15 && operation.after.duration === 15 && operation.adjacency === "REQUIRED"));
 });
@@ -24,6 +24,7 @@ test("unit IDs group configuration but never become required resources", () => {
     ["reality-camera-4", "reality-sound-2"],
     ["reality-camera-3", "reality-camera-4", "reality-sound-1"],
   ]);
+  assert.deepEqual(itinerantUnitProfiles.map(unit=>unit.availability), [[{start:660,end:840}],[{start:675,end:810}],[{start:960,end:1080}]]);
   const problem = projectStandaloneFocalA2RealityProblem();
   const unitIds = new Set(itinerantUnitProfiles.map((unit) => unit.id));
   assert.equal(problem.tasks.filter((task) => task.id.startsWith("reality-operation")).length, 9);

@@ -1,0 +1,2 @@
+import assert from "node:assert/strict";import test from "node:test";import { canPlaceTask } from "./placement";import { mainFlowMealScenario } from "./scenarios/mainFlowMealScenario";
+test("canonical placement enforces effective task availability",()=>{const p=mainFlowMealScenario(),t=p.tasks[0]!;t.availability=[{start:600,end:630}];assert.equal(canPlaceTask(p,t,600,[]),true);assert.equal(canPlaceTask(p,t,585,[]),false);t.availability=undefined;assert.equal(canPlaceTask(p,t,585,[]),true)});

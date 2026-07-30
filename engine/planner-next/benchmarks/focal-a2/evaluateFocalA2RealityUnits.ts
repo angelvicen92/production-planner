@@ -27,14 +27,18 @@ export function evaluateFocalA2RealityUnits(tasks: ReadonlyArray<ScheduledOperat
     const operationalBlockCount = operations.reduce((count, task, index) => count + (index === 0 || operations[index - 1]!.end < task.start ? 1 : 0), 0);
     const locationSequence = operations.filter((task, index) => index === 0 || operations[index - 1]!.spaceId !== task.spaceId).map((task) => task.spaceId);
     const exactComposition = operations.every((task) => sameSet(task.requiredResourceIds ?? [], unit.memberResourceIds));
+    const operationsOutsideUnitAvailability=operations.filter(task=>!unit.availability.some(window=>window.start<=task.start&&task.end<=window.end)).map(task=>task.id);
     return [unit.id, {
+      unitId:unit.id,memberResourceIds:[...unit.memberResourceIds],availability:unit.availability.map(window=>({...window})),
+      operationIds:configuredOperationIds, plannedOperationIds:scheduledOperationIds,
       configuredOperationIds, scheduledOperationIds,
       missingOperationIds: configuredOperationIds.filter((id) => !scheduledOperationIds.includes(id)),
       unexpectedOperationIds: scheduledOperationIds.filter((id) => !configuredOperationIds.includes(id)),
       operationCount: configuredOperationIds.length, scheduledOperationCount: operations.length,
-      start, end, productiveMinutes, spanMinutes: start === null || end === null ? 0 : end - start,
+      presenceStart:start, presenceEnd:end, start, end, productiveMinutes, presenceSpanMinutes:start === null || end === null ? 0 : end-start, spanMinutes: start === null || end === null ? 0 : end - start,
       internalGapMinutes: start === null || end === null ? 0 : end - start - productiveMinutes,
       operationalBlockCount, locationSequence, moveCount: Math.max(0, locationSequence.length - 1),
+      exactCompositionSatisfied:exactComposition, availabilitySatisfied:operationsOutsideUnitAvailability.length===0,operationsOutsideUnitAvailability,
       exactMembershipSatisfied: configuredOperationIds.length === scheduledOperationIds.length
         && configuredOperationIds.every((id) => scheduledOperationIds.includes(id)) && exactComposition,
     }];

@@ -1,9 +1,10 @@
-import type { ParticipantTask, PlannerNextProblem } from "../../contracts";
+import type { ParticipantTask, PlannerNextProblem, Window } from "../../contracts";
 import { projectFocalA2BandProblem } from "./focalA2BandReference";
 
 export interface ItinerantUnitProfile {
   id: string;
   memberResourceIds: string[];
+  availability: Window[];
   informationalAssignments?: string[];
 }
 
@@ -23,12 +24,13 @@ export interface StandaloneItinerantOperationProfile extends OperationInformatio
 }
 
 export interface WrappedItinerantOperationProfile extends OperationInformation {
-  type: "WRAP_ANCHOR";
+  type: "ANCHORED_ACCOMPANIMENT";
   anchorTaskId: string;
-  before: { duration: number; spaceSource: "ANCHOR_SPACE" };
-  during: { source: "ANCHOR_DURATION_AND_SPACE" };
-  after: { duration: number; spaceSource: "ANCHOR_SPACE" };
+  before: { duration: number; spaceId: string };
+  after: { duration: number; spaceId: string };
   adjacency: "REQUIRED";
+  internalTransition: "INCLUDED";
+  resourceContinuity: "REQUIRED";
 }
 
 export type ItinerantOperationProfile =
@@ -41,9 +43,9 @@ export const realitySourceDocuments = [
 ] as const;
 
 export const itinerantUnitProfiles: ItinerantUnitProfile[] = [
-  { id: "reality-unit-morning-a", memberResourceIds: ["reality-camera-3", "reality-sound-1"], informationalAssignments: ["Redacción A", "Producción A"] },
-  { id: "reality-unit-morning-b", memberResourceIds: ["reality-camera-4", "reality-sound-2"], informationalAssignments: ["Redacción B", "Producción B"] },
-  { id: "reality-unit-afternoon-combined", memberResourceIds: ["reality-camera-3", "reality-camera-4", "reality-sound-1"], informationalAssignments: ["Redacción A", "Producción A"] },
+  { id: "reality-unit-morning-a", memberResourceIds: ["reality-camera-3", "reality-sound-1"], availability:[{start:660,end:840}], informationalAssignments: ["Redacción A", "Producción A"] },
+  { id: "reality-unit-morning-b", memberResourceIds: ["reality-camera-4", "reality-sound-2"], availability:[{start:675,end:810}], informationalAssignments: ["Redacción B", "Producción B"] },
+  { id: "reality-unit-afternoon-combined", memberResourceIds: ["reality-camera-3", "reality-camera-4", "reality-sound-1"], availability:[{start:960,end:1080}], informationalAssignments: ["Redacción A", "Producción A"] },
 ];
 
 const standalone = (
@@ -58,12 +60,11 @@ const wrap = (
   id: string, participantId: string, unitId: string, start: number,
   _spaceId: string, annotations: string[] = [],
 ): WrappedItinerantOperationProfile => ({
-  id, type: "WRAP_ANCHOR", unitId, participantId,
+  id, type: "ANCHORED_ACCOMPANIMENT", unitId, participantId,
   anchorTaskId: `main-${participantId}`,
-  before: { duration: 15, spaceSource: "ANCHOR_SPACE" },
-  during: { source: "ANCHOR_DURATION_AND_SPACE" },
-  after: { duration: 15, spaceSource: "ANCHOR_SPACE" },
-  adjacency: "REQUIRED", location: "PLATÓ", annotations,
+  before: { duration: 15, spaceId: "reality-location-stage" },
+  after: { duration: 15, spaceId: "reality-location-stage" },
+  adjacency: "REQUIRED", internalTransition:"INCLUDED", resourceContinuity:"REQUIRED", location: "PLATÓ", annotations,
   humanReference: { start, end: start + 45 },
 });
 
@@ -92,7 +93,7 @@ const standaloneOperations = itinerantOperationProfiles.filter(
   (operation): operation is StandaloneItinerantOperationProfile => operation.type === "STANDALONE",
 );
 const wrappedOperations = itinerantOperationProfiles.filter(
-  (operation): operation is WrappedItinerantOperationProfile => operation.type === "WRAP_ANCHOR",
+  (operation): operation is WrappedItinerantOperationProfile => operation.type === "ANCHORED_ACCOMPANIMENT",
 );
 
 export const realityReferenceValidation = {
@@ -108,7 +109,7 @@ export const realityReferenceValidation = {
   projectedTaskCountWhenSupported: 53,
 };
 
-const spaces = [...new Set(standaloneOperations.map((operation) => operation.spaceId))]
+const spaces = [...new Set([...standaloneOperations.map((operation) => operation.spaceId),"reality-location-stage"])]
   .map((id) => ({ id, availability: [{ start: 540, end: 1080 }] }));
 const memberIds = [...new Set(itinerantUnitProfiles.flatMap((unit) => unit.memberResourceIds))];
 
@@ -142,6 +143,7 @@ export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
       id: operation.id, kind: "auxiliary", participantId: operation.participantId,
       duration: operation.duration, spaceId: operation.spaceId, dependencies: [],
       requiredResourceIds: [...itinerantUnitProfiles.find((unit) => unit.id === operation.unitId)!.memberResourceIds],
+      availability: itinerantUnitProfiles.find((unit) => unit.id === operation.unitId)!.availability.map(window=>({...window})),
     }))],
   };
 }
@@ -155,9 +157,9 @@ export function projectCombinedFocalA2ItinerantProblem():PlannerNextProblem{
     const anchor=problem.tasks.find(task=>task.id===operation.anchorTaskId)!;
     const unit=itinerantUnitProfiles.find(candidate=>candidate.id===operation.unitId)!;
     const requiredResourceIds=[...new Set([...(anchor.requiredResourceIds??[]),...unit.memberResourceIds])].sort();
-    anchor.requiredResourceIds=requiredResourceIds;
-    problem.tasks.push({id:`${operation.id}-before`,kind:"auxiliary",participantId:operation.participantId,duration:operation.before.duration,spaceId:anchor.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds]},{id:`${operation.id}-after`,kind:"auxiliary",participantId:operation.participantId,duration:operation.after.duration,spaceId:anchor.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds]});
+    anchor.requiredResourceIds=requiredResourceIds; anchor.availability=unit.availability.map(window=>({...window}));
+    problem.tasks.push({id:`${operation.id}-before`,kind:"auxiliary",participantId:operation.participantId,duration:operation.before.duration,spaceId:operation.before.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds],availability:unit.availability.map(window=>({...window}))},{id:`${operation.id}-after`,kind:"auxiliary",participantId:operation.participantId,duration:operation.after.duration,spaceId:operation.after.spaceId,dependencies:[],requiredResourceIds:[...unit.memberResourceIds],availability:unit.availability.map(window=>({...window}))});
   }
-  problem.anchoredClosures=wraps.map(operation=>({id:operation.id,anchorTaskId:operation.anchorTaskId,beforeTaskIds:[`${operation.id}-before`],afterTaskIds:[`${operation.id}-after`],adjacency:"REQUIRED",spaceSource:"ANCHOR_SPACE",participantSource:"ANCHOR_PARTICIPANT"}));
+  problem.anchoredAccompaniments=wraps.map(operation=>({id:operation.id,anchorTaskId:operation.anchorTaskId,beforeTaskIds:[`${operation.id}-before`],afterTaskIds:[`${operation.id}-after`],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED"}));
   return problem;
 }

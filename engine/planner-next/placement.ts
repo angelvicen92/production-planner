@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
+import { taskFitsAvailability } from "./taskAvailability";
 
 /** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
 export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
@@ -15,7 +16,7 @@ export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: num
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
   const space = problem.spaces.find((x) => x.id === task.spaceId);
   const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((x) => x.id === id));
-  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach)) return false;
+  if ((task.kind !== "technical" && !participant) || !space || (task.coachId !== undefined && !coach) || !taskFitsAvailability(task,start,end)) return false;
   if (start < problem.day.start || end > problem.day.end || !occupationAvoidsProtectedMeal(problem,task.spaceId,start,end)
     || (participant && !contains(participant.availability, start, end)) || (coach && !contains(coach.availability, start, end))
     || !contains(space.availability, start, end) || resources.some((x) => !x || !contains(x.availability, start, end))) return false;
