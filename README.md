@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-itinerant-unit-audit-v3.json`.
+The current accepted artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2340,19 +2340,18 @@ Only `ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE` and
 `MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE` remain active.
 The faithful full benchmark is therefore still intentionally unexecuted.
 No Planner Next algorithm or production integration changed.
-The accepted artifact is `planner-next-focal-a2-itinerant-unit-audit-v3.json`.
-`./validate-focal-a2-008.sh legacy` publishes it atomically from verified v2 history.
-`./validate-focal-a2-008.sh current` regenerates it using v3 alone and checks idempotence.
-After publication this is the single Planner Next artifact at the repository root.
-### FOCAL-A2-009 — Main-Flow Anchor Wrapping
+The historical v3 audit is retained only inside the current SPEC-08 foundation Evidence.
+Its obsolete validator and root artifact are withdrawn; REPO-002 names the sole current artifact.
+### FOCAL-A2-009R1 — SPEC-08 Foundation Repair
 
-Planner Next accepts a generic `anchoredClosures` contract for REQUIRED before/anchor/after work items.
-Every segment is a real auxiliary task; the existing main anchor keeps its identity and duration.
-Configured participant, space, adjacency, and explicit resource requirements are validated before search.
-Variable operational durations keep each closure indivisible around the protected meal.
-Feeders use the first before segment as the participant deadline, and auxiliary placement skips preplaced IDs.
-Main-flow continuity observes segments while coach block accounting remains main-only.
-The Focal projection combines nine standalone operations with three wraps and 53 real tasks.
-The fresh benchmark is `npm run benchmark:planner-next:focal-a2-main-anchor-wrapping`.
-Auxiliary anchors remain deliberately unsupported for a later evidence-driven iteration.
-This work is isolated to Planner Next and does not alter the database or production integration.
+FOCAL-A2-009 is withdrawn because its same-space wrapping semantics were incorrect.
+Before and after are productive auxiliary tasks in `reality-location-stage`, not occupations of `main-stage`.
+The historical main-only timeline, meal, continuity, coach blocks, and feeder deadline are restored.
+Every productive task kind supports optional effective availability windows with atomic preflight validation.
+Itinerant units now declare independent composition windows; the combined unit is afternoon-only from 16:00.
+The corrected standalone projection schedules 47 tasks, including nine operations and 240 productive minutes.
+The corrected 53-task combined projection is audited statically with six real segments and three existing anchors.
+Generic anchored-accompaniment scheduling is intentionally not supported and fails atomically before search.
+The remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
+The accepted Evidence is `planner-next-focal-a2-itinerant-spec08-foundation-v1.json`.
+Run `./validate-focal-a2-009r1.sh current`; Planner Next remains isolated from production and the database.

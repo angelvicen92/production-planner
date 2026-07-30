@@ -1,8 +1,9 @@
 {
-  "version": "planner-next-focal-a2-itinerant-unit-audit-v3",
-  "status": "FOCAL_A2_ITINERANT_UNIT_AUDIT_REPAIRED",
-  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-unit-audit-v2",
-  "sourceArtifactSha256": "baddefda190c01e352a85f386be9392372ff94ee25c4527dcbb09f2e4a3c3cc6",
+  "version": "planner-next-focal-a2-itinerant-spec08-foundation-v1",
+  "status": "FOCAL_A2_SPEC08_FOUNDATION_ACCEPTED",
+  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-unit-audit-v3",
+  "sourceArtifactSha256": "c83abb8f91703a157520be46b9392815b59e12ddcb4e3aa4cf66fd72a0b65d3d",
+  "scenarioCount": 30,
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -10417,1157 +10418,1967 @@
         "ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE",
         "MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE"
       ]
+    },
+    "focalA2Spec08FoundationRepair": {
+      "modes": {
+        "CURRENT_OFF": {
+          "complete": true,
+          "hardValid": true,
+          "plannedTaskCount": 38,
+          "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
+          "branches": 64558,
+          "runtimeMs": 479.88825799999995,
+          "searchStopReason": "SOLUTION_FOUND",
+          "reasonCodes": [],
+          "tasks": [
+            {
+              "id": "vocal-carmen-maria-saborido",
+              "start": 585,
+              "end": 600,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-lina-isabel-garcia-salcedo",
+              "start": 595,
+              "end": 610,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-moises-salazar-ramirez",
+              "start": 600,
+              "end": 615,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-julio-gomez",
+              "start": 610,
+              "end": 625,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-angel-gonzalez",
+              "start": 615,
+              "end": 630,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-luis-belda",
+              "start": 625,
+              "end": 640,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-cristina-zuloaga",
+              "start": 630,
+              "end": 645,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-linet-varela",
+              "start": 640,
+              "end": 655,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-gisela-montserrat",
+              "start": 655,
+              "end": 670,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-naomi-ines-carretero",
+              "start": 670,
+              "end": 685,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-angel-gonzalez",
+              "start": 675,
+              "end": 690,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-jose-javier-cuenca",
+              "start": 685,
+              "end": 700,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-cristina-zuloaga",
+              "start": 690,
+              "end": 705,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-moises-salazar-ramirez",
+              "start": 705,
+              "end": 720,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-carmen-maria-saborido",
+              "start": 720,
+              "end": 735,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-jose-javier-cuenca",
+              "start": 735,
+              "end": 750,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-naomi-ines-carretero",
+              "start": 750,
+              "end": 765,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-julio-gomez",
+              "start": 765,
+              "end": 780,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-gisela-montserrat",
+              "start": 780,
+              "end": 795,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-lina-isabel-garcia-salcedo",
+              "start": 795,
+              "end": 810,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-linet-varela",
+              "start": 810,
+              "end": 825,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-luis-belda",
+              "start": 825,
+              "end": 840,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-claudia-torrent",
+              "start": 825,
+              "end": 840,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-eva-martin-fernandez",
+              "start": 840,
+              "end": 855,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-noa-marcos-diez",
+              "start": 855,
+              "end": 870,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-marta-fonrali",
+              "start": 870,
+              "end": 885,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-adrian-darrel",
+              "start": 885,
+              "end": 900,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-daniel-hernan-barres",
+              "start": 900,
+              "end": 915,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-marta-fonrali",
+              "start": 915,
+              "end": 930,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-pere-portero",
+              "start": 915,
+              "end": 930,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-noa-marcos-diez",
+              "start": 930,
+              "end": 945,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-nela-garcia",
+              "start": 930,
+              "end": 945,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-eva-martin-fernandez",
+              "start": 945,
+              "end": 960,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-claudia-torrent",
+              "start": 960,
+              "end": 975,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-nela-garcia",
+              "start": 975,
+              "end": 990,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-pere-portero",
+              "start": 990,
+              "end": 1005,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-daniel-hernan-barres",
+              "start": 1005,
+              "end": 1020,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-adrian-darrel",
+              "start": 1020,
+              "end": 1035,
+              "spaceId": "main-stage"
+            }
+          ]
+        },
+        "CURRENT_PREFERRED": {
+          "complete": true,
+          "hardValid": true,
+          "plannedTaskCount": 38,
+          "planFingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+          "branches": 15599,
+          "runtimeMs": 899.5923190000001,
+          "searchStopReason": "SOLUTION_FOUND",
+          "reasonCodes": [],
+          "tasks": [
+            {
+              "id": "vocal-angel-gonzalez",
+              "start": 585,
+              "end": 600,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-julio-gomez",
+              "start": 595,
+              "end": 610,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-moises-salazar-ramirez",
+              "start": 600,
+              "end": 615,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-lina-isabel-garcia-salcedo",
+              "start": 610,
+              "end": 625,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-cristina-zuloaga",
+              "start": 615,
+              "end": 630,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-jose-javier-cuenca",
+              "start": 625,
+              "end": 640,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-carmen-maria-saborido",
+              "start": 630,
+              "end": 645,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-naomi-ines-carretero",
+              "start": 640,
+              "end": 655,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-gisela-montserrat",
+              "start": 655,
+              "end": 670,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-linet-varela",
+              "start": 670,
+              "end": 685,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-angel-gonzalez",
+              "start": 675,
+              "end": 690,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-luis-belda",
+              "start": 685,
+              "end": 700,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-moises-salazar-ramirez",
+              "start": 690,
+              "end": 705,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-cristina-zuloaga",
+              "start": 705,
+              "end": 720,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-carmen-maria-saborido",
+              "start": 720,
+              "end": 735,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-julio-gomez",
+              "start": 735,
+              "end": 750,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-lina-isabel-garcia-salcedo",
+              "start": 750,
+              "end": 765,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-jose-javier-cuenca",
+              "start": 765,
+              "end": 780,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-naomi-ines-carretero",
+              "start": 780,
+              "end": 795,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-gisela-montserrat",
+              "start": 795,
+              "end": 810,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-linet-varela",
+              "start": 810,
+              "end": 825,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-luis-belda",
+              "start": 825,
+              "end": 840,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-marta-fonrali",
+              "start": 825,
+              "end": 840,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-eva-martin-fernandez",
+              "start": 840,
+              "end": 855,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-noa-marcos-diez",
+              "start": 855,
+              "end": 870,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-claudia-torrent",
+              "start": 870,
+              "end": 885,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-pere-portero",
+              "start": 885,
+              "end": 900,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-nela-garcia",
+              "start": 900,
+              "end": 915,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-marta-fonrali",
+              "start": 915,
+              "end": 930,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-daniel-hernan-barres",
+              "start": 915,
+              "end": 930,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-eva-martin-fernandez",
+              "start": 930,
+              "end": 945,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-adrian-darrel",
+              "start": 930,
+              "end": 945,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-noa-marcos-diez",
+              "start": 945,
+              "end": 960,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-claudia-torrent",
+              "start": 960,
+              "end": 975,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-pere-portero",
+              "start": 975,
+              "end": 990,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-nela-garcia",
+              "start": 990,
+              "end": 1005,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-daniel-hernan-barres",
+              "start": 1005,
+              "end": 1020,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-adrian-darrel",
+              "start": 1020,
+              "end": 1035,
+              "spaceId": "main-stage"
+            }
+          ]
+        },
+        "CURRENT_REQUIRED": {
+          "complete": false,
+          "hardValid": false,
+          "plannedTaskCount": 0,
+          "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "branches": 1909,
+          "runtimeMs": 64.1034709999999,
+          "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+          "reasonCodes": [
+            "NO_COMPLETE_HARD_VALID_PLAN"
+          ],
+          "tasks": []
+        }
+      },
+      "standalone": {
+        "complete": true,
+        "hardValid": true,
+        "plannedTaskCount": 47,
+        "planFingerprint": "58166b1a2527784c70234e920552753c3eb6830e5e5f725f61289def61085fbf",
+        "branches": 52755,
+        "runtimeMs": 898.016666,
+        "searchStopReason": "SOLUTION_FOUND",
+        "reasonCodes": [],
+        "tasks": [
+          {
+            "id": "vocal-angel-gonzalez",
+            "start": 585,
+            "end": 600,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-julio-gomez",
+            "start": 595,
+            "end": 610,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-moises-salazar-ramirez",
+            "start": 600,
+            "end": 615,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-lina-isabel-garcia-salcedo",
+            "start": 610,
+            "end": 625,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-cristina-zuloaga",
+            "start": 615,
+            "end": 630,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-jose-javier-cuenca",
+            "start": 625,
+            "end": 640,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-noa-marcos-diez",
+            "start": 630,
+            "end": 645,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-naomi-ines-carretero",
+            "start": 640,
+            "end": 655,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-gisela-montserrat",
+            "start": 655,
+            "end": 670,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-luis-belda",
+            "start": 670,
+            "end": 685,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-angel-gonzalez",
+            "start": 675,
+            "end": 690,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-05",
+            "start": 675,
+            "end": 705,
+            "spaceId": "reality-location-manzano"
+          },
+          {
+            "id": "vocal-linet-varela",
+            "start": 685,
+            "end": 700,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-moises-salazar-ramirez",
+            "start": 690,
+            "end": 705,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-02",
+            "start": 690,
+            "end": 720,
+            "spaceId": "reality-location-influencer-corner"
+          },
+          {
+            "id": "main-cristina-zuloaga",
+            "start": 705,
+            "end": 720,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-07",
+            "start": 705,
+            "end": 735,
+            "spaceId": "reality-location-hall-p14"
+          },
+          {
+            "id": "main-noa-marcos-diez",
+            "start": 720,
+            "end": 735,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-julio-gomez",
+            "start": 735,
+            "end": 750,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-lina-isabel-garcia-salcedo",
+            "start": 750,
+            "end": 765,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-04",
+            "start": 750,
+            "end": 780,
+            "spaceId": "reality-location-music-corner"
+          },
+          {
+            "id": "main-jose-javier-cuenca",
+            "start": 765,
+            "end": 780,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-naomi-ines-carretero",
+            "start": 780,
+            "end": 795,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-gisela-montserrat",
+            "start": 795,
+            "end": 810,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-luis-belda",
+            "start": 810,
+            "end": 825,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-linet-varela",
+            "start": 825,
+            "end": 840,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-marta-fonrali",
+            "start": 825,
+            "end": 840,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-claudia-torrent",
+            "start": 840,
+            "end": 855,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-carmen-maria-saborido",
+            "start": 855,
+            "end": 870,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-eva-martin-fernandez",
+            "start": 870,
+            "end": 885,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-pere-portero",
+            "start": 885,
+            "end": 900,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-nela-garcia",
+            "start": 900,
+            "end": 915,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-marta-fonrali",
+            "start": 915,
+            "end": 930,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-daniel-hernan-barres",
+            "start": 915,
+            "end": 930,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-claudia-torrent",
+            "start": 930,
+            "end": 945,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-adrian-darrel",
+            "start": 930,
+            "end": 945,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-carmen-maria-saborido",
+            "start": 945,
+            "end": 960,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-eva-martin-fernandez",
+            "start": 960,
+            "end": 975,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-08",
+            "start": 960,
+            "end": 990,
+            "spaceId": "reality-location-hall-p14"
+          },
+          {
+            "id": "main-pere-portero",
+            "start": 975,
+            "end": 990,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-nela-garcia",
+            "start": 990,
+            "end": 1005,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-09",
+            "start": 990,
+            "end": 1020,
+            "spaceId": "reality-location-control"
+          },
+          {
+            "id": "main-daniel-hernan-barres",
+            "start": 1005,
+            "end": 1020,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-adrian-darrel",
+            "start": 1020,
+            "end": 1035,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-10",
+            "start": 1020,
+            "end": 1050,
+            "spaceId": "reality-location-buggy"
+          },
+          {
+            "id": "reality-operation-11",
+            "start": 1050,
+            "end": 1065,
+            "spaceId": "reality-location-red-carpet"
+          },
+          {
+            "id": "reality-operation-12",
+            "start": 1065,
+            "end": 1080,
+            "spaceId": "reality-location-red-carpet"
+          }
+        ]
+      },
+      "combined": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 0,
+        "runtimeMs": 0.7439869999998336,
+        "searchStopReason": "PREFLIGHT_FAILED",
+        "reasonCodes": [
+          "ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
+        ],
+        "tasks": []
+      },
+      "combinedCounts": {
+        "tasks": 53,
+        "main": 19,
+        "vocal": 19,
+        "auxiliary": 15,
+        "segments": 6,
+        "accompaniments": 3
+      }
     }
   },
-  "historicalEvidence": {
-    "currentOff": {
-      "mode": "CURRENT_OFF",
-      "complete": true,
-      "searchStopReason": "SOLUTION_FOUND",
-      "reasonCodes": [],
-      "scheduledTasks": [
-        {
-          "id": "vocal-carmen-maria-saborido",
-          "kind": "vocal",
-          "participantId": "carmen-maria-saborido",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 585,
-          "end": 600
+  "historicalSubstrate": {
+    "historicalEvidence": {
+      "currentOff": {
+        "mode": "CURRENT_OFF",
+        "complete": true,
+        "searchStopReason": "SOLUTION_FOUND",
+        "reasonCodes": [],
+        "scheduledTasks": [
+          {
+            "id": "vocal-carmen-maria-saborido",
+            "kind": "vocal",
+            "participantId": "carmen-maria-saborido",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 585,
+            "end": 600
+          },
+          {
+            "id": "vocal-lina-isabel-garcia-salcedo",
+            "kind": "vocal",
+            "participantId": "lina-isabel-garcia-salcedo",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 595,
+            "end": 610
+          },
+          {
+            "id": "vocal-moises-salazar-ramirez",
+            "kind": "vocal",
+            "participantId": "moises-salazar-ramirez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 600,
+            "end": 615
+          },
+          {
+            "id": "vocal-julio-gomez",
+            "kind": "vocal",
+            "participantId": "julio-gomez",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 610,
+            "end": 625
+          },
+          {
+            "id": "vocal-angel-gonzalez",
+            "kind": "vocal",
+            "participantId": "angel-gonzalez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 615,
+            "end": 630
+          },
+          {
+            "id": "vocal-luis-belda",
+            "kind": "vocal",
+            "participantId": "luis-belda",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 625,
+            "end": 640
+          },
+          {
+            "id": "vocal-cristina-zuloaga",
+            "kind": "vocal",
+            "participantId": "cristina-zuloaga",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 630,
+            "end": 645
+          },
+          {
+            "id": "vocal-linet-varela",
+            "kind": "vocal",
+            "participantId": "linet-varela",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 640,
+            "end": 655
+          },
+          {
+            "id": "vocal-gisela-montserrat",
+            "kind": "vocal",
+            "participantId": "gisela-montserrat",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 655,
+            "end": 670
+          },
+          {
+            "id": "vocal-naomi-ines-carretero",
+            "kind": "vocal",
+            "participantId": "naomi-ines-carretero",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 670,
+            "end": 685
+          },
+          {
+            "id": "main-angel-gonzalez",
+            "kind": "main",
+            "participantId": "angel-gonzalez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-angel-gonzalez"
+            ],
+            "start": 675,
+            "end": 690
+          },
+          {
+            "id": "vocal-jose-javier-cuenca",
+            "kind": "vocal",
+            "participantId": "jose-javier-cuenca",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 685,
+            "end": 700
+          },
+          {
+            "id": "main-cristina-zuloaga",
+            "kind": "main",
+            "participantId": "cristina-zuloaga",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-cristina-zuloaga"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 690,
+            "end": 705
+          },
+          {
+            "id": "main-moises-salazar-ramirez",
+            "kind": "main",
+            "participantId": "moises-salazar-ramirez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-moises-salazar-ramirez"
+            ],
+            "start": 705,
+            "end": 720
+          },
+          {
+            "id": "main-carmen-maria-saborido",
+            "kind": "main",
+            "participantId": "carmen-maria-saborido",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-carmen-maria-saborido"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 720,
+            "end": 735
+          },
+          {
+            "id": "main-jose-javier-cuenca",
+            "kind": "main",
+            "participantId": "jose-javier-cuenca",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-jose-javier-cuenca"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 735,
+            "end": 750
+          },
+          {
+            "id": "main-naomi-ines-carretero",
+            "kind": "main",
+            "participantId": "naomi-ines-carretero",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-naomi-ines-carretero"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 750,
+            "end": 765
+          },
+          {
+            "id": "main-julio-gomez",
+            "kind": "main",
+            "participantId": "julio-gomez",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-julio-gomez"
+            ],
+            "start": 765,
+            "end": 780
+          },
+          {
+            "id": "main-gisela-montserrat",
+            "kind": "main",
+            "participantId": "gisela-montserrat",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-gisela-montserrat"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 780,
+            "end": 795
+          },
+          {
+            "id": "main-lina-isabel-garcia-salcedo",
+            "kind": "main",
+            "participantId": "lina-isabel-garcia-salcedo",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-lina-isabel-garcia-salcedo"
+            ],
+            "start": 795,
+            "end": 810
+          },
+          {
+            "id": "main-linet-varela",
+            "kind": "main",
+            "participantId": "linet-varela",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-linet-varela"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 810,
+            "end": 825
+          },
+          {
+            "id": "main-luis-belda",
+            "kind": "main",
+            "participantId": "luis-belda",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-luis-belda"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 825,
+            "end": 840
+          },
+          {
+            "id": "vocal-claudia-torrent",
+            "kind": "vocal",
+            "participantId": "claudia-torrent",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 825,
+            "end": 840
+          },
+          {
+            "id": "vocal-eva-martin-fernandez",
+            "kind": "vocal",
+            "participantId": "eva-martin-fernandez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 840,
+            "end": 855
+          },
+          {
+            "id": "vocal-noa-marcos-diez",
+            "kind": "vocal",
+            "participantId": "noa-marcos-diez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 855,
+            "end": 870
+          },
+          {
+            "id": "vocal-marta-fonrali",
+            "kind": "vocal",
+            "participantId": "marta-fonrali",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 870,
+            "end": 885
+          },
+          {
+            "id": "vocal-adrian-darrel",
+            "kind": "vocal",
+            "participantId": "adrian-darrel",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 885,
+            "end": 900
+          },
+          {
+            "id": "vocal-daniel-hernan-barres",
+            "kind": "vocal",
+            "participantId": "daniel-hernan-barres",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 900,
+            "end": 915
+          },
+          {
+            "id": "main-marta-fonrali",
+            "kind": "main",
+            "participantId": "marta-fonrali",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-marta-fonrali"
+            ],
+            "start": 915,
+            "end": 930
+          },
+          {
+            "id": "vocal-pere-portero",
+            "kind": "vocal",
+            "participantId": "pere-portero",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 915,
+            "end": 930
+          },
+          {
+            "id": "main-noa-marcos-diez",
+            "kind": "main",
+            "participantId": "noa-marcos-diez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-noa-marcos-diez"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 930,
+            "end": 945
+          },
+          {
+            "id": "vocal-nela-garcia",
+            "kind": "vocal",
+            "participantId": "nela-garcia",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 930,
+            "end": 945
+          },
+          {
+            "id": "main-eva-martin-fernandez",
+            "kind": "main",
+            "participantId": "eva-martin-fernandez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-eva-martin-fernandez"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 945,
+            "end": 960
+          },
+          {
+            "id": "main-claudia-torrent",
+            "kind": "main",
+            "participantId": "claudia-torrent",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-claudia-torrent"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 960,
+            "end": 975
+          },
+          {
+            "id": "main-nela-garcia",
+            "kind": "main",
+            "participantId": "nela-garcia",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-nela-garcia"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 975,
+            "end": 990
+          },
+          {
+            "id": "main-pere-portero",
+            "kind": "main",
+            "participantId": "pere-portero",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-pere-portero"
+            ],
+            "start": 990,
+            "end": 1005
+          },
+          {
+            "id": "main-daniel-hernan-barres",
+            "kind": "main",
+            "participantId": "daniel-hernan-barres",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-daniel-hernan-barres"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 1005,
+            "end": 1020
+          },
+          {
+            "id": "main-adrian-darrel",
+            "kind": "main",
+            "participantId": "adrian-darrel",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-adrian-darrel"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 1020,
+            "end": 1035
+          }
+        ],
+        "scheduledSetupPreparations": [],
+        "scheduledSpaceMeals": [
+          {
+            "id": "space-meal:main-stage:1",
+            "kind": "space-meal",
+            "spaceId": "main-stage",
+            "entryIndex": 1,
+            "duration": 75,
+            "start": 840,
+            "end": 915
+          }
+        ],
+        "plannedTaskCount": 38,
+        "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
+        "branches": 64558,
+        "branchBudgetConsumed": 64558,
+        "runtimeMs": 256.2180440000001,
+        "totalParticipantPresenceMinutes": 2345,
+        "maxParticipantPresenceMinutes": 215,
+        "mainFlowSpanMinutes": 360,
+        "resourceOperationalBlockCountById": {
+          "focal-a2-continuous-resource": 6
         },
-        {
-          "id": "vocal-lina-isabel-garcia-salcedo",
-          "kind": "vocal",
-          "participantId": "lina-isabel-garcia-salcedo",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 595,
-          "end": 610
+        "resourceAuthorizedMealMinutesById": {
+          "focal-a2-continuous-resource": 0
         },
-        {
-          "id": "vocal-moises-salazar-ramirez",
-          "kind": "vocal",
-          "participantId": "moises-salazar-ramirez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 600,
-          "end": 615
-        },
-        {
-          "id": "vocal-julio-gomez",
-          "kind": "vocal",
-          "participantId": "julio-gomez",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 610,
-          "end": 625
-        },
-        {
-          "id": "vocal-angel-gonzalez",
-          "kind": "vocal",
-          "participantId": "angel-gonzalez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 615,
-          "end": 630
-        },
-        {
-          "id": "vocal-luis-belda",
-          "kind": "vocal",
-          "participantId": "luis-belda",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 625,
-          "end": 640
-        },
-        {
-          "id": "vocal-cristina-zuloaga",
-          "kind": "vocal",
-          "participantId": "cristina-zuloaga",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 630,
-          "end": 645
-        },
-        {
-          "id": "vocal-linet-varela",
-          "kind": "vocal",
-          "participantId": "linet-varela",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 640,
-          "end": 655
-        },
-        {
-          "id": "vocal-gisela-montserrat",
-          "kind": "vocal",
-          "participantId": "gisela-montserrat",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 655,
-          "end": 670
-        },
-        {
-          "id": "vocal-naomi-ines-carretero",
-          "kind": "vocal",
-          "participantId": "naomi-ines-carretero",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 670,
-          "end": 685
-        },
-        {
-          "id": "main-angel-gonzalez",
-          "kind": "main",
-          "participantId": "angel-gonzalez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-angel-gonzalez"
-          ],
-          "start": 675,
-          "end": 690
-        },
-        {
-          "id": "vocal-jose-javier-cuenca",
-          "kind": "vocal",
-          "participantId": "jose-javier-cuenca",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 685,
-          "end": 700
-        },
-        {
-          "id": "main-cristina-zuloaga",
-          "kind": "main",
-          "participantId": "cristina-zuloaga",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-cristina-zuloaga"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 690,
-          "end": 705
-        },
-        {
-          "id": "main-moises-salazar-ramirez",
-          "kind": "main",
-          "participantId": "moises-salazar-ramirez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-moises-salazar-ramirez"
-          ],
-          "start": 705,
-          "end": 720
-        },
-        {
-          "id": "main-carmen-maria-saborido",
-          "kind": "main",
-          "participantId": "carmen-maria-saborido",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-carmen-maria-saborido"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 720,
-          "end": 735
-        },
-        {
-          "id": "main-jose-javier-cuenca",
-          "kind": "main",
-          "participantId": "jose-javier-cuenca",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-jose-javier-cuenca"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 735,
-          "end": 750
-        },
-        {
-          "id": "main-naomi-ines-carretero",
-          "kind": "main",
-          "participantId": "naomi-ines-carretero",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-naomi-ines-carretero"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 750,
-          "end": 765
-        },
-        {
-          "id": "main-julio-gomez",
-          "kind": "main",
-          "participantId": "julio-gomez",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-julio-gomez"
-          ],
-          "start": 765,
-          "end": 780
-        },
-        {
-          "id": "main-gisela-montserrat",
-          "kind": "main",
-          "participantId": "gisela-montserrat",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-gisela-montserrat"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 780,
-          "end": 795
-        },
-        {
-          "id": "main-lina-isabel-garcia-salcedo",
-          "kind": "main",
-          "participantId": "lina-isabel-garcia-salcedo",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-lina-isabel-garcia-salcedo"
-          ],
-          "start": 795,
-          "end": 810
-        },
-        {
-          "id": "main-linet-varela",
-          "kind": "main",
-          "participantId": "linet-varela",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-linet-varela"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 810,
-          "end": 825
-        },
-        {
-          "id": "main-luis-belda",
-          "kind": "main",
-          "participantId": "luis-belda",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-luis-belda"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 825,
-          "end": 840
-        },
-        {
-          "id": "vocal-claudia-torrent",
-          "kind": "vocal",
-          "participantId": "claudia-torrent",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 825,
-          "end": 840
-        },
-        {
-          "id": "vocal-eva-martin-fernandez",
-          "kind": "vocal",
-          "participantId": "eva-martin-fernandez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 840,
-          "end": 855
-        },
-        {
-          "id": "vocal-noa-marcos-diez",
-          "kind": "vocal",
-          "participantId": "noa-marcos-diez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 855,
-          "end": 870
-        },
-        {
-          "id": "vocal-marta-fonrali",
-          "kind": "vocal",
-          "participantId": "marta-fonrali",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 870,
-          "end": 885
-        },
-        {
-          "id": "vocal-adrian-darrel",
-          "kind": "vocal",
-          "participantId": "adrian-darrel",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 885,
-          "end": 900
-        },
-        {
-          "id": "vocal-daniel-hernan-barres",
-          "kind": "vocal",
-          "participantId": "daniel-hernan-barres",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 900,
-          "end": 915
-        },
-        {
-          "id": "main-marta-fonrali",
-          "kind": "main",
-          "participantId": "marta-fonrali",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-marta-fonrali"
-          ],
-          "start": 915,
-          "end": 930
-        },
-        {
-          "id": "vocal-pere-portero",
-          "kind": "vocal",
-          "participantId": "pere-portero",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 915,
-          "end": 930
-        },
-        {
-          "id": "main-noa-marcos-diez",
-          "kind": "main",
-          "participantId": "noa-marcos-diez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-noa-marcos-diez"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 930,
-          "end": 945
-        },
-        {
-          "id": "vocal-nela-garcia",
-          "kind": "vocal",
-          "participantId": "nela-garcia",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 930,
-          "end": 945
-        },
-        {
-          "id": "main-eva-martin-fernandez",
-          "kind": "main",
-          "participantId": "eva-martin-fernandez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-eva-martin-fernandez"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 945,
-          "end": 960
-        },
-        {
-          "id": "main-claudia-torrent",
-          "kind": "main",
-          "participantId": "claudia-torrent",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-claudia-torrent"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 960,
-          "end": 975
-        },
-        {
-          "id": "main-nela-garcia",
-          "kind": "main",
-          "participantId": "nela-garcia",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-nela-garcia"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 975,
-          "end": 990
-        },
-        {
-          "id": "main-pere-portero",
-          "kind": "main",
-          "participantId": "pere-portero",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-pere-portero"
-          ],
-          "start": 990,
-          "end": 1005
-        },
-        {
-          "id": "main-daniel-hernan-barres",
-          "kind": "main",
-          "participantId": "daniel-hernan-barres",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-daniel-hernan-barres"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 1005,
-          "end": 1020
-        },
-        {
-          "id": "main-adrian-darrel",
-          "kind": "main",
-          "participantId": "adrian-darrel",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-adrian-darrel"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 1020,
-          "end": 1035
-        }
-      ],
-      "scheduledSetupPreparations": [],
-      "scheduledSpaceMeals": [
-        {
-          "id": "space-meal:main-stage:1",
-          "kind": "space-meal",
-          "spaceId": "main-stage",
-          "entryIndex": 1,
-          "duration": 75,
-          "start": 840,
-          "end": 915
-        }
-      ],
-      "plannedTaskCount": 38,
-      "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
-      "branches": 64558,
-      "branchBudgetConsumed": 64558,
-      "runtimeMs": 256.2180440000001,
-      "totalParticipantPresenceMinutes": 2345,
-      "maxParticipantPresenceMinutes": 215,
-      "mainFlowSpanMinutes": 360,
-      "resourceOperationalBlockCountById": {
-        "focal-a2-continuous-resource": 6
+        "hardValid": true,
+        "inputUnchanged": true
       },
-      "resourceAuthorizedMealMinutesById": {
-        "focal-a2-continuous-resource": 0
+      "preferredPlan": {
+        "mode": "CURRENT_PREFERRED",
+        "complete": true,
+        "searchStopReason": "SOLUTION_FOUND",
+        "reasonCodes": [],
+        "scheduledTasks": [
+          {
+            "id": "vocal-angel-gonzalez",
+            "kind": "vocal",
+            "participantId": "angel-gonzalez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 585,
+            "end": 600
+          },
+          {
+            "id": "vocal-julio-gomez",
+            "kind": "vocal",
+            "participantId": "julio-gomez",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 595,
+            "end": 610
+          },
+          {
+            "id": "vocal-moises-salazar-ramirez",
+            "kind": "vocal",
+            "participantId": "moises-salazar-ramirez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 600,
+            "end": 615
+          },
+          {
+            "id": "vocal-lina-isabel-garcia-salcedo",
+            "kind": "vocal",
+            "participantId": "lina-isabel-garcia-salcedo",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 610,
+            "end": 625
+          },
+          {
+            "id": "vocal-cristina-zuloaga",
+            "kind": "vocal",
+            "participantId": "cristina-zuloaga",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 615,
+            "end": 630
+          },
+          {
+            "id": "vocal-jose-javier-cuenca",
+            "kind": "vocal",
+            "participantId": "jose-javier-cuenca",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 625,
+            "end": 640
+          },
+          {
+            "id": "vocal-carmen-maria-saborido",
+            "kind": "vocal",
+            "participantId": "carmen-maria-saborido",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 630,
+            "end": 645
+          },
+          {
+            "id": "vocal-naomi-ines-carretero",
+            "kind": "vocal",
+            "participantId": "naomi-ines-carretero",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 640,
+            "end": 655
+          },
+          {
+            "id": "vocal-gisela-montserrat",
+            "kind": "vocal",
+            "participantId": "gisela-montserrat",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 655,
+            "end": 670
+          },
+          {
+            "id": "vocal-linet-varela",
+            "kind": "vocal",
+            "participantId": "linet-varela",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 670,
+            "end": 685
+          },
+          {
+            "id": "main-angel-gonzalez",
+            "kind": "main",
+            "participantId": "angel-gonzalez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-angel-gonzalez"
+            ],
+            "start": 675,
+            "end": 690
+          },
+          {
+            "id": "vocal-luis-belda",
+            "kind": "vocal",
+            "participantId": "luis-belda",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 685,
+            "end": 700
+          },
+          {
+            "id": "main-moises-salazar-ramirez",
+            "kind": "main",
+            "participantId": "moises-salazar-ramirez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-moises-salazar-ramirez"
+            ],
+            "start": 690,
+            "end": 705
+          },
+          {
+            "id": "main-cristina-zuloaga",
+            "kind": "main",
+            "participantId": "cristina-zuloaga",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-cristina-zuloaga"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 705,
+            "end": 720
+          },
+          {
+            "id": "main-carmen-maria-saborido",
+            "kind": "main",
+            "participantId": "carmen-maria-saborido",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-carmen-maria-saborido"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 720,
+            "end": 735
+          },
+          {
+            "id": "main-julio-gomez",
+            "kind": "main",
+            "participantId": "julio-gomez",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-julio-gomez"
+            ],
+            "start": 735,
+            "end": 750
+          },
+          {
+            "id": "main-lina-isabel-garcia-salcedo",
+            "kind": "main",
+            "participantId": "lina-isabel-garcia-salcedo",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-lina-isabel-garcia-salcedo"
+            ],
+            "start": 750,
+            "end": 765
+          },
+          {
+            "id": "main-jose-javier-cuenca",
+            "kind": "main",
+            "participantId": "jose-javier-cuenca",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-jose-javier-cuenca"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 765,
+            "end": 780
+          },
+          {
+            "id": "main-naomi-ines-carretero",
+            "kind": "main",
+            "participantId": "naomi-ines-carretero",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-naomi-ines-carretero"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 780,
+            "end": 795
+          },
+          {
+            "id": "main-gisela-montserrat",
+            "kind": "main",
+            "participantId": "gisela-montserrat",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-gisela-montserrat"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 795,
+            "end": 810
+          },
+          {
+            "id": "main-linet-varela",
+            "kind": "main",
+            "participantId": "linet-varela",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-linet-varela"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 810,
+            "end": 825
+          },
+          {
+            "id": "main-luis-belda",
+            "kind": "main",
+            "participantId": "luis-belda",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-luis-belda"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 825,
+            "end": 840
+          },
+          {
+            "id": "vocal-marta-fonrali",
+            "kind": "vocal",
+            "participantId": "marta-fonrali",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 825,
+            "end": 840
+          },
+          {
+            "id": "vocal-eva-martin-fernandez",
+            "kind": "vocal",
+            "participantId": "eva-martin-fernandez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 840,
+            "end": 855
+          },
+          {
+            "id": "vocal-noa-marcos-diez",
+            "kind": "vocal",
+            "participantId": "noa-marcos-diez",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 855,
+            "end": 870
+          },
+          {
+            "id": "vocal-claudia-torrent",
+            "kind": "vocal",
+            "participantId": "claudia-torrent",
+            "coachId": "coach-lucia",
+            "spaceId": "vocal-room-lucia",
+            "duration": 15,
+            "dependencies": [],
+            "start": 870,
+            "end": 885
+          },
+          {
+            "id": "vocal-pere-portero",
+            "kind": "vocal",
+            "participantId": "pere-portero",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 885,
+            "end": 900
+          },
+          {
+            "id": "vocal-nela-garcia",
+            "kind": "vocal",
+            "participantId": "nela-garcia",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 900,
+            "end": 915
+          },
+          {
+            "id": "main-marta-fonrali",
+            "kind": "main",
+            "participantId": "marta-fonrali",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-marta-fonrali"
+            ],
+            "start": 915,
+            "end": 930
+          },
+          {
+            "id": "vocal-daniel-hernan-barres",
+            "kind": "vocal",
+            "participantId": "daniel-hernan-barres",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 915,
+            "end": 930
+          },
+          {
+            "id": "main-eva-martin-fernandez",
+            "kind": "main",
+            "participantId": "eva-martin-fernandez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-eva-martin-fernandez"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 930,
+            "end": 945
+          },
+          {
+            "id": "vocal-adrian-darrel",
+            "kind": "vocal",
+            "participantId": "adrian-darrel",
+            "coachId": "coach-jose-maria",
+            "spaceId": "vocal-room-jose-maria",
+            "duration": 15,
+            "dependencies": [],
+            "start": 930,
+            "end": 945
+          },
+          {
+            "id": "main-noa-marcos-diez",
+            "kind": "main",
+            "participantId": "noa-marcos-diez",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-noa-marcos-diez"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 945,
+            "end": 960
+          },
+          {
+            "id": "main-claudia-torrent",
+            "kind": "main",
+            "participantId": "claudia-torrent",
+            "coachId": "coach-lucia",
+            "blockKey": "coach-lucia",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-claudia-torrent"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 960,
+            "end": 975
+          },
+          {
+            "id": "main-pere-portero",
+            "kind": "main",
+            "participantId": "pere-portero",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-pere-portero"
+            ],
+            "start": 975,
+            "end": 990
+          },
+          {
+            "id": "main-nela-garcia",
+            "kind": "main",
+            "participantId": "nela-garcia",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-nela-garcia"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 990,
+            "end": 1005
+          },
+          {
+            "id": "main-daniel-hernan-barres",
+            "kind": "main",
+            "participantId": "daniel-hernan-barres",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-daniel-hernan-barres"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 1005,
+            "end": 1020
+          },
+          {
+            "id": "main-adrian-darrel",
+            "kind": "main",
+            "participantId": "adrian-darrel",
+            "coachId": "coach-jose-maria",
+            "blockKey": "coach-jose-maria",
+            "spaceId": "main-stage",
+            "duration": 15,
+            "dependencies": [
+              "vocal-adrian-darrel"
+            ],
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ],
+            "start": 1020,
+            "end": 1035
+          }
+        ],
+        "scheduledSetupPreparations": [],
+        "scheduledSpaceMeals": [
+          {
+            "id": "space-meal:main-stage:1",
+            "kind": "space-meal",
+            "spaceId": "main-stage",
+            "entryIndex": 1,
+            "duration": 75,
+            "start": 840,
+            "end": 915
+          }
+        ],
+        "plannedTaskCount": 38,
+        "fingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+        "branches": 15599,
+        "branchBudgetConsumed": 15599,
+        "runtimeMs": 639.4230709999999,
+        "totalParticipantPresenceMinutes": 2345,
+        "maxParticipantPresenceMinutes": 155,
+        "mainFlowSpanMinutes": 360,
+        "resourceOperationalBlockCountById": {
+          "focal-a2-continuous-resource": 4
+        },
+        "resourceAuthorizedMealMinutesById": {
+          "focal-a2-continuous-resource": 75
+        },
+        "hardValid": true,
+        "inputUnchanged": true
       },
-      "hardValid": true,
-      "inputUnchanged": true
-    },
-    "preferredPlan": {
-      "mode": "CURRENT_PREFERRED",
-      "complete": true,
-      "searchStopReason": "SOLUTION_FOUND",
-      "reasonCodes": [],
-      "scheduledTasks": [
-        {
-          "id": "vocal-angel-gonzalez",
-          "kind": "vocal",
-          "participantId": "angel-gonzalez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 585,
-          "end": 600
-        },
-        {
-          "id": "vocal-julio-gomez",
-          "kind": "vocal",
-          "participantId": "julio-gomez",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 595,
-          "end": 610
-        },
-        {
-          "id": "vocal-moises-salazar-ramirez",
-          "kind": "vocal",
-          "participantId": "moises-salazar-ramirez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 600,
-          "end": 615
-        },
-        {
-          "id": "vocal-lina-isabel-garcia-salcedo",
-          "kind": "vocal",
-          "participantId": "lina-isabel-garcia-salcedo",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 610,
-          "end": 625
-        },
-        {
-          "id": "vocal-cristina-zuloaga",
-          "kind": "vocal",
-          "participantId": "cristina-zuloaga",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 615,
-          "end": 630
-        },
-        {
-          "id": "vocal-jose-javier-cuenca",
-          "kind": "vocal",
-          "participantId": "jose-javier-cuenca",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 625,
-          "end": 640
-        },
-        {
-          "id": "vocal-carmen-maria-saborido",
-          "kind": "vocal",
-          "participantId": "carmen-maria-saborido",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 630,
-          "end": 645
-        },
-        {
-          "id": "vocal-naomi-ines-carretero",
-          "kind": "vocal",
-          "participantId": "naomi-ines-carretero",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 640,
-          "end": 655
-        },
-        {
-          "id": "vocal-gisela-montserrat",
-          "kind": "vocal",
-          "participantId": "gisela-montserrat",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 655,
-          "end": 670
-        },
-        {
-          "id": "vocal-linet-varela",
-          "kind": "vocal",
-          "participantId": "linet-varela",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 670,
-          "end": 685
-        },
-        {
-          "id": "main-angel-gonzalez",
-          "kind": "main",
-          "participantId": "angel-gonzalez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-angel-gonzalez"
-          ],
-          "start": 675,
-          "end": 690
-        },
-        {
-          "id": "vocal-luis-belda",
-          "kind": "vocal",
-          "participantId": "luis-belda",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 685,
-          "end": 700
-        },
-        {
-          "id": "main-moises-salazar-ramirez",
-          "kind": "main",
-          "participantId": "moises-salazar-ramirez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-moises-salazar-ramirez"
-          ],
-          "start": 690,
-          "end": 705
-        },
-        {
-          "id": "main-cristina-zuloaga",
-          "kind": "main",
-          "participantId": "cristina-zuloaga",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-cristina-zuloaga"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 705,
-          "end": 720
-        },
-        {
-          "id": "main-carmen-maria-saborido",
-          "kind": "main",
-          "participantId": "carmen-maria-saborido",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-carmen-maria-saborido"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 720,
-          "end": 735
-        },
-        {
-          "id": "main-julio-gomez",
-          "kind": "main",
-          "participantId": "julio-gomez",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-julio-gomez"
-          ],
-          "start": 735,
-          "end": 750
-        },
-        {
-          "id": "main-lina-isabel-garcia-salcedo",
-          "kind": "main",
-          "participantId": "lina-isabel-garcia-salcedo",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-lina-isabel-garcia-salcedo"
-          ],
-          "start": 750,
-          "end": 765
-        },
-        {
-          "id": "main-jose-javier-cuenca",
-          "kind": "main",
-          "participantId": "jose-javier-cuenca",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-jose-javier-cuenca"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 765,
-          "end": 780
-        },
-        {
-          "id": "main-naomi-ines-carretero",
-          "kind": "main",
-          "participantId": "naomi-ines-carretero",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-naomi-ines-carretero"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 780,
-          "end": 795
-        },
-        {
-          "id": "main-gisela-montserrat",
-          "kind": "main",
-          "participantId": "gisela-montserrat",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-gisela-montserrat"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 795,
-          "end": 810
-        },
-        {
-          "id": "main-linet-varela",
-          "kind": "main",
-          "participantId": "linet-varela",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-linet-varela"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 810,
-          "end": 825
-        },
-        {
-          "id": "main-luis-belda",
-          "kind": "main",
-          "participantId": "luis-belda",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-luis-belda"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 825,
-          "end": 840
-        },
-        {
-          "id": "vocal-marta-fonrali",
-          "kind": "vocal",
-          "participantId": "marta-fonrali",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 825,
-          "end": 840
-        },
-        {
-          "id": "vocal-eva-martin-fernandez",
-          "kind": "vocal",
-          "participantId": "eva-martin-fernandez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 840,
-          "end": 855
-        },
-        {
-          "id": "vocal-noa-marcos-diez",
-          "kind": "vocal",
-          "participantId": "noa-marcos-diez",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 855,
-          "end": 870
-        },
-        {
-          "id": "vocal-claudia-torrent",
-          "kind": "vocal",
-          "participantId": "claudia-torrent",
-          "coachId": "coach-lucia",
-          "spaceId": "vocal-room-lucia",
-          "duration": 15,
-          "dependencies": [],
-          "start": 870,
-          "end": 885
-        },
-        {
-          "id": "vocal-pere-portero",
-          "kind": "vocal",
-          "participantId": "pere-portero",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 885,
-          "end": 900
-        },
-        {
-          "id": "vocal-nela-garcia",
-          "kind": "vocal",
-          "participantId": "nela-garcia",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 900,
-          "end": 915
-        },
-        {
-          "id": "main-marta-fonrali",
-          "kind": "main",
-          "participantId": "marta-fonrali",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-marta-fonrali"
-          ],
-          "start": 915,
-          "end": 930
-        },
-        {
-          "id": "vocal-daniel-hernan-barres",
-          "kind": "vocal",
-          "participantId": "daniel-hernan-barres",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 915,
-          "end": 930
-        },
-        {
-          "id": "main-eva-martin-fernandez",
-          "kind": "main",
-          "participantId": "eva-martin-fernandez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-eva-martin-fernandez"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 930,
-          "end": 945
-        },
-        {
-          "id": "vocal-adrian-darrel",
-          "kind": "vocal",
-          "participantId": "adrian-darrel",
-          "coachId": "coach-jose-maria",
-          "spaceId": "vocal-room-jose-maria",
-          "duration": 15,
-          "dependencies": [],
-          "start": 930,
-          "end": 945
-        },
-        {
-          "id": "main-noa-marcos-diez",
-          "kind": "main",
-          "participantId": "noa-marcos-diez",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-noa-marcos-diez"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 945,
-          "end": 960
-        },
-        {
-          "id": "main-claudia-torrent",
-          "kind": "main",
-          "participantId": "claudia-torrent",
-          "coachId": "coach-lucia",
-          "blockKey": "coach-lucia",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-claudia-torrent"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 960,
-          "end": 975
-        },
-        {
-          "id": "main-pere-portero",
-          "kind": "main",
-          "participantId": "pere-portero",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-pere-portero"
-          ],
-          "start": 975,
-          "end": 990
-        },
-        {
-          "id": "main-nela-garcia",
-          "kind": "main",
-          "participantId": "nela-garcia",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-nela-garcia"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 990,
-          "end": 1005
-        },
-        {
-          "id": "main-daniel-hernan-barres",
-          "kind": "main",
-          "participantId": "daniel-hernan-barres",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-daniel-hernan-barres"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 1005,
-          "end": 1020
-        },
-        {
-          "id": "main-adrian-darrel",
-          "kind": "main",
-          "participantId": "adrian-darrel",
-          "coachId": "coach-jose-maria",
-          "blockKey": "coach-jose-maria",
-          "spaceId": "main-stage",
-          "duration": 15,
-          "dependencies": [
-            "vocal-adrian-darrel"
-          ],
-          "requiredResourceIds": [
-            "focal-a2-continuous-resource"
-          ],
-          "start": 1020,
-          "end": 1035
-        }
-      ],
-      "scheduledSetupPreparations": [],
-      "scheduledSpaceMeals": [
-        {
-          "id": "space-meal:main-stage:1",
-          "kind": "space-meal",
-          "spaceId": "main-stage",
-          "entryIndex": 1,
-          "duration": 75,
-          "start": 840,
-          "end": 915
-        }
-      ],
-      "plannedTaskCount": 38,
-      "fingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
-      "branches": 15599,
-      "branchBudgetConsumed": 15599,
-      "runtimeMs": 639.4230709999999,
-      "totalParticipantPresenceMinutes": 2345,
-      "maxParticipantPresenceMinutes": 155,
-      "mainFlowSpanMinutes": 360,
-      "resourceOperationalBlockCountById": {
-        "focal-a2-continuous-resource": 4
+      "currentRequiredFailure": {
+        "mode": "CURRENT_REQUIRED",
+        "complete": false,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "reasonCodes": [
+          "NO_COMPLETE_HARD_VALID_PLAN"
+        ],
+        "scheduledTasks": [],
+        "scheduledSetupPreparations": [],
+        "scheduledSpaceMeals": [],
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 1909,
+        "branchBudgetConsumed": 1909,
+        "runtimeMs": 15.171558000000005,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "mainFlowSpanMinutes": 0,
+        "resourceOperationalBlockCountById": {},
+        "resourceAuthorizedMealMinutesById": {},
+        "hardValid": false,
+        "inputUnchanged": true
       },
-      "resourceAuthorizedMealMinutesById": {
-        "focal-a2-continuous-resource": 75
-      },
-      "hardValid": true,
-      "inputUnchanged": true
-    },
-    "currentRequiredFailure": {
-      "mode": "CURRENT_REQUIRED",
-      "complete": false,
-      "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
-      "reasonCodes": [
-        "NO_COMPLETE_HARD_VALID_PLAN"
-      ],
-      "scheduledTasks": [],
-      "scheduledSetupPreparations": [],
-      "scheduledSpaceMeals": [],
-      "plannedTaskCount": 0,
-      "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "branches": 1909,
-      "branchBudgetConsumed": 1909,
-      "runtimeMs": 15.171558000000005,
-      "totalParticipantPresenceMinutes": 0,
-      "maxParticipantPresenceMinutes": 0,
-      "mainFlowSpanMinutes": 0,
-      "resourceOperationalBlockCountById": {},
-      "resourceAuthorizedMealMinutesById": {},
-      "hardValid": false,
-      "inputUnchanged": true
-    },
-    "withdrawalEvidence": {
-      "code": "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
-      "status": "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION",
-      "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
+      "withdrawalEvidence": {
+        "code": "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
+        "status": "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION",
+        "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
+      }
     }
   },
-  "sourceDocuments": [
-    {
-      "name": "ENSAYO_A2_LV.pdf",
-      "sha256": "0207f3bb59621c263219676153aae50c0cf1a98c1089b8bd732ac63e54f8df18"
-    },
-    {
-      "name": "ENSAYO_A2_LV 15 JUNIO 2025 - DESGLOSE A2.pdf",
-      "sha256": "8f96af987db37a0c8b5c1fd8870aad36d46b721ed81a0535bc22b8fb10f312b3"
-    }
-  ],
-  "referenceValidation": {
-    "operationProfileCount": 12,
-    "wrappedOperationCount": 3,
-    "standaloneOperationCount": 9,
-    "wrappedBeforeSegmentCount": 3,
-    "wrappedAfterSegmentCount": 3,
-    "wrappedAnchorCount": 3,
-    "totalItinerantResourceMinutes": 375,
-    "projectedTaskCountWhenSupported": 53
+  "historicalMismatches": {
+    "scenarioMismatches": [],
+    "evidenceMismatches": [],
+    "fingerprintMismatches": [],
+    "branchMismatches": []
+  },
+  "withdrawnAssumption": {
+    "code": "ANCHOR_SPACE_WRAPPING_SEMANTICS",
+    "status": "WITHDRAWN",
+    "reason": "before and after are operational tasks in their configured space and must not extend main-space occupancy."
+  },
+  "historicalWithdrawnEvidence": {
+    "status": "WITHDRAWN",
+    "branchFailure": 448,
+    "reason": "The synthetic FOCAL-A2-009 model did not demonstrate human operation; its failure was representational, not a search-budget shortage."
   },
   "itinerantUnitProfiles": [
     {
@@ -11575,6 +12386,12 @@
       "memberResourceIds": [
         "reality-camera-3",
         "reality-sound-1"
+      ],
+      "availability": [
+        {
+          "start": 660,
+          "end": 840
+        }
       ],
       "informationalAssignments": [
         "Redacción A",
@@ -11586,6 +12403,12 @@
       "memberResourceIds": [
         "reality-camera-4",
         "reality-sound-2"
+      ],
+      "availability": [
+        {
+          "start": 675,
+          "end": 810
+        }
       ],
       "informationalAssignments": [
         "Redacción B",
@@ -11599,6 +12422,12 @@
         "reality-camera-4",
         "reality-sound-1"
       ],
+      "availability": [
+        {
+          "start": 960,
+          "end": 1080
+        }
+      ],
       "informationalAssignments": [
         "Redacción A",
         "Producción A"
@@ -11608,22 +12437,21 @@
   "itinerantOperationProfiles": [
     {
       "id": "reality-operation-01",
-      "type": "WRAP_ANCHOR",
+      "type": "ANCHORED_ACCOMPANIMENT",
       "unitId": "reality-unit-morning-a",
       "participantId": "cristina-zuloaga",
       "anchorTaskId": "main-cristina-zuloaga",
       "before": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
-      },
-      "during": {
-        "source": "ANCHOR_DURATION_AND_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "after": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "adjacency": "REQUIRED",
+      "internalTransition": "INCLUDED",
+      "resourceContinuity": "REQUIRED",
       "location": "PLATÓ",
       "annotations": [
         "CON MADRE"
@@ -11651,22 +12479,21 @@
     },
     {
       "id": "reality-operation-03",
-      "type": "WRAP_ANCHOR",
+      "type": "ANCHORED_ACCOMPANIMENT",
       "unitId": "reality-unit-morning-a",
       "participantId": "jose-javier-cuenca",
       "anchorTaskId": "main-jose-javier-cuenca",
       "before": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
-      },
-      "during": {
-        "source": "ANCHOR_DURATION_AND_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "after": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "adjacency": "REQUIRED",
+      "internalTransition": "INCLUDED",
+      "resourceContinuity": "REQUIRED",
       "location": "PLATÓ",
       "annotations": [],
       "humanReference": {
@@ -11706,22 +12533,21 @@
     },
     {
       "id": "reality-operation-06",
-      "type": "WRAP_ANCHOR",
+      "type": "ANCHORED_ACCOMPANIMENT",
       "unitId": "reality-unit-morning-b",
       "participantId": "julio-gomez",
       "anchorTaskId": "main-julio-gomez",
       "before": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
-      },
-      "during": {
-        "source": "ANCHOR_DURATION_AND_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "after": {
         "duration": 15,
-        "spaceSource": "ANCHOR_SPACE"
+        "spaceId": "reality-location-stage"
       },
       "adjacency": "REQUIRED",
+      "internalTransition": "INCLUDED",
+      "resourceContinuity": "REQUIRED",
       "location": "PLATÓ",
       "annotations": [
         "GUITARRA",
@@ -11867,236 +12693,294 @@
       }
     ]
   },
-  "standaloneRealityRun": {
-    "status": "EXECUTED_COMPLETE",
-    "complete": true,
-    "hardValid": true,
-    "plannedTaskCount": 47,
-    "scheduledTaskCount": 47,
-    "fingerprint": "a71fdc4ddaff625f0ff3221f5703266f5b27c329de85f4142d85990900ca5d6d",
-    "branches": 124819,
-    "runtimeMs": 1870.4117310000001,
-    "deterministic": true,
-    "orderInvariant": true,
-    "inputUnchanged": true,
-    "evaluation": {
-      "plannedTaskCount": 9,
-      "sharedResourceConflicts": [],
-      "participantOverlapConflicts": [],
-      "agendas": {
-        "reality-unit-morning-a": {
-          "configuredOperationIds": [
-            "reality-operation-02",
-            "reality-operation-04"
-          ],
-          "scheduledOperationIds": [
-            "reality-operation-02",
-            "reality-operation-04"
-          ],
-          "missingOperationIds": [],
-          "unexpectedOperationIds": [],
-          "operationCount": 2,
-          "scheduledOperationCount": 2,
-          "start": 690,
-          "end": 830,
-          "productiveMinutes": 60,
-          "spanMinutes": 140,
-          "internalGapMinutes": 80,
-          "operationalBlockCount": 2,
-          "locationSequence": [
-            "reality-location-influencer-corner",
-            "reality-location-music-corner"
-          ],
-          "moveCount": 1,
-          "exactMembershipSatisfied": true
-        },
-        "reality-unit-morning-b": {
-          "configuredOperationIds": [
-            "reality-operation-05",
-            "reality-operation-07"
-          ],
-          "scheduledOperationIds": [
-            "reality-operation-05",
-            "reality-operation-07"
-          ],
-          "missingOperationIds": [],
-          "unexpectedOperationIds": [],
-          "operationCount": 2,
-          "scheduledOperationCount": 2,
-          "start": 675,
-          "end": 735,
-          "productiveMinutes": 60,
-          "spanMinutes": 60,
-          "internalGapMinutes": 0,
-          "operationalBlockCount": 1,
-          "locationSequence": [
-            "reality-location-manzano",
-            "reality-location-hall-p14"
-          ],
-          "moveCount": 1,
-          "exactMembershipSatisfied": true
-        },
-        "reality-unit-afternoon-combined": {
-          "configuredOperationIds": [
-            "reality-operation-08",
-            "reality-operation-09",
-            "reality-operation-10",
-            "reality-operation-11",
-            "reality-operation-12"
-          ],
-          "scheduledOperationIds": [
-            "reality-operation-10",
-            "reality-operation-08",
-            "reality-operation-09",
-            "reality-operation-11",
-            "reality-operation-12"
-          ],
-          "missingOperationIds": [],
-          "unexpectedOperationIds": [],
-          "operationCount": 5,
-          "scheduledOperationCount": 5,
-          "start": 735,
-          "end": 1060,
-          "productiveMinutes": 120,
-          "spanMinutes": 325,
-          "internalGapMinutes": 205,
-          "operationalBlockCount": 3,
-          "locationSequence": [
-            "reality-location-buggy",
-            "reality-location-hall-p14",
-            "reality-location-control",
-            "reality-location-red-carpet"
-          ],
-          "moveCount": 3,
-          "exactMembershipSatisfied": true
-        }
+  "composition": {
+    "exactCompositions": true,
+    "compositionWindows": [
+      {
+        "unitId": "reality-unit-morning-a",
+        "memberResourceIds": [
+          "reality-camera-3",
+          "reality-sound-1"
+        ],
+        "availability": [
+          {
+            "start": 660,
+            "end": 840
+          }
+        ]
       },
-      "duplicateOperationIds": [],
-      "unassignedOperationIds": [],
-      "exactMembershipSatisfied": true,
-      "inputUnchanged": true
+      {
+        "unitId": "reality-unit-morning-b",
+        "memberResourceIds": [
+          "reality-camera-4",
+          "reality-sound-2"
+        ],
+        "availability": [
+          {
+            "start": 675,
+            "end": 810
+          }
+        ]
+      },
+      {
+        "unitId": "reality-unit-afternoon-combined",
+        "memberResourceIds": [
+          "reality-camera-3",
+          "reality-camera-4",
+          "reality-sound-1"
+        ],
+        "availability": [
+          {
+            "start": 960,
+            "end": 1080
+          }
+        ]
+      }
+    ],
+    "unitIdAbsentFromRequirements": true,
+    "combinedBefore960Rejected": true,
+    "combinedFrom960Accepted": true
+  },
+  "evaluation": {
+    "plannedTaskCount": 9,
+    "sharedResourceConflicts": [],
+    "participantOverlapConflicts": [],
+    "agendas": {
+      "reality-unit-morning-a": {
+        "unitId": "reality-unit-morning-a",
+        "memberResourceIds": [
+          "reality-camera-3",
+          "reality-sound-1"
+        ],
+        "availability": [
+          {
+            "start": 660,
+            "end": 840
+          }
+        ],
+        "operationIds": [
+          "reality-operation-02",
+          "reality-operation-04"
+        ],
+        "plannedOperationIds": [
+          "reality-operation-02",
+          "reality-operation-04"
+        ],
+        "configuredOperationIds": [
+          "reality-operation-02",
+          "reality-operation-04"
+        ],
+        "scheduledOperationIds": [
+          "reality-operation-02",
+          "reality-operation-04"
+        ],
+        "missingOperationIds": [],
+        "unexpectedOperationIds": [],
+        "operationCount": 2,
+        "scheduledOperationCount": 2,
+        "presenceStart": 690,
+        "presenceEnd": 780,
+        "start": 690,
+        "end": 780,
+        "productiveMinutes": 60,
+        "presenceSpanMinutes": 90,
+        "spanMinutes": 90,
+        "internalGapMinutes": 30,
+        "operationalBlockCount": 2,
+        "locationSequence": [
+          "reality-location-influencer-corner",
+          "reality-location-music-corner"
+        ],
+        "moveCount": 1,
+        "exactCompositionSatisfied": true,
+        "availabilitySatisfied": true,
+        "operationsOutsideUnitAvailability": [],
+        "exactMembershipSatisfied": true
+      },
+      "reality-unit-morning-b": {
+        "unitId": "reality-unit-morning-b",
+        "memberResourceIds": [
+          "reality-camera-4",
+          "reality-sound-2"
+        ],
+        "availability": [
+          {
+            "start": 675,
+            "end": 810
+          }
+        ],
+        "operationIds": [
+          "reality-operation-05",
+          "reality-operation-07"
+        ],
+        "plannedOperationIds": [
+          "reality-operation-05",
+          "reality-operation-07"
+        ],
+        "configuredOperationIds": [
+          "reality-operation-05",
+          "reality-operation-07"
+        ],
+        "scheduledOperationIds": [
+          "reality-operation-05",
+          "reality-operation-07"
+        ],
+        "missingOperationIds": [],
+        "unexpectedOperationIds": [],
+        "operationCount": 2,
+        "scheduledOperationCount": 2,
+        "presenceStart": 675,
+        "presenceEnd": 735,
+        "start": 675,
+        "end": 735,
+        "productiveMinutes": 60,
+        "presenceSpanMinutes": 60,
+        "spanMinutes": 60,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 1,
+        "locationSequence": [
+          "reality-location-manzano",
+          "reality-location-hall-p14"
+        ],
+        "moveCount": 1,
+        "exactCompositionSatisfied": true,
+        "availabilitySatisfied": true,
+        "operationsOutsideUnitAvailability": [],
+        "exactMembershipSatisfied": true
+      },
+      "reality-unit-afternoon-combined": {
+        "unitId": "reality-unit-afternoon-combined",
+        "memberResourceIds": [
+          "reality-camera-3",
+          "reality-camera-4",
+          "reality-sound-1"
+        ],
+        "availability": [
+          {
+            "start": 960,
+            "end": 1080
+          }
+        ],
+        "operationIds": [
+          "reality-operation-08",
+          "reality-operation-09",
+          "reality-operation-10",
+          "reality-operation-11",
+          "reality-operation-12"
+        ],
+        "plannedOperationIds": [
+          "reality-operation-08",
+          "reality-operation-09",
+          "reality-operation-10",
+          "reality-operation-11",
+          "reality-operation-12"
+        ],
+        "configuredOperationIds": [
+          "reality-operation-08",
+          "reality-operation-09",
+          "reality-operation-10",
+          "reality-operation-11",
+          "reality-operation-12"
+        ],
+        "scheduledOperationIds": [
+          "reality-operation-08",
+          "reality-operation-09",
+          "reality-operation-10",
+          "reality-operation-11",
+          "reality-operation-12"
+        ],
+        "missingOperationIds": [],
+        "unexpectedOperationIds": [],
+        "operationCount": 5,
+        "scheduledOperationCount": 5,
+        "presenceStart": 960,
+        "presenceEnd": 1080,
+        "start": 960,
+        "end": 1080,
+        "productiveMinutes": 120,
+        "presenceSpanMinutes": 120,
+        "spanMinutes": 120,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 1,
+        "locationSequence": [
+          "reality-location-hall-p14",
+          "reality-location-control",
+          "reality-location-buggy",
+          "reality-location-red-carpet"
+        ],
+        "moveCount": 3,
+        "exactCompositionSatisfied": true,
+        "availabilitySatisfied": true,
+        "operationsOutsideUnitAvailability": [],
+        "exactMembershipSatisfied": true
+      }
+    },
+    "duplicateOperationIds": [],
+    "unassignedOperationIds": [],
+    "exactMembershipSatisfied": true,
+    "inputUnchanged": true
+  },
+  "combinedProjection": {
+    "inputUnchanged": true,
+    "counts": {
+      "tasks": 53,
+      "main": 19,
+      "vocal": 19,
+      "auxiliary": 15,
+      "segments": 6,
+      "accompaniments": 3
     }
   },
-  "behavioralControls": {
-    "status": "BEHAVIORALLY_SUPPORTED",
-    "complete": true,
-    "hardValid": true,
-    "exactComposition": true,
-    "parallelUnits": true,
-    "recomposition": true,
-    "exclusivity": true,
-    "availability": true,
-    "variableDurations": true,
-    "locationChange": true,
-    "deterministic": true,
-    "orderInvariant": true,
-    "inputUnchanged": true,
-    "illegalOverlapRejected": true,
-    "exactResourceSets": {
-      "unit-a-1": [
-        "camera-a",
-        "sound-a"
-      ],
-      "unit-b-1": [
-        "camera-b",
-        "sound-b"
-      ],
-      "unit-c-1": [
-        "camera-a",
-        "camera-b",
-        "sound-a"
-      ]
-    },
-    "fingerprint": "396894d6f442b96fa74c2bf85f84423edc2fe047680ee24bbf7df6ed1815af62",
-    "reversedFingerprint": "396894d6f442b96fa74c2bf85f84423edc2fe047680ee24bbf7df6ed1815af62"
-  },
-  "wrappedMainControl": {
-    "status": "CONTRACT_GAP_CONFIRMED",
-    "expressible": false,
-    "anchorKind": "main",
-    "adjacency": "REQUIRED",
-    "spaceSource": "ANCHOR_SPACE"
-  },
-  "wrappedAuxiliaryControl": {
-    "status": "CONTRACT_GAP_CONFIRMED",
-    "expressible": false,
-    "anchorKind": "auxiliary",
-    "adjacency": "REQUIRED",
-    "spaceSource": "ANCHOR_SPACE"
-  },
-  "invalidStandaloneSubstitutionControl": {
-    "status": "REJECTED_INVALID_PROJECTION",
-    "validProjection": false,
-    "preservesAnchorIdentity": false,
-    "preservesAdjacency": false
-  },
-  "combinedRealityRun": {
-    "status": "NOT_EXECUTED_UNREPRESENTABLE_INPUT",
-    "reason": "Generic before/anchor/after adjacency is not expressible."
-  },
-  "confirmedGapCodes": [
+  "resolvedGapCodes": [
+    "TASK_EFFECTIVE_AVAILABILITY_NOT_EXPRESSIBLE",
+    "ITINERANT_COMPOSITION_WINDOW_NOT_ENFORCED"
+  ],
+  "withdrawnGapCodes": [
     "ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE",
     "MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE"
   ],
-  "withdrawnGapCodes": [
-    {
-      "code": "REALITY_EXACT_RESOURCE_COMPOSITION_NOT_EXPRESSIBLE",
-      "reason": "Withdrawn with the invalid v1 projection; retained only in historical scenario evidence."
-    },
-    {
-      "code": "REALITY_PARALLEL_UNITS_NOT_EXPRESSIBLE",
-      "reason": "Withdrawn with the invalid v1 projection; retained only in historical scenario evidence."
-    },
-    {
-      "code": "REALITY_AFTERNOON_RECOMPOSITION_NOT_EXPRESSIBLE",
-      "reason": "Withdrawn with the invalid v1 projection; retained only in historical scenario evidence."
-    },
-    {
-      "code": "REALITY_UNIT_COMPACTNESS_NOT_ACHIEVED",
-      "reason": "Withdrawn with the invalid v1 projection; retained only in historical scenario evidence."
-    },
-    {
-      "code": "REALITY_FUTURE_FEASIBILITY_INSUFFICIENT",
-      "reason": "Withdrawn with the invalid v1 projection; retained only in historical scenario evidence."
-    }
+  "remainingGapCodes": [
+    "GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
   ],
-  "historicalRegressionEvidence": {
-    "protectedScenarioCount": 28,
-    "scenarioMismatchIds": [],
-    "historicalEvidenceMismatchIds": [],
-    "fingerprintMismatchIds": [],
-    "intact": true
-  },
   "acceptance": {
     "artifactAccepted": true,
-    "sourceCorpusAccepted": true,
-    "operationProfileCountsAccepted": true,
-    "unitCompositionAccepted": true,
-    "unitIdentityAccepted": true,
-    "sourceAvailabilityAccepted": true,
-    "anchorSpaceSemanticsAccepted": true,
-    "humanReferenceNotUsedAsSeed": true,
-    "standaloneProjectionPure": true,
-    "standaloneInputUnchanged": true,
-    "standalonePlanComplete": true,
-    "standalonePlanHardValid": true,
-    "standalonePlanDeterministic": true,
-    "standalonePlanOrderInvariant": true,
-    "exactCompositionDemonstrated": true,
-    "parallelUnitsDemonstrated": true,
-    "resourceRecompositionDemonstrated": true,
-    "resourceExclusivityDemonstrated": true,
-    "resourceAvailabilityDemonstrated": true,
-    "variableDurationsDemonstrated": true,
-    "unitAgendasCorrect": true,
-    "wrappedMainContractGapConfirmed": true,
-    "wrappedAuxiliaryContractGapConfirmed": true,
-    "invalidStandaloneSubstitutionRejected": true,
+    "sourceArtifactAccepted": true,
     "historicalRegressionIntact": true,
-    "onlyCurrentArtifactRequired": true,
-    "combinedInputRepresentable": false,
-    "fullRealityBenchmarkPassed": false,
-    "acceptedMeaning": "Planner Next correctly plans the representable standalone itinerant-unit subset with exact configurable resource composition, source availability, independent unit identity, parallel teams, later resource recomposition, exclusivity, movement, variable durations, deterministic output, and auditable unit agendas. The full Focal A2 itinerant benchmark remains intentionally unexecuted because generic before/anchor/after adjacency and anchored main-flow closure are not yet expressible; no invalid duration-total substitution is accepted.",
+    "currentOffFrozen": true,
+    "currentPreferredFrozen": true,
+    "currentRequiredFrozen": true,
+    "incorrectAnchorSpaceModelWithdrawn": true,
+    "variableMainFlowTimelineRemoved": true,
+    "mainFlowHistoricalTimelineRestored": true,
+    "taskAvailabilityContractAccepted": true,
+    "taskAvailabilityPreflightAccepted": true,
+    "taskAvailabilityPlacementAccepted": true,
+    "taskAvailabilityValidationAccepted": true,
+    "taskAvailabilityMetricsAccepted": true,
+    "taskAvailabilityDeterministic": true,
+    "taskAvailabilityOrderInvariant": true,
+    "taskAvailabilityInputUnchanged": true,
+    "unitCompositionAvailabilityAccepted": true,
+    "standaloneProjectionCorrected": true,
+    "standaloneComplete": true,
+    "standaloneHardValid": true,
+    "standaloneTaskCountAccepted": true,
+    "standaloneOperationsAccepted": true,
+    "standaloneProductiveMinutesAccepted": true,
+    "combinedTaskCountAccepted": true,
+    "combinedSeparateSpacesAccepted": true,
+    "combinedAnchorIdentityAccepted": true,
+    "combinedCompositionWindowsAccepted": true,
+    "combinedUnsupportedAtomic": true,
+    "standaloneUnitAgendasAccepted": true,
+    "standaloneSourceAvailabilityAccepted": true,
+    "combinedProjectionSemanticsAccepted": true,
+    "combinedResourceProjectionAccepted": true,
+    "invalidDurationTotalSubstitutionRejected": true,
+    "humanReferenceNotUsedAsSeed": true,
+    "anchoredAccompanimentSupported": false,
+    "fullFocalA2ItinerantBenchmarkPassed": false,
+    "acceptedMeaning": "Planner Next preserves all historical planning behavior when task availability is absent, enforces optional effective task windows generically, and audits the corrected SPEC-08 itinerant corpus with independent unit-composition windows and separate spaces for before, anchor, and after. The prior same-space variable-main-flow closure interpretation is withdrawn and no anchored-accompaniment scheduling capability is claimed; the combined 53-task corpus remains intentionally unexecuted until generic accompaniment is implemented.",
     "accepted": true
   }
 }
