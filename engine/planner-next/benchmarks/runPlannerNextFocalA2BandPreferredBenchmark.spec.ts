@@ -5,8 +5,13 @@ import { buildArtifact } from "./runPlannerNextFocalA2BandPreferredBenchmark";
 
 const sourcePath = existsSync("planner-next-focal-a2-band-preferred-v2.json")
   ? "planner-next-focal-a2-band-preferred-v2.json"
-  : "planner-next-focal-a2-band-preferred-v1.json";
-const source = JSON.parse(readFileSync(sourcePath, "utf8"));
+  : existsSync("planner-next-focal-a2-band-required-audit-v1.json")
+    ? "planner-next-focal-a2-band-required-audit-v1.json"
+    : "planner-next-focal-a2-band-preferred-v1.json";
+const published = JSON.parse(readFileSync(sourcePath, "utf8"));
+const source = published.version === "planner-next-focal-a2-band-required-audit-v1"
+  ? { ...published, scenarios: Object.fromEntries(Object.entries(published.scenarios).filter(([id]) => id !== "focalA2BandRequiredAudit")) }
+  : published;
 const manifest = JSON.parse(
   readFileSync(
     "engine/planner-next/benchmarks/focal-a2/focalA2BandPreferredV2HistoricalManifest.json",

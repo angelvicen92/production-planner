@@ -79,11 +79,13 @@ test("authorized space meals join operational occupations without becoming produ
     presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
     authorizedMealMinutes: 75, internalGapMinutes: 0, operationalBlockCount: 1,
     preferredLexicographicTuple: [1, 105, 0],
+    crossesAuthorizedMeal: true, requiredPolicySatisfied: true,
   });
   assert.deepEqual(evaluateResourcePresence(resource, tasks, [{ ...meal, spaceId: "other" }]), {
     presenceStart: 825, presenceEnd: 930, presenceSpanMinutes: 105, productiveTaskMinutes: 30,
     authorizedMealMinutes: 0, internalGapMinutes: 75, operationalBlockCount: 2,
     preferredLexicographicTuple: [2, 105, 75],
+    crossesAuthorizedMeal: false, requiredPolicySatisfied: true,
   });
   assert.equal(JSON.stringify({ resource, tasks, meal }), before);
 });
