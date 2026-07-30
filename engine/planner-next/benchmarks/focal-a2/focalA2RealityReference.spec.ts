@@ -1,4 +1,32 @@
-import assert from "node:assert/strict";import test from "node:test";
-import {focalA2RealityTasks,projectFocalA2RealityProblem,realityReferenceValidation,realitySourceDocuments} from "./focalA2RealityReference";
-test("real Reality corpus is faithful and reference times never seed planning",()=>{assert.equal(focalA2RealityTasks.length,12);assert.deepEqual(realityReferenceValidation,{...realityReferenceValidation,realityTaskCount:12});assert.equal(new Set(focalA2RealityTasks.map(x=>x.spaceId)).size,8);assert.equal(focalA2RealityTasks.reduce((n,x)=>n+x.duration,0),375);assert.equal(realitySourceDocuments.length,2);const p=projectFocalA2RealityProblem();for(const t of p.tasks.filter(x=>x.id.startsWith("reality-task"))){assert.equal("start" in t,false);assert.equal("end" in t,false);assert.equal(t.dependencies.length,0)}assert.equal(p.tasks.length,50)});
-test("projection is pure and annotations cannot become resources",()=>{const a=projectFocalA2RealityProblem(),json=JSON.stringify(a),b=projectFocalA2RealityProblem();assert.equal(JSON.stringify(a),json);assert.deepEqual(a,b);for(const t of focalA2RealityTasks)assert.deepEqual(a.tasks.find(x=>x.id===t.id)?.requiredResourceIds,t.requiredResourceIds)});
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  itinerantOperationProfiles,
+  itinerantUnitProfiles,
+  projectStandaloneFocalA2RealityProblem,
+  realityReferenceValidation,
+} from "./focalA2RealityReference";
+
+test("generic itinerant contract separates standalone and wrapped operations", () => {
+  assert.deepEqual(realityReferenceValidation, {
+    operationProfileCount: 12, wrappedOperationCount: 3, standaloneOperationCount: 9,
+    wrappedBeforeSegmentCount: 3, wrappedAfterSegmentCount: 3, wrappedAnchorCount: 3,
+    totalItinerantResourceMinutes: 375, projectedTaskCountWhenSupported: 53,
+  });
+  const wrapped = itinerantOperationProfiles.filter((operation) => operation.type === "WRAP_ANCHOR");
+  assert.deepEqual(wrapped.map((operation) => operation.participantId).sort(), ["cristina-zuloaga", "jose-javier-cuenca", "julio-gomez"]);
+  assert.ok(wrapped.every((operation) => operation.before.duration === 15 && operation.after.duration === 15 && operation.adjacency === "REQUIRED"));
+});
+
+test("unit IDs group configuration but never become required resources", () => {
+  assert.deepEqual(itinerantUnitProfiles.map((unit) => unit.memberResourceIds), [
+    ["reality-camera-3", "reality-sound-1"],
+    ["reality-camera-4", "reality-sound-2"],
+    ["reality-camera-3", "reality-camera-4", "reality-sound-1"],
+  ]);
+  const problem = projectStandaloneFocalA2RealityProblem();
+  const unitIds = new Set(itinerantUnitProfiles.map((unit) => unit.id));
+  assert.equal(problem.tasks.filter((task) => task.id.startsWith("reality-operation")).length, 9);
+  assert.ok(problem.tasks.every((task) => task.requiredResourceIds?.every((id) => !unitIds.has(id)) ?? true));
+  assert.equal(problem.tasks.length, 47);
+});

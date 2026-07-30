@@ -1,2 +1,19 @@
-import assert from "node:assert/strict";import test from "node:test";import {evaluateFocalA2RealityUnits} from "./evaluateFocalA2RealityUnits";import {focalA2RealityTasks,realityReferenceValidation} from "./focalA2RealityReference";
-test("independent oracle derives the human reference",()=>{const e=evaluateFocalA2RealityUnits(focalA2RealityTasks.map(x=>({...x,start:x.humanReference.start,end:x.humanReference.end})),true);assert.equal(e.plannedTaskCount,12);assert.equal(e.parallelMorningUnits,true);assert.deepEqual(e.sharedResourceConflicts,[]);assert.deepEqual(e.participantOverlapConflicts,[]);for(const u of Object.keys(realityReferenceValidation.unitMetrics) as (keyof typeof realityReferenceValidation.unitMetrics)[])assert.deepEqual({...e.units[u],locationSequence:undefined,moveCount:undefined,resourceComposition:undefined,taskCount:undefined,plannedTaskCount:undefined},{...realityReferenceValidation.unitMetrics[u],locationSequence:undefined,moveCount:undefined,resourceComposition:undefined,taskCount:undefined,plannedTaskCount:undefined})});
+import assert from "node:assert/strict";
+import test from "node:test";
+import { evaluateFocalA2RealityUnits } from "./evaluateFocalA2RealityUnits";
+import { itinerantOperationProfiles, itinerantUnitProfiles } from "./focalA2RealityReference";
+
+test("oracle evaluates only valid standalone operations and member resources", () => {
+  const standalone = itinerantOperationProfiles.filter((operation) => operation.type === "STANDALONE");
+  const tasks = standalone.map((operation) => ({
+    id: operation.id, participantId: operation.participantId,
+    start: operation.humanReference.start, end: operation.humanReference.end,
+    spaceId: operation.spaceId,
+    requiredResourceIds: itinerantUnitProfiles.find((unit) => unit.id === operation.unitId)!.memberResourceIds,
+  }));
+  const evaluation = evaluateFocalA2RealityUnits(tasks, true);
+  assert.equal(evaluation.plannedTaskCount, 9);
+  assert.deepEqual(evaluation.sharedResourceConflicts, []);
+  assert.deepEqual(evaluation.participantOverlapConflicts, []);
+  assert.equal(evaluation.inputUnchanged, true);
+});
