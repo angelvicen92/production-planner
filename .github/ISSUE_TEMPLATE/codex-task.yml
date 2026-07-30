@@ -1,0 +1,82 @@
+name: Codex task
+description: Define a single OptiPlan implementation unit for Codex.
+title: "[CODEX] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for one logical implementation unit only. Follow AGENTS.md and the official OptiPlan documentation.
+
+  - type: dropdown
+    id: change_type
+    attributes:
+      label: Change classification
+      options:
+        - Fast Merge
+        - DB Safe Merge
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: State the concrete result this iteration must achieve.
+    validations:
+      required: true
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Why this is the next step
+      description: Explain the expected operational value and why lower-risk alternatives are insufficient.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Define the files, components and behavior that may change.
+    validations:
+      required: true
+
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: Do not modify
+      description: List explicit exclusions and protected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable criteria.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Required validation
+      description: List commands, tests, benchmarks, Evidence and any human validation required.
+    validations:
+      required: true
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Official documentation affected
+      description: Identify the governing documents and whether README must be updated.
+    validations:
+      required: true
+
+  - type: textarea
+    id: intervention
+    attributes:
+      label: Human intervention threshold
+      description: State exactly when the implementation must stop and request a decision.
+    validations:
+      required: true
