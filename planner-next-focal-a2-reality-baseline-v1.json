@@ -1,8 +1,8 @@
 {
-  "version": "planner-next-focal-a2-band-semantics-v4",
-  "status": "BAND_OPERATIONAL_SCOPE_ACCEPTED_INSTRUMENT_INFORMATIONAL",
-  "sourceArtifactVersion": "planner-next-focal-a2-band-required-audit-v3",
-  "sourceArtifactSha256": "e1ded8f231563fbad83be151f4fcde04a005283ca619b40290b34c5a7b24a888",
+  "version": "planner-next-focal-a2-reality-baseline-v1",
+  "status": "FOCAL_A2_REALITY_EXPRESSIBILITY_AUDIT_ACCEPTED",
+  "sourceArtifactVersion": "planner-next-focal-a2-band-semantics-v4",
+  "sourceArtifactSha256": "c197ae517fa478ac68ee964eb513e671027acdd9dc807f8dcb62dc0de56d7160",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -8719,6 +8719,679 @@
         "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
       },
       "runtimeMs": 945.8318320000001
+    },
+    "focalA2RealityBaselineAudit": {
+      "sourceDocuments": [
+        {
+          "name": "ENSAYO_A2_LV.pdf",
+          "sha256": "0207f3bb59621c263219676153aae50c0cf1a98c1089b8bd732ac63e54f8df18"
+        },
+        {
+          "name": "ENSAYO_A2_LV 15 JUNIO 2025 - DESGLOSE A2.pdf",
+          "sha256": "8f96af987db37a0c8b5c1fd8870aad36d46b721ed81a0535bc22b8fb10f312b3"
+        }
+      ],
+      "referenceRealityValidation": {
+        "realityTaskCount": 12,
+        "morningUnitATaskCount": 4,
+        "morningUnitBTaskCount": 3,
+        "afternoonCombinedUnitTaskCount": 5,
+        "uniqueLocationCount": 8,
+        "totalProductiveMinutes": 375,
+        "duration15TaskCount": 2,
+        "duration30TaskCount": 7,
+        "duration45TaskCount": 3,
+        "unitMetrics": {
+          "MORNING_A": {
+            "start": 660,
+            "end": 840,
+            "productiveMinutes": 150,
+            "spanMinutes": 180,
+            "internalGapMinutes": 30,
+            "operationalBlockCount": 3
+          },
+          "MORNING_B": {
+            "start": 675,
+            "end": 810,
+            "productiveMinutes": 105,
+            "spanMinutes": 135,
+            "internalGapMinutes": 30,
+            "operationalBlockCount": 3
+          },
+          "AFTERNOON_COMBINED": {
+            "start": 960,
+            "end": 1080,
+            "productiveMinutes": 120,
+            "spanMinutes": 120,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 1
+          }
+        }
+      },
+      "realityReference": [
+        {
+          "id": "reality-task-01",
+          "participantId": "cristina-zuloaga",
+          "humanName": "Cristina Zuloaga",
+          "unit": "MORNING_A",
+          "duration": 45,
+          "humanReference": {
+            "start": 660,
+            "end": 705
+          },
+          "spaceId": "reality-location-stage",
+          "location": "PLATÓ",
+          "annotations": [
+            "CON MADRE"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-morning-a",
+            "reality-camera-3",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-02",
+          "participantId": "luis-belda",
+          "humanName": "Luis Belda",
+          "unit": "MORNING_A",
+          "duration": 30,
+          "humanReference": {
+            "start": 720,
+            "end": 750
+          },
+          "spaceId": "reality-location-influencer-corner",
+          "location": "CORNER INFLUENCER",
+          "annotations": [
+            "TROMBÓN"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-morning-a",
+            "reality-camera-3",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-03",
+          "participantId": "jose-javier-cuenca",
+          "humanName": "José Javier Cuenca",
+          "unit": "MORNING_A",
+          "duration": 45,
+          "humanReference": {
+            "start": 765,
+            "end": 810
+          },
+          "spaceId": "reality-location-stage",
+          "location": "PLATÓ",
+          "annotations": [],
+          "requiredResourceIds": [
+            "reality-unit-morning-a",
+            "reality-camera-3",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-04",
+          "participantId": "pere-portero",
+          "humanName": "Pere Portero",
+          "unit": "MORNING_A",
+          "duration": 30,
+          "humanReference": {
+            "start": 810,
+            "end": 840
+          },
+          "spaceId": "reality-location-music-corner",
+          "location": "CORNER MUSIC",
+          "annotations": [
+            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-morning-a",
+            "reality-camera-3",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-05",
+          "participantId": "gisela-montserrat",
+          "humanName": "Gisela Montserrat",
+          "unit": "MORNING_B",
+          "duration": 30,
+          "humanReference": {
+            "start": 675,
+            "end": 705
+          },
+          "spaceId": "reality-location-manzano",
+          "location": "MANZANO",
+          "annotations": [],
+          "requiredResourceIds": [
+            "reality-unit-morning-b",
+            "reality-camera-4",
+            "reality-sound-2",
+            "reality-editorial-b",
+            "reality-production-b"
+          ]
+        },
+        {
+          "id": "reality-task-06",
+          "participantId": "julio-gomez",
+          "humanName": "Julio Gómez",
+          "unit": "MORNING_B",
+          "duration": 45,
+          "humanReference": {
+            "start": 720,
+            "end": 765
+          },
+          "spaceId": "reality-location-stage",
+          "location": "PLATÓ",
+          "annotations": [
+            "GUITARRA",
+            "CON PADRE"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-morning-b",
+            "reality-camera-4",
+            "reality-sound-2",
+            "reality-editorial-b",
+            "reality-production-b"
+          ]
+        },
+        {
+          "id": "reality-task-07",
+          "participantId": "nela-garcia",
+          "humanName": "Nela García",
+          "unit": "MORNING_B",
+          "duration": 30,
+          "humanReference": {
+            "start": 780,
+            "end": 810
+          },
+          "spaceId": "reality-location-hall-p14",
+          "location": "HALL P.14",
+          "annotations": [
+            "MAQUILLAJE, ANILLOS, RESPIRADOR, BRILLANTES Y PEINE",
+            "ESPEJO GRANDE CON LUCES"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-morning-b",
+            "reality-camera-4",
+            "reality-sound-2",
+            "reality-editorial-b",
+            "reality-production-b"
+          ]
+        },
+        {
+          "id": "reality-task-08",
+          "participantId": "lina-isabel-garcia-salcedo",
+          "humanName": "Lina Isabel García-Salcedo",
+          "unit": "AFTERNOON_COMBINED",
+          "duration": 30,
+          "humanReference": {
+            "start": 960,
+            "end": 990
+          },
+          "spaceId": "reality-location-hall-p14",
+          "location": "HALL P.14",
+          "annotations": [
+            "TABLET PARA VIDEOLLAMADA"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-afternoon-combined",
+            "reality-camera-3",
+            "reality-camera-4",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-09",
+          "participantId": "marta-fonrali",
+          "humanName": "Marta Fonrali",
+          "unit": "AFTERNOON_COMBINED",
+          "duration": 30,
+          "humanReference": {
+            "start": 990,
+            "end": 1020
+          },
+          "spaceId": "reality-location-control",
+          "location": "CONTROL",
+          "annotations": [],
+          "requiredResourceIds": [
+            "reality-unit-afternoon-combined",
+            "reality-camera-3",
+            "reality-camera-4",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-10",
+          "participantId": "linet-varela",
+          "humanName": "Linet Varela",
+          "unit": "AFTERNOON_COMBINED",
+          "duration": 30,
+          "humanReference": {
+            "start": 1020,
+            "end": 1050
+          },
+          "spaceId": "reality-location-buggy",
+          "location": "BUGGY",
+          "annotations": [
+            "COLLAR AMULETO",
+            "TABLET CON MENSAJE"
+          ],
+          "requiredResourceIds": [
+            "reality-unit-afternoon-combined",
+            "reality-camera-3",
+            "reality-camera-4",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-11",
+          "participantId": "carmen-maria-saborido",
+          "humanName": "Carmen María Saborido",
+          "unit": "AFTERNOON_COMBINED",
+          "duration": 15,
+          "humanReference": {
+            "start": 1050,
+            "end": 1065
+          },
+          "spaceId": "reality-location-red-carpet",
+          "location": "ALFOMBRA ROJA",
+          "annotations": [],
+          "sourceLabel": "A. ROJA EVA",
+          "requiredResourceIds": [
+            "reality-unit-afternoon-combined",
+            "reality-camera-3",
+            "reality-camera-4",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        },
+        {
+          "id": "reality-task-12",
+          "participantId": "eva-martin-fernandez",
+          "humanName": "Eva Martín Fernández",
+          "unit": "AFTERNOON_COMBINED",
+          "duration": 15,
+          "humanReference": {
+            "start": 1065,
+            "end": 1080
+          },
+          "spaceId": "reality-location-red-carpet",
+          "location": "ALFOMBRA ROJA",
+          "annotations": [],
+          "sourceLabel": "A. ROJA EVA",
+          "requiredResourceIds": [
+            "reality-unit-afternoon-combined",
+            "reality-camera-3",
+            "reality-camera-4",
+            "reality-sound-1",
+            "reality-editorial-a",
+            "reality-production-a"
+          ]
+        }
+      ],
+      "assumptionRegister": [
+        "REALITY_REFERENCE_TIMES_ARE_EXTERNAL_QUALITY_REFERENCE",
+        "REALITY_FIXED_MEALS_PROJECTED_AS_RESOURCE_AVAILABILITY_GAPS",
+        "REALITY_AFTERNOON_INTERNAL_PHASES_INCLUDED_IN_TASK_DURATION",
+        "NO_ADDITIONAL_UNIFORM_REALITY_TRANSITION_ASSUMED",
+        "REALITY_TASK_ORDER_IS_REFERENCE_NOT_HARD_INPUT",
+        "REALITY_LOCATIONS_ARE_OPERATIONAL_SPACES",
+        "DOWNSTREAM_TOTALS_HANDOFF_DEFERRED"
+      ],
+      "deferredObservedOperations": [
+        {
+          "operation": "posicionamiento posterior del equipo en Totales Post",
+          "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+        },
+        {
+          "operation": "Totales Post con Lina y Gisela",
+          "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+        },
+        {
+          "operation": "grabación sin audio de Adrián",
+          "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+        },
+        {
+          "operation": "Beauties de Alfombra vacía",
+          "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+        }
+      ],
+      "projectedRealityInput": {
+        "digest": "eb72550cfb4f5f5fb0f75650ff91b52b9512a748df2cadd61a4167e0808307b8",
+        "taskCount": 50,
+        "resourceCount": 12,
+        "spaceCount": 11,
+        "humanTimesPresent": false
+      },
+      "currentPreferredFrozen": true,
+      "currentRequiredFrozen": true,
+      "currentRealityRun": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 111320,
+        "alternatives": 3865,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "scheduledTaskCount": 0,
+        "scheduledSetupPreparationCount": 0,
+        "scheduledSpaceMealCount": 0,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "runtimeMs": 1106.830707,
+        "scheduledTasks": []
+      },
+      "currentRealityRepeat": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 111320,
+        "alternatives": 3865,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "scheduledTaskCount": 0,
+        "scheduledSetupPreparationCount": 0,
+        "scheduledSpaceMealCount": 0,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "runtimeMs": 729.6015500000001,
+        "digest": "630c55ced2ad2c5aa0288c25b7db79c473292b77e932b31433812b2c10d0a2ef"
+      },
+      "currentRealityReversed": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 111320,
+        "alternatives": 3865,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "scheduledTaskCount": 0,
+        "scheduledSetupPreparationCount": 0,
+        "scheduledSpaceMealCount": 0,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "runtimeMs": 781.0283039999999,
+        "digest": "630c55ced2ad2c5aa0288c25b7db79c473292b77e932b31433812b2c10d0a2ef"
+      },
+      "realityUnitsOffRun": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 111320,
+        "alternatives": 3865,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "scheduledTaskCount": 0,
+        "scheduledSetupPreparationCount": 0,
+        "scheduledSpaceMealCount": 0,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "runtimeMs": 717.9234220000003,
+        "evaluation": {
+          "plannedTaskCount": 0,
+          "units": {
+            "MORNING_A": {
+              "taskCount": 4,
+              "plannedTaskCount": 0,
+              "productiveMinutes": 0,
+              "start": null,
+              "end": null,
+              "spanMinutes": 0,
+              "internalGapMinutes": 0,
+              "operationalBlockCount": 0,
+              "locationSequence": [],
+              "moveCount": 0,
+              "resourceComposition": {}
+            },
+            "MORNING_B": {
+              "taskCount": 3,
+              "plannedTaskCount": 0,
+              "productiveMinutes": 0,
+              "start": null,
+              "end": null,
+              "spanMinutes": 0,
+              "internalGapMinutes": 0,
+              "operationalBlockCount": 0,
+              "locationSequence": [],
+              "moveCount": 0,
+              "resourceComposition": {}
+            },
+            "AFTERNOON_COMBINED": {
+              "taskCount": 5,
+              "plannedTaskCount": 0,
+              "productiveMinutes": 0,
+              "start": null,
+              "end": null,
+              "spanMinutes": 0,
+              "internalGapMinutes": 0,
+              "operationalBlockCount": 0,
+              "locationSequence": [],
+              "moveCount": 0,
+              "resourceComposition": {}
+            }
+          },
+          "parallelMorningUnits": false,
+          "sharedResourceConflicts": [],
+          "participantOverlapConflicts": [],
+          "inputUnchanged": true
+        }
+      },
+      "impossibleRealityRun": {
+        "complete": false,
+        "hardValid": false,
+        "plannedTaskCount": 0,
+        "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "branches": 15599,
+        "alternatives": 3865,
+        "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+        "scheduledTaskCount": 0,
+        "scheduledSetupPreparationCount": 0,
+        "scheduledSpaceMealCount": 0,
+        "totalParticipantPresenceMinutes": 0,
+        "maxParticipantPresenceMinutes": 0,
+        "runtimeMs": 537.5030959999999,
+        "arraysEmpty": true
+      },
+      "independentRealityEvaluation": {
+        "plannedTaskCount": 0,
+        "units": {
+          "MORNING_A": {
+            "taskCount": 4,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          },
+          "MORNING_B": {
+            "taskCount": 3,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          },
+          "AFTERNOON_COMBINED": {
+            "taskCount": 5,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          }
+        },
+        "parallelMorningUnits": false,
+        "sharedResourceConflicts": [],
+        "participantOverlapConflicts": [],
+        "inputUnchanged": true
+      },
+      "humanComparison": {
+        "MORNING_A": {
+          "classification": "NOT_COMPARABLE",
+          "human": {
+            "start": 660,
+            "end": 840,
+            "productiveMinutes": 150,
+            "spanMinutes": 180,
+            "internalGapMinutes": 30,
+            "operationalBlockCount": 3
+          },
+          "planned": {
+            "taskCount": 4,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          },
+          "explanation": "Operational quality is published without requiring identical order or times."
+        },
+        "MORNING_B": {
+          "classification": "NOT_COMPARABLE",
+          "human": {
+            "start": 675,
+            "end": 810,
+            "productiveMinutes": 105,
+            "spanMinutes": 135,
+            "internalGapMinutes": 30,
+            "operationalBlockCount": 3
+          },
+          "planned": {
+            "taskCount": 3,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          },
+          "explanation": "Operational quality is published without requiring identical order or times."
+        },
+        "AFTERNOON_COMBINED": {
+          "classification": "NOT_COMPARABLE",
+          "human": {
+            "start": 960,
+            "end": 1080,
+            "productiveMinutes": 120,
+            "spanMinutes": 120,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 1
+          },
+          "planned": {
+            "taskCount": 5,
+            "plannedTaskCount": 0,
+            "productiveMinutes": 0,
+            "start": null,
+            "end": null,
+            "spanMinutes": 0,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 0,
+            "locationSequence": [],
+            "moveCount": 0,
+            "resourceComposition": {}
+          },
+          "explanation": "Operational quality is published without requiring identical order or times."
+        }
+      },
+      "expressibilityAudit": {
+        "exactResourceComposition": "GAP_CONFIRMED",
+        "parallelIndependentUnits": "GAP_CONFIRMED",
+        "sharedResourceExclusivity": "SUPPORTED",
+        "afternoonResourceRecomposition": "GAP_CONFIRMED",
+        "unitAvailabilityGaps": "SUPPORTED",
+        "participantConflicts": "SUPPORTED",
+        "variableTaskDurations": "GAP_CONFIRMED",
+        "locationExclusivity": "SUPPORTED",
+        "unitPresenceCompaction": "GAP_CONFIRMED",
+        "deterministicPlanning": "SUPPORTED",
+        "atomicFailure": "SUPPORTED",
+        "downstreamTotalsHandoff": "DEFERRED_OUT_OF_SCOPE",
+        "alternativeTeamAssignment": "NOT_REQUIRED_BY_SOURCE",
+        "locationSpecificTravelMatrix": "NOT_REQUIRED_BY_SOURCE",
+        "scheduledUnitMealEntity": "NOT_REQUIRED_BY_SOURCE"
+      },
+      "confirmedGapCodes": [
+        "REALITY_EXACT_RESOURCE_COMPOSITION_NOT_EXPRESSIBLE",
+        "REALITY_PARALLEL_UNITS_NOT_EXPRESSIBLE",
+        "REALITY_AFTERNOON_RECOMPOSITION_NOT_EXPRESSIBLE",
+        "REALITY_UNIT_COMPACTNESS_NOT_ACHIEVED",
+        "REALITY_FUTURE_FEASIBILITY_INSUFFICIENT"
+      ],
+      "supportedCapabilityCodes": [
+        "sharedResourceExclusivity",
+        "unitAvailabilityGaps",
+        "participantConflicts",
+        "locationExclusivity",
+        "deterministicPlanning",
+        "atomicFailure"
+      ],
+      "historicalRegressionEvidence": {
+        "scenarioMismatchIds": [],
+        "intact": true
+      },
+      "acceptance": {
+        "artifactAccepted": true,
+        "sourceCorpusAccepted": true,
+        "referenceCountsAccepted": true,
+        "referenceResourceCompositionAccepted": true,
+        "humanReferenceNotUsedAsSeed": true,
+        "projectionPure": true,
+        "currentOffFrozen": true,
+        "currentPreferredFrozen": true,
+        "currentRequiredFrozen": true,
+        "historicalRegressionIntact": true,
+        "realityRunDeterministic": true,
+        "realityRunOrderInvariant": true,
+        "realityInputUnchanged": true,
+        "impossibleRealityAtomic": true,
+        "expressibilityAuditComplete": true,
+        "currentPlannerCompletesReality": false,
+        "currentPlannerRealityHardValid": false,
+        "fullRealityBenchmarkPassed": false,
+        "acceptedMeaning": "Planner Next has been evaluated against the real Focal A2 Reality corpus with two parallel morning units, exact resource composition, an afternoon recomposed unit, participant conflicts, locations, availability gaps, and variable task durations. The artifact records truthfully which capabilities are already supported and which evidence-backed gaps remain; no Reality-specific algorithm has been added.",
+        "accepted": true
+      }
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -10844,324 +11517,21 @@
     }
   },
   "expressibilityAudit": {
-    "behavioralControls": {
-      "sameSpanDifferentBlocks": {
-        "oracleA": {
-          "requiredTaskCount": 13,
-          "plannedTaskCount": 13,
-          "presenceStart": 675,
-          "presenceEnd": 1020,
-          "presenceSpanMinutes": 345,
-          "requiredTaskMinutes": 195,
-          "authorizedMealMinutesInsideSpan": 75,
-          "internalGapMinutes": 75,
-          "operationalBlockCount": 4,
-          "crossesAuthorizedMeal": true,
-          "requiredPolicySatisfied": true,
-          "preferredLexicographicTuple": [
-            4,
-            345,
-            75
-          ],
-          "operationalBlocks": [
-            {
-              "start": 675,
-              "end": 690,
-              "taskIds": [
-                "main-cristina-zuloaga"
-              ]
-            },
-            {
-              "start": 720,
-              "end": 735,
-              "taskIds": [
-                "main-carmen-maria-saborido"
-              ]
-            },
-            {
-              "start": 765,
-              "end": 915,
-              "taskIds": [
-                "main-naomi-ines-carretero",
-                "main-jose-javier-cuenca",
-                "main-luis-belda",
-                "main-gisela-montserrat",
-                "main-linet-varela"
-              ]
-            },
-            {
-              "start": 930,
-              "end": 1020,
-              "taskIds": [
-                "main-eva-martin-fernandez",
-                "main-noa-marcos-diez",
-                "main-claudia-torrent",
-                "main-adrian-darrel",
-                "main-nela-garcia",
-                "main-daniel-hernan-barres"
-              ]
-            }
-          ]
-        },
-        "oracleB": {
-          "requiredTaskCount": 13,
-          "plannedTaskCount": 13,
-          "presenceStart": 690,
-          "presenceEnd": 1035,
-          "presenceSpanMinutes": 345,
-          "requiredTaskMinutes": 195,
-          "authorizedMealMinutesInsideSpan": 75,
-          "internalGapMinutes": 75,
-          "operationalBlockCount": 6,
-          "crossesAuthorizedMeal": true,
-          "requiredPolicySatisfied": true,
-          "preferredLexicographicTuple": [
-            6,
-            345,
-            75
-          ],
-          "operationalBlocks": [
-            {
-              "start": 690,
-              "end": 705,
-              "taskIds": [
-                "main-cristina-zuloaga"
-              ]
-            },
-            {
-              "start": 720,
-              "end": 765,
-              "taskIds": [
-                "main-carmen-maria-saborido",
-                "main-jose-javier-cuenca",
-                "main-naomi-ines-carretero"
-              ]
-            },
-            {
-              "start": 780,
-              "end": 795,
-              "taskIds": [
-                "main-gisela-montserrat"
-              ]
-            },
-            {
-              "start": 810,
-              "end": 915,
-              "taskIds": [
-                "main-linet-varela",
-                "main-luis-belda"
-              ]
-            },
-            {
-              "start": 930,
-              "end": 990,
-              "taskIds": [
-                "main-noa-marcos-diez",
-                "main-eva-martin-fernandez",
-                "main-claudia-torrent",
-                "main-nela-garcia"
-              ]
-            },
-            {
-              "start": 1005,
-              "end": 1035,
-              "taskIds": [
-                "main-daniel-hernan-barres",
-                "main-adrian-darrel"
-              ]
-            }
-          ]
-        },
-        "currentMetricsPublishOperationalBlockCount": false,
-        "legacyA": {
-          "presenceMinutesById": {
-            "focal-a2-continuous-resource": 345
-          },
-          "internalGapMinutesById": {
-            "focal-a2-continuous-resource": 150
-          }
-        }
-      },
-      "authorizedMeal": {
-        "oracle": {
-          "requiredTaskCount": 2,
-          "plannedTaskCount": 2,
-          "presenceStart": 825,
-          "presenceEnd": 930,
-          "presenceSpanMinutes": 105,
-          "requiredTaskMinutes": 30,
-          "authorizedMealMinutesInsideSpan": 75,
-          "internalGapMinutes": 0,
-          "operationalBlockCount": 1,
-          "crossesAuthorizedMeal": true,
-          "requiredPolicySatisfied": true,
-          "preferredLexicographicTuple": [
-            1,
-            105,
-            0
-          ],
-          "operationalBlocks": [
-            {
-              "start": 825,
-              "end": 930,
-              "taskIds": [
-                "before",
-                "after"
-              ]
-            }
-          ]
-        },
-        "current": {
-          "presenceMinutesById": {
-            "focal-a2-continuous-resource": 105
-          },
-          "internalGapMinutesById": {
-            "focal-a2-continuous-resource": 75
-          }
-        },
-        "mealCountedAsCurrentGap": true
-      },
-      "required": {
-        "split": {
-          "requiredTaskCount": 2,
-          "plannedTaskCount": 2,
-          "presenceStart": 600,
-          "presenceEnd": 645,
-          "presenceSpanMinutes": 45,
-          "requiredTaskMinutes": 30,
-          "authorizedMealMinutesInsideSpan": 0,
-          "internalGapMinutes": 15,
-          "operationalBlockCount": 2,
-          "crossesAuthorizedMeal": false,
-          "requiredPolicySatisfied": false,
-          "preferredLexicographicTuple": [
-            2,
-            45,
-            15
-          ],
-          "operationalBlocks": [
-            {
-              "start": 600,
-              "end": 615,
-              "taskIds": [
-                "a"
-              ]
-            },
-            {
-              "start": 630,
-              "end": 645,
-              "taskIds": [
-                "b"
-              ]
-            }
-          ]
-        },
-        "single": {
-          "requiredTaskCount": 2,
-          "plannedTaskCount": 2,
-          "presenceStart": 600,
-          "presenceEnd": 630,
-          "presenceSpanMinutes": 30,
-          "requiredTaskMinutes": 30,
-          "authorizedMealMinutesInsideSpan": 0,
-          "internalGapMinutes": 0,
-          "operationalBlockCount": 1,
-          "crossesAuthorizedMeal": false,
-          "requiredPolicySatisfied": true,
-          "preferredLexicographicTuple": [
-            1,
-            30,
-            0
-          ],
-          "operationalBlocks": [
-            {
-              "start": 600,
-              "end": 630,
-              "taskIds": [
-                "a",
-                "b"
-              ]
-            }
-          ]
-        },
-        "currentValidatorAcceptsSplit": true
-      },
-      "instrument": {
-        "matrix": [
-          {
-            "id": "neither",
-            "requiresBand": false,
-            "usesInstrument": false,
-            "projection": {
-              "participantId": "neither",
-              "requiredResourceIds": [],
-              "instrumentSetupRequired": false
-            }
-          },
-          {
-            "id": "band-only",
-            "requiresBand": true,
-            "usesInstrument": false,
-            "projection": {
-              "participantId": "band-only",
-              "requiredResourceIds": [
-                "focal-a2-continuous-resource"
-              ],
-              "instrumentSetupRequired": false
-            }
-          },
-          {
-            "id": "instrument-only",
-            "requiresBand": false,
-            "usesInstrument": true,
-            "projection": {
-              "participantId": "instrument-only",
-              "requiredResourceIds": [],
-              "instrumentSetupRequired": true
-            }
-          },
-          {
-            "id": "band-and-instrument",
-            "requiresBand": true,
-            "usesInstrument": true,
-            "projection": {
-              "participantId": "band-and-instrument",
-              "requiredResourceIds": [
-                "focal-a2-continuous-resource"
-              ],
-              "instrumentSetupRequired": true
-            }
-          }
-        ],
-        "mainFlowProjectionRepresentable": false
-      }
-    },
-    "gapEvidence": {
-      "RESOURCE_PRESENCE_SCORING_IGNORES_BLOCK_COUNT_PRIORITY": true,
-      "AUTHORIZED_SPACE_MEAL_COUNTED_AS_RESOURCE_GAP": true,
-      "REQUIRED_RESOURCE_PRESENCE_NOT_HARD_VALIDATED": true,
-      "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE": true,
-      "OFF_PREFERRED_REQUIRED_POLICY_NOT_EXPRESSIBLE": true
-    },
-    "derivedGapCodes": [
-      "AUTHORIZED_SPACE_MEAL_COUNTED_AS_RESOURCE_GAP",
-      "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
-      "OFF_PREFERRED_REQUIRED_POLICY_NOT_EXPRESSIBLE",
-      "REQUIRED_RESOURCE_PRESENCE_NOT_HARD_VALIDATED",
-      "RESOURCE_PRESENCE_SCORING_IGNORES_BLOCK_COUNT_PRIORITY"
-    ],
-    "gates": {
-      "independentFlags": true,
-      "genericResourceProjection": true,
-      "preferredLexicographic": false,
-      "authorizedMeal": false,
-      "requiredHardValidation": false,
-      "instrumentRepresentable": false,
-      "complete": false,
-      "deterministic": true,
-      "budgetRespected": true
-    },
-    "currentPlannerMeetsBandBenchmark": false
+    "exactResourceComposition": "GAP_CONFIRMED",
+    "parallelIndependentUnits": "GAP_CONFIRMED",
+    "sharedResourceExclusivity": "SUPPORTED",
+    "afternoonResourceRecomposition": "GAP_CONFIRMED",
+    "unitAvailabilityGaps": "SUPPORTED",
+    "participantConflicts": "SUPPORTED",
+    "variableTaskDurations": "GAP_CONFIRMED",
+    "locationExclusivity": "SUPPORTED",
+    "unitPresenceCompaction": "GAP_CONFIRMED",
+    "deterministicPlanning": "SUPPORTED",
+    "atomicFailure": "SUPPORTED",
+    "downstreamTotalsHandoff": "DEFERRED_OUT_OF_SCOPE",
+    "alternativeTeamAssignment": "NOT_REQUIRED_BY_SOURCE",
+    "locationSpecificTravelMatrix": "NOT_REQUIRED_BY_SOURCE",
+    "scheduledUnitMealEntity": "NOT_REQUIRED_BY_SOURCE"
   },
   "currentPlannerRun": {
     "first": {
@@ -11282,17 +11652,13 @@
     "remainingModelGaps": []
   },
   "assumptionRegister": [
-    {
-      "id": "A2_UNMARKED_MAIN_TASKS_REQUIRE_BAND",
-      "status": "USER_CONFIRMED_FOR_FOCAL_BENCHMARK",
-      "description": "Los seis ensayos con anotación explícita utilizan instrumento. Los trece ensayos restantes requieren la Banda en este benchmark focal.",
-      "impact": [
-        "determina las trece tareas que consumen el recurso continuo",
-        "no altera horarios de referencia",
-        "no introduce una regla global para otros días",
-        "puede cambiar mediante configuración diaria en futuros escenarios"
-      ]
-    }
+    "REALITY_REFERENCE_TIMES_ARE_EXTERNAL_QUALITY_REFERENCE",
+    "REALITY_FIXED_MEALS_PROJECTED_AS_RESOURCE_AVAILABILITY_GAPS",
+    "REALITY_AFTERNOON_INTERNAL_PHASES_INCLUDED_IN_TASK_DURATION",
+    "NO_ADDITIONAL_UNIFORM_REALITY_TRANSITION_ASSUMED",
+    "REALITY_TASK_ORDER_IS_REFERENCE_NOT_HARD_INPUT",
+    "REALITY_LOCATIONS_ARE_OPERATIONAL_SPACES",
+    "DOWNSTREAM_TOTALS_HANDOFF_DEFERRED"
   ],
   "focalA2ResolutionEvidence": {
     "spaceLocalMeal": {
@@ -15462,21 +15828,25 @@
     }
   },
   "acceptance": {
-    "bandOperationalBenchmarkPassed": true,
-    "instrumentMetadataSemanticsAccepted": true,
-    "instrumentMetadataHasNoPlanningInfluence": true,
-    "independentFlagsAccepted": true,
-    "bandOnlyAccepted": true,
-    "instrumentOnlyInformationalAccepted": true,
-    "bandAndInstrumentInformationalAccepted": true,
-    "noInstrumentResourcesCreated": true,
+    "artifactAccepted": true,
+    "sourceCorpusAccepted": true,
+    "referenceCountsAccepted": true,
+    "referenceResourceCompositionAccepted": true,
+    "humanReferenceNotUsedAsSeed": true,
+    "projectionPure": true,
     "currentOffFrozen": true,
     "currentPreferredFrozen": true,
     "currentRequiredFrozen": true,
     "historicalRegressionIntact": true,
-    "fullBandBenchmarkPassed": true,
-    "remainingGapCodesEmpty": true,
-    "acceptedMeaning": "Planner Next passes the operational Band benchmark. Instrument usage is participant-owned informational metadata and intentionally has no planning influence; any future operational preparation, transport, musician, or technical requirement must be configured explicitly as a separate resource, task, setup, or dependency.",
+    "realityRunDeterministic": true,
+    "realityRunOrderInvariant": true,
+    "realityInputUnchanged": true,
+    "impossibleRealityAtomic": true,
+    "expressibilityAuditComplete": true,
+    "currentPlannerCompletesReality": false,
+    "currentPlannerRealityHardValid": false,
+    "fullRealityBenchmarkPassed": false,
+    "acceptedMeaning": "Planner Next has been evaluated against the real Focal A2 Reality corpus with two parallel morning units, exact resource composition, an afternoon recomposed unit, participant conflicts, locations, availability gaps, and variable task durations. The artifact records truthfully which capabilities are already supported and which evidence-backed gaps remain; no Reality-specific algorithm has been added.",
     "accepted": true
   },
   "currentOff": {
@@ -17195,9 +17565,7 @@
     "atomic": true
   },
   "historicalRegressionEvidence": {
-    "sourceArtifactSha256Matches": true,
-    "scenarioDigestMismatchIds": [],
-    "evidenceDigestMismatchIds": [],
+    "scenarioMismatchIds": [],
     "intact": true
   },
   "original": {
@@ -17721,5 +18089,614 @@
     "code": "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
     "status": "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION",
     "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
-  }
+  },
+  "referenceRealityValidation": {
+    "realityTaskCount": 12,
+    "morningUnitATaskCount": 4,
+    "morningUnitBTaskCount": 3,
+    "afternoonCombinedUnitTaskCount": 5,
+    "uniqueLocationCount": 8,
+    "totalProductiveMinutes": 375,
+    "duration15TaskCount": 2,
+    "duration30TaskCount": 7,
+    "duration45TaskCount": 3,
+    "unitMetrics": {
+      "MORNING_A": {
+        "start": 660,
+        "end": 840,
+        "productiveMinutes": 150,
+        "spanMinutes": 180,
+        "internalGapMinutes": 30,
+        "operationalBlockCount": 3
+      },
+      "MORNING_B": {
+        "start": 675,
+        "end": 810,
+        "productiveMinutes": 105,
+        "spanMinutes": 135,
+        "internalGapMinutes": 30,
+        "operationalBlockCount": 3
+      },
+      "AFTERNOON_COMBINED": {
+        "start": 960,
+        "end": 1080,
+        "productiveMinutes": 120,
+        "spanMinutes": 120,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 1
+      }
+    }
+  },
+  "realityReference": [
+    {
+      "id": "reality-task-01",
+      "participantId": "cristina-zuloaga",
+      "humanName": "Cristina Zuloaga",
+      "unit": "MORNING_A",
+      "duration": 45,
+      "humanReference": {
+        "start": 660,
+        "end": 705
+      },
+      "spaceId": "reality-location-stage",
+      "location": "PLATÓ",
+      "annotations": [
+        "CON MADRE"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-morning-a",
+        "reality-camera-3",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-02",
+      "participantId": "luis-belda",
+      "humanName": "Luis Belda",
+      "unit": "MORNING_A",
+      "duration": 30,
+      "humanReference": {
+        "start": 720,
+        "end": 750
+      },
+      "spaceId": "reality-location-influencer-corner",
+      "location": "CORNER INFLUENCER",
+      "annotations": [
+        "TROMBÓN"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-morning-a",
+        "reality-camera-3",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-03",
+      "participantId": "jose-javier-cuenca",
+      "humanName": "José Javier Cuenca",
+      "unit": "MORNING_A",
+      "duration": 45,
+      "humanReference": {
+        "start": 765,
+        "end": 810
+      },
+      "spaceId": "reality-location-stage",
+      "location": "PLATÓ",
+      "annotations": [],
+      "requiredResourceIds": [
+        "reality-unit-morning-a",
+        "reality-camera-3",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-04",
+      "participantId": "pere-portero",
+      "humanName": "Pere Portero",
+      "unit": "MORNING_A",
+      "duration": 30,
+      "humanReference": {
+        "start": 810,
+        "end": 840
+      },
+      "spaceId": "reality-location-music-corner",
+      "location": "CORNER MUSIC",
+      "annotations": [
+        "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-morning-a",
+        "reality-camera-3",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-05",
+      "participantId": "gisela-montserrat",
+      "humanName": "Gisela Montserrat",
+      "unit": "MORNING_B",
+      "duration": 30,
+      "humanReference": {
+        "start": 675,
+        "end": 705
+      },
+      "spaceId": "reality-location-manzano",
+      "location": "MANZANO",
+      "annotations": [],
+      "requiredResourceIds": [
+        "reality-unit-morning-b",
+        "reality-camera-4",
+        "reality-sound-2",
+        "reality-editorial-b",
+        "reality-production-b"
+      ]
+    },
+    {
+      "id": "reality-task-06",
+      "participantId": "julio-gomez",
+      "humanName": "Julio Gómez",
+      "unit": "MORNING_B",
+      "duration": 45,
+      "humanReference": {
+        "start": 720,
+        "end": 765
+      },
+      "spaceId": "reality-location-stage",
+      "location": "PLATÓ",
+      "annotations": [
+        "GUITARRA",
+        "CON PADRE"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-morning-b",
+        "reality-camera-4",
+        "reality-sound-2",
+        "reality-editorial-b",
+        "reality-production-b"
+      ]
+    },
+    {
+      "id": "reality-task-07",
+      "participantId": "nela-garcia",
+      "humanName": "Nela García",
+      "unit": "MORNING_B",
+      "duration": 30,
+      "humanReference": {
+        "start": 780,
+        "end": 810
+      },
+      "spaceId": "reality-location-hall-p14",
+      "location": "HALL P.14",
+      "annotations": [
+        "MAQUILLAJE, ANILLOS, RESPIRADOR, BRILLANTES Y PEINE",
+        "ESPEJO GRANDE CON LUCES"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-morning-b",
+        "reality-camera-4",
+        "reality-sound-2",
+        "reality-editorial-b",
+        "reality-production-b"
+      ]
+    },
+    {
+      "id": "reality-task-08",
+      "participantId": "lina-isabel-garcia-salcedo",
+      "humanName": "Lina Isabel García-Salcedo",
+      "unit": "AFTERNOON_COMBINED",
+      "duration": 30,
+      "humanReference": {
+        "start": 960,
+        "end": 990
+      },
+      "spaceId": "reality-location-hall-p14",
+      "location": "HALL P.14",
+      "annotations": [
+        "TABLET PARA VIDEOLLAMADA"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-afternoon-combined",
+        "reality-camera-3",
+        "reality-camera-4",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-09",
+      "participantId": "marta-fonrali",
+      "humanName": "Marta Fonrali",
+      "unit": "AFTERNOON_COMBINED",
+      "duration": 30,
+      "humanReference": {
+        "start": 990,
+        "end": 1020
+      },
+      "spaceId": "reality-location-control",
+      "location": "CONTROL",
+      "annotations": [],
+      "requiredResourceIds": [
+        "reality-unit-afternoon-combined",
+        "reality-camera-3",
+        "reality-camera-4",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-10",
+      "participantId": "linet-varela",
+      "humanName": "Linet Varela",
+      "unit": "AFTERNOON_COMBINED",
+      "duration": 30,
+      "humanReference": {
+        "start": 1020,
+        "end": 1050
+      },
+      "spaceId": "reality-location-buggy",
+      "location": "BUGGY",
+      "annotations": [
+        "COLLAR AMULETO",
+        "TABLET CON MENSAJE"
+      ],
+      "requiredResourceIds": [
+        "reality-unit-afternoon-combined",
+        "reality-camera-3",
+        "reality-camera-4",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-11",
+      "participantId": "carmen-maria-saborido",
+      "humanName": "Carmen María Saborido",
+      "unit": "AFTERNOON_COMBINED",
+      "duration": 15,
+      "humanReference": {
+        "start": 1050,
+        "end": 1065
+      },
+      "spaceId": "reality-location-red-carpet",
+      "location": "ALFOMBRA ROJA",
+      "annotations": [],
+      "sourceLabel": "A. ROJA EVA",
+      "requiredResourceIds": [
+        "reality-unit-afternoon-combined",
+        "reality-camera-3",
+        "reality-camera-4",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    },
+    {
+      "id": "reality-task-12",
+      "participantId": "eva-martin-fernandez",
+      "humanName": "Eva Martín Fernández",
+      "unit": "AFTERNOON_COMBINED",
+      "duration": 15,
+      "humanReference": {
+        "start": 1065,
+        "end": 1080
+      },
+      "spaceId": "reality-location-red-carpet",
+      "location": "ALFOMBRA ROJA",
+      "annotations": [],
+      "sourceLabel": "A. ROJA EVA",
+      "requiredResourceIds": [
+        "reality-unit-afternoon-combined",
+        "reality-camera-3",
+        "reality-camera-4",
+        "reality-sound-1",
+        "reality-editorial-a",
+        "reality-production-a"
+      ]
+    }
+  ],
+  "deferredObservedOperations": [
+    {
+      "operation": "posicionamiento posterior del equipo en Totales Post",
+      "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+    },
+    {
+      "operation": "Totales Post con Lina y Gisela",
+      "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+    },
+    {
+      "operation": "grabación sin audio de Adrián",
+      "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+    },
+    {
+      "operation": "Beauties de Alfombra vacía",
+      "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
+    }
+  ],
+  "projectedRealityInput": {
+    "digest": "eb72550cfb4f5f5fb0f75650ff91b52b9512a748df2cadd61a4167e0808307b8",
+    "taskCount": 50,
+    "resourceCount": 12,
+    "spaceCount": 11,
+    "humanTimesPresent": false
+  },
+  "currentPreferredFrozen": true,
+  "currentRequiredFrozen": true,
+  "currentRealityRun": {
+    "complete": false,
+    "hardValid": false,
+    "plannedTaskCount": 0,
+    "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "branches": 111320,
+    "alternatives": 3865,
+    "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+    "scheduledTaskCount": 0,
+    "scheduledSetupPreparationCount": 0,
+    "scheduledSpaceMealCount": 0,
+    "totalParticipantPresenceMinutes": 0,
+    "maxParticipantPresenceMinutes": 0,
+    "runtimeMs": 1106.830707,
+    "scheduledTasks": []
+  },
+  "currentRealityRepeat": {
+    "complete": false,
+    "hardValid": false,
+    "plannedTaskCount": 0,
+    "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "branches": 111320,
+    "alternatives": 3865,
+    "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+    "scheduledTaskCount": 0,
+    "scheduledSetupPreparationCount": 0,
+    "scheduledSpaceMealCount": 0,
+    "totalParticipantPresenceMinutes": 0,
+    "maxParticipantPresenceMinutes": 0,
+    "runtimeMs": 729.6015500000001,
+    "digest": "630c55ced2ad2c5aa0288c25b7db79c473292b77e932b31433812b2c10d0a2ef"
+  },
+  "currentRealityReversed": {
+    "complete": false,
+    "hardValid": false,
+    "plannedTaskCount": 0,
+    "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "branches": 111320,
+    "alternatives": 3865,
+    "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+    "scheduledTaskCount": 0,
+    "scheduledSetupPreparationCount": 0,
+    "scheduledSpaceMealCount": 0,
+    "totalParticipantPresenceMinutes": 0,
+    "maxParticipantPresenceMinutes": 0,
+    "runtimeMs": 781.0283039999999,
+    "digest": "630c55ced2ad2c5aa0288c25b7db79c473292b77e932b31433812b2c10d0a2ef"
+  },
+  "realityUnitsOffRun": {
+    "complete": false,
+    "hardValid": false,
+    "plannedTaskCount": 0,
+    "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "branches": 111320,
+    "alternatives": 3865,
+    "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+    "scheduledTaskCount": 0,
+    "scheduledSetupPreparationCount": 0,
+    "scheduledSpaceMealCount": 0,
+    "totalParticipantPresenceMinutes": 0,
+    "maxParticipantPresenceMinutes": 0,
+    "runtimeMs": 717.9234220000003,
+    "evaluation": {
+      "plannedTaskCount": 0,
+      "units": {
+        "MORNING_A": {
+          "taskCount": 4,
+          "plannedTaskCount": 0,
+          "productiveMinutes": 0,
+          "start": null,
+          "end": null,
+          "spanMinutes": 0,
+          "internalGapMinutes": 0,
+          "operationalBlockCount": 0,
+          "locationSequence": [],
+          "moveCount": 0,
+          "resourceComposition": {}
+        },
+        "MORNING_B": {
+          "taskCount": 3,
+          "plannedTaskCount": 0,
+          "productiveMinutes": 0,
+          "start": null,
+          "end": null,
+          "spanMinutes": 0,
+          "internalGapMinutes": 0,
+          "operationalBlockCount": 0,
+          "locationSequence": [],
+          "moveCount": 0,
+          "resourceComposition": {}
+        },
+        "AFTERNOON_COMBINED": {
+          "taskCount": 5,
+          "plannedTaskCount": 0,
+          "productiveMinutes": 0,
+          "start": null,
+          "end": null,
+          "spanMinutes": 0,
+          "internalGapMinutes": 0,
+          "operationalBlockCount": 0,
+          "locationSequence": [],
+          "moveCount": 0,
+          "resourceComposition": {}
+        }
+      },
+      "parallelMorningUnits": false,
+      "sharedResourceConflicts": [],
+      "participantOverlapConflicts": [],
+      "inputUnchanged": true
+    }
+  },
+  "impossibleRealityRun": {
+    "complete": false,
+    "hardValid": false,
+    "plannedTaskCount": 0,
+    "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "branches": 15599,
+    "alternatives": 3865,
+    "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+    "scheduledTaskCount": 0,
+    "scheduledSetupPreparationCount": 0,
+    "scheduledSpaceMealCount": 0,
+    "totalParticipantPresenceMinutes": 0,
+    "maxParticipantPresenceMinutes": 0,
+    "runtimeMs": 537.5030959999999,
+    "arraysEmpty": true
+  },
+  "independentRealityEvaluation": {
+    "plannedTaskCount": 0,
+    "units": {
+      "MORNING_A": {
+        "taskCount": 4,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      },
+      "MORNING_B": {
+        "taskCount": 3,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      },
+      "AFTERNOON_COMBINED": {
+        "taskCount": 5,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      }
+    },
+    "parallelMorningUnits": false,
+    "sharedResourceConflicts": [],
+    "participantOverlapConflicts": [],
+    "inputUnchanged": true
+  },
+  "humanComparison": {
+    "MORNING_A": {
+      "classification": "NOT_COMPARABLE",
+      "human": {
+        "start": 660,
+        "end": 840,
+        "productiveMinutes": 150,
+        "spanMinutes": 180,
+        "internalGapMinutes": 30,
+        "operationalBlockCount": 3
+      },
+      "planned": {
+        "taskCount": 4,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      },
+      "explanation": "Operational quality is published without requiring identical order or times."
+    },
+    "MORNING_B": {
+      "classification": "NOT_COMPARABLE",
+      "human": {
+        "start": 675,
+        "end": 810,
+        "productiveMinutes": 105,
+        "spanMinutes": 135,
+        "internalGapMinutes": 30,
+        "operationalBlockCount": 3
+      },
+      "planned": {
+        "taskCount": 3,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      },
+      "explanation": "Operational quality is published without requiring identical order or times."
+    },
+    "AFTERNOON_COMBINED": {
+      "classification": "NOT_COMPARABLE",
+      "human": {
+        "start": 960,
+        "end": 1080,
+        "productiveMinutes": 120,
+        "spanMinutes": 120,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 1
+      },
+      "planned": {
+        "taskCount": 5,
+        "plannedTaskCount": 0,
+        "productiveMinutes": 0,
+        "start": null,
+        "end": null,
+        "spanMinutes": 0,
+        "internalGapMinutes": 0,
+        "operationalBlockCount": 0,
+        "locationSequence": [],
+        "moveCount": 0,
+        "resourceComposition": {}
+      },
+      "explanation": "Operational quality is published without requiring identical order or times."
+    }
+  },
+  "confirmedGapCodes": [
+    "REALITY_EXACT_RESOURCE_COMPOSITION_NOT_EXPRESSIBLE",
+    "REALITY_PARALLEL_UNITS_NOT_EXPRESSIBLE",
+    "REALITY_AFTERNOON_RECOMPOSITION_NOT_EXPRESSIBLE",
+    "REALITY_UNIT_COMPACTNESS_NOT_ACHIEVED",
+    "REALITY_FUTURE_FEASIBILITY_INSUFFICIENT"
+  ],
+  "supportedCapabilityCodes": [
+    "sharedResourceExclusivity",
+    "unitAvailabilityGaps",
+    "participantConflicts",
+    "locationExclusivity",
+    "deterministicPlanning",
+    "atomicFailure"
+  ]
 }
