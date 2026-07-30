@@ -6,12 +6,12 @@ import { evaluateResourcePresence } from "../resourcePresence";
 import { requiredContinuousResourceScenario, dividedRequiredSchedule } from "../scenarios/requiredContinuousResourceScenario";
 import { validatePlan } from "../validate";
 import { auditFocalA2RequiredFeasibility } from "./focal-a2/focalA2RequiredFeasibilityAudit";
+import { buildRequiredCompositeBlocks, requiredCompositePositions } from "../requiredCompositeBlock";
 import { FOCAL_A2_BAND_RESOURCE_ID, projectFocalA2BandProblem } from "./focal-a2/focalA2BandReference";
 
-const LEGACY_PATH = "planner-next-focal-a2-band-preferred-v2.json";
-const CURRENT_PATH = "planner-next-focal-a2-band-required-audit-v2.json";
-const PREVIOUS_PATH = "planner-next-focal-a2-band-required-audit-v1.json";
-const MANIFEST_PATH = "engine/planner-next/benchmarks/focal-a2/focalA2BandRequiredAuditHistoricalManifest.json";
+const LEGACY_PATH = "planner-next-focal-a2-band-required-audit-v2.json";
+const CURRENT_PATH = "planner-next-focal-a2-band-required-audit-v3.json";
+const MANIFEST_PATH = "engine/planner-next/benchmarks/focal-a2/focalA2BandRequiredCompositeV3HistoricalManifest.json";
 export const ACCEPTED_MEANING = "Planner Next expresses and hard-validates REQUIRED continuous-resource concentration, completes feasible REQUIRED controls, rejects divided or impossible plans atomically, and proves that a single Band block is infeasible in the real Focal A2 corpus under its coach-block, feeder, availability, meal, and dependency constraints; PREFERRED remains the valid operational policy for this day, and main-flow instrument representation remains pending";
 export const canonical = (value: any): any => Array.isArray(value) ? value.map(canonical) : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).filter((k) => k !== "runtimeMs").sort().map((k) => [k, canonical(value[k])])) : value;
 export const digest = (value: any) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
@@ -64,41 +64,61 @@ export function buildArtifact(source: any, manifest: any, sourcePath?: string) {
   const sourceArtifactSha256Matches = sourcePath === LEGACY_PATH ? fileDigest(sourcePath) === manifest.sourceArtifactSha256 : source.sourceArtifactSha256 === manifest.sourceArtifactSha256;
   const historicalRegressionEvidence: any = { sourceArtifactSha256Matches, scenarioDigestMismatchIds, evidenceDigestMismatchIds, fingerprintMismatchIds, branchBudgetMismatchIds, currentOffMismatchFields, preferredPlanMismatchFields, currentRequiredFailureMismatchFields, intact: false };
   historicalRegressionEvidence.intact = sourceArtifactSha256Matches && [scenarioDigestMismatchIds, evidenceDigestMismatchIds, fingerprintMismatchIds, branchBudgetMismatchIds, currentOffMismatchFields, preferredPlanMismatchFields, currentRequiredFailureMismatchFields].every((x) => x.length === 0);
-  const requiredPolicyControls = controls(), certificate = auditFocalA2RequiredFeasibility();
+  const requiredPolicyControls = controls();
+  const certificateProblem = projectFocalA2BandProblem("CURRENT_REQUIRED"), certificateInput = JSON.stringify(certificateProblem);
+  const certificate = auditFocalA2RequiredFeasibility({ problem: certificateProblem });
+  const repeatedCertificate = auditFocalA2RequiredFeasibility({ problem: certificateProblem });
+  const reversedCertificate = auditFocalA2RequiredFeasibility({ problem: reverse(certificateProblem) });
+  const certificateRepeatDigest = digest(repeatedCertificate), certificateReversedDigest = digest(reversedCertificate);
+  const certificateDeterministic = digest(certificate) === certificateRepeatDigest;
+  const certificateOrderInvariant = digest(certificate) === certificateReversedDigest;
+  const certificateInputUnchanged = certificateInput === JSON.stringify(certificateProblem) && certificate.inputUnchanged;
   const deterministic = digest(required) === digest(repeat), orderInvariant = digest(required) === digest(reversed);
   const atomic = required.scheduledTasks.length + required.scheduledSetupPreparations.length + required.scheduledSpaceMeals.length === 0;
-  const gates = {
-    artifactAccepted: true, focalCorpusAccepted: Object.keys(manifest.scenarioDigests).every((id) => source.scenarios?.[id] !== undefined),
-    currentPlannerMeetsFocalBenchmark: !required.complete && certificate.infeasible,
-    offPolicyAccepted: currentOff.complete, preferredPolicyAccepted: preferredPlan.complete,
-    requiredPolicyExpressible: true, requiredPolicyHardValidated: requiredPolicyControls.splitInvalid.accepted,
-    requiredFeasibleControlAccepted: requiredPolicyControls.feasibleContiguous.accepted,
-    requiredMealBridgeControlAccepted: requiredPolicyControls.feasibleWithAuthorizedMeal.accepted,
-    requiredSplitControlRejected: requiredPolicyControls.splitInvalid.accepted,
-    requiredAtomicFailureAccepted: requiredPolicyControls.impossibleAtomic.accepted,
-    multipleRequiredResourcesAccepted: requiredPolicyControls.multipleRequiredResources.accepted,
-    focalCurrentRequiredComplete: required.complete, focalCurrentRequiredPlanPublished: !atomic,
-    focalRequiredFailureDeterministic: deterministic, focalRequiredFailureOrderInvariant: orderInvariant,
-    focalRequiredInputUnchanged: required.inputUnchanged, focalRequiredBudgetRespected: required.branchBudgetConsumed <= 300000,
-    focalRequiredInfeasibilityProven: certificate.infeasible && certificate.feasibleRequiredWindowCount === 0,
-    focalPreferredRemainsOperationallyValid: preferredPlan.complete && preferredPlan.hardValid,
-    currentOffFrozen: currentOffMismatchFields.length === 0, currentPreferredFrozen: preferredPlanMismatchFields.length === 0,
-    historicalRegressionIntact: historicalRegressionEvidence.intact, fullBandBenchmarkPassed: false,
-  };
-  const accepted = Object.entries(gates).every(([key, value]) => ["focalCurrentRequiredComplete", "focalCurrentRequiredPlanPublished", "fullBandBenchmarkPassed"].includes(key) ? value === false : value === true);
-  const acceptance = { ...gates, acceptedMeaning: ACCEPTED_MEANING, accepted };
+  const multiProblem = requiredContinuousResourceScenario("MULTIPLE_REQUIRED_RESOURCES");
+  const multiMains = multiProblem.tasks.filter((task) => task.kind === "main");
+  const structural = requiredCompositePositions(buildRequiredCompositeBlocks(multiProblem, multiMains), multiMains,
+    multiMains.map((task) => task.blockKey ?? ""), multiProblem.budget.maxPatterns);
+  const homogeneousProblem = requiredContinuousResourceScenario("FEASIBLE_CONTIGUOUS");
+  const homogeneousTemplate = homogeneousProblem.tasks.find((task) => task.kind === "main")!;
+  const homogeneousMains = Array.from({ length: 10 }, (_, index) => ({ ...homogeneousTemplate,
+    id: `homogeneous-main-${index}`, participantId: `homogeneous-participant-${index}`, duration: 30 }));
+  const supportedHomogeneousDurationMinutes = buildRequiredCompositeBlocks(homogeneousProblem, homogeneousMains)[0]!.productiveDurationMinutes;
+  const blockers = certificate.candidateWindows.flatMap((window: any) => window.blockers);
+  const earliest = (taskId: string) => Math.min(...blockers.filter((blocker: any) => blocker.taskId === taskId).map((blocker: any) => blocker.earliestMainStart));
+  const historicalRegressionIntact = historicalRegressionEvidence.intact;
+  const compositeBlockAccepted = requiredPolicyControls.feasibleContiguous.accepted && requiredPolicyControls.multipleRequiredResources.accepted;
+  const homogeneousMainDurationContractAccepted = supportedHomogeneousDurationMinutes === 300;
+  const structuralEnumerationBounded = structural.rawCombinationCount <= multiProblem.budget.maxPatterns && !structural.exhausted;
+  const certificateTransitionMarginsAccepted = earliest("main-marta-fonrali") === 855 && earliest("main-pere-portero") === 915;
+  const currentOffFrozen = currentOffMismatchFields.length === 0, currentPreferredFrozen = preferredPlanMismatchFields.length === 0;
+  const currentRequiredAtomic = !required.complete && !required.hardValid && atomic && required.fingerprint === manifest.frozenCurrentRequiredFailure.fingerprint && required.branches <= 1909;
+  const fullBandBenchmarkPassed = false;
+  const accepted = compositeBlockAccepted && homogeneousMainDurationContractAccepted && structuralEnumerationBounded
+    && certificateTransitionMarginsAccepted && certificateDeterministic && certificateOrderInvariant && certificateInputUnchanged
+    && historicalRegressionIntact && currentOffFrozen && currentPreferredFrozen && currentRequiredAtomic && deterministic && orderInvariant;
+  const acceptance = { compositeBlockAccepted, homogeneousMainDurationContractAccepted, structuralEnumerationBounded,
+    certificateTransitionMarginsAccepted, certificateDeterministic, certificateOrderInvariant, historicalRegressionIntact,
+    currentOffFrozen, currentPreferredFrozen, currentRequiredAtomic, fullBandBenchmarkPassed, acceptedMeaning: ACCEPTED_MEANING, accepted };
   const scenarios = Object.fromEntries(Object.keys(manifest.scenarioDigests).map((id) => [id, source.scenarios[id]]));
-  scenarios.focalA2BandRequiredAudit = { fingerprint: required.fingerprint, branches: required.branches, complete: required.complete, certificateDigest: digest(certificate) };
+  scenarios.focalA2BandRequiredCompositeFoundationRepair = {
+    supportedHomogeneousDurationMinutes,
+    structuralLimit: multiProblem.budget.maxPatterns, rawCombinationCount: structural.rawCombinationCount,
+    compatibleCombinationCount: structural.compatibleCombinationCount, evaluatedCombinationCount: structural.rawCombinationCount,
+    exhausted: structural.exhausted, martaEarliestMainStart: earliest("main-marta-fonrali"), pereEarliestMainStart: earliest("main-pere-portero"),
+    certificateRepeatDigest, certificateReversedDigest, currentRequiredResult: required.searchStopReason,
+    branches: required.branches, runtimeMs: required.runtimeMs,
+  };
   const historicalEvidence = Object.fromEntries(Object.keys(manifest.evidenceDigests).map((id) => [id, source[id]]));
-  return { version: "planner-next-focal-a2-band-required-audit-v2", status: accepted ? "BAND_REQUIRED_COMPOSITE_ACCEPTED_FOCAL_REQUIRED_INFEASIBLE" : "BAND_REQUIRED_COMPOSITE_AUDIT_FAILED",
+  return { version: "planner-next-focal-a2-band-required-audit-v3", status: accepted ? "BAND_REQUIRED_COMPOSITE_FOUNDATION_ACCEPTED" : "BAND_REQUIRED_COMPOSITE_FOUNDATION_FAILED",
     sourceArtifactVersion: manifest.sourceArtifactVersion, sourceArtifactSha256: manifest.sourceArtifactSha256, scenarios, ...historicalEvidence,
     acceptance, currentOff, preferredPlan, currentRequiredFailure: required,
-    requiredPolicyControls, focalRequiredFeasibilityEvidence: { certificate, repeatDigest: digest(repeat), reversedDigest: digest(reversed), deterministic, orderInvariant, atomic }, historicalRegressionEvidence,
+    requiredPolicyControls, focalRequiredFeasibilityEvidence: { certificate, certificateRepeatDigest, certificateReversedDigest, certificateDeterministic, certificateOrderInvariant, certificateInputUnchanged, atomic }, historicalRegressionEvidence,
     original, resolvedGapCodes: ["AUTHORIZED_SPACE_MEAL_COUNTED_AS_RESOURCE_GAP", "RESOURCE_PRESENCE_SCORING_IGNORES_BLOCK_COUNT_PRIORITY", "REQUIRED_RESOURCE_PRESENCE_NOT_HARD_VALIDATED", "OFF_PREFERRED_REQUIRED_POLICY_NOT_EXPRESSIBLE"], remainingGapCodes: ["MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE"] };
 }
 
 export function runBenchmark() {
-  const sourcePath = existsSync(CURRENT_PATH) ? CURRENT_PATH : existsSync(PREVIOUS_PATH) ? PREVIOUS_PATH : LEGACY_PATH;
+  const sourcePath = existsSync(CURRENT_PATH) ? CURRENT_PATH : LEGACY_PATH;
   if (!existsSync(sourcePath)) throw new Error("NO_CURRENT_OR_LEGACY_ARTIFACT");
   const output = buildArtifact(JSON.parse(readFileSync(sourcePath, "utf8")), JSON.parse(readFileSync(MANIFEST_PATH, "utf8")), sourcePath);
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);

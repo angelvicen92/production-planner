@@ -14,6 +14,9 @@ test("the independent oracle derives the real Focal A2 impossibility", () => {
   assert.deepEqual(audit.compatibleStartIndexes, [3]);
   assert.deepEqual(audit.latestPrefixMainStartByPosition.slice(0, 3), [675, 690, 705]);
   assert.deepEqual(audit.blockerTaskIds, ["main-marta-fonrali", "main-pere-portero"]);
+  const blockers = audit.candidateWindows.flatMap((window) => window.blockers);
+  assert.ok(blockers.some((blocker) => blocker.taskId === "main-marta-fonrali" && blocker.transitionMargin === 15 && blocker.earliestMainStart === 855));
+  assert.ok(blockers.some((blocker) => blocker.taskId === "main-pere-portero" && blocker.transitionMargin === 15 && blocker.earliestMainStart === 915));
   assert.equal(audit.feasibleRequiredWindowCount, 0);
   assert.equal(audit.infeasible, true);
   assert.deepEqual(audit.reasonCodes, [FOCAL_REQUIRED_INFEASIBLE]);
@@ -35,7 +38,7 @@ test("the oracle is canonical, immutable, and derives changed resource membershi
   const first = auditFocalA2RequiredFeasibility({ problem });
   const reversed = { ...problem, tasks: [...problem.tasks].reverse(), participants: [...problem.participants].reverse(), coaches: [...problem.coaches].reverse(), spaces: [...problem.spaces].reverse(), resources: [...problem.resources].reverse() };
   const reordered = auditFocalA2RequiredFeasibility({ problem: reversed });
-  assert.deepEqual({ ...first, inputDigest: "x" }, { ...reordered, inputDigest: "x" });
+  assert.deepEqual(first, reordered);
   assert.equal(JSON.stringify(problem), before);
   assert.equal(first.inputUnchanged, true);
   const changed = structuredClone(problem);

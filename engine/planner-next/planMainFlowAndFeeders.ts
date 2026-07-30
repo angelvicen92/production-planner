@@ -294,12 +294,17 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   }
 
   const alternatives: MainAlternative[] = [];
+  let structuralCombinationsEvaluated = 0;
   for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
     const timelines: Array<MainFlowTimeline | undefined> = withMeal
       ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
     timelineCandidateCount += timelines.length;
-    const compositePositions = requiredCompositePositions(requiredBlocks, mains, pattern);
+    const compositeResult = requiredBlocks.length === 0 ? null : requiredCompositePositions(requiredBlocks, mains, pattern,
+      problem.budget.maxPatterns - structuralCombinationsEvaluated);
+    structuralCombinationsEvaluated += compositeResult?.rawCombinationCount ?? 0;
+    if (compositeResult?.exhausted) return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
+    const compositePositions = compositeResult?.positions ?? [{ startIndexByResourceId: {}, signature: "" }];
     for (const timeline of timelines) for (const compositePosition of compositePositions) {
     let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline }];
     for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
