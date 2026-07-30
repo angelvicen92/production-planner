@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v1.json`.
+The current accepted artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v2.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2355,3 +2355,16 @@ Generic anchored-accompaniment scheduling is intentionally not supported and fai
 The remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
 The accepted Evidence is `planner-next-focal-a2-itinerant-spec08-foundation-v1.json`.
 Run `./validate-focal-a2-009r1.sh current`; Planner Next remains isolated from production and the database.
+
+### FOCAL-A2-009R2 — SPEC-08 Foundation Consolidation
+
+The final Planner Next suite is self-contained; historical tests extract protected Evidence without legacy root artifacts.
+The operational corpus and explicit neutral participant availability are separated from the informational human reference.
+The Reality scenario supplies auxiliary policy `OFF` explicitly rather than through projection fallback.
+Task availability and itinerant composition are exercised through placement and final validation behavior.
+Acceptance is built from executions, audits, manifests, digests, comparisons, and poison controls.
+The corrected standalone result contains 47 tasks, nine itinerant operations, and 240 productive minutes.
+The 53-task combined corpus still fails atomically with `ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
+The sole remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`; no accompaniment search was added.
+The sole artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v2.json`.
+Run `./validate-focal-a2-009r2.sh current`; Planner Next remains isolated from production and the database.

@@ -48,7 +48,7 @@
     "benchmark:planner-next:focal-a2-band-preferred": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2BandPreferredBenchmark.ts",
     "benchmark:planner-next:focal-a2-required-audit": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2RequiredAuditBenchmark.ts",
     "benchmark:planner-next:focal-a2-band-semantics": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2RequiredAuditBenchmark.ts",
-    "benchmark:planner-next:focal-a2-spec08-foundation": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationBenchmark.ts"
+    "benchmark:planner-next:focal-a2-spec08-foundation": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV2Benchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
