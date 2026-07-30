@@ -12,6 +12,13 @@ const canonical = (value: any): any => Array.isArray(value)
     ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]))
     : value;
 const digest = (value: any) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
+const problemDigest = (problem: PlannerNextProblem) => digest({ ...problem,
+  tasks: [...problem.tasks].sort((a, b) => a.id.localeCompare(b.id)),
+  participants: [...problem.participants].sort((a, b) => a.id.localeCompare(b.id)),
+  coaches: [...problem.coaches].sort((a, b) => a.id.localeCompare(b.id)),
+  spaces: [...problem.spaces].sort((a, b) => a.id.localeCompare(b.id)),
+  resources: [...problem.resources].sort((a, b) => a.id.localeCompare(b.id)),
+});
 const intersects = (sets: Window[][], duration: number): number | null => {
   const starts = [...new Set(sets.flat().map((w) => w.start))].sort((a, b) => a - b);
   for (const start of starts) if (sets.every((windows) => windows.some((w) => w.start <= start && start + duration <= w.end))) return start;
@@ -66,8 +73,12 @@ export function auditFocalA2RequiredFeasibility(options: FocalRequiredAuditOptio
       const coach = problem.coaches.find((c) => c.id === feeder?.coachId)!;
       const space = problem.spaces.find((s) => s.id === feeder?.spaceId)!;
       const vocalStart = feeder ? intersects([participant.availability, coach.availability, space.availability], feeder.duration) : null;
-      const earliestMainStart = vocalStart == null || !feeder ? null : Math.max(vocalStart + feeder.duration + problem.participantTransitionMinutes, participant.availability[0]!.start);
-      return { taskId: main.id, feederId: feeder?.id, earliestVocalStart: vocalStart, earliestMainStart };
+      const transitionMargin = !feeder ? 0 : Math.max(
+        feeder.participantId === main.participantId ? problem.participantTransitionMinutes : 0,
+        feeder.coachId === main.coachId && feeder.spaceId !== main.spaceId ? problem.resourceTransitionMinutes : 0,
+      );
+      const earliestMainStart = vocalStart == null || !feeder ? null : Math.max(vocalStart + feeder.duration + transitionMargin, participant.availability[0]!.start);
+      return { taskId: main.id, feederId: feeder?.id, earliestVocalStart: vocalStart, transitionMargin, earliestMainStart };
     }).filter((x) => x.earliestMainStart == null || x.earliestMainStart > latestPrefixMainStartByPosition[startIndex - 1]!);
     candidateWindows.push({ pattern: pattern.join(","), startIndex, prefixCounts: Object.fromEntries(coaches.map((c) => [c, pattern.slice(0, startIndex).filter((x) => x === c).length])), suffixCounts, forcedBeforeTaskIds: forcedBefore.map((t) => t.id), blockers });
   }
@@ -83,7 +94,7 @@ export function auditFocalA2RequiredFeasibility(options: FocalRequiredAuditOptio
     blockerFeederIds: window.blockers.map((blocker: any) => blocker.feederId).filter(Boolean).sort(),
   }));
   const output = {
-    proofVersion: "focal-a2-required-composite-feasibility-proof-v2", inputDigest: digest(problem), mainTaskCount: mains.length,
+    proofVersion: "focal-a2-required-composite-feasibility-proof-v3", inputDigest: problemDigest(problem), mainTaskCount: mains.length,
     requiredTaskCount: mains.filter(required).length, nonRequiredTaskCount: mains.filter((t) => !required(t)).length,
     compositeBlock,
     coachTaskCounts, requiredTaskCountsByCoach, nonRequiredTaskCountsByCoach,
@@ -98,7 +109,7 @@ export function auditFocalA2RequiredFeasibility(options: FocalRequiredAuditOptio
     internalOrderingCompletePositionCount: feasibleRequiredWindowCount,
     infeasible: feasibleRequiredWindowCount === 0,
     reasonCodes: feasibleRequiredWindowCount === 0 ? [FOCAL_REQUIRED_INFEASIBLE] : [],
-    deterministic: true, inputUnchanged: before === JSON.stringify(problem),
+    inputUnchanged: before === JSON.stringify(problem),
   };
   return output;
 }

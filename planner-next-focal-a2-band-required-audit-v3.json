@@ -1,8 +1,8 @@
 {
-  "version": "planner-next-focal-a2-band-required-audit-v2",
-  "status": "BAND_REQUIRED_COMPOSITE_ACCEPTED_FOCAL_REQUIRED_INFEASIBLE",
-  "sourceArtifactVersion": "planner-next-focal-a2-band-preferred-v2",
-  "sourceArtifactSha256": "3aa1003c3b6624b808cda8b9cd206e8c1bdea6322fc97595e59b339d2b299382",
+  "version": "planner-next-focal-a2-band-required-audit-v3",
+  "status": "BAND_REQUIRED_COMPOSITE_FOUNDATION_ACCEPTED",
+  "sourceArtifactVersion": "planner-next-focal-a2-band-required-audit-v2",
+  "sourceArtifactSha256": "eb4c95ecfd3b8d906805b2788e2e05fdddfad7330721799c87b3e6d5980c9985",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -8606,6 +8606,21 @@
       "branches": 1909,
       "complete": false,
       "certificateDigest": "8ed094c122c3969cfdf1291098dba099a257bfdfcb4a771b79e46babb76061cb"
+    },
+    "focalA2BandRequiredCompositeFoundationRepair": {
+      "supportedHomogeneousDurationMinutes": 300,
+      "structuralLimit": 100,
+      "rawCombinationCount": 6,
+      "compatibleCombinationCount": 2,
+      "evaluatedCombinationCount": 6,
+      "exhausted": false,
+      "martaEarliestMainStart": 855,
+      "pereEarliestMainStart": 915,
+      "certificateRepeatDigest": "649b38aa86f6fdd11002880abb7d87ffea9d61f5a9000ddd48e6daa184423648",
+      "certificateReversedDigest": "649b38aa86f6fdd11002880abb7d87ffea9d61f5a9000ddd48e6daa184423648",
+      "currentRequiredResult": "NO_COMPLETE_HARD_VALID_PLAN",
+      "branches": 1909,
+      "runtimeMs": 15.171558000000005
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -15349,29 +15364,16 @@
     }
   },
   "acceptance": {
-    "artifactAccepted": true,
-    "focalCorpusAccepted": true,
-    "currentPlannerMeetsFocalBenchmark": true,
-    "offPolicyAccepted": true,
-    "preferredPolicyAccepted": true,
-    "requiredPolicyExpressible": true,
-    "requiredPolicyHardValidated": true,
-    "requiredFeasibleControlAccepted": true,
-    "requiredMealBridgeControlAccepted": true,
-    "requiredSplitControlRejected": true,
-    "requiredAtomicFailureAccepted": true,
-    "multipleRequiredResourcesAccepted": true,
-    "focalCurrentRequiredComplete": false,
-    "focalCurrentRequiredPlanPublished": false,
-    "focalRequiredFailureDeterministic": true,
-    "focalRequiredFailureOrderInvariant": true,
-    "focalRequiredInputUnchanged": true,
-    "focalRequiredBudgetRespected": true,
-    "focalRequiredInfeasibilityProven": true,
-    "focalPreferredRemainsOperationallyValid": true,
+    "compositeBlockAccepted": true,
+    "homogeneousMainDurationContractAccepted": true,
+    "structuralEnumerationBounded": true,
+    "certificateTransitionMarginsAccepted": true,
+    "certificateDeterministic": true,
+    "certificateOrderInvariant": true,
+    "historicalRegressionIntact": true,
     "currentOffFrozen": true,
     "currentPreferredFrozen": true,
-    "historicalRegressionIntact": true,
+    "currentRequiredAtomic": true,
     "fullBandBenchmarkPassed": false,
     "acceptedMeaning": "Planner Next expresses and hard-validates REQUIRED continuous-resource concentration, completes feasible REQUIRED controls, rejects divided or impossible plans atomically, and proves that a single Band block is infeasible in the real Focal A2 corpus under its coach-block, feeder, availability, meal, and dependency constraints; PREFERRED remains the valid operational policy for this day, and main-flow instrument representation remains pending",
     "accepted": true
@@ -15913,7 +15915,7 @@
     "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
     "branches": 64558,
     "branchBudgetConsumed": 64558,
-    "runtimeMs": 173.05278099999998,
+    "runtimeMs": 256.2180440000001,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 215,
     "mainFlowSpanMinutes": 360,
@@ -16463,7 +16465,7 @@
     "fingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
     "branches": 15599,
     "branchBudgetConsumed": 15599,
-    "runtimeMs": 411.49327900000003,
+    "runtimeMs": 639.4230709999999,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 155,
     "mainFlowSpanMinutes": 360,
@@ -16490,7 +16492,7 @@
     "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "branches": 1909,
     "branchBudgetConsumed": 1909,
-    "runtimeMs": 11.363851999999952,
+    "runtimeMs": 15.171558000000005,
     "totalParticipantPresenceMinutes": 0,
     "maxParticipantPresenceMinutes": 0,
     "mainFlowSpanMinutes": 0,
@@ -16551,8 +16553,8 @@
   },
   "focalRequiredFeasibilityEvidence": {
     "certificate": {
-      "proofVersion": "focal-a2-required-composite-feasibility-proof-v2",
-      "inputDigest": "951acea9de5bed5c858ee3c7427a60bf05440923dbc0180967ab33b1e2d516ed",
+      "proofVersion": "focal-a2-required-composite-feasibility-proof-v3",
+      "inputDigest": "8f33c6dc5c32549f8d57fb4749595f4618b445384bcdccdc2ed4afc21681a49b",
       "mainTaskCount": 19,
       "requiredTaskCount": 13,
       "nonRequiredTaskCount": 6,
@@ -16673,7 +16675,8 @@
               "taskId": "main-pere-portero",
               "feederId": "vocal-pere-portero",
               "earliestVocalStart": 885,
-              "earliestMainStart": 905
+              "transitionMargin": 15,
+              "earliestMainStart": 915
             }
           ]
         },
@@ -16698,7 +16701,8 @@
               "taskId": "main-pere-portero",
               "feederId": "vocal-pere-portero",
               "earliestVocalStart": 885,
-              "earliestMainStart": 905
+              "transitionMargin": 15,
+              "earliestMainStart": 915
             }
           ]
         },
@@ -16723,7 +16727,8 @@
               "taskId": "main-pere-portero",
               "feederId": "vocal-pere-portero",
               "earliestVocalStart": 885,
-              "earliestMainStart": 905
+              "transitionMargin": 15,
+              "earliestMainStart": 915
             }
           ]
         },
@@ -16748,7 +16753,8 @@
               "taskId": "main-pere-portero",
               "feederId": "vocal-pere-portero",
               "earliestVocalStart": 885,
-              "earliestMainStart": 905
+              "transitionMargin": 15,
+              "earliestMainStart": 915
             }
           ]
         },
@@ -16773,7 +16779,8 @@
               "taskId": "main-pere-portero",
               "feederId": "vocal-pere-portero",
               "earliestVocalStart": 885,
-              "earliestMainStart": 905
+              "transitionMargin": 15,
+              "earliestMainStart": 915
             }
           ]
         },
@@ -16798,7 +16805,8 @@
               "taskId": "main-marta-fonrali",
               "feederId": "vocal-marta-fonrali",
               "earliestVocalStart": 825,
-              "earliestMainStart": 845
+              "transitionMargin": 15,
+              "earliestMainStart": 855
             }
           ]
         },
@@ -16823,7 +16831,8 @@
               "taskId": "main-marta-fonrali",
               "feederId": "vocal-marta-fonrali",
               "earliestVocalStart": 825,
-              "earliestMainStart": 845
+              "transitionMargin": 15,
+              "earliestMainStart": 855
             }
           ]
         },
@@ -16848,7 +16857,8 @@
               "taskId": "main-marta-fonrali",
               "feederId": "vocal-marta-fonrali",
               "earliestVocalStart": 825,
-              "earliestMainStart": 845
+              "transitionMargin": 15,
+              "earliestMainStart": 855
             }
           ]
         },
@@ -16873,7 +16883,8 @@
               "taskId": "main-marta-fonrali",
               "feederId": "vocal-marta-fonrali",
               "earliestVocalStart": 825,
-              "earliestMainStart": 845
+              "transitionMargin": 15,
+              "earliestMainStart": 855
             }
           ]
         },
@@ -16898,7 +16909,8 @@
               "taskId": "main-marta-fonrali",
               "feederId": "vocal-marta-fonrali",
               "earliestVocalStart": 825,
-              "earliestMainStart": 845
+              "transitionMargin": 15,
+              "earliestMainStart": 855
             }
           ]
         }
@@ -17072,13 +17084,13 @@
       "reasonCodes": [
         "FOCAL_A2_REQUIRED_SINGLE_BLOCK_INFEASIBLE_UNDER_FEEDER_AND_COACH_CONSTRAINTS"
       ],
-      "deterministic": true,
       "inputUnchanged": true
     },
-    "repeatDigest": "c1a03dc599a35c9eae280f65294ec2e1c06145c92b56a3d9646d6465557b4dc1",
-    "reversedDigest": "c1a03dc599a35c9eae280f65294ec2e1c06145c92b56a3d9646d6465557b4dc1",
-    "deterministic": true,
-    "orderInvariant": true,
+    "certificateRepeatDigest": "649b38aa86f6fdd11002880abb7d87ffea9d61f5a9000ddd48e6daa184423648",
+    "certificateReversedDigest": "649b38aa86f6fdd11002880abb7d87ffea9d61f5a9000ddd48e6daa184423648",
+    "certificateDeterministic": true,
+    "certificateOrderInvariant": true,
+    "certificateInputUnchanged": true,
     "atomic": true
   },
   "historicalRegressionEvidence": {
@@ -17590,7 +17602,7 @@
     "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
     "branches": 64558,
     "branchBudgetConsumed": 64558,
-    "runtimeMs": 181.83335499999998,
+    "runtimeMs": 238.480095,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 215,
     "mainFlowSpanMinutes": 360,
