@@ -1,6 +1,6 @@
 {
-  "version": "planner-next-focal-a2-band-required-audit-v1",
-  "status": "BAND_REQUIRED_POLICY_ACCEPTED_FOCAL_REQUIRED_INFEASIBLE",
+  "version": "planner-next-focal-a2-band-required-audit-v2",
+  "status": "BAND_REQUIRED_COMPOSITE_ACCEPTED_FOCAL_REQUIRED_INFEASIBLE",
   "sourceArtifactVersion": "planner-next-focal-a2-band-preferred-v2",
   "sourceArtifactSha256": "3aa1003c3b6624b808cda8b9cd206e8c1bdea6322fc97595e59b339d2b299382",
   "scenarios": {
@@ -8603,9 +8603,9 @@
     },
     "focalA2BandRequiredAudit": {
       "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "branches": 4541,
+      "branches": 1909,
       "complete": false,
-      "certificateDigest": "86dadf0f515e02858f00cd470b81e5e0cb321ea8f2978cd21a2224162983d1ee"
+      "certificateDigest": "8ed094c122c3969cfdf1291098dba099a257bfdfcb4a771b79e46babb76061cb"
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -15913,7 +15913,7 @@
     "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
     "branches": 64558,
     "branchBudgetConsumed": 64558,
-    "runtimeMs": 155.83012200000007,
+    "runtimeMs": 173.05278099999998,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 215,
     "mainFlowSpanMinutes": 360,
@@ -16463,7 +16463,7 @@
     "fingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
     "branches": 15599,
     "branchBudgetConsumed": 15599,
-    "runtimeMs": 401.97604,
+    "runtimeMs": 411.49327900000003,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 155,
     "mainFlowSpanMinutes": 360,
@@ -16488,9 +16488,9 @@
     "scheduledSpaceMeals": [],
     "plannedTaskCount": 0,
     "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "branches": 4541,
-    "branchBudgetConsumed": 4541,
-    "runtimeMs": 1669.928032,
+    "branches": 1909,
+    "branchBudgetConsumed": 1909,
+    "runtimeMs": 11.363851999999952,
     "totalParticipantPresenceMinutes": 0,
     "maxParticipantPresenceMinutes": 0,
     "mainFlowSpanMinutes": 0,
@@ -16551,11 +16551,62 @@
   },
   "focalRequiredFeasibilityEvidence": {
     "certificate": {
-      "proofVersion": "focal-a2-required-feasibility-proof-v1",
+      "proofVersion": "focal-a2-required-composite-feasibility-proof-v2",
       "inputDigest": "951acea9de5bed5c858ee3c7427a60bf05440923dbc0180967ab33b1e2d516ed",
       "mainTaskCount": 19,
       "requiredTaskCount": 13,
       "nonRequiredTaskCount": 6,
+      "compositeBlock": {
+        "resourceId": "focal-a2-continuous-resource",
+        "memberTaskIds": [
+          "main-adrian-darrel",
+          "main-carmen-maria-saborido",
+          "main-claudia-torrent",
+          "main-cristina-zuloaga",
+          "main-daniel-hernan-barres",
+          "main-eva-martin-fernandez",
+          "main-gisela-montserrat",
+          "main-jose-javier-cuenca",
+          "main-linet-varela",
+          "main-luis-belda",
+          "main-naomi-ines-carretero",
+          "main-nela-garcia",
+          "main-noa-marcos-diez"
+        ],
+        "productiveDurationMinutes": 195,
+        "assignedSpaceId": "main-stage",
+        "taskBoundaryOffsets": [
+          0,
+          15,
+          30,
+          45,
+          60,
+          75,
+          90,
+          105,
+          120,
+          135,
+          150,
+          165,
+          180,
+          195
+        ],
+        "authorizedMealSplitOffsets": [
+          15,
+          30,
+          45,
+          60,
+          75,
+          90,
+          105,
+          120,
+          135,
+          150,
+          165,
+          180
+        ],
+        "canonicalSignature": "focal-a2-continuous-resource|main-stage|main-adrian-darrel:15|main-carmen-maria-saborido:15|main-claudia-torrent:15|main-cristina-zuloaga:15|main-daniel-hernan-barres:15|main-eva-martin-fernandez:15|main-gisela-montserrat:15|main-jose-javier-cuenca:15|main-linet-varela:15|main-luis-belda:15|main-naomi-ines-carretero:15|main-nela-garcia:15|main-noa-marcos-diez:15"
+      },
       "coachTaskCounts": {
         "coach-jose-maria": 11,
         "coach-lucia": 8
@@ -16861,6 +16912,162 @@
         "vocal-pere-portero"
       ],
       "feasibleRequiredWindowCount": 0,
+      "macroPositionsConsidered": [
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3
+        }
+      ],
+      "macroPositionsDiscarded": [
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-pere-portero"
+          ],
+          "blockerFeederIds": [
+            "vocal-pere-portero"
+          ]
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-pere-portero"
+          ],
+          "blockerFeederIds": [
+            "vocal-pere-portero"
+          ]
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-pere-portero"
+          ],
+          "blockerFeederIds": [
+            "vocal-pere-portero"
+          ]
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-pere-portero"
+          ],
+          "blockerFeederIds": [
+            "vocal-pere-portero"
+          ]
+        },
+        {
+          "pattern": "coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-pere-portero"
+          ],
+          "blockerFeederIds": [
+            "vocal-pere-portero"
+          ]
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-marta-fonrali"
+          ],
+          "blockerFeederIds": [
+            "vocal-marta-fonrali"
+          ]
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-marta-fonrali"
+          ],
+          "blockerFeederIds": [
+            "vocal-marta-fonrali"
+          ]
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-marta-fonrali"
+          ],
+          "blockerFeederIds": [
+            "vocal-marta-fonrali"
+          ]
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-marta-fonrali"
+          ],
+          "blockerFeederIds": [
+            "vocal-marta-fonrali"
+          ]
+        },
+        {
+          "pattern": "coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-lucia,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria,coach-jose-maria",
+          "startIndex": 3,
+          "reason": "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+          "blockerTaskIds": [
+            "main-marta-fonrali"
+          ],
+          "blockerFeederIds": [
+            "vocal-marta-fonrali"
+          ]
+        }
+      ],
+      "internalOrderingAttemptedPositionCount": 10,
+      "internalOrderingCompletePositionCount": 0,
       "infeasible": true,
       "reasonCodes": [
         "FOCAL_A2_REQUIRED_SINGLE_BLOCK_INFEASIBLE_UNDER_FEEDER_AND_COACH_CONSTRAINTS"
@@ -16868,8 +17075,8 @@
       "deterministic": true,
       "inputUnchanged": true
     },
-    "repeatDigest": "c43354a6a9049bf5ad0ef15870ca3d03fa30bb54a6b8f7f924e240f56a5f1b35",
-    "reversedDigest": "c43354a6a9049bf5ad0ef15870ca3d03fa30bb54a6b8f7f924e240f56a5f1b35",
+    "repeatDigest": "c1a03dc599a35c9eae280f65294ec2e1c06145c92b56a3d9646d6465557b4dc1",
+    "reversedDigest": "c1a03dc599a35c9eae280f65294ec2e1c06145c92b56a3d9646d6465557b4dc1",
     "deterministic": true,
     "orderInvariant": true,
     "atomic": true
@@ -17383,7 +17590,7 @@
     "fingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
     "branches": 64558,
     "branchBudgetConsumed": 64558,
-    "runtimeMs": 218.89109200000007,
+    "runtimeMs": 181.83335499999998,
     "totalParticipantPresenceMinutes": 2345,
     "maxParticipantPresenceMinutes": 215,
     "mainFlowSpanMinutes": 360,

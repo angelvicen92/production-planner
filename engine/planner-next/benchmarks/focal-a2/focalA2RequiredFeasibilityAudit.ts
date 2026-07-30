@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PlannerNextProblem, Task, Window } from "../../contracts";
 import { FOCAL_A2_BAND_RESOURCE_ID, projectFocalA2BandProblem } from "./focalA2BandReference";
+import { buildRequiredCompositeBlocks } from "../../requiredCompositeBlock";
 
 export const FOCAL_REQUIRED_INFEASIBLE =
   "FOCAL_A2_REQUIRED_SINGLE_BLOCK_INFEASIBLE_UNDER_FEEDER_AND_COACH_CONSTRAINTS";
@@ -73,15 +74,28 @@ export function auditFocalA2RequiredFeasibility(options: FocalRequiredAuditOptio
   const blockerTaskIds = [...new Set(candidateWindows.flatMap((w) => w.blockers.map((b: any) => b.taskId)))].sort();
   const blockerFeederIds = [...new Set(candidateWindows.flatMap((w) => w.blockers.map((b: any) => b.feederId)).filter(Boolean))].sort();
   const feasibleRequiredWindowCount = candidateWindows.filter((w) => w.blockers.length === 0).length;
+  const compositeBlock = buildRequiredCompositeBlocks(problem, mains)
+    .find((block) => block.resourceId === resourceId)!;
+  const discardedPositions = candidateWindows.filter((window) => window.blockers.length > 0).map((window) => ({
+    pattern: window.pattern, startIndex: window.startIndex,
+    reason: "FEEDER_OR_AVAILABILITY_PREFIX_INFEASIBLE",
+    blockerTaskIds: window.blockers.map((blocker: any) => blocker.taskId).sort(),
+    blockerFeederIds: window.blockers.map((blocker: any) => blocker.feederId).filter(Boolean).sort(),
+  }));
   const output = {
-    proofVersion: "focal-a2-required-feasibility-proof-v1", inputDigest: digest(problem), mainTaskCount: mains.length,
+    proofVersion: "focal-a2-required-composite-feasibility-proof-v2", inputDigest: digest(problem), mainTaskCount: mains.length,
     requiredTaskCount: mains.filter(required).length, nonRequiredTaskCount: mains.filter((t) => !required(t)).length,
+    compositeBlock,
     coachTaskCounts, requiredTaskCountsByCoach, nonRequiredTaskCountsByCoach,
     legalCoachPatternCount: patterns.length, legalPatterns: patterns.map((p) => p.join(",")),
     membershipCompatiblePatternWindowCount: candidateWindows.length,
     compatibleStartIndexes: [...new Set(candidateWindows.map((w) => w.startIndex))].sort((a, b) => a - b),
     minimumMorningTaskCount, maximumAfternoonTaskCount, latestPrefixMainStartByPosition,
     candidateWindows, blockerTaskIds, blockerFeederIds, feasibleRequiredWindowCount,
+    macroPositionsConsidered: candidateWindows.map(({ pattern, startIndex }) => ({ pattern, startIndex })),
+    macroPositionsDiscarded: discardedPositions,
+    internalOrderingAttemptedPositionCount: candidateWindows.length,
+    internalOrderingCompletePositionCount: feasibleRequiredWindowCount,
     infeasible: feasibleRequiredWindowCount === 0,
     reasonCodes: feasibleRequiredWindowCount === 0 ? [FOCAL_REQUIRED_INFEASIBLE] : [],
     deterministic: true, inputUnchanged: before === JSON.stringify(problem),

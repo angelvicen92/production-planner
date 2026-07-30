@@ -85,7 +85,7 @@
   "frozenCurrentRequiredFailure": {
     "complete": false,
     "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "branches": 4541,
+    "branches": 1909,
     "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
     "plannedTaskCount": 0
   }

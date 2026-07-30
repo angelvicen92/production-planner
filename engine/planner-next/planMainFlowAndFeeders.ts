@@ -22,6 +22,7 @@ import { getTechnicalChains } from "./technicalChains";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
 import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
+import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -34,27 +35,6 @@ interface MainAlternative {
   preferredPresenceTuple?: [number, number, number];
   participantScore?: number;
   feederClosable?: boolean;
-  requiredResourceStates?: RequiredResourceStates;
-}
-
-type RequiredResourceState = "NOT_STARTED" | "ACTIVE" | "CLOSED";
-type RequiredResourceStates = Record<string, RequiredResourceState>;
-
-/** Advances all REQUIRED resources atomically; null denotes a forbidden re-entry. */
-export function advanceRequiredResourceStates(
-  states: RequiredResourceStates,
-  requiredResourceIds: readonly string[],
-): RequiredResourceStates | null {
-  const required = new Set(requiredResourceIds);
-  const next: RequiredResourceStates = { ...states };
-  for (const resourceId of Object.keys(states).sort()) {
-    const state = states[resourceId]!;
-    if (required.has(resourceId)) {
-      if (state === "CLOSED") return null;
-      next[resourceId] = "ACTIVE";
-    } else if (state === "ACTIVE") next[resourceId] = "CLOSED";
-  }
-  return next;
 }
 
 function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative): [number, number, number] {
@@ -68,12 +48,6 @@ function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAl
 }
 
 function compareAlternatives(a: MainAlternative, b: MainAlternative, preferred: boolean): number {
-  if (a.requiredResourceStates && b.requiredResourceStates && a.tasks.length === b.tasks.length) {
-    const rank = (states: RequiredResourceStates) => Object.values(states).reduce((sum, state) =>
-      sum + (state === "ACTIVE" ? 0 : state === "NOT_STARTED" ? 1 : 2), 0);
-    const required = rank(a.requiredResourceStates) - rank(b.requiredResourceStates);
-    if (required) return required;
-  }
   const historical = a.score - b.score;
   if (!preferred || a.tasks.length !== b.tasks.length || a.tasks.length === 0) {
     return historical || a.signature.localeCompare(b.signature);
@@ -278,8 +252,7 @@ function failure(
 export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult {
   const begun = performance.now();
   const hasPreferredPresence = Array.isArray(problem.resources)
-    && problem.resources.some((resource) => resource.presenceConcentrationPolicy === "PREFERRED"
-      || resource.presenceConcentrationPolicy === "REQUIRED");
+    && problem.resources.some((resource) => resource.presenceConcentrationPolicy === "PREFERRED");
   const preflightReasons = preflight(problem);
   if (preflightReasons.length > 0) {
     return {
@@ -292,12 +265,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   }
 
   const mains = canonical(problem.tasks.filter(({ kind }) => kind === "main"));
-  const requiredResourceIds = problem.resources
-    .filter((resource) => resource.presenceConcentrationPolicy === "REQUIRED"
-      && mains.some((task) => (task.requiredResourceIds ?? []).includes(resource.id)))
-    .map(({ id }) => id).sort();
-  const initialRequiredStates: RequiredResourceStates | undefined = requiredResourceIds.length === 0
-    ? undefined : Object.fromEntries(requiredResourceIds.map((id) => [id, "NOT_STARTED" as const]));
+  const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const duration = mains[0]?.duration;
   if (duration === undefined || mains.length === 0) {
     return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN");
@@ -331,19 +299,22 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     const timelines: Array<MainFlowTimeline | undefined> = withMeal
       ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
     timelineCandidateCount += timelines.length;
-    for (const timeline of timelines) {
-    let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline,
-      ...(initialRequiredStates ? { requiredResourceStates: initialRequiredStates } : {}) }];
+    const compositePositions = requiredCompositePositions(requiredBlocks, mains, pattern);
+    for (const timeline of timelines) for (const compositePosition of compositePositions) {
+    let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline }];
     for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
       const next: MainAlternative[] = [];
       const slot = timeline?.slots[position] ?? mainStart + position * duration;
       for (const state of beam) {
         for (const task of mains) {
+          if (requiredBlocks.length > 0 && (task.blockKey !== pattern[position]
+            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition))) continue;
           if (counters.branches >= problem.budget.maxBranchExpansions) {
             return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
           }
           counters.branches += 1;
           if (task.blockKey !== pattern[position]
+            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
             || state.tasks.some(({ id }) => id === task.id)
             || !canPlaceTask(problem, task, slot, state.tasks, timeline ? [timeline.meal] : [])) continue;
           const feeder = problem.tasks.find(
@@ -361,50 +332,15 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
           const originalIndex = mains.findIndex(({ id }) => id === task.id);
           const scheduledTask = { ...task, start: slot, end: slot + duration };
-          const requiredResourceStates = state.requiredResourceStates
-            ? advanceRequiredResourceStates(state.requiredResourceStates, task.requiredResourceIds ?? []) : undefined;
-          if (state.requiredResourceStates && !requiredResourceStates) continue;
-          if (requiredResourceStates && Object.entries(requiredResourceStates).some(([resourceId, resourceState]) =>
-            resourceState === "CLOSED" && mains.some((remaining) => remaining.id !== task.id
-              && !state.tasks.some(({ id }) => id === remaining.id)
-              && (remaining.requiredResourceIds ?? []).includes(resourceId)))) continue;
-          if (requiredResourceStates && Object.entries(requiredResourceStates).some(([resourceId, resourceState]) => {
-            const remainingPositions = mains.length - position - 1;
-            const remainingRequired = mains.filter((candidate) => candidate.id !== task.id
-              && !state.tasks.some(({ id }) => id === candidate.id)
-              && (candidate.requiredResourceIds ?? []).includes(resourceId));
-            if (resourceState === "NOT_STARTED" && remainingRequired.length > remainingPositions) return true;
-            if (resourceState !== "ACTIVE") return false;
-            const slots = Array.from({ length: remainingRequired.length }, (_, offset) => {
-              const at = position + 1 + offset;
-              return timeline?.slots[at] ?? mainStart + at * duration;
-            });
-            const memo = new Map<string, boolean>();
-            const visit = (index: number, left: Task[]): boolean => {
-              if (index === slots.length) return true;
-              const memoKey = `${index}|${left.map(({ id }) => id).sort().join("|")}`;
-              const cached = memo.get(memoKey);
-              if (cached !== undefined) return cached;
-              const start = slots[index]!;
-              const key = pattern[position + 1 + index];
-              const result = left.some((candidate) => candidate.blockKey === key
-                && canPlaceTask(problem, candidate, start, placed, timeline ? [timeline.meal] : [])
-                && visit(index + 1, left.filter(({ id }) => id !== candidate.id)));
-              memo.set(memoKey, result);
-              return result;
-            };
-            const placed = [...state.tasks, scheduledTask];
-            return !visit(0, remainingRequired);
-          })) continue;
           const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
             const resource = problem.resources.find(({ id }) => id === resourceId);
-            return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED" ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
+            return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
+              && resource.presenceConcentrationPolicy !== "REQUIRED" ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
               * presencePreferenceWeight(resource.presencePreference) : 0);
           }, 0);
           const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
           const tasks = [...state.tasks, scheduledTask];
-          const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.map(({ id }) => id).join("|"), timeline,
-            ...(requiredResourceStates ? { requiredResourceStates } : {}) };
+          const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.map(({ id }) => id).join("|"), timeline };
           if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
           if (hasPreferredPresence) {
             candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;

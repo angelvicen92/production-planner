@@ -2314,12 +2314,14 @@ The accepted artifact is `planner-next-focal-a2-band-preferred-v2.json`, protect
 Validate fresh execution, publication integrity, and idempotence with `./validate-focal-a2-004.sh current`.
 
 ### FOCAL-A2-005 — Hard REQUIRED Presence and Focal Feasibility Audit
-`REQUIRED` is hard-validated: feasible controls form one block and divided schedules are rejected atomically.
-An assigned-space meal bridges required work without adding an internal gap; an unrelated meal does not.
+`REQUIRED` is now constructed as a provisional composite block, positioned before its member tasks are ordered; the incremental REQUIRED automaton was removed from the beam.
+Internal ordering reuses the deterministic main-flow hard filters, dependencies, feeder closure, coach constraints, margins, and future feasibility.
+An assigned-space meal may cut the block only at a task boundary, without changing productive duration or permitting an incompatible task inside it.
 Impossible construction publishes no partial tasks, preparations, or meals and never relaxes hard rules.
 The real Focal A2 corpus cannot form one Band block under its coach blocks and late vocal feeders.
 The independent audit derives Marta and Pere as blockers; no availability, dependency, meal, or budget was relaxed.
 `PREFERRED` remains the operationally valid A2 policy, while frozen `OFF` and `PREFERRED` results are protected.
 Main-flow instrument representation remains pending, so the full Band-and-instrument benchmark is not claimed.
-The accepted artifact is `planner-next-focal-a2-band-required-audit-v1.json`.
+`OFF` and `PREFERRED` remain exactly frozen, and Planner Next remains isolated from production.
+The accepted artifact is `planner-next-focal-a2-band-required-audit-v2.json`.
 Run `./validate-focal-a2-005.sh current`; Planner Next remains isolated from production.
