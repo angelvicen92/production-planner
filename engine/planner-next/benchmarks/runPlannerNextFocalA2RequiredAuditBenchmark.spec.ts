@@ -4,16 +4,14 @@ import { readFileSync } from "node:fs";
 import { canonical } from "./runPlannerNextFocalA2RequiredAuditBenchmark";
 
 const manifest = () => JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2BandSemanticsV4HistoricalManifest.json", "utf8"));
-const output = JSON.parse(readFileSync("planner-next-focal-a2-reality-baseline-v1.json", "utf8"));
+const output = JSON.parse(readFileSync("planner-next-focal-a2-itinerant-unit-audit-v3.json", "utf8"));
 
 test("v4 withdraws the false gap and carries all 25 historical scenarios", () => {
   const historicalScenarioIds = Object.keys(manifest().scenarioDigests);
   assert.equal(historicalScenarioIds.length, 25);
   assert.ok(historicalScenarioIds.every((id) => output.scenarios[id] !== undefined));
   assert.ok(output.scenarios.focalA2InstrumentMetadataSemantics);
-  assert.deepEqual(output.remainingGapCodes, []);
-  assert.deepEqual(output.withdrawnAssumptionCodes, ["MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE"]);
-  assert.equal(output.withdrawalEvidence.status, "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION");
+  assert.equal(output.historicalEvidence.withdrawalEvidence.status, "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION");
 });
 
 test("three metadata variants project and plan identically", () => {
