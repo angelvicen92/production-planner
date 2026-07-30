@@ -1,7 +1,9 @@
 {
-  "manifestVersion": "focal-a2-spec08-foundation-v2-historical-manifest-v1",
-  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v1",
-  "sourceArtifactSha256": "ae30d0c7fcde3e13c4ab64a318b4d32f6c2b439fc7118d07fdc943065c242d6e",
+  "manifestVersion": "focal-a2-spec08-foundation-v3-manifest-v1",
+  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v2",
+  "sourceArtifactSha256": "8e7b46925c1469b538e14e928c3e83ca871e57e9089b5c4eb8956ea53a182faa",
+  "protectedSubstrateVersion": "focal-a2-spec08-v3-protected-substrate-v1",
+  "protectedSubstrateSha256": "c3ccc1fd8819bbbe641367d36fcc7acf223279829114bb3eb4c03f9b3af080a3",
   "scenarioDigests": {
     "baseline": "02da2ec655fc829364c18cb849dba14a34c3d21b5fe27383b6e3540806762c86",
     "adversarial": "8abdddbbd4f55dfe37f09fc7fc07ede512f9bf3dd25c7866f0807dd5c2b6a300",
@@ -32,7 +34,8 @@
     "focalA2RealityBaselineAudit": "238bc1a4de6c93b0c0ec50d76d7b9d53d6fc2f33f00ae1eff48ec9de16698128",
     "focalA2ItinerantUnitContractAudit": "ed1e057b61b851c31f6693b26c4b3720e06b4d85e94611297a7e3c0ee16ab789",
     "focalA2ItinerantUnitAuditRepair": "132c4f2f9ec243c0af7dcea7e307a1114adc67384fed4ea61d97735e809c862f",
-    "focalA2Spec08FoundationRepair": "601ef74d85cd26c4ab04e449e9501989967b10e6b1a089906fedb174f22ae938"
+    "focalA2Spec08FoundationRepair": "601ef74d85cd26c4ab04e449e9501989967b10e6b1a089906fedb174f22ae938",
+    "focalA2Spec08FoundationConsolidation": "cf24e12d02cb53524b768e7ec8d7af9181bf28cfb546757360bec25475080b86"
   },
   "historicalEvidenceDigests": {
     "currentOff": "138011094cc3175306426cc66a40b33e7951cd7e3ed5223737260b23fc4eb757",
@@ -50,10 +53,7 @@
     "CURRENT_PREFERRED": 15599
   },
   "supersededHistoricalScenarioIds": [
-    "focalA2RealityBaselineAudit",
-    "focalA2ItinerantUnitContractAudit",
-    "focalA2ItinerantUnitAuditRepair",
-    "focalA2Spec08FoundationRepair"
+    "focalA2Spec08FoundationConsolidation"
   ],
-  "activeScenarioId": "focalA2Spec08FoundationConsolidation"
+  "activeScenarioId": "focalA2Spec08NeutralStandaloneBlockRepair"
 }

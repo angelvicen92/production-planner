@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import fs from "node:fs";
 import {
   itinerantOperationProfiles,
   itinerantUnitProfiles,
@@ -31,3 +32,4 @@ test("unit IDs group configuration but never become required resources", () => {
   assert.ok(problem.tasks.every((task) => task.requiredResourceIds?.every((id) => !unitIds.has(id)) ?? true));
   assert.equal(problem.tasks.length, 47);
 });
+test("standalone projection applies neutral availability and contains no human schedule seed",()=>{const source=fs.readFileSync(new URL("./focalA2RealityReference.ts",import.meta.url),"utf8");assert.ok(!source.includes("focalA2HumanItinerantReference"));assert.ok(!source.includes("_start"));assert.ok(!source.includes("Math.max"));const problem=projectStandaloneFocalA2RealityProblem();for(const [id,availability] of Object.entries({"lina-isabel-garcia-salcedo":[{start:570,end:1080}],"marta-fonrali":[{start:670,end:1080}],"linet-varela":[{start:600,end:1080}],"carmen-maria-saborido":[{start:570,end:1080}],"eva-martin-fernandez":[{start:630,end:1080}]}))assert.deepEqual(problem.participants.find(p=>p.id===id)?.availability,availability);assert.equal(problem.auxiliaryPolicy?.participantPresencePreference,"OFF")});

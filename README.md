@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v2.json`.
+The current accepted artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v3.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2368,3 +2368,18 @@ The 53-task combined corpus still fails atomically with `ANCHORED_ACCOMPANIMENT_
 The sole remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`; no accompaniment search was added.
 The sole artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v2.json`.
 Run `./validate-focal-a2-009r2.sh current`; Planner Next remains isolated from production and the database.
+
+### FOCAL-A2-009R3 — Neutral Itinerant Saturated Block
+
+The v2 artifact is retired because its benchmark read its own accepted output.
+Human start/end times are removed from the operational corpus and remain only in the external comparison reference.
+The five Reality participants receive one real neutral availability window ending at 18:00.
+The standalone projection supplies auxiliary presence policy `OFF` explicitly, without planner fallback.
+Planner Next generically derives exact-fit shared-resource windows as bounded atomic work items.
+The combined Reality unit is freshly constructed without gaps from 16:00 to 18:00.
+The standalone run completes all 47 tasks, nine operations, and 240 productive minutes hard-validly.
+The v3 benchmark builds fresh Evidence from code, configuration, the protected substrate, and executions.
+The 53-task accompaniment projection remains atomically `ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
+The sole remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
+The sole root artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v3.json`.
+Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from production and the database.

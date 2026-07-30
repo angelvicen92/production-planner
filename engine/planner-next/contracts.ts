@@ -188,6 +188,15 @@ export interface PlanMetrics extends ValidationSummary {
   auxiliaryBranchesExplored: number;
   auxiliarySelectionOrder: string[];
   auxiliaryCandidateCountWhenSelectedByTaskId: Record<string, number>;
+  saturatedResourceWindowBlockCount: number;
+  saturatedResourceWindowBlockPlannedCount: number;
+  saturatedResourceWindowBlockBranchesExplored: number;
+  saturatedResourceWindowBlockCandidateCountByKey: Record<string, number>;
+  saturatedResourceWindowBlockTaskIdsByKey: Record<string, string[]>;
+  saturatedResourceWindowBlockResourceIdsByKey: Record<string, string[]>;
+  saturatedResourceWindowBlockStartByKey: Record<string, Minute>;
+  saturatedResourceWindowBlockEndByKey: Record<string, Minute>;
+  saturatedResourceWindowBlockSelectedOrderByKey: Record<string, string[]>;
   secondaryBlockBranchesExplored: number;
   futureFeasibilityChecks: number;
   futureFeasibilityBranchesExplored: number;
