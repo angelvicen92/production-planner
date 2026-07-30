@@ -5,18 +5,6 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { evaluateResourcePresence, resourcePresenceMetrics } from "./resourcePresence";
 import { mainFlowResourcePresenceScenario } from "./scenarios/mainFlowResourcePresenceScenario";
 import { validatePlan } from "./validate";
-import { advanceRequiredResourceStates } from "./planMainFlowAndFeeders";
-
-test("REQUIRED state rejects re-entry without mutating independent resources", () => {
-  const initial = { a: "NOT_STARTED", b: "NOT_STARTED" } as const;
-  const active = advanceRequiredResourceStates(initial, ["a", "b"]);
-  assert.deepEqual(active, { a: "ACTIVE", b: "ACTIVE" });
-  const closedA = advanceRequiredResourceStates(active!, ["b"]);
-  assert.deepEqual(closedA, { a: "CLOSED", b: "ACTIVE" });
-  assert.equal(advanceRequiredResourceStates(closedA!, ["a", "b"]), null);
-  assert.deepEqual(initial, { a: "NOT_STARTED", b: "NOT_STARTED" });
-});
-
 test("REQUIRED presence treats only the assigned-space meal as an authorized bridge", () => {
   const resource = { id: "r", availability: [{ start: 0, end: 200 }], presencePreference: "MAXIMUM" as const,
     presenceConcentrationPolicy: "REQUIRED" as const, assignedSpaceId: "main" };

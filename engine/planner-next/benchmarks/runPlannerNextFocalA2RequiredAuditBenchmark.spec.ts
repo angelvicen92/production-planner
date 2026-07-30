@@ -4,7 +4,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { buildArtifact, canonical } from "./runPlannerNextFocalA2RequiredAuditBenchmark";
 
-const sourcePath = () => existsSync("planner-next-focal-a2-band-required-audit-v1.json") ? "planner-next-focal-a2-band-required-audit-v1.json" : "planner-next-focal-a2-band-preferred-v2.json";
+const sourcePath = () => existsSync("planner-next-focal-a2-band-required-audit-v2.json") ? "planner-next-focal-a2-band-required-audit-v2.json" : existsSync("planner-next-focal-a2-band-required-audit-v1.json") ? "planner-next-focal-a2-band-required-audit-v1.json" : "planner-next-focal-a2-band-preferred-v2.json";
 const source = () => JSON.parse(readFileSync(sourcePath(), "utf8"));
 const manifest = () => JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2BandRequiredAuditHistoricalManifest.json", "utf8"));
 
@@ -34,13 +34,13 @@ test("canonical comparison excludes runtimeMs and no other evidence", () => {
 });
 
 test("the validator always leaves valid failure JSON without replacing the accepted artifact", () => {
-  const active = existsSync("planner-next-focal-a2-band-required-audit-v1.json") ? "planner-next-focal-a2-band-required-audit-v1.json" : "planner-next-focal-a2-band-preferred-v2.json";
+  const active = sourcePath();
   const before = readFileSync(active);
   const result = spawnSync("bash", ["validate-focal-a2-005.sh", "__INVALID_MODE__"]);
   assert.notEqual(result.status, 0);
-  const failed = JSON.parse(readFileSync("planner-next-focal-a2-band-required-audit-v1.failed.json", "utf8"));
+  const failed = JSON.parse(readFileSync("planner-next-focal-a2-band-required-audit-v2.failed.json", "utf8"));
   assert.equal(failed.accepted, false);
   assert.equal(failed.reason, "MODE_ARTIFACT_MISMATCH");
   assert.deepEqual(readFileSync(active), before);
-  rmSync("planner-next-focal-a2-band-required-audit-v1.failed.json");
+  rmSync("planner-next-focal-a2-band-required-audit-v2.failed.json");
 });
