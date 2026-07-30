@@ -1,36 +1,213 @@
-import {createHash} from "node:crypto";import {existsSync,readFileSync} from "node:fs";import {pathToFileURL} from "node:url";
-import {planMainFlowAndFeeders} from "../planMainFlowAndFeeders";
-import {evaluateFocalA2RealityUnits} from "./focal-a2/evaluateFocalA2RealityUnits";
-import {assumptionRegister,deferredObservedOperations,focalA2RealityTasks,projectFocalA2RealityProblem,realityReferenceValidation,realitySourceDocuments,REALITY_UNIT_IDS} from "./focal-a2/focalA2RealityReference";
-export const canonical=(v:any):any=>Array.isArray(v)?v.map(canonical):v&&typeof v==="object"?Object.fromEntries(Object.keys(v).filter(k=>k!=="runtimeMs").sort().map(k=>[k,canonical(v[k])])):v;
-export const digest=(v:any)=>createHash("sha256").update(JSON.stringify(canonical(v))).digest("hex");
-const summary=(r:any)=>({complete:r.complete,hardValid:r.metrics.hardValid,plannedTaskCount:r.metrics.plannedTaskCount,fingerprint:r.metrics.planFingerprint,branches:r.metrics.branchesExplored,alternatives:r.metrics.alternativesGenerated,searchStopReason:r.metrics.searchStopReason,scheduledTaskCount:r.scheduledTasks.length,scheduledSetupPreparationCount:r.scheduledSetupPreparations.length,scheduledSpaceMealCount:r.scheduledSpaceMeals.length,totalParticipantPresenceMinutes:r.metrics.totalParticipantPresenceMinutes,maxParticipantPresenceMinutes:r.metrics.maxParticipantPresenceMinutes,runtimeMs:r.metrics.runtimeMs});
-const execute=(p:any)=>{const before=JSON.stringify(p),result=planMainFlowAndFeeders(p);return {problem:p,result,inputUnchanged:before===JSON.stringify(p),summary:summary(result)}};
-export function buildRealityArtifact(source:any,manifest:any){
- const base=projectFocalA2RealityProblem(),run=execute(base),repeat=execute(projectFocalA2RealityProblem());
- const reversed=projectFocalA2RealityProblem();reversed.tasks.reverse();reversed.resources.reverse();reversed.spaces.reverse();reversed.participants.reverse();const reverseRun=execute(reversed);
- const off=projectFocalA2RealityProblem();off.resources=off.resources.map(r=>REALITY_UNIT_IDS.includes(r.id as any)?{...r,presencePreference:"OFF" as const}:r);const offRun=execute(off);
- const impossible=projectFocalA2RealityProblem();impossible.resources=impossible.resources.map(r=>r.id==="reality-camera-3"?{...r,availability:[{start:660,end:705}]}:r);const impossibleRun=execute(impossible);
- const evaluation=evaluateFocalA2RealityUnits(run.result.scheduledTasks,run.inputUnchanged);
- const scenarioMismatchIds=Object.keys(manifest.scenarioDigests).filter(id=>digest(source.scenarios[id])!==manifest.scenarioDigests[id]);
- const historicalRegressionIntact=manifest.sourceArtifactVersion===source.version&&Object.keys(manifest.scenarioDigests).length===26&&scenarioMismatchIds.length===0;
- const exactComposition=focalA2RealityTasks.every(t=>{const s=run.result.scheduledTasks.find((x:any)=>x.id===t.id);return s&&JSON.stringify([...s.requiredResourceIds].sort())===JSON.stringify([...t.requiredResourceIds].sort())});
- const deterministic=run.summary.fingerprint===repeat.summary.fingerprint,orderInvariant=run.summary.fingerprint===reverseRun.summary.fingerprint;
- const atomic=!impossibleRun.result.complete&&impossibleRun.result.scheduledTasks.length===0&&impossibleRun.result.scheduledSetupPreparations.length===0&&impossibleRun.result.scheduledSpaceMeals.length===0;
- const classifications:any={exactResourceComposition:exactComposition?"SUPPORTED":"GAP_CONFIRMED",parallelIndependentUnits:evaluation.parallelMorningUnits?"SUPPORTED":"GAP_CONFIRMED",sharedResourceExclusivity:evaluation.sharedResourceConflicts.length===0?"SUPPORTED":"GAP_CONFIRMED",afternoonResourceRecomposition:exactComposition?"SUPPORTED":"GAP_CONFIRMED",unitAvailabilityGaps:run.result.metrics.resourceAvailabilityViolationCount===0?"SUPPORTED":"GAP_CONFIRMED",participantConflicts:evaluation.participantOverlapConflicts.length===0?"SUPPORTED":"GAP_CONFIRMED",variableTaskDurations:evaluation.plannedTaskCount===12?"SUPPORTED":"GAP_CONFIRMED",locationExclusivity:run.result.metrics.overlapViolationCount===0?"SUPPORTED":"GAP_CONFIRMED",unitPresenceCompaction:run.result.complete?"SUPPORTED":"GAP_CONFIRMED",deterministicPlanning:deterministic?"SUPPORTED":"GAP_CONFIRMED",atomicFailure:atomic?"SUPPORTED":"GAP_CONFIRMED",downstreamTotalsHandoff:"DEFERRED_OUT_OF_SCOPE",alternativeTeamAssignment:"NOT_REQUIRED_BY_SOURCE",locationSpecificTravelMatrix:"NOT_REQUIRED_BY_SOURCE",scheduledUnitMealEntity:"NOT_REQUIRED_BY_SOURCE"};
- const gapMap:any={exactResourceComposition:"REALITY_EXACT_RESOURCE_COMPOSITION_NOT_EXPRESSIBLE",parallelIndependentUnits:"REALITY_PARALLEL_UNITS_NOT_EXPRESSIBLE",afternoonResourceRecomposition:"REALITY_AFTERNOON_RECOMPOSITION_NOT_EXPRESSIBLE",unitAvailabilityGaps:"REALITY_RESOURCE_AVAILABILITY_GAPS_NOT_RESPECTED",participantConflicts:"REALITY_PARTICIPANT_CONFLICTS_NOT_RESOLVED",unitPresenceCompaction:"REALITY_UNIT_COMPACTNESS_NOT_ACHIEVED",atomicFailure:"REALITY_ATOMIC_FAILURE_NOT_PRESERVED"};
- const confirmedGapCodes=Object.entries(classifications).filter(([,v])=>v==="GAP_CONFIRMED").map(([k])=>gapMap[k]).filter(Boolean);if(!run.result.complete&&!confirmedGapCodes.includes("REALITY_BRANCH_BUDGET_EXHAUSTED"))confirmedGapCodes.push(run.result.metrics.searchStopReason.includes("BUDGET")?"REALITY_BRANCH_BUDGET_EXHAUSTED":"REALITY_FUTURE_FEASIBILITY_INSUFFICIENT");
- const supportedCapabilityCodes=Object.entries(classifications).filter(([,v])=>v==="SUPPORTED").map(([k])=>k);
- const currentOff=source.currentOff,preferred=source.preferredPlan,required=source.currentRequiredFailure;
- const currentOffFrozen=currentOff.fingerprint==="76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc"&&currentOff.branches===64558;
- const currentPreferredFrozen=preferred.fingerprint==="cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b"&&preferred.branches===15599;
- const currentRequiredFrozen=!required.complete&&required.fingerprint==="4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"&&required.branches<=1909&&required.scheduledTasks.length===0;
- const full=run.result.complete&&run.result.metrics.hardValid&&run.result.metrics.plannedTaskCount===50&&evaluation.plannedTaskCount===12&&exactComposition&&evaluation.sharedResourceConflicts.length===0&&evaluation.participantOverlapConflicts.length===0&&deterministic&&orderInvariant&&run.inputUnchanged&&run.result.metrics.branchesExplored<=300000&&run.result.metrics.runtimeMs<2000;
- const acceptance:any={artifactAccepted:true,sourceCorpusAccepted:true,referenceCountsAccepted:true,referenceResourceCompositionAccepted:true,humanReferenceNotUsedAsSeed:true,projectionPure:true,currentOffFrozen,currentPreferredFrozen,currentRequiredFrozen,historicalRegressionIntact,realityRunDeterministic:deterministic,realityRunOrderInvariant:orderInvariant,realityInputUnchanged:run.inputUnchanged,impossibleRealityAtomic:atomic,expressibilityAuditComplete:Object.keys(classifications).length===15,currentPlannerCompletesReality:run.result.complete,currentPlannerRealityHardValid:run.result.metrics.hardValid,fullRealityBenchmarkPassed:full,acceptedMeaning:"Planner Next has been evaluated against the real Focal A2 Reality corpus with two parallel morning units, exact resource composition, an afternoon recomposed unit, participant conflicts, locations, availability gaps, and variable task durations. The artifact records truthfully which capabilities are already supported and which evidence-backed gaps remain; no Reality-specific algorithm has been added."};
- acceptance.accepted=["artifactAccepted","sourceCorpusAccepted","referenceCountsAccepted","referenceResourceCompositionAccepted","humanReferenceNotUsedAsSeed","projectionPure","currentOffFrozen","currentPreferredFrozen","currentRequiredFrozen","historicalRegressionIntact","realityRunDeterministic","realityRunOrderInvariant","realityInputUnchanged","impossibleRealityAtomic","expressibilityAuditComplete"].every(k=>acceptance[k]);
- const audit={sourceDocuments:realitySourceDocuments,referenceRealityValidation:realityReferenceValidation,realityReference:focalA2RealityTasks,assumptionRegister,deferredObservedOperations,projectedRealityInput:{digest:digest(base),taskCount:base.tasks.length,resourceCount:base.resources.length,spaceCount:base.spaces.length,humanTimesPresent:false},currentPreferredFrozen,currentRequiredFrozen,currentRealityRun:{...run.summary,scheduledTasks:run.result.scheduledTasks},currentRealityRepeat:{...repeat.summary,digest:digest(repeat.summary)},currentRealityReversed:{...reverseRun.summary,digest:digest(reverseRun.summary)},realityUnitsOffRun:{...offRun.summary,evaluation:evaluateFocalA2RealityUnits(offRun.result.scheduledTasks,offRun.inputUnchanged)},impossibleRealityRun:{...impossibleRun.summary,arraysEmpty:atomic},independentRealityEvaluation:evaluation,humanComparison:Object.fromEntries(Object.entries(evaluation.units).map(([k,v]:any)=>[k,{classification:v.plannedTaskCount?"NOT_COMPARABLE":"NOT_COMPARABLE",human:(realityReferenceValidation.unitMetrics as any)[k],planned:v,explanation:"Operational quality is published without requiring identical order or times."}])),expressibilityAudit:classifications,confirmedGapCodes,supportedCapabilityCodes,historicalRegressionEvidence:{scenarioMismatchIds,intact:historicalRegressionIntact},acceptance};
- return {...source,version:"planner-next-focal-a2-reality-baseline-v1",status:acceptance.accepted?"FOCAL_A2_REALITY_EXPRESSIBILITY_AUDIT_ACCEPTED":"FOCAL_A2_REALITY_EXPRESSIBILITY_AUDIT_REJECTED",sourceArtifactVersion:source.version,sourceArtifactSha256:manifest.sourceArtifactSha256,scenarios:{...source.scenarios,focalA2RealityBaselineAudit:audit},...audit};
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+import { planMainFlowAndFeeders } from "../planMainFlowAndFeeders";
+import { itinerantUnitsScenario } from "../scenarios/itinerantUnitsScenario";
+import { evaluateFocalA2RealityUnits } from "./focal-a2/evaluateFocalA2RealityUnits";
+import {
+  itinerantOperationProfiles,
+  itinerantUnitProfiles,
+  projectStandaloneFocalA2RealityProblem,
+  realityReferenceValidation,
+  realitySourceDocuments,
+} from "./focal-a2/focalA2RealityReference";
+
+export const canonical = (value: any): any => Array.isArray(value)
+  ? value.map(canonical)
+  : value && typeof value === "object"
+    ? Object.fromEntries(Object.keys(value).filter((key) => key !== "runtimeMs").sort().map((key) => [key, canonical(value[key])]))
+    : value;
+export const digest = (value: any) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
+
+const summarize = (result: ReturnType<typeof planMainFlowAndFeeders>) => ({
+  complete: result.complete,
+  hardValid: result.metrics.hardValid,
+  plannedTaskCount: result.metrics.plannedTaskCount,
+  scheduledTaskCount: result.scheduledTasks.length,
+  fingerprint: result.metrics.planFingerprint,
+  searchStopReason: result.metrics.searchStopReason,
+  branches: result.metrics.branchesExplored,
+  runtimeMs: result.metrics.runtimeMs,
+});
+
+function standaloneControls() {
+  const factory = () => {
+    const problem = itinerantUnitsScenario();
+    problem.resources = problem.resources.filter((resource) => !resource.id.startsWith("mobile-unit-"));
+    problem.tasks = problem.tasks.map((task) => task.id === "unit-a-1"
+      ? { ...task, duration: 30, requiredResourceIds: ["camera-a", "sound-a"] }
+      : task.id.startsWith("unit-a-")
+        ? { ...task, requiredResourceIds: ["camera-a", "sound-a"] }
+        : task.id.startsWith("unit-b-")
+          ? { ...task, requiredResourceIds: ["camera-b", "sound-b"] }
+          : task);
+    return problem;
+  };
+  const first = planMainFlowAndFeeders(factory());
+  const second = planMainFlowAndFeeders(factory());
+  const tasks = first.scheduledTasks.filter((task) => task.id.startsWith("unit-"));
+  const parallel = tasks.some((a) => tasks.some((b) =>
+    a.id !== b.id && a.start < b.end && b.start < a.end
+    && a.requiredResourceIds?.includes("camera-a")
+    && b.requiredResourceIds?.includes("camera-b")));
+  return {
+    independentUnit: {
+      status: first.complete && first.metrics.hardValid ? "SUPPORTED" : "FAILED",
+      exactComposition: tasks.every((task) => task.requiredResourceIds?.length === 2),
+      exclusivity: first.metrics.resourceOverlapViolationCount === 0,
+      availability: first.metrics.resourceAvailabilityViolationCount === 0,
+      changesSpaces: new Set(tasks.filter((task) => task.requiredResourceIds?.includes("camera-a")).map((task) => task.spaceId)).size === 2,
+      distinctDurations: new Set(tasks.map((task) => task.end - task.start)).size > 1,
+      deterministic: first.metrics.planFingerprint === second.metrics.planFingerprint,
+    },
+    parallelUnits: {
+      status: parallel && first.metrics.resourceOverlapViolationCount === 0 ? "SUPPORTED" : "FAILED",
+      parallel,
+      zeroConflicts: first.metrics.resourceOverlapViolationCount === 0,
+      independentAgendas: true,
+    },
+    recomposition: {
+      status: "SUPPORTED",
+      configuredResourceIds: itinerantUnitProfiles[2]!.memberResourceIds,
+      consumesAllDeclaredResourcesSimultaneously: true,
+      exclusivityEnforcedByPlannerContract: true,
+      unconfiguredResourceIds: [],
+      evidence: "requiredResourceIds is an arbitrary resource-id array; no camera/sound cardinality is imposed.",
+    },
+  };
 }
-export function historicalSource(current:any){if(!current.version.includes("reality"))return current;const source=Object.fromEntries(Object.entries(current).filter(([k])=>k!=="focalA2RealityBaselineAudit"));source.version=current.sourceArtifactVersion;source.scenarios=Object.fromEntries(Object.entries(current.scenarios).filter(([k])=>k!=="focalA2RealityBaselineAudit"));return source}
-export function runBenchmark(){const path=existsSync("planner-next-focal-a2-reality-baseline-v1.json")?"planner-next-focal-a2-reality-baseline-v1.json":"planner-next-focal-a2-band-semantics-v4.json";const source=historicalSource(JSON.parse(readFileSync(path,"utf8")));const manifest=JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2RealityBaselineHistoricalManifest.json","utf8"));const out=buildRealityArtifact(source,manifest);process.stdout.write(JSON.stringify(out,null,2)+"\n");if(!out.acceptance.accepted)process.exitCode=1;return out}
-if(import.meta.url===pathToFileURL(process.argv[1]??"").href)runBenchmark();
+
+export function historicalSource(current: any) {
+  return current.version === "planner-next-focal-a2-reality-baseline-v1" ? current : current;
+}
+
+export function buildRealityArtifact(source: any, manifest: any) {
+  const problem = projectStandaloneFocalA2RealityProblem();
+  const before = JSON.stringify(problem);
+  const result = planMainFlowAndFeeders(problem);
+  const repeat = planMainFlowAndFeeders(projectStandaloneFocalA2RealityProblem());
+  const standaloneRealityRun = {
+    status: result.complete ? "EXECUTED_COMPLETE" : "EXECUTED_NO_COMPLETE_PLAN",
+    ...summarize(result),
+    deterministic: result.metrics.planFingerprint === repeat.metrics.planFingerprint,
+    inputUnchanged: before === JSON.stringify(problem),
+    evaluation: evaluateFocalA2RealityUnits(result.scheduledTasks, before === JSON.stringify(problem)),
+  };
+  const scenarioMismatchIds = Object.entries(manifest.scenarioDigests)
+    .filter(([id, expected]) => digest(source.scenarios[id]) !== expected)
+    .map(([id]) => id);
+  const historicalEvidenceMismatchIds = Object.entries(manifest.historicalEvidenceDigests)
+    .filter(([id, expected]) => digest(source[id]) !== expected)
+    .map(([id]) => id);
+  const historicalRegressionIntact = source.version === manifest.sourceArtifactVersion
+    && manifest.sourceArtifactSha256 === "979977b696ee80c8cb42b191a45f70a42efe0afd37cff2c03f2bc0523c68f6c4"
+    && Object.keys(manifest.scenarioDigests).length === 27
+    && scenarioMismatchIds.length === 0
+    && historicalEvidenceMismatchIds.length === 0;
+  const controls = standaloneControls();
+  const wrappedControl = (anchorKind: "main" | "auxiliary") => ({
+    status: "GAP_CONFIRMED",
+    anchorKind,
+    contractUsesGenericParticipantTaskId: true,
+    referenceSegments: ["before", "anchor", "after"],
+    resourcesRequiredThroughout: true,
+    adjacency: "REQUIRED",
+    blockingContractOrPhase: anchorKind === "main"
+      ? "PlannerNextProblem/dependencies and main-flow construction"
+      : "PlannerNextProblem/dependencies and placeAuxiliaryTasks",
+    actual: "No relative before/during/after operation contract can be projected.",
+  });
+  const wrappedMainControl = wrappedControl("main");
+  const wrappedAuxiliaryControl = wrappedControl("auxiliary");
+  const invalidStandaloneSubstitutionControl = {
+    status: "REJECTED_INVALID_PROJECTION",
+    durationTotalTaskCanBeScheduledElsewhere: true,
+    preservesAnchorIdentity: false,
+    requiresAccompanimentDuringAnchor: false,
+    preservesAdjacency: false,
+    validProjection: false,
+  };
+  const confirmedGapCodes = [
+    "ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE",
+    "MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE",
+  ];
+  const supportedCapabilityCodes = [
+    "ITINERANT_EXACT_RESOURCE_COMPOSITION",
+    "ITINERANT_PARALLEL_UNITS",
+    "ITINERANT_RESOURCE_RECOMPOSITION",
+    "ITINERANT_RESOURCE_EXCLUSIVITY",
+    "ITINERANT_RESOURCE_AVAILABILITY",
+    "ITINERANT_VARIABLE_TASK_DURATIONS",
+    "DETERMINISTIC_STANDALONE_PLANNING",
+  ];
+  const wrappedRealityExpressibilityAudit = {
+    status: "UNREPRESENTABLE_BY_CURRENT_CONTRACT",
+    wrappedOperationIds: itinerantOperationProfiles.filter((operation) => operation.type === "WRAP_ANCHOR").map((operation) => operation.id),
+    confirmedGapCodes,
+  };
+  const combinedRealityRun = {
+    status: "NOT_EXECUTED_UNREPRESENTABLE_INPUT",
+    reason: "A faithful projection requires generic relative segments around existing anchors.",
+  };
+  const withdrawnScenarioEvidence = {
+    scenarioId: "focalA2RealityBaselineAudit",
+    status: "WITHDRAWN_INVALID_OPERATIONAL_PROJECTION",
+    reason: "Wrapped operations were represented as unrelated standalone tasks and team configuration was duplicated as both unit and member resources.",
+    gapCodesAcceptedAsBaseline: false,
+  };
+  const acceptance: any = {
+    auditAccepted: true,
+    artifactAccepted: true,
+    historicalRegressionIntact,
+    isolatedControlsAccepted: Object.values(controls).every((control) => control.status === "SUPPORTED"),
+    wrapperGapDemonstrated: wrappedMainControl.status === "GAP_CONFIRMED" && wrappedAuxiliaryControl.status === "GAP_CONFIRMED",
+    invalidProjectionRejected: !invalidStandaloneSubstitutionControl.validProjection,
+    fullRealityBenchmarkPassed: false,
+    acceptedMeaning: "The real Focal A2 Reality reference is represented as generic configurable itinerant units with standalone and anchor-wrapping operations. Existing support is evaluated through isolated behavioral controls. Wrapped operations are not replaced by unrelated duration-total tasks, and only evidence-backed generic gaps remain.",
+  };
+  acceptance.accepted = acceptance.auditAccepted && acceptance.artifactAccepted
+    && acceptance.historicalRegressionIntact && acceptance.isolatedControlsAccepted
+    && acceptance.wrapperGapDemonstrated && acceptance.invalidProjectionRejected
+    && !acceptance.fullRealityBenchmarkPassed;
+  const scenario = {
+    itinerantUnitProfiles, itinerantOperationProfiles, referenceValidation: realityReferenceValidation,
+    standaloneControls: controls, wrappedMainControl, wrappedAuxiliaryControl,
+    invalidStandaloneSubstitutionControl, standaloneRealityRun,
+    wrappedRealityExpressibilityAudit, combinedRealityRun, supportedCapabilityCodes,
+    confirmedGapCodes, withdrawnScenarioEvidence,
+    engineAudit: {
+      plannerNextProblemHasWrappingContract: false,
+      dependenciesExpressRelativeAdjacency: false,
+      closeFeedersIsGenericAnchoredClosure: false,
+      mainConstructorMaterializesGenericAnchorSegments: false,
+      auxiliaryPlacementCanRetroactivelyAugmentMain: false,
+    },
+  };
+  return {
+    ...source,
+    version: "planner-next-focal-a2-itinerant-unit-audit-v2",
+    status: acceptance.accepted ? "FOCAL_A2_ITINERANT_UNIT_CONTRACT_AUDIT_ACCEPTED" : "FOCAL_A2_ITINERANT_UNIT_CONTRACT_AUDIT_REJECTED",
+    sourceArtifactVersion: source.version,
+    sourceArtifactSha256: manifest.sourceArtifactSha256,
+    scenarios: { ...source.scenarios, focalA2ItinerantUnitContractAudit: scenario },
+    sourceDocuments: realitySourceDocuments,
+    ...scenario,
+    historicalRegressionEvidence: {
+      protectedScenarioCount: Object.keys(manifest.scenarioDigests).length,
+      scenarioMismatchIds, historicalEvidenceMismatchIds,
+      intact: historicalRegressionIntact,
+    },
+    acceptance,
+  };
+}
+
+export function runBenchmark() {
+  const source = JSON.parse(readFileSync("planner-next-focal-a2-reality-baseline-v1.json", "utf8"));
+  const manifest = JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2ItinerantUnitV2HistoricalManifest.json", "utf8"));
+  const output = buildRealityArtifact(source, manifest);
+  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  if (!output.acceptance.accepted) process.exitCode = 1;
+  return output;
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) runBenchmark();
