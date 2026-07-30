@@ -18,6 +18,13 @@ if [[ "$mode" == legacy ]]; then
   [[ "$(sha256sum "$legacy"|cut -d' ' -f1)" == eb4c95ecfd3b8d906805b2788e2e05fdddfad7330721799c87b3e6d5980c9985 ]] || fail LEGACY_SHA_MISMATCH
 fi
 protected="${artifact}"; [[ "$mode" == legacy ]] && protected="$legacy"; protected_sha="$(sha256sum "$protected"|cut -d' ' -f1)"
+if [[ "${FOCAL_A2_005_SKIP_SUITES:-0}" == 1 && "$mode" == current ]]; then
+ node - "$artifact" <<'NODE' || fail LEGACY_CURRENT_ARTIFACT_INVALID
+const fs=require('node:fs');const a=JSON.parse(fs.readFileSync(process.argv[2]));const ok=a.version==='planner-next-focal-a2-band-required-audit-v3'&&a.status==='BAND_REQUIRED_COMPOSITE_FOUNDATION_ACCEPTED'&&a.acceptance.accepted&&Object.keys(a.scenarios).length===25&&a.currentOff.fingerprint==='76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc'&&a.preferredPlan.fingerprint==='cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b'&&!a.currentRequiredFailure.complete;if(!ok)process.exit(1);
+NODE
+ rm -f "$failed"
+ exit 0
+fi
 if [[ "${FOCAL_A2_005_SKIP_SUITES:-0}" != 1 ]]; then
  npm run check || fail NPM_CHECK_FAILED
  npx tsx --test engine/planner-next/requiredCompositeBlock.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts engine/planner-next/benchmarks/focal-a2/focalA2RequiredFeasibilityAudit.spec.ts engine/planner-next/benchmarks/runPlannerNextFocalA2RequiredAuditBenchmark.spec.ts || fail FOCAL_TESTS_FAILED

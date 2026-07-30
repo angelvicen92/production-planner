@@ -1,8 +1,8 @@
 {
-  "version": "planner-next-focal-a2-band-required-audit-v3",
-  "status": "BAND_REQUIRED_COMPOSITE_FOUNDATION_ACCEPTED",
-  "sourceArtifactVersion": "planner-next-focal-a2-band-required-audit-v2",
-  "sourceArtifactSha256": "eb4c95ecfd3b8d906805b2788e2e05fdddfad7330721799c87b3e6d5980c9985",
+  "version": "planner-next-focal-a2-band-semantics-v4",
+  "status": "BAND_OPERATIONAL_SCOPE_ACCEPTED_INSTRUMENT_INFORMATIONAL",
+  "sourceArtifactVersion": "planner-next-focal-a2-band-required-audit-v3",
+  "sourceArtifactSha256": "e1ded8f231563fbad83be151f4fcde04a005283ca619b40290b34c5a7b24a888",
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -8621,6 +8621,104 @@
       "currentRequiredResult": "NO_COMPLETE_HARD_VALID_PLAN",
       "branches": 1909,
       "runtimeMs": 15.171558000000005
+    },
+    "focalA2InstrumentMetadataSemantics": {
+      "annotations": [
+        {
+          "participantId": "moises-salazar-ramirez",
+          "displayName": "Moisés Salazar Ramírez",
+          "instrumentAnnotation": "SOLO A PIANO"
+        },
+        {
+          "participantId": "angel-gonzalez",
+          "displayName": "Ángel Gonzalez",
+          "instrumentAnnotation": "GUITARRA"
+        },
+        {
+          "participantId": "julio-gomez",
+          "displayName": "Julio Gómez",
+          "instrumentAnnotation": "GUITARRA"
+        },
+        {
+          "participantId": "lina-isabel-garcia-salcedo",
+          "displayName": "Lina Isabel García-Salcedo",
+          "instrumentAnnotation": "GUITARRISTA FLAMENCO"
+        },
+        {
+          "participantId": "marta-fonrali",
+          "displayName": "Marta Fonrali",
+          "instrumentAnnotation": "GUITARRA"
+        },
+        {
+          "participantId": "pere-portero",
+          "displayName": "Pere Portero",
+          "instrumentAnnotation": "GUITARRA"
+        }
+      ],
+      "flagCombinations": [
+        {
+          "id": "NEITHER",
+          "requiresBand": false,
+          "usesInstrument": false,
+          "instrumentAnnotation": null,
+          "projection": {
+            "participantId": "NEITHER",
+            "requiredResourceIds": []
+          }
+        },
+        {
+          "id": "BAND_ONLY",
+          "requiresBand": true,
+          "usesInstrument": false,
+          "instrumentAnnotation": null,
+          "projection": {
+            "participantId": "BAND_ONLY",
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ]
+          }
+        },
+        {
+          "id": "INSTRUMENT_ONLY",
+          "requiresBand": false,
+          "usesInstrument": true,
+          "instrumentAnnotation": "PARTICIPANT PIANO",
+          "projection": {
+            "participantId": "INSTRUMENT_ONLY",
+            "requiredResourceIds": []
+          }
+        },
+        {
+          "id": "BOTH",
+          "requiresBand": true,
+          "usesInstrument": true,
+          "instrumentAnnotation": "PARTICIPANT GUITAR",
+          "projection": {
+            "participantId": "BOTH",
+            "requiredResourceIds": [
+              "focal-a2-continuous-resource"
+            ]
+          }
+        }
+      ],
+      "informationalVariantDigests": [
+        "5d0cd6ec93b019c144bd553158acbd336e3cfc9d1d600d5d05b17c59072836e9",
+        "960f28d9c7b33c43557f0ee5575463dab72c09442b219842d7e07959dbaf5a50",
+        "78a65b9c470bd7f1bc0c0d589760bde4f7ecab4b8f8dc87086ecf169f6247605"
+      ],
+      "projectedProblemDigest": "a66208eb4b93f7030e1569b7212a12150c26097fb004602e0fbbe33c0572f1c8",
+      "executionFingerprints": [
+        "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+        "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+        "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b"
+      ],
+      "noInstrumentResources": true,
+      "withdrawalEvidence": {
+        "code": "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
+        "status": "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION",
+        "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
+      },
+      "runtimeMs": 945.8318320000001
     }
   },
   "jointFutureFeasibilityEvidence": {
@@ -15364,18 +15462,21 @@
     }
   },
   "acceptance": {
-    "compositeBlockAccepted": true,
-    "homogeneousMainDurationContractAccepted": true,
-    "structuralEnumerationBounded": true,
-    "certificateTransitionMarginsAccepted": true,
-    "certificateDeterministic": true,
-    "certificateOrderInvariant": true,
-    "historicalRegressionIntact": true,
+    "bandOperationalBenchmarkPassed": true,
+    "instrumentMetadataSemanticsAccepted": true,
+    "instrumentMetadataHasNoPlanningInfluence": true,
+    "independentFlagsAccepted": true,
+    "bandOnlyAccepted": true,
+    "instrumentOnlyInformationalAccepted": true,
+    "bandAndInstrumentInformationalAccepted": true,
+    "noInstrumentResourcesCreated": true,
     "currentOffFrozen": true,
     "currentPreferredFrozen": true,
-    "currentRequiredAtomic": true,
-    "fullBandBenchmarkPassed": false,
-    "acceptedMeaning": "Planner Next expresses and hard-validates REQUIRED continuous-resource concentration, completes feasible REQUIRED controls, rejects divided or impossible plans atomically, and proves that a single Band block is infeasible in the real Focal A2 corpus under its coach-block, feeder, availability, meal, and dependency constraints; PREFERRED remains the valid operational policy for this day, and main-flow instrument representation remains pending",
+    "currentRequiredFrozen": true,
+    "historicalRegressionIntact": true,
+    "fullBandBenchmarkPassed": true,
+    "remainingGapCodesEmpty": true,
+    "acceptedMeaning": "Planner Next passes the operational Band benchmark. Instrument usage is participant-owned informational metadata and intentionally has no planning influence; any future operational preparation, transport, musician, or technical requirement must be configured explicitly as a separate resource, task, setup, or dependency.",
     "accepted": true
   },
   "currentOff": {
@@ -17097,11 +17198,6 @@
     "sourceArtifactSha256Matches": true,
     "scenarioDigestMismatchIds": [],
     "evidenceDigestMismatchIds": [],
-    "fingerprintMismatchIds": [],
-    "branchBudgetMismatchIds": [],
-    "currentOffMismatchFields": [],
-    "preferredPlanMismatchFields": [],
-    "currentRequiredFailureMismatchFields": [],
     "intact": true
   },
   "original": {
@@ -17617,7 +17713,13 @@
     "REQUIRED_RESOURCE_PRESENCE_NOT_HARD_VALIDATED",
     "OFF_PREFERRED_REQUIRED_POLICY_NOT_EXPRESSIBLE"
   ],
-  "remainingGapCodes": [
+  "remainingGapCodes": [],
+  "withdrawnAssumptionCodes": [
     "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE"
-  ]
+  ],
+  "withdrawalEvidence": {
+    "code": "MAIN_FLOW_INSTRUMENT_REQUIREMENT_NOT_REPRESENTABLE",
+    "status": "WITHDRAWN_INVALID_OPERATIONAL_ASSUMPTION",
+    "reason": "Instrument usage is participant-owned informational metadata and does not impose a resource, setup, availability, transition, dependency, grouping, or validation requirement on the planner."
+  }
 }

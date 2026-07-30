@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-band-required-audit-v1.json`.
+The current accepted artifact is `planner-next-focal-a2-band-semantics-v4.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2321,7 +2321,9 @@ Impossible construction publishes no partial tasks, preparations, or meals and n
 The real Focal A2 corpus cannot form one Band block under its coach blocks and late vocal feeders.
 The independent audit derives Marta at minute 855 and Pere at minute 915 from their windows, dependencies, spaces, and the real 15-minute hard transition margin.
 `PREFERRED` remains the operationally valid A2 policy, while frozen `OFF` and `PREFERRED` results are protected by the 24-scenario v2 historical manifest.
-Main-flow instrument representation remains pending, so the full Band-and-instrument benchmark is not claimed.
+That historical audit still listed instrument representation as pending; FOCAL-A2-007 withdraws that invalid operational assumption rather than implementing it.
 `OFF` and `PREFERRED` remain exactly frozen, and Planner Next remains isolated from production.
-The accepted artifact is `planner-next-focal-a2-band-required-audit-v3.json`.
-Run `./validate-focal-a2-005.sh current` to verify fresh deterministic executions, historical anchoring, and idempotence.
+The historical accepted artifact was `planner-next-focal-a2-band-required-audit-v3.json`; its SHA-256 is now anchored by the FOCAL-A2-007 manifest.
+
+### FOCAL-A2-007 — Informational Instrument Metadata
+Instrument usage belongs to the contestant and is informational metadata, not an operational resource; it affects neither schedules nor constraints. Band remains operational through `requiresBand`, while `usesInstrument` and `instrumentAnnotation` are independent descriptive fields, so no preparation or setup is inferred. The frozen CURRENT_PREFERRED plan remains intact, the false instrument gap is withdrawn, and the operational Band benchmark is closed. The current artifact is `planner-next-focal-a2-band-semantics-v4.json`; validate its historical anchor, semantic Evidence, deterministic reruns, atomic publication, and idempotence with `./validate-focal-a2-007.sh current`.

@@ -10,7 +10,7 @@ export type FocalA2ParticipantRequirementProfile = {
   displayName: string;
   requiresBand: boolean;
   usesInstrument: boolean;
-  sourceAnnotation: string | null;
+  instrumentAnnotation: string | null;
   sourceConfidence:
     | "EXPLICIT_MAIN_STAGE_ANNOTATION"
     | "USER_CONFIRMED_COMPLEMENT_OF_EXPLICIT_INSTRUMENT_SET";
@@ -18,7 +18,6 @@ export type FocalA2ParticipantRequirementProfile = {
 export type ProjectedMainTaskRequirements = {
   participantId: string;
   requiredResourceIds: string[];
-  instrumentSetupRequired: boolean;
 };
 export type ContinuousResourceReferencePolicy = {
   resourceId: string;
@@ -48,7 +47,7 @@ export const focalA2ParticipantRequirementProfiles: FocalA2ParticipantRequiremen
       displayName: p.displayName,
       requiresBand: !annotation,
       usesInstrument: Boolean(annotation),
-      sourceAnnotation: annotation ?? null,
+      instrumentAnnotation: annotation ?? null,
       sourceConfidence: annotation
         ? "EXPLICIT_MAIN_STAGE_ANNOTATION"
         : "USER_CONFIRMED_COMPLEMENT_OF_EXPLICIT_INSTRUMENT_SET",
@@ -75,15 +74,16 @@ export function projectRequirement(
     requiredResourceIds: profile.requiresBand
       ? [...new Set([...existing, FOCAL_A2_BAND_RESOURCE_ID])]
       : [...existing],
-    instrumentSetupRequired: profile.usesInstrument,
   };
 }
 export function projectFocalA2BandProblem(
   mode: CurrentBandMode,
+  profiles: ReadonlyArray<Pick<FocalA2ParticipantRequirementProfile, "participantId" | "requiresBand">> =
+    focalA2ParticipantRequirementProfiles,
 ): PlannerNextProblem {
   const p = focalA2Problem(),
     band = new Set(
-      focalA2ParticipantRequirementProfiles
+      profiles
         .filter((x) => x.requiresBand)
         .map((x) => x.participantId),
     );
