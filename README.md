@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-reality-baseline-v1.json`.
+The current accepted artifact is `planner-next-focal-a2-itinerant-unit-audit-v3.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2328,33 +2328,19 @@ The historical accepted artifact was `planner-next-focal-a2-band-required-audit-
 ### FOCAL-A2-007 — Informational Instrument Metadata
 Instrument usage belongs to the contestant and is informational metadata, not an operational resource; it affects neither schedules nor constraints. Band remains operational through `requiresBand`, while `usesInstrument` and `instrumentAnnotation` are independent descriptive fields, so no preparation or setup is inferred. The frozen CURRENT_PREFERRED plan remains intact, the false instrument gap is withdrawn, and the operational Band benchmark is closed. The current artifact is `planner-next-focal-a2-band-semantics-v4.json`; validate its historical anchor, semantic Evidence, deterministic reruns, atomic publication, and idempotence with `./validate-focal-a2-007.sh current`.
 
-### FOCAL-A2-008R — Generic Itinerant Units and Anchor-Wrapping Operations
-“Reality” is only the product label for a configurable itinerant unit. A unit groups confirmed
-operational resources for agenda and Evidence purposes; its ID is not duplicated as a hard
-resource. Morning A contains camera 3 and sound 1, morning B contains camera 4 and sound 2,
-and the afternoon composition contains cameras 3 and 4 plus sound 1. Editorial, production,
-people, instruments, relatives, narrative objects, and annotations remain informational.
-
-The corrected contract distinguishes nine independent `STANDALONE` operations from three
-`WRAP_ANCHOR` operations for Cristina Zuloaga, Julio Gómez, and José Javier Cuenca. Each wrap
-requires a 15-minute before segment, the existing 15-minute main rehearsal as its unchanged
-anchor, and a 15-minute after segment with strict adjacency. The same generic contract can
-reference a main task, Totales, or any other `ParticipantTask`; it has no kind- or name-specific
-case.
-
-Isolated behavioral controls establish that exact configurable composition, exclusivity,
-availability, movement, variable duration, parallel disjoint units, recomposition, and
-determinism are already supported. The current problem contract and construction phases cannot
-express generic relative segments and anchored main-flow closure, so only the generic gaps
-`ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE` and
-`MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE` remain. The three wraps are never replaced
-by unrelated 45-minute tasks. Consequently the standalone subset is executed, the faithful
-combined run is `NOT_EXECUTED_UNREPRESENTABLE_INPUT`, and the complete benchmark remains pending.
-
-The v1 Reality scenario is retained as historical Evidence but is explicitly withdrawn as
-`WITHDRAWN_INVALID_OPERATIONAL_PROJECTION`; its false Reality-specific gap codes are not a valid
-baseline. All 27 historical scenarios remain protected by the v2 manifest and the corrected
-scenario is number 28. No Planner Next algorithm or production integration was modified. The
-only current artifact is `planner-next-focal-a2-itinerant-unit-audit-v2.json`; validate the legacy
-anchor and current idempotent publication with `./validate-focal-a2-008.sh legacy` and
-`./validate-focal-a2-008.sh current`.
+### FOCAL-A2-008R2 — Audited Itinerant Units Before Anchor Wrapping
+The audit executes nine standalone operations; three anchor wraps remain pending.
+Exact configurable compositions never duplicate a unit ID as a hard resource.
+Each operation belongs only to its configured unit, producing corrected agenda Evidence.
+The benchmark preserves the audited resource availability windows.
+The behavioral control proves disjoint morning teams can work in parallel.
+It also proves later afternoon recomposition, exclusivity, movement, and variable duration.
+The v1 projection is withdrawn and v2 is protected solely as historical substrate.
+Only `ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE` and
+`MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE` remain active.
+The faithful full benchmark is therefore still intentionally unexecuted.
+No Planner Next algorithm or production integration changed.
+The accepted artifact is `planner-next-focal-a2-itinerant-unit-audit-v3.json`.
+`./validate-focal-a2-008.sh legacy` publishes it atomically from verified v2 history.
+`./validate-focal-a2-008.sh current` regenerates it using v3 alone and checks idempotence.
+After publication this is the single Planner Next artifact at the repository root.

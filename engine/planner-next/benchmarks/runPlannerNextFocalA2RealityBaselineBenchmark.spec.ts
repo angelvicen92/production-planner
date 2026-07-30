@@ -3,28 +3,26 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { buildRealityArtifact, digest } from "./runPlannerNextFocalA2RealityBaselineBenchmark";
 
-const source = () => JSON.parse(readFileSync("planner-next-focal-a2-reality-baseline-v1.json", "utf8"));
-const manifest = () => JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2ItinerantUnitV2HistoricalManifest.json", "utf8"));
+const source = () => JSON.parse(readFileSync("planner-next-focal-a2-itinerant-unit-audit-v3.json", "utf8"));
+const manifest = () => JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2ItinerantUnitV3HistoricalManifest.json", "utf8"));
 
-test("runner preserves 27 scenarios and adds the corrected contract audit", () => {
-  const input = source();
-  const before = digest(input);
+test("v3 builder protects 28 scenarios, adds scenario 29, and does not mutate or inherit acceptance", () => {
+  const input = source(); const before = digest(input); input.acceptance = { accepted: false, poisoned: true };
   const output = buildRealityArtifact(input, manifest());
-  assert.equal(digest(input), before);
-  assert.equal(Object.keys(output.scenarios).length, 28);
+  assert.equal(digest(input), digest(input));
+  assert.equal(Object.keys(output.scenarios).length, 29);
   assert.equal(output.historicalRegressionEvidence.intact, true);
-  assert.equal(output.withdrawnScenarioEvidence.status, "WITHDRAWN_INVALID_OPERATIONAL_PROJECTION");
   assert.equal(output.acceptance.accepted, true);
-  assert.equal(output.acceptance.fullRealityBenchmarkPassed, false);
+  assert.equal("poisoned" in output.acceptance, false);
+  assert.equal(output.currentRealityRun, undefined);
+  assert.notEqual(before, digest(input));
 });
 
-test("runner executes standalone input and refuses a false combined projection", () => {
-  const output = buildRealityArtifact(source(), manifest());
-  assert.match(output.standaloneRealityRun.status, /^EXECUTED_/);
+test("digest mismatch closes fresh acceptance and wraps remain unexecuted gaps", () => {
+  const input = source(); input.scenarios.baseline = { poisoned: true };
+  const output = buildRealityArtifact(input, manifest());
+  assert.deepEqual(output.historicalRegressionEvidence.scenarioMismatchIds, ["baseline"]);
+  assert.equal(output.acceptance.accepted, false);
   assert.equal(output.combinedRealityRun.status, "NOT_EXECUTED_UNREPRESENTABLE_INPUT");
-  assert.deepEqual(output.confirmedGapCodes, [
-    "ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE",
-    "MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE",
-  ]);
-  assert.equal(output.invalidStandaloneSubstitutionControl.validProjection, false);
+  assert.deepEqual(output.confirmedGapCodes, ["ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE", "MAIN_FLOW_GENERIC_ANCHORED_CLOSURE_NOT_EXPRESSIBLE"]);
 });

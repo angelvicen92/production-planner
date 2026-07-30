@@ -25,9 +25,9 @@ export interface StandaloneItinerantOperationProfile extends OperationInformatio
 export interface WrappedItinerantOperationProfile extends OperationInformation {
   type: "WRAP_ANCHOR";
   anchorTaskId: string;
-  before: { duration: number; spaceId: string };
+  before: { duration: number; spaceSource: "ANCHOR_SPACE" };
   during: { source: "ANCHOR_DURATION_AND_SPACE" };
-  after: { duration: number; spaceId: string };
+  after: { duration: number; spaceSource: "ANCHOR_SPACE" };
   adjacency: "REQUIRED";
 }
 
@@ -56,13 +56,13 @@ const standalone = (
 
 const wrap = (
   id: string, participantId: string, unitId: string, start: number,
-  spaceId: string, annotations: string[] = [],
+  _spaceId: string, annotations: string[] = [],
 ): WrappedItinerantOperationProfile => ({
   id, type: "WRAP_ANCHOR", unitId, participantId,
   anchorTaskId: `main-${participantId}`,
-  before: { duration: 15, spaceId },
+  before: { duration: 15, spaceSource: "ANCHOR_SPACE" },
   during: { source: "ANCHOR_DURATION_AND_SPACE" },
-  after: { duration: 15, spaceId },
+  after: { duration: 15, spaceSource: "ANCHOR_SPACE" },
   adjacency: "REQUIRED", location: "PLATÓ", annotations,
   humanReference: { start, end: start + 45 },
 });
@@ -112,6 +112,13 @@ const spaces = [...new Set(standaloneOperations.map((operation) => operation.spa
   .map((id) => ({ id, availability: [{ start: 540, end: 1080 }] }));
 const memberIds = [...new Set(itinerantUnitProfiles.flatMap((unit) => unit.memberResourceIds))];
 
+export const realityResourceAvailability: Record<string, Array<{ start: number; end: number }>> = {
+  "reality-camera-3": [{ start: 660, end: 840 }, { start: 915, end: 1080 }],
+  "reality-sound-1": [{ start: 660, end: 840 }, { start: 915, end: 1080 }],
+  "reality-camera-4": [{ start: 675, end: 810 }, { start: 885, end: 1080 }],
+  "reality-sound-2": [{ start: 675, end: 810 }],
+};
+
 export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
   const problem = projectFocalA2BandProblem("CURRENT_PREFERRED");
   const minimumEnd: Record<string, number> = {
@@ -120,10 +127,12 @@ export function projectStandaloneFocalA2RealityProblem(): PlannerNextProblem {
   return {
     ...problem,
     day: { ...problem.day, end: 1080 },
-    auxiliaryPolicy: { participantPresencePreference: "OFF" },
+    // The source has no policy, while Planner Next preflight requires one. OFF is
+    // the neutral policy and is recorded by the audit rather than used to ease availability.
+    auxiliaryPolicy: problem.auxiliaryPolicy ?? { participantPresencePreference: "OFF" },
     spaces: [...problem.spaces, ...spaces],
     resources: [...problem.resources, ...memberIds.map((id) => ({
-      id, availability: [{ start: 540, end: 1080 }], presencePreference: "OFF" as const, transitionMinutes: 0,
+      id, availability: realityResourceAvailability[id]!.map((window) => ({ ...window })), presencePreference: "OFF" as const, transitionMinutes: 0,
     }))],
     participants: problem.participants.map((participant) => ({
       ...participant,
