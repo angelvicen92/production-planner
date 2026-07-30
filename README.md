@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-band-preferred-v2.json`.
+The current accepted artifact is `planner-next-focal-a2-band-required-audit-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2312,3 +2312,14 @@ CURRENT_OFF remains frozen at `76f52d…e4fc`, 64,558 branches, and Band `[6, 34
 The authorized-meal gap and block-count-priority gaps are resolved; REQUIRED presence and main-flow instruments remain pending.
 The accepted artifact is `planner-next-focal-a2-band-preferred-v2.json`, protected by its historical manifest.
 Validate fresh execution, publication integrity, and idempotence with `./validate-focal-a2-004.sh current`.
+
+### FOCAL-A2-005 — Hard REQUIRED Presence and Focal Feasibility Audit
+`REQUIRED` is hard-validated: feasible controls form one block and divided schedules are rejected atomically.
+An assigned-space meal bridges required work without adding an internal gap; an unrelated meal does not.
+Impossible construction publishes no partial tasks, preparations, or meals and never relaxes hard rules.
+The real Focal A2 corpus cannot form one Band block under its coach blocks and late vocal feeders.
+The independent audit derives Marta and Pere as blockers; no availability, dependency, meal, or budget was relaxed.
+`PREFERRED` remains the operationally valid A2 policy, while frozen `OFF` and `PREFERRED` results are protected.
+Main-flow instrument representation remains pending, so the full Band-and-instrument benchmark is not claimed.
+The accepted artifact is `planner-next-focal-a2-band-required-audit-v1.json`.
+Run `./validate-focal-a2-005.sh current`; Planner Next remains isolated from production.
