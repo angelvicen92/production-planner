@@ -3,14 +3,18 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { buildArtifact } from "./runPlannerNextFocalA2BandPreferredBenchmark";
 
-const sourcePath = existsSync("planner-next-focal-a2-band-preferred-v2.json")
+const sourcePath = existsSync("planner-next-focal-a2-band-semantics-v4.json")
+  ? "planner-next-focal-a2-band-semantics-v4.json"
+  : existsSync("planner-next-focal-a2-band-required-audit-v3.json")
+    ? "planner-next-focal-a2-band-required-audit-v3.json"
+  : existsSync("planner-next-focal-a2-band-preferred-v2.json")
   ? "planner-next-focal-a2-band-preferred-v2.json"
   : existsSync("planner-next-focal-a2-band-required-audit-v1.json")
     ? "planner-next-focal-a2-band-required-audit-v1.json"
     : "planner-next-focal-a2-band-preferred-v1.json";
 const published = JSON.parse(readFileSync(sourcePath, "utf8"));
-const source = published.version === "planner-next-focal-a2-band-required-audit-v1"
-  ? { ...published, scenarios: Object.fromEntries(Object.entries(published.scenarios).filter(([id]) => id !== "focalA2BandRequiredAudit")) }
+const source = !published.version.includes("band-preferred")
+  ? { ...published, scenarios: Object.fromEntries(Object.entries(published.scenarios).filter(([id]) => !["focalA2BandRequiredAudit", "focalA2BandRequiredCompositeFoundationRepair", "focalA2InstrumentMetadataSemantics"].includes(id))) }
   : published;
 const manifest = JSON.parse(
   readFileSync(

@@ -48,7 +48,6 @@ test("four combinations project independently", () => {
     {
       participantId: "n",
       requiredResourceIds: [],
-      instrumentSetupRequired: false,
     },
   );
   assert.deepEqual(
@@ -60,16 +59,15 @@ test("four combinations project independently", () => {
     {
       participantId: "b",
       requiredResourceIds: [FOCAL_A2_BAND_RESOURCE_ID],
-      instrumentSetupRequired: false,
     },
   );
-  assert.equal(
+  assert.deepEqual(
     projectRequirement({
       participantId: "i",
       requiresBand: false,
       usesInstrument: true,
-    }).instrumentSetupRequired,
-    true,
+    }),
+    { participantId: "i", requiredResourceIds: [] },
   );
   assert.deepEqual(
     projectRequirement(
@@ -78,6 +76,13 @@ test("four combinations project independently", () => {
     ).requiredResourceIds,
     ["old", FOCAL_A2_BAND_RESOURCE_ID],
   );
+});
+test("instrument metadata cannot influence the projected problem", () => {
+  const original = focalA2ParticipantRequirementProfiles;
+  const cleared = original.map((profile) => ({ ...profile, usesInstrument: false, instrumentAnnotation: null }));
+  const changed = original.map((profile, index) => ({ ...profile, usesInstrument: index % 2 === 0, instrumentAnnotation: `INFORMATION-${index}` }));
+  assert.deepEqual(projectFocalA2BandProblem("CURRENT_PREFERRED", original), projectFocalA2BandProblem("CURRENT_PREFERRED", cleared));
+  assert.deepEqual(projectFocalA2BandProblem("CURRENT_PREFERRED", original), projectFocalA2BandProblem("CURRENT_PREFERRED", changed));
 });
 test("Band projection is pure, main-only and preserves requirements", () => {
   const original = focalA2Problem(),
