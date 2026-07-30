@@ -2108,7 +2108,7 @@ Planner Next remains isolated and is not integrated into production or represent
 The historical ORC JSON artifacts were removed without deleting V3, V4, or ORC code.
 V3 remains the production fallback, while V4 and ORC are frozen.
 Planner Next continues in isolation and is not integrated into production.
-The current accepted artifact is `planner-next-focal-a2-band-semantics-v4.json`.
+The current accepted artifact is `planner-next-focal-a2-reality-baseline-v1.json`.
 The closure record is available at `docs/history/legacy-orc-closure.md`.
 Only the latest accepted Planner Next artifact will be retained in version control.
 
@@ -2327,3 +2327,14 @@ The historical accepted artifact was `planner-next-focal-a2-band-required-audit-
 
 ### FOCAL-A2-007 — Informational Instrument Metadata
 Instrument usage belongs to the contestant and is informational metadata, not an operational resource; it affects neither schedules nor constraints. Band remains operational through `requiresBand`, while `usesInstrument` and `instrumentAnnotation` are independent descriptive fields, so no preparation or setup is inferred. The frozen CURRENT_PREFERRED plan remains intact, the false instrument gap is withdrawn, and the operational Band benchmark is closed. The current artifact is `planner-next-focal-a2-band-semantics-v4.json`; validate its historical anchor, semantic Evidence, deterministic reruns, atomic publication, and idempotence with `./validate-focal-a2-007.sh current`.
+
+### FOCAL-A2-008 — Real Reality Corpus and Expressibility Audit
+The real twelve-task Reality corpus adds two parallel morning units and an afternoon unit recomposed from exact resources.
+Every ordinary auxiliary task consumes its unit and exact camera, sound, editorial, and production resources simultaneously.
+Fixed crew meals are availability gaps; human reference times remain Evidence and never seed tasks, order, locks, or dependencies.
+No Reality-specific logic or planner algorithm was added, and Planner Next remains isolated from production.
+The current engine deterministically fails to complete the combined corpus with `NO_COMPLETE_HARD_VALID_PLAN`; the audit remains accepted and honest.
+Shared exclusivity, availability enforcement, participant conflict handling, location exclusivity, determinism, and atomic failure are supported.
+Confirmed gaps cover completion of exact composition, parallel units, afternoon recomposition, unit compaction, and future feasibility.
+Downstream Totales and technical handoff operations remain explicitly deferred.
+The artifact is `planner-next-focal-a2-reality-baseline-v1.json`; validate legacy/current publication with `./validate-focal-a2-008.sh`.
