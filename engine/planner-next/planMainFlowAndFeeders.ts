@@ -19,7 +19,8 @@ import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparatio
 import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, setupTasks } from "./setupGrouping";
 import { technicalMetrics } from "./technicalOperations";
 import { getTechnicalChains } from "./technicalChains";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
+import { buildTimeline, buildVariableTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
+import { anchoredClosureMetrics, closureByAnchor, feederDeadlineBase, materializeAnchoredWorkItem } from "./anchoredClosure";
 import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
@@ -127,12 +128,12 @@ export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: 
   const feederByParticipant = new Map(
     problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
   );
-  const latestFirst = [...mains].sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
+  const latestFirst = mains.filter(t=>t.kind==="main").sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
   for (const main of latestFirst) {
     const feeder = feederByParticipant.get(main.participantId);
     if (!feeder) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
     attemptedFeederIds.push(feeder.id);attemptedStartCountByFeederId[feeder.id]=0;
-    const deadline = main.start - Math.max(
+    const deadline = feederDeadlineBase(problem,main) - Math.max(
       problem.participantTransitionMinutes,
       problem.resourceTransitionMinutes,
     );
@@ -229,6 +230,7 @@ function emptyMetrics(
     technicalOperationPlannedCount: 0, technicalOperationCandidateCountWhenSelectedById: {}, technicalOperationStartById: {}, technicalOperationEndById: {},
     technicalChainCount:0,technicalChainPlannedCount:0,technicalChainScheduledTaskCount:0,technicalChainCandidateCountWhenSelectedByRootId:{},technicalChainTaskIdsByRootId:{},technicalChainStartByRootId:{},technicalChainEndByRootId:{},technicalChainBranchesExplored:0,
     spaceMealCount:Array.isArray(problem.spaces)?problem.spaces.filter(x=>x?.mealPolicy!==undefined).length:0,spaceMealPlannedCount:0,spaceMealCandidateCountWhenSelectedBySpaceId:{},spaceMealStartBySpaceId:{},spaceMealEndBySpaceId:{},spaceMealMinutesBySpaceId:{},spaceMealBranchesExplored:0,
+    ...anchoredClosureMetrics(problem,[]),
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -265,6 +267,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   }
 
   const mains = canonical(problem.tasks.filter(({ kind }) => kind === "main"));
+  const closures=closureByAnchor(problem);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const duration = mains[0]?.duration;
   if (duration === undefined || mains.length === 0) {
@@ -297,21 +300,33 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   let structuralCombinationsEvaluated = 0;
   for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
-    const timelines: Array<MainFlowTimeline | undefined> = withMeal
-      ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
-    timelineCandidateCount += timelines.length;
+    const structuralAssignments:Array<Record<number,string>>=[];
+    const anchored=[...closures.values()].filter(c=>pattern.includes(c.anchor.blockKey??""));
+    const assign=(index:number,used:Set<number>,current:Record<number,string>)=>{if(index===anchored.length){structuralAssignments.push({...current});return}const c=anchored[index]!;for(let p=0;p<pattern.length;p++)if(pattern[p]===c.anchor.blockKey&&!used.has(p)){used.add(p);current[p]=c.anchorTaskId;assign(index+1,used,current);delete current[p];used.delete(p)}};
+    assign(0,new Set(),{});
+    if(structuralAssignments.length===0) structuralAssignments.push({});
     const compositeResult = requiredBlocks.length === 0 ? null : requiredCompositePositions(requiredBlocks, mains, pattern,
       problem.budget.maxPatterns - structuralCombinationsEvaluated);
     structuralCombinationsEvaluated += compositeResult?.rawCombinationCount ?? 0;
     if (compositeResult?.exhausted) return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
     const compositePositions = compositeResult?.positions ?? [{ startIndexByResourceId: {}, signature: "" }];
+    for(const structural of structuralAssignments){
+    const operationalDurations=pattern.map((_,i)=>{const id=structural[i];return id?closures.get(id)!.operationalDuration:duration});
+    const beforeDurations=pattern.map((_,i)=>{const id=structural[i];return id?closures.get(id)!.beforeDuration:0});
+    const timelines: Array<MainFlowTimeline | undefined> = withMeal
+      ? candidateCuts(pattern).map(cut => anchored.length?buildVariableTimeline(problem,pattern,operationalDurations,beforeDurations,cut):buildTimeline(problem, pattern, duration, cut)) : [undefined];
+    timelineCandidateCount += timelines.length;
     for (const timeline of timelines) for (const compositePosition of compositePositions) {
+    if(timeline&&anchored.length&&Object.entries(structural).some(([rawPosition,id])=>{const position=Number(rawPosition),c=closures.get(id)!;const start=(timeline?.slots[position]??0)-c.beforeDuration;const members=materializeAnchoredWorkItem(c,start);let placed:ScheduledTask[]=[];for(const member of members){if(!canPlaceTask(problem,member,member.start,placed,timeline?[timeline.meal]:[]))return true;placed=[...placed,member]}return false}))continue;
     let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline }];
     for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
       const next: MainAlternative[] = [];
-      const slot = timeline?.slots[position] ?? mainStart + position * duration;
+      const nonMealStart=problem.mainFlow.preferredEnd-operationalDurations.reduce((a,b)=>a+b,0)+operationalDurations.slice(0,position).reduce((a,b)=>a+b,0);
+      const slot = timeline?.slots[position] ?? nonMealStart+beforeDurations[position]!;
       for (const state of beam) {
         for (const task of mains) {
+          if(structural[position]!==undefined&&structural[position]!==task.id)continue;
+          if(structural[position]===undefined&&closures.has(task.id))continue;
           if (requiredBlocks.length > 0 && (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition))) continue;
           if (counters.branches >= problem.budget.maxBranchExpansions) {
@@ -320,8 +335,9 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           counters.branches += 1;
           if (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
-            || state.tasks.some(({ id }) => id === task.id)
-            || !canPlaceTask(problem, task, slot, state.tasks, timeline ? [timeline.meal] : [])) continue;
+            || state.tasks.some(({ id }) => id === task.id)) continue;
+          const closure=closures.get(task.id);const workItem=closure?materializeAnchoredWorkItem(closure,slot-closure.beforeDuration):[{...task,start:slot,end:slot+task.duration}];
+          let provisional=[...state.tasks],valid=true;for(const member of workItem){if(!canPlaceTask(problem,member,member.start,provisional,timeline?[timeline.meal]:[])){valid=false;break}provisional.push(member)}if(!valid)continue;
           const feeder = problem.tasks.find(
             (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
           );
@@ -336,7 +352,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             .filter((window) => window.start <= slot && slot + duration <= window.end)
             .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
           const originalIndex = mains.findIndex(({ id }) => id === task.id);
-          const scheduledTask = { ...task, start: slot, end: slot + duration };
+          const scheduledTask = workItem.find(x=>x.id===task.id)!;
           const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
             const resource = problem.resources.find(({ id }) => id === resourceId);
             return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
@@ -344,13 +360,13 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
               * presencePreferenceWeight(resource.presencePreference) : 0);
           }, 0);
           const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
-          const tasks = [...state.tasks, scheduledTask];
+          const tasks = provisional;
           const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.map(({ id }) => id).join("|"), timeline };
           if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
           if (hasPreferredPresence) {
             candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
           }
-          if (hasPreferredPresence && position === mains.length - 2) {
+          if (hasPreferredPresence && closures.size===0 && position === mains.length - 2) {
             const finalSlot = timeline?.slots[position + 1] ?? mainStart + (position + 1) * duration;
             const completions = mains.filter((remaining) => remaining.blockKey === pattern[position + 1]
               && !tasks.some(({ id }) => id === remaining.id)
@@ -375,6 +391,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
         .slice(0, problem.budget.bestK);
     }
     alternatives.push(...beam);
+    }
     }
   }
   let feederFallbackUsed=false,feederBranches=0,feederCompleteCount=0,feederMaximumStates=0;
@@ -522,6 +539,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       technicalChainEndByRootId:Object.fromEntries(getTechnicalChains(problem.tasks).map(c=>[c[0]!.id,ordered.find(t=>t.id===c.at(-1)!.id)?.end??null])),
       technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
       spaceMealCount:problem.spaces.filter(s=>s.mealPolicy!==undefined).length,spaceMealPlannedCount:meals.length,spaceMealCandidateCountWhenSelectedBySpaceId:auxiliary?.mealCandidateCounts??{},spaceMealStartBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.start])),spaceMealEndBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.end])),spaceMealMinutesBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.duration])),spaceMealBranchesExplored:auxiliary?.spaceMealBranches??0,
+      ...anchoredClosureMetrics(problem,ordered),
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
     };
     return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };

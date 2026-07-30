@@ -1,5 +1,6 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
+import { feederDeadlineBase } from "./anchoredClosure";
 
 export interface FeederClosureCandidate { feeders: ScheduledTask[]; cost: number; signature: string; selectedFeederOrder:string[] }
 export interface FeederClosureDiagnostics { consumed:number; exhausted:boolean; completeClosuresGenerated:number; maximumPartialStates:number; rejectedStateBlockerIds:string[]; greedyFallbackUsed:boolean }
@@ -14,17 +15,18 @@ export function closeFeeders(problem:PlannerNextProblem,mains:ScheduledTask[],me
   const rejectedBlockers=new Set<string>();
   const vocals=problem.tasks.filter(t=>t.kind==="vocal");
   const pending:Task[]=[];
-  for(const main of ordered(mains)){
+  for(const main of ordered(mains.filter(t=>t.kind==="main"))){
     const matches=vocals.filter(v=>v.participantId===main.participantId);
     if(matches.length!==1){rejectedBlockers.add(matches[0]?.id??`feeder:${main.participantId}`);continue}
     pending.push(matches[0]!);
   }
   const diagnostics=(complete:number):FeederClosureDiagnostics=>({consumed,exhausted,completeClosuresGenerated:complete,maximumPartialStates,rejectedStateBlockerIds:[...rejectedBlockers].sort(),greedyFallbackUsed:true});
-  if(pending.length!==mains.length)return {candidates:[],diagnostics:diagnostics(0)};
-  const mainByParticipant=new Map(mains.map(m=>[m.participantId,m]));
+  const anchors=mains.filter(t=>t.kind==="main");
+  if(pending.length!==anchors.length)return {candidates:[],diagnostics:diagnostics(0)};
+  const mainByParticipant=new Map(anchors.map(m=>[m.participantId,m]));
   const starts=(feeder:Task,state:State):number[]=>{
     const main=mainByParticipant.get(feeder.participantId);if(!main)return [];
-    const deadline=main.start-Math.max(problem.participantTransitionMinutes,problem.resourceTransitionMinutes);
+    const deadline=feederDeadlineBase(problem,main)-Math.max(problem.participantTransitionMinutes,problem.resourceTransitionMinutes);
     const result:number[]=[];
     for(let start=deadline-feeder.duration;start>=problem.day.start;start-=5){
       if(consumed>=allowance){exhausted=true;break} consumed+=1;
