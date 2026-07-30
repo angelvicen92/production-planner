@@ -12077,7 +12077,7 @@
           "plannedTaskCount": 38,
           "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
           "branches": 64558,
-          "runtimeMs": 138.44781599999988,
+          "runtimeMs": 149.26554499999997,
           "searchStopReason": "SOLUTION_FOUND",
           "reasonCodes": [],
           "tasks": [
@@ -12317,7 +12317,7 @@
           "plannedTaskCount": 38,
           "planFingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
           "branches": 15599,
-          "runtimeMs": 228.18613299999993,
+          "runtimeMs": 235.72245499999985,
           "searchStopReason": "SOLUTION_FOUND",
           "reasonCodes": [],
           "tasks": [
@@ -12557,7 +12557,7 @@
           "plannedTaskCount": 0,
           "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "branches": 1909,
-          "runtimeMs": 38.79551100000003,
+          "runtimeMs": 33.373858000000155,
           "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
           "reasonCodes": [
             "NO_COMPLETE_HARD_VALID_PLAN"
@@ -12571,7 +12571,7 @@
         "plannedTaskCount": 47,
         "planFingerprint": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
         "branches": 28875,
-        "runtimeMs": 453.29606000000007,
+        "runtimeMs": 502.8766649999999,
         "searchStopReason": "SOLUTION_FOUND",
         "reasonCodes": [],
         "tasks": [
@@ -14210,22 +14210,22 @@
   ],
   "checks": {
     "sourceArtifactAccepted": {
-      "expected": "8e7b46925c1469b538e14e928c3e83ca871e57e9089b5c4eb8956ea53a182faa",
-      "actual": "8e7b46925c1469b538e14e928c3e83ca871e57e9089b5c4eb8956ea53a182faa",
+      "expected": true,
+      "actual": true,
       "passed": true,
-      "details": "The protected v2 source SHA is the authorized baseline."
+      "details": "Legacy mode compares the observed source SHA; current mode verifies the protected substrate and all historical digests."
     },
     "protectedSubstrateAccepted": {
-      "expected": 31,
-      "actual": 31,
+      "expected": true,
+      "actual": true,
       "passed": true,
-      "details": "The internal fixture contains exactly the protected historical scenarios."
+      "details": "The benchmark compares the validator-observed fixture SHA with the protected manifest."
     },
     "historicalRegressionIntact": {
       "expected": [],
       "actual": [],
       "passed": true,
-      "details": "Scenario and Evidence digests are recomputed from the fixture."
+      "details": "Scenario and Evidence digests are recomputed from the protected fixture."
     },
     "currentOffFrozen": {
       "expected": [
@@ -14237,7 +14237,7 @@
         64558
       ],
       "passed": true,
-      "details": "OFF fingerprint and logical branches remain frozen."
+      "details": "OFF fingerprint and branches are freshly executed."
     },
     "currentPreferredFrozen": {
       "expected": [
@@ -14249,7 +14249,7 @@
         15599
       ],
       "passed": true,
-      "details": "PREFERRED fingerprint and logical branches remain frozen."
+      "details": "PREFERRED fingerprint and branches are freshly executed."
     },
     "currentRequiredFrozen": {
       "expected": [
@@ -14261,13 +14261,13 @@
         "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
       ],
       "passed": true,
-      "details": "REQUIRED remains the protected infeasible control."
+      "details": "REQUIRED is freshly executed as the protected infeasible control."
     },
     "operationalCorpusContainsNoHumanTimes": {
       "expected": false,
       "actual": false,
       "passed": true,
-      "details": "Operational profiles expose no schedule-time fields."
+      "details": "Runtime inspection finds no schedule-time fields in operational profiles."
     },
     "participantNeutralAvailabilityApplied": {
       "expected": {
@@ -14335,103 +14335,109 @@
         ]
       },
       "passed": true,
-      "details": "Projection structurally applies the five neutral windows."
+      "details": "Fresh projection structurally contains the five configured windows."
     },
     "participantNeutralAvailabilityOrderIndependent": {
       "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Reversing operational arrays preserves the fresh plan fingerprint."
+      "details": "Reversing operational input preserves the fresh fingerprint."
     },
     "explicitAuxiliaryPolicyAccepted": {
       "expected": "OFF",
       "actual": "OFF",
       "passed": true,
-      "details": "Auxiliary policy is explicitly projected, never defaulted."
+      "details": "Fresh projection supplies OFF explicitly."
     },
     "humanReferenceSeparated": {
       "expected": false,
       "actual": false,
       "passed": true,
-      "details": "Operational projection has no human-reference dependency."
+      "details": "Runtime source inspection finds no human-reference dependency in the operational projection."
     },
     "humanReferencePoisonInvariant": {
-      "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
-      "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+      "expected": [
+        "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+        true
+      ],
+      "actual": [
+        "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+        true
+      ],
       "passed": true,
-      "details": "Poisoning all informational human fields does not alter planning."
+      "details": "The poisoned reference is delivered to the external comparator, changes only that comparison, and leaves a freshly generated plan invariant."
     },
     "saturatedBlockContractAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Block identity is canonical resource/window/task Evidence."
+      "details": "Fresh metrics expose the canonical resource/window/task identity."
     },
     "saturatedBlockDetectionAccepted": {
       "expected": 1,
       "actual": 1,
       "passed": true,
-      "details": "One exact-fit cohort is derived."
+      "details": "Fresh planning detects one exact-fit cohort."
     },
     "saturatedBlockConstructionAccepted": {
       "expected": 1,
       "actual": 1,
       "passed": true,
-      "details": "The detected cohort is inserted atomically."
+      "details": "Fresh planning inserts that cohort atomically."
     },
     "saturatedBlockBounded": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Block DFS consumes the existing branch allowance."
+      "details": "Block DFS remains inside the existing budget."
     },
     "saturatedBlockDeterministic": {
       "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Repeated construction is deterministic."
+      "details": "Independent repeat preserves fingerprint."
     },
     "saturatedBlockOrderInvariant": {
       "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Reversed input produces the same result."
+      "details": "Reversed input preserves fingerprint."
     },
     "saturatedBlockInputUnchanged": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Planner and block derivation leave the input unchanged."
+      "details": "Serialized effective input is unchanged after planning."
     },
     "focalNeutralStandaloneComplete": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Neutral standalone planning completes."
+      "details": "Fresh standalone planning completes."
     },
     "focalNeutralStandaloneHardValid": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Canonical validation reports zero hard violations."
+      "details": "Canonical final validation is hard-valid."
     },
     "focalNeutralStandaloneTaskCountAccepted": {
       "expected": 47,
       "actual": 47,
       "passed": true,
-      "details": "All 47 standalone tasks are scheduled."
+      "details": "All standalone tasks are scheduled."
     },
     "focalNeutralStandaloneOperationsAccepted": {
       "expected": 9,
       "actual": 9,
       "passed": true,
-      "details": "All nine standalone Reality operations are present."
+      "details": "All standalone Reality operations are scheduled."
     },
     "focalNeutralStandaloneMinutesAccepted": {
       "expected": 240,
       "actual": 240,
       "passed": true,
-      "details": "Derived unit minutes total 240."
+      "details": "Unit minutes are derived from scheduled operations."
     },
     "focalNeutralUnitAgendasAccepted": {
       "expected": [
@@ -14445,7 +14451,7 @@
         120
       ],
       "passed": true,
-      "details": "Unit A, B and C agendas have their exact productive totals."
+      "details": "Derived A/B/C minutes match the operational corpus."
     },
     "focalNeutralCombinedUnitBlockAccepted": {
       "expected": [
@@ -14461,13 +14467,13 @@
         1
       ],
       "passed": true,
-      "details": "Unit C continuously occupies its configured 16:00-18:00 window."
+      "details": "Unit C continuously occupies its configured window."
     },
     "independentFeasibilityWitnessAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Independent canPlaceTask enumeration and canonical validation both establish feasibility."
+      "details": "Independent canPlaceTask enumeration and canonical validation establish feasibility."
     },
     "combinedProjectionAccepted": {
       "expected": [
@@ -14479,7 +14485,7 @@
         3
       ],
       "passed": true,
-      "details": "Combined projection retains 53 tasks and three accompaniment contracts."
+      "details": "Static combined projection retains 53 tasks and three contracts."
     },
     "combinedUnsupportedAtomic": {
       "expected": [
@@ -14495,25 +14501,89 @@
         "ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
       ],
       "passed": true,
-      "details": "Unsupported accompaniment fails before search with no partial plan."
+      "details": "Unsupported accompaniment stops before search without partials."
     },
     "benchmarkFreshWithoutCurrentArtifact": {
-      "expected": 0,
-      "actual": 0,
+      "expected": false,
+      "actual": false,
       "passed": true,
-      "details": "Builder never opens or imports its root output."
-    },
-    "acceptancePoisonControlsAccepted": {
-      "expected": 25,
-      "actual": 25,
-      "passed": true,
-      "details": "Twenty-five independent acceptance inputs are covered by derived checks."
+      "details": "The validator made the root output inaccessible before each benchmark execution."
     },
     "finalRepositoryTestsAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Repository validation state is supplied by the fresh benchmark/validator execution."
+      "details": "An explicit validator-only receipt lists every completed mandatory command and observed historical hash; direct benchmark execution remains false."
+    },
+    "acceptancePoisonControlsAccepted": {
+      "expected": [
+        "sourceArtifactAccepted",
+        "protectedSubstrateAccepted",
+        "historicalRegressionIntact",
+        "currentOffFrozen",
+        "currentPreferredFrozen",
+        "currentRequiredFrozen",
+        "operationalCorpusContainsNoHumanTimes",
+        "participantNeutralAvailabilityApplied",
+        "participantNeutralAvailabilityOrderIndependent",
+        "explicitAuxiliaryPolicyAccepted",
+        "humanReferenceSeparated",
+        "humanReferencePoisonInvariant",
+        "saturatedBlockContractAccepted",
+        "saturatedBlockDetectionAccepted",
+        "saturatedBlockConstructionAccepted",
+        "saturatedBlockBounded",
+        "saturatedBlockDeterministic",
+        "saturatedBlockOrderInvariant",
+        "saturatedBlockInputUnchanged",
+        "focalNeutralStandaloneComplete",
+        "focalNeutralStandaloneHardValid",
+        "focalNeutralStandaloneTaskCountAccepted",
+        "focalNeutralStandaloneOperationsAccepted",
+        "focalNeutralStandaloneMinutesAccepted",
+        "focalNeutralUnitAgendasAccepted",
+        "focalNeutralCombinedUnitBlockAccepted",
+        "independentFeasibilityWitnessAccepted",
+        "combinedProjectionAccepted",
+        "combinedUnsupportedAtomic",
+        "benchmarkFreshWithoutCurrentArtifact",
+        "finalRepositoryTestsAccepted"
+      ],
+      "actual": [
+        "sourceArtifactAccepted",
+        "protectedSubstrateAccepted",
+        "historicalRegressionIntact",
+        "currentOffFrozen",
+        "currentPreferredFrozen",
+        "currentRequiredFrozen",
+        "operationalCorpusContainsNoHumanTimes",
+        "participantNeutralAvailabilityApplied",
+        "participantNeutralAvailabilityOrderIndependent",
+        "explicitAuxiliaryPolicyAccepted",
+        "humanReferenceSeparated",
+        "humanReferencePoisonInvariant",
+        "saturatedBlockContractAccepted",
+        "saturatedBlockDetectionAccepted",
+        "saturatedBlockConstructionAccepted",
+        "saturatedBlockBounded",
+        "saturatedBlockDeterministic",
+        "saturatedBlockOrderInvariant",
+        "saturatedBlockInputUnchanged",
+        "focalNeutralStandaloneComplete",
+        "focalNeutralStandaloneHardValid",
+        "focalNeutralStandaloneTaskCountAccepted",
+        "focalNeutralStandaloneOperationsAccepted",
+        "focalNeutralStandaloneMinutesAccepted",
+        "focalNeutralUnitAgendasAccepted",
+        "focalNeutralCombinedUnitBlockAccepted",
+        "independentFeasibilityWitnessAccepted",
+        "combinedProjectionAccepted",
+        "combinedUnsupportedAtomic",
+        "benchmarkFreshWithoutCurrentArtifact",
+        "finalRepositoryTestsAccepted"
+      ],
+      "passed": true,
+      "details": "Every required acceptance input is independently poisoned and must close acceptance."
     }
   },
   "requiredPositiveChecks": [

@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
+import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task, Window } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { getTechnicalChains } from "./technicalChains";
 
@@ -57,12 +57,12 @@ export function deriveSaturatedResourceWindowBlocks(problem: PlannerNextProblem,
 }
 
 /** Enumerates only complete, hard-placeable orders; partial states never escape. */
-export function constructSaturatedResourceWindowBlockCandidates(problem: PlannerNextProblem, block: SaturatedResourceWindowBlock, placed: ScheduledTask[], branchAllowance: number): SaturatedResourceWindowConstruction {
+export function constructSaturatedResourceWindowBlockCandidates(problem: PlannerNextProblem, block: SaturatedResourceWindowBlock, placed: ScheduledTask[], branchAllowance: number, scheduledSpaceMeals: ScheduledSpaceMeal[] = []): SaturatedResourceWindowConstruction {
   const candidates: SaturatedResourceWindowCandidate[] = [];
   const seen = new Set<string>();
   let branchesExplored = 0;
   const constraintCount = (task: Task) => task.dependencies.length + (task.requiredResourceIds?.length ?? 0) + (task.availability?.length ?? 0) + (task.participantId === undefined ? 0 : 1);
-  const continuationCount = (task: Task, cursor: number, scheduled: ScheduledTask[]) => canPlaceTask(problem, task, cursor, [...placed, ...scheduled]) ? 1 : 0;
+  const continuationCount = (task: Task, cursor: number, scheduled: ScheduledTask[]) => canPlaceTask(problem, task, cursor, [...placed, ...scheduled], scheduledSpaceMeals) ? 1 : 0;
   const visit = (remaining: Task[], cursor: number, scheduled: ScheduledTask[]): boolean => {
     if (remaining.length === 0) {
       if (cursor !== block.window.end) return false;
@@ -75,7 +75,7 @@ export function constructSaturatedResourceWindowBlockCandidates(problem: Planner
     for (const task of ordered) {
       if (branchesExplored >= branchAllowance) return true;
       branchesExplored += 1;
-      if (cursor + task.duration > block.window.end || !canPlaceTask(problem, task, cursor, [...placed, ...scheduled])) continue;
+      if (cursor + task.duration > block.window.end || !canPlaceTask(problem, task, cursor, [...placed, ...scheduled], scheduledSpaceMeals)) continue;
       const next: ScheduledTask = { ...task, start: cursor, end: cursor + task.duration };
       if (visit(remaining.filter(({ id }) => id !== task.id), next.end, [...scheduled, next])) return true;
     }
