@@ -76,6 +76,10 @@ export interface AnchoredAccompaniment {
   resourceContinuity: "REQUIRED";
 }
 
+export type PlannerSearchPolicy =
+  | "COMPATIBILITY_PRESERVING"
+  | "EXACT_CONSTRUCTIVE";
+
 export interface PlannerNextProblem {
   day: Window;
   protectedMeal: Window;
@@ -96,6 +100,7 @@ export interface PlannerNextProblem {
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];
+  searchPolicy?: PlannerSearchPolicy;
 }
 
 export type ScheduledTask = Task & {
