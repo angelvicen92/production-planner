@@ -2386,3 +2386,13 @@ The 53-task accompaniment projection remains atomically `ANCHORED_ACCOMPANIMENT_
 The sole remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
 The sole root artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v3.json`.
 Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from production and the database.
+
+### FOCAL-A2-010 — Main Anchored Accompaniment
+
+- **Objetivo:** soportar de forma genérica y determinista contratos `AnchoredAccompaniment` cuyo anchor sea `main`.
+- **Implementación:** la búsqueda principal materializa atómicamente `before → anchor → after`; el estado mantiene las posiciones `main` separadas de las ocupaciones estructurales completas. El anchor conserva identidad y duración, y cada segmento conserva su espacio, recursos y ventana.
+- **Transiciones y feeders:** `internalTransition: INCLUDED` elimina el margen únicamente entre fases consecutivas del mismo contrato; los márgenes externos permanecen activos. El deadline feeder parte de la primera fase `before`, o del anchor cuando no existe `before`.
+- **Validación y métricas:** `validatePlan` invalida operaciones incompletas, no adyacentes o con identidad operativa alterada y publica conteos, tiempos, cumplimiento y posiciones evaluadas/rechazadas derivados de ejecución.
+- **Tests y benchmark:** la suite conductual cubre atomicidad, identidad, lados vacíos, rechazo no-main, inmutabilidad, determinismo, invariancia al orden y regresión sin contratos. El benchmark FOCAL-A2 V4 obtiene 53 tareas hard-valid, 3 operaciones ancladas, 6 segmentos y 12 operaciones itinerantes (375 minutos) sin seed humana y dentro del presupuesto vigente.
+- **Evidence:** `planner-next-focal-a2-itinerant-spec08-foundation-v4.json` protege los 32 escenarios previos y añade el escenario activo 33 con fingerprint y Evidence reproducible.
+- **Alcance y exclusiones:** anchors vocal, auxiliary y technical continúan fuera de alcance. No se modifican DB, RLS, producción ni presupuestos. Planner Next continúa aislado de endpoints de producción.
