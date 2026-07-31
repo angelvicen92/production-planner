@@ -297,7 +297,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   };
   type SearchResult =
     | { kind: "solution"; value: LeafSolution }
-    | { kind: "dead-end"; reason: string; failedLeaf: boolean }
+    | { kind: "dead-end"; reason: string }
     | { kind: "budget-exhausted"; reason: string };
 
   let feederFallbackUsed = false, feederBranches = 0, feederCompleteCount = 0, feederMaximumStates = 0;
@@ -321,10 +321,15 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   const failLeaf = (reason: string): SearchResult => {
     counters.mainFailedLeaves += 1;
     recordFailure(reason);
-    return { kind: "dead-end", reason, failedLeaf: true };
+    return { kind: "dead-end", reason };
   };
   const tryCompleteMainLeaf = (alternative: MainAlternative): SearchResult => {
+    if (counters.mainLeafAttempts > 0) {
+      if (counters.backtracks >= problem.budget.maxBacktracks) return { kind: "budget-exhausted", reason: "BACKTRACK_BUDGET_EXHAUSTED" };
+      counters.backtracks += 1;
+    }
     counters.mainLeafAttempts += 1;
+    counters.alternativesRetained += 1;
     const initialMeals = alternative.timeline ? [alternative.timeline.meal] : [];
     const requiredValid = problem.resources.every(resource => resource.presenceConcentrationPolicy !== "REQUIRED"
       || evaluateResourcePresence(resource, alternative.tasks, initialMeals).requiredPolicySatisfied);
@@ -334,6 +339,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     const preparedClosure = alternative.prefixFeederClosure;
     if (preparedClosure) {
       feederFallbackUsed = true;
+      // Classification only: this final-closure work is already included once in
+      // counters.branches and feederPrefixBranches; it is not consumed again here.
       feederBranches += preparedClosure.consumedBranches;
       feederCompleteCount += preparedClosure.completeClosureCount;
       feederMaximumStates = Math.max(feederMaximumStates, preparedClosure.maximumPartialStates);
@@ -349,7 +356,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       counters.branches += closure.diagnostics.consumed;
       feederCompleteCount += closure.diagnostics.completeClosuresGenerated;
       feederMaximumStates = Math.max(feederMaximumStates, closure.diagnostics.maximumPartialStates);
-      if (closure.diagnostics.exhausted) return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
+      if (closure.diagnostics.status === "BUDGET_EXHAUSTED") return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
       for (const candidate of closure.candidates) feederCandidates.push({ tasks: [...alternative.tasks, ...candidate.feeders], selectedOrder: candidate.selectedFeederOrder, signature: candidate.signature });
     }
     if (feederCandidates.length === 0) return failLeaf("FEEDER_CLOSURE_FAILED");
@@ -468,11 +475,11 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           counters.feederPrefixChecks += 1;
           counters.feederPrefixBranches += prefixClosure.consumedBranches;
           counters.branches += prefixClosure.consumedBranches;
-          if (prefixClosure.exhausted) {
+          if (prefixClosure.status === "BUDGET_EXHAUSTED") {
             feederPrefixBudgetExhausted = true;
             break;
           }
-          if (!prefixClosure.feasible) {
+          if (prefixClosure.status === "PROVEN_INFEASIBLE") {
             counters.feederPrefixPrunes += 1;
             counters.mainStructuralDeadEnds += 1;
             const depth = String(position + 1);
@@ -493,9 +500,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
         if (candidates.length === 0) {
           counters.mainStructuralDeadEnds += 1;
           recordFailure("MAIN_DEAD_END");
-          return { kind: "dead-end", reason: "MAIN_DEAD_END", failedLeaf: false };
+          return { kind: "dead-end", reason: "MAIN_DEAD_END" };
         }
-        let failedLeafInSubtree = false;
         for (let rank = 0; rank < candidates.length; rank += 1) {
           if (rank >= problem.budget.bestK) counters.mainDeferred += 1;
           const result = search(candidates[rank]!, position + 1);
@@ -504,15 +510,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             return result;
           }
           if (result.kind === "budget-exhausted") return result;
-          failedLeafInSubtree ||= result.failedLeaf;
-          if (result.failedLeaf && rank + 1 < candidates.length) {
-            if (counters.backtracks >= problem.budget.maxBacktracks) {
-              return { kind: "budget-exhausted", reason: "BACKTRACK_BUDGET_EXHAUSTED" };
-            }
-            counters.backtracks += 1;
-          }
         }
-        return { kind: "dead-end", reason: "MAIN_DEAD_END", failedLeaf: failedLeafInSubtree };
+        return { kind: "dead-end", reason: "MAIN_DEAD_END" };
       };
       const result = search({ tasks: [], score: 0, participantScore: 0, signature: "", timeline }, 0);
       if (result.kind === "solution") {

@@ -1,7 +1,8 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
-import { closeFeeders, diagnoseGreedyFeederClosure, type FeederClosureCandidate } from "./feederClosure";
+import { closeFeeders, type FeederClosureCandidate, type FeederClosureStatus } from "./feederClosure";
 
 export interface PlacedMainFeederClosureAssessment {
+  status: FeederClosureStatus;
   feasible: boolean;
   exhausted: boolean;
   consumedBranches: number;
@@ -24,14 +25,6 @@ export function assessPlacedMainFeederClosure(
   bestK: number,
 ): PlacedMainFeederClosureAssessment {
   const mains = [...placedStructuralTasks].filter(task => task.kind === "main");
-  const greedy = bestK === 1 ? diagnoseGreedyFeederClosure(problem, [...placedStructuralTasks], [...meals]) : null;
-  if (greedy?.complete) {
-    return { feasible: true, exhausted: false, consumedBranches: 0, completeClosureCount: 1,
-      blockingFeederIds: [], blockingMainTaskIds: [], maximumPartialStates: 1,
-      selectedFeederOrder: greedy.scheduledFeeders.map(feeder => feeder.id), witnessFeeders: greedy.scheduledFeeders,
-      closureCandidates: [{ feeders: greedy.scheduledFeeders, cost: 0, signature: greedy.scheduledFeeders.map(feeder => `${feeder.id}@${feeder.start}`).sort().join("|"), selectedFeederOrder: greedy.scheduledFeeders.map(feeder => feeder.id) }],
-      rejectedStateBlockerIds: [] };
-  }
   const closure = closeFeeders(problem, [...placedStructuralTasks], [...meals], allowance, bestK);
   const feederById = new Map(problem.tasks.filter(task => task.kind === "vocal").map(task => [task.id, task]));
   const blockingFeederIds = [...closure.diagnostics.rejectedStateBlockerIds].sort();
@@ -39,7 +32,8 @@ export function assessPlacedMainFeederClosure(
   const blockingMainTaskIds = mains.filter(main => blockingParticipants.has(main.participantId)).map(main => main.id).sort();
   const witness = closure.candidates[0];
   return {
-    feasible: closure.candidates.length > 0,
+    status: closure.diagnostics.status,
+    feasible: closure.diagnostics.status === "FEASIBLE",
     exhausted: closure.diagnostics.exhausted,
     consumedBranches: closure.diagnostics.consumed,
     completeClosureCount: closure.diagnostics.completeClosuresGenerated,

@@ -7,17 +7,16 @@ import { mainFlowVocalBacktrackingScenario } from "./scenarios/mainFlowVocalBack
 
 const firstScheduledMain = () => {
   const problem = mainFlowVocalScenario();
-  const planned = planMainFlowAndFeeders(problem);
-  const task = planned.scheduledTasks.find(candidate => candidate.kind === "main")!;
-  return { problem, structural: [task] };
+  const task = problem.tasks.find(candidate => candidate.id === "main-participant-z")!;
+  return { problem, structural: [{ ...task, start: 600, end: 600 + task.duration }] };
 };
 
 test("a feedable placed-main prefix returns a bounded deterministic witness without mutation", () => {
   const { problem, structural } = firstScheduledMain(); const before = JSON.stringify(problem);
   const first = assessPlacedMainFeederClosure(problem, structural, [], 10_000, 1);
   const second = assessPlacedMainFeederClosure(problem, [...structural].reverse(), [], 10_000, 1);
-  assert.equal(first.feasible, true); assert.equal(first.exhausted, false); assert.equal(first.completeClosureCount, 1);
-  assert.equal(first.witnessFeeders?.length, 1); assert.equal(first.consumedBranches, 0);
+  assert.equal(first.status, "FEASIBLE"); assert.equal(first.feasible, true); assert.equal(first.exhausted, false); assert.equal(first.completeClosureCount, 1);
+  assert.equal(first.witnessFeeders?.length, 1); assert.equal(first.consumedBranches > 0, true);
   assert.deepEqual(first, second); assert.equal(JSON.stringify(problem), before);
 });
 
@@ -26,7 +25,7 @@ test("an impossible feeder prefix is pruned with canonical feeder and main block
   const feeder = problem.tasks.find(task => task.kind === "vocal" && task.participantId === structural[0]!.participantId)!;
   feeder.availability = [{ start: problem.day.start, end: problem.day.start + 1 }];
   const result = assessPlacedMainFeederClosure(problem, structural, [], 10_000, 1);
-  assert.equal(result.feasible, false); assert.equal(result.exhausted, false);
+  assert.equal(result.status, "PROVEN_INFEASIBLE"); assert.equal(result.feasible, false); assert.equal(result.exhausted, false);
   assert.deepEqual(result.blockingFeederIds, [feeder.id]);
   assert.deepEqual(result.blockingMainTaskIds, [structural[0]!.id]);
 });
@@ -36,7 +35,7 @@ test("allowance exhaustion is explicit and publishes no closure", () => {
   const feeder = problem.tasks.find(task => task.kind === "vocal" && task.participantId === structural[0]!.participantId)!;
   feeder.availability = [{ start: problem.day.start, end: problem.day.start + 1 }];
   const result = assessPlacedMainFeederClosure(problem, structural, [], 0, 1);
-  assert.equal(result.feasible, false); assert.equal(result.exhausted, true);
+  assert.equal(result.status, "BUDGET_EXHAUSTED"); assert.equal(result.feasible, false); assert.equal(result.exhausted, true);
   assert.equal(result.consumedBranches, 0); assert.equal(result.completeClosureCount, 0);
   assert.equal(result.witnessFeeders, undefined);
 });
