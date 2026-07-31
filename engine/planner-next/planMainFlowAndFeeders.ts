@@ -12,7 +12,7 @@ import { fingerprint } from "./fingerprint";
 import { evaluateResourcePresence, presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
 import { preflight, validatePlan } from "./validate";
 import { canPlaceTask } from "./placement";
-import { placeAuxiliaryTasks } from "./placeAuxiliaryTasks";
+import { placeAuxiliaryTasks, type AuxiliaryPlacementResult } from "./placeAuxiliaryTasks";
 import { participantPresenceSpan } from "./participantPresence";
 import { requiredSecondarySpaces, secondaryBlockCount, secondaryEnd, secondaryGapMinutes, secondaryStart, secondaryTasks } from "./secondaryContinuity";
 import { setupPreparationCounts, setupPreparationMinutesBySpace, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
@@ -241,7 +241,7 @@ function emptyMetrics(
     mainBacktrackCount: counters?.backtracks ?? 0, mainMaximumSearchDepth: counters?.mainMaximumDepth ?? 0,
     mainCompleteLeafAttemptCount: counters?.mainLeafAttempts ?? 0, mainFailedLeafCount: counters?.mainFailedLeaves ?? 0,
     mainDeferredCandidateExploredCount: counters?.mainDeferred ?? 0, mainDecisionPointCount: counters?.mainDecisionPoints ?? 0,
-    mainFailureCountByReason: counters?.mainFailures ?? {}, mainFirstSolutionRankByDepth: counters?.mainFirstRank ?? {}, hiddenFutureProbeCount: 0,
+    mainFailureCountByReason: counters?.mainFailures ?? {}, mainFirstSolutionRankByDepth: counters?.mainFirstRank ?? {},
     reasonCodes: reasons,
   };
 }
@@ -305,10 +305,112 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
   }
 
-  const alternatives: MainAlternative[] = [];
-  let branchBudgetExhausted = false;
+  type LeafSolution = {
+    alternative: MainAlternative;
+    auxiliary: AuxiliaryPlacementResult;
+    validation: ReturnType<typeof validatePlan>;
+  };
+  type SearchResult =
+    | { kind: "solution"; value: LeafSolution }
+    | { kind: "dead-end"; reason: string }
+    | { kind: "budget-exhausted"; reason: string };
+
+  let feederFallbackUsed = false, feederBranches = 0, feederCompleteCount = 0, feederMaximumStates = 0;
+  const feederRejectedIds: string[] = [];
+  const recordFailure = (reason: string): void => {
+    counters.mainFailures[reason] = (counters.mainFailures[reason] ?? 0) + 1;
+  };
+  const addAuxiliaryDiagnostics = (auxiliary: AuxiliaryPlacementResult): void => {
+    counters.auxiliaryBranches += auxiliary.branches;
+    counters.branches += auxiliary.branches;
+    counters.secondaryBranches += auxiliary.secondaryBranches;
+    counters.futureChecks += auxiliary.futureChecks;
+    counters.futureBranches += auxiliary.futureBranches;
+    counters.futurePruned += auxiliary.futurePruned;
+    counters.futureTopPruned += auxiliary.futureTopPruned;
+    counters.acceptedMinimum = auxiliary.acceptedMinimum;
+    for (const [key, value] of Object.entries(auxiliary.blockers)) {
+      counters.blockers[key] = (counters.blockers[key] ?? 0) + value;
+    }
+  };
+  const failLeaf = (reason: string): SearchResult => {
+    counters.mainFailedLeaves += 1;
+    recordFailure(reason);
+    return { kind: "dead-end", reason };
+  };
+  const tryCompleteMainLeaf = (alternative: MainAlternative): SearchResult => {
+    counters.mainLeafAttempts += 1;
+    const initialMeals = alternative.timeline ? [alternative.timeline.meal] : [];
+    const requiredValid = problem.resources.every(resource => resource.presenceConcentrationPolicy !== "REQUIRED"
+      || evaluateResourcePresence(resource, alternative.tasks, initialMeals).requiredPolicySatisfied);
+    if (!requiredValid) return failLeaf("REQUIRED_RESOURCE_PRESENCE_FAILED");
+
+    const feederCandidates: Array<{ tasks: ScheduledTask[]; selectedOrder?: string[]; signature?: string }> = [];
+    const greedy = tryGreedyFeederClosure(problem, alternative.tasks, initialMeals);
+    if (greedy) {
+      feederCompleteCount += 1;
+      feederCandidates.push({ tasks: greedy });
+    } else if (hasExplicitMainFlowMeal(problem)) {
+      feederFallbackUsed = true;
+      const remaining = problem.budget.maxBranchExpansions - counters.branches;
+      if (remaining <= 0) {
+        recordFailure("FEEDER_BRANCH_BUDGET_EXHAUSTED");
+        return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
+      }
+      const closure = closeFeeders(problem, alternative.tasks, initialMeals, remaining);
+      feederBranches += closure.diagnostics.consumed;
+      counters.branches += closure.diagnostics.consumed;
+      feederCompleteCount += closure.diagnostics.completeClosuresGenerated;
+      feederMaximumStates = Math.max(feederMaximumStates, closure.diagnostics.maximumPartialStates);
+      for (const id of closure.diagnostics.rejectedStateBlockerIds) if (!feederRejectedIds.includes(id)) feederRejectedIds.push(id);
+      if (closure.diagnostics.exhausted || counters.branches >= problem.budget.maxBranchExpansions && closure.candidates.length === 0) {
+        recordFailure("FEEDER_BRANCH_BUDGET_EXHAUSTED");
+        return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
+      }
+      for (const candidate of closure.candidates) {
+        feederCandidates.push({ tasks: [...alternative.tasks, ...candidate.feeders], selectedOrder: candidate.selectedFeederOrder, signature: candidate.signature });
+      }
+    }
+    if (feederCandidates.length === 0) return failLeaf("FEEDER_CLOSURE_FAILED");
+
+    let auxiliaryReachedValidation = false;
+    for (const feederCandidate of feederCandidates) {
+      const remaining = problem.budget.maxBranchExpansions - counters.branches;
+      if (remaining <= 0) {
+        recordFailure("AUXILIARY_BRANCH_BUDGET_EXHAUSTED");
+        return { kind: "budget-exhausted", reason: "AUXILIARY_BRANCH_BUDGET_EXHAUSTED" };
+      }
+      const auxiliary = placeAuxiliaryTasks(problem, feederCandidate.tasks, remaining, initialMeals);
+      addAuxiliaryDiagnostics(auxiliary);
+      if (auxiliary.futureExhausted || auxiliary.secondaryExhausted || auxiliary.exhausted && auxiliary.tasks === null) {
+        recordFailure("AUXILIARY_BRANCH_BUDGET_EXHAUSTED");
+        return { kind: "budget-exhausted", reason: "AUXILIARY_BRANCH_BUDGET_EXHAUSTED" };
+      }
+      if (!auxiliary.tasks) continue;
+      auxiliaryReachedValidation = true;
+      const validation = validatePlan(problem, auxiliary.tasks, auxiliary.preparations, auxiliary.meals);
+      if (!validation.hardValid || auxiliary.tasks.length !== problem.tasks.length) continue;
+      return {
+        kind: "solution",
+        value: {
+          alternative: {
+            ...alternative,
+            feeders: feederCandidate.tasks.filter(task => task.kind === "vocal"),
+            feederSelectedOrder: feederCandidate.selectedOrder,
+            signature: feederCandidate.signature ? `${alternative.signature}|${feederCandidate.signature}` : alternative.signature,
+          },
+          auxiliary,
+          validation,
+        },
+      };
+    }
+    return failLeaf(auxiliaryReachedValidation ? "FINAL_HARD_VALIDATION_FAILED" : "AUXILIARY_PLACEMENT_FAILED");
+  };
+
+  let solution: LeafSolution | null = null;
+  let budgetExhausted = false;
   let structuralCombinationsEvaluated = 0;
-  for (const pattern of generatedPatterns.patterns) {
+  searchSpace: for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
     const compositeResult = requiredBlocks.length === 0 ? null : requiredCompositePositions(requiredBlocks, mains, pattern,
       problem.budget.maxPatterns - structuralCombinationsEvaluated);
@@ -319,117 +421,94 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
     timelineCandidateCount += timelines.length;
     for (const timeline of timelines) for (const compositePosition of compositePositions) {
-    const search = (state: MainAlternative, position: number): void => {
-      counters.mainMaximumDepth = Math.max(counters.mainMaximumDepth, position);
-      if (position === mains.length) {
-        counters.mainLeafAttempts += 1;
-        alternatives.push(state);
-        return;
-      }
-      const slot = timeline?.slots[position] ?? mainStart + position * duration;
-      const candidates: MainAlternative[] = [];
-      for (const task of mains) {
-        if (task.blockKey !== pattern[position]
-          || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
-          || state.tasks.some(({ id }) => id === task.id)) continue;
-        if (counters.branches >= problem.budget.maxBranchExpansions) { branchBudgetExhausted = true; return; }
-        counters.branches += 1;
-        const operation = materializeAnchoredOperation(problem, task, slot, state.tasks, timeline ? [timeline.meal] : []);
-        if (anchoredAccompanimentIndex(problem).has(task.id)) {
-          counters.anchoredCandidates += 1;
-          if (!operation) counters.anchoredRejected += 1;
+      const search = (state: MainAlternative, position: number): SearchResult => {
+        counters.mainMaximumDepth = Math.max(counters.mainMaximumDepth, position);
+        if (position === mains.length) return tryCompleteMainLeaf(state);
+        const slot = timeline?.slots[position] ?? mainStart + position * duration;
+        const candidates: MainAlternative[] = [];
+        for (const task of mains) {
+          if (task.blockKey !== pattern[position]
+            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
+            || state.tasks.some(({ id }) => id === task.id)) continue;
+          if (counters.branches >= problem.budget.maxBranchExpansions) {
+            return { kind: "budget-exhausted", reason: "MAIN_BRANCH_BUDGET_EXHAUSTED" };
+          }
+          counters.branches += 1;
+          const operation = materializeAnchoredOperation(problem, task, slot, state.tasks, timeline ? [timeline.meal] : []);
+          if (anchoredAccompanimentIndex(problem).has(task.id)) {
+            counters.anchoredCandidates += 1;
+            if (!operation) counters.anchoredRejected += 1;
+          }
+          if (!operation) continue;
+          const feeder = problem.tasks.find(candidate => candidate.kind === "vocal" && candidate.participantId === task.participantId);
+          const participant = problem.participants.find(({ id }) => id === task.participantId);
+          if (!feeder || !participant) continue;
+          const deadline = operation.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
+          if (!participant.availability.some(window => window.start + feeder.duration <= deadline)) continue;
+          const loss = participant.availability.filter(window => window.start <= slot && slot + duration <= window.end)
+            .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
+          const originalIndex = mains.findIndex(({ id }) => id === task.id);
+          const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
+            const resource = problem.resources.find(({ id }) => id === resourceId);
+            return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
+              && resource.presenceConcentrationPolicy !== "REQUIRED"
+              ? resourcePresenceIncrement(resourceId, state.tasks, operation.anchor) * presencePreferenceWeight(resource.presencePreference) : 0);
+          }, 0);
+          const tasks = [...state.tasks, ...operation.tasks];
+          const candidate: MainAlternative = {
+            tasks,
+            score: state.score + loss + Math.abs(originalIndex - position) + resourcePenalty,
+            participantScore: (state.participantScore ?? 0) + loss,
+            signature: tasks.filter(task => task.kind === "main").map(({ id }) => id).join("|"),
+            timeline,
+          };
+          if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
+          candidates.push(candidate);
+          counters.alternativesGenerated += 1;
         }
-        if (!operation) continue;
-        const feeder = problem.tasks.find(candidate => candidate.kind === "vocal" && candidate.participantId === task.participantId);
-        const participant = problem.participants.find(({ id }) => id === task.participantId);
-        if (!feeder || !participant) continue;
-        const deadline = operation.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
-        if (!participant.availability.some(window => window.start + feeder.duration <= deadline)) continue;
-        const loss = participant.availability.filter(window => window.start <= slot && slot + duration <= window.end)
-          .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
-        const originalIndex = mains.findIndex(({ id }) => id === task.id);
-        const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
-          const resource = problem.resources.find(({ id }) => id === resourceId);
-          return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
-            && resource.presenceConcentrationPolicy !== "REQUIRED"
-            ? resourcePresenceIncrement(resourceId, state.tasks, operation.anchor) * presencePreferenceWeight(resource.presencePreference) : 0);
-        }, 0);
-        const tasks = [...state.tasks, ...operation.tasks];
-        const candidate: MainAlternative = { tasks, score: state.score + loss + Math.abs(originalIndex - position) + resourcePenalty,
-          participantScore: (state.participantScore ?? 0) + loss,
-          signature: tasks.filter(t => t.kind === "main").map(({ id }) => id).join("|"), timeline };
-        if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
-        candidates.push(candidate);
-        counters.alternativesGenerated += 1;
+        candidates.sort((a, b) => compareAlternatives(a, b, hasPreferredPresence));
+        if (candidates.length > 1) counters.mainDecisionPoints += 1;
+        if (candidates.length === 0) {
+          recordFailure("MAIN_DEAD_END");
+          return { kind: "dead-end", reason: "MAIN_DEAD_END" };
+        }
+        for (let rank = 0; rank < candidates.length; rank += 1) {
+          if (rank >= problem.budget.bestK) counters.mainDeferred += 1;
+          const result = search(candidates[rank]!, position + 1);
+          if (result.kind === "solution") {
+            counters.mainFirstRank[String(position)] = rank;
+            return result;
+          }
+          if (result.kind === "budget-exhausted") return result;
+          if (rank + 1 < candidates.length) counters.backtracks += 1;
+        }
+        return { kind: "dead-end", reason: "MAIN_DEAD_END" };
+      };
+      const result = search({ tasks: [], score: 0, participantScore: 0, signature: "", timeline }, 0);
+      if (result.kind === "solution") {
+        solution = result.value;
+        break searchSpace;
       }
-      candidates.sort((a, b) => compareAlternatives(a, b, hasPreferredPresence));
-      if (candidates.length > 1) counters.mainDecisionPoints += 1;
-      for (let rank = 0; rank < candidates.length; rank += 1) {
-        if (counters.branches >= problem.budget.maxBranchExpansions) { branchBudgetExhausted = true; return; }
-        if (rank >= problem.budget.bestK) counters.mainDeferred += 1;
-        search(candidates[rank]!, position + 1);
+      if (result.kind === "budget-exhausted") {
+        budgetExhausted = true;
+        break searchSpace;
       }
-    };
-    search({ tasks: [], score: 0, participantScore: 0, signature: "", timeline }, 0);
-    if (branchBudgetExhausted) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
     }
   }
-  let feederFallbackUsed=false,feederBranches=0,feederCompleteCount=0,feederMaximumStates=0;
-  const feederRejectedIds:string[]=[];
-  const feederClosedAlternatives:MainAlternative[]=[];
-  for(const alternative of alternatives){
-    const meals=alternative.timeline?[alternative.timeline.meal]:[];
-    const requiredValid = problem.resources.every((resource) => resource.presenceConcentrationPolicy !== "REQUIRED"
-      || evaluateResourcePresence(resource, alternative.tasks, meals).requiredPolicySatisfied);
-    if (!requiredValid) continue;
-    const greedy=tryGreedyFeederClosure(problem,alternative.tasks,meals);
-    if(greedy){feederClosedAlternatives.push({...alternative,feeders:greedy.filter(t=>t.kind==="vocal"),feederScore:greedy.filter(t=>t.kind==="vocal").reduce((sum,f)=>sum+(alternative.tasks.find(m=>m.participantId===f.participantId)?.end??f.end)-f.start,0)});continue}
-    if(!hasExplicitMainFlowMeal(problem))continue;
-    feederFallbackUsed=true;
-    const closure=closeFeeders(problem,alternative.tasks,meals,Math.max(0,problem.budget.maxBranchExpansions-counters.branches));
-    feederBranches+=closure.diagnostics.consumed;counters.branches+=closure.diagnostics.consumed;
-    feederCompleteCount+=closure.diagnostics.completeClosuresGenerated;
-    feederMaximumStates=Math.max(feederMaximumStates,closure.diagnostics.maximumPartialStates);
-    for(const id of closure.diagnostics.rejectedStateBlockerIds)if(!feederRejectedIds.includes(id))feederRejectedIds.push(id);
-    if(closure.diagnostics.exhausted)return failure(problem,begun,"BRANCH_BUDGET_EXHAUSTED",counters);
-    for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,feederSelectedOrder:candidate.selectedFeederOrder,signature:`${alternative.signature}|${candidate.signature}`});
-  }
-  const retained = withMeal
-    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence))])).values()].flat()
-    : alternatives.sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence));
-  counters.alternativesRetained = retained.length;
+  if (budgetExhausted) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
+  if (!solution) return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 
-  for (let index = 0; index < retained.length; index += 1) {
-    const alternative = retained[index];
-    if (!alternative) continue;
-    const initialMeals = alternative.timeline ? [alternative.timeline.meal] : [];
-    const core = alternative.feeders ? [...alternative.tasks,...alternative.feeders] : tryGreedyFeederClosure(problem,alternative.tasks,initialMeals);
-    const auxiliary = core ? placeAuxiliaryTasks(problem, core, Math.max(0, problem.budget.maxBranchExpansions - counters.branches), initialMeals) : null;
-    if (auxiliary) { counters.auxiliaryBranches += auxiliary.branches; counters.branches += auxiliary.branches; }
-    if (auxiliary) { counters.secondaryBranches += auxiliary.secondaryBranches; counters.futureChecks += auxiliary.futureChecks; counters.futureBranches += auxiliary.futureBranches; counters.futurePruned += auxiliary.futurePruned; counters.futureTopPruned += auxiliary.futureTopPruned; counters.acceptedMinimum = auxiliary.acceptedMinimum; for (const [key,value] of Object.entries(auxiliary.blockers)) counters.blockers[key]=(counters.blockers[key]??0)+value; }
-    if (auxiliary?.futureExhausted) return failure(problem, begun, "FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED", counters);
-    if (auxiliary?.secondaryExhausted) return failure(problem, begun, "SECONDARY_BLOCK_BRANCH_BUDGET_EXHAUSTED", counters);
-    if (auxiliary?.exhausted) return failure(problem, begun, "AUXILIARY_BRANCH_BUDGET_EXHAUSTED", counters);
-    const all = auxiliary?.tasks ?? null;
-    const preparations = auxiliary?.preparations ?? [];
-    const meals=auxiliary?.meals??[];
-    const validation = all ? validatePlan(problem, all, preparations,meals) : null;
-    if (!all || !validation?.hardValid) {
-      counters.mainFailedLeaves += 1;
-      counters.mainFailures[core ? "AUXILIARY_OR_FINAL_VALIDATION_FAILED" : "FEEDER_CLOSURE_FAILED"] =
-        (counters.mainFailures[core ? "AUXILIARY_OR_FINAL_VALIDATION_FAILED" : "FEEDER_CLOSURE_FAILED"] ?? 0) + 1;
-      if (index + 1 >= retained.length) break;
-      if (counters.branches >= problem.budget.maxBranchExpansions) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
-      counters.branches += 1;
-      counters.backtracks += 1;
-      continue;
-    }
-
+  const alternative = solution.alternative;
+  const auxiliary = solution.auxiliary;
+  const validation = solution.validation;
+  const all = auxiliary.tasks!;
+  const preparations = auxiliary.preparations;
+  const meals = auxiliary.meals;
     const ordered = [...all].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
     const mainTasks = ordered.filter(({ kind }) => kind === "main");
     const firstMain = mainTasks[0];
     const lastMain = mainTasks.at(-1);
-    if (!firstMain || !lastMain) break;
+    if (!firstMain || !lastMain) return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
     const runs: string[] = [];
     for (const task of mainTasks) {
       const key = task.blockKey;
@@ -458,8 +537,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       mainFlowMealStart:alternative.timeline?.meal.start??null,mainFlowMealEnd:alternative.timeline?.meal.end??null,
       mainFlowMorningTaskCount:alternative.timeline?.morningTaskCount??mainTasks.length,mainFlowAfternoonTaskCount:alternative.timeline?.afternoonTaskCount??0,
       mainFlowSelectedSplitIndex:alternative.timeline?.splitIndex??null,mainFlowTimelineCandidateCount:timelineCandidateCount,
-      mainFlowAllMorningAlternativeCount:feederClosedAlternatives.filter(a=>a.timeline?.afternoonTaskCount===0).length,
-      mainFlowSplitAlternativeCount:feederClosedAlternatives.filter(a=>(a.timeline?.afternoonTaskCount??0)>0).length,
+      mainFlowAllMorningAlternativeCount:alternative.timeline?.afternoonTaskCount===0?1:0,
+      mainFlowSplitAlternativeCount:(alternative.timeline?.afternoonTaskCount??0)>0?1:0,
       blockSequence: runs,
       blockCountByKey,
       participantPresenceMinutesById: presence,
@@ -533,12 +612,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       mainBacktrackCount: counters.backtracks, mainMaximumSearchDepth: counters.mainMaximumDepth,
       mainCompleteLeafAttemptCount: counters.mainLeafAttempts, mainFailedLeafCount: counters.mainFailedLeaves,
       mainDeferredCandidateExploredCount: counters.mainDeferred, mainDecisionPointCount: counters.mainDecisionPoints,
-      mainFailureCountByReason: counters.mainFailures, mainFirstSolutionRankByDepth: counters.mainFirstRank, hiddenFutureProbeCount: 0,
+      mainFailureCountByReason: counters.mainFailures, mainFirstSolutionRankByDepth: counters.mainFirstRank,
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
-  }
-  return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
+  return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
 }
 
 function anchoredMetrics(problem:PlannerNextProblem,scheduled:ScheduledTask[],candidates:number,rejected:number):Pick<PlanMetrics,"anchoredAccompanimentCount"|"anchoredAccompanimentPlannedCount"|"anchoredAccompanimentScheduledSegmentCount"|"anchoredAccompanimentCandidatePositionsEvaluated"|"anchoredAccompanimentRejectedPositionCount"|"anchoredAccompanimentAnchorTaskIdById"|"anchoredAccompanimentBeforeTaskIdsById"|"anchoredAccompanimentAfterTaskIdsById"|"anchoredAccompanimentOperationStartById"|"anchoredAccompanimentAnchorStartById"|"anchoredAccompanimentAnchorEndById"|"anchoredAccompanimentOperationEndById"|"anchoredAccompanimentTotalDurationById"|"anchoredAccompanimentAdjacencySatisfiedById"|"anchoredAccompanimentParticipantSatisfiedById"|"anchoredAccompanimentSpacesSatisfiedById"|"anchoredAccompanimentResourcesSatisfiedById"|"anchoredAccompanimentTaskWindowsSatisfiedById"|"anchoredAccompanimentCompleteById"|"anchoredAccompanimentRejectedReasonCountByCode">{
