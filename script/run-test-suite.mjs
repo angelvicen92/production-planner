@@ -11,6 +11,7 @@ const toRepoRelative = (absolutePath) => path.relative(repoRoot, absolutePath).s
 export function discoverSpecFiles(directories, options = {}) {
   const root = path.resolve(options.root ?? repoRoot);
   const results = [];
+  const directoryAliases = { "engine-planner-next": "engine/planner-next" };
   const visit = (absoluteDir) => {
     const entries = readdirSync(absoluteDir, { withFileTypes: true })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -24,7 +25,7 @@ export function discoverSpecFiles(directories, options = {}) {
   };
 
   for (const directory of directories) {
-    const absoluteDir = path.resolve(root, directory);
+    const absoluteDir = path.resolve(root, directoryAliases[directory] ?? directory);
     if (!existsSync(absoluteDir) || !statSync(absoluteDir).isDirectory()) {
       throw new Error(`Test directory not found: ${directory}`);
     }

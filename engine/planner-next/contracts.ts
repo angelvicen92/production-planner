@@ -239,9 +239,11 @@ export interface PlanMetrics extends ValidationSummary {
   technicalChainBranchesExplored: number;
   spaceMealCount:number; spaceMealPlannedCount:number; spaceMealCandidateCountWhenSelectedBySpaceId:Record<string,number>; spaceMealStartBySpaceId:Record<string,Minute>; spaceMealEndBySpaceId:Record<string,Minute>; spaceMealMinutesBySpaceId:Record<string,number>; spaceMealBranchesExplored:number;
   anchoredAccompanimentCount:number; anchoredAccompanimentPlannedCount:number; anchoredAccompanimentScheduledSegmentCount:number; anchoredAccompanimentCandidatePositionsEvaluated:number; anchoredAccompanimentRejectedPositionCount:number;
+  anchoredAccompanimentCandidatePositionsAccepted:number; anchoredAccompanimentFutureFeasibilityProbes:number; anchoredAccompanimentFutureFeasibilityBranchesConsumed:number; anchoredAccompanimentHardZeroAlternativePrunes:number; anchoredAccompanimentMinimumAlternativesOnAcceptedPath:number;
   anchoredAccompanimentAnchorTaskIdById:Record<string,string>; anchoredAccompanimentBeforeTaskIdsById:Record<string,string[]>; anchoredAccompanimentAfterTaskIdsById:Record<string,string[]>;
   anchoredAccompanimentOperationStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorEndById:Record<string,Minute|null>; anchoredAccompanimentOperationEndById:Record<string,Minute|null>; anchoredAccompanimentTotalDurationById:Record<string,number>;
   anchoredAccompanimentAdjacencySatisfiedById:Record<string,boolean>; anchoredAccompanimentParticipantSatisfiedById:Record<string,boolean>; anchoredAccompanimentSpacesSatisfiedById:Record<string,boolean>; anchoredAccompanimentResourcesSatisfiedById:Record<string,boolean>; anchoredAccompanimentTaskWindowsSatisfiedById:Record<string,boolean>; anchoredAccompanimentCompleteById:Record<string,boolean>; anchoredAccompanimentRejectedReasonCountByCode:Record<string,number>;
+  anchoredAccompanimentContinuousResourceIdsById:Record<string,string[]>;
 }
 
 export interface PlanResult {

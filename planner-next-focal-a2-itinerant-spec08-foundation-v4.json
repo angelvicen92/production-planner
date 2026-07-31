@@ -1,5 +1,6 @@
 {
   "version": "planner-next-focal-a2-itinerant-spec08-foundation-v4",
+  "evidenceRevision": "FOCAL-A2-010R1",
   "status": "FOCAL_A2_SPEC08_MAIN_ANCHORED_ACCOMPANIMENT_ACCEPTED",
   "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v3",
   "sourceArtifactSha256": "cf87e0ca0e9f8ad62b0a06fbd4a49206a8f0357b2a5003c833145c3b8f082bb5",
@@ -13064,28 +13065,39 @@
       }
     },
     "focalA2Spec08MainAnchoredAccompaniment": {
+      "evidenceRevision": "FOCAL-A2-010R1",
       "checks": {
+        "validationReceipt": true,
+        "sourceSha": true,
+        "currentArtifactUnread": true,
         "complete": true,
         "hardValid": true,
         "taskCount": true,
         "mainCount": true,
         "vocalCount": true,
+        "standaloneCount": true,
         "anchoredCount": true,
         "segmentCount": true,
-        "itinerantOperationCount": true,
+        "operationCount": true,
         "productiveMinutes": true,
+        "partialOperationCount": true,
         "anchorDuration": true,
+        "resourceContinuity": true,
+        "taskWindows": true,
+        "mainContinuity": true,
         "deterministic": true,
         "orderInvariant": true,
         "inputImmutable": true,
-        "budgetStable": true,
-        "outputUnread": true
+        "budgetStable": true
       },
       "complete": true,
       "hardValid": true,
       "plannedTaskCount": 53,
+      "operationCount": 12,
+      "productiveMinutes": 375,
+      "partialOperationCount": 0,
       "planFingerprint": "b3b0d36504d5e4e9dac079f130b82b4fd91e2f5c07125d5ed7180e04ebe37f35",
-      "branchesExplored": 28432,
+      "branchesExplored": 28964,
       "maxBranchExpansions": 300000,
       "metrics": {
         "hardValid": true,
@@ -13199,13 +13211,13 @@
         },
         "totalResourcePresenceMinutes": 1680,
         "maxResourcePresenceMinutes": 420,
-        "alternativesGenerated": 3770,
+        "alternativesGenerated": 3667,
         "alternativesRetained": 5,
-        "branchesExplored": 28432,
+        "branchesExplored": 28964,
         "backtracks": 0,
         "patternsGenerated": 15,
         "patternsEvaluated": 15,
-        "branchBudgetConsumed": 28432,
+        "branchBudgetConsumed": 28964,
         "feederClosureFallbackUsed": false,
         "feederClosureBranchesExplored": 0,
         "feederClosureCompleteCandidateCount": 1,
@@ -13214,7 +13226,7 @@
         "feederClosureZeroAlternativeTaskIds": [],
         "feederClosureRejectedStateBlockerIds": [],
         "searchStopReason": "SOLUTION_FOUND",
-        "runtimeMs": 3358.396051,
+        "runtimeMs": 2769.786713,
         "planFingerprint": "b3b0d36504d5e4e9dac079f130b82b4fd91e2f5c07125d5ed7180e04ebe37f35",
         "auxiliaryTaskCount": 15,
         "auxiliaryPlannedTaskCount": 15,
@@ -13336,8 +13348,13 @@
         "anchoredAccompanimentCount": 3,
         "anchoredAccompanimentPlannedCount": 3,
         "anchoredAccompanimentScheduledSegmentCount": 6,
-        "anchoredAccompanimentCandidatePositionsEvaluated": 593,
-        "anchoredAccompanimentRejectedPositionCount": 390,
+        "anchoredAccompanimentCandidatePositionsEvaluated": 575,
+        "anchoredAccompanimentCandidatePositionsAccepted": 222,
+        "anchoredAccompanimentRejectedPositionCount": 353,
+        "anchoredAccompanimentFutureFeasibilityProbes": 3807,
+        "anchoredAccompanimentFutureFeasibilityBranchesConsumed": 3551931,
+        "anchoredAccompanimentHardZeroAlternativePrunes": 140,
+        "anchoredAccompanimentMinimumAlternativesOnAcceptedPath": 0,
         "anchoredAccompanimentAnchorTaskIdById": {
           "reality-operation-01": "main-cristina-zuloaga",
           "reality-operation-03": "main-jose-javier-cuenca",
@@ -13420,7 +13437,29 @@
           "reality-operation-03": true,
           "reality-operation-06": true
         },
-        "anchoredAccompanimentRejectedReasonCountByCode": {}
+        "anchoredAccompanimentContinuousResourceIdsById": {
+          "reality-operation-01": [
+            "reality-camera-3",
+            "reality-sound-1"
+          ],
+          "reality-operation-03": [
+            "reality-camera-3",
+            "reality-sound-1"
+          ],
+          "reality-operation-06": [
+            "reality-camera-4",
+            "reality-sound-2"
+          ]
+        },
+        "anchoredAccompanimentRejectedReasonCountByCode": {
+          "EXTERNAL_RESOURCE_TRANSITION": 11,
+          "PARTICIPANT_AVAILABILITY": 253,
+          "RESOURCE_AVAILABILITY": 124,
+          "RESOURCE_CONFLICT": 12,
+          "SPACE_AVAILABILITY": 55,
+          "SPACE_CONFLICT": 50,
+          "TASK_WINDOW": 304
+        }
       },
       "tasks": [
         {
@@ -13983,9 +14022,7 @@
             "reality-sound-1"
           ]
         }
-      ],
-      "humanComparisonInformationalOnly": true,
-      "humanScheduleUsedAsSeed": false
+      ]
     }
   },
   "activeScenarioId": "focalA2Spec08MainAnchoredAccompaniment",
@@ -14025,9 +14062,9 @@
   },
   "acceptance": {
     "accepted": true,
+    "finalRepositoryTestsAccepted": true,
     "mainAnchoredAccompanimentSupported": true,
-    "nonMainAnchorsSupported": false,
-    "plannerNextProductionIntegrated": false
+    "nonMainAnchorsSupported": false
   },
-  "artifactFingerprint": "499188ef92501cd2cb0c608f71ce3c1dbd5775f09e67cea11fa1ea621ccbb1d8"
+  "artifactFingerprint": "60bda9d5325036a1dd5b88a3278d88f708b7b1773154d1b038030a44f98a722b"
 }

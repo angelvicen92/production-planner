@@ -24,7 +24,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } 
 import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
-import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { anchoredAccompanimentIndex, buildAnchoredExecutionContext, evaluateAnchoredAccompaniments, firstParticipantObligation, materializeAnchoredOperation, type AnchoredFailureReasonCode } from "./anchoredAccompaniment";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 
 interface MainAlternative {
@@ -38,6 +38,8 @@ interface MainAlternative {
   preferredPresenceTuple?: [number, number, number];
   participantScore?: number;
   feederClosable?: boolean;
+  futureMinimumAlternativeCount?: number;
+  futureTotalAlternativeCount?: number;
 }
 
 function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative): [number, number, number] {
@@ -54,13 +56,15 @@ function compareAlternatives(a: MainAlternative, b: MainAlternative, preferred: 
   const historical = a.score - b.score;
   const aMain=a.tasks.filter(t=>t.kind==="main").length,bMain=b.tasks.filter(t=>t.kind==="main").length;
   if (!preferred || aMain !== bMain || aMain === 0) {
-    return historical || a.signature.localeCompare(b.signature);
+    return historical || (b.futureMinimumAlternativeCount??0)-(a.futureMinimumAlternativeCount??0)
+      || (b.futureTotalAlternativeCount??0)-(a.futureTotalAlternativeCount??0) || a.signature.localeCompare(b.signature);
   }
   if (a.feederClosable !== b.feederClosable) return a.feederClosable ? -1 : 1;
   const left = a.preferredPresenceTuple ?? [0, 0, 0];
   const right = b.preferredPresenceTuple ?? [0, 0, 0];
   return left[0] - right[0] || left[1] - right[1] || left[2] - right[2]
-    || historical || a.signature.localeCompare(b.signature);
+    || historical || (b.futureMinimumAlternativeCount??0)-(a.futureMinimumAlternativeCount??0)
+    || (b.futureTotalAlternativeCount??0)-(a.futureTotalAlternativeCount??0) || a.signature.localeCompare(b.signature);
 }
 
 interface Counters {
@@ -73,17 +77,18 @@ interface Counters {
   auxiliaryBranches: number;
   secondaryBranches: number;
   futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
-  anchoredCandidates:number; anchoredRejected:number;
+  anchoredCandidates:number; anchoredAccepted:number; anchoredRejected:number; anchoredRejections:Record<string,number>; anchoredFutureProbes:number; anchoredFutureBranches:number; anchoredHardPrunes:number;
 }
 
 function canonical<T extends { id: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.id.localeCompare(b.id));
 }
-function remainingAuxiliariesHaveWitness(problem:PlannerNextProblem,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]):boolean{
- const excluded=anchoredTaskIds(problem);return problem.tasks.filter(t=>(t.kind==="auxiliary"||t.kind==="technical")&&!excluded.has(t.id)&&!placed.some(x=>x.id===t.id)).every(task=>{for(let start=problem.day.start;start+task.duration<=problem.day.end;start+=5)if(canPlaceTask(problem,task,start,placed,meals))return true;return false;});
-}
-function anchoredFutureAlternatives(problem:PlannerNextProblem,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]):number{
- if(!(problem.anchoredAccompaniments?.length))return 0;const excluded=anchoredTaskIds(problem);const withFeeders=tryGreedyFeederClosure(problem,placed,meals)??placed;let total=0;for(const task of problem.tasks.filter(t=>t.kind==="auxiliary"&&!excluded.has(t.id))){let own=0;for(let start=problem.day.start;start+task.duration<=problem.day.end;start+=5)if(canPlaceTask(problem,task,start,withFeeders,meals))own+=1;if(own===0)return -1_000_000;total+=own;}return total;
+interface AnchoredFutureFeasibility { feasible:boolean; minimumAlternativeCount:number; totalAlternativeCount:number; blockerKeys:string[]; branchesConsumed:number }
+function assessAnchoredFutureFeasibility(problem:PlannerNextProblem,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]):AnchoredFutureFeasibility{
+ if(!(problem.anchoredAccompaniments?.length))return {feasible:true,minimumAlternativeCount:0,totalAlternativeCount:0,blockerKeys:[],branchesConsumed:0};
+ const excluded=anchoredTaskIds(problem),withFeeders=tryGreedyFeederClosure(problem,placed,meals)??placed, counts:number[]=[], blockers:string[]=[];let branches=0;
+ for(const task of problem.tasks.filter(t=>(t.kind==="auxiliary"||t.kind==="technical")&&!excluded.has(t.id)&&!placed.some(x=>x.id===t.id)).sort((a,b)=>a.id.localeCompare(b.id))){let count=0;for(let start=problem.day.start;start+task.duration<=problem.day.end;start+=5){branches+=1;if(canPlaceTask(problem,task,start,withFeeders,meals))count+=1;}counts.push(count);if(count===0)blockers.push(task.id);}
+ return {feasible:blockers.length===0,minimumAlternativeCount:counts.length?Math.min(...counts):0,totalAlternativeCount:counts.reduce((n,x)=>n+x,0),blockerKeys:blockers,branchesConsumed:branches};
 }
 
 function generatePatterns(
@@ -243,7 +248,7 @@ function emptyMetrics(
     technicalOperationPlannedCount: 0, technicalOperationCandidateCountWhenSelectedById: {}, technicalOperationStartById: {}, technicalOperationEndById: {},
     technicalChainCount:0,technicalChainPlannedCount:0,technicalChainScheduledTaskCount:0,technicalChainCandidateCountWhenSelectedByRootId:{},technicalChainTaskIdsByRootId:{},technicalChainStartByRootId:{},technicalChainEndByRootId:{},technicalChainBranchesExplored:0,
     spaceMealCount:Array.isArray(problem.spaces)?problem.spaces.filter(x=>x?.mealPolicy!==undefined).length:0,spaceMealPlannedCount:0,spaceMealCandidateCountWhenSelectedBySpaceId:{},spaceMealStartBySpaceId:{},spaceMealEndBySpaceId:{},spaceMealMinutesBySpaceId:{},spaceMealBranchesExplored:0,
-    anchoredAccompanimentCount:Array.isArray(problem.anchoredAccompaniments)?problem.anchoredAccompaniments.length:0,anchoredAccompanimentPlannedCount:0,anchoredAccompanimentScheduledSegmentCount:0,anchoredAccompanimentCandidatePositionsEvaluated:0,anchoredAccompanimentRejectedPositionCount:0,anchoredAccompanimentAnchorTaskIdById:{},anchoredAccompanimentBeforeTaskIdsById:{},anchoredAccompanimentAfterTaskIdsById:{},anchoredAccompanimentOperationStartById:{},anchoredAccompanimentAnchorStartById:{},anchoredAccompanimentAnchorEndById:{},anchoredAccompanimentOperationEndById:{},anchoredAccompanimentTotalDurationById:{},anchoredAccompanimentAdjacencySatisfiedById:{},anchoredAccompanimentParticipantSatisfiedById:{},anchoredAccompanimentSpacesSatisfiedById:{},anchoredAccompanimentResourcesSatisfiedById:{},anchoredAccompanimentTaskWindowsSatisfiedById:{},anchoredAccompanimentCompleteById:{},anchoredAccompanimentRejectedReasonCountByCode:{},
+    anchoredAccompanimentCount:Array.isArray(problem.anchoredAccompaniments)?problem.anchoredAccompaniments.length:0,anchoredAccompanimentPlannedCount:0,anchoredAccompanimentScheduledSegmentCount:0,anchoredAccompanimentCandidatePositionsEvaluated:0,anchoredAccompanimentCandidatePositionsAccepted:0,anchoredAccompanimentRejectedPositionCount:0,anchoredAccompanimentFutureFeasibilityProbes:0,anchoredAccompanimentFutureFeasibilityBranchesConsumed:0,anchoredAccompanimentHardZeroAlternativePrunes:0,anchoredAccompanimentMinimumAlternativesOnAcceptedPath:0,anchoredAccompanimentAnchorTaskIdById:{},anchoredAccompanimentBeforeTaskIdsById:{},anchoredAccompanimentAfterTaskIdsById:{},anchoredAccompanimentOperationStartById:{},anchoredAccompanimentAnchorStartById:{},anchoredAccompanimentAnchorEndById:{},anchoredAccompanimentOperationEndById:{},anchoredAccompanimentTotalDurationById:{},anchoredAccompanimentAdjacencySatisfiedById:{},anchoredAccompanimentParticipantSatisfiedById:{},anchoredAccompanimentSpacesSatisfiedById:{},anchoredAccompanimentResourcesSatisfiedById:{},anchoredAccompanimentTaskWindowsSatisfiedById:{},anchoredAccompanimentCompleteById:{},anchoredAccompanimentContinuousResourceIdsById:{},anchoredAccompanimentRejectedReasonCountByCode:{},
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -302,13 +307,14 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     patternsGenerated: generatedPatterns.patterns.length,
     patternsEvaluated: 0,
     auxiliaryBranches: 0,
-    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredRejected:0,
+    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredAccepted:0, anchoredRejected:0, anchoredRejections:{}, anchoredFutureProbes:0, anchoredFutureBranches:0, anchoredHardPrunes:0,
   };
   if (generatedPatterns.exhausted) {
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
   }
 
   const alternatives: MainAlternative[] = [];
+  const anchoredContext=buildAnchoredExecutionContext(problem);
   let structuralCombinationsEvaluated = 0;
   for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
@@ -336,10 +342,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
           if (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
             || state.tasks.some(({ id }) => id === task.id)) continue;
-          const operation=materializeAnchoredOperation(problem,task,slot,state.tasks,timeline?[timeline.meal]:[]);
-          if(anchoredAccompanimentIndex(problem).has(task.id)){counters.anchoredCandidates+=1;if(!operation)counters.anchoredRejected+=1;}
-          if (!operation) continue;
-          const provisional=[...state.tasks,...operation.tasks];
+          const materialized=materializeAnchoredOperation(problem,task,slot,state.tasks,timeline?[timeline.meal]:[],anchoredContext);
+          if(anchoredContext.contractByAnchorTaskId.has(task.id)){counters.anchoredCandidates+=1;if(!materialized.success){counters.anchoredRejected+=1;for(const reason of materialized.reasonCodes)counters.anchoredRejections[reason]=(counters.anchoredRejections[reason]??0)+1;}else counters.anchoredAccepted+=1;}
+          if (!materialized.success) continue;
+          const operation=materialized.operation, provisional=[...state.tasks,...operation.tasks];
           const feeder = problem.tasks.find(
             (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
           );
@@ -361,10 +367,11 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
               && resource.presenceConcentrationPolicy !== "REQUIRED" ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
               * presencePreferenceWeight(resource.presencePreference) : 0);
           }, 0);
-          const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty-anchoredFutureAlternatives(problem,provisional,timeline?[timeline.meal]:[]);
+          const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty;
           const tasks = provisional;
-          if(position===mains.length-1&&!remainingAuxiliariesHaveWitness(problem,tasks,timeline?[timeline.meal]:[]))continue;
-          const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.filter(t=>t.kind==="main").map(({ id }) => id).join("|"), timeline };
+          const future=assessAnchoredFutureFeasibility(problem,tasks,timeline?[timeline.meal]:[]);counters.anchoredFutureProbes+=1;counters.anchoredFutureBranches+=future.branchesConsumed;
+          if(!future.feasible){counters.anchoredHardPrunes+=1;continue;}
+          const candidate: MainAlternative = { tasks, score, futureMinimumAlternativeCount:future.minimumAlternativeCount,futureTotalAlternativeCount:future.totalAlternativeCount, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.filter(t=>t.kind==="main").map(({ id }) => id).join("|"), timeline };
           if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
           if (hasPreferredPresence) {
             candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
@@ -373,8 +380,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             const finalSlot = timeline?.slots[position + 1] ?? mainStart + (position + 1) * duration;
             const completions = mains.filter((remaining) => remaining.blockKey === pattern[position + 1]
               && !tasks.some(({ id }) => id === remaining.id)
-              && materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[])!==null)
-              .map((remaining) => [...tasks, ...materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[])!.tasks]);
+              && materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[],anchoredContext).success)
+              .map((remaining) => materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[],anchoredContext))
+              .filter(result=>result.success)
+              .map((result) => [...tasks, ...result.operation.tasks]);
             const closable = completions.filter((completion) => tryGreedyFeederClosure(problem, completion, timeline ? [timeline.meal] : []) !== null);
             if (closable.length > 0) {
               candidate.feederClosable = true;
@@ -551,15 +560,15 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
       spaceMealCount:problem.spaces.filter(s=>s.mealPolicy!==undefined).length,spaceMealPlannedCount:meals.length,spaceMealCandidateCountWhenSelectedBySpaceId:auxiliary?.mealCandidateCounts??{},spaceMealStartBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.start])),spaceMealEndBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.end])),spaceMealMinutesBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.duration])),spaceMealBranchesExplored:auxiliary?.spaceMealBranches??0,
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
-      ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
+      ...anchoredMetrics(problem,ordered,counters),
     };
     return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }
 
-function anchoredMetrics(problem:PlannerNextProblem,scheduled:ScheduledTask[],candidates:number,rejected:number):Pick<PlanMetrics,"anchoredAccompanimentCount"|"anchoredAccompanimentPlannedCount"|"anchoredAccompanimentScheduledSegmentCount"|"anchoredAccompanimentCandidatePositionsEvaluated"|"anchoredAccompanimentRejectedPositionCount"|"anchoredAccompanimentAnchorTaskIdById"|"anchoredAccompanimentBeforeTaskIdsById"|"anchoredAccompanimentAfterTaskIdsById"|"anchoredAccompanimentOperationStartById"|"anchoredAccompanimentAnchorStartById"|"anchoredAccompanimentAnchorEndById"|"anchoredAccompanimentOperationEndById"|"anchoredAccompanimentTotalDurationById"|"anchoredAccompanimentAdjacencySatisfiedById"|"anchoredAccompanimentParticipantSatisfiedById"|"anchoredAccompanimentSpacesSatisfiedById"|"anchoredAccompanimentResourcesSatisfiedById"|"anchoredAccompanimentTaskWindowsSatisfiedById"|"anchoredAccompanimentCompleteById"|"anchoredAccompanimentRejectedReasonCountByCode">{
- const contracts=problem.anchoredAccompaniments??[],byId=new Map(scheduled.map(t=>[t.id,t])),expected=new Map(problem.tasks.map(t=>[t.id,t]));const record=<T>()=>({} as Record<string,T>);const anchor=record<string>(),before=record<string[]>(),after=record<string[]>(),opStart=record<number|null>(),aStart=record<number|null>(),aEnd=record<number|null>(),opEnd=record<number|null>(),duration=record<number>(),adj=record<boolean>(),participant=record<boolean>(),spaces=record<boolean>(),resources=record<boolean>(),windows=record<boolean>(),complete=record<boolean>();let planned=0,segments=0;
- for(const c of [...contracts].sort((a,b)=>a.id.localeCompare(b.id))){const ids=[...c.beforeTaskIds,c.anchorTaskId,...c.afterTaskIds],tasks=ids.map(id=>byId.get(id));anchor[c.id]=c.anchorTaskId;before[c.id]=[...c.beforeTaskIds];after[c.id]=[...c.afterTaskIds];opStart[c.id]=tasks[0]?.start??null;aStart[c.id]=byId.get(c.anchorTaskId)?.start??null;aEnd[c.id]=byId.get(c.anchorTaskId)?.end??null;opEnd[c.id]=tasks.at(-1)?.end??null;duration[c.id]=ids.reduce((n,id)=>n+(expected.get(id)?.duration??0),0);adj[c.id]=tasks.every(Boolean)&&tasks.slice(1).every((t,i)=>tasks[i]!.end===t!.start);participant[c.id]=tasks.every(t=>t?.participantId===tasks[0]?.participantId);spaces[c.id]=tasks.every((t,i)=>t?.spaceId===expected.get(ids[i]!)?.spaceId);resources[c.id]=tasks.every((t,i)=>JSON.stringify([...(t?.requiredResourceIds??[])].sort())===JSON.stringify([...(expected.get(ids[i]!)?.requiredResourceIds??[])].sort()));windows[c.id]=tasks.every((t,i)=>t&&t.end-t.start===expected.get(ids[i]!)?.duration);complete[c.id]=tasks.every(Boolean)&&adj[c.id]&&participant[c.id]&&spaces[c.id]&&resources[c.id]&&windows[c.id];if(complete[c.id])planned+=1;segments+=c.beforeTaskIds.filter(id=>byId.has(id)).length+c.afterTaskIds.filter(id=>byId.has(id)).length;}
- return {anchoredAccompanimentCount:contracts.length,anchoredAccompanimentPlannedCount:planned,anchoredAccompanimentScheduledSegmentCount:segments,anchoredAccompanimentCandidatePositionsEvaluated:candidates,anchoredAccompanimentRejectedPositionCount:rejected,anchoredAccompanimentAnchorTaskIdById:anchor,anchoredAccompanimentBeforeTaskIdsById:before,anchoredAccompanimentAfterTaskIdsById:after,anchoredAccompanimentOperationStartById:opStart,anchoredAccompanimentAnchorStartById:aStart,anchoredAccompanimentAnchorEndById:aEnd,anchoredAccompanimentOperationEndById:opEnd,anchoredAccompanimentTotalDurationById:duration,anchoredAccompanimentAdjacencySatisfiedById:adj,anchoredAccompanimentParticipantSatisfiedById:participant,anchoredAccompanimentSpacesSatisfiedById:spaces,anchoredAccompanimentResourcesSatisfiedById:resources,anchoredAccompanimentTaskWindowsSatisfiedById:windows,anchoredAccompanimentCompleteById:complete,anchoredAccompanimentRejectedReasonCountByCode:{}};
+function anchoredMetrics(problem:PlannerNextProblem,scheduled:ScheduledTask[],counters:Counters):Pick<PlanMetrics,"anchoredAccompanimentCount"|"anchoredAccompanimentPlannedCount"|"anchoredAccompanimentScheduledSegmentCount"|"anchoredAccompanimentCandidatePositionsEvaluated"|"anchoredAccompanimentCandidatePositionsAccepted"|"anchoredAccompanimentRejectedPositionCount"|"anchoredAccompanimentFutureFeasibilityProbes"|"anchoredAccompanimentFutureFeasibilityBranchesConsumed"|"anchoredAccompanimentHardZeroAlternativePrunes"|"anchoredAccompanimentMinimumAlternativesOnAcceptedPath"|"anchoredAccompanimentAnchorTaskIdById"|"anchoredAccompanimentBeforeTaskIdsById"|"anchoredAccompanimentAfterTaskIdsById"|"anchoredAccompanimentOperationStartById"|"anchoredAccompanimentAnchorStartById"|"anchoredAccompanimentAnchorEndById"|"anchoredAccompanimentOperationEndById"|"anchoredAccompanimentTotalDurationById"|"anchoredAccompanimentAdjacencySatisfiedById"|"anchoredAccompanimentParticipantSatisfiedById"|"anchoredAccompanimentSpacesSatisfiedById"|"anchoredAccompanimentResourcesSatisfiedById"|"anchoredAccompanimentTaskWindowsSatisfiedById"|"anchoredAccompanimentCompleteById"|"anchoredAccompanimentContinuousResourceIdsById"|"anchoredAccompanimentRejectedReasonCountByCode">{
+ const contracts=problem.anchoredAccompaniments??[],byId=new Map(scheduled.map(t=>[t.id,t])),expected=new Map(problem.tasks.map(t=>[t.id,t])),evaluation=new Map(evaluateAnchoredAccompaniments(problem,scheduled).map(e=>[e.contractId,e]));const record=<T>()=>({} as Record<string,T>);const anchor=record<string>(),before=record<string[]>(),after=record<string[]>(),opStart=record<number|null>(),aStart=record<number|null>(),aEnd=record<number|null>(),opEnd=record<number|null>(),duration=record<number>(),adj=record<boolean>(),participant=record<boolean>(),spaces=record<boolean>(),resources=record<boolean>(),windows=record<boolean>(),complete=record<boolean>(),continuous=record<string[]>();let planned=0,segments=0;
+ for(const c of [...contracts].sort((a,b)=>a.id.localeCompare(b.id))){const ids=[...c.beforeTaskIds,c.anchorTaskId,...c.afterTaskIds],tasks=ids.map(id=>byId.get(id)),e=evaluation.get(c.id)!;anchor[c.id]=c.anchorTaskId;before[c.id]=[...c.beforeTaskIds];after[c.id]=[...c.afterTaskIds];opStart[c.id]=tasks[0]?.start??null;aStart[c.id]=byId.get(c.anchorTaskId)?.start??null;aEnd[c.id]=byId.get(c.anchorTaskId)?.end??null;opEnd[c.id]=tasks.at(-1)?.end??null;duration[c.id]=ids.reduce((n,id)=>n+(expected.get(id)?.duration??0),0);adj[c.id]=e.adjacencySatisfied;participant[c.id]=e.participantSatisfied;spaces[c.id]=tasks.every((t,i)=>t?.spaceId===expected.get(ids[i]!)?.spaceId);resources[c.id]=e.resourcesSatisfied;windows[c.id]=e.taskWindowsSatisfied;complete[c.id]=e.complete;continuous[c.id]=e.continuousResourceIds;if(e.complete)planned+=1;segments+=c.beforeTaskIds.filter(id=>byId.has(id)).length+c.afterTaskIds.filter(id=>byId.has(id)).length;}
+ return {anchoredAccompanimentCount:contracts.length,anchoredAccompanimentPlannedCount:planned,anchoredAccompanimentScheduledSegmentCount:segments,anchoredAccompanimentCandidatePositionsEvaluated:counters.anchoredCandidates,anchoredAccompanimentCandidatePositionsAccepted:counters.anchoredAccepted,anchoredAccompanimentRejectedPositionCount:counters.anchoredRejected,anchoredAccompanimentFutureFeasibilityProbes:counters.anchoredFutureProbes,anchoredAccompanimentFutureFeasibilityBranchesConsumed:counters.anchoredFutureBranches,anchoredAccompanimentHardZeroAlternativePrunes:counters.anchoredHardPrunes,anchoredAccompanimentMinimumAlternativesOnAcceptedPath:0,anchoredAccompanimentAnchorTaskIdById:anchor,anchoredAccompanimentBeforeTaskIdsById:before,anchoredAccompanimentAfterTaskIdsById:after,anchoredAccompanimentOperationStartById:opStart,anchoredAccompanimentAnchorStartById:aStart,anchoredAccompanimentAnchorEndById:aEnd,anchoredAccompanimentOperationEndById:opEnd,anchoredAccompanimentTotalDurationById:duration,anchoredAccompanimentAdjacencySatisfiedById:adj,anchoredAccompanimentParticipantSatisfiedById:participant,anchoredAccompanimentSpacesSatisfiedById:spaces,anchoredAccompanimentResourcesSatisfiedById:resources,anchoredAccompanimentTaskWindowsSatisfiedById:windows,anchoredAccompanimentCompleteById:complete,anchoredAccompanimentContinuousResourceIdsById:continuous,anchoredAccompanimentRejectedReasonCountByCode:Object.fromEntries(Object.entries(counters.anchoredRejections).sort(([a],[b])=>a.localeCompare(b)))};
 }
