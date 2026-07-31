@@ -6,6 +6,28 @@ export interface FeederClosureCandidate { feeders: ScheduledTask[]; cost: number
 export interface FeederClosureDiagnostics { consumed:number; exhausted:boolean; completeClosuresGenerated:number; maximumPartialStates:number; rejectedStateBlockerIds:string[]; greedyFallbackUsed:boolean }
 export interface FeederClosureResult { candidates:FeederClosureCandidate[]; diagnostics:FeederClosureDiagnostics }
 
+
+export interface GreedyFeederClosureResult { complete:boolean; scheduledTasks:ScheduledTask[]; scheduledFeeders:ScheduledTask[]; attemptedFeederIds:string[]; placedFeederIds:string[]; blockingFeederId:string|null; blockingMainTaskId:string|null; attemptedStartCountByFeederId:Record<string,number> }
+export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): GreedyFeederClosureResult {
+  const placed = [...mains];
+  const attemptedFeederIds:string[]=[],placedFeederIds:string[]=[];const attemptedStartCountByFeederId:Record<string,number>={};
+  const feederByParticipant = new Map(problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]));
+  const latestFirst = mains.filter(task=>task.kind==="main").sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
+  for (const main of latestFirst) {
+    const feeder = feederByParticipant.get(main.participantId);
+    if (!feeder) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
+    attemptedFeederIds.push(feeder.id);attemptedStartCountByFeederId[feeder.id]=0;
+    const deadline = firstParticipantObligation(main,placed,anchoredAccompanimentIndex(problem)) - Math.max(problem.participantTransitionMinutes,problem.resourceTransitionMinutes);
+    let selectedStart: number | undefined;
+    for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
+      attemptedStartCountByFeederId[feeder.id] += 1;
+      if (canPlaceTask(problem, feeder, start, placed, scheduledSpaceMeals)) { selectedStart = start; break; }
+    }
+    if (selectedStart === undefined) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:feeder.id,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
+    placed.push({ ...feeder, start: selectedStart, end: selectedStart + feeder.duration });placedFeederIds.push(feeder.id);
+  }
+  return {complete:true,scheduledTasks:placed,scheduledFeeders:placed.filter(task=>task.kind==="vocal"),attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:null,attemptedStartCountByFeederId};
+}
 type State={feeders:ScheduledTask[];pending:Task[];cost:number;signature:string;selectedFeederOrder:string[]};
 const ordered=<T extends {id:string}>(xs:T[])=>[...xs].sort((a,b)=>a.id.localeCompare(b.id));
 

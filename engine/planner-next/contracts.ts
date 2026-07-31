@@ -182,6 +182,17 @@ export interface PlanMetrics extends ValidationSummary {
   mainDecisionPointCount: number;
   mainFailureCountByReason: Record<string, number>;
   mainFirstSolutionRankByDepth: Record<string, number>;
+  mainResidualMatchingCheckCount: number;
+  mainResidualMatchingPruneCount: number;
+  mainResidualMatchingEdgeEvaluationCount: number;
+  mainResidualMatchingFailureCountByDepth: Record<string, number>;
+  mainStructuralDeadEndCount: number;
+  feederPrefixClosureCheckCount: number;
+  feederPrefixClosurePruneCount: number;
+  feederPrefixClosureBranchesExplored: number;
+  feederPrefixClosureFailureCountByDepth: Record<string, number>;
+  feederPrefixBlockingCountByFeederId: Record<string, number>;
+  feederPrefixBlockingCountByMainTaskId: Record<string, number>;
   feederClosureFallbackUsed: boolean;
   feederClosureBranchesExplored: number;
   feederClosureCompleteCandidateCount: number;

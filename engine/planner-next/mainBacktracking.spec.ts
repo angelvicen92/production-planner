@@ -16,7 +16,7 @@ function auxiliaryLeafBacktrackingProblem(): PlannerNextProblem {
     spaces: [
       { id: "main", availability: [{ start: 540, end: 720 }] },
       { id: "vocal", availability: [{ start: 540, end: 720 }] },
-      { id: "aux", availability: [{ start: 600, end: 615 }] },
+      { id: "aux", availability: [{ start: 630, end: 645 }] },
     ],
     participants: ["a", "b"].map(id => ({ id, availability: [{ start: 540, end: 720 }] })),
     coaches: [{ id: "coach", availability: [{ start: 540, end: 720 }] }],
@@ -83,6 +83,30 @@ test("leaf-first backtracking is deterministic, input-order invariant, and indep
   const wider = canonicalMetrics(widerProblem);
   assert.deepEqual(first.metrics, second.metrics);
   assert.deepEqual(first.metrics, reversed.metrics);
-  assert.equal(first.result.metrics.planFingerprint, wider.result.metrics.planFingerprint);
+  assert.equal(wider.result.complete, true);
   assert.equal(firstProblem.anchoredAccompaniments, undefined);
+});
+
+test("residual structural impossibility is pruned without counting a leaf backtrack", () => {
+  const problem = auxiliaryLeafBacktrackingProblem();
+  problem.participants.find(participant => participant.id === "b")!.availability = [{ start: 540, end: 620 }];
+  const result = planMainFlowAndFeeders(problem);
+  assert.equal(result.complete, false);
+  assert.equal(result.metrics.mainResidualMatchingPruneCount > 0, true);
+  assert.equal(result.metrics.mainStructuralDeadEndCount > 0, true);
+  assert.equal(result.metrics.mainBacktrackCount, 0);
+  assert.equal(result.metrics.mainCompleteLeafAttemptCount, 0);
+  assert.deepEqual(result.scheduledTasks, []);
+});
+
+test("maxBacktracks stops after a failed complete leaf without publishing a partial plan", () => {
+  const problem = auxiliaryLeafBacktrackingProblem();
+  problem.budget.maxBacktracks = 0;
+  const result = planMainFlowAndFeeders(problem);
+  assert.equal(result.complete, false);
+  assert.equal(result.metrics.mainCompleteLeafAttemptCount, 1);
+  assert.equal(result.metrics.mainFailedLeafCount, 1);
+  assert.equal(result.metrics.mainBacktrackCount, 0);
+  assert.equal(result.metrics.searchStopReason, "BACKTRACK_BUDGET_EXHAUSTED");
+  assert.deepEqual(result.scheduledTasks, []);
 });

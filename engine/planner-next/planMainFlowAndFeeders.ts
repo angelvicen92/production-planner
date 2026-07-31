@@ -20,9 +20,11 @@ import { setupBlockCounts, setupFamilySequence, setupSpaces, setupSwitchCount, s
 import { technicalMetrics } from "./technicalOperations";
 import { getTechnicalChains } from "./technicalChains";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } from "./mainFlowMeal";
+import { assessMainResidualMatching } from "./mainResidualMatching";
 
 import { hasExplicitMainFlowMeal } from "./spaceMeals";
-import { closeFeeders } from "./feederClosure";
+import { closeFeeders, diagnoseGreedyFeederClosure } from "./feederClosure";
+import { assessPlacedMainFeederClosure, type PlacedMainFeederClosureAssessment } from "./feederPrefixClosure";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
 import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
 
@@ -37,6 +39,7 @@ interface MainAlternative {
   preferredPresenceTuple?: [number, number, number];
   participantScore?: number;
   feederClosable?: boolean;
+  prefixFeederClosure?: PlacedMainFeederClosureAssessment;
 }
 
 function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative): [number, number, number] {
@@ -72,7 +75,7 @@ interface Counters {
   auxiliaryBranches: number;
   secondaryBranches: number;
   futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
-  anchoredCandidates:number; anchoredRejected:number; mainMaximumDepth:number; mainLeafAttempts:number; mainFailedLeaves:number; mainDeferred:number; mainDecisionPoints:number; mainFailures:Record<string,number>; mainFirstRank:Record<string,number>;
+  anchoredCandidates:number; anchoredRejected:number; mainMaximumDepth:number; mainLeafAttempts:number; mainFailedLeaves:number; mainDeferred:number; mainDecisionPoints:number; mainFailures:Record<string,number>; mainFirstRank:Record<string,number>; mainMatchingChecks:number; mainMatchingPrunes:number; mainMatchingEdges:number; mainMatchingFailuresByDepth:Record<string,number>; mainStructuralDeadEnds:number; feederPrefixChecks:number; feederPrefixPrunes:number; feederPrefixBranches:number; feederPrefixFailuresByDepth:Record<string,number>; feederPrefixBlockingFeeders:Record<string,number>; feederPrefixBlockingMains:Record<string,number>;
 }
 
 function canonical<T extends { id: string }>(items: T[]): T[] {
@@ -124,36 +127,7 @@ function generatePatterns(
   return { patterns: output, exhausted };
 }
 
-export interface GreedyFeederClosureResult { complete:boolean; scheduledTasks:ScheduledTask[]; scheduledFeeders:ScheduledTask[]; attemptedFeederIds:string[]; placedFeederIds:string[]; blockingFeederId:string|null; blockingMainTaskId:string|null; attemptedStartCountByFeederId:Record<string,number> }
-export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): GreedyFeederClosureResult {
-  const placed = [...mains];
-  const attemptedFeederIds:string[]=[],placedFeederIds:string[]=[];const attemptedStartCountByFeederId:Record<string,number>={};
-  const feederByParticipant = new Map(
-    problem.tasks.filter(({ kind }) => kind === "vocal").map((task) => [task.participantId, task]),
-  );
-  const latestFirst = mains.filter(t=>t.kind==="main").sort((a, b) => b.start - a.start || a.id.localeCompare(b.id));
-  for (const main of latestFirst) {
-    const feeder = feederByParticipant.get(main.participantId);
-    if (!feeder) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
-    attemptedFeederIds.push(feeder.id);attemptedStartCountByFeederId[feeder.id]=0;
-    const deadline = firstParticipantObligation(main,placed,anchoredAccompanimentIndex(problem)) - Math.max(
-      problem.participantTransitionMinutes,
-      problem.resourceTransitionMinutes,
-    );
-    let selectedStart: number | undefined;
-    for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      attemptedStartCountByFeederId[feeder.id] += 1;
-      if (canPlaceTask(problem, feeder, start, placed, scheduledSpaceMeals)) {
-        selectedStart = start;
-        break;
-      }
-    }
-    if (selectedStart === undefined) return {complete:false,scheduledTasks:[],scheduledFeeders:[],attemptedFeederIds,placedFeederIds,blockingFeederId:feeder.id,blockingMainTaskId:main.id,attemptedStartCountByFeederId};
-    placed.push({ ...feeder, start: selectedStart, end: selectedStart + feeder.duration });
-    placedFeederIds.push(feeder.id);
-  }
-  return {complete:true,scheduledTasks:placed,scheduledFeeders:placed.filter(t=>t.kind==="vocal"),attemptedFeederIds,placedFeederIds,blockingFeederId:null,blockingMainTaskId:null,attemptedStartCountByFeederId};
-}
+export { diagnoseGreedyFeederClosure } from "./feederClosure";
 export function tryGreedyFeederClosure(problem: PlannerNextProblem, mains: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): ScheduledTask[] | null {
   const diagnosis=diagnoseGreedyFeederClosure(problem,mains,scheduledSpaceMeals);return diagnosis.complete?diagnosis.scheduledTasks:null;
 }
@@ -242,6 +216,17 @@ function emptyMetrics(
     mainCompleteLeafAttemptCount: counters?.mainLeafAttempts ?? 0, mainFailedLeafCount: counters?.mainFailedLeaves ?? 0,
     mainDeferredCandidateExploredCount: counters?.mainDeferred ?? 0, mainDecisionPointCount: counters?.mainDecisionPoints ?? 0,
     mainFailureCountByReason: counters?.mainFailures ?? {}, mainFirstSolutionRankByDepth: counters?.mainFirstRank ?? {},
+    mainResidualMatchingCheckCount: counters?.mainMatchingChecks ?? 0,
+    mainResidualMatchingPruneCount: counters?.mainMatchingPrunes ?? 0,
+    mainResidualMatchingEdgeEvaluationCount: counters?.mainMatchingEdges ?? 0,
+    mainResidualMatchingFailureCountByDepth: counters?.mainMatchingFailuresByDepth ?? {},
+    mainStructuralDeadEndCount: counters?.mainStructuralDeadEnds ?? 0,
+    feederPrefixClosureCheckCount: counters?.feederPrefixChecks ?? 0,
+    feederPrefixClosurePruneCount: counters?.feederPrefixPrunes ?? 0,
+    feederPrefixClosureBranchesExplored: counters?.feederPrefixBranches ?? 0,
+    feederPrefixClosureFailureCountByDepth: counters?.feederPrefixFailuresByDepth ?? {},
+    feederPrefixBlockingCountByFeederId: counters?.feederPrefixBlockingFeeders ?? {},
+    feederPrefixBlockingCountByMainTaskId: counters?.feederPrefixBlockingMains ?? {},
     reasonCodes: reasons,
   };
 }
@@ -299,7 +284,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     patternsGenerated: generatedPatterns.patterns.length,
     patternsEvaluated: 0,
     auxiliaryBranches: 0,
-    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredRejected:0, mainMaximumDepth:0, mainLeafAttempts:0, mainFailedLeaves:0, mainDeferred:0, mainDecisionPoints:0, mainFailures:{}, mainFirstRank:{},
+    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredRejected:0, mainMaximumDepth:0, mainLeafAttempts:0, mainFailedLeaves:0, mainDeferred:0, mainDecisionPoints:0, mainFailures:{}, mainFirstRank:{}, mainMatchingChecks:0, mainMatchingPrunes:0, mainMatchingEdges:0, mainMatchingFailuresByDepth:{}, mainStructuralDeadEnds:0, feederPrefixChecks:0, feederPrefixPrunes:0, feederPrefixBranches:0, feederPrefixFailuresByDepth:{}, feederPrefixBlockingFeeders:{}, feederPrefixBlockingMains:{},
   };
   if (generatedPatterns.exhausted) {
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
@@ -312,7 +297,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   };
   type SearchResult =
     | { kind: "solution"; value: LeafSolution }
-    | { kind: "dead-end"; reason: string }
+    | { kind: "dead-end"; reason: string; failedLeaf: boolean }
     | { kind: "budget-exhausted"; reason: string };
 
   let feederFallbackUsed = false, feederBranches = 0, feederCompleteCount = 0, feederMaximumStates = 0;
@@ -336,7 +321,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   const failLeaf = (reason: string): SearchResult => {
     counters.mainFailedLeaves += 1;
     recordFailure(reason);
-    return { kind: "dead-end", reason };
+    return { kind: "dead-end", reason, failedLeaf: true };
   };
   const tryCompleteMainLeaf = (alternative: MainAlternative): SearchResult => {
     counters.mainLeafAttempts += 1;
@@ -346,30 +331,26 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     if (!requiredValid) return failLeaf("REQUIRED_RESOURCE_PRESENCE_FAILED");
 
     const feederCandidates: Array<{ tasks: ScheduledTask[]; selectedOrder?: string[]; signature?: string }> = [];
-    const greedy = tryGreedyFeederClosure(problem, alternative.tasks, initialMeals);
-    if (greedy) {
-      feederCompleteCount += 1;
-      feederCandidates.push({ tasks: greedy });
-    } else if (hasExplicitMainFlowMeal(problem)) {
+    const preparedClosure = alternative.prefixFeederClosure;
+    if (preparedClosure) {
       feederFallbackUsed = true;
-      const remaining = problem.budget.maxBranchExpansions - counters.branches;
-      if (remaining <= 0) {
-        recordFailure("FEEDER_BRANCH_BUDGET_EXHAUSTED");
-        return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
+      feederBranches += preparedClosure.consumedBranches;
+      feederCompleteCount += preparedClosure.completeClosureCount;
+      feederMaximumStates = Math.max(feederMaximumStates, preparedClosure.maximumPartialStates);
+      for (const id of preparedClosure.rejectedStateBlockerIds) if (!feederRejectedIds.includes(id)) feederRejectedIds.push(id);
+      for (const candidate of preparedClosure.closureCandidates) {
+        feederCandidates.push({ tasks: [...alternative.tasks, ...candidate.feeders], selectedOrder: candidate.selectedFeederOrder, signature: candidate.signature });
       }
+    } else {
+      const remaining = problem.budget.maxBranchExpansions - counters.branches;
+      if (remaining <= 0) return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
       const closure = closeFeeders(problem, alternative.tasks, initialMeals, remaining);
       feederBranches += closure.diagnostics.consumed;
       counters.branches += closure.diagnostics.consumed;
       feederCompleteCount += closure.diagnostics.completeClosuresGenerated;
       feederMaximumStates = Math.max(feederMaximumStates, closure.diagnostics.maximumPartialStates);
-      for (const id of closure.diagnostics.rejectedStateBlockerIds) if (!feederRejectedIds.includes(id)) feederRejectedIds.push(id);
-      if (closure.diagnostics.exhausted || counters.branches >= problem.budget.maxBranchExpansions && closure.candidates.length === 0) {
-        recordFailure("FEEDER_BRANCH_BUDGET_EXHAUSTED");
-        return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
-      }
-      for (const candidate of closure.candidates) {
-        feederCandidates.push({ tasks: [...alternative.tasks, ...candidate.feeders], selectedOrder: candidate.selectedFeederOrder, signature: candidate.signature });
-      }
+      if (closure.diagnostics.exhausted) return { kind: "budget-exhausted", reason: "FEEDER_BRANCH_BUDGET_EXHAUSTED" };
+      for (const candidate of closure.candidates) feederCandidates.push({ tasks: [...alternative.tasks, ...candidate.feeders], selectedOrder: candidate.selectedFeederOrder, signature: candidate.signature });
     }
     if (feederCandidates.length === 0) return failLeaf("FEEDER_CLOSURE_FAILED");
 
@@ -408,7 +389,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
   };
 
   let solution: LeafSolution | null = null;
-  let budgetExhausted = false;
+  let budgetExhausted: SearchStopReason | null = null;
   let structuralCombinationsEvaluated = 0;
   searchSpace: for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
@@ -426,6 +407,7 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
         if (position === mains.length) return tryCompleteMainLeaf(state);
         const slot = timeline?.slots[position] ?? mainStart + position * duration;
         const candidates: MainAlternative[] = [];
+        let feederPrefixBudgetExhausted = false;
         for (const task of mains) {
           if (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
@@ -462,16 +444,58 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             signature: tasks.filter(task => task.kind === "main").map(({ id }) => id).join("|"),
             timeline,
           };
+          const remainingMainTasks = mains.filter(main => !tasks.some(placed => placed.id === main.id));
+          const remainingPositions = Array.from({ length: mains.length - position - 1 }, (_, offset) => {
+            const residualPosition = position + offset + 1;
+            return { position: residualPosition, slot: timeline?.slots[residualPosition] ?? mainStart + residualPosition * duration };
+          });
+          const matching = assessMainResidualMatching(problem, remainingMainTasks, remainingPositions, pattern, timeline,
+            requiredBlocks, compositePosition, tasks, timeline ? [timeline.meal] : []);
+          counters.mainMatchingChecks += 1;
+          counters.mainMatchingEdges += matching.edgeEvaluationCount;
+          if (!matching.feasible) {
+            counters.mainMatchingPrunes += 1;
+            counters.mainStructuralDeadEnds += 1;
+            const depth = String(position + 1);
+            counters.mainMatchingFailuresByDepth[depth] = (counters.mainMatchingFailuresByDepth[depth] ?? 0) + 1;
+            for (const id of matching.unmatchedTaskIds) recordFailure(`MAIN_RESIDUAL_UNMATCHED:${id}`);
+            continue;
+          }
+          const remainingBranchAllowance = problem.budget.maxBranchExpansions - counters.branches;
+          const placedMainCount = tasks.filter(placed => placed.kind === "main").length;
+          const prefixClosure = assessPlacedMainFeederClosure(problem, tasks, timeline ? [timeline.meal] : [],
+            remainingBranchAllowance, placedMainCount === mains.length ? problem.budget.bestK : 1);
+          counters.feederPrefixChecks += 1;
+          counters.feederPrefixBranches += prefixClosure.consumedBranches;
+          counters.branches += prefixClosure.consumedBranches;
+          if (prefixClosure.exhausted) {
+            feederPrefixBudgetExhausted = true;
+            break;
+          }
+          if (!prefixClosure.feasible) {
+            counters.feederPrefixPrunes += 1;
+            counters.mainStructuralDeadEnds += 1;
+            const depth = String(position + 1);
+            counters.feederPrefixFailuresByDepth[depth] = (counters.feederPrefixFailuresByDepth[depth] ?? 0) + 1;
+            for (const id of prefixClosure.blockingFeederIds) counters.feederPrefixBlockingFeeders[id] = (counters.feederPrefixBlockingFeeders[id] ?? 0) + 1;
+            for (const id of prefixClosure.blockingMainTaskIds) counters.feederPrefixBlockingMains[id] = (counters.feederPrefixBlockingMains[id] ?? 0) + 1;
+            recordFailure("FEEDER_PREFIX_CLOSURE_FAILED");
+            continue;
+          }
+          candidate.prefixFeederClosure = prefixClosure;
           if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
           candidates.push(candidate);
           counters.alternativesGenerated += 1;
         }
+        if (feederPrefixBudgetExhausted) return { kind: "budget-exhausted", reason: "FEEDER_PREFIX_BRANCH_BUDGET_EXHAUSTED" };
         candidates.sort((a, b) => compareAlternatives(a, b, hasPreferredPresence));
         if (candidates.length > 1) counters.mainDecisionPoints += 1;
         if (candidates.length === 0) {
+          counters.mainStructuralDeadEnds += 1;
           recordFailure("MAIN_DEAD_END");
-          return { kind: "dead-end", reason: "MAIN_DEAD_END" };
+          return { kind: "dead-end", reason: "MAIN_DEAD_END", failedLeaf: false };
         }
+        let failedLeafInSubtree = false;
         for (let rank = 0; rank < candidates.length; rank += 1) {
           if (rank >= problem.budget.bestK) counters.mainDeferred += 1;
           const result = search(candidates[rank]!, position + 1);
@@ -480,9 +504,15 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
             return result;
           }
           if (result.kind === "budget-exhausted") return result;
-          if (rank + 1 < candidates.length) counters.backtracks += 1;
+          failedLeafInSubtree ||= result.failedLeaf;
+          if (result.failedLeaf && rank + 1 < candidates.length) {
+            if (counters.backtracks >= problem.budget.maxBacktracks) {
+              return { kind: "budget-exhausted", reason: "BACKTRACK_BUDGET_EXHAUSTED" };
+            }
+            counters.backtracks += 1;
+          }
         }
-        return { kind: "dead-end", reason: "MAIN_DEAD_END" };
+        return { kind: "dead-end", reason: "MAIN_DEAD_END", failedLeaf: failedLeafInSubtree };
       };
       const result = search({ tasks: [], score: 0, participantScore: 0, signature: "", timeline }, 0);
       if (result.kind === "solution") {
@@ -490,12 +520,12 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
         break searchSpace;
       }
       if (result.kind === "budget-exhausted") {
-        budgetExhausted = true;
+        budgetExhausted = result.reason === "BACKTRACK_BUDGET_EXHAUSTED" ? "BACKTRACK_BUDGET_EXHAUSTED" : "BRANCH_BUDGET_EXHAUSTED";
         break searchSpace;
       }
     }
   }
-  if (budgetExhausted) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
+  if (budgetExhausted) return failure(problem, begun, budgetExhausted, counters);
   if (!solution) return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 
   const alternative = solution.alternative;
@@ -613,6 +643,17 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       mainCompleteLeafAttemptCount: counters.mainLeafAttempts, mainFailedLeafCount: counters.mainFailedLeaves,
       mainDeferredCandidateExploredCount: counters.mainDeferred, mainDecisionPointCount: counters.mainDecisionPoints,
       mainFailureCountByReason: counters.mainFailures, mainFirstSolutionRankByDepth: counters.mainFirstRank,
+      mainResidualMatchingCheckCount: counters.mainMatchingChecks,
+      mainResidualMatchingPruneCount: counters.mainMatchingPrunes,
+      mainResidualMatchingEdgeEvaluationCount: counters.mainMatchingEdges,
+      mainResidualMatchingFailureCountByDepth: counters.mainMatchingFailuresByDepth,
+      mainStructuralDeadEndCount: counters.mainStructuralDeadEnds,
+      feederPrefixClosureCheckCount: counters.feederPrefixChecks,
+      feederPrefixClosurePruneCount: counters.feederPrefixPrunes,
+      feederPrefixClosureBranchesExplored: counters.feederPrefixBranches,
+      feederPrefixClosureFailureCountByDepth: counters.feederPrefixFailuresByDepth,
+      feederPrefixBlockingCountByFeederId: counters.feederPrefixBlockingFeeders,
+      feederPrefixBlockingCountByMainTaskId: counters.feederPrefixBlockingMains,
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
   return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
