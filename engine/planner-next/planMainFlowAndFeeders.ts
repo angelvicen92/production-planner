@@ -25,7 +25,6 @@ import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
 import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
-import { anchoredTaskIds } from "./anchoredAccompaniment";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -73,17 +72,11 @@ interface Counters {
   auxiliaryBranches: number;
   secondaryBranches: number;
   futureChecks: number; futureBranches: number; futurePruned: number; futureTopPruned: number; blockers: Record<string, number>; acceptedMinimum: number;
-  anchoredCandidates:number; anchoredRejected:number;
+  anchoredCandidates:number; anchoredRejected:number; mainMaximumDepth:number; mainLeafAttempts:number; mainFailedLeaves:number; mainDeferred:number; mainDecisionPoints:number; mainFailures:Record<string,number>; mainFirstRank:Record<string,number>;
 }
 
 function canonical<T extends { id: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.id.localeCompare(b.id));
-}
-function remainingAuxiliariesHaveWitness(problem:PlannerNextProblem,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]):boolean{
- const excluded=anchoredTaskIds(problem);return problem.tasks.filter(t=>(t.kind==="auxiliary"||t.kind==="technical")&&!excluded.has(t.id)&&!placed.some(x=>x.id===t.id)).every(task=>{for(let start=problem.day.start;start+task.duration<=problem.day.end;start+=5)if(canPlaceTask(problem,task,start,placed,meals))return true;return false;});
-}
-function anchoredFutureAlternatives(problem:PlannerNextProblem,placed:ScheduledTask[],meals:ScheduledSpaceMeal[]):number{
- if(!(problem.anchoredAccompaniments?.length))return 0;const excluded=anchoredTaskIds(problem);const withFeeders=tryGreedyFeederClosure(problem,placed,meals)??placed;let total=0;for(const task of problem.tasks.filter(t=>t.kind==="auxiliary"&&!excluded.has(t.id))){let own=0;for(let start=problem.day.start;start+task.duration<=problem.day.end;start+=5)if(canPlaceTask(problem,task,start,withFeeders,meals))own+=1;if(own===0)return -1_000_000;total+=own;}return total;
 }
 
 function generatePatterns(
@@ -245,6 +238,10 @@ function emptyMetrics(
     spaceMealCount:Array.isArray(problem.spaces)?problem.spaces.filter(x=>x?.mealPolicy!==undefined).length:0,spaceMealPlannedCount:0,spaceMealCandidateCountWhenSelectedBySpaceId:{},spaceMealStartBySpaceId:{},spaceMealEndBySpaceId:{},spaceMealMinutesBySpaceId:{},spaceMealBranchesExplored:0,
     anchoredAccompanimentCount:Array.isArray(problem.anchoredAccompaniments)?problem.anchoredAccompaniments.length:0,anchoredAccompanimentPlannedCount:0,anchoredAccompanimentScheduledSegmentCount:0,anchoredAccompanimentCandidatePositionsEvaluated:0,anchoredAccompanimentRejectedPositionCount:0,anchoredAccompanimentAnchorTaskIdById:{},anchoredAccompanimentBeforeTaskIdsById:{},anchoredAccompanimentAfterTaskIdsById:{},anchoredAccompanimentOperationStartById:{},anchoredAccompanimentAnchorStartById:{},anchoredAccompanimentAnchorEndById:{},anchoredAccompanimentOperationEndById:{},anchoredAccompanimentTotalDurationById:{},anchoredAccompanimentAdjacencySatisfiedById:{},anchoredAccompanimentParticipantSatisfiedById:{},anchoredAccompanimentSpacesSatisfiedById:{},anchoredAccompanimentResourcesSatisfiedById:{},anchoredAccompanimentTaskWindowsSatisfiedById:{},anchoredAccompanimentCompleteById:{},anchoredAccompanimentRejectedReasonCountByCode:{},
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
+    mainBacktrackCount: counters?.backtracks ?? 0, mainMaximumSearchDepth: counters?.mainMaximumDepth ?? 0,
+    mainCompleteLeafAttemptCount: counters?.mainLeafAttempts ?? 0, mainFailedLeafCount: counters?.mainFailedLeaves ?? 0,
+    mainDeferredCandidateExploredCount: counters?.mainDeferred ?? 0, mainDecisionPointCount: counters?.mainDecisionPoints ?? 0,
+    mainFailureCountByReason: counters?.mainFailures ?? {}, mainFirstSolutionRankByDepth: counters?.mainFirstRank ?? {}, hiddenFutureProbeCount: 0,
     reasonCodes: reasons,
   };
 }
@@ -302,13 +299,14 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     patternsGenerated: generatedPatterns.patterns.length,
     patternsEvaluated: 0,
     auxiliaryBranches: 0,
-    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredRejected:0,
+    secondaryBranches: 0, futureChecks: 0, futureBranches: 0, futurePruned: 0, futureTopPruned: 0, blockers: {}, acceptedMinimum: 0, anchoredCandidates:0, anchoredRejected:0, mainMaximumDepth:0, mainLeafAttempts:0, mainFailedLeaves:0, mainDeferred:0, mainDecisionPoints:0, mainFailures:{}, mainFirstRank:{},
   };
   if (generatedPatterns.exhausted) {
     return failure(problem, begun, "PATTERN_BUDGET_EXHAUSTED", counters);
   }
 
   const alternatives: MainAlternative[] = [];
+  let branchBudgetExhausted = false;
   let structuralCombinationsEvaluated = 0;
   for (const pattern of generatedPatterns.patterns) {
     counters.patternsEvaluated += 1;
@@ -321,79 +319,59 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       ? candidateCuts(pattern).map(cut => buildTimeline(problem, pattern, duration, cut)) : [undefined];
     timelineCandidateCount += timelines.length;
     for (const timeline of timelines) for (const compositePosition of compositePositions) {
-    let beam: MainAlternative[] = [{ tasks: [], score: 0, participantScore: 0, signature: "", timeline }];
-    for (let position = 0; position < mains.length && beam.length > 0; position += 1) {
-      const next: MainAlternative[] = [];
-      const slot = timeline?.slots[position] ?? mainStart + position * duration;
-      for (const state of beam) {
-        for (const task of mains) {
-          if (requiredBlocks.length > 0 && (task.blockKey !== pattern[position]
-            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition))) continue;
-          if (counters.branches >= problem.budget.maxBranchExpansions) {
-            return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
-          }
-          counters.branches += 1;
-          if (task.blockKey !== pattern[position]
-            || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
-            || state.tasks.some(({ id }) => id === task.id)) continue;
-          const operation=materializeAnchoredOperation(problem,task,slot,state.tasks,timeline?[timeline.meal]:[]);
-          if(anchoredAccompanimentIndex(problem).has(task.id)){counters.anchoredCandidates+=1;if(!operation)counters.anchoredRejected+=1;}
-          if (!operation) continue;
-          const provisional=[...state.tasks,...operation.tasks];
-          const feeder = problem.tasks.find(
-            (candidate) => candidate.kind === "vocal" && candidate.participantId === task.participantId,
-          );
-          const participant = problem.participants.find(({ id }) => id === task.participantId);
-          if (!feeder || !participant) continue;
-          const deadline = operation.start - Math.max(
-            problem.participantTransitionMinutes,
-            problem.resourceTransitionMinutes,
-          );
-          if (!participant.availability.some((window) => window.start + feeder.duration <= deadline)) continue;
-          const loss = participant.availability
-            .filter((window) => window.start <= slot && slot + duration <= window.end)
-            .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
-          const originalIndex = mains.findIndex(({ id }) => id === task.id);
-          const scheduledTask = operation.anchor;
-          const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
-            const resource = problem.resources.find(({ id }) => id === resourceId);
-            return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
-              && resource.presenceConcentrationPolicy !== "REQUIRED" ? resourcePresenceIncrement(resourceId, state.tasks, scheduledTask)
-              * presencePreferenceWeight(resource.presencePreference) : 0);
-          }, 0);
-          const score = state.score + loss + Math.abs(originalIndex - position) + resourcePenalty-anchoredFutureAlternatives(problem,provisional,timeline?[timeline.meal]:[]);
-          const tasks = provisional;
-          if(position===mains.length-1&&!remainingAuxiliariesHaveWitness(problem,tasks,timeline?[timeline.meal]:[]))continue;
-          const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.filter(t=>t.kind==="main").map(({ id }) => id).join("|"), timeline };
-          if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
-          if (hasPreferredPresence) {
-            candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
-          }
-          if (hasPreferredPresence && position === mains.length - 2) {
-            const finalSlot = timeline?.slots[position + 1] ?? mainStart + (position + 1) * duration;
-            const completions = mains.filter((remaining) => remaining.blockKey === pattern[position + 1]
-              && !tasks.some(({ id }) => id === remaining.id)
-              && materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[])!==null)
-              .map((remaining) => [...tasks, ...materializeAnchoredOperation(problem,remaining,finalSlot,tasks,timeline?[timeline.meal]:[])!.tasks]);
-            const closable = completions.filter((completion) => tryGreedyFeederClosure(problem, completion, timeline ? [timeline.meal] : []) !== null);
-            if (closable.length > 0) {
-              candidate.feederClosable = true;
-              candidate.preferredPresenceTuple = closable.map((completion) => preferredPresenceTuple(problem, { ...candidate, tasks: completion }))
-                .sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2])[0];
-            } else candidate.feederClosable = false;
-          }
-          if (hasPreferredPresence && position === mains.length - 1) {
-            candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
-          }
-          next.push(candidate);
-          counters.alternativesGenerated += 1;
-        }
+    const search = (state: MainAlternative, position: number): void => {
+      counters.mainMaximumDepth = Math.max(counters.mainMaximumDepth, position);
+      if (position === mains.length) {
+        counters.mainLeafAttempts += 1;
+        alternatives.push(state);
+        return;
       }
-      beam = next
-        .sort((a, b) => compareAlternatives(a, b, hasPreferredPresence))
-        .slice(0, problem.budget.bestK);
-    }
-    alternatives.push(...beam);
+      const slot = timeline?.slots[position] ?? mainStart + position * duration;
+      const candidates: MainAlternative[] = [];
+      for (const task of mains) {
+        if (task.blockKey !== pattern[position]
+          || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, compositePosition)
+          || state.tasks.some(({ id }) => id === task.id)) continue;
+        if (counters.branches >= problem.budget.maxBranchExpansions) { branchBudgetExhausted = true; return; }
+        counters.branches += 1;
+        const operation = materializeAnchoredOperation(problem, task, slot, state.tasks, timeline ? [timeline.meal] : []);
+        if (anchoredAccompanimentIndex(problem).has(task.id)) {
+          counters.anchoredCandidates += 1;
+          if (!operation) counters.anchoredRejected += 1;
+        }
+        if (!operation) continue;
+        const feeder = problem.tasks.find(candidate => candidate.kind === "vocal" && candidate.participantId === task.participantId);
+        const participant = problem.participants.find(({ id }) => id === task.participantId);
+        if (!feeder || !participant) continue;
+        const deadline = operation.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
+        if (!participant.availability.some(window => window.start + feeder.duration <= deadline)) continue;
+        const loss = participant.availability.filter(window => window.start <= slot && slot + duration <= window.end)
+          .reduce((total, window) => total + Math.max(0, window.end - slot), 0);
+        const originalIndex = mains.findIndex(({ id }) => id === task.id);
+        const resourcePenalty = (task.requiredResourceIds ?? []).reduce((sum, resourceId) => {
+          const resource = problem.resources.find(({ id }) => id === resourceId);
+          return sum + (resource && resource.presenceConcentrationPolicy !== "PREFERRED"
+            && resource.presenceConcentrationPolicy !== "REQUIRED"
+            ? resourcePresenceIncrement(resourceId, state.tasks, operation.anchor) * presencePreferenceWeight(resource.presencePreference) : 0);
+        }, 0);
+        const tasks = [...state.tasks, ...operation.tasks];
+        const candidate: MainAlternative = { tasks, score: state.score + loss + Math.abs(originalIndex - position) + resourcePenalty,
+          participantScore: (state.participantScore ?? 0) + loss,
+          signature: tasks.filter(t => t.kind === "main").map(({ id }) => id).join("|"), timeline };
+        if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
+        candidates.push(candidate);
+        counters.alternativesGenerated += 1;
+      }
+      candidates.sort((a, b) => compareAlternatives(a, b, hasPreferredPresence));
+      if (candidates.length > 1) counters.mainDecisionPoints += 1;
+      for (let rank = 0; rank < candidates.length; rank += 1) {
+        if (counters.branches >= problem.budget.maxBranchExpansions) { branchBudgetExhausted = true; return; }
+        if (rank >= problem.budget.bestK) counters.mainDeferred += 1;
+        search(candidates[rank]!, position + 1);
+      }
+    };
+    search({ tasks: [], score: 0, participantScore: 0, signature: "", timeline }, 0);
+    if (branchBudgetExhausted) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
     }
   }
   let feederFallbackUsed=false,feederBranches=0,feederCompleteCount=0,feederMaximumStates=0;
@@ -417,8 +395,8 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     for(const candidate of closure.candidates)feederClosedAlternatives.push({...alternative,feeders:candidate.feeders,feederScore:candidate.cost,feederSelectedOrder:candidate.selectedFeederOrder,signature:`${alternative.signature}|${candidate.signature}`});
   }
   const retained = withMeal
-    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence)).slice(0,problem.budget.bestK)])).values()].flat()
-    : alternatives.sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence)).slice(0,problem.budget.bestK);
+    ? [...new Map(candidateCuts(generatedPatterns.patterns[0] ?? []).map(cut => [cut, feederClosedAlternatives.filter(a=>a.timeline?.splitIndex===cut).sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence))])).values()].flat()
+    : alternatives.sort((a,b)=>compareAlternatives(a,b,hasPreferredPresence));
   counters.alternativesRetained = retained.length;
 
   for (let index = 0; index < retained.length; index += 1) {
@@ -437,11 +415,12 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
     const meals=auxiliary?.meals??[];
     const validation = all ? validatePlan(problem, all, preparations,meals) : null;
     if (!all || !validation?.hardValid) {
-      const hasNext = index + 1 < retained.length;
-      if (!hasNext) break;
-      if (counters.backtracks >= problem.budget.maxBacktracks) {
-        return failure(problem, begun, "BACKTRACK_BUDGET_EXHAUSTED", counters);
-      }
+      counters.mainFailedLeaves += 1;
+      counters.mainFailures[core ? "AUXILIARY_OR_FINAL_VALIDATION_FAILED" : "FEEDER_CLOSURE_FAILED"] =
+        (counters.mainFailures[core ? "AUXILIARY_OR_FINAL_VALIDATION_FAILED" : "FEEDER_CLOSURE_FAILED"] ?? 0) + 1;
+      if (index + 1 >= retained.length) break;
+      if (counters.branches >= problem.budget.maxBranchExpansions) return failure(problem, begun, "BRANCH_BUDGET_EXHAUSTED", counters);
+      counters.branches += 1;
       counters.backtracks += 1;
       continue;
     }
@@ -551,6 +530,10 @@ export function planMainFlowAndFeeders(problem: PlannerNextProblem): PlanResult 
       technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
       spaceMealCount:problem.spaces.filter(s=>s.mealPolicy!==undefined).length,spaceMealPlannedCount:meals.length,spaceMealCandidateCountWhenSelectedBySpaceId:auxiliary?.mealCandidateCounts??{},spaceMealStartBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.start])),spaceMealEndBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.end])),spaceMealMinutesBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.duration])),spaceMealBranchesExplored:auxiliary?.spaceMealBranches??0,
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
+      mainBacktrackCount: counters.backtracks, mainMaximumSearchDepth: counters.mainMaximumDepth,
+      mainCompleteLeafAttemptCount: counters.mainLeafAttempts, mainFailedLeafCount: counters.mainFailedLeaves,
+      mainDeferredCandidateExploredCount: counters.mainDeferred, mainDecisionPointCount: counters.mainDecisionPoints,
+      mainFailureCountByReason: counters.mainFailures, mainFirstSolutionRankByDepth: counters.mainFirstRank, hiddenFutureProbeCount: 0,
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
     return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };

@@ -174,6 +174,15 @@ export interface PlanMetrics extends ValidationSummary {
   patternsGenerated: number;
   patternsEvaluated: number;
   branchBudgetConsumed: number;
+  mainBacktrackCount: number;
+  mainMaximumSearchDepth: number;
+  mainCompleteLeafAttemptCount: number;
+  mainFailedLeafCount: number;
+  mainDeferredCandidateExploredCount: number;
+  mainDecisionPointCount: number;
+  mainFailureCountByReason: Record<string, number>;
+  mainFirstSolutionRankByDepth: Record<string, number>;
+  hiddenFutureProbeCount: number;
   feederClosureFallbackUsed: boolean;
   feederClosureBranchesExplored: number;
   feederClosureCompleteCandidateCount: number;
