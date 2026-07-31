@@ -83,5 +83,5 @@ export function constructSaturatedResourceWindowBlockCandidates(problem: Planner
   };
   const exhausted = visit(block.tasks, block.window.start, []);
   candidates.sort((a, b) => a.order.join("|").localeCompare(b.order.join("|")));
-  return { candidates: candidates.slice(0, problem.budget.bestK), branchesExplored, exhausted };
+  return { candidates, branchesExplored, exhausted };
 }

@@ -2377,11 +2377,11 @@ The five Reality participants receive one real neutral availability window endin
 The standalone projection supplies auxiliary presence policy `OFF` explicitly, without planner fallback.
 Planner Next generically derives exact-fit shared-resource windows as bounded atomic work items.
 Block construction propagates scheduled space meals through the canonical hard-placement predicate.
-Block candidates reuse the same incremental participant/resource presence scoring as individual auxiliaries.
+Block candidates are scored incrementally with the ordinary auxiliary rules before `bestK` pruning.
 The combined Reality unit is freshly constructed without gaps from 16:00 to 18:00.
 The standalone run completes all 47 tasks, nine operations, and 240 productive minutes hard-validly.
-The v3 benchmark builds fresh Evidence from code, configuration, the protected substrate, and executions.
-Real artifact-absence, human-reference, validation-signal, and acceptance poison controls replace declared Evidence.
+The v3 benchmark validates a protected historical witness under neutral configuration without using it as a seed.
+Real input mutations rebuild checks and acceptance alongside artifact, human-reference, and validator poison controls.
 The 53-task accompaniment projection remains atomically `ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
 The sole remaining gap is `GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED`.
 The sole root artifact is `planner-next-focal-a2-itinerant-spec08-foundation-v3.json`.

@@ -12077,7 +12077,7 @@
           "plannedTaskCount": 38,
           "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
           "branches": 64558,
-          "runtimeMs": 149.26554499999997,
+          "runtimeMs": 141.51482199999987,
           "searchStopReason": "SOLUTION_FOUND",
           "reasonCodes": [],
           "tasks": [
@@ -12317,7 +12317,7 @@
           "plannedTaskCount": 38,
           "planFingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
           "branches": 15599,
-          "runtimeMs": 235.72245499999985,
+          "runtimeMs": 269.8574779999999,
           "searchStopReason": "SOLUTION_FOUND",
           "reasonCodes": [],
           "tasks": [
@@ -12557,7 +12557,7 @@
           "plannedTaskCount": 0,
           "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "branches": 1909,
-          "runtimeMs": 33.373858000000155,
+          "runtimeMs": 26.6241950000001,
           "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
           "reasonCodes": [
             "NO_COMPLETE_HARD_VALID_PLAN"
@@ -12571,7 +12571,7 @@
         "plannedTaskCount": 47,
         "planFingerprint": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
         "branches": 28875,
-        "runtimeMs": 502.8766649999999,
+        "runtimeMs": 437.849352,
         "searchStopReason": "SOLUTION_FOUND",
         "reasonCodes": [],
         "tasks": [
@@ -13040,6 +13040,13 @@
         "inputUnchanged": true
       },
       "oracleValidOrderCount": 36,
+      "historicalNeutralWitness": {
+        "sourceScenarioId": "focalA2Spec08FoundationConsolidation",
+        "taskCount": 47,
+        "hardValid": true,
+        "reasonCodes": [],
+        "witnessDigest": "ad30794b755bce107e914c5e9a418137ada561b12a3351eb4199ceb680f0e61d"
+      },
       "saturatedBlock": {
         "count": 1,
         "plannedCount": 1,
@@ -14470,10 +14477,20 @@
       "details": "Unit C continuously occupies its configured window."
     },
     "independentFeasibilityWitnessAccepted": {
-      "expected": true,
-      "actual": true,
+      "expected": [
+        true,
+        true,
+        47,
+        "focalA2Spec08FoundationConsolidation"
+      ],
+      "actual": [
+        true,
+        true,
+        47,
+        "focalA2Spec08FoundationConsolidation"
+      ],
       "passed": true,
-      "details": "Independent canPlaceTask enumeration and canonical validation establish feasibility."
+      "details": "An independent oracle and the protected historical schedule both validate under neutral configuration; neither is passed to the planner."
     },
     "combinedProjectionAccepted": {
       "expected": [
@@ -14583,7 +14600,7 @@
         "finalRepositoryTestsAccepted"
       ],
       "passed": true,
-      "details": "Every required acceptance input is independently poisoned and must close acceptance."
+      "details": "Each control mutates a real benchmark input, rebuilds checks, and recomputes acceptance."
     }
   },
   "requiredPositiveChecks": [
