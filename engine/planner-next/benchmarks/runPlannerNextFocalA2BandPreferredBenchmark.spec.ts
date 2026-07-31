@@ -4,7 +4,8 @@ import test from "node:test";
 import { canonical } from "./runPlannerNextFocalA2BandPreferredBenchmark";
 import { inspectProtectedHistoricalSubstrate } from "./focal-a2/focalA2ProtectedHistoricalSubstrate";
 
-const current = JSON.parse(readFileSync("planner-next-focal-a2-itinerant-spec08-foundation-v2.json", "utf8"));
+const fixture = JSON.parse(readFileSync("engine/planner-next/benchmarks/focal-a2/focalA2Spec08V3ProtectedSubstrate.json", "utf8"));
+const current = { scenarios: fixture.scenarios, historicalSubstrate: { historicalEvidence: fixture.historicalEvidence } };
 const manifest = JSON.parse(readFileSync(
   "engine/planner-next/benchmarks/focal-a2/focalA2BandPreferredV2HistoricalManifest.json",
   "utf8",

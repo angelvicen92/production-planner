@@ -1,6 +1,5 @@
 import type { ParticipantTask, PlannerNextProblem, Window } from "../../contracts";
 import { projectFocalA2BandProblem } from "./focalA2BandReference";
-import { focalA2HumanItinerantReference } from "./focalA2HumanItinerantReference";
 import { focalA2RealityAuxiliaryPolicy, focalA2RealityParticipantAvailabilityOverrides } from "./focalA2RealityOperationalConfiguration";
 
 export interface ItinerantUnitProfile {
@@ -51,15 +50,14 @@ export const itinerantUnitProfiles: ItinerantUnitProfile[] = [
 
 const standalone = (
   id: string, participantId: string, unitId: string, duration: number,
-  _start: number, spaceId: string, location: string, annotations: string[] = [],
+  spaceId: string, location: string, annotations: string[] = [],
 ): StandaloneItinerantOperationProfile => ({
   id, type: "STANDALONE", unitId, participantId, duration, spaceId, location,
   annotations,
 });
 
 const wrap = (
-  id: string, participantId: string, unitId: string, _start: number,
-  _spaceId: string, annotations: string[] = [],
+  id: string, participantId: string, unitId: string, annotations: string[] = [],
 ): WrappedItinerantOperationProfile => ({
   id, type: "ANCHORED_ACCOMPANIMENT", unitId, participantId,
   anchorTaskId: `main-${participantId}`,
@@ -73,18 +71,18 @@ const B = "reality-unit-morning-b";
 const C = "reality-unit-afternoon-combined";
 
 export const itinerantOperationProfiles: ItinerantOperationProfile[] = [
-  wrap("reality-operation-01", "cristina-zuloaga", A, 660, "reality-location-stage", ["CON MADRE"]),
-  standalone("reality-operation-02", "luis-belda", A, 30, 720, "reality-location-influencer-corner", "CORNER INFLUENCER", ["TROMBÓN"]),
-  wrap("reality-operation-03", "jose-javier-cuenca", A, 765, "reality-location-stage"),
-  standalone("reality-operation-04", "pere-portero", A, 30, 810, "reality-location-music-corner", "CORNER MUSIC", ["INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"]),
-  standalone("reality-operation-05", "gisela-montserrat", B, 30, 675, "reality-location-manzano", "MANZANO"),
-  wrap("reality-operation-06", "julio-gomez", B, 720, "reality-location-stage", ["GUITARRA", "CON PADRE"]),
-  standalone("reality-operation-07", "nela-garcia", B, 30, 780, "reality-location-hall-p14", "HALL P.14", ["MAQUILLAJE, ANILLOS, RESPIRADOR, BRILLANTES Y PEINE", "ESPEJO GRANDE CON LUCES"]),
-  standalone("reality-operation-08", "lina-isabel-garcia-salcedo", C, 30, 960, "reality-location-hall-p14", "HALL P.14", ["TABLET PARA VIDEOLLAMADA"]),
-  standalone("reality-operation-09", "marta-fonrali", C, 30, 990, "reality-location-control", "CONTROL"),
-  standalone("reality-operation-10", "linet-varela", C, 30, 1020, "reality-location-buggy", "BUGGY", ["COLLAR AMULETO", "TABLET CON MENSAJE"]),
-  standalone("reality-operation-11", "carmen-maria-saborido", C, 15, 1050, "reality-location-red-carpet", "ALFOMBRA ROJA", ["A. ROJA EVA"]),
-  standalone("reality-operation-12", "eva-martin-fernandez", C, 15, 1065, "reality-location-red-carpet", "ALFOMBRA ROJA", ["A. ROJA EVA"]),
+  wrap("reality-operation-01", "cristina-zuloaga", A, ["CON MADRE"]),
+  standalone("reality-operation-02", "luis-belda", A, 30, "reality-location-influencer-corner", "CORNER INFLUENCER", ["TROMBÓN"]),
+  wrap("reality-operation-03", "jose-javier-cuenca", A),
+  standalone("reality-operation-04", "pere-portero", A, 30, "reality-location-music-corner", "CORNER MUSIC", ["INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"]),
+  standalone("reality-operation-05", "gisela-montserrat", B, 30, "reality-location-manzano", "MANZANO"),
+  wrap("reality-operation-06", "julio-gomez", B, ["GUITARRA", "CON PADRE"]),
+  standalone("reality-operation-07", "nela-garcia", B, 30, "reality-location-hall-p14", "HALL P.14", ["MAQUILLAJE, ANILLOS, RESPIRADOR, BRILLANTES Y PEINE", "ESPEJO GRANDE CON LUCES"]),
+  standalone("reality-operation-08", "lina-isabel-garcia-salcedo", C, 30, "reality-location-hall-p14", "HALL P.14", ["TABLET PARA VIDEOLLAMADA"]),
+  standalone("reality-operation-09", "marta-fonrali", C, 30, "reality-location-control", "CONTROL"),
+  standalone("reality-operation-10", "linet-varela", C, 30, "reality-location-buggy", "BUGGY", ["COLLAR AMULETO", "TABLET CON MENSAJE"]),
+  standalone("reality-operation-11", "carmen-maria-saborido", C, 15, "reality-location-red-carpet", "ALFOMBRA ROJA", ["A. ROJA EVA"]),
+  standalone("reality-operation-12", "eva-martin-fernandez", C, 15, "reality-location-red-carpet", "ALFOMBRA ROJA", ["A. ROJA EVA"]),
 ];
 
 export const focalA2RealityTasks = itinerantOperationProfiles;
@@ -133,10 +131,9 @@ export function projectStandaloneFocalA2RealityProblem(
     resources: [...problem.resources, ...memberIds.map((id) => ({
       id, availability: realityResourceAvailability[id]!.map((window) => ({ ...window })), presencePreference: "OFF" as const, transitionMinutes: 0,
     }))],
-    participants: problem.participants.map((participant) => ({
-      ...participant,
-      availability: participant.availability.map(window => ({ ...window, end: Math.max(window.end, ({"linet-varela":1050,"carmen-maria-saborido":1065,"eva-martin-fernandez":1080} as Record<string,number>)[participant.id] ?? window.end) })),
-    })),
+    participants: problem.participants.map((participant) => Object.prototype.hasOwnProperty.call(focalA2RealityParticipantAvailabilityOverrides,participant.id)
+      ? { ...participant, availability: focalA2RealityParticipantAvailabilityOverrides[participant.id]!.map((window) => ({ ...window })) }
+      : { ...participant, availability: participant.availability.map((window) => ({ ...window })) }),
     tasks: [...problem.tasks, ...selectedStandalone.map((operation): ParticipantTask => ({
       id: operation.id, kind: "auxiliary", participantId: operation.participantId,
       duration: operation.duration, spaceId: operation.spaceId, dependencies: [],
@@ -147,6 +144,7 @@ export function projectStandaloneFocalA2RealityProblem(
 }
 
 export const projectFocalA2RealityProblem = projectStandaloneFocalA2RealityProblem;
+export const projectNeutralStandaloneFocalA2RealityProblem = projectStandaloneFocalA2RealityProblem;
 
 export function projectCombinedFocalA2ItinerantProblem(operationalCorpus:ItinerantOperationProfile[]=itinerantOperationProfiles):PlannerNextProblem{
   const problem=projectStandaloneFocalA2RealityProblem(operationalCorpus);
@@ -161,6 +159,3 @@ export function projectCombinedFocalA2ItinerantProblem(operationalCorpus:Itinera
   problem.anchoredAccompaniments=wraps.map(operation=>({id:operation.id,anchorTaskId:operation.anchorTaskId,beforeTaskIds:[`${operation.id}-before`],afterTaskIds:[`${operation.id}-after`],adjacency:"REQUIRED",internalTransition:"INCLUDED",resourceContinuity:"REQUIRED"}));
   return problem;
 }
-
-// Exported only for external comparison/evidence; projection functions never consult it.
-export { focalA2HumanItinerantReference };

@@ -1,9 +1,11 @@
 {
-  "version": "planner-next-focal-a2-itinerant-spec08-foundation-v2",
-  "status": "FOCAL_A2_SPEC08_FOUNDATION_CONSOLIDATED",
-  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v1",
-  "sourceArtifactSha256": "ae30d0c7fcde3e13c4ab64a318b4d32f6c2b439fc7118d07fdc943065c242d6e",
-  "scenarioCount": 31,
+  "version": "planner-next-focal-a2-itinerant-spec08-foundation-v3",
+  "status": "FOCAL_A2_SPEC08_NEUTRAL_STANDALONE_ACCEPTED",
+  "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v2",
+  "sourceArtifactSha256": "8e7b46925c1469b538e14e928c3e83ca871e57e9089b5c4eb8956ea53a182faa",
+  "protectedSubstrateVersion": "focal-a2-spec08-v3-protected-substrate-v1",
+  "protectedSubstrateSha256": "c3ccc1fd8819bbbe641367d36fcc7acf223279829114bb3eb4c03f9b3af080a3",
+  "scenarioCount": 32,
   "scenarios": {
     "baseline": {
       "bestK": 5,
@@ -8627,22 +8629,22 @@
       "annotations": [
         {
           "participantId": "moises-salazar-ramirez",
-          "displayName": "Mois\u00e9s Salazar Ram\u00edrez",
+          "displayName": "Moisés Salazar Ramírez",
           "instrumentAnnotation": "SOLO A PIANO"
         },
         {
           "participantId": "angel-gonzalez",
-          "displayName": "\u00c1ngel Gonzalez",
+          "displayName": "Ángel Gonzalez",
           "instrumentAnnotation": "GUITARRA"
         },
         {
           "participantId": "julio-gomez",
-          "displayName": "Julio G\u00f3mez",
+          "displayName": "Julio Gómez",
           "instrumentAnnotation": "GUITARRA"
         },
         {
           "participantId": "lina-isabel-garcia-salcedo",
-          "displayName": "Lina Isabel Garc\u00eda-Salcedo",
+          "displayName": "Lina Isabel García-Salcedo",
           "instrumentAnnotation": "GUITARRISTA FLAMENCO"
         },
         {
@@ -8781,7 +8783,7 @@
             "end": 705
           },
           "spaceId": "reality-location-stage",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "CON MADRE"
           ],
@@ -8806,7 +8808,7 @@
           "spaceId": "reality-location-influencer-corner",
           "location": "CORNER INFLUENCER",
           "annotations": [
-            "TROMB\u00d3N"
+            "TROMBÓN"
           ],
           "requiredResourceIds": [
             "reality-unit-morning-a",
@@ -8819,7 +8821,7 @@
         {
           "id": "reality-task-03",
           "participantId": "jose-javier-cuenca",
-          "humanName": "Jos\u00e9 Javier Cuenca",
+          "humanName": "José Javier Cuenca",
           "unit": "MORNING_A",
           "duration": 45,
           "humanReference": {
@@ -8827,7 +8829,7 @@
             "end": 810
           },
           "spaceId": "reality-location-stage",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [],
           "requiredResourceIds": [
             "reality-unit-morning-a",
@@ -8850,7 +8852,7 @@
           "spaceId": "reality-location-music-corner",
           "location": "CORNER MUSIC",
           "annotations": [
-            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJ\u00d3N"
+            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"
           ],
           "requiredResourceIds": [
             "reality-unit-morning-a",
@@ -8884,7 +8886,7 @@
         {
           "id": "reality-task-06",
           "participantId": "julio-gomez",
-          "humanName": "Julio G\u00f3mez",
+          "humanName": "Julio Gómez",
           "unit": "MORNING_B",
           "duration": 45,
           "humanReference": {
@@ -8892,7 +8894,7 @@
             "end": 765
           },
           "spaceId": "reality-location-stage",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "GUITARRA",
             "CON PADRE"
@@ -8908,7 +8910,7 @@
         {
           "id": "reality-task-07",
           "participantId": "nela-garcia",
-          "humanName": "Nela Garc\u00eda",
+          "humanName": "Nela García",
           "unit": "MORNING_B",
           "duration": 30,
           "humanReference": {
@@ -8932,7 +8934,7 @@
         {
           "id": "reality-task-08",
           "participantId": "lina-isabel-garcia-salcedo",
-          "humanName": "Lina Isabel Garc\u00eda-Salcedo",
+          "humanName": "Lina Isabel García-Salcedo",
           "unit": "AFTERNOON_COMBINED",
           "duration": 30,
           "humanReference": {
@@ -9003,7 +9005,7 @@
         {
           "id": "reality-task-11",
           "participantId": "carmen-maria-saborido",
-          "humanName": "Carmen Mar\u00eda Saborido",
+          "humanName": "Carmen María Saborido",
           "unit": "AFTERNOON_COMBINED",
           "duration": 15,
           "humanReference": {
@@ -9026,7 +9028,7 @@
         {
           "id": "reality-task-12",
           "participantId": "eva-martin-fernandez",
-          "humanName": "Eva Mart\u00edn Fern\u00e1ndez",
+          "humanName": "Eva Martín Fernández",
           "unit": "AFTERNOON_COMBINED",
           "duration": 15,
           "humanReference": {
@@ -9066,11 +9068,11 @@
           "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
         },
         {
-          "operation": "grabaci\u00f3n sin audio de Adri\u00e1n",
+          "operation": "grabación sin audio de Adrián",
           "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
         },
         {
-          "operation": "Beauties de Alfombra vac\u00eda",
+          "operation": "Beauties de Alfombra vacía",
           "reason": "OUT_OF_SCOPE_DOWNSTREAM_TOTALS_AND_TECHNICAL_HANDOFF"
         }
       ],
@@ -9403,8 +9405,8 @@
             "reality-sound-1"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n A",
-            "Producci\u00f3n A"
+            "Redacción A",
+            "Producción A"
           ]
         },
         {
@@ -9414,8 +9416,8 @@
             "reality-sound-2"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n B",
-            "Producci\u00f3n B"
+            "Redacción B",
+            "Producción B"
           ]
         },
         {
@@ -9426,8 +9428,8 @@
             "reality-sound-1"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n A",
-            "Producci\u00f3n A"
+            "Redacción A",
+            "Producción A"
           ]
         }
       ],
@@ -9450,7 +9452,7 @@
             "spaceId": "reality-location-stage"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "CON MADRE"
           ],
@@ -9468,7 +9470,7 @@
           "spaceId": "reality-location-influencer-corner",
           "location": "CORNER INFLUENCER",
           "annotations": [
-            "TROMB\u00d3N"
+            "TROMBÓN"
           ],
           "humanReference": {
             "start": 720,
@@ -9493,7 +9495,7 @@
             "spaceId": "reality-location-stage"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [],
           "humanReference": {
             "start": 765,
@@ -9509,7 +9511,7 @@
           "spaceId": "reality-location-music-corner",
           "location": "CORNER MUSIC",
           "annotations": [
-            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJ\u00d3N"
+            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"
           ],
           "humanReference": {
             "start": 810,
@@ -9548,7 +9550,7 @@
             "spaceId": "reality-location-stage"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "GUITARRA",
             "CON PADRE"
@@ -9947,8 +9949,8 @@
             "reality-sound-1"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n A",
-            "Producci\u00f3n A"
+            "Redacción A",
+            "Producción A"
           ]
         },
         {
@@ -9958,8 +9960,8 @@
             "reality-sound-2"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n B",
-            "Producci\u00f3n B"
+            "Redacción B",
+            "Producción B"
           ]
         },
         {
@@ -9970,8 +9972,8 @@
             "reality-sound-1"
           ],
           "informationalAssignments": [
-            "Redacci\u00f3n A",
-            "Producci\u00f3n A"
+            "Redacción A",
+            "Producción A"
           ]
         }
       ],
@@ -9994,7 +9996,7 @@
             "spaceSource": "ANCHOR_SPACE"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "CON MADRE"
           ],
@@ -10012,7 +10014,7 @@
           "spaceId": "reality-location-influencer-corner",
           "location": "CORNER INFLUENCER",
           "annotations": [
-            "TROMB\u00d3N"
+            "TROMBÓN"
           ],
           "humanReference": {
             "start": 720,
@@ -10037,7 +10039,7 @@
             "spaceSource": "ANCHOR_SPACE"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [],
           "humanReference": {
             "start": 765,
@@ -10053,7 +10055,7 @@
           "spaceId": "reality-location-music-corner",
           "location": "CORNER MUSIC",
           "annotations": [
-            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJ\u00d3N"
+            "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJÓN"
           ],
           "humanReference": {
             "start": 810,
@@ -10092,7 +10094,7 @@
             "spaceSource": "ANCHOR_SPACE"
           },
           "adjacency": "REQUIRED",
-          "location": "PLAT\u00d3",
+          "location": "PLATÓ",
           "annotations": [
             "GUITARRA",
             "CON PADRE"
@@ -12066,6 +12068,1002 @@
         "inherited": false,
         "fallbackUsed": false
       }
+    },
+    "focalA2Spec08NeutralStandaloneBlockRepair": {
+      "modes": {
+        "CURRENT_OFF": {
+          "complete": true,
+          "hardValid": true,
+          "plannedTaskCount": 38,
+          "planFingerprint": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
+          "branches": 64558,
+          "runtimeMs": 141.51482199999987,
+          "searchStopReason": "SOLUTION_FOUND",
+          "reasonCodes": [],
+          "tasks": [
+            {
+              "id": "vocal-carmen-maria-saborido",
+              "start": 585,
+              "end": 600,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-lina-isabel-garcia-salcedo",
+              "start": 595,
+              "end": 610,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-moises-salazar-ramirez",
+              "start": 600,
+              "end": 615,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-julio-gomez",
+              "start": 610,
+              "end": 625,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-angel-gonzalez",
+              "start": 615,
+              "end": 630,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-luis-belda",
+              "start": 625,
+              "end": 640,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-cristina-zuloaga",
+              "start": 630,
+              "end": 645,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-linet-varela",
+              "start": 640,
+              "end": 655,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-gisela-montserrat",
+              "start": 655,
+              "end": 670,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-naomi-ines-carretero",
+              "start": 670,
+              "end": 685,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-angel-gonzalez",
+              "start": 675,
+              "end": 690,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-jose-javier-cuenca",
+              "start": 685,
+              "end": 700,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-cristina-zuloaga",
+              "start": 690,
+              "end": 705,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-moises-salazar-ramirez",
+              "start": 705,
+              "end": 720,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-carmen-maria-saborido",
+              "start": 720,
+              "end": 735,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-jose-javier-cuenca",
+              "start": 735,
+              "end": 750,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-naomi-ines-carretero",
+              "start": 750,
+              "end": 765,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-julio-gomez",
+              "start": 765,
+              "end": 780,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-gisela-montserrat",
+              "start": 780,
+              "end": 795,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-lina-isabel-garcia-salcedo",
+              "start": 795,
+              "end": 810,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-linet-varela",
+              "start": 810,
+              "end": 825,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-luis-belda",
+              "start": 825,
+              "end": 840,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-claudia-torrent",
+              "start": 825,
+              "end": 840,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-eva-martin-fernandez",
+              "start": 840,
+              "end": 855,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-noa-marcos-diez",
+              "start": 855,
+              "end": 870,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-marta-fonrali",
+              "start": 870,
+              "end": 885,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-adrian-darrel",
+              "start": 885,
+              "end": 900,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-daniel-hernan-barres",
+              "start": 900,
+              "end": 915,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-marta-fonrali",
+              "start": 915,
+              "end": 930,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-pere-portero",
+              "start": 915,
+              "end": 930,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-noa-marcos-diez",
+              "start": 930,
+              "end": 945,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-nela-garcia",
+              "start": 930,
+              "end": 945,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-eva-martin-fernandez",
+              "start": 945,
+              "end": 960,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-claudia-torrent",
+              "start": 960,
+              "end": 975,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-nela-garcia",
+              "start": 975,
+              "end": 990,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-pere-portero",
+              "start": 990,
+              "end": 1005,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-daniel-hernan-barres",
+              "start": 1005,
+              "end": 1020,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-adrian-darrel",
+              "start": 1020,
+              "end": 1035,
+              "spaceId": "main-stage"
+            }
+          ]
+        },
+        "CURRENT_PREFERRED": {
+          "complete": true,
+          "hardValid": true,
+          "plannedTaskCount": 38,
+          "planFingerprint": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+          "branches": 15599,
+          "runtimeMs": 269.8574779999999,
+          "searchStopReason": "SOLUTION_FOUND",
+          "reasonCodes": [],
+          "tasks": [
+            {
+              "id": "vocal-angel-gonzalez",
+              "start": 585,
+              "end": 600,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-julio-gomez",
+              "start": 595,
+              "end": 610,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-moises-salazar-ramirez",
+              "start": 600,
+              "end": 615,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-lina-isabel-garcia-salcedo",
+              "start": 610,
+              "end": 625,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-cristina-zuloaga",
+              "start": 615,
+              "end": 630,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-jose-javier-cuenca",
+              "start": 625,
+              "end": 640,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-carmen-maria-saborido",
+              "start": 630,
+              "end": 645,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-naomi-ines-carretero",
+              "start": 640,
+              "end": 655,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-gisela-montserrat",
+              "start": 655,
+              "end": 670,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-linet-varela",
+              "start": 670,
+              "end": 685,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-angel-gonzalez",
+              "start": 675,
+              "end": 690,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-luis-belda",
+              "start": 685,
+              "end": 700,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-moises-salazar-ramirez",
+              "start": 690,
+              "end": 705,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-cristina-zuloaga",
+              "start": 705,
+              "end": 720,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-carmen-maria-saborido",
+              "start": 720,
+              "end": 735,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-julio-gomez",
+              "start": 735,
+              "end": 750,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-lina-isabel-garcia-salcedo",
+              "start": 750,
+              "end": 765,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-jose-javier-cuenca",
+              "start": 765,
+              "end": 780,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-naomi-ines-carretero",
+              "start": 780,
+              "end": 795,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-gisela-montserrat",
+              "start": 795,
+              "end": 810,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-linet-varela",
+              "start": 810,
+              "end": 825,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-luis-belda",
+              "start": 825,
+              "end": 840,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-marta-fonrali",
+              "start": 825,
+              "end": 840,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-eva-martin-fernandez",
+              "start": 840,
+              "end": 855,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-noa-marcos-diez",
+              "start": 855,
+              "end": 870,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-claudia-torrent",
+              "start": 870,
+              "end": 885,
+              "spaceId": "vocal-room-lucia"
+            },
+            {
+              "id": "vocal-pere-portero",
+              "start": 885,
+              "end": 900,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "vocal-nela-garcia",
+              "start": 900,
+              "end": 915,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-marta-fonrali",
+              "start": 915,
+              "end": 930,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-daniel-hernan-barres",
+              "start": 915,
+              "end": 930,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-eva-martin-fernandez",
+              "start": 930,
+              "end": 945,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "vocal-adrian-darrel",
+              "start": 930,
+              "end": 945,
+              "spaceId": "vocal-room-jose-maria"
+            },
+            {
+              "id": "main-noa-marcos-diez",
+              "start": 945,
+              "end": 960,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-claudia-torrent",
+              "start": 960,
+              "end": 975,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-pere-portero",
+              "start": 975,
+              "end": 990,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-nela-garcia",
+              "start": 990,
+              "end": 1005,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-daniel-hernan-barres",
+              "start": 1005,
+              "end": 1020,
+              "spaceId": "main-stage"
+            },
+            {
+              "id": "main-adrian-darrel",
+              "start": 1020,
+              "end": 1035,
+              "spaceId": "main-stage"
+            }
+          ]
+        },
+        "CURRENT_REQUIRED": {
+          "complete": false,
+          "hardValid": false,
+          "plannedTaskCount": 0,
+          "planFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "branches": 1909,
+          "runtimeMs": 26.6241950000001,
+          "searchStopReason": "NO_COMPLETE_HARD_VALID_PLAN",
+          "reasonCodes": [
+            "NO_COMPLETE_HARD_VALID_PLAN"
+          ],
+          "tasks": []
+        }
+      },
+      "standalone": {
+        "complete": true,
+        "hardValid": true,
+        "plannedTaskCount": 47,
+        "planFingerprint": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+        "branches": 28875,
+        "runtimeMs": 437.849352,
+        "searchStopReason": "SOLUTION_FOUND",
+        "reasonCodes": [],
+        "tasks": [
+          {
+            "id": "vocal-angel-gonzalez",
+            "start": 585,
+            "end": 600,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-julio-gomez",
+            "start": 595,
+            "end": 610,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-moises-salazar-ramirez",
+            "start": 600,
+            "end": 615,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-lina-isabel-garcia-salcedo",
+            "start": 610,
+            "end": 625,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-cristina-zuloaga",
+            "start": 615,
+            "end": 630,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-jose-javier-cuenca",
+            "start": 625,
+            "end": 640,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-noa-marcos-diez",
+            "start": 630,
+            "end": 645,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-naomi-ines-carretero",
+            "start": 640,
+            "end": 655,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-gisela-montserrat",
+            "start": 655,
+            "end": 670,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-luis-belda",
+            "start": 670,
+            "end": 685,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-angel-gonzalez",
+            "start": 675,
+            "end": 690,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-adrian-darrel",
+            "start": 685,
+            "end": 700,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-moises-salazar-ramirez",
+            "start": 690,
+            "end": 705,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-02",
+            "start": 690,
+            "end": 720,
+            "spaceId": "reality-location-influencer-corner"
+          },
+          {
+            "id": "reality-operation-07",
+            "start": 700,
+            "end": 730,
+            "spaceId": "reality-location-hall-p14"
+          },
+          {
+            "id": "main-cristina-zuloaga",
+            "start": 705,
+            "end": 720,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-noa-marcos-diez",
+            "start": 720,
+            "end": 735,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-05",
+            "start": 730,
+            "end": 760,
+            "spaceId": "reality-location-manzano"
+          },
+          {
+            "id": "main-julio-gomez",
+            "start": 735,
+            "end": 750,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-lina-isabel-garcia-salcedo",
+            "start": 750,
+            "end": 765,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-04",
+            "start": 750,
+            "end": 780,
+            "spaceId": "reality-location-music-corner"
+          },
+          {
+            "id": "main-jose-javier-cuenca",
+            "start": 765,
+            "end": 780,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-naomi-ines-carretero",
+            "start": 780,
+            "end": 795,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-gisela-montserrat",
+            "start": 795,
+            "end": 810,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-luis-belda",
+            "start": 810,
+            "end": 825,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-adrian-darrel",
+            "start": 825,
+            "end": 840,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-marta-fonrali",
+            "start": 825,
+            "end": 840,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-claudia-torrent",
+            "start": 840,
+            "end": 855,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-carmen-maria-saborido",
+            "start": 855,
+            "end": 870,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-eva-martin-fernandez",
+            "start": 870,
+            "end": 885,
+            "spaceId": "vocal-room-lucia"
+          },
+          {
+            "id": "vocal-pere-portero",
+            "start": 885,
+            "end": 900,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "vocal-nela-garcia",
+            "start": 900,
+            "end": 915,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-marta-fonrali",
+            "start": 915,
+            "end": 930,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-daniel-hernan-barres",
+            "start": 915,
+            "end": 930,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-claudia-torrent",
+            "start": 930,
+            "end": 945,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "vocal-linet-varela",
+            "start": 930,
+            "end": 945,
+            "spaceId": "vocal-room-jose-maria"
+          },
+          {
+            "id": "main-carmen-maria-saborido",
+            "start": 945,
+            "end": 960,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-eva-martin-fernandez",
+            "start": 960,
+            "end": 975,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-08",
+            "start": 960,
+            "end": 990,
+            "spaceId": "reality-location-hall-p14"
+          },
+          {
+            "id": "main-pere-portero",
+            "start": 975,
+            "end": 990,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "main-nela-garcia",
+            "start": 990,
+            "end": 1005,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-12",
+            "start": 990,
+            "end": 1005,
+            "spaceId": "reality-location-red-carpet"
+          },
+          {
+            "id": "main-daniel-hernan-barres",
+            "start": 1005,
+            "end": 1020,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-09",
+            "start": 1005,
+            "end": 1035,
+            "spaceId": "reality-location-control"
+          },
+          {
+            "id": "main-linet-varela",
+            "start": 1020,
+            "end": 1035,
+            "spaceId": "main-stage"
+          },
+          {
+            "id": "reality-operation-11",
+            "start": 1035,
+            "end": 1050,
+            "spaceId": "reality-location-red-carpet"
+          },
+          {
+            "id": "reality-operation-10",
+            "start": 1050,
+            "end": 1080,
+            "spaceId": "reality-location-buggy"
+          }
+        ]
+      },
+      "evaluation": {
+        "plannedTaskCount": 9,
+        "sharedResourceConflicts": [],
+        "participantOverlapConflicts": [],
+        "agendas": {
+          "reality-unit-morning-a": {
+            "unitId": "reality-unit-morning-a",
+            "memberResourceIds": [
+              "reality-camera-3",
+              "reality-sound-1"
+            ],
+            "availability": [
+              {
+                "start": 660,
+                "end": 840
+              }
+            ],
+            "operationIds": [
+              "reality-operation-02",
+              "reality-operation-04"
+            ],
+            "plannedOperationIds": [
+              "reality-operation-02",
+              "reality-operation-04"
+            ],
+            "configuredOperationIds": [
+              "reality-operation-02",
+              "reality-operation-04"
+            ],
+            "scheduledOperationIds": [
+              "reality-operation-02",
+              "reality-operation-04"
+            ],
+            "missingOperationIds": [],
+            "unexpectedOperationIds": [],
+            "operationCount": 2,
+            "scheduledOperationCount": 2,
+            "presenceStart": 690,
+            "presenceEnd": 780,
+            "start": 690,
+            "end": 780,
+            "productiveMinutes": 60,
+            "presenceSpanMinutes": 90,
+            "spanMinutes": 90,
+            "internalGapMinutes": 30,
+            "operationalBlockCount": 2,
+            "locationSequence": [
+              "reality-location-influencer-corner",
+              "reality-location-music-corner"
+            ],
+            "moveCount": 1,
+            "exactCompositionSatisfied": true,
+            "availabilitySatisfied": true,
+            "operationsOutsideUnitAvailability": [],
+            "exactMembershipSatisfied": true
+          },
+          "reality-unit-morning-b": {
+            "unitId": "reality-unit-morning-b",
+            "memberResourceIds": [
+              "reality-camera-4",
+              "reality-sound-2"
+            ],
+            "availability": [
+              {
+                "start": 675,
+                "end": 810
+              }
+            ],
+            "operationIds": [
+              "reality-operation-05",
+              "reality-operation-07"
+            ],
+            "plannedOperationIds": [
+              "reality-operation-07",
+              "reality-operation-05"
+            ],
+            "configuredOperationIds": [
+              "reality-operation-05",
+              "reality-operation-07"
+            ],
+            "scheduledOperationIds": [
+              "reality-operation-07",
+              "reality-operation-05"
+            ],
+            "missingOperationIds": [],
+            "unexpectedOperationIds": [],
+            "operationCount": 2,
+            "scheduledOperationCount": 2,
+            "presenceStart": 700,
+            "presenceEnd": 760,
+            "start": 700,
+            "end": 760,
+            "productiveMinutes": 60,
+            "presenceSpanMinutes": 60,
+            "spanMinutes": 60,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 1,
+            "locationSequence": [
+              "reality-location-hall-p14",
+              "reality-location-manzano"
+            ],
+            "moveCount": 1,
+            "exactCompositionSatisfied": true,
+            "availabilitySatisfied": true,
+            "operationsOutsideUnitAvailability": [],
+            "exactMembershipSatisfied": true
+          },
+          "reality-unit-afternoon-combined": {
+            "unitId": "reality-unit-afternoon-combined",
+            "memberResourceIds": [
+              "reality-camera-3",
+              "reality-camera-4",
+              "reality-sound-1"
+            ],
+            "availability": [
+              {
+                "start": 960,
+                "end": 1080
+              }
+            ],
+            "operationIds": [
+              "reality-operation-08",
+              "reality-operation-09",
+              "reality-operation-10",
+              "reality-operation-11",
+              "reality-operation-12"
+            ],
+            "plannedOperationIds": [
+              "reality-operation-08",
+              "reality-operation-12",
+              "reality-operation-09",
+              "reality-operation-11",
+              "reality-operation-10"
+            ],
+            "configuredOperationIds": [
+              "reality-operation-08",
+              "reality-operation-09",
+              "reality-operation-10",
+              "reality-operation-11",
+              "reality-operation-12"
+            ],
+            "scheduledOperationIds": [
+              "reality-operation-08",
+              "reality-operation-12",
+              "reality-operation-09",
+              "reality-operation-11",
+              "reality-operation-10"
+            ],
+            "missingOperationIds": [],
+            "unexpectedOperationIds": [],
+            "operationCount": 5,
+            "scheduledOperationCount": 5,
+            "presenceStart": 960,
+            "presenceEnd": 1080,
+            "start": 960,
+            "end": 1080,
+            "productiveMinutes": 120,
+            "presenceSpanMinutes": 120,
+            "spanMinutes": 120,
+            "internalGapMinutes": 0,
+            "operationalBlockCount": 1,
+            "locationSequence": [
+              "reality-location-hall-p14",
+              "reality-location-red-carpet",
+              "reality-location-control",
+              "reality-location-red-carpet",
+              "reality-location-buggy"
+            ],
+            "moveCount": 4,
+            "exactCompositionSatisfied": true,
+            "availabilitySatisfied": true,
+            "operationsOutsideUnitAvailability": [],
+            "exactMembershipSatisfied": true
+          }
+        },
+        "duplicateOperationIds": [],
+        "unassignedOperationIds": [],
+        "exactMembershipSatisfied": true,
+        "inputUnchanged": true
+      },
+      "oracleValidOrderCount": 36,
+      "historicalNeutralWitness": {
+        "sourceScenarioId": "focalA2Spec08FoundationConsolidation",
+        "taskCount": 47,
+        "hardValid": true,
+        "reasonCodes": [],
+        "witnessDigest": "ad30794b755bce107e914c5e9a418137ada561b12a3351eb4199ceb680f0e61d"
+      },
+      "saturatedBlock": {
+        "count": 1,
+        "plannedCount": 1,
+        "branches": 131,
+        "candidateCountByKey": {
+          "resource-window:reality-camera-3,reality-camera-4,reality-sound-1:960-1080:reality-operation-08,reality-operation-09,reality-operation-10,reality-operation-11,reality-operation-12": 5
+        },
+        "selectedOrderByKey": {
+          "resource-window:reality-camera-3,reality-camera-4,reality-sound-1:960-1080:reality-operation-08,reality-operation-09,reality-operation-10,reality-operation-11,reality-operation-12": [
+            "reality-operation-08",
+            "reality-operation-12",
+            "reality-operation-09",
+            "reality-operation-11",
+            "reality-operation-10"
+          ]
+        }
+      }
     }
   },
   "historicalSubstrate": {
@@ -13200,528 +14198,15 @@
       }
     }
   },
-  "historicalMismatches": {
-    "scenarioMismatches": [],
-    "evidenceMismatches": [],
-    "fingerprintMismatches": [],
-    "branchMismatches": []
+  "historicalMismatches": [],
+  "supersededHistoricalScenarios": {
+    "focalA2Spec08FoundationConsolidation": "SUPERSEDED_SELF_REFERENTIAL_BUILDER_UNUSED_NEUTRAL_CONFIGURATION"
   },
-  "withdrawnAssumption": {
-    "code": "ANCHOR_SPACE_WRAPPING_SEMANTICS",
-    "status": "WITHDRAWN",
-    "reason": "before and after are operational tasks in their configured space and must not extend main-space occupancy."
-  },
-  "historicalWithdrawnEvidence": {
-    "status": "WITHDRAWN",
-    "branchFailure": 448,
-    "reason": "The synthetic FOCAL-A2-009 model did not demonstrate human operation; its failure was representational, not a search-budget shortage."
-  },
-  "itinerantUnitProfiles": [
-    {
-      "id": "reality-unit-morning-a",
-      "memberResourceIds": [
-        "reality-camera-3",
-        "reality-sound-1"
-      ],
-      "availability": [
-        {
-          "start": 660,
-          "end": 840
-        }
-      ],
-      "informationalAssignments": [
-        "Redacci\u00f3n A",
-        "Producci\u00f3n A"
-      ]
-    },
-    {
-      "id": "reality-unit-morning-b",
-      "memberResourceIds": [
-        "reality-camera-4",
-        "reality-sound-2"
-      ],
-      "availability": [
-        {
-          "start": 675,
-          "end": 810
-        }
-      ],
-      "informationalAssignments": [
-        "Redacci\u00f3n B",
-        "Producci\u00f3n B"
-      ]
-    },
-    {
-      "id": "reality-unit-afternoon-combined",
-      "memberResourceIds": [
-        "reality-camera-3",
-        "reality-camera-4",
-        "reality-sound-1"
-      ],
-      "availability": [
-        {
-          "start": 960,
-          "end": 1080
-        }
-      ],
-      "informationalAssignments": [
-        "Redacci\u00f3n A",
-        "Producci\u00f3n A"
-      ]
-    }
-  ],
-  "itinerantOperationProfiles": [
-    {
-      "id": "reality-operation-01",
-      "type": "ANCHORED_ACCOMPANIMENT",
-      "unitId": "reality-unit-morning-a",
-      "participantId": "cristina-zuloaga",
-      "anchorTaskId": "main-cristina-zuloaga",
-      "before": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "after": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "adjacency": "REQUIRED",
-      "internalTransition": "INCLUDED",
-      "resourceContinuity": "REQUIRED",
-      "location": "PLAT\u00d3",
-      "annotations": [
-        "CON MADRE"
-      ]
-    },
-    {
-      "id": "reality-operation-02",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-morning-a",
-      "participantId": "luis-belda",
-      "duration": 30,
-      "spaceId": "reality-location-influencer-corner",
-      "location": "CORNER INFLUENCER",
-      "annotations": [
-        "TROMB\u00d3N"
-      ]
-    },
-    {
-      "id": "reality-operation-03",
-      "type": "ANCHORED_ACCOMPANIMENT",
-      "unitId": "reality-unit-morning-a",
-      "participantId": "jose-javier-cuenca",
-      "anchorTaskId": "main-jose-javier-cuenca",
-      "before": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "after": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "adjacency": "REQUIRED",
-      "internalTransition": "INCLUDED",
-      "resourceContinuity": "REQUIRED",
-      "location": "PLAT\u00d3",
-      "annotations": []
-    },
-    {
-      "id": "reality-operation-04",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-morning-a",
-      "participantId": "pere-portero",
-      "duration": 30,
-      "spaceId": "reality-location-music-corner",
-      "location": "CORNER MUSIC",
-      "annotations": [
-        "INSTRUMENTOS: GUITARRA, BAJO, PIANO, CAJ\u00d3N"
-      ]
-    },
-    {
-      "id": "reality-operation-05",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-morning-b",
-      "participantId": "gisela-montserrat",
-      "duration": 30,
-      "spaceId": "reality-location-manzano",
-      "location": "MANZANO",
-      "annotations": []
-    },
-    {
-      "id": "reality-operation-06",
-      "type": "ANCHORED_ACCOMPANIMENT",
-      "unitId": "reality-unit-morning-b",
-      "participantId": "julio-gomez",
-      "anchorTaskId": "main-julio-gomez",
-      "before": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "after": {
-        "duration": 15,
-        "spaceId": "reality-location-stage"
-      },
-      "adjacency": "REQUIRED",
-      "internalTransition": "INCLUDED",
-      "resourceContinuity": "REQUIRED",
-      "location": "PLAT\u00d3",
-      "annotations": [
-        "GUITARRA",
-        "CON PADRE"
-      ]
-    },
-    {
-      "id": "reality-operation-07",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-morning-b",
-      "participantId": "nela-garcia",
-      "duration": 30,
-      "spaceId": "reality-location-hall-p14",
-      "location": "HALL P.14",
-      "annotations": [
-        "MAQUILLAJE, ANILLOS, RESPIRADOR, BRILLANTES Y PEINE",
-        "ESPEJO GRANDE CON LUCES"
-      ]
-    },
-    {
-      "id": "reality-operation-08",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-afternoon-combined",
-      "participantId": "lina-isabel-garcia-salcedo",
-      "duration": 30,
-      "spaceId": "reality-location-hall-p14",
-      "location": "HALL P.14",
-      "annotations": [
-        "TABLET PARA VIDEOLLAMADA"
-      ]
-    },
-    {
-      "id": "reality-operation-09",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-afternoon-combined",
-      "participantId": "marta-fonrali",
-      "duration": 30,
-      "spaceId": "reality-location-control",
-      "location": "CONTROL",
-      "annotations": []
-    },
-    {
-      "id": "reality-operation-10",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-afternoon-combined",
-      "participantId": "linet-varela",
-      "duration": 30,
-      "spaceId": "reality-location-buggy",
-      "location": "BUGGY",
-      "annotations": [
-        "COLLAR AMULETO",
-        "TABLET CON MENSAJE"
-      ]
-    },
-    {
-      "id": "reality-operation-11",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-afternoon-combined",
-      "participantId": "carmen-maria-saborido",
-      "duration": 15,
-      "spaceId": "reality-location-red-carpet",
-      "location": "ALFOMBRA ROJA",
-      "annotations": [
-        "A. ROJA EVA"
-      ]
-    },
-    {
-      "id": "reality-operation-12",
-      "type": "STANDALONE",
-      "unitId": "reality-unit-afternoon-combined",
-      "participantId": "eva-martin-fernandez",
-      "duration": 15,
-      "spaceId": "reality-location-red-carpet",
-      "location": "ALFOMBRA ROJA",
-      "annotations": [
-        "A. ROJA EVA"
-      ]
-    }
-  ],
-  "sourceAvailability": {
-    "reality-camera-3": [
-      {
-        "start": 660,
-        "end": 840
-      },
-      {
-        "start": 915,
-        "end": 1080
-      }
-    ],
-    "reality-sound-1": [
-      {
-        "start": 660,
-        "end": 840
-      },
-      {
-        "start": 915,
-        "end": 1080
-      }
-    ],
-    "reality-camera-4": [
-      {
-        "start": 675,
-        "end": 810
-      },
-      {
-        "start": 885,
-        "end": 1080
-      }
-    ],
-    "reality-sound-2": [
-      {
-        "start": 675,
-        "end": 810
-      }
-    ]
-  },
-  "composition": {
-    "exactCompositions": true,
-    "compositionWindows": [
-      {
-        "unitId": "reality-unit-morning-a",
-        "memberResourceIds": [
-          "reality-camera-3",
-          "reality-sound-1"
-        ],
-        "availability": [
-          {
-            "start": 660,
-            "end": 840
-          }
-        ]
-      },
-      {
-        "unitId": "reality-unit-morning-b",
-        "memberResourceIds": [
-          "reality-camera-4",
-          "reality-sound-2"
-        ],
-        "availability": [
-          {
-            "start": 675,
-            "end": 810
-          }
-        ]
-      },
-      {
-        "unitId": "reality-unit-afternoon-combined",
-        "memberResourceIds": [
-          "reality-camera-3",
-          "reality-camera-4",
-          "reality-sound-1"
-        ],
-        "availability": [
-          {
-            "start": 960,
-            "end": 1080
-          }
-        ]
-      }
-    ],
-    "unitIdAbsentFromRequirements": true,
-    "combinedBefore960Rejected": true,
-    "combinedFrom960Accepted": true
-  },
-  "evaluation": {
-    "plannedTaskCount": 9,
-    "sharedResourceConflicts": [],
-    "participantOverlapConflicts": [],
-    "agendas": {
-      "reality-unit-morning-a": {
-        "unitId": "reality-unit-morning-a",
-        "memberResourceIds": [
-          "reality-camera-3",
-          "reality-sound-1"
-        ],
-        "availability": [
-          {
-            "start": 660,
-            "end": 840
-          }
-        ],
-        "operationIds": [
-          "reality-operation-02",
-          "reality-operation-04"
-        ],
-        "plannedOperationIds": [
-          "reality-operation-02",
-          "reality-operation-04"
-        ],
-        "configuredOperationIds": [
-          "reality-operation-02",
-          "reality-operation-04"
-        ],
-        "scheduledOperationIds": [
-          "reality-operation-02",
-          "reality-operation-04"
-        ],
-        "missingOperationIds": [],
-        "unexpectedOperationIds": [],
-        "operationCount": 2,
-        "scheduledOperationCount": 2,
-        "presenceStart": 690,
-        "presenceEnd": 780,
-        "start": 690,
-        "end": 780,
-        "productiveMinutes": 60,
-        "presenceSpanMinutes": 90,
-        "spanMinutes": 90,
-        "internalGapMinutes": 30,
-        "operationalBlockCount": 2,
-        "locationSequence": [
-          "reality-location-influencer-corner",
-          "reality-location-music-corner"
-        ],
-        "moveCount": 1,
-        "exactCompositionSatisfied": true,
-        "availabilitySatisfied": true,
-        "operationsOutsideUnitAvailability": [],
-        "exactMembershipSatisfied": true
-      },
-      "reality-unit-morning-b": {
-        "unitId": "reality-unit-morning-b",
-        "memberResourceIds": [
-          "reality-camera-4",
-          "reality-sound-2"
-        ],
-        "availability": [
-          {
-            "start": 675,
-            "end": 810
-          }
-        ],
-        "operationIds": [
-          "reality-operation-05",
-          "reality-operation-07"
-        ],
-        "plannedOperationIds": [
-          "reality-operation-05",
-          "reality-operation-07"
-        ],
-        "configuredOperationIds": [
-          "reality-operation-05",
-          "reality-operation-07"
-        ],
-        "scheduledOperationIds": [
-          "reality-operation-05",
-          "reality-operation-07"
-        ],
-        "missingOperationIds": [],
-        "unexpectedOperationIds": [],
-        "operationCount": 2,
-        "scheduledOperationCount": 2,
-        "presenceStart": 675,
-        "presenceEnd": 735,
-        "start": 675,
-        "end": 735,
-        "productiveMinutes": 60,
-        "presenceSpanMinutes": 60,
-        "spanMinutes": 60,
-        "internalGapMinutes": 0,
-        "operationalBlockCount": 1,
-        "locationSequence": [
-          "reality-location-manzano",
-          "reality-location-hall-p14"
-        ],
-        "moveCount": 1,
-        "exactCompositionSatisfied": true,
-        "availabilitySatisfied": true,
-        "operationsOutsideUnitAvailability": [],
-        "exactMembershipSatisfied": true
-      },
-      "reality-unit-afternoon-combined": {
-        "unitId": "reality-unit-afternoon-combined",
-        "memberResourceIds": [
-          "reality-camera-3",
-          "reality-camera-4",
-          "reality-sound-1"
-        ],
-        "availability": [
-          {
-            "start": 960,
-            "end": 1080
-          }
-        ],
-        "operationIds": [
-          "reality-operation-08",
-          "reality-operation-09",
-          "reality-operation-10",
-          "reality-operation-11",
-          "reality-operation-12"
-        ],
-        "plannedOperationIds": [
-          "reality-operation-08",
-          "reality-operation-09",
-          "reality-operation-10",
-          "reality-operation-11",
-          "reality-operation-12"
-        ],
-        "configuredOperationIds": [
-          "reality-operation-08",
-          "reality-operation-09",
-          "reality-operation-10",
-          "reality-operation-11",
-          "reality-operation-12"
-        ],
-        "scheduledOperationIds": [
-          "reality-operation-08",
-          "reality-operation-09",
-          "reality-operation-10",
-          "reality-operation-11",
-          "reality-operation-12"
-        ],
-        "missingOperationIds": [],
-        "unexpectedOperationIds": [],
-        "operationCount": 5,
-        "scheduledOperationCount": 5,
-        "presenceStart": 960,
-        "presenceEnd": 1080,
-        "start": 960,
-        "end": 1080,
-        "productiveMinutes": 120,
-        "presenceSpanMinutes": 120,
-        "spanMinutes": 120,
-        "internalGapMinutes": 0,
-        "operationalBlockCount": 1,
-        "locationSequence": [
-          "reality-location-hall-p14",
-          "reality-location-control",
-          "reality-location-buggy",
-          "reality-location-red-carpet"
-        ],
-        "moveCount": 3,
-        "exactCompositionSatisfied": true,
-        "availabilitySatisfied": true,
-        "operationsOutsideUnitAvailability": [],
-        "exactMembershipSatisfied": true
-      }
-    },
-    "duplicateOperationIds": [],
-    "unassignedOperationIds": [],
-    "exactMembershipSatisfied": true,
-    "inputUnchanged": true
-  },
-  "combinedProjection": {
-    "inputUnchanged": true,
-    "counts": {
-      "tasks": 53,
-      "main": 19,
-      "vocal": 19,
-      "auxiliary": 15,
-      "segments": 6,
-      "accompaniments": 3
-    }
-  },
+  "activeScenarioId": "focalA2Spec08NeutralStandaloneBlockRepair",
   "resolvedGapCodes": [
     "TASK_EFFECTIVE_AVAILABILITY_NOT_EXPRESSIBLE",
-    "ITINERANT_COMPOSITION_WINDOW_NOT_ENFORCED"
+    "ITINERANT_COMPOSITION_WINDOW_NOT_ENFORCED",
+    "SATURATED_SHARED_RESOURCE_WINDOW_BLOCK_NOT_CONSTRUCTED"
   ],
   "withdrawnGapCodes": [
     "ANCHORED_OPERATION_RELATIVE_SEGMENTS_NOT_EXPRESSIBLE",
@@ -13730,366 +14215,433 @@
   "remainingGapCodes": [
     "GENERIC_ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
   ],
-  "acceptance": {
-    "artifactAccepted": true,
-    "sourceArtifactAccepted": true,
-    "historicalRegressionIntact": true,
-    "currentOffFrozen": true,
-    "currentPreferredFrozen": true,
-    "currentRequiredFrozen": true,
-    "incorrectAnchorSpaceModelWithdrawn": true,
-    "variableMainFlowTimelineRemoved": true,
-    "mainFlowHistoricalTimelineRestored": true,
-    "taskAvailabilityContractAccepted": true,
-    "taskAvailabilityPreflightAccepted": true,
-    "taskAvailabilityPlacementAccepted": true,
-    "taskAvailabilityValidationAccepted": true,
-    "taskAvailabilityMetricsAccepted": true,
-    "taskAvailabilityDeterministic": true,
-    "taskAvailabilityOrderInvariant": true,
-    "taskAvailabilityInputUnchanged": true,
-    "unitCompositionAvailabilityAccepted": true,
-    "standaloneProjectionCorrected": true,
-    "standaloneComplete": true,
-    "standaloneHardValid": true,
-    "standaloneTaskCountAccepted": true,
-    "standaloneOperationsAccepted": true,
-    "standaloneProductiveMinutesAccepted": true,
-    "combinedTaskCountAccepted": true,
-    "combinedSeparateSpacesAccepted": true,
-    "combinedAnchorIdentityAccepted": true,
-    "combinedCompositionWindowsAccepted": true,
-    "combinedUnsupportedAtomic": true,
-    "standaloneUnitAgendasAccepted": true,
-    "standaloneSourceAvailabilityAccepted": true,
-    "combinedProjectionSemanticsAccepted": true,
-    "combinedResourceProjectionAccepted": true,
-    "invalidDurationTotalSubstitutionRejected": true,
-    "humanReferenceNotUsedAsSeed": true,
-    "anchoredAccompanimentSupported": false,
-    "fullFocalA2ItinerantBenchmarkPassed": false,
-    "acceptedMeaning": "Planner Next preserves all protected historical planning behavior, enforces effective task availability through real placement and final validation, and audits SPEC-08 itinerant composition windows from explicit operational configuration independent of human reference task times. The same-space variable-main-flow model remains withdrawn, the final repository and validator are self-contained without legacy root artifacts, and generic anchored-accompaniment scheduling remains intentionally unsupported.",
-    "accepted": true,
-    "finalRepositoryTestStateAccepted": true,
-    "legacyIndependentTestsAccepted": true,
-    "explicitAuxiliaryPolicyAccepted": true,
-    "auxiliaryPolicyFallbackAbsent": true,
-    "participantAvailabilityConfigurationAccepted": true,
-    "participantAvailabilityOrderNeutral": true,
-    "humanReferenceSeparatedFromOperationalCorpus": true,
-    "humanReferencePoisonInvariant": true,
-    "compositionBehaviorallyExecuted": true,
-    "acceptancePoisonControlsAccepted": true
-  },
-  "historicalManifest": {
-    "manifestVersion": "focal-a2-spec08-foundation-v2-historical-manifest-v1",
-    "sourceArtifactVersion": "planner-next-focal-a2-itinerant-spec08-foundation-v1",
-    "sourceArtifactSha256": "ae30d0c7fcde3e13c4ab64a318b4d32f6c2b439fc7118d07fdc943065c242d6e",
-    "scenarioDigests": {
-      "baseline": "02da2ec655fc829364c18cb849dba14a34c3d21b5fe27383b6e3540806762c86",
-      "adversarial": "8abdddbbd4f55dfe37f09fc7fc07ede512f9bf3dd25c7866f0807dd5c2b6a300",
-      "adversarialZeroBacktracks": "5bc735dc9d44985eac7ad355e5252dd06976594305c008cda1c90b4d01e09b82",
-      "resourceOff": "08e0cf4569f99225b93722500bbf7f17be77abbf19f2e9cd0c939fe7a053b48e",
-      "resourceHigh": "b3822a28cfcad793ac5f63755c586dae555252cf5086418200a5db6f08026d77",
-      "auxiliaryOff": "a1f3c1cad2ba068c3a3535766cbd00b2f02ace88f45b3601b98d30c08e8f3834",
-      "auxiliaryHigh": "67116baacbda49003f29fe711b543698e156e65c943cd903c3a1e547e91747fe",
-      "itinerantUnits": "003afd11a85d46e5a772308093c7b5e50d744f1dc4df0db6f7d3ac7e76683c51",
-      "longSecondaryBlock": "4beb360c5675a4023e6f00b0bf695863b2bc7fbbdbf404bf2e284aa034fdbedf",
-      "futureFeasibility": "427e7ef4af23818c4c4e68856955be74fd20bc0f5e3580f9070c507d4844d444",
-      "boundedFutureFeasibility": "1c1ea5e865f63290dce094e85669a85a20441b152c73e1d6c120794209829bf6",
-      "branchHistoryIsolatedPruning": "5a76fb71fb6ddae635c448e3708d157cc3cd1110b403f965f56a55611f3af95e",
-      "setupGrouping": "f882738ad6bb6bcf17a1b4fc3723fd55137961bfad3d8f9225ee8f25e4fc4a2d",
-      "setupPreparation": "bae2dc97769bc23541586a96e6116ffee23b2bc343c10a2a2dcb83df71a5e985",
-      "jointAuxiliaryTasks": "97c6613a14dd95ae8b0d5bb68bf78a0eb094eabb48cfa47a6d718110bd797e3d",
-      "technicalOperation": "7e0c797de22c31ed1cc5cef5c7d20530d0032fda0efca2b59a1825c096ec8769",
-      "technicalChain": "50ea3e8e8022a06678fcc508a90b57c3bfef13e4474730579a28dbebfa508007",
-      "spaceMeal": "3d2e54230d36d39777c431eb9228e6e8191ee77ed62fc2728c7fa1d8fec61a36",
-      "requiredSpaceMeal": "09663767a43ea1245214dc0f90aa1931bf24193bea2b988302e2e0f43a20c3a0",
-      "mainFlowMeal": "ee9c51c6d16ac9868efb89c2ae6e4b7b45e1217fdfc58232a1a57a78c92a7020",
-      "focalA2": "2fe9f1b7e5497a81acb924a803f3d6a69132b44ac7ed67031d91a1253aa43aee",
-      "focalA2BandAudit": "b8cc0fa04ec55d05c989d3227a778ec34653aeced6de8f8840164f411dfc7116",
-      "focalA2BandPreferredAudit": "31ddb4eda75d92fed36cc0314c6ad11fddd2428e210a4e6ea8bcb00fe5ff699a",
-      "focalA2BandRequiredAudit": "9d6e8a6d566af0ebdfc8c3049eba2a652d9b0cf8a7caf5f59db10e472cd2a0f3",
-      "focalA2BandRequiredCompositeFoundationRepair": "d0955e286c70a6b1485fab6dc1f7dccfe1e1493470b5e44ebfdbdf2678ff585d",
-      "focalA2InstrumentMetadataSemantics": "d8744d0462bf4819ea7d4f1dd95ef8ef032bd01e919779c857ee00bd585613dc",
-      "focalA2RealityBaselineAudit": "238bc1a4de6c93b0c0ec50d76d7b9d53d6fc2f33f00ae1eff48ec9de16698128",
-      "focalA2ItinerantUnitContractAudit": "ed1e057b61b851c31f6693b26c4b3720e06b4d85e94611297a7e3c0ee16ab789",
-      "focalA2ItinerantUnitAuditRepair": "132c4f2f9ec243c0af7dcea7e307a1114adc67384fed4ea61d97735e809c862f",
-      "focalA2Spec08FoundationRepair": "601ef74d85cd26c4ab04e449e9501989967b10e6b1a089906fedb174f22ae938"
-    },
-    "historicalEvidenceDigests": {
-      "currentOff": "138011094cc3175306426cc66a40b33e7951cd7e3ed5223737260b23fc4eb757",
-      "preferredPlan": "8d698d25b189feff65e01d5e596d44a3ac050fc493464b9b354c7ad43299d7af",
-      "currentRequiredFailure": "c1a03dc599a35c9eae280f65294ec2e1c06145c92b56a3d9646d6465557b4dc1",
-      "withdrawalEvidence": "1b615e57c734f30014d8a4f04d5f73003c5bf61f32bbb6cb8ef4bf61ca149ef5"
-    },
-    "frozenFingerprints": {
-      "CURRENT_OFF": "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
-      "CURRENT_PREFERRED": "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
-      "CURRENT_REQUIRED": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
-    },
-    "frozenBranchBudgets": {
-      "CURRENT_OFF": 64558,
-      "CURRENT_PREFERRED": 15599
-    },
-    "supersededHistoricalScenarioIds": [
-      "focalA2RealityBaselineAudit",
-      "focalA2ItinerantUnitContractAudit",
-      "focalA2ItinerantUnitAuditRepair",
-      "focalA2Spec08FoundationRepair"
-    ],
-    "activeScenarioId": "focalA2Spec08FoundationConsolidation"
-  },
   "checks": {
-    "artifactAccepted": {
-      "expected": true,
-      "actual": true,
-      "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
-    },
     "sourceArtifactAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Legacy mode compares the observed source SHA; current mode verifies the protected substrate and all historical digests."
+    },
+    "protectedSubstrateAccepted": {
+      "expected": true,
+      "actual": true,
+      "passed": true,
+      "details": "The benchmark compares the validator-observed fixture SHA with the protected manifest."
     },
     "historicalRegressionIntact": {
-      "expected": true,
-      "actual": true,
+      "expected": [],
+      "actual": [],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Scenario and Evidence digests are recomputed from the protected fixture."
     },
     "currentOffFrozen": {
-      "expected": true,
-      "actual": true,
+      "expected": [
+        "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
+        64558
+      ],
+      "actual": [
+        "76f52d292e810ab8506ba868d77036126f299bcf129462a62b6c3b49a13be4fc",
+        64558
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "OFF fingerprint and branches are freshly executed."
     },
     "currentPreferredFrozen": {
-      "expected": true,
-      "actual": true,
+      "expected": [
+        "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+        15599
+      ],
+      "actual": [
+        "cff587b5eac3b77d6e81589791035aead34187b65ab248d9586e462294e0087b",
+        15599
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "PREFERRED fingerprint and branches are freshly executed."
     },
     "currentRequiredFrozen": {
-      "expected": true,
-      "actual": true,
+      "expected": [
+        false,
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ],
+      "actual": [
+        false,
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "REQUIRED is freshly executed as the protected infeasible control."
     },
-    "incorrectAnchorSpaceModelWithdrawn": {
-      "expected": true,
-      "actual": true,
+    "operationalCorpusContainsNoHumanTimes": {
+      "expected": false,
+      "actual": false,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Runtime inspection finds no schedule-time fields in operational profiles."
     },
-    "variableMainFlowTimelineRemoved": {
-      "expected": true,
-      "actual": true,
+    "participantNeutralAvailabilityApplied": {
+      "expected": {
+        "lina-isabel-garcia-salcedo": [
+          {
+            "start": 570,
+            "end": 1080
+          }
+        ],
+        "marta-fonrali": [
+          {
+            "start": 670,
+            "end": 1080
+          }
+        ],
+        "linet-varela": [
+          {
+            "start": 600,
+            "end": 1080
+          }
+        ],
+        "carmen-maria-saborido": [
+          {
+            "start": 570,
+            "end": 1080
+          }
+        ],
+        "eva-martin-fernandez": [
+          {
+            "start": 630,
+            "end": 1080
+          }
+        ]
+      },
+      "actual": {
+        "carmen-maria-saborido": [
+          {
+            "start": 570,
+            "end": 1080
+          }
+        ],
+        "lina-isabel-garcia-salcedo": [
+          {
+            "start": 570,
+            "end": 1080
+          }
+        ],
+        "linet-varela": [
+          {
+            "start": 600,
+            "end": 1080
+          }
+        ],
+        "marta-fonrali": [
+          {
+            "start": 670,
+            "end": 1080
+          }
+        ],
+        "eva-martin-fernandez": [
+          {
+            "start": 630,
+            "end": 1080
+          }
+        ]
+      },
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh projection structurally contains the five configured windows."
     },
-    "mainFlowHistoricalTimelineRestored": {
-      "expected": true,
-      "actual": true,
+    "participantNeutralAvailabilityOrderIndependent": {
+      "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+      "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Reversing operational input preserves the fresh fingerprint."
     },
-    "taskAvailabilityContractAccepted": {
-      "expected": true,
-      "actual": true,
+    "explicitAuxiliaryPolicyAccepted": {
+      "expected": "OFF",
+      "actual": "OFF",
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh projection supplies OFF explicitly."
     },
-    "taskAvailabilityPreflightAccepted": {
-      "expected": true,
-      "actual": true,
+    "humanReferenceSeparated": {
+      "expected": false,
+      "actual": false,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Runtime source inspection finds no human-reference dependency in the operational projection."
     },
-    "taskAvailabilityPlacementAccepted": {
-      "expected": true,
-      "actual": true,
+    "humanReferencePoisonInvariant": {
+      "expected": [
+        "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+        true
+      ],
+      "actual": [
+        "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+        true
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "The poisoned reference is delivered to the external comparator, changes only that comparison, and leaves a freshly generated plan invariant."
     },
-    "taskAvailabilityValidationAccepted": {
+    "saturatedBlockContractAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh metrics expose the canonical resource/window/task identity."
     },
-    "taskAvailabilityMetricsAccepted": {
-      "expected": true,
-      "actual": true,
+    "saturatedBlockDetectionAccepted": {
+      "expected": 1,
+      "actual": 1,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh planning detects one exact-fit cohort."
     },
-    "taskAvailabilityDeterministic": {
-      "expected": true,
-      "actual": true,
+    "saturatedBlockConstructionAccepted": {
+      "expected": 1,
+      "actual": 1,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh planning inserts that cohort atomically."
     },
-    "taskAvailabilityOrderInvariant": {
+    "saturatedBlockBounded": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Block DFS remains inside the existing budget."
     },
-    "taskAvailabilityInputUnchanged": {
-      "expected": true,
-      "actual": true,
+    "saturatedBlockDeterministic": {
+      "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+      "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Independent repeat preserves fingerprint."
     },
-    "unitCompositionAvailabilityAccepted": {
-      "expected": true,
-      "actual": true,
+    "saturatedBlockOrderInvariant": {
+      "expected": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
+      "actual": "c86f31acba9b89628681021909bf0dcabba224845e6f21457e05221ad8a3cf72",
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Reversed input preserves fingerprint."
     },
-    "standaloneProjectionCorrected": {
+    "saturatedBlockInputUnchanged": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Serialized effective input is unchanged after planning."
     },
-    "standaloneComplete": {
+    "focalNeutralStandaloneComplete": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Fresh standalone planning completes."
     },
-    "standaloneHardValid": {
+    "focalNeutralStandaloneHardValid": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Canonical final validation is hard-valid."
     },
-    "standaloneTaskCountAccepted": {
-      "expected": true,
-      "actual": true,
+    "focalNeutralStandaloneTaskCountAccepted": {
+      "expected": 47,
+      "actual": 47,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "All standalone tasks are scheduled."
     },
-    "standaloneOperationsAccepted": {
-      "expected": true,
-      "actual": true,
+    "focalNeutralStandaloneOperationsAccepted": {
+      "expected": 9,
+      "actual": 9,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "All standalone Reality operations are scheduled."
     },
-    "standaloneProductiveMinutesAccepted": {
-      "expected": true,
-      "actual": true,
+    "focalNeutralStandaloneMinutesAccepted": {
+      "expected": 240,
+      "actual": 240,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Unit minutes are derived from scheduled operations."
     },
-    "combinedTaskCountAccepted": {
-      "expected": true,
-      "actual": true,
+    "focalNeutralUnitAgendasAccepted": {
+      "expected": [
+        60,
+        60,
+        120
+      ],
+      "actual": [
+        60,
+        60,
+        120
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Derived A/B/C minutes match the operational corpus."
     },
-    "combinedSeparateSpacesAccepted": {
-      "expected": true,
-      "actual": true,
+    "focalNeutralCombinedUnitBlockAccepted": {
+      "expected": [
+        960,
+        1080,
+        0,
+        1
+      ],
+      "actual": [
+        960,
+        1080,
+        0,
+        1
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Unit C continuously occupies its configured window."
     },
-    "combinedAnchorIdentityAccepted": {
-      "expected": true,
-      "actual": true,
+    "independentFeasibilityWitnessAccepted": {
+      "expected": [
+        true,
+        true,
+        47,
+        "focalA2Spec08FoundationConsolidation"
+      ],
+      "actual": [
+        true,
+        true,
+        47,
+        "focalA2Spec08FoundationConsolidation"
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "An independent oracle and the protected historical schedule both validate under neutral configuration; neither is passed to the planner."
     },
-    "combinedCompositionWindowsAccepted": {
-      "expected": true,
-      "actual": true,
+    "combinedProjectionAccepted": {
+      "expected": [
+        53,
+        3
+      ],
+      "actual": [
+        53,
+        3
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Static combined projection retains 53 tasks and three contracts."
     },
     "combinedUnsupportedAtomic": {
-      "expected": true,
-      "actual": true,
+      "expected": [
+        false,
+        0,
+        0,
+        "ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
+      ],
+      "actual": [
+        false,
+        0,
+        0,
+        "ANCHORED_ACCOMPANIMENT_NOT_SUPPORTED"
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Unsupported accompaniment stops before search without partials."
     },
-    "standaloneUnitAgendasAccepted": {
-      "expected": true,
-      "actual": true,
+    "benchmarkFreshWithoutCurrentArtifact": {
+      "expected": false,
+      "actual": false,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "The validator made the root output inaccessible before each benchmark execution."
     },
-    "standaloneSourceAvailabilityAccepted": {
+    "finalRepositoryTestsAccepted": {
       "expected": true,
       "actual": true,
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "An explicit validator-only receipt lists every completed mandatory command and observed historical hash; direct benchmark execution remains false."
     },
-    "combinedProjectionSemanticsAccepted": {
-      "expected": true,
-      "actual": true,
+    "acceptancePoisonControlsAccepted": {
+      "expected": [
+        "sourceArtifactAccepted",
+        "protectedSubstrateAccepted",
+        "historicalRegressionIntact",
+        "currentOffFrozen",
+        "currentPreferredFrozen",
+        "currentRequiredFrozen",
+        "operationalCorpusContainsNoHumanTimes",
+        "participantNeutralAvailabilityApplied",
+        "participantNeutralAvailabilityOrderIndependent",
+        "explicitAuxiliaryPolicyAccepted",
+        "humanReferenceSeparated",
+        "humanReferencePoisonInvariant",
+        "saturatedBlockContractAccepted",
+        "saturatedBlockDetectionAccepted",
+        "saturatedBlockConstructionAccepted",
+        "saturatedBlockBounded",
+        "saturatedBlockDeterministic",
+        "saturatedBlockOrderInvariant",
+        "saturatedBlockInputUnchanged",
+        "focalNeutralStandaloneComplete",
+        "focalNeutralStandaloneHardValid",
+        "focalNeutralStandaloneTaskCountAccepted",
+        "focalNeutralStandaloneOperationsAccepted",
+        "focalNeutralStandaloneMinutesAccepted",
+        "focalNeutralUnitAgendasAccepted",
+        "focalNeutralCombinedUnitBlockAccepted",
+        "independentFeasibilityWitnessAccepted",
+        "combinedProjectionAccepted",
+        "combinedUnsupportedAtomic",
+        "benchmarkFreshWithoutCurrentArtifact",
+        "finalRepositoryTestsAccepted"
+      ],
+      "actual": [
+        "sourceArtifactAccepted",
+        "protectedSubstrateAccepted",
+        "historicalRegressionIntact",
+        "currentOffFrozen",
+        "currentPreferredFrozen",
+        "currentRequiredFrozen",
+        "operationalCorpusContainsNoHumanTimes",
+        "participantNeutralAvailabilityApplied",
+        "participantNeutralAvailabilityOrderIndependent",
+        "explicitAuxiliaryPolicyAccepted",
+        "humanReferenceSeparated",
+        "humanReferencePoisonInvariant",
+        "saturatedBlockContractAccepted",
+        "saturatedBlockDetectionAccepted",
+        "saturatedBlockConstructionAccepted",
+        "saturatedBlockBounded",
+        "saturatedBlockDeterministic",
+        "saturatedBlockOrderInvariant",
+        "saturatedBlockInputUnchanged",
+        "focalNeutralStandaloneComplete",
+        "focalNeutralStandaloneHardValid",
+        "focalNeutralStandaloneTaskCountAccepted",
+        "focalNeutralStandaloneOperationsAccepted",
+        "focalNeutralStandaloneMinutesAccepted",
+        "focalNeutralUnitAgendasAccepted",
+        "focalNeutralCombinedUnitBlockAccepted",
+        "independentFeasibilityWitnessAccepted",
+        "combinedProjectionAccepted",
+        "combinedUnsupportedAtomic",
+        "benchmarkFreshWithoutCurrentArtifact",
+        "finalRepositoryTestsAccepted"
+      ],
       "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
-    },
-    "combinedResourceProjectionAccepted": {
-      "expected": true,
-      "actual": true,
-      "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
-    },
-    "invalidDurationTotalSubstitutionRejected": {
-      "expected": true,
-      "actual": true,
-      "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
-    },
-    "humanReferenceNotUsedAsSeed": {
-      "expected": true,
-      "actual": true,
-      "passed": true,
-      "details": "Derived from protected substrate or benchmark execution."
+      "details": "Each control mutates a real benchmark input, rebuilds checks, and recomputes acceptance."
     }
   },
   "requiredPositiveChecks": [
-    "artifactAccepted",
     "sourceArtifactAccepted",
+    "protectedSubstrateAccepted",
     "historicalRegressionIntact",
     "currentOffFrozen",
     "currentPreferredFrozen",
     "currentRequiredFrozen",
-    "incorrectAnchorSpaceModelWithdrawn",
-    "variableMainFlowTimelineRemoved",
-    "mainFlowHistoricalTimelineRestored",
-    "taskAvailabilityContractAccepted",
-    "taskAvailabilityPreflightAccepted",
-    "taskAvailabilityPlacementAccepted",
-    "taskAvailabilityValidationAccepted",
-    "taskAvailabilityMetricsAccepted",
-    "taskAvailabilityDeterministic",
-    "taskAvailabilityOrderInvariant",
-    "taskAvailabilityInputUnchanged",
-    "unitCompositionAvailabilityAccepted",
-    "standaloneProjectionCorrected",
-    "standaloneComplete",
-    "standaloneHardValid",
-    "standaloneTaskCountAccepted",
-    "standaloneOperationsAccepted",
-    "standaloneProductiveMinutesAccepted",
-    "combinedTaskCountAccepted",
-    "combinedSeparateSpacesAccepted",
-    "combinedAnchorIdentityAccepted",
-    "combinedCompositionWindowsAccepted",
+    "operationalCorpusContainsNoHumanTimes",
+    "participantNeutralAvailabilityApplied",
+    "participantNeutralAvailabilityOrderIndependent",
+    "explicitAuxiliaryPolicyAccepted",
+    "humanReferenceSeparated",
+    "humanReferencePoisonInvariant",
+    "saturatedBlockContractAccepted",
+    "saturatedBlockDetectionAccepted",
+    "saturatedBlockConstructionAccepted",
+    "saturatedBlockBounded",
+    "saturatedBlockDeterministic",
+    "saturatedBlockOrderInvariant",
+    "saturatedBlockInputUnchanged",
+    "focalNeutralStandaloneComplete",
+    "focalNeutralStandaloneHardValid",
+    "focalNeutralStandaloneTaskCountAccepted",
+    "focalNeutralStandaloneOperationsAccepted",
+    "focalNeutralStandaloneMinutesAccepted",
+    "focalNeutralUnitAgendasAccepted",
+    "focalNeutralCombinedUnitBlockAccepted",
+    "independentFeasibilityWitnessAccepted",
+    "combinedProjectionAccepted",
     "combinedUnsupportedAtomic",
-    "standaloneUnitAgendasAccepted",
-    "standaloneSourceAvailabilityAccepted",
-    "combinedProjectionSemanticsAccepted",
-    "combinedResourceProjectionAccepted",
-    "invalidDurationTotalSubstitutionRejected",
-    "humanReferenceNotUsedAsSeed"
+    "benchmarkFreshWithoutCurrentArtifact",
+    "acceptancePoisonControlsAccepted",
+    "finalRepositoryTestsAccepted"
   ],
-  "supersededHistoricalScenarios": {
-    "focalA2Spec08FoundationRepair": "SUPERSEDED_UNDERIVED_ACCEPTANCE_AND_REFERENCE_TIME_COUPLING"
+  "acceptance": {
+    "artifactAccepted": true,
+    "anchoredAccompanimentSupported": false,
+    "fullFocalA2ItinerantBenchmarkPassed": false,
+    "acceptedMeaning": "Planner Next constructs the SPEC-08 standalone itinerant corpus from neutral operational availability without using human schedule times, detects exact-fit shared-resource windows as bounded structural blocks, preserves the protected historical main-flow behavior, and publishes freshly derived Evidence. Generic anchored-accompaniment scheduling remains intentionally unsupported.",
+    "accepted": true
   }
 }

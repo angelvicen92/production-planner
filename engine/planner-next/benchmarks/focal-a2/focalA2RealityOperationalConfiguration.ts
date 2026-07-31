@@ -5,11 +5,11 @@ export const focalA2RealityAuxiliaryPolicy: AuxiliaryPolicy = {
 };
 
 export const focalA2RealityParticipantAvailabilityOverrides: Record<string, Window[]> = {
-  "lina-isabel-garcia-salcedo": [{ start: 570, end: 1035 }, { start: 1035, end: 1080 }],
-  "marta-fonrali": [{ start: 670, end: 1035 }, { start: 1035, end: 1080 }],
-  "linet-varela": [{ start: 600, end: 1035 }, { start: 1035, end: 1080 }],
-  "carmen-maria-saborido": [{ start: 570, end: 1035 }, { start: 1035, end: 1080 }],
-  "eva-martin-fernandez": [{ start: 630, end: 1035 }, { start: 1035, end: 1080 }],
+  "lina-isabel-garcia-salcedo": [{ start: 570, end: 1080 }],
+  "marta-fonrali": [{ start: 670, end: 1080 }],
+  "linet-varela": [{ start: 600, end: 1080 }],
+  "carmen-maria-saborido": [{ start: 570, end: 1080 }],
+  "eva-martin-fernandez": [{ start: 630, end: 1080 }],
 };
 
 export const participantAvailabilitySource = {
