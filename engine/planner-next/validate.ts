@@ -23,7 +23,7 @@ import { createScheduledSpaceMeal, spaceMealAvoidsMeals, spaceMealAvoidsTasks, s
 import { mainFlowMealAligned, hasMainFlowMeal } from "./mainFlowMeal";
 import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { evaluateResourcePresence } from "./resourcePresence";
-import { anchoredAccompanimentPreflight } from "./anchoredAccompaniment";
+import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
 import { taskFitsAvailability, validateTaskAvailability } from "./taskAvailability";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
@@ -316,7 +316,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       for (let index = 1; index < list.length; index += 1) {
         const previous = list[index - 1];
         const current = list[index];
-        if (previous && current && previous.spaceId !== current.spaceId && current.start - previous.end < margin) transition += 1;
+        if (previous && current && previous.spaceId !== current.spaceId && current.start - previous.end < margin && !isInternalAnchoredPair(problem,previous,current)) transition += 1;
       }
     }
   }
@@ -327,7 +327,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const [a, b] = unorderedA.start <= unorderedB.start ? [unorderedA, unorderedB] : [unorderedB, unorderedA];
       const shared = (a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
       const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id)), 0);
-      if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin) resourceTransition += 1;
+      if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin && !isInternalAnchoredPair(problem,a,b)) resourceTransition += 1;
     }
   }
   const mains = scheduled.filter(({ kind }) => kind === "main").sort((a, b) => a.start - b.start);
@@ -470,6 +470,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
 
   const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
 
+  let anchoredAccompaniment=0;
+  for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));}if(invalid)anchoredAccompaniment+=1;}
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");
@@ -489,6 +491,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (technicalChain) reasonCodes.push("TECHNICAL_CHAIN_VIOLATION");
   if (spaceMeal) reasonCodes.push("SPACE_MEAL_VIOLATION");
   if (mainFlowMeal) reasonCodes.push("MAIN_FLOW_MEAL_VIOLATION");
+  if (anchoredAccompaniment) reasonCodes.push("ANCHORED_ACCOMPANIMENT_VIOLATION");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
     const presence = evaluateResourcePresence(resource, scheduled, meals);
@@ -513,6 +516,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     technicalChainViolationCount: technicalChain,
     spaceMealViolationCount:spaceMeal,
     mainFlowMealViolationCount:mainFlowMeal,
+    anchoredAccompanimentViolationCount:anchoredAccompaniment,
     reasonCodes: reasonCodes.sort(),
   };
 }

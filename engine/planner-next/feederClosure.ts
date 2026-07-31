@@ -1,5 +1,6 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
+import { anchoredAccompanimentIndex, firstParticipantObligation } from "./anchoredAccompaniment";
 
 export interface FeederClosureCandidate { feeders: ScheduledTask[]; cost: number; signature: string; selectedFeederOrder:string[] }
 export interface FeederClosureDiagnostics { consumed:number; exhausted:boolean; completeClosuresGenerated:number; maximumPartialStates:number; rejectedStateBlockerIds:string[]; greedyFallbackUsed:boolean }
@@ -25,7 +26,7 @@ export function closeFeeders(problem:PlannerNextProblem,mains:ScheduledTask[],me
   const mainByParticipant=new Map(anchors.map(m=>[m.participantId,m]));
   const starts=(feeder:Task,state:State):number[]=>{
     const main=mainByParticipant.get(feeder.participantId);if(!main)return [];
-    const deadline=main.start-Math.max(problem.participantTransitionMinutes,problem.resourceTransitionMinutes);
+    const deadline=firstParticipantObligation(main,mains,anchoredAccompanimentIndex(problem))-Math.max(problem.participantTransitionMinutes,problem.resourceTransitionMinutes);
     const result:number[]=[];
     for(let start=deadline-feeder.duration;start>=problem.day.start;start-=5){
       if(consumed>=allowance){exhausted=true;break} consumed+=1;
