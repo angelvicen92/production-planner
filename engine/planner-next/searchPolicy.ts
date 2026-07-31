@@ -6,7 +6,8 @@ export type PlannerCapability = "ANCHORED_ACCOMPANIMENT";
 
 export interface PlannerCapabilityRequirement {
   capability: PlannerCapability;
-  requiredPolicy: PlannerSearchPolicy;
+  supportedPolicies: readonly PlannerSearchPolicy[];
+  requiredPolicy?: PlannerSearchPolicy;
 }
 
 export type PlannerSearchPolicyReasonCode =
@@ -28,8 +29,9 @@ export interface PlannerSearchPolicyResolution {
 export const PLANNER_CAPABILITY_REQUIREMENTS: Readonly<
   Record<PlannerCapability, Readonly<PlannerCapabilityRequirement>>
 > = Object.freeze({
-  ANCHORED_ACCOMPANIMENT: Object.freeze({
+  ANCHORED_ACCOMPANIMENT: defineCapabilityRequirement({
     capability: "ANCHORED_ACCOMPANIMENT",
+    supportedPolicies: ["EXACT_CONSTRUCTIVE"],
     requiredPolicy: "EXACT_CONSTRUCTIVE",
   }),
 });
@@ -38,6 +40,22 @@ const MIGRATION_DEFAULT_POLICY: PlannerSearchPolicy = "COMPATIBILITY_PRESERVING"
 
 function canonical<T extends string>(values: Iterable<T>): readonly T[] {
   return [...new Set(values)].sort();
+}
+
+function defineCapabilityRequirement(
+  requirement: PlannerCapabilityRequirement,
+): Readonly<PlannerCapabilityRequirement> {
+  return Object.freeze({
+    ...requirement,
+    supportedPolicies: Object.freeze(canonical(requirement.supportedPolicies)),
+  });
+}
+
+export function isPlannerCapabilitySupported(
+  requirement: Readonly<PlannerCapabilityRequirement>,
+  policy: PlannerSearchPolicy,
+): boolean {
+  return requirement.supportedPolicies.includes(policy);
 }
 
 export function detectPlannerCapabilities(
@@ -58,13 +76,19 @@ export function resolvePlannerSearchPolicy(
   const supportedCapabilities = canonical(
     requiredCapabilities.filter(
       (capability) =>
-        PLANNER_CAPABILITY_REQUIREMENTS[capability].requiredPolicy === effectivePolicy,
+        isPlannerCapabilitySupported(
+          PLANNER_CAPABILITY_REQUIREMENTS[capability],
+          effectivePolicy,
+        ),
     ),
   );
   const unsupportedCapabilities = canonical(
     requiredCapabilities.filter(
       (capability) =>
-        PLANNER_CAPABILITY_REQUIREMENTS[capability].requiredPolicy !== effectivePolicy,
+        !isPlannerCapabilitySupported(
+          PLANNER_CAPABILITY_REQUIREMENTS[capability],
+          effectivePolicy,
+        ),
     ),
   );
   const warnings = canonical<PlannerSearchPolicyReasonCode>(

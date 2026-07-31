@@ -3,8 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { AnchoredAccompaniment, PlannerNextProblem, PlannerSearchPolicy } from "./contracts";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
+import type { PlannerCapabilityRequirement } from "./searchPolicy";
 import {
   detectPlannerCapabilities,
+  isPlannerCapabilitySupported,
   PLANNER_CAPABILITY_REQUIREMENTS,
   resolvePlannerSearchPolicy,
 } from "./searchPolicy";
@@ -48,8 +50,23 @@ test("an omitted policy uses the explicit migration default and deprecation warn
 test("anchored accompaniment is detected canonically and requires the exact policy", () => {
   assert.deepEqual(PLANNER_CAPABILITY_REQUIREMENTS.ANCHORED_ACCOMPANIMENT, {
     capability: "ANCHORED_ACCOMPANIMENT",
+    supportedPolicies: ["EXACT_CONSTRUCTIVE"],
     requiredPolicy: "EXACT_CONSTRUCTIVE",
   });
+  assert.equal(
+    isPlannerCapabilitySupported(
+      PLANNER_CAPABILITY_REQUIREMENTS.ANCHORED_ACCOMPANIMENT,
+      "EXACT_CONSTRUCTIVE",
+    ),
+    true,
+  );
+  assert.equal(
+    isPlannerCapabilitySupported(
+      PLANNER_CAPABILITY_REQUIREMENTS.ANCHORED_ACCOMPANIMENT,
+      "COMPATIBILITY_PRESERVING",
+    ),
+    false,
+  );
   const exact = problem("EXACT_CONSTRUCTIVE");
   exact.anchoredAccompaniments = [contract("b"), contract("a"), contract("b")];
   assert.deepEqual(detectPlannerCapabilities(exact), ["ANCHORED_ACCOMPANIMENT"]);
@@ -64,6 +81,23 @@ test("anchored accompaniment is detected canonically and requires the exact poli
     reasonCodes: [],
     warnings: [],
   });
+});
+
+test("the requirement contract can support both policies without requiring either", () => {
+  const requirement: PlannerCapabilityRequirement = {
+    capability: "ANCHORED_ACCOMPANIMENT",
+    supportedPolicies: ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"],
+  };
+  assert.equal(requirement.requiredPolicy, undefined);
+  assert.equal(isPlannerCapabilitySupported(requirement, "COMPATIBILITY_PRESERVING"), true);
+  assert.equal(isPlannerCapabilitySupported(requirement, "EXACT_CONSTRUCTIVE"), true);
+  assert.deepEqual(
+    PLANNER_CAPABILITY_REQUIREMENTS.ANCHORED_ACCOMPANIMENT.supportedPolicies,
+    ["EXACT_CONSTRUCTIVE"],
+  );
+  const supportedPolicies =
+    PLANNER_CAPABILITY_REQUIREMENTS.ANCHORED_ACCOMPANIMENT.supportedPolicies;
+  assert.deepEqual(supportedPolicies, [...new Set(supportedPolicies)].sort());
 });
 
 test("an incompatible explicit policy is explained and never silently replaced", () => {
