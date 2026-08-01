@@ -45,6 +45,15 @@ assert.equal(baseline.plan.evidence.fullFingerprint, "fded1fd188ba3daa833f68ce74
 assert.equal(baseline.quality.summary.qualityFingerprint, "a64f641fcde8d470808a1b3e2eda986b5a99390600dd5c70ab189d37fc16189f");
 assert.equal(baseline.hardValid, true); assert.equal(experiment.hardValid, true);
 assert.equal(baseline.inputUnchanged, true); assert.equal(experiment.inputUnchanged, true);
+assert.equal(experiment.plan.status, "COMPLETE"); assert.equal(experiment.plan.scheduledTasks.length, 53);
+assert.equal(experiment.plan.remainingTaskIds.length, 0); assert.equal(experiment.plan.evidence.branchesExplored, 70_704);
+assert.equal(experiment.plan.evidence.coreBranches, 48_224); assert.equal(experiment.plan.evidence.standaloneBranches, 22_480);
+assert.equal(experiment.plan.evidence.selectedCoreFingerprint, "44f10279aa01fa7628c01962e9fbdd819d69486ae11df4fe4851de946600f07f");
+assert.equal(experiment.plan.evidence.fullFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
+assert.equal(experiment.quality.summary.qualityFingerprint, "13a87e0d9b6983c18ca5a0162785058b67b10f8ea65d46644463f49063791c75");
+assert.equal(experiment.orderingEvidence?.cacheScope, "DESCRIPTOR_STATE");
+assert.equal(experiment.orderingEvidence?.staticStartEvaluations, 13_944);
+assert.equal(experiment.orderingEvidence?.staticStartsFound, 2_748);
 
 const beforeByParticipant = new Map(baseline.quality.participants.map((item) => [item.participantId, item]));
 const participantDeltas = experiment.quality.participants.map((item) => ({ participantId: item.participantId,
@@ -89,3 +98,4 @@ const artifact = { baseline, experiment, deterministic: true, orderInvariant: tr
     : classification === "C" ? "No integrar; estudiar contexto dinámico o comparación futura de hojas completas."
     : classification === "D" ? "Descartar este orden." : "No aumentar presupuesto; analizar por qué se retrasa la primera solución." };
 process.stdout.write(`${JSON.stringify(artifact, null, 2)}\n`);
+assert.equal(classification, "B");

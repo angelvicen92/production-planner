@@ -27,6 +27,7 @@ export interface ResidualOrderingDecision {
 
 export interface ResidualObligationOrderingEvidence {
   orderingPolicy: "RESIDUAL_OBLIGATION_ALIGNMENT";
+  cacheScope: "DESCRIPTOR_STATE";
   orderingDecisions: number;
   candidatesRanked: number;
   candidatesWithResidualTasks: number;
@@ -43,29 +44,54 @@ export interface ResidualObligationOrderingEvidence {
   selectedProjectedMaximumGapLowerBoundByDepth: Record<string, number>;
 }
 
-interface Interval { start: number; end: number }
-interface Metrics { span: number; idle: number; maximumGap: number; nearestDistance: number }
+export interface ResidualObligationInterval { start: number; end: number }
+export interface ResidualObligationIntervalMetrics {
+  span: number;
+  productive: number;
+  idle: number;
+  maximumGap: number;
+  nearestDistance: number;
+}
 
 const MAX_DIAGNOSTIC_DECISIONS = 40;
 const fits = (windows: readonly Window[] | undefined, start: number, end: number): boolean =>
   windows === undefined || windows.some((window) => window.start <= start && end <= window.end);
-const intervalsForParticipant = (tasks: readonly Readonly<ScheduledTask>[], participantId: string): Interval[] =>
+const intervalsForParticipant = (tasks: readonly Readonly<ScheduledTask>[], participantId: string): ResidualObligationInterval[] =>
   tasks.filter((task) => task.kind !== "technical" && task.participantId === participantId)
     .map(({ start, end }) => ({ start, end }));
 
-function metrics(intervals: readonly Interval[], added?: Interval): Metrics {
-  const ordered = [...intervals, ...(added ? [added] : [])].sort((a, b) => a.start - b.start || a.end - b.end);
-  if (!ordered.length) return { span: 0, idle: 0, maximumGap: 0, nearestDistance: 0 };
-  let productive = 0, maximumGap = 0, nearestDistance = Number.POSITIVE_INFINITY;
-  for (const interval of ordered) productive += interval.end - interval.start;
-  for (let index = 1; index < ordered.length; index += 1) {
-    const gap = Math.max(0, ordered[index]!.start - ordered[index - 1]!.end);
+export function mergeResidualObligationIntervals(
+  intervals: readonly Readonly<ResidualObligationInterval>[],
+): ResidualObligationInterval[] {
+  const ordered = intervals.filter(({ start, end }) => end > start)
+    .map(({ start, end }) => ({ start, end }))
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: ResidualObligationInterval[] = [];
+  for (const interval of ordered) {
+    const current = merged.at(-1);
+    if (!current || interval.start > current.end) merged.push({ ...interval });
+    else current.end = Math.max(current.end, interval.end);
+  }
+  return merged;
+}
+
+export function measureResidualObligationIntervals(
+  intervals: readonly Readonly<ResidualObligationInterval>[],
+  added?: Readonly<ResidualObligationInterval>,
+): ResidualObligationIntervalMetrics {
+  const existing = mergeResidualObligationIntervals(intervals);
+  const merged = mergeResidualObligationIntervals([...existing, ...(added ? [{ ...added }] : [])]);
+  if (!merged.length) return { span: 0, productive: 0, idle: 0, maximumGap: 0, nearestDistance: 0 };
+  const productive = merged.reduce((sum, interval) => sum + interval.end - interval.start, 0);
+  let maximumGap = 0, nearestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < merged.length; index += 1) {
+    const gap = Math.max(0, merged[index]!.start - merged[index - 1]!.end);
     maximumGap = Math.max(maximumGap, gap);
   }
-  if (added) for (const interval of intervals) nearestDistance = Math.min(nearestDistance,
+  if (added && added.end > added.start) for (const interval of existing) nearestDistance = Math.min(nearestDistance,
     Math.max(0, added.start - interval.end, interval.start - added.end));
-  const span = ordered.at(-1)!.end - ordered[0]!.start;
-  return { span, idle: Math.max(0, span - productive), maximumGap,
+  const span = merged.at(-1)!.end - merged[0]!.start;
+  return { span, productive, idle: Math.max(0, span - productive), maximumGap,
     nearestDistance: Number.isFinite(nearestDistance) ? nearestDistance : 0 };
 }
 
@@ -98,7 +124,7 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
   const transition = Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
   const idealFeederEnd = candidate.firstObligation - transition;
   current.push({ start: idealFeederEnd - candidate.feeder.duration, end: idealFeederEnd });
-  const currentMetrics = metrics(current);
+  const currentMetrics = measureResidualObligationIntervals(current);
   let projectedPresence = currentMetrics.span, projectedGap = currentMetrics.maximumGap;
   let presenceExpansion = 0, idleExpansion = 0, minimumGap = 0, empty = 0;
   for (const task of [...residual].sort((a, b) => a.id.localeCompare(b.id))) {
@@ -106,15 +132,17 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const resources = (task.requiredResourceIds ?? []).map((id) => problem.resources.find((item) => item.id === id));
     const coach = task.coachId === undefined ? undefined : problem.coaches.find(({ id }) => id === task.coachId);
-    let best: (Metrics & { start: number }) | undefined;
+    const missingReference = participant === undefined || space === undefined || resources.some((resource) => resource === undefined)
+      || (task.coachId !== undefined && coach === undefined);
+    let best: (ResidualObligationIntervalMetrics & { start: number }) | undefined;
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
       if (counters) counters.staticStartEvaluations += 1;
       const end = start + task.duration;
-      if (!fits(task.availability, start, end) || !fits(participant?.availability, start, end)
+      if (missingReference || !fits(task.availability, start, end) || !fits(participant!.availability, start, end)
         || !fits(space?.availability, start, end) || resources.some((resource) => !fits(resource?.availability, start, end))
         || !fits(coach?.availability, start, end)) continue;
       if (counters) counters.staticStartsFound += 1;
-      const value = { ...metrics(current, { start, end }), start };
+      const value = { ...measureResidualObligationIntervals(current, { start, end }), start };
       if (!best || lexicographicNumbers([value.span, value.maximumGap, value.idle - currentMetrics.idle,
         value.nearestDistance, value.start], [best.span, best.maximumGap, best.idle - currentMetrics.idle,
         best.nearestDistance, best.start]) < 0) best = value;
@@ -138,17 +166,17 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
   standaloneTasks: readonly Readonly<Task>[]): { options: NonNullable<ExactItinerantPlanSearchOptions["coreOrderer"]>;
     evidence: ResidualObligationOrderingEvidence } {
   const evidence: ResidualObligationOrderingEvidence = { orderingPolicy: "RESIDUAL_OBLIGATION_ALIGNMENT",
+    cacheScope: "DESCRIPTOR_STATE",
     orderingDecisions: 0, candidatesRanked: 0, candidatesWithResidualTasks: 0, candidatesWithoutResidualTasks: 0,
     staticStartEvaluations: 0, staticStartsFound: 0, emptyStaticDomains: 0, decisionOrderChangedCount: 0,
     firstCandidateChangedCount: 0, selectedCandidateHadResidualTasksCount: 0,
     usesIdealLatestFeederLowerBound: true, decisions: [], selectedProjectedPresenceLowerBoundByDepth: {},
     selectedProjectedMaximumGapLowerBoundByDepth: {} };
-  const keys = new Map<string, ResidualObligationAlignmentKey>();
-  const signature = (candidate: ExactMainChoiceDescriptor) => `${candidate.depth}:${candidate.slot}:${candidate.mainTask.id}`;
+  const keys = new WeakMap<ExactMainChoiceDescriptor, ResidualObligationAlignmentKey>();
   const key = (candidate: ExactMainChoiceDescriptor): ResidualObligationAlignmentKey => {
-    const id = signature(candidate), known = keys.get(id); if (known) return known;
+    const known = keys.get(candidate); if (known) return known;
     const evaluated = evaluateResidualObligationCandidate(problem, standaloneTasks, candidate, evidence);
-    keys.set(id, evaluated); return evaluated;
+    keys.set(candidate, evaluated); return evaluated;
   };
   const options: NonNullable<ExactItinerantPlanSearchOptions["coreOrderer"]> = {
     mainChoiceComparator: (a, b) => lexicographicNumbers(residualObligationAlignmentTuple(key(a)), residualObligationAlignmentTuple(key(b))),

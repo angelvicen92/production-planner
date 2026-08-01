@@ -3,7 +3,7 @@ import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
 import { createResidualObligationMainOrderer, evaluateResidualObligationCandidate,
-  residualObligationAlignmentTuple } from "./residualObligationAlignment";
+  measureResidualObligationIntervals, mergeResidualObligationIntervals, residualObligationAlignmentTuple } from "./residualObligationAlignment";
 
 const windows = [{ start: 0, end: 200 }];
 function problem(): PlannerNextProblem { return { day: { start: 0, end: 200 }, protectedMeal: { start: 190, end: 200 },
@@ -80,4 +80,80 @@ test("evaluation does not mutate its inputs", () => {
 test("stable id is the final tie-break", () => {
   const input = problem(), orderer = createResidualObligationMainOrderer(input, []);
   assert.ok(orderer.options.mainChoiceComparator!(descriptor(80, "a"), descriptor(80, "b")) < 0);
+});
+
+test("descriptor-state cache never reuses a key across backtracked branch states", () => {
+  const input = problem(), task = residual("late", [{ start: 150, end: 170 }]);
+  const placed = (id: string, start: number, end: number) => ({ id, kind: "auxiliary" as const, participantId: "p",
+    duration: end - start, spaceId: "aux", dependencies: [], start, end });
+  const a = { ...descriptor(80), placedTasks: [placed("placed-a", 0, 20)] };
+  const b = { ...descriptor(80), placedTasks: [placed("placed-b", 120, 140)] };
+  const run = (first: ExactMainChoiceDescriptor, second: ExactMainChoiceDescriptor) => {
+    const orderer = createResidualObligationMainOrderer(input, [task]);
+    orderer.options.mainChoiceComparator!(first, first);
+    const afterFirst = orderer.evidence.staticStartEvaluations;
+    orderer.options.mainChoiceComparator!(first, first);
+    assert.equal(orderer.evidence.staticStartEvaluations, afterFirst);
+    orderer.options.mainChoiceComparator!(second, second);
+    assert.equal(orderer.evidence.staticStartEvaluations, afterFirst * 2);
+    orderer.options.onMainChoicesRanked!([first, second], [first, second]);
+    return orderer.evidence.decisions[0]!.keys.map(({ currentPresenceSpan, projectedPresenceLowerBound }) =>
+      ({ currentPresenceSpan, projectedPresenceLowerBound }));
+  };
+  const ab = run(a, b), ba = run(b, a);
+  assert.notDeepEqual(ab[0], ab[1]);
+  assert.deepEqual(ab, [ba[1], ba[0]]);
+  assert.deepEqual(ab, [
+    { currentPresenceSpan: 90, projectedPresenceLowerBound: 160 },
+    { currentPresenceSpan: 80, projectedPresenceLowerBound: 100 },
+  ]);
+});
+
+test("canonical interval union ignores invalid intervals and does not mutate input", () => {
+  const input = [{ start: 20, end: 50 }, { start: 0, end: 30 }, { start: 60, end: 70 }, { start: 5, end: 5 }];
+  const before = structuredClone(input);
+  assert.deepEqual(mergeResidualObligationIntervals(input), [{ start: 0, end: 50 }, { start: 60, end: 70 }]);
+  assert.deepEqual(input, before);
+});
+
+test("contained residual uses union productive time and preserves the real ten-minute gap", () => {
+  const measured = measureResidualObligationIntervals([{ start: 0, end: 100 }, { start: 110, end: 120 }], { start: 10, end: 20 });
+  assert.deepEqual(measured, { span: 120, productive: 110, idle: 10, maximumGap: 10, nearestDistance: 0 });
+  const candidate = { ...descriptor(0), feeder: { ...descriptor(0).feeder, duration: 0 },
+    operationTasks: [{ ...descriptor(0).operationTasks[0]!, duration: 100, start: 0, end: 100 }],
+    placedTasks: [{ id: "placed", kind: "auxiliary" as const, participantId: "p", duration: 10, spaceId: "aux",
+      dependencies: [], start: 110, end: 120 }] };
+  const key = evaluateResidualObligationCandidate(problem(), [residual("inside", [{ start: 10, end: 20 }])], candidate);
+  assert.equal(key.currentPresenceSpan, 120); assert.equal(key.projectedPresenceLowerBound, 120);
+  assert.equal(key.projectedMaximumGapLowerBound, 10); assert.equal(key.sumIndependentIdleExpansion, 0);
+});
+
+test("partially overlapping intervals produce canonical productive idle and gap", () => {
+  assert.deepEqual(measureResidualObligationIntervals([{ start: 0, end: 30 }, { start: 20, end: 50 }, { start: 60, end: 70 }]),
+    { span: 70, productive: 60, idle: 10, maximumGap: 10, nearestDistance: 0 });
+});
+
+test("adjacent intervals are one productive union without idle or gap", () => {
+  assert.deepEqual(measureResidualObligationIntervals([{ start: 0, end: 20 }], { start: 20, end: 40 }),
+    { span: 40, productive: 40, idle: 0, maximumGap: 0, nearestDistance: 0 });
+});
+
+test("an ideal feeder contained in an existing obligation is not double-counted", () => {
+  const input = problem(), candidate = { ...descriptor(80), placedTasks: [{ id: "wide", kind: "auxiliary" as const,
+    participantId: "p", duration: 100, spaceId: "aux", dependencies: [], start: 0, end: 100 }] };
+  const key = evaluateResidualObligationCandidate(input, [], candidate);
+  assert.equal(key.currentPresenceSpan, 100); assert.equal(key.projectedMaximumGapLowerBound, 0);
+});
+
+for (const [name, mutate] of [
+  ["participant", (input: PlannerNextProblem, task: Task) => { input.participants = input.participants.filter(({ id }) => id !== task.participantId); }],
+  ["space", (input: PlannerNextProblem, task: Task) => { task.spaceId = "missing-space"; }],
+  ["resource", (_input: PlannerNextProblem, task: Task) => { task.requiredResourceIds = ["missing-resource"]; }],
+  ["coach", (_input: PlannerNextProblem, task: Task) => { if (task.kind !== "technical") task.coachId = "missing-coach"; }],
+] as const) test(`an explicit missing ${name} reference creates an empty static domain without throwing`, () => {
+  const input = problem(), task = residual("missing"); mutate(input, task);
+  const evidence = createResidualObligationMainOrderer(input, [task]);
+  evidence.options.mainChoiceComparator!(descriptor(80), descriptor(80, "other-main"));
+  assert.equal(evidence.evidence.emptyStaticDomains, 2);
+  assert.equal(evidence.evidence.staticStartsFound, 0);
 });
