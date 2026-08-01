@@ -11,6 +11,7 @@ import {
 
 function reversedProblem() {
   const problem = projectCombinedFocalA2ItinerantProblem([...itinerantOperationProfiles].reverse());
+  problem.searchPolicy = "EXACT_CONSTRUCTIVE";
   problem.tasks.reverse(); problem.participants.reverse(); problem.spaces.reverse(); problem.resources.reverse();
   problem.anchoredAccompaniments?.reverse();
   return problem;
@@ -42,11 +43,23 @@ const artifact = {
   itinerantOperationCount: standalone.length + (problem.anchoredAccompaniments?.length ?? 0),
   productiveMinutes: standalone.reduce((sum, task) => sum + task.duration, 0)
     + (problem.anchoredAccompaniments?.length ?? 0) * 45,
-  hardValid: validation.hardValid, partialOperationCount: evaluation.exactMembershipSatisfied ? 0 : 1,
+  hardValid: validation.hardValid, partialOperationCount: first.scheduledTasks.length === 0 || evaluation.exactMembershipSatisfied ? 0 : 1,
   inputUnchanged: JSON.stringify(problem) === before,
   deterministic: JSON.stringify(first) === JSON.stringify(second),
-  orderInvariant: first.evidence.fullFingerprint === reversed.evidence.fullFingerprint,
-  coreIdentical: JSON.stringify(resultCore) === JSON.stringify(core.scheduledTasks), evidence: first.evidence,
+  orderInvariant: JSON.stringify(first) === JSON.stringify(reversed),
+  isolatedCoreFingerprint: core.evidence.coreFingerprint,
+  selectedCoreFingerprint: first.evidence.selectedCoreFingerprint,
+  selectedCoreDistributionDiffers: first.complete ? JSON.stringify(resultCore) !== JSON.stringify(core.scheduledTasks) : null,
+  coreCompleteLeavesEvaluated: first.evidence.coreCompleteLeavesEvaluated,
+  coreLeavesRejectedByStandalone: first.evidence.coreLeavesRejectedByStandalone,
+  standaloneSearchInvocations: first.evidence.standaloneSearchInvocations,
+  standaloneBlockingTaskCounts: first.evidence.standaloneBlockingTaskCounts,
+  branches: { core: first.evidence.coreBranches, standalone: first.evidence.standaloneBranches,
+    total: first.evidence.branchesExplored },
+  backtracks: { core: first.evidence.coreBacktracks, standalone: first.evidence.standaloneBacktracks },
+  maximumDepth: { core: first.evidence.coreMaximumDepth, standalone: first.evidence.standaloneMaximumDepth },
+  completeLeaves: { core: first.evidence.coreCompleteLeafCount, standalone: first.evidence.standaloneCompleteLeafCount },
+  evidence: first.evidence,
 };
 process.stdout.write(`${JSON.stringify(artifact, null, 2)}\n`);
 
@@ -57,9 +70,10 @@ assert.equal(artifact.taskCounts.standalone, 9); assert.equal(artifact.taskCount
 assert.equal(artifact.anchoredOperationCount, 3); assert.equal(artifact.itinerantOperationCount, 12);
 assert.equal(artifact.productiveMinutes, 375); assert.equal(first.remainingTaskIds.length, 0);
 assert.equal(validation.hardValid, true); assert.equal(artifact.partialOperationCount, 0);
-assert.deepEqual(resultCore, core.scheduledTasks);
 assert.equal(core.evidence.coreFingerprint, "c85b9b2cfbbf9434135f08e2b293b0ab6c23e5ff070e880cbb5406022dd52785");
 assert.equal(artifact.inputUnchanged, true); assert.equal(artifact.deterministic, true); assert.equal(artifact.orderInvariant, true);
 assert.ok(first.evidence.fullFingerprint); assert.equal(first.evidence.fullFingerprint, second.evidence.fullFingerprint);
 assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
+assert.ok(first.evidence.selectedCoreFingerprint); assert.equal(first.evidence.selectedCoreFingerprint, second.evidence.selectedCoreFingerprint);
+assert.equal(first.evidence.selectedCoreFingerprint, reversed.evidence.selectedCoreFingerprint);
 assert.ok(first.evidence.branchesExplored <= 300_000);

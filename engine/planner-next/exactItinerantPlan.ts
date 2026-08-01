@@ -1,20 +1,18 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
-  constructExactMainAndFeederCore,
+  createExactSearchLedger,
+  runExactMainAndFeederSearch,
   type ExactMainAndFeederCoreStatus,
+  type ExactSearchLedger,
 } from "./exactMainAndFeederCore";
 import { fingerprint } from "./fingerprint";
 import { canPlaceTask } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { validatePlan } from "./validate";
 
-export type ExactItinerantPlanStatus =
-  | "COMPLETE"
-  | "CORE_FAILED"
-  | "UNSUPPORTED_STANDALONE_SHAPE"
-  | "INFEASIBLE"
-  | "BRANCH_BUDGET_EXHAUSTED";
+export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
+  | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
 
 export interface ExactItinerantPlanEvidence {
   branchesExplored: number;
@@ -26,14 +24,27 @@ export interface ExactItinerantPlanEvidence {
   standaloneBacktracks: number;
   standaloneMaximumDepth: number;
   standaloneCompleteLeafCount: number;
+  coreCompleteLeavesEvaluated: number;
+  coreLeavesRejectedByStandalone: number;
+  standaloneSearchInvocations: number;
+  standaloneBlockingTaskCounts: Record<string, number>;
+  /** Canonical stable-ID list of the standalone tasks in the accepted plan, not DFS order. */
   selectedStandaloneTaskIds: string[];
   selectedStandaloneStarts: Record<string, number>;
+  /** Actual dynamic DFS selection order along the accepted standalone path. */
+  selectedStandaloneSelectionOrder: string[];
   coreFingerprint: string | null;
+  selectedCoreFingerprint: string | null;
+  defaultCoreFingerprint: string | null;
   fullFingerprint: string | null;
   remainingTaskIds: string[];
   coreStatus: ExactMainAndFeederCoreStatus;
   coreReasonCodes: string[];
   reasonCodes: string[];
+  coreBacktracks: number;
+  coreMaximumDepth: number;
+  coreCompleteLeafCount: number;
+  lastExhaustionPhase: "CORE" | "STANDALONE" | null;
 }
 
 export interface ExactItinerantPlanResult {
@@ -45,8 +56,9 @@ export interface ExactItinerantPlanResult {
   evidence: ExactItinerantPlanEvidence;
 }
 
-type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
+type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
+interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; selectionOrder: string[] }
 
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
@@ -62,8 +74,7 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
 }
 
 function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
-  const anchoredIds = anchoredTaskIds(problem);
-  const reasons: string[] = [];
+  const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   for (const task of [...pending].sort(byId)) {
     if (task.kind !== "auxiliary") reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
@@ -78,110 +89,114 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
   return [...new Set(reasons)].sort();
 }
 
-/** Constructs the accepted exact core, then atomically extends it with standalone itinerant tasks. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
-  const core = constructExactMainAndFeederCore(problem);
-  const evidence: ExactItinerantPlanEvidence = {
-    branchesExplored: core.evidence.branchesExplored,
-    coreBranches: core.evidence.branchesExplored,
-    standaloneBranches: 0,
-    standaloneStartChecks: 0,
-    standaloneTaskSelections: 0,
-    standaloneZeroAlternativePrunes: 0,
-    standaloneBacktracks: 0,
-    standaloneMaximumDepth: 0,
-    standaloneCompleteLeafCount: 0,
-    selectedStandaloneTaskIds: [],
-    selectedStandaloneStarts: {},
-    coreFingerprint: core.evidence.coreFingerprint,
-    fullFingerprint: null,
-    remainingTaskIds: [...core.remainingTaskIds].sort(),
-    coreStatus: core.status,
-    coreReasonCodes: [...core.evidence.reasonCodes],
-    reasonCodes: [],
-  };
-  const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
-    evidence.branchesExplored = evidence.coreBranches + evidence.standaloneBranches;
-    evidence.reasonCodes = [...new Set(reasons)].sort();
-    return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
-      remainingTaskIds: [...evidence.remainingTaskIds], evidence };
-  };
-  if (core.status !== "COMPLETE") return fail("CORE_FAILED", [`CORE_${core.status}`, ...core.evidence.reasonCodes]);
-
-  const coreIds = new Set(core.scheduledTasks.map(({ id }) => id));
-  const taskById = new Map(problem.tasks.map((task) => [task.id, task]));
-  const pending = core.remainingTaskIds.map((id) => taskById.get(id)).filter((task): task is Task => task !== undefined);
-  const missingIds = core.remainingTaskIds.filter((id) => !taskById.has(id)).map((id) => `MISSING_REMAINING_TASK:${id}`);
-  const unsupported = [...missingIds, ...unsupportedShapeReasons(problem, pending, coreIds)].sort();
-  if (unsupported.length > 0) return fail("UNSUPPORTED_STANDALONE_SHAPE", unsupported);
-
-  const allowance = Math.max(0, problem.budget.maxBranchExpansions - evidence.coreBranches);
-  let selected: ScheduledTask[] | null = null;
-  const consumeBranch = (): boolean => {
-    if (evidence.standaloneBranches >= allowance) return false;
-    evidence.standaloneBranches += 1;
-    evidence.branchesExplored = evidence.coreBranches + evidence.standaloneBranches;
-    return true;
-  };
-  const search = (remaining: Task[], placedStandalone: ScheduledTask[], depth: number): SearchOutcome => {
+function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
+  pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence): StandaloneSearchResult {
+  evidence.standaloneSearchInvocations += 1;
+  let found: ScheduledTask[] | null = null, foundOrder: string[] = [];
+  const search = (remaining: Task[], placed: ScheduledTask[], depth: number, selectionOrder: string[]): StandaloneOutcome => {
     evidence.standaloneMaximumDepth = Math.max(evidence.standaloneMaximumDepth, depth);
     if (remaining.length === 0) {
-      if (!consumeBranch()) return "BUDGET_EXHAUSTED";
+      if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
       evidence.standaloneCompleteLeafCount += 1;
-      const candidate = orderScheduled([...core.scheduledTasks, ...placedStandalone]);
-      const expectedIds = [...problem.tasks].sort(byId).map(({ id }) => id);
-      const actualIds = [...candidate].sort(byId).map(({ id }) => id);
-      const exact = actualIds.length === expectedIds.length && actualIds.every((id, index) => id === expectedIds[index]);
-      if (exact && validatePlan(problem, candidate, [], core.scheduledSpaceMeals).hardValid) {
-        selected = candidate;
-        return "FOUND";
+      const candidate = orderScheduled([...coreTasks, ...placed]);
+      const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
+      const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
+      if (exact && validatePlan(problem, candidate, [], coreMeals).hardValid) {
+        found = candidate; foundOrder = selectionOrder; return "FOUND";
       }
       return "DEAD_END";
     }
-
     const alternatives: Positions[] = [];
     for (const task of [...remaining].sort(byId)) {
       const starts: number[] = [];
       for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
-        if (!consumeBranch()) return "BUDGET_EXHAUSTED";
+        if (!ledger.consume("STANDALONE")) return "BUDGET_EXHAUSTED";
         evidence.standaloneStartChecks += 1;
-        if (canPlaceTask(problem, task, start, [...core.scheduledTasks, ...placedStandalone], core.scheduledSpaceMeals)) starts.push(start);
+        if (canPlaceTask(problem, task, start, [...coreTasks, ...placed], coreMeals)) starts.push(start);
       }
       if (starts.length === 0) {
         evidence.standaloneZeroAlternativePrunes += 1;
+        evidence.standaloneBlockingTaskCounts[task.id] = (evidence.standaloneBlockingTaskCounts[task.id] ?? 0) + 1;
         return "DEAD_END";
       }
       alternatives.push({ task, starts, effectiveDeadline: effectiveDeadline(problem, task) });
     }
-    alternatives.sort((a, b) => a.starts.length - b.starts.length
-      || a.effectiveDeadline - b.effectiveDeadline
+    alternatives.sort((a, b) => a.starts.length - b.starts.length || a.effectiveDeadline - b.effectiveDeadline
       || b.task.duration - a.task.duration
       || (b.task.requiredResourceIds?.length ?? 0) - (a.task.requiredResourceIds?.length ?? 0)
       || a.task.id.localeCompare(b.task.id));
     const choice = alternatives[0]!;
     evidence.standaloneTaskSelections += 1;
     const orderedStarts = choice.starts.map((start) => scoreAuxiliaryTask(problem, choice.task, start,
-      [...core.scheduledTasks, ...placedStandalone])).sort((a, b) => a.cost - b.cost
-        || a.scheduled.start - b.scheduled.start || a.scheduled.id.localeCompare(b.scheduled.id));
+      [...coreTasks, ...placed])).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
+        || a.scheduled.id.localeCompare(b.scheduled.id));
     for (const { scheduled } of orderedStarts) {
-      const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placedStandalone, scheduled], depth + 1);
-      if (child === "FOUND") return child;
-      if (child === "BUDGET_EXHAUSTED") return child;
+      const child = search(remaining.filter(({ id }) => id !== choice.task.id), [...placed, scheduled], depth + 1,
+        [...selectionOrder, choice.task.id]);
+      if (child !== "DEAD_END") return child;
       evidence.standaloneBacktracks += 1;
     }
     return "DEAD_END";
   };
+  const outcome = search(pending, [], 0, []);
+  return { outcome, tasks: found, selectionOrder: foundOrder };
+}
 
-  const outcome = search(pending, [], 0);
-  if (outcome === "BUDGET_EXHAUSTED") return fail("BRANCH_BUDGET_EXHAUSTED", ["STANDALONE_BRANCH_BUDGET_EXHAUSTED"]);
-  if (outcome === "DEAD_END" || selected === null) return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"]);
-  const scheduledTasks: ScheduledTask[] = selected;
-  evidence.selectedStandaloneTaskIds = scheduledTasks.filter(({ id }) => !coreIds.has(id)).map(({ id }) => id);
-  evidence.selectedStandaloneStarts = Object.fromEntries(scheduledTasks.filter(({ id }) => !coreIds.has(id)).map(({ id, start }) => [id, start]));
-  evidence.fullFingerprint = fingerprint(scheduledTasks, [], core.scheduledSpaceMeals);
-  evidence.remainingTaskIds = [];
-  evidence.reasonCodes = [];
-  evidence.branchesExplored = evidence.coreBranches + evidence.standaloneBranches;
-  return { status: "COMPLETE", complete: true, scheduledTasks,
-    scheduledSpaceMeals: [...core.scheduledSpaceMeals], remainingTaskIds: [], evidence };
+/** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
+export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+  const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
+  const evidence: ExactItinerantPlanEvidence = {
+    branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
+    standaloneTaskSelections: 0, standaloneZeroAlternativePrunes: 0, standaloneBacktracks: 0,
+    standaloneMaximumDepth: 0, standaloneCompleteLeafCount: 0, coreCompleteLeavesEvaluated: 0,
+    coreLeavesRejectedByStandalone: 0, standaloneSearchInvocations: 0, standaloneBlockingTaskCounts: {},
+    selectedStandaloneTaskIds: [], selectedStandaloneStarts: {}, selectedStandaloneSelectionOrder: [],
+    coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
+    remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
+    coreMaximumDepth: 0, coreCompleteLeafCount: 0, lastExhaustionPhase: null,
+  };
+  let selectedTasks: ScheduledTask[] | null = null, selectedMeals: ScheduledSpaceMeal[] = [], selectedCoreIds = new Set<string>();
+  let unsupported: string[] = [];
+  const core = runExactMainAndFeederSearch(problem, { ledger, onHardValidCoreLeaf(candidate) {
+    evidence.coreCompleteLeavesEvaluated += 1;
+    const coreIds = new Set(candidate.tasks.map(({ id }) => id));
+    const taskMap = new Map(problem.tasks.map((task) => [task.id, task]));
+    const pending = candidate.remainingTaskIds.map((id) => taskMap.get(id)).filter((task): task is Task => task !== undefined);
+    unsupported = [...candidate.remainingTaskIds.filter((id) => !taskMap.has(id)).map((id) => `MISSING_REMAINING_TASK:${id}`),
+      ...unsupportedShapeReasons(problem, pending, coreIds)].sort();
+    if (unsupported.length) return "BUDGET_EXHAUSTED";
+    const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, pending, ledger, evidence);
+    if (standalone.outcome === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+    if (standalone.outcome === "DEAD_END" || !standalone.tasks) {
+      evidence.coreLeavesRejectedByStandalone += 1; return "REJECT";
+    }
+    selectedTasks = standalone.tasks; selectedMeals = candidate.meals; selectedCoreIds = coreIds;
+    evidence.selectedCoreFingerprint = candidate.fingerprint; evidence.coreFingerprint = candidate.fingerprint;
+    evidence.selectedStandaloneSelectionOrder = standalone.selectionOrder;
+    return "ACCEPT";
+  }});
+  evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
+  evidence.standaloneBranches = ledger.standaloneBranches; evidence.lastExhaustionPhase = ledger.lastExhaustionPhase;
+  evidence.coreStatus = core.status; evidence.coreReasonCodes = [...core.evidence.reasonCodes];
+  evidence.coreBacktracks = core.evidence.backtracks; evidence.coreMaximumDepth = core.evidence.maximumDepth;
+  evidence.coreCompleteLeafCount = core.evidence.completeLeafCount;
+  evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
+  const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
+    evidence.reasonCodes = [...new Set(reasons)].sort();
+    return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
+      remainingTaskIds: [...evidence.remainingTaskIds], evidence };
+  };
+  if (unsupported.length) return fail("UNSUPPORTED_STANDALONE_SHAPE", unsupported);
+  if (core.status === "BRANCH_BUDGET_EXHAUSTED") return fail("BRANCH_BUDGET_EXHAUSTED",
+    [ledger.lastExhaustionPhase === "STANDALONE" ? "STANDALONE_BRANCH_BUDGET_EXHAUSTED" : "CORE_BRANCH_BUDGET_EXHAUSTED"]);
+  if (core.status !== "COMPLETE" || selectedTasks === null) {
+    if (evidence.coreCompleteLeavesEvaluated > 0) return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"]);
+    return fail("CORE_FAILED", [`CORE_${core.status}`, ...core.evidence.reasonCodes]);
+  }
+  const scheduledTasks: ScheduledTask[] = selectedTasks;
+  evidence.selectedStandaloneTaskIds = scheduledTasks.filter(({ id }) => !selectedCoreIds.has(id)).map(({ id }) => id).sort();
+  evidence.selectedStandaloneStarts = Object.fromEntries(scheduledTasks.filter(({ id }) => !selectedCoreIds.has(id))
+    .sort(byId).map(({ id, start }) => [id, start]));
+  evidence.fullFingerprint = fingerprint(scheduledTasks, [], selectedMeals); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
+  return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSpaceMeals: [...selectedMeals], remainingTaskIds: [], evidence };
 }
