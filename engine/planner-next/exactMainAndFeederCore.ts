@@ -1,5 +1,5 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
-import { anchoredAccompanimentIndex, anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { anchoredTaskIds, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, orderTimelines, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
@@ -46,8 +46,10 @@ interface Alternative {
   feederAlternativeCount: number;
   participantSlack: number;
   firstObligation: number;
-  futureMainPositions: number;
 }
+
+type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
+type FeederStartOutcome = { status: "COMPLETE"; starts: number[] } | { status: "BUDGET_EXHAUSTED" };
 
 const canonical = <T extends { id: string }>(values: readonly T[]): T[] => [...values].sort((a, b) => a.id.localeCompare(b.id));
 
@@ -84,50 +86,46 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
   const preflightReasons = preflight(problem);
   if (preflightReasons.length > 0) return fail("PREFLIGHT_FAILED", preflightReasons);
   const anchoredIds = anchoredTaskIds(problem);
-  const anchorIndex = anchoredAccompanimentIndex(problem);
   const mainIds = new Set(mains.map(({ id }) => id));
   const applicableContracts = canonical((problem.anchoredAccompaniments ?? []).filter((contract) => mainIds.has(contract.anchorTaskId)));
   const coreIds = new Set([...mainIds, ...feederByMain.values()].map((value) => typeof value === "string" ? value : value.id));
   for (const contract of applicableContracts) for (const id of [...contract.beforeTaskIds, ...contract.afterTaskIds]) coreIds.add(id);
   if ([...anchoredIds].some((id) => !coreIds.has(id))) return fail("UNSUPPORTED_CORE_SHAPE", ["UNSUPPORTED_NON_MAIN_ANCHORED_OPERATION"], coreIds);
 
-  let exhausted = false;
-  const consume = (): boolean => {
-    if (evidence.branchesExplored >= problem.budget.maxBranchExpansions) { exhausted = true; return false; }
+  let exhaustionReason = "BRANCH_BUDGET_EXHAUSTED";
+  const consumeBranch = (reason: string): boolean => {
+    if (evidence.branchesExplored >= problem.budget.maxBranchExpansions) { exhaustionReason = reason; return false; }
     evidence.branchesExplored += 1;
     return true;
   };
   const duration = mains[0]!.duration;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns);
-  if (patterns.exhausted) return fail("PREFLIGHT_FAILED", ["PATTERN_BUDGET_EXHAUSTED"], coreIds);
+  if (patterns.exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["PATTERN_SEARCH_BUDGET_EXHAUSTED"], coreIds);
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
-  const feederStarts = (feeder: Task, operation: ScheduledTask[], placed: ScheduledTask[], meals: ScheduledSpaceMeal[]): number[] => {
+  const evaluateFeederStarts = (feeder: Task, operation: ScheduledTask[], placed: ScheduledTask[],
+    meals: ScheduledSpaceMeal[], mode: "ALL" | "FIRST_WITNESS"): FeederStartOutcome => {
     const first = operation[0]!.start;
     const deadline = first - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
     const starts: number[] = [];
     for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      if (!consume()) return starts;
+      if (!consumeBranch("FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return { status: "BUDGET_EXHAUSTED" };
       evidence.feederCandidatesEvaluated += 1;
-      if (canPlaceTask(problem, feeder, start, [...placed, ...operation], meals)) starts.push(start);
+      if (canPlaceTask(problem, feeder, start, [...placed, ...operation], meals)) {
+        starts.push(start);
+        if (mode === "FIRST_WITNESS") break;
+      }
     }
-    return starts;
-  };
-  const feederHasStart = (feeder: Task, operation: ScheduledTask[], placed: ScheduledTask[], meals: ScheduledSpaceMeal[]): boolean => {
-    const deadline = operation[0]!.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
-    for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      if (canPlaceTask(problem, feeder, start, [...placed, ...operation], meals)) return true;
-    }
-    return false;
+    return { status: "COMPLETE", starts };
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
-    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number): boolean => {
-    if (exhausted) return false;
+    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number): SearchOutcome => {
     evidence.maximumDepth = Math.max(evidence.maximumDepth, depth);
     if (depth === mains.length) {
+      if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
       const reduced: PlannerNextProblem = { ...problem, tasks: problem.tasks.filter(({ id }) => coreIds.has(id)),
         anchoredAccompaniments: applicableContracts };
@@ -135,110 +133,127 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
       const actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       const validation = validatePlan(reduced, placed, [], meals);
-      if (validShape && validation.hardValid) { selected = { tasks: placed, meals, pattern }; return true; }
-      evidence.backtracks += 1;
-      return false;
+      if (validShape && validation.hardValid) { selected = { tasks: placed, meals, pattern }; return "FOUND"; }
+      return "DEAD_END";
     }
     const slot = slots[depth]!;
     const candidates: Alternative[] = [];
     for (const task of mains) {
       if (used.has(task.id) || task.blockKey !== pattern[depth]
         || !taskFitsRequiredCompositePosition(task, depth, requiredBlocks, composite)) continue;
-      if (!consume()) return false;
+      if (!consumeBranch("MAIN_CANDIDATE_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.mainCandidatesEvaluated += 1;
       const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
       const feeder = feederByMain.get(task.id)!;
       if (!operation) continue;
-      const starts = feederStarts(feeder, operation.tasks, placed, meals);
-      if (exhausted) return false;
-      if (starts.length === 0) { evidence.zeroAlternativePrunes += 1; continue; }
+      const feederResult = evaluateFeederStarts(feeder, operation.tasks, placed, meals, "ALL");
+      if (feederResult.status === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+      if (feederResult.starts.length === 0) { evidence.zeroAlternativePrunes += 1; continue; }
       const participant = problem.participants.find(({ id }) => id === task.participantId)!;
       const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
       const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start - start) + (end - operation.end))) : 0;
-      const futurePositions = slots.slice(depth + 1).filter((futureSlot, offset) => task.blockKey === pattern[depth + 1 + offset]
-        && taskFitsRequiredCompositePosition(task, depth + 1 + offset, requiredBlocks, composite)
-        && materializeAnchoredOperation(problem, task, futureSlot, placed, meals) !== null).length;
-      for (const start of starts) candidates.push({ task, operation: operation.tasks,
-        feeder: { ...feeder, start, end: start + feeder.duration }, feederAlternativeCount: starts.length,
-        participantSlack: slack, firstObligation: operation.start, futureMainPositions: futurePositions });
+      for (const start of feederResult.starts) candidates.push({ task, operation: operation.tasks,
+        feeder: { ...feeder, start, end: start + feeder.duration }, feederAlternativeCount: feederResult.starts.length,
+        participantSlack: slack, firstObligation: operation.start });
     }
     candidates.sort((a, b) => a.feederAlternativeCount - b.feederAlternativeCount
       || a.participantSlack - b.participantSlack || a.firstObligation - b.firstObligation
-      || a.futureMainPositions - b.futureMainPositions || a.task.id.localeCompare(b.task.id)
+      || a.task.id.localeCompare(b.task.id)
       || b.feeder.start - a.feeder.start);
-    if (candidates.length === 0) { evidence.zeroAlternativePrunes += 1; return false; }
+    if (candidates.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
     for (const alternative of candidates) {
       const nextPlaced = [...placed, ...alternative.operation, alternative.feeder];
       const nextUsed = new Set(used).add(alternative.task.id);
-      if (!residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1)) {
-        if (exhausted) return false;
+      const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
+      if (matching === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+      if (matching === "DEAD_END") {
         evidence.residualMatchingPrunes += 1;
         evidence.backtracks += 1;
         continue;
       }
-      if (!consume()) return false; // the recursive future-feasibility alternative
-      if (search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1)) return true;
-      evidence.backtracks += 1;
-      if (exhausted) return false;
+      if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+      const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
+      if (child === "FOUND") return "FOUND";
+      if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+      evidence.backtracks += 1; // exactly this already-taken alternative is abandoned
     }
-    return false;
+    return "DEAD_END";
   };
 
   const residualMatching = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
-    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number): boolean => {
+    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, nextDepth: number): SearchOutcome => {
+    if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     evidence.residualMatchingChecks += 1;
     const remaining = mains.filter(({ id }) => !used.has(id));
-    if (remaining.length === 0) return true;
+    if (remaining.length === 0) return "FOUND";
     const edges = new Map<string, number[]>();
     for (const task of remaining) {
       const positions: number[] = [];
       for (let position = nextDepth; position < mains.length; position += 1) {
         if (task.blockKey !== pattern[position] || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-        if (!consume()) return false;
+        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
         const feeder = feederByMain.get(task.id)!;
-        if (feederHasStart(feeder, operation.tasks, placed, meals)) positions.push(position);
+        const feederResult = evaluateFeederStarts(feeder, operation.tasks, placed, meals, "FIRST_WITNESS");
+        if (feederResult.status === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (feederResult.starts.length > 0) positions.push(position);
       }
       edges.set(task.id, positions);
-      if (positions.length === 0) return false;
+      if (positions.length === 0) return "DEAD_END";
     }
     const positionOwner = new Map<number, string>();
-    const augment = (taskId: string, seen: Set<number>): boolean => {
+    const augment = (taskId: string, seen: Set<number>): "MATCHED" | "UNMATCHED" | "BUDGET_EXHAUSTED" => {
       for (const position of edges.get(taskId) ?? []) {
         if (seen.has(position)) continue;
-        if (!consume()) return false;
+        if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         seen.add(position);
         const owner = positionOwner.get(position);
-        if (owner === undefined || augment(owner, seen)) { positionOwner.set(position, taskId); return true; }
+        if (owner === undefined) { positionOwner.set(position, taskId); return "MATCHED"; }
+        const displaced = augment(owner, seen);
+        if (displaced === "BUDGET_EXHAUSTED") return displaced;
+        if (displaced === "MATCHED") { positionOwner.set(position, taskId); return "MATCHED"; }
       }
-      return false;
+      return "UNMATCHED";
     };
-    return remaining.every(({ id }) => augment(id, new Set()));
+    for (const { id } of remaining) {
+      const result = augment(id, new Set());
+      if (result === "BUDGET_EXHAUSTED") return result;
+      if (result === "UNMATCHED") return "DEAD_END";
+    }
+    return "FOUND";
   };
 
   outer: for (const pattern of patterns.patterns) {
-    if (!consume()) break;
+    if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
+      return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;
-    const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, problem.budget.maxPatterns);
-    if (positionsResult.exhausted) return fail("PREFLIGHT_FAILED", ["COMPOSITE_PATTERN_BUDGET_EXHAUSTED"], coreIds);
+    const compositeAllowance = problem.budget.maxBranchExpansions - evidence.branchesExplored;
+    const positionsResult = requiredCompositePositions(requiredBlocks, mains, pattern, compositeAllowance);
+    evidence.branchesExplored += positionsResult.rawCombinationCount;
+    if (positionsResult.exhausted)
+      return fail("BRANCH_BUDGET_EXHAUSTED", ["COMPOSITE_SEARCH_BUDGET_EXHAUSTED"], coreIds);
     const positions = positionsResult.positions.length ? positionsResult.positions : [{ startIndexByResourceId: {}, signature: "" }];
     const timelines: Array<MainFlowTimeline | undefined> = hasMainFlowMeal(problem)
       ? orderTimelines(candidateCuts(pattern).map((cut) => buildTimeline(problem, pattern, duration, cut))) : [undefined];
     for (const timeline of timelines) {
-      if (!consume()) break outer;
+      if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
+        return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
       evidence.timelineCandidatesExplored += 1;
       const slots = timeline?.slots ?? pattern.map((_, index) => problem.mainFlow.preferredEnd - pattern.length * duration + index * duration);
       for (const composite of positions) {
-        if (search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0)) {
+        if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
+          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+        const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0);
+        if (result === "BUDGET_EXHAUSTED")
+          return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
+        if (result === "FOUND") {
           if (selected) selected.timeline = timeline;
           break outer;
         }
-        if (exhausted) break outer;
       }
     }
   }
-  if (exhausted) return fail("BRANCH_BUDGET_EXHAUSTED", ["BRANCH_BUDGET_EXHAUSTED"], coreIds);
   if (!selected) return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_CORE"], coreIds);
   const ordered = [...selected.tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
   const meals = [...selected.meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
