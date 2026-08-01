@@ -5,6 +5,7 @@ import {
   runExactMainAndFeederSearch,
   type ExactMainAndFeederCoreStatus,
   type ExactSearchLedger,
+  type ExactMainAndFeederSearchOptions,
 } from "./exactMainAndFeederCore";
 import { fingerprint } from "./fingerprint";
 import { canPlaceTask } from "./placement";
@@ -175,7 +176,12 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
 }
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+export interface ExactItinerantPlanSearchOptions {
+  coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted">;
+}
+
+export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
+  options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
@@ -203,7 +209,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactI
     return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
-  const core = runExactMainAndFeederSearch(problem, { ledger, onPartialCoreCandidate(candidate) {
+  const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
     const impacted = standaloneTasks.filter((task) => candidate.addedTasks.some((added) => tasksCanAffectEachOther(task, added)));
     if (impacted.length === 0) return "CONTINUE";
     evidence.standaloneForwardChecks += 1;
@@ -266,4 +272,9 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactI
     .sort(byId).map(({ id, start }) => [id, start]));
   evidence.fullFingerprint = fingerprint(scheduledTasks, [], selectedMeals); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
   return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSpaceMeals: [...selectedMeals], remainingTaskIds: [], evidence };
+}
+
+/** Accepted public path: deliberately runs without an experimental orderer. */
+export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+  return runExactItinerantPlanSearch(problem, {});
 }
