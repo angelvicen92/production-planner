@@ -46,8 +46,8 @@ test("constructs main and direct vocal feeders atomically, deterministically and
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "main").length, 8);
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "vocal").length, 8);
   assert.equal(first.evidence.coreFingerprint, second.evidence.coreFingerprint);
-  assert.equal(first.evidence.feederCandidatesEvaluated,
-    first.evidence.constructiveFeederStartChecks + first.evidence.matchingFeederStartChecks);
+  assert.equal(first.evidence.matchingFeederStartChecks, 0);
+  assert.equal(first.evidence.feederCandidatesEvaluated, first.evidence.constructiveFeederStartChecks);
   assert.deepEqual(problem, snapshot); assert.deepEqual(first.remainingTaskIds, []);
   for (const main of first.scheduledTasks.filter(({ kind }) => kind === "main")) {
     const feeder = first.scheduledTasks.find(({ id }) => id === main.dependencies[0]);
@@ -103,9 +103,26 @@ test("a deferred earlier feeder start survives after the latest valid start bloc
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
-  assert.ok(result.evidence.backtracks > 0); assert.ok(result.evidence.residualMatchingPrunes > 0);
-  assert.equal(result.evidence.feederCandidatesEvaluated,
-    result.evidence.constructiveFeederStartChecks + result.evidence.matchingFeederStartChecks);
+  assert.ok(result.evidence.backtracks > 0);
+  assert.equal(result.evidence.matchingFeederStartChecks, 0);
+  assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
+});
+
+test("defers an impossible future feeder to exact construction without publishing a partial result", () => {
+  const problem = syntheticProblem([
+    { id: "vocal-a", kind: "vocal", participantId: "a", duration: 10, spaceId: "vocal-a", dependencies: [] },
+    { id: "main-a", kind: "main", participantId: "a", duration: 10, spaceId: "main", dependencies: ["vocal-a"], blockKey: "block" },
+    { id: "vocal-b-impossible", kind: "vocal", participantId: "b", duration: 10, spaceId: "vocal-b",
+      dependencies: [], availability: [{ start: 0, end: 5 }] },
+    { id: "main-b", kind: "main", participantId: "b", duration: 10, spaceId: "main", dependencies: ["vocal-b-impossible"], blockKey: "block" },
+  ], ["a", "b"], ["vocal-a", "vocal-b"]);
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "INFEASIBLE");
+  assert.ok(result.evidence.residualMatchingChecks > 0);
+  assert.equal(result.evidence.residualMatchingPrunes, 0);
+  assert.equal(result.evidence.matchingFeederStartChecks, 0);
+  assert.equal(result.evidence.feederCandidatesEvaluated, result.evidence.constructiveFeederStartChecks);
+  assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
 });
 
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
