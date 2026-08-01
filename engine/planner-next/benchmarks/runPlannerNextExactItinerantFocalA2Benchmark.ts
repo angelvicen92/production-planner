@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { constructExactMainAndFeederCore } from "../exactMainAndFeederCore";
-import { constructExactItinerantPlan } from "../exactItinerantPlan";
+import { executePlannerNext } from "../executePlannerNext";
 import { evaluateParticipantItineraryQuality } from "../participantItineraryQuality";
 import { validatePlan } from "../validate";
 import { evaluateFocalA2RealityUnits } from "./focal-a2/evaluateFocalA2RealityUnits";
@@ -28,11 +28,29 @@ function reversedProblem() {
 const problem = createAcceptedExactConstructiveFocalA2Problem();
 const before = JSON.stringify(problem);
 const started = performance.now();
-const first = constructExactItinerantPlan(problem);
+const firstExecution = executePlannerNext(problem);
 const runtimeMs = performance.now() - started;
 const secondProblem = createAcceptedExactConstructiveFocalA2Problem();
-const second = constructExactItinerantPlan(secondProblem);
-const reversed = constructExactItinerantPlan(reversedProblem());
+const secondExecution = executePlannerNext(secondProblem);
+const reversedExecution = executePlannerNext(reversedProblem());
+for (const execution of [firstExecution, secondExecution, reversedExecution]) {
+  assert.equal(execution.kind, "EXACT_CONSTRUCTIVE");
+  assert.equal(execution.policyResolution.requestedPolicy, "EXACT_CONSTRUCTIVE");
+  assert.equal(execution.policyResolution.effectivePolicy, "EXACT_CONSTRUCTIVE");
+  assert.equal(execution.policyResolution.selectionSource, "EXPLICIT");
+  assert.equal(execution.policyResolution.compatible, true);
+  assert.deepEqual(execution.policyResolution.requiredCapabilities, ["ANCHORED_ACCOMPANIMENT"]);
+  assert.deepEqual(execution.policyResolution.supportedCapabilities, ["ANCHORED_ACCOMPANIMENT"]);
+  assert.deepEqual(execution.policyResolution.unsupportedCapabilities, []);
+  assert.deepEqual(execution.policyResolution.reasonCodes, []);
+  assert.deepEqual(execution.policyResolution.warnings, []);
+}
+assert.equal(firstExecution.kind, "EXACT_CONSTRUCTIVE");
+assert.equal(secondExecution.kind, "EXACT_CONSTRUCTIVE");
+assert.equal(reversedExecution.kind, "EXACT_CONSTRUCTIVE");
+const first = firstExecution.result;
+const second = secondExecution.result;
+const reversed = reversedExecution.result;
 const core = constructExactMainAndFeederCore(problem);
 const coreIds = new Set(core.scheduledTasks.map(({ id }) => id));
 const resultCore = first.scheduledTasks.filter(({ id }) => coreIds.has(id));
@@ -58,6 +76,7 @@ const quality = evaluateParticipantItineraryQuality(problem, first.scheduledTask
 const artifact = {
   status: first.status,
   runtimeMs,
+  policyResolution: firstExecution.policyResolution,
   complete: first.complete,
   configuration: {
     requestedPolicy: focalA2ExactConstructiveEvidence.representativePolicy,
