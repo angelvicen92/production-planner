@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
-import { constructExactItinerantPlan } from "./exactItinerantPlan";
+import { compareCompleteParticipantQuality, constructExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -167,4 +167,42 @@ test("results are deterministic and invariant to input collection order", () => 
   const reversed = constructExactItinerantPlan(reversedInput);
   assert.deepEqual(first, second); assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
   assert.deepEqual(first.scheduledTasks, reversed.scheduledTasks);
+});
+
+test("complete quality replaces only a strictly dominating incumbent", () => {
+  const incumbent = { maximumParticipantIdleMinutes: 20, maximumSingleGapMinutes: 15, totalIdleMinutes: 30,
+    totalGapCount: 2, totalSpaceChangeCount: 4 };
+  assert.equal(compareCompleteParticipantQuality({ ...incumbent, totalIdleMinutes: 25 }, incumbent), 1);
+  assert.equal(compareCompleteParticipantQuality({ ...incumbent, totalIdleMinutes: 25, maximumParticipantIdleMinutes: 25 }, incumbent), 0);
+  assert.equal(compareCompleteParticipantQuality({ ...incumbent, maximumParticipantIdleMinutes: 15, maximumSingleGapMinutes: 20 }, incumbent), 0);
+  assert.equal(compareCompleteParticipantQuality({ ...incumbent }, incumbent), -1);
+});
+
+test("first-complete remains the default while complete-plan selection keeps the best dominant leaf", () => {
+  const create = () => problem([auxiliary("standalone", "core", [{ start: 0, end: 110 }])]);
+  const snapshot = structuredClone(create());
+  const historical = constructExactItinerantPlan(create());
+  const explicitFirst = runExactItinerantPlanSearch(create(), { standaloneCompletionSelection: "FIRST_HARD_VALID" });
+  const selected = runExactItinerantPlanSearch(snapshot, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
+  assert.deepEqual(explicitFirst, historical);
+  assert.equal(historical.evidence.completePlansObserved, 1);
+  assert.equal(selected.status, "COMPLETE"); assert.equal(selected.complete, true);
+  assert.ok(selected.evidence.completePlansObserved > 1); assert.ok(selected.evidence.completeIncumbentReplacements > 1);
+  assert.notEqual(selected.evidence.firstCompleteFingerprint, selected.evidence.selectedCompleteFingerprint);
+  assert.equal(compareCompleteParticipantQuality(selected.evidence.selectedCompleteQuality!, selected.evidence.firstCompleteQuality!), 1);
+  assert.equal(selected.evidence.branchesExplored, selected.evidence.coreBranches + selected.evidence.standaloneBranches);
+  assert.equal(validatePlan(snapshot, selected.scheduledTasks, [], selected.scheduledSpaceMeals).hardValid, true);
+  assert.deepEqual(snapshot, create());
+});
+
+test("budget exhaustion publishes an incumbent atomically but never a partial plan", () => {
+  const create = () => problem([auxiliary("standalone", "core", [{ start: 0, end: 110 }])]);
+  const first = runExactItinerantPlanSearch(create(), { standaloneCompletionSelection: "FIRST_HARD_VALID" });
+  const withIncumbent = create(); withIncumbent.budget.maxBranchExpansions = first.evidence.branchesExplored;
+  const kept = runExactItinerantPlanSearch(withIncumbent, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
+  assert.equal(kept.status, "COMPLETE"); assert.equal(kept.evidence.completeSelectionStoppedByBudget, true);
+  assert.equal(kept.scheduledTasks.length, withIncumbent.tasks.length);
+  const withoutIncumbent = create(); withoutIncumbent.budget.maxBranchExpansions = first.evidence.branchesExplored - 1;
+  const empty = runExactItinerantPlanSearch(withoutIncumbent, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
+  assert.equal(empty.status, "BRANCH_BUDGET_EXHAUSTED"); assert.deepEqual(empty.scheduledTasks, []);
 });

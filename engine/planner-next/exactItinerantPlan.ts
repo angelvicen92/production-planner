@@ -10,7 +10,21 @@ import {
 import { fingerprint } from "./fingerprint";
 import { canPlaceTask } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
+import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
 import { validatePlan } from "./validate";
+
+export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
+export type CompleteParticipantQuality = Pick<ParticipantItineraryQualitySummary,
+  "maximumParticipantIdleMinutes" | "maximumSingleGapMinutes" | "totalIdleMinutes" | "totalGapCount" | "totalSpaceChangeCount">;
+
+/** Returns 1 only when candidate dominates incumbent across the five operational metrics. */
+export function compareCompleteParticipantQuality(candidate: CompleteParticipantQuality,
+  incumbent: CompleteParticipantQuality): -1 | 0 | 1 {
+  const keys: Array<keyof CompleteParticipantQuality> = ["maximumParticipantIdleMinutes", "maximumSingleGapMinutes",
+    "totalIdleMinutes", "totalGapCount", "totalSpaceChangeCount"];
+  if (keys.some((key) => candidate[key] > incumbent[key])) return 0;
+  return keys.some((key) => candidate[key] < incumbent[key]) ? 1 : -1;
+}
 
 export type ExactItinerantPlanStatus = "COMPLETE" | "CORE_FAILED" | "UNSUPPORTED_STANDALONE_SHAPE"
   | "INFEASIBLE" | "BRANCH_BUDGET_EXHAUSTED";
@@ -61,6 +75,14 @@ export interface ExactItinerantPlanEvidence {
   coreMaximumDepth: number;
   coreCompleteLeafCount: number;
   lastExhaustionPhase: "CORE" | "STANDALONE" | null;
+  completePlansObserved: number;
+  completeIncumbentReplacements: number;
+  completeSelectionMode: StandaloneCompletionSelection;
+  completeSelectionStoppedByBudget: boolean;
+  firstCompleteFingerprint: string | null;
+  selectedCompleteFingerprint: string | null;
+  firstCompleteQuality: CompleteParticipantQuality | null;
+  selectedCompleteQuality: CompleteParticipantQuality | null;
 }
 
 export interface ExactItinerantPlanResult {
@@ -118,7 +140,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 }
 
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
-  pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence): StandaloneSearchResult {
+  pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
+  selection: StandaloneCompletionSelection): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [];
   const consumeLeafBranch = (): boolean => {
@@ -135,7 +158,21 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
       const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       if (exact && validatePlan(problem, candidate, [], coreMeals).hardValid) {
-        found = candidate; foundOrder = selectionOrder; return "FOUND";
+        const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
+        const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
+          maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,
+          totalGapCount: quality.totalGapCount, totalSpaceChangeCount: quality.totalSpaceChangeCount };
+        const candidateFingerprint = fingerprint(candidate, [], coreMeals);
+        evidence.completePlansObserved += 1;
+        if (!found) {
+          found = candidate; foundOrder = selectionOrder; evidence.firstCompleteFingerprint = candidateFingerprint;
+          evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact;
+          evidence.selectedCompleteQuality = compact;
+        } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
+          found = candidate; foundOrder = selectionOrder; evidence.completeIncumbentReplacements += 1;
+          evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;
+        }
+        return selection === "FIRST_HARD_VALID" ? "FOUND" : "DEAD_END";
       }
       return "DEAD_END";
     }
@@ -171,17 +208,20 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     }
     return "DEAD_END";
   };
-  const outcome = search(pending, [], 0, []);
+  const searchOutcome = search(pending, [], 0, []);
+  const outcome = searchOutcome === "DEAD_END" && found !== null ? "FOUND" : searchOutcome;
   return { outcome, tasks: found, selectionOrder: foundOrder };
 }
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
 export interface ExactItinerantPlanSearchOptions {
   coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted">;
+  standaloneCompletionSelection?: StandaloneCompletionSelection;
 }
 
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
+  const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
   const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
   const evidence: ExactItinerantPlanEvidence = {
     branchesExplored: 0, coreBranches: 0, standaloneBranches: 0, standaloneStartChecks: 0,
@@ -198,6 +238,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     coreFingerprint: null, selectedCoreFingerprint: null, defaultCoreFingerprint: null, fullFingerprint: null,
     remainingTaskIds: [], coreStatus: "INFEASIBLE", coreReasonCodes: [], reasonCodes: [], coreBacktracks: 0,
     coreMaximumDepth: 0, coreCompleteLeafCount: 0, lastExhaustionPhase: null,
+    completePlansObserved: 0, completeIncumbentReplacements: 0, completeSelectionMode,
+    completeSelectionStoppedByBudget: false, firstCompleteFingerprint: null, selectedCompleteFingerprint: null,
+    firstCompleteQuality: null, selectedCompleteQuality: null,
   };
   let selectedTasks: ScheduledTask[] | null = null, selectedMeals: ScheduledSpaceMeal[] = [], selectedCoreIds = new Set<string>();
   const staticCoreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
@@ -238,14 +281,20 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   }, onHardValidCoreLeaf(candidate) {
     evidence.coreCompleteLeavesEvaluated += 1;
     const coreIds = new Set(candidate.tasks.map(({ id }) => id));
-    const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence);
-    if (standalone.outcome === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+    const standalone = searchStandaloneForCoreCandidate(problem, candidate.tasks, candidate.meals, standaloneTasks, ledger, evidence,
+      completeSelectionMode);
+    if (standalone.tasks) {
+      selectedTasks = standalone.tasks; selectedMeals = candidate.meals; selectedCoreIds = coreIds;
+      evidence.selectedCoreFingerprint = candidate.fingerprint; evidence.coreFingerprint = candidate.fingerprint;
+      evidence.selectedStandaloneSelectionOrder = standalone.selectionOrder;
+    }
+    if (standalone.outcome === "BUDGET_EXHAUSTED") {
+      evidence.completeSelectionStoppedByBudget = completeSelectionMode === "BEST_DOMINATING_WITHIN_BUDGET" && standalone.tasks !== null;
+      return "BUDGET_EXHAUSTED";
+    }
     if (standalone.outcome === "DEAD_END" || !standalone.tasks) {
       evidence.coreLeavesRejectedByStandalone += 1; return "REJECT";
     }
-    selectedTasks = standalone.tasks; selectedMeals = candidate.meals; selectedCoreIds = coreIds;
-    evidence.selectedCoreFingerprint = candidate.fingerprint; evidence.coreFingerprint = candidate.fingerprint;
-    evidence.selectedStandaloneSelectionOrder = standalone.selectionOrder;
     return "ACCEPT";
   }});
   evidence.branchesExplored = ledger.branchesExplored; evidence.coreBranches = ledger.coreBranches;
@@ -259,9 +308,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   };
-  if (core.status === "BRANCH_BUDGET_EXHAUSTED") return fail("BRANCH_BUDGET_EXHAUSTED",
+  if (core.status === "BRANCH_BUDGET_EXHAUSTED" && selectedTasks === null) return fail("BRANCH_BUDGET_EXHAUSTED",
     [ledger.lastExhaustionPhase === "STANDALONE" ? "STANDALONE_BRANCH_BUDGET_EXHAUSTED" : "CORE_BRANCH_BUDGET_EXHAUSTED"]);
-  if (core.status !== "COMPLETE" || selectedTasks === null) {
+  if (selectedTasks === null) {
     if (evidence.coreCompleteLeavesEvaluated > 0 || evidence.standaloneForwardPrunes > 0)
       return fail("INFEASIBLE", ["NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"]);
     return fail("CORE_FAILED", [`CORE_${core.status}`, ...core.evidence.reasonCodes]);

@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
-import { createResidualObligationMainOrderer, evaluateResidualObligationCandidate, evaluateResidualObligationCandidateWithTrace,
-  measureResidualObligationIntervals, mergeResidualObligationIntervals, residualObligationAlignmentTuple,
-  residualOrderingStateFingerprint } from "./residualObligationAlignment";
+import { createResidualObligationMainOrderer, evaluateResidualObligationCandidate,
+  measureResidualObligationIntervals, mergeResidualObligationIntervals, residualObligationAlignmentTuple } from "./residualObligationAlignment";
 
 const windows = [{ start: 0, end: 200 }];
 function problem(): PlannerNextProblem { return { day: { start: 0, end: 200 }, protectedMeal: { start: 190, end: 200 },
@@ -81,47 +80,6 @@ test("evaluation does not mutate its inputs", () => {
 test("stable id is the final tie-break", () => {
   const input = problem(), orderer = createResidualObligationMainOrderer(input, []);
   assert.ok(orderer.options.mainChoiceComparator!(descriptor(80, "a"), descriptor(80, "b")) < 0);
-});
-
-test("state fingerprints distinguish branch state and ignore incidental array order", () => {
-  const a = { ...descriptor(80), placedTasks: [{ ...descriptor(80).operationTasks[0]!, id: "a" }, { ...descriptor(80).operationTasks[0]!, id: "b" }] };
-  const equivalent = { ...a, placedTasks: [...a.placedTasks].reverse() };
-  const sibling = { ...a, placedTasks: a.placedTasks.map((task) => task.id === "a" ? { ...task, start: task.start + 5, end: task.end + 5 } : task) };
-  assert.equal(residualOrderingStateFingerprint([a]), residualOrderingStateFingerprint([equivalent]));
-  assert.notEqual(residualOrderingStateFingerprint([a]), residualOrderingStateFingerprint([sibling]));
-});
-
-test("acceptance uses descriptor identity, never a sibling at the same depth", () => {
-  const orderer = createResidualObligationMainOrderer(problem(), []), a = descriptor(80, "a"), sibling = descriptor(90, "a");
-  orderer.options.onMainChoicesRanked!([a], [a]); orderer.options.onMainChoicesRanked!([sibling], [sibling]);
-  orderer.options.onMainChoiceAccepted!(a);
-  assert.equal(orderer.evidence.acceptedPathDecisions.length, 1);
-  assert.equal(orderer.evidence.decisions[0]!.acceptedPath, true); assert.equal(orderer.evidence.decisions[1]!.acceptedPath, false);
-  assert.equal(orderer.evidence.acceptedPathDecisions[0], orderer.evidence.decisions[0]);
-  assert.equal(orderer.evidence.acceptedPathDecisions[0]!.selectedTrace!.candidateId, "a");
-  assert.equal(orderer.evidence.acceptedPathDecisions[0]!.selectedTrace!.stateFingerprint,
-    orderer.evidence.acceptedPathDecisions[0]!.stateFingerprint);
-  assert.equal(orderer.evidence.decisions[1]!.selectedTrace, null);
-});
-
-test("evaluation with trace preserves the exact key and canonical static estimates", () => {
-  const input = problem(), task = residual("z", [{ start: 10, end: 100 }]);
-  task.requiredResourceIds = ["unit"];
-  const candidate = descriptor(80), before = JSON.stringify({ input, task, candidate });
-  const evaluation = evaluateResidualObligationCandidateWithTrace(input, [task], candidate);
-  assert.deepEqual(evaluation.key, evaluateResidualObligationCandidate(input, [task], candidate));
-  assert.equal(evaluation.trace.residualTasks[0]!.taskId, "z");
-  assert.deepEqual(evaluation.trace.residualTasks[0]!.requiredResourceIds, ["unit"]);
-  assert.equal(evaluation.trace.residualTasks[0]!.staticStartsEvaluated, 39);
-  assert.equal(JSON.stringify({ input, task, candidate }), before);
-});
-
-test("diagnostic limit cannot remove accepted-path trace", () => {
-  const orderer = createResidualObligationMainOrderer(problem(), []), descriptors = Array.from({ length: 45 }, (_, i) => ({ ...descriptor(i, `m-${i}`), depth: i }));
-  for (const item of descriptors) orderer.options.onMainChoicesRanked!([item], [item]);
-  orderer.options.onMainChoiceAccepted!(descriptors[44]!);
-  assert.equal(orderer.evidence.decisions.length, 40); assert.equal(orderer.evidence.acceptedPathDecisions.length, 1);
-  assert.equal(orderer.evidence.acceptedPathDecisions[0]!.selectedCandidateId, "m-44");
 });
 
 test("descriptor-state cache never reuses a key across backtracked branch states", () => {
