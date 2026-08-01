@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { constructExactMainAndFeederCore } from "./exactMainAndFeederCore";
-import { compareCompleteParticipantQuality, constructExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
+import { compareCompleteParticipantQuality, constructExactItinerantPlan,
+  constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
 import { canPlaceTask } from "./placement";
 import { validatePlan } from "./validate";
 
@@ -178,13 +179,14 @@ test("complete quality replaces only a strictly dominating incumbent", () => {
   assert.equal(compareCompleteParticipantQuality({ ...incumbent }, incumbent), -1);
 });
 
-test("first-complete remains the default while complete-plan selection keeps the best dominant leaf", () => {
+test("the public constructor selects the best dominant leaf while the compatibility constructor remains first-complete", () => {
   const create = () => problem([auxiliary("standalone", "core", [{ start: 0, end: 110 }])]);
   const snapshot = structuredClone(create());
-  const historical = constructExactItinerantPlan(create());
+  const historical = constructFirstHardValidExactItinerantPlan(create());
   const explicitFirst = runExactItinerantPlanSearch(create(), { standaloneCompletionSelection: "FIRST_HARD_VALID" });
   const selected = runExactItinerantPlanSearch(snapshot, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
   assert.deepEqual(explicitFirst, historical);
+  assert.deepEqual(constructExactItinerantPlan(create()), selected);
   assert.equal(historical.evidence.completePlansObserved, 1);
   assert.equal(selected.status, "COMPLETE"); assert.equal(selected.complete, true);
   assert.ok(selected.evidence.completePlansObserved > 1); assert.ok(selected.evidence.completeIncumbentReplacements > 1);
@@ -193,6 +195,15 @@ test("first-complete remains the default while complete-plan selection keeps the
   assert.equal(selected.evidence.branchesExplored, selected.evidence.coreBranches + selected.evidence.standaloneBranches);
   assert.equal(validatePlan(snapshot, selected.scheduledTasks, [], selected.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(snapshot, create());
+});
+
+test("a core-only problem preserves the historical first-complete route", () => {
+  const input = problem([]);
+  const historical = constructFirstHardValidExactItinerantPlan(input);
+  const accepted = constructExactItinerantPlan(input);
+  assert.deepEqual(accepted, historical);
+  assert.equal(accepted.evidence.completeSelectionMode, "FIRST_HARD_VALID");
+  assert.equal(accepted.evidence.completePlansObserved, 1);
 });
 
 test("budget exhaustion publishes an incumbent atomically but never a partial plan", () => {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { constructExactMainAndFeederCore } from "../exactMainAndFeederCore";
 import { constructExactItinerantPlan } from "../exactItinerantPlan";
+import { evaluateParticipantItineraryQuality } from "../participantItineraryQuality";
 import { validatePlan } from "../validate";
 import { evaluateFocalA2RealityUnits } from "./focal-a2/evaluateFocalA2RealityUnits";
 import {
@@ -53,6 +54,7 @@ const validation = validatePlan(
   [],
   first.scheduledSpaceMeals,
 );
+const quality = evaluateParticipantItineraryQuality(problem, first.scheduledTasks).summary;
 const artifact = {
   status: first.status,
   runtimeMs,
@@ -113,6 +115,7 @@ const artifact = {
     standalone: first.evidence.standaloneCompleteLeafCount,
   },
   evidence: first.evidence,
+  quality,
 };
 process.stdout.write(`${JSON.stringify(artifact, null, 2)}\n`);
 
@@ -155,10 +158,25 @@ assert.equal(
 );
 assert.equal(
   first.evidence.selectedCoreFingerprint,
-  "0948b758c96f17ec546c331ce6d8b42464dbdbe95970d0640ae5fbea95fdbae9",
+  "44f10279aa01fa7628c01962e9fbdd819d69486ae11df4fe4851de946600f07f",
 );
 assert.equal(
   first.evidence.fullFingerprint,
-  "fded1fd188ba3daa833f68ce74533e6db43fd6e801d64f7f4cebea42aa5224d6",
+  "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357",
 );
-assert.equal(first.evidence.branchesExplored, 85_557);
+assert.equal(first.evidence.branchesExplored, 300_000);
+assert.equal(first.evidence.coreBranches, 48_224);
+assert.equal(first.evidence.standaloneBranches, 251_776);
+assert.equal(first.evidence.completePlansObserved, 78);
+assert.equal(first.evidence.completeIncumbentReplacements, 2);
+assert.equal(first.evidence.completeSelectionMode, "BEST_DOMINATING_WITHIN_BUDGET");
+assert.equal(first.evidence.completeSelectionStoppedByBudget, true);
+assert.equal(first.evidence.firstCompleteFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
+assert.equal(first.evidence.selectedCompleteFingerprint, "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357");
+assert.equal(quality.qualityFingerprint, "256244c1ccad494ca319d921dfcdc8c696b54a4b16506d42567f2e29abb5657b");
+assert.deepEqual({ totalPresence: quality.totalPresenceSpanMinutes, productive: quality.totalProductiveMinutes,
+  idle: quality.totalIdleMinutes, maximumPresence: quality.maximumParticipantPresenceSpanMinutes,
+  maximumIdle: quality.maximumParticipantIdleMinutes, maximumGap: quality.maximumSingleGapMinutes,
+  gaps: quality.totalGapCount, spaceChanges: quality.totalSpaceChangeCount },
+{ totalPresence: 3_290, productive: 900, idle: 2_390, maximumPresence: 425,
+  maximumIdle: 365, maximumGap: 225, gaps: 28, spaceChanges: 34 });

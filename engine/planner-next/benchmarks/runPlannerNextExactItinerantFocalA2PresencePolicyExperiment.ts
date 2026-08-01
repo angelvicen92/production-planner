@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { PlannerNextProblem, PreferenceLevel, ScheduledTask } from "../contracts";
-import { constructExactItinerantPlan, type ExactItinerantPlanResult } from "../exactItinerantPlan";
+import { constructFirstHardValidExactItinerantPlan, type ExactItinerantPlanResult } from "../exactItinerantPlan";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualityEvaluation } from "../participantItineraryQuality";
 import { validatePlan } from "../validate";
 import { focalA2RealityAuxiliaryPolicy } from "./focal-a2/focalA2RealityOperationalConfiguration";
@@ -39,7 +39,7 @@ function run(policy: PreferenceLevel, reversed = false) {
   const problem = createProblem(policy, reversed), before = stable(problem);
   assert.equal(problem.searchPolicy, "EXACT_CONSTRUCTIVE");
   assert.equal(problem.auxiliaryPolicy?.participantPresencePreference, policy);
-  const plan = constructExactItinerantPlan(problem);
+  const plan = constructFirstHardValidExactItinerantPlan(problem);
   const inputUnchanged = stable(problem) === before;
   const hardValid = plan.complete && validatePlan(problem, plan.scheduledTasks, [], plan.scheduledSpaceMeals).hardValid;
   const quality = plan.complete ? evaluateParticipantItineraryQuality(problem, plan.scheduledTasks) : null;

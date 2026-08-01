@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem } from "./contracts";
-import { constructExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
+import { constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "./exactItinerantPlan";
 import { evaluateParticipantItineraryQuality } from "./participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
@@ -28,7 +28,7 @@ function experimental(input: PlannerNextProblem) {
 }
 
 test("residual context changes only candidate order and reduces the causal fixture presence", () => {
-  const input = fixture(), before = structuredClone(input), baseline = constructExactItinerantPlan(input), changed = experimental(input);
+  const input = fixture(), before = structuredClone(input), baseline = constructFirstHardValidExactItinerantPlan(input), changed = experimental(input);
   assert.equal(baseline.status, "COMPLETE"); assert.equal(changed.result.status, "COMPLETE"); assert.equal(input.budget.bestK, 1);
   assert.equal(baseline.scheduledTasks.find(({ id }) => id === "main-a")!.start, 80);
   assert.equal(changed.result.scheduledTasks.find(({ id }) => id === "main-b")!.start, 80);
