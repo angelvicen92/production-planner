@@ -46,11 +46,25 @@ test("constructs main and direct vocal feeders atomically, deterministically and
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "main").length, 8);
   assert.equal(first.scheduledTasks.filter(({ kind }) => kind === "vocal").length, 8);
   assert.equal(first.evidence.coreFingerprint, second.evidence.coreFingerprint);
+  assert.equal(first.evidence.feederCandidatesEvaluated,
+    first.evidence.constructiveFeederStartChecks + first.evidence.matchingFeederStartChecks);
   assert.deepEqual(problem, snapshot); assert.deepEqual(first.remainingTaskIds, []);
   for (const main of first.scheduledTasks.filter(({ kind }) => kind === "main")) {
     const feeder = first.scheduledTasks.find(({ id }) => id === main.dependencies[0]);
     assert.ok(feeder && feeder.end <= main.start);
   }
+});
+
+test("explores the first valid feeder start immediately without enumerating earlier starts", () => {
+  const problem = syntheticProblem([
+    { id: "vocal", kind: "vocal", participantId: "p", duration: 10, spaceId: "vocal-room", dependencies: [] },
+    { id: "main", kind: "main", participantId: "p", duration: 10, spaceId: "main", dependencies: ["vocal"], blockKey: "coach" },
+  ], ["p"], ["vocal-room"]);
+  const result = constructExactMainAndFeederCore(problem);
+  assert.equal(result.status, "COMPLETE"); assert.equal(result.evidence.constructiveFeederStartChecks, 1);
+  assert.equal(result.evidence.matchingFeederStartChecks, 0);
+  assert.equal(result.evidence.feederCandidatesEvaluated, 1);
+  assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal")!.start, 80);
 });
 
 test("is invariant to canonical input collection order", () => {
@@ -90,6 +104,8 @@ test("a deferred earlier feeder start survives after the latest valid start bloc
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-a")!.start, 60);
   assert.equal(result.scheduledTasks.find(({ id }) => id === "vocal-b")!.start, 70);
   assert.ok(result.evidence.backtracks > 0); assert.ok(result.evidence.residualMatchingPrunes > 0);
+  assert.equal(result.evidence.feederCandidatesEvaluated,
+    result.evidence.constructiveFeederStartChecks + result.evidence.matchingFeederStartChecks);
 });
 
 test("residual matching prunes an uncovered state and preserves a covered real solution", () => {
@@ -104,7 +120,6 @@ test("residual matching prunes an uncovered state and preserves a covered real s
 test("the exact branch threshold completes at B and exhausts atomically at B-1", () => {
   const generous = feederStartBacktrackingProblem(), complete = constructExactMainAndFeederCore(generous);
   assert.equal(complete.status, "COMPLETE"); const branchThreshold = complete.evidence.branchesExplored;
-  assert.equal(branchThreshold, 86);
   const exact = feederStartBacktrackingProblem(); exact.budget.maxBranchExpansions = branchThreshold;
   const atThreshold = constructExactMainAndFeederCore(exact);
   assert.equal(atThreshold.status, "COMPLETE"); assert.deepEqual(atThreshold.scheduledTasks, complete.scheduledTasks);

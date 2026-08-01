@@ -16,6 +16,8 @@ export interface ExactMainAndFeederCoreEvidence {
   timelineCandidatesExplored: number;
   mainCandidatesEvaluated: number;
   feederCandidatesEvaluated: number;
+  constructiveFeederStartChecks: number;
+  matchingFeederStartChecks: number;
   residualMatchingChecks: number;
   residualMatchingPrunes: number;
   zeroAlternativePrunes: number;
@@ -39,23 +41,22 @@ export interface ExactMainAndFeederCoreResult {
   evidence: ExactMainAndFeederCoreEvidence;
 }
 
-interface Alternative {
+interface MainChoice {
   task: Task;
   operation: ScheduledTask[];
-  feeder: ScheduledTask;
-  feederAlternativeCount: number;
+  feeder: Task;
   participantSlack: number;
   firstObligation: number;
 }
 
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
-type FeederStartOutcome = { status: "COMPLETE"; starts: number[] } | { status: "BUDGET_EXHAUSTED" };
 
 const canonical = <T extends { id: string }>(values: readonly T[]): T[] => [...values].sort((a, b) => a.id.localeCompare(b.id));
 
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
-    mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, residualMatchingChecks: 0,
+    mainCandidatesEvaluated: 0, feederCandidatesEvaluated: 0, constructiveFeederStartChecks: 0,
+    matchingFeederStartChecks: 0, residualMatchingChecks: 0,
     residualMatchingPrunes: 0, zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [] };
@@ -105,20 +106,13 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
-  const evaluateFeederStarts = (feeder: Task, operation: ScheduledTask[], placed: ScheduledTask[],
-    meals: ScheduledSpaceMeal[], mode: "ALL" | "FIRST_WITNESS"): FeederStartOutcome => {
-    const first = operation[0]!.start;
-    const deadline = first - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
-    const starts: number[] = [];
-    for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-      if (!consumeBranch("FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return { status: "BUDGET_EXHAUSTED" };
-      evidence.feederCandidatesEvaluated += 1;
-      if (canPlaceTask(problem, feeder, start, [...placed, ...operation], meals)) {
-        starts.push(start);
-        if (mode === "FIRST_WITNESS") break;
-      }
-    }
-    return { status: "COMPLETE", starts };
+  const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
+    meals: ScheduledSpaceMeal[], phase: "CONSTRUCTIVE" | "MATCHING"): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
+    if (!consumeBranch(`${phase}_FEEDER_START_SEARCH_BUDGET_EXHAUSTED`)) return "BUDGET_EXHAUSTED";
+    evidence.feederCandidatesEvaluated += 1;
+    if (phase === "CONSTRUCTIVE") evidence.constructiveFeederStartChecks += 1;
+    else evidence.matchingFeederStartChecks += 1;
+    return canPlaceTask(problem, feeder, start, [...placed, ...operation], meals) ? "VALID" : "INVALID";
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
@@ -137,7 +131,7 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
       return "DEAD_END";
     }
     const slot = slots[depth]!;
-    const candidates: Alternative[] = [];
+    const choices: MainChoice[] = [];
     for (const task of mains) {
       if (used.has(task.id) || task.blockKey !== pattern[depth]
         || !taskFitsRequiredCompositePosition(task, depth, requiredBlocks, composite)) continue;
@@ -146,36 +140,39 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
       const operation = materializeAnchoredOperation(problem, task, slot, placed, meals);
       const feeder = feederByMain.get(task.id)!;
       if (!operation) continue;
-      const feederResult = evaluateFeederStarts(feeder, operation.tasks, placed, meals, "ALL");
-      if (feederResult.status === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-      if (feederResult.starts.length === 0) { evidence.zeroAlternativePrunes += 1; continue; }
       const participant = problem.participants.find(({ id }) => id === task.participantId)!;
       const containing = participant.availability.filter(({ start, end }) => start <= operation.start && operation.end <= end);
       const slack = containing.length ? Math.min(...containing.map(({ start, end }) => (operation.start - start) + (end - operation.end))) : 0;
-      for (const start of feederResult.starts) candidates.push({ task, operation: operation.tasks,
-        feeder: { ...feeder, start, end: start + feeder.duration }, feederAlternativeCount: feederResult.starts.length,
-        participantSlack: slack, firstObligation: operation.start });
+      choices.push({ task, operation: operation.tasks, feeder, participantSlack: slack, firstObligation: operation.start });
     }
-    candidates.sort((a, b) => a.feederAlternativeCount - b.feederAlternativeCount
-      || a.participantSlack - b.participantSlack || a.firstObligation - b.firstObligation
-      || a.task.id.localeCompare(b.task.id)
-      || b.feeder.start - a.feeder.start);
-    if (candidates.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
-    for (const alternative of candidates) {
-      const nextPlaced = [...placed, ...alternative.operation, alternative.feeder];
-      const nextUsed = new Set(used).add(alternative.task.id);
-      const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
-      if (matching === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-      if (matching === "DEAD_END") {
-        evidence.residualMatchingPrunes += 1;
+    choices.sort((a, b) => a.participantSlack - b.participantSlack
+      || a.firstObligation - b.firstObligation || a.task.id.localeCompare(b.task.id));
+    if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
+    for (const choice of choices) {
+      const deadline = choice.firstObligation - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
+      let validStartFound = false;
+      for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
+        const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals, "CONSTRUCTIVE");
+        if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (startCheck === "INVALID") continue;
+        validStartFound = true;
+        const scheduledFeeder: ScheduledTask = { ...choice.feeder, start, end: start + choice.feeder.duration };
+        const nextPlaced = [...placed, ...choice.operation, scheduledFeeder];
+        const nextUsed = new Set(used).add(choice.task.id);
+        const matching = residualMatching(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
+        if (matching === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (matching === "DEAD_END") {
+          evidence.residualMatchingPrunes += 1;
+          evidence.backtracks += 1;
+          continue;
+        }
+        if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
+        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
+        if (child === "FOUND") return "FOUND";
+        if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         evidence.backtracks += 1;
-        continue;
       }
-      if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
-      const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
-      if (child === "FOUND") return "FOUND";
-      if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-      evidence.backtracks += 1; // exactly this already-taken alternative is abandoned
+      if (!validStartFound) evidence.zeroAlternativePrunes += 1;
     }
     return "DEAD_END";
   };
@@ -195,9 +192,14 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
         const feeder = feederByMain.get(task.id)!;
-        const feederResult = evaluateFeederStarts(feeder, operation.tasks, placed, meals, "FIRST_WITNESS");
-        if (feederResult.status === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-        if (feederResult.starts.length > 0) positions.push(position);
+        const deadline = operation.tasks[0]!.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
+        let witness = false;
+        for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
+          const startCheck = checkFeederStart(feeder, start, operation.tasks, placed, meals, "MATCHING");
+          if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+          if (startCheck === "VALID") { witness = true; break; }
+        }
+        if (witness) positions.push(position);
       }
       edges.set(task.id, positions);
       if (positions.length === 0) return "DEAD_END";

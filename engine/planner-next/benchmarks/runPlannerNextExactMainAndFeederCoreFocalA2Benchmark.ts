@@ -20,6 +20,8 @@ assert.equal(JSON.stringify(problem), before); assert.equal(first.status, second
 assert.deepEqual(first.evidence, second.evidence); assert.deepEqual(first.evidence, reversed.evidence);
 assert.deepEqual(first.scheduledTasks, second.scheduledTasks); assert.deepEqual(first.scheduledSpaceMeals, second.scheduledSpaceMeals);
 assert.ok(first.evidence.branchesExplored <= problem.budget.maxBranchExpansions);
+assert.equal(first.evidence.feederCandidatesEvaluated,
+  first.evidence.constructiveFeederStartChecks + first.evidence.matchingFeederStartChecks);
 const coreIds = new Set(first.scheduledTasks.map(({ id }) => id));
 const reduced = { ...problem, tasks: problem.tasks.filter(({ id }) => coreIds.has(id)) };
 const operations = (problem.anchoredAccompaniments ?? []).filter((contract) =>
