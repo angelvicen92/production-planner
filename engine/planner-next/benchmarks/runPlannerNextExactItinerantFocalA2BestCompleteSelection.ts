@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
 import { anchoredTaskIds } from "../anchoredAccompaniment";
 import type { PlannerNextProblem } from "../contracts";
-import { constructExactItinerantPlan, runExactItinerantPlanSearch } from "../exactItinerantPlan";
+import { compareCompleteParticipantQuality, constructExactItinerantPlan, runExactItinerantPlanSearch } from "../exactItinerantPlan";
 import { evaluateParticipantItineraryQuality } from "../participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "../residualObligationAlignment";
 import { validatePlan } from "../validate";
@@ -52,6 +52,25 @@ assert.equal(residual.quality.qualityFingerprint, "13a87e0d9b6983c18ca5a01627850
 assert.deepEqual(residual.core, selected.core); assert.deepEqual(residual.meals, selected.meals);
 const result = selected.plan.evidence.completePlansObserved === 0 ? "NO_COMPLETE_INCUMBENT"
   : selected.plan.evidence.completeIncumbentReplacements > 0 ? "IMPROVES_FIRST_COMPLETE" : "EQUIVALENT_TO_FIRST_COMPLETE";
+assert.equal(result, "IMPROVES_FIRST_COMPLETE");
+assert.equal(selected.plan.status, "COMPLETE"); assert.equal(selected.plan.complete, true);
+assert.equal(selected.plan.scheduledTasks.length, 53); assert.equal(selected.plan.remainingTaskIds.length, 0);
+assert.equal(selected.hardValid, true);
+assert.equal(selected.plan.evidence.branchesExplored, 300_000);
+assert.equal(selected.plan.evidence.coreBranches, 48_224);
+assert.equal(selected.plan.evidence.standaloneBranches, 251_776);
+assert.equal(selected.plan.evidence.completePlansObserved, 78);
+assert.equal(selected.plan.evidence.completeIncumbentReplacements, 2);
+assert.equal(selected.plan.evidence.completeSelectionStoppedByBudget, true);
+assert.equal(selected.plan.evidence.firstCompleteFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
+assert.equal(selected.plan.evidence.selectedCompleteFingerprint, "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357");
+assert.equal(selected.quality.qualityFingerprint, "256244c1ccad494ca319d921dfcdc8c696b54a4b16506d42567f2e29abb5657b");
+assert.deepEqual(selected.plan.evidence.firstCompleteQuality, { maximumParticipantIdleMinutes: 435,
+  maximumSingleGapMinutes: 315, totalIdleMinutes: 2_480, totalGapCount: 28, totalSpaceChangeCount: 34 });
+assert.deepEqual(selected.plan.evidence.selectedCompleteQuality, { maximumParticipantIdleMinutes: 365,
+  maximumSingleGapMinutes: 225, totalIdleMinutes: 2_390, totalGapCount: 28, totalSpaceChangeCount: 34 });
+assert.equal(compareCompleteParticipantQuality(selected.plan.evidence.selectedCompleteQuality!,
+  selected.plan.evidence.firstCompleteQuality!), 1);
 const summary = (item: typeof baseline) => ({ branches: item.plan.evidence.branchesExplored,
   coreBranches: item.plan.evidence.coreBranches, standaloneBranches: item.plan.evidence.standaloneBranches,
   completePlansObserved: item.plan.evidence.completePlansObserved,

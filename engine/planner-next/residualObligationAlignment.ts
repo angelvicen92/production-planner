@@ -21,7 +21,6 @@ export interface ResidualOrderingDecision {
   baselineOrder: string[];
   contextualOrder: string[];
   keys: ResidualObligationAlignmentKey[];
-  selectedCandidateId: string | null;
   explanation: string;
 }
 
@@ -189,7 +188,7 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
       if (baselineOrder.join("\0") !== contextualOrder.join("\0")) evidence.decisionOrderChangedCount += 1;
       if (baselineOrder[0] !== contextualOrder[0]) evidence.firstCandidateChangedCount += 1;
       if (evidence.decisions.length < MAX_DIAGNOSTIC_DECISIONS) evidence.decisions.push({ depth: ordered[0]?.depth ?? 0,
-        baselineOrder, contextualOrder, keys: decisionKeys, selectedCandidateId: null,
+        baselineOrder, contextualOrder, keys: decisionKeys,
         explanation: "La obligación residual cambia solo el orden: todas las alternativas exactas siguen disponibles." });
     },
     onMainChoiceAccepted(candidate) {
@@ -197,8 +196,6 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
       evidence.selectedProjectedPresenceLowerBoundByDepth[depth] = selected.projectedPresenceLowerBound;
       evidence.selectedProjectedMaximumGapLowerBoundByDepth[depth] = selected.projectedMaximumGapLowerBound;
       if (selected.residualTaskCount > 0) evidence.selectedCandidateHadResidualTasksCount += 1;
-      const decision = [...evidence.decisions].reverse().find((item) => item.depth === candidate.depth && item.contextualOrder.includes(candidate.mainTask.id));
-      if (decision) decision.selectedCandidateId = candidate.mainTask.id;
     },
   };
   return { options, evidence };
