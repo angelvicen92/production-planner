@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { anchoredTaskIds } from "../anchoredAccompaniment";
 import type { PlannerNextProblem } from "../contracts";
 import { constructExactMainAndFeederCore } from "../exactMainAndFeederCore";
-import { constructExactItinerantPlan, runExactItinerantPlanSearch } from "../exactItinerantPlan";
+import { constructFirstHardValidExactItinerantPlan, runExactItinerantPlanSearch } from "../exactItinerantPlan";
 import { evaluateParticipantItineraryQuality } from "../participantItineraryQuality";
 import { createResidualObligationMainOrderer } from "../residualObligationAlignment";
 import { validatePlan } from "../validate";
@@ -27,7 +27,7 @@ function run(mode: "ACCEPTED_BASELINE" | "RESIDUAL_OBLIGATION_ALIGNMENT", revers
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standalone = problem.tasks.filter(({ id }) => !coreIds.has(id));
   const orderer = mode === "RESIDUAL_OBLIGATION_ALIGNMENT" ? createResidualObligationMainOrderer(problem, standalone) : null;
-  const plan = orderer ? runExactItinerantPlanSearch(problem, { coreOrderer: orderer.options }) : constructExactItinerantPlan(problem);
+  const plan = orderer ? runExactItinerantPlanSearch(problem, { coreOrderer: orderer.options }) : constructFirstHardValidExactItinerantPlan(problem);
   const quality = evaluateParticipantItineraryQuality(problem, plan.scheduledTasks);
   return { mode, plan, quality, orderingEvidence: orderer?.evidence ?? null,
     hardValid: validatePlan(problem, plan.scheduledTasks, [], plan.scheduledSpaceMeals).hardValid,

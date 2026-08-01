@@ -11,6 +11,7 @@ import { fingerprint } from "./fingerprint";
 import { canPlaceTask } from "./placement";
 import { scoreAuxiliaryTask } from "./placeAuxiliaryTasks";
 import { evaluateParticipantItineraryQuality, type ParticipantItineraryQualitySummary } from "./participantItineraryQuality";
+import { createResidualObligationMainOrderer } from "./residualObligationAlignment";
 import { validatePlan } from "./validate";
 
 export type StandaloneCompletionSelection = "FIRST_HARD_VALID" | "BEST_DOMINATING_WITHIN_BUDGET";
@@ -323,7 +324,20 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSpaceMeals: [...selectedMeals], remainingTaskIds: [], evidence };
 }
 
-/** Accepted public path: deliberately runs without an experimental orderer. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+/** Frozen historical control and explicit rollback path. */
+export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
   return runExactItinerantPlanSearch(problem, {});
+}
+
+/** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
+export function constructExactItinerantPlan(problem: PlannerNextProblem): ExactItinerantPlanResult {
+  const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
+  for (const id of anchoredTaskIds(problem)) coreIds.add(id);
+  const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
+  if (standaloneTasks.length === 0) return constructFirstHardValidExactItinerantPlan(problem);
+  const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
+  return runExactItinerantPlanSearch(problem, {
+    coreOrderer: orderer.options,
+    standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET",
+  });
 }

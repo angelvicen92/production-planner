@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { anchoredTaskIds } from "../anchoredAccompaniment";
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask } from "../contracts";
-import { compareCompleteParticipantQuality, constructExactItinerantPlan, runExactItinerantPlanSearch } from "../exactItinerantPlan";
+import { compareCompleteParticipantQuality, constructExactItinerantPlan,
+  constructFirstHardValidExactItinerantPlan } from "../exactItinerantPlan";
 import { evaluateParticipantItineraryQuality } from "../participantItineraryQuality";
-import { createResidualObligationMainOrderer } from "../residualObligationAlignment";
 import { validatePlan } from "../validate";
 import { createAcceptedExactConstructiveFocalA2Problem } from "./focal-a2/focalA2ExactConstructiveConfiguration";
 import { focalA2HumanItinerantReference } from "./focal-a2/focalA2HumanItinerantReference";
@@ -11,6 +10,7 @@ import { focalA2Participants, focalA2Reference } from "./focal-a2/focalA2Referen
 import { itinerantOperationProfiles } from "./focal-a2/focalA2RealityReference";
 
 const BASELINE_FULL = "fded1fd188ba3daa833f68ce74533e6db43fd6e801d64f7f4cebea42aa5224d6";
+const BASELINE_CORE = "0948b758c96f17ec546c331ce6d8b42464dbdbe95970d0640ae5fbea95fdbae9";
 const BASELINE_QUALITY = "a64f641fcde8d470808a1b3e2eda986b5a99390600dd5c70ab189d37fc16189f";
 const CANDIDATE_FULL = "b5b1fc1fe3b1813e425b26b22cbf7932604718f1b194eb00a8e909f0937f7357";
 const CANDIDATE_QUALITY = "256244c1ccad494ca319d921dfcdc8c696b54a4b16506d42567f2e29abb5657b";
@@ -121,11 +121,8 @@ function humanReference(problem: PlannerNextProblem) {
 
 function execute(reversed = false) {
   const problem = createProblem(reversed), before = JSON.stringify(problem);
-  const baseline = constructExactItinerantPlan(problem);
-  const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
-  for (const id of anchoredTaskIds(problem)) coreIds.add(id);
-  const orderer = createResidualObligationMainOrderer(problem, problem.tasks.filter(({ id }) => !coreIds.has(id)));
-  const candidate = runExactItinerantPlanSearch(problem, { coreOrderer: orderer.options, standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
+  const baseline = constructFirstHardValidExactItinerantPlan(problem);
+  const candidate = constructExactItinerantPlan(problem);
   return { problem, baseline, candidate, human: humanReference(problem),
     baselineValidation: validatePlan(problem, baseline.scheduledTasks, [], baseline.scheduledSpaceMeals),
     candidateValidation: validatePlan(problem, candidate.scheduledTasks, [], candidate.scheduledSpaceMeals),
@@ -224,7 +221,7 @@ function buildEvidence(execution: Execution) {
     candidateVsHuman: { classification: comparison.referenceInvalid, metrics: null }, participantComparison: participants,
     taskTimingComparison: null, presenceEnvelopeComparison: null, mainFlowComparison: null, itinerantComparison: null,
     acceptance: { decision: "NOT_READY_FOR_HUMAN_REVIEW", operationalWarnings: participants.participants.some(({ classification }) => classification === "WORSENED"),
-      candidateActivated: false, finalDecisionOwner: "HUMAN" }, inputUnchanged: execution.inputUnchanged };
+      acceptedExactRouteActive: true, finalDecisionOwner: "HUMAN" }, inputUnchanged: execution.inputUnchanged };
 
   const humanQuality = evaluateParticipantItineraryQuality(problem, human.tasks);
   const candidateVsHumanClassification = compareCandidateWithHuman(qualityVector(candidateQuality), qualityVector(humanQuality));
@@ -288,7 +285,7 @@ function buildEvidence(execution: Execution) {
       candidate: mainFlow(problem, candidate.scheduledTasks, candidate.scheduledSpaceMeals) },
     itinerantComparison: { operations: itinerantRows, baseline: operationAggregate("baselineStartDifference"), candidate: operationAggregate("candidateStartDifference") },
     acceptance: { decision: ready ? "READY_FOR_HUMAN_REVIEW" : "NOT_READY_FOR_HUMAN_REVIEW", operationalWarnings,
-      candidateActivated: false, finalDecisionOwner: "HUMAN" }, inputUnchanged: execution.inputUnchanged };
+      acceptedExactRouteActive: true, finalDecisionOwner: "HUMAN" }, inputUnchanged: execution.inputUnchanged };
 }
 
 const first = execute(), repeated = execute(), reversed = execute(true);
@@ -301,7 +298,7 @@ assert.equal(invalidReferenceEvidence.presenceEnvelopeComparison, null);
 assert.equal(invalidReferenceEvidence.mainFlowComparison, null);
 assert.equal(invalidReferenceEvidence.itinerantComparison, null);
 assert.equal(invalidReferenceEvidence.acceptance.decision, "NOT_READY_FOR_HUMAN_REVIEW");
-assert.equal(invalidReferenceEvidence.acceptance.candidateActivated, false);
+assert.equal(invalidReferenceEvidence.acceptance.acceptedExactRouteActive, true);
 assert.deepEqual(repeated.baseline, first.baseline); assert.deepEqual(repeated.candidate, first.candidate);
 assert.deepEqual(reversed.baseline, first.baseline); assert.deepEqual(reversed.candidate, first.candidate);
 assert.deepEqual(repeatedEvidence, firstEvidence); assert.deepEqual(reversedEvidence, firstEvidence);
@@ -310,9 +307,13 @@ const executionChecks = { deterministicPlan: true, orderInvariantPlan: true, det
 
 assert.equal(first.baseline.status, "COMPLETE"); assert.equal(first.baseline.scheduledTasks.length, 53); assert.equal(first.baseline.remainingTaskIds.length, 0); assert.equal(first.baselineValidation.hardValid, true);
 assert.equal(first.baseline.evidence.branchesExplored, 85_557); assert.equal(first.baseline.evidence.fullFingerprint, BASELINE_FULL);
+assert.equal(first.baseline.evidence.selectedCoreFingerprint, BASELINE_CORE);
+assert.equal(first.baseline.evidence.completeSelectionMode, "FIRST_HARD_VALID");
 assert.equal(first.candidate.status, "COMPLETE"); assert.equal(first.candidate.scheduledTasks.length, 53); assert.equal(first.candidate.remainingTaskIds.length, 0); assert.equal(first.candidateValidation.hardValid, true);
 assert.equal(first.candidate.evidence.branchesExplored, 300_000); assert.equal(first.candidate.evidence.coreBranches, 48_224); assert.equal(first.candidate.evidence.standaloneBranches, 251_776);
 assert.equal(first.candidate.evidence.completePlansObserved, 78); assert.equal(first.candidate.evidence.completeIncumbentReplacements, 2); assert.equal(first.candidate.evidence.completeSelectionStoppedByBudget, true);
+assert.equal(first.candidate.evidence.completeSelectionMode, "BEST_DOMINATING_WITHIN_BUDGET");
+assert.equal(first.candidate.evidence.firstCompleteFingerprint, "38309867fb51dcb14515d152035b7076a4738cac04d3d8cea721ec7be0749fa8");
 assert.equal(first.candidate.evidence.fullFingerprint, CANDIDATE_FULL); assert.equal(first.candidate.evidence.selectedCompleteFingerprint, CANDIDATE_FULL);
 assert.equal(firstEvidence.baseline.qualityFingerprint, BASELINE_QUALITY); assert.equal(firstEvidence.candidate.qualityFingerprint, CANDIDATE_QUALITY);
 assert.equal(compareCompleteParticipantQuality(
@@ -354,6 +355,6 @@ for (const planOperations of [operations(first.problem,first.human.tasks),operat
   assert.deepEqual(planOperations.map(({operationId})=>operationId),focalA2HumanItinerantReference.map(({operationId})=>operationId).sort());
   for (const item of planOperations) assert.equal(item.duration,focalA2HumanItinerantReference.find(({operationId})=>operationId===item.operationId)!.end-focalA2HumanItinerantReference.find(({operationId})=>operationId===item.operationId)!.start);
 }
-assert.deepEqual(firstEvidence.acceptance,{decision:"READY_FOR_HUMAN_REVIEW",operationalWarnings:true,candidateActivated:false,finalDecisionOwner:"HUMAN"});
+assert.deepEqual(firstEvidence.acceptance,{decision:"READY_FOR_HUMAN_REVIEW",operationalWarnings:true,acceptedExactRouteActive:true,finalDecisionOwner:"HUMAN"});
 assert.deepEqual(executionChecks,{deterministicPlan:true,orderInvariantPlan:true,deterministicEvidence:true,orderInvariantEvidence:true,inputUnchanged:true});
 process.stdout.write(`${JSON.stringify({ ...firstEvidence, executionChecks }, null, 2)}\n`);
