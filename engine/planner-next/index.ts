@@ -5,6 +5,7 @@ export * from "./planMainFlowAndFeeders";
 export * from "./resourcePresence";
 export * from "./placement";
 export * from "./participantPresence";
+export * from "./participantItineraryQuality";
 export * from "./placeAuxiliaryTasks";
 export * from "./secondaryContinuity";
 export * from "./saturatedResourceWindowBlock";
