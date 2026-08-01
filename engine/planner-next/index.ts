@@ -11,3 +11,5 @@ export * from "./participantItineraryQuality";
 export * from "./placeAuxiliaryTasks";
 export * from "./secondaryContinuity";
 export * from "./saturatedResourceWindowBlock";
+export { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
+export type { EngineInputPreflightDiagnostics, EngineInputPreflightIssue, EngineInputPreflightReasonCode, EngineInputPreflightResult, EngineInputPreflightStatus, EngineInputIdentity, EngineInputIdentityNamespace } from "./integration/engineInputPreflight";
