@@ -76,6 +76,33 @@ type StandaloneOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 interface Positions { task: Task; starts: number[]; effectiveDeadline: number }
 interface StandaloneSearchResult { outcome: StandaloneOutcome; tasks: ScheduledTask[] | null; selectionOrder: string[] }
 
+export type HardValidStandaloneLeafDecision = "ACCEPT" | "CONTINUE" | "BUDGET_EXHAUSTED";
+export interface HardValidStandaloneLeafDescriptor {
+  readonly scheduledTasks: readonly Readonly<ScheduledTask>[];
+  readonly standaloneTasks: readonly Readonly<ScheduledTask>[];
+  readonly coreTasks: readonly Readonly<ScheduledTask>[];
+  readonly meals: readonly Readonly<ScheduledSpaceMeal>[];
+  readonly selectionOrder: readonly string[];
+  readonly standaloneStarts: Readonly<Record<string, number>>;
+  readonly fullFingerprint: string;
+  readonly depth: number;
+  readonly ordinal: number;
+}
+export interface FixedCoreStandaloneSearchEvidence {
+  branchLimit: number; branchesConsumed: number; startChecks: number; taskSelections: number;
+  zeroAlternativePrunes: number; backtracks: number; maximumDepth: number; completeLeavesReached: number;
+  hardValidCompleteLeaves: number; invalidCompleteLeaves: number; uniqueHardValidFingerprints: number;
+  duplicatedFingerprints: number; searchExhaustedNaturally: boolean; budgetExhausted: boolean;
+  stopReason: "ACCEPTED" | "SEARCH_EXHAUSTED" | "BUDGET_EXHAUSTED";
+}
+export interface FixedCoreStandaloneSearchResult {
+  outcome: StandaloneOutcome; scheduledTasks: ScheduledTask[] | null; selectionOrder: string[];
+  evidence: FixedCoreStandaloneSearchEvidence;
+}
+export interface FixedCoreStandaloneSearchOptions {
+  onHardValidStandaloneLeaf?: (leaf: HardValidStandaloneLeafDescriptor) => HardValidStandaloneLeafDecision;
+}
+
 const byId = <T extends { id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 const orderScheduled = (tasks: ScheduledTask[]): ScheduledTask[] =>
   [...tasks].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
@@ -118,7 +145,8 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
 }
 
 function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks: ScheduledTask[], coreMeals: ScheduledSpaceMeal[],
-  pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence): StandaloneSearchResult {
+  pending: Task[], ledger: ExactSearchLedger, evidence: ExactItinerantPlanEvidence,
+  options: FixedCoreStandaloneSearchOptions = {}, diagnostics?: FixedCoreStandaloneSearchEvidence): StandaloneSearchResult {
   evidence.standaloneSearchInvocations += 1;
   let found: ScheduledTask[] | null = null, foundOrder: string[] = [];
   const consumeLeafBranch = (): boolean => {
@@ -131,12 +159,26 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
     if (remaining.length === 0) {
       if (!consumeLeafBranch()) return "BUDGET_EXHAUSTED";
       evidence.standaloneCompleteLeafCount += 1;
+      if (diagnostics) diagnostics.completeLeavesReached += 1;
       const candidate = orderScheduled([...coreTasks, ...placed]);
       const expected = [...problem.tasks].sort(byId).map(({ id }) => id), actual = [...candidate].sort(byId).map(({ id }) => id);
       const exact = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
       if (exact && validatePlan(problem, candidate, [], coreMeals).hardValid) {
+        if (diagnostics) diagnostics.hardValidCompleteLeaves += 1;
+        const fullFingerprint = fingerprint(candidate, [], coreMeals);
+        const standalone = placed.map((task) => Object.freeze({ ...task })).sort(byId);
+        const descriptor = Object.freeze({ scheduledTasks: Object.freeze(candidate.map((task) => Object.freeze({ ...task }))),
+          standaloneTasks: Object.freeze(standalone), coreTasks: Object.freeze(coreTasks.map((task) => Object.freeze({ ...task }))),
+          meals: Object.freeze(coreMeals.map((meal) => Object.freeze({ ...meal }))),
+          selectionOrder: Object.freeze([...selectionOrder]),
+          standaloneStarts: Object.freeze(Object.fromEntries(standalone.map(({ id, start }) => [id, start]))),
+          fullFingerprint, depth, ordinal: diagnostics?.hardValidCompleteLeaves ?? 1 });
+        const decision = options.onHardValidStandaloneLeaf?.(descriptor) ?? "ACCEPT";
+        if (decision === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (decision === "CONTINUE") return "DEAD_END";
         found = candidate; foundOrder = selectionOrder; return "FOUND";
       }
+      if (diagnostics) diagnostics.invalidCompleteLeaves += 1;
       return "DEAD_END";
     }
     const alternatives: Positions[] = [];
@@ -173,6 +215,39 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
   };
   const outcome = search(pending, [], 0, []);
   return { outcome, tasks: found, selectionOrder: foundOrder };
+}
+
+/** Experimental internal runner: fixes the supplied core and dedicates a fresh contractual ledger to standalone DFS. */
+export function runExactStandaloneSearchForFixedCore(problem: PlannerNextProblem, coreTasks: readonly ScheduledTask[],
+  coreMeals: readonly ScheduledSpaceMeal[], pending: readonly Task[], options: FixedCoreStandaloneSearchOptions = {}): FixedCoreStandaloneSearchResult {
+  const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions);
+  const evidence = {
+    standaloneSearchInvocations: 0, standaloneLeafSearchBranches: 0, standaloneMaximumDepth: 0,
+    standaloneCompleteLeafCount: 0, standaloneStartChecks: 0, standaloneZeroAlternativePrunes: 0,
+    standaloneBlockingTaskCounts: {}, standaloneTaskSelections: 0, standaloneBacktracks: 0,
+  } as ExactItinerantPlanEvidence;
+  const diagnostics: FixedCoreStandaloneSearchEvidence = { branchLimit: problem.budget.maxBranchExpansions,
+    branchesConsumed: 0, startChecks: 0, taskSelections: 0, zeroAlternativePrunes: 0, backtracks: 0,
+    maximumDepth: 0, completeLeavesReached: 0, hardValidCompleteLeaves: 0, invalidCompleteLeaves: 0,
+    uniqueHardValidFingerprints: 0, duplicatedFingerprints: 0, searchExhaustedNaturally: false,
+    budgetExhausted: false, stopReason: "SEARCH_EXHAUSTED" };
+  const fingerprints = new Set<string>();
+  const callback = options.onHardValidStandaloneLeaf;
+  const result = searchStandaloneForCoreCandidate(problem, [...coreTasks], [...coreMeals], [...pending].sort(byId), ledger, evidence, {
+    onHardValidStandaloneLeaf(leaf) {
+      if (fingerprints.has(leaf.fullFingerprint)) diagnostics.duplicatedFingerprints += 1;
+      else fingerprints.add(leaf.fullFingerprint);
+      return callback?.(leaf) ?? "ACCEPT";
+    },
+  }, diagnostics);
+  diagnostics.branchesConsumed = ledger.branchesExplored; diagnostics.startChecks = evidence.standaloneStartChecks;
+  diagnostics.taskSelections = evidence.standaloneTaskSelections; diagnostics.zeroAlternativePrunes = evidence.standaloneZeroAlternativePrunes;
+  diagnostics.backtracks = evidence.standaloneBacktracks; diagnostics.maximumDepth = evidence.standaloneMaximumDepth;
+  diagnostics.uniqueHardValidFingerprints = fingerprints.size;
+  diagnostics.budgetExhausted = result.outcome === "BUDGET_EXHAUSTED";
+  diagnostics.searchExhaustedNaturally = result.outcome === "DEAD_END";
+  diagnostics.stopReason = result.outcome === "FOUND" ? "ACCEPTED" : result.outcome === "BUDGET_EXHAUSTED" ? "BUDGET_EXHAUSTED" : "SEARCH_EXHAUSTED";
+  return { outcome: result.outcome, scheduledTasks: result.tasks, selectionOrder: result.selectionOrder, evidence: diagnostics };
 }
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
