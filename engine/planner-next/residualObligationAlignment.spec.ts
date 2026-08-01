@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerNextProblem, Task } from "./contracts";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
-import { createResidualObligationMainOrderer, evaluateResidualObligationCandidate,
+import { createResidualObligationMainOrderer, evaluateResidualObligationCandidate, evaluateResidualObligationCandidateWithTrace,
   measureResidualObligationIntervals, mergeResidualObligationIntervals, residualObligationAlignmentTuple,
   residualOrderingStateFingerprint } from "./residualObligationAlignment";
 
@@ -98,6 +98,22 @@ test("acceptance uses descriptor identity, never a sibling at the same depth", (
   assert.equal(orderer.evidence.acceptedPathDecisions.length, 1);
   assert.equal(orderer.evidence.decisions[0]!.acceptedPath, true); assert.equal(orderer.evidence.decisions[1]!.acceptedPath, false);
   assert.equal(orderer.evidence.acceptedPathDecisions[0], orderer.evidence.decisions[0]);
+  assert.equal(orderer.evidence.acceptedPathDecisions[0]!.selectedTrace!.candidateId, "a");
+  assert.equal(orderer.evidence.acceptedPathDecisions[0]!.selectedTrace!.stateFingerprint,
+    orderer.evidence.acceptedPathDecisions[0]!.stateFingerprint);
+  assert.equal(orderer.evidence.decisions[1]!.selectedTrace, null);
+});
+
+test("evaluation with trace preserves the exact key and canonical static estimates", () => {
+  const input = problem(), task = residual("z", [{ start: 10, end: 100 }]);
+  task.requiredResourceIds = ["unit"];
+  const candidate = descriptor(80), before = JSON.stringify({ input, task, candidate });
+  const evaluation = evaluateResidualObligationCandidateWithTrace(input, [task], candidate);
+  assert.deepEqual(evaluation.key, evaluateResidualObligationCandidate(input, [task], candidate));
+  assert.equal(evaluation.trace.residualTasks[0]!.taskId, "z");
+  assert.deepEqual(evaluation.trace.residualTasks[0]!.requiredResourceIds, ["unit"]);
+  assert.equal(evaluation.trace.residualTasks[0]!.staticStartsEvaluated, 39);
+  assert.equal(JSON.stringify({ input, task, candidate }), before);
 });
 
 test("diagnostic limit cannot remove accepted-path trace", () => {

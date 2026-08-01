@@ -27,8 +27,27 @@ export interface ResidualOrderingDecision {
   selectedCandidateId: string | null;
   selectedParticipantId: string | null;
   acceptedPath: boolean;
+  selectedTrace: ResidualObligationCandidateTrace | null;
   explanation: string;
 }
+
+export interface ResidualTaskStaticEstimate {
+  readonly taskId: string; readonly duration: number; readonly participantId: string; readonly spaceId: string;
+  readonly coachId: string | null; readonly requiredResourceIds: readonly string[];
+  readonly staticStartsEvaluated: number; readonly staticStartsValid: number; readonly missingReference: boolean;
+  readonly staticDomainEmpty: boolean; readonly bestStaticStart: number | null; readonly bestStaticEnd: number | null;
+  readonly resultingPresence: number | null; readonly resultingIdle: number | null; readonly resultingMaximumGap: number | null;
+  readonly presenceIncrement: number | null; readonly idleIncrement: number | null; readonly nearestObligationDistance: number | null;
+}
+export interface ResidualObligationCandidateTrace {
+  readonly stateFingerprint: string; readonly candidateId: string; readonly participantId: string | null;
+  readonly depth: number; readonly slot: number; readonly firstObligation: number; readonly participantSlack: number;
+  readonly operationTasks: readonly Readonly<ResidualObligationInterval & { id: string }>[];
+  readonly placedParticipantTasks: readonly Readonly<ResidualObligationInterval & { id: string }>[];
+  readonly feeder: Readonly<{ taskId: string; duration: number; idealStart: number; idealEnd: number; transition: number }>;
+  readonly residualTasks: readonly Readonly<ResidualTaskStaticEstimate>[]; readonly key: Readonly<ResidualObligationAlignmentKey>;
+}
+export interface ResidualObligationCandidateEvaluation { readonly key: ResidualObligationAlignmentKey; readonly trace: ResidualObligationCandidateTrace }
 
 export interface ResidualObligationOrderingEvidence {
   orderingPolicy: "RESIDUAL_OBLIGATION_ALIGNMENT";
@@ -132,6 +151,11 @@ export function residualObligationAlignmentTuple(key: ResidualObligationAlignmen
 export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNextProblem>,
   standaloneTasks: readonly Readonly<Task>[], candidate: ExactMainChoiceDescriptor,
   counters?: Pick<ResidualObligationOrderingEvidence, "staticStartEvaluations" | "staticStartsFound" | "emptyStaticDomains">): ResidualObligationAlignmentKey {
+  return evaluateResidualObligationCandidateWithTrace(problem, standaloneTasks, candidate, counters).key;
+}
+export function evaluateResidualObligationCandidateWithTrace(problem: Readonly<PlannerNextProblem>,
+  standaloneTasks: readonly Readonly<Task>[], candidate: ExactMainChoiceDescriptor,
+  counters?: Pick<ResidualObligationOrderingEvidence, "staticStartEvaluations" | "staticStartsFound" | "emptyStaticDomains">): ResidualObligationCandidateEvaluation {
   const participantId = candidate.mainTask.kind === "technical" ? undefined : candidate.mainTask.participantId;
   const residual = participantId === undefined ? [] : standaloneTasks.filter((task) => task.kind === "auxiliary"
     && task.participantId === participantId && !candidate.placedTasks.some(({ id }) => id === task.id));
@@ -142,6 +166,7 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
   const currentMetrics = measureResidualObligationIntervals(current);
   let projectedPresence = currentMetrics.span, projectedGap = currentMetrics.maximumGap;
   let presenceExpansion = 0, idleExpansion = 0, minimumGap = 0, empty = 0;
+  const estimates: ResidualTaskStaticEstimate[] = [];
   for (const task of [...residual].sort((a, b) => a.id.localeCompare(b.id))) {
     const participant = problem.participants.find(({ id }) => id === task.participantId);
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
@@ -149,32 +174,52 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
     const coach = task.coachId === undefined ? undefined : problem.coaches.find(({ id }) => id === task.coachId);
     const missingReference = participant === undefined || space === undefined || resources.some((resource) => resource === undefined)
       || (task.coachId !== undefined && coach === undefined);
-    let best: (ResidualObligationIntervalMetrics & { start: number }) | undefined;
+    let best: (ResidualObligationIntervalMetrics & { start: number }) | undefined, evaluated = 0, valid = 0;
     for (let start = problem.day.start; start + task.duration <= problem.day.end; start += 5) {
+      evaluated += 1;
       if (counters) counters.staticStartEvaluations += 1;
       const end = start + task.duration;
       if (missingReference || !fits(task.availability, start, end) || !fits(participant!.availability, start, end)
         || !fits(space?.availability, start, end) || resources.some((resource) => !fits(resource?.availability, start, end))
         || !fits(coach?.availability, start, end)) continue;
       if (counters) counters.staticStartsFound += 1;
+      valid += 1;
       const value = { ...measureResidualObligationIntervals(current, { start, end }), start };
       if (!best || lexicographicNumbers([value.span, value.maximumGap, value.idle - currentMetrics.idle,
         value.nearestDistance, value.start], [best.span, best.maximumGap, best.idle - currentMetrics.idle,
         best.nearestDistance, best.start]) < 0) best = value;
     }
-    if (!best) { empty += 1; if (counters) counters.emptyStaticDomains += 1; continue; }
+    if (!best) { empty += 1; if (counters) counters.emptyStaticDomains += 1;
+      estimates.push({ taskId: task.id, duration: task.duration, participantId: task.participantId, spaceId: task.spaceId,
+        coachId: task.coachId ?? null, requiredResourceIds: [...(task.requiredResourceIds ?? [])].sort(), staticStartsEvaluated: evaluated,
+        staticStartsValid: valid, missingReference, staticDomainEmpty: true, bestStaticStart: null, bestStaticEnd: null,
+        resultingPresence: null, resultingIdle: null, resultingMaximumGap: null, presenceIncrement: null, idleIncrement: null,
+        nearestObligationDistance: null }); continue; }
     projectedPresence = Math.max(projectedPresence, best.span);
     projectedGap = Math.max(projectedGap, best.maximumGap);
     presenceExpansion += Math.max(0, best.span - currentMetrics.span);
     idleExpansion += Math.max(0, best.idle - currentMetrics.idle);
     minimumGap += best.maximumGap;
+    estimates.push({ taskId: task.id, duration: task.duration, participantId: task.participantId, spaceId: task.spaceId,
+      coachId: task.coachId ?? null, requiredResourceIds: [...(task.requiredResourceIds ?? [])].sort(), staticStartsEvaluated: evaluated,
+      staticStartsValid: valid, missingReference, staticDomainEmpty: false, bestStaticStart: best.start, bestStaticEnd: best.start + task.duration,
+      resultingPresence: best.span, resultingIdle: best.idle, resultingMaximumGap: best.maximumGap,
+      presenceIncrement: best.span - currentMetrics.span, idleIncrement: best.idle - currentMetrics.idle,
+      nearestObligationDistance: best.nearestDistance });
   }
-  return { residualTaskCount: residual.length, currentPresenceSpan: currentMetrics.span,
+  const key = { residualTaskCount: residual.length, currentPresenceSpan: currentMetrics.span,
     projectedPresenceLowerBound: projectedPresence, projectedMaximumGapLowerBound: projectedGap,
     sumIndependentPresenceExpansion: presenceExpansion, sumIndependentIdleExpansion: idleExpansion,
     sumIndependentMinimumGap: minimumGap, emptyStaticDomainCount: empty,
     participantSlack: candidate.participantSlack, firstObligation: candidate.firstObligation,
     candidateId: candidate.mainTask.id };
+  const trace: ResidualObligationCandidateTrace = { stateFingerprint: residualOrderingStateFingerprint([candidate]), candidateId: candidate.mainTask.id,
+    participantId: participantId ?? null, depth: candidate.depth, slot: candidate.slot, firstObligation: candidate.firstObligation,
+    participantSlack: candidate.participantSlack, operationTasks: canonicalTimed(candidate.operationTasks),
+    placedParticipantTasks: canonicalTimed(candidate.placedTasks.filter((task) => task.participantId === participantId)),
+    feeder: { taskId: candidate.feeder.id, duration: candidate.feeder.duration, idealStart: idealFeederEnd - candidate.feeder.duration,
+      idealEnd: idealFeederEnd, transition }, residualTasks: estimates, key: { ...key } };
+  return { key, trace };
 }
 
 export function createResidualObligationMainOrderer(problem: Readonly<PlannerNextProblem>,
@@ -187,12 +232,12 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
     firstCandidateChangedCount: 0, selectedCandidateHadResidualTasksCount: 0,
     usesIdealLatestFeederLowerBound: true, decisions: [], acceptedPathDecisions: [], selectedProjectedPresenceLowerBoundByDepth: {},
     selectedProjectedMaximumGapLowerBoundByDepth: {} };
-  const keys = new WeakMap<ExactMainChoiceDescriptor, ResidualObligationAlignmentKey>();
+  const evaluations = new WeakMap<ExactMainChoiceDescriptor, ResidualObligationCandidateEvaluation>();
   const decisionsByDescriptor = new WeakMap<ExactMainChoiceDescriptor, ResidualOrderingDecision>();
   const key = (candidate: ExactMainChoiceDescriptor): ResidualObligationAlignmentKey => {
-    const known = keys.get(candidate); if (known) return known;
-    const evaluated = evaluateResidualObligationCandidate(problem, standaloneTasks, candidate, evidence);
-    keys.set(candidate, evaluated); return evaluated;
+    const known = evaluations.get(candidate); if (known) return known.key;
+    const evaluated = evaluateResidualObligationCandidateWithTrace(problem, standaloneTasks, candidate, evidence);
+    evaluations.set(candidate, evaluated); return evaluated.key;
   };
   const options: NonNullable<ExactItinerantPlanSearchOptions["coreOrderer"]> = {
     mainChoiceComparator: (a, b) => lexicographicNumbers(residualObligationAlignmentTuple(key(a)), residualObligationAlignmentTuple(key(b))),
@@ -208,7 +253,7 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
       const decision: ResidualOrderingDecision = { stateFingerprint: residualOrderingStateFingerprint(ordered), depth: first?.depth ?? 0,
         slot: first?.slot ?? 0,
         baselineOrder, contextualOrder, keys: decisionKeys, selectedCandidateId: null,
-        selectedParticipantId: null, acceptedPath: false,
+        selectedParticipantId: null, acceptedPath: false, selectedTrace: null,
         explanation: "La obligación residual cambia solo el orden: todas las alternativas exactas siguen disponibles." };
       for (const descriptor of [...baseline, ...ordered]) decisionsByDescriptor.set(descriptor, decision);
       if (evidence.decisions.length < MAX_DIAGNOSTIC_DECISIONS) evidence.decisions.push(decision);
@@ -223,6 +268,7 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
         decision.selectedCandidateId = candidate.mainTask.id;
         decision.selectedParticipantId = candidate.mainTask.kind === "technical" ? null : candidate.mainTask.participantId;
         decision.acceptedPath = true;
+        decision.selectedTrace = { ...structuredClone(evaluations.get(candidate)!.trace), stateFingerprint: decision.stateFingerprint };
         evidence.acceptedPathDecisions.push(decision);
         evidence.acceptedPathDecisions.sort((a, b) => a.depth - b.depth || a.stateFingerprint.localeCompare(b.stateFingerprint));
       }

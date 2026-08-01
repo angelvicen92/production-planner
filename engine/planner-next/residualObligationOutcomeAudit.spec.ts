@@ -23,7 +23,7 @@ const scheduled = (id: string, start: number): ScheduledTask => ({ ...tasks.find
 const baseline = [scheduled("a-main", 50), scheduled("a-vocal", 30), scheduled("a-standalone", 100), scheduled("a-anchor", 90), scheduled("b-main", 50), scheduled("c-main", 50)];
 const experiment = [scheduled("a-main", 40), scheduled("a-vocal", 10), scheduled("a-standalone", 120), scheduled("a-anchor", 110), scheduled("b-main", 60), scheduled("c-main", 50)];
 const decision = (participantId: string, candidateId: string, presence: number, gap: number): ResidualOrderingDecision => ({ stateFingerprint: `state-${participantId}`, depth: participantId.charCodeAt(0), slot: 40,
-  baselineOrder: [candidateId], contextualOrder: [candidateId], selectedCandidateId: candidateId, selectedParticipantId: participantId, acceptedPath: true,
+  baselineOrder: [candidateId], contextualOrder: [candidateId], selectedCandidateId: candidateId, selectedParticipantId: participantId, acceptedPath: true, selectedTrace: null,
   keys: [{ candidateId, residualTaskCount: 1, currentPresenceSpan: 20, projectedPresenceLowerBound: presence, projectedMaximumGapLowerBound: gap,
     sumIndependentPresenceExpansion: 0, sumIndependentIdleExpansion: 0, sumIndependentMinimumGap: 0, emptyStaticDomainCount: 0,
     participantSlack: 1, firstObligation: 40 }], explanation: "test" });
