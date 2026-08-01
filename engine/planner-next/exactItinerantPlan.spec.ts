@@ -34,7 +34,16 @@ const auxiliary = (id: string, participantId: string, availability: Array<{ star
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
 
 function coreLeafContinuationProblem(): PlannerNextProblem {
-  const input = problem([auxiliary("standalone", "core", [{ start: 80, end: 90 }])]);
+  const input = problem([auxiliary("standalone", "core", [{ start: 70, end: 80 }])]);
+  const availability = [{ start: 0, end: 120 }];
+  input.participants.push({ id: "other", availability });
+  input.spaces.push({ id: "vocal-other", availability });
+  input.tasks.push(
+    { id: "vocal-other", kind: "vocal", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "vocal-other", dependencies: [] },
+    { id: "main-other", kind: "main", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["vocal-other"], blockKey: "coach" },
+  );
   return input;
 }
 
@@ -45,6 +54,7 @@ test("compatible standalone tasks complete atomically and preserve the exact cor
   assert.deepEqual(result.scheduledTasks.filter(({ id }) => new Set(core.scheduledTasks.map((task) => task.id)).has(id)), core.scheduledTasks);
   assert.equal(validatePlan(input, result.scheduledTasks, [], result.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, before); assert.deepEqual(result.remainingTaskIds, []);
+  assert.equal(result.evidence.standaloneForwardImpactedTaskChecks, 0);
 });
 
 test("shared resources never overlap and the narrower task is selected first", () => {
@@ -85,15 +95,37 @@ test("a blocking first core leaf is rejected and a later hard-valid core leaf co
   const input = coreLeafContinuationProblem(), snapshot = structuredClone(input);
   const isolated = constructExactMainAndFeederCore(input), standalone = input.tasks.find(({ id }) => id === "standalone")!;
   assert.equal(isolated.status, "COMPLETE");
-  assert.equal(isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start, 80);
-  assert.equal([...Array(3)].some((_, index) => canPlaceTask(input, standalone, 80 + index * 5, isolated.scheduledTasks)), false);
+  assert.equal(isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start, 70);
+  assert.equal([...Array(3)].some((_, index) => canPlaceTask(input, standalone, 70 + index * 5, isolated.scheduledTasks)), false);
   const integrated = constructExactItinerantPlan(input);
-  assert.equal(integrated.status, "COMPLETE"); assert.ok(integrated.evidence.coreLeavesRejectedByStandalone > 0);
-  assert.ok(integrated.evidence.standaloneSearchInvocations > 1);
+  assert.equal(integrated.status, "COMPLETE"); assert.ok(integrated.evidence.standaloneForwardPrunes > 0);
+  assert.equal(integrated.evidence.coreLeavesRejectedByStandalone, 0);
+  assert.ok(integrated.evidence.firstStandaloneForwardPruneDepth! < integrated.evidence.coreMaximumDepth);
+  assert.equal(integrated.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
+  assert.equal(integrated.evidence.standaloneSearchInvocations, 1);
   assert.notEqual(integrated.scheduledTasks.find(({ id }) => id === "vocal")!.start,
     isolated.scheduledTasks.find(({ id }) => id === "vocal")!.start);
   assert.equal(validatePlan(input, integrated.scheduledTasks, [], integrated.scheduledSpaceMeals).hardValid, true);
   assert.deepEqual(input, snapshot); assert.equal(input.budget.bestK, 1);
+});
+
+test("the last accumulating core occupation is recorded when it removes a prior witness", () => {
+  const input = problem([auxiliary("standalone", "standalone-person", [{ start: 80, end: 105 }], ["unit"])]);
+  const availability = [{ start: 0, end: 120 }];
+  input.participants.push({ id: "other", availability }); input.spaces.push({ id: "vocal-other", availability });
+  input.tasks.find(({ id }) => id === "main")!.requiredResourceIds = ["unit"];
+  input.tasks.push(
+    { id: "vocal-other", kind: "vocal", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "vocal-other", dependencies: [] },
+    { id: "main-other", kind: "main", participantId: "other", coachId: "coach", duration: 10,
+      spaceId: "main", dependencies: ["vocal-other"], blockKey: "coach", requiredResourceIds: ["unit"] },
+  );
+  const result = constructExactItinerantPlan(input);
+  assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneForwardWitnessesFound > 0);
+  assert.ok((result.evidence.standaloneForwardPrunesByDepth["2"] ?? 0) > 0);
+  assert.equal(result.evidence.lastStandaloneForwardBlockingTaskId, "standalone");
+  assert.ok(result.evidence.lastStandaloneForwardCausingCoreTaskIds.some((id) => id.startsWith("main")));
+  assert.deepEqual(result.scheduledTasks, []);
 });
 
 test("zero alternatives are infeasible and failures publish no partial core", () => {
@@ -114,6 +146,7 @@ test("unsupported standalone shapes are explicit and atomic", () => {
 test("the global branch threshold completes at B and B-1 exhausts exactly", () => {
   const baseline = coreLeafContinuationProblem();
   const complete = constructExactItinerantPlan(baseline); assert.equal(complete.status, "COMPLETE");
+  assert.ok(complete.evidence.standaloneForwardPrunes > 0);
   const threshold = complete.evidence.branchesExplored;
   const exact = coreLeafContinuationProblem(); exact.budget.maxBranchExpansions = threshold;
   const atThreshold = constructExactItinerantPlan(exact); assert.equal(atThreshold.status, "COMPLETE");
@@ -122,7 +155,7 @@ test("the global branch threshold completes at B and B-1 exhausts exactly", () =
   const exhausted = constructExactItinerantPlan(below);
   assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED"); assert.equal(exhausted.evidence.branchesExplored, threshold - 1);
   assert.equal(exhausted.evidence.branchesExplored, exhausted.evidence.coreBranches + exhausted.evidence.standaloneBranches);
-  assert.ok(exhausted.evidence.coreLeavesRejectedByStandalone > 0);
+  assert.ok(exhausted.evidence.standaloneForwardPrunes > 0);
   assert.equal(exhausted.evidence.lastExhaustionPhase, "STANDALONE");
   assert.deepEqual(exhausted.scheduledTasks, []);
 });

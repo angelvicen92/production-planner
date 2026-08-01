@@ -52,6 +52,7 @@ interface MainChoice {
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 
 export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
+export type ExactPartialCoreContinuationOutcome = "CONTINUE" | "REJECT" | "BUDGET_EXHAUSTED";
 export interface ExactSearchLedger {
   limit: number;
   branchesExplored: number;
@@ -66,9 +67,20 @@ export interface ExactCoreLeafCandidate {
   remainingTaskIds: string[];
   fingerprint: string;
 }
+export interface ExactPartialCoreCandidate {
+  tasks: ScheduledTask[];
+  addedTasks: ScheduledTask[];
+  meals: ScheduledSpaceMeal[];
+  depth: number;
+  mainTaskId: string;
+  feederStart: number;
+  pattern: string[];
+  timelineKey: string | null;
+}
 export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
+  onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -150,7 +162,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
 
   const search = (pattern: string[], slots: number[], composite: RequiredCompositePosition,
-    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number): SearchOutcome => {
+    meals: ScheduledSpaceMeal[], placed: ScheduledTask[], used: Set<string>, depth: number,
+    timelineKey: string | null): SearchOutcome => {
     evidence.maximumDepth = Math.max(evidence.maximumDepth, depth);
     if (depth === mains.length) {
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
@@ -207,8 +220,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           evidence.backtracks += 1;
           continue;
         }
+        const partial = options.onPartialCoreCandidate?.({ tasks: nextPlaced, addedTasks: [...choice.operation, scheduledFeeder],
+          meals, depth: depth + 1, mainTaskId: choice.task.id, feederStart: start, pattern: [...pattern],
+          timelineKey }) ?? "CONTINUE";
+        if (partial === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
+        if (partial === "REJECT") { evidence.backtracks += 1; continue; }
         if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
-        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1);
+        const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey);
         if (child === "FOUND") return "FOUND";
         if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         evidence.backtracks += 1;
@@ -281,7 +299,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       for (const composite of positions) {
         if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-        const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0);
+        const result = search(pattern, slots, composite, timeline ? [timeline.meal] : [], [], new Set(), 0,
+          timeline?.key ?? null);
         if (result === "BUDGET_EXHAUSTED")
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
         if (result === "FOUND") {

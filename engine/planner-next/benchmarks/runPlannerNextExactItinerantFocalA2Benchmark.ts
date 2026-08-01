@@ -76,4 +76,6 @@ assert.ok(first.evidence.fullFingerprint); assert.equal(first.evidence.fullFinge
 assert.equal(first.evidence.fullFingerprint, reversed.evidence.fullFingerprint);
 assert.ok(first.evidence.selectedCoreFingerprint); assert.equal(first.evidence.selectedCoreFingerprint, second.evidence.selectedCoreFingerprint);
 assert.equal(first.evidence.selectedCoreFingerprint, reversed.evidence.selectedCoreFingerprint);
+assert.equal(first.evidence.selectedCoreFingerprint, "0948b758c96f17ec546c331ce6d8b42464dbdbe95970d0640ae5fbea95fdbae9");
+assert.equal(first.evidence.fullFingerprint, "825314fa954d2511c5cef2bcd2d6f988efe560131c6039dc99d4ba4c80b662b4");
 assert.ok(first.evidence.branchesExplored <= 300_000);
