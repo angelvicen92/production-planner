@@ -107,11 +107,10 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
   let selected: { tasks: ScheduledTask[]; meals: ScheduledSpaceMeal[]; pattern: string[]; timeline?: MainFlowTimeline } | null = null;
 
   const checkFeederStart = (feeder: Task, start: number, operation: ScheduledTask[], placed: ScheduledTask[],
-    meals: ScheduledSpaceMeal[], phase: "CONSTRUCTIVE" | "MATCHING"): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
-    if (!consumeBranch(`${phase}_FEEDER_START_SEARCH_BUDGET_EXHAUSTED`)) return "BUDGET_EXHAUSTED";
+    meals: ScheduledSpaceMeal[]): "VALID" | "INVALID" | "BUDGET_EXHAUSTED" => {
+    if (!consumeBranch("CONSTRUCTIVE_FEEDER_START_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
     evidence.feederCandidatesEvaluated += 1;
-    if (phase === "CONSTRUCTIVE") evidence.constructiveFeederStartChecks += 1;
-    else evidence.matchingFeederStartChecks += 1;
+    evidence.constructiveFeederStartChecks += 1;
     return canPlaceTask(problem, feeder, start, [...placed, ...operation], meals) ? "VALID" : "INVALID";
   };
 
@@ -152,7 +151,7 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
       const deadline = choice.firstObligation - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
       let validStartFound = false;
       for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
-        const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals, "CONSTRUCTIVE");
+        const startCheck = checkFeederStart(choice.feeder, start, choice.operation, placed, meals);
         if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (startCheck === "INVALID") continue;
         validStartFound = true;
@@ -191,15 +190,7 @@ export function constructExactMainAndFeederCore(problem: PlannerNextProblem): Ex
         if (!consumeBranch("MATCHING_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const operation = materializeAnchoredOperation(problem, task, slots[position]!, placed, meals);
         if (!operation) continue;
-        const feeder = feederByMain.get(task.id)!;
-        const deadline = operation.tasks[0]!.start - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
-        let witness = false;
-        for (let start = deadline - feeder.duration; start >= problem.day.start; start -= 5) {
-          const startCheck = checkFeederStart(feeder, start, operation.tasks, placed, meals, "MATCHING");
-          if (startCheck === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
-          if (startCheck === "VALID") { witness = true; break; }
-        }
-        if (witness) positions.push(position);
+        positions.push(position);
       }
       edges.set(task.id, positions);
       if (positions.length === 0) return "DEAD_END";
