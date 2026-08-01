@@ -49,6 +49,20 @@ interface MainChoice {
   firstObligation: number;
 }
 
+/** Immutable, derived view exposed only to experimental candidate-ordering code. */
+export interface ExactMainChoiceDescriptor {
+  readonly mainTask: Readonly<Task>;
+  readonly operationTasks: readonly Readonly<ScheduledTask>[];
+  readonly feeder: Readonly<Task>;
+  readonly placedTasks: readonly Readonly<ScheduledTask>[];
+  readonly meals: readonly Readonly<ScheduledSpaceMeal>[];
+  readonly slot: number;
+  readonly depth: number;
+  readonly pattern: readonly string[];
+  readonly participantSlack: number;
+  readonly firstObligation: number;
+}
+
 type SearchOutcome = "FOUND" | "DEAD_END" | "BUDGET_EXHAUSTED";
 
 export type ExactCoreContinuationOutcome = "ACCEPT" | "REJECT" | "BUDGET_EXHAUSTED";
@@ -81,6 +95,11 @@ export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
   onHardValidCoreLeaf?: (candidate: ExactCoreLeafCandidate) => ExactCoreContinuationOutcome;
   onPartialCoreCandidate?: (candidate: ExactPartialCoreCandidate) => ExactPartialCoreContinuationOutcome;
+  /** Experimental ordering only: a negative result puts `a` before `b`; no candidate can be removed. */
+  mainChoiceComparator?: (a: ExactMainChoiceDescriptor, b: ExactMainChoiceDescriptor) => number;
+  onMainChoicesRanked?: (baseline: readonly ExactMainChoiceDescriptor[], ordered: readonly ExactMainChoiceDescriptor[]) => void;
+  onMainChoiceEntered?: (candidate: ExactMainChoiceDescriptor) => void;
+  onMainChoiceAccepted?: (candidate: ExactMainChoiceDescriptor) => void;
 }
 
 export function createExactSearchLedger(limit: number): ExactSearchLedger {
@@ -97,6 +116,11 @@ export function createExactSearchLedger(limit: number): ExactSearchLedger {
 }
 
 const canonical = <T extends { id: string }>(values: readonly T[]): T[] => [...values].sort((a, b) => a.id.localeCompare(b.id));
+const readonlyTaskCopy = <T extends Task | ScheduledTask>(task: T): Readonly<T> => Object.freeze({ ...task,
+  dependencies: Object.freeze([...task.dependencies]),
+  requiredResourceIds: task.requiredResourceIds === undefined ? undefined : Object.freeze([...task.requiredResourceIds]),
+  availability: task.availability === undefined ? undefined : Object.freeze(task.availability.map((window) => Object.freeze({ ...window }))),
+}) as Readonly<T>;
 
 function emptyEvidence(): ExactMainAndFeederCoreEvidence {
   return { branchesExplored: 0, patternCandidatesExplored: 0, timelineCandidatesExplored: 0,
@@ -202,7 +226,23 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     choices.sort((a, b) => a.participantSlack - b.participantSlack
       || a.firstObligation - b.firstObligation || a.task.id.localeCompare(b.task.id));
     if (choices.length === 0) { evidence.zeroAlternativePrunes += 1; return "DEAD_END"; }
+    const describe = (choice: MainChoice): ExactMainChoiceDescriptor => Object.freeze({
+      mainTask: readonlyTaskCopy(choice.task),
+      operationTasks: Object.freeze(choice.operation.map(readonlyTaskCopy)),
+      feeder: readonlyTaskCopy(choice.feeder),
+      placedTasks: Object.freeze(placed.map(readonlyTaskCopy)),
+      meals: Object.freeze(meals.map((meal) => Object.freeze({ ...meal }))),
+      slot, depth, pattern: Object.freeze([...pattern]), participantSlack: choice.participantSlack,
+      firstObligation: choice.firstObligation,
+    });
+    const descriptorById = new Map(choices.map((choice) => [choice.task.id, describe(choice)]));
+    const baselineDescriptors = choices.map((choice) => descriptorById.get(choice.task.id)!);
+    if (options.mainChoiceComparator) choices.sort((a, b) => options.mainChoiceComparator!(
+      descriptorById.get(a.task.id)!, descriptorById.get(b.task.id)!));
+    options.onMainChoicesRanked?.(Object.freeze([...baselineDescriptors]),
+      Object.freeze(choices.map((choice) => descriptorById.get(choice.task.id)!)));
     for (const choice of choices) {
+      options.onMainChoiceEntered?.(descriptorById.get(choice.task.id)!);
       const deadline = choice.firstObligation - Math.max(problem.participantTransitionMinutes, problem.resourceTransitionMinutes);
       let validStartFound = false;
       for (let start = deadline - choice.feeder.duration; start >= problem.day.start; start -= 5) {
@@ -227,7 +267,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         if (partial === "REJECT") { evidence.backtracks += 1; continue; }
         if (!consumeBranch("FUTURE_FEASIBILITY_SEARCH_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
         const child = search(pattern, slots, composite, meals, nextPlaced, nextUsed, depth + 1, timelineKey);
-        if (child === "FOUND") return "FOUND";
+        if (child === "FOUND") { options.onMainChoiceAccepted?.(descriptorById.get(choice.task.id)!); return "FOUND"; }
         if (child === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         evidence.backtracks += 1;
       }
