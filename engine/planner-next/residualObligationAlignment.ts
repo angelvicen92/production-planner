@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import type { ExactItinerantPlanSearchOptions } from "./exactItinerantPlan";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
@@ -17,11 +18,15 @@ export interface ResidualObligationAlignmentKey {
 }
 
 export interface ResidualOrderingDecision {
+  stateFingerprint: string;
   depth: number;
+  slot: number;
   baselineOrder: string[];
   contextualOrder: string[];
   keys: ResidualObligationAlignmentKey[];
   selectedCandidateId: string | null;
+  selectedParticipantId: string | null;
+  acceptedPath: boolean;
   explanation: string;
 }
 
@@ -40,6 +45,7 @@ export interface ResidualObligationOrderingEvidence {
   selectedCandidateHadResidualTasksCount: number;
   usesIdealLatestFeederLowerBound: true;
   decisions: ResidualOrderingDecision[];
+  acceptedPathDecisions: ResidualOrderingDecision[];
   selectedProjectedPresenceLowerBoundByDepth: Record<string, number>;
   selectedProjectedMaximumGapLowerBoundByDepth: Record<string, number>;
 }
@@ -54,6 +60,15 @@ export interface ResidualObligationIntervalMetrics {
 }
 
 const MAX_DIAGNOSTIC_DECISIONS = 40;
+const canonicalTimed = (items: readonly { id: string; start: number; end: number }[]) =>
+  [...items].map(({ id, start, end }) => ({ id, start, end })).sort((a, b) => a.id.localeCompare(b.id) || a.start - b.start || a.end - b.end);
+export function residualOrderingStateFingerprint(candidates: readonly ExactMainChoiceDescriptor[]): string {
+  const first = candidates[0];
+  const canonical = { depth: first?.depth ?? 0, slot: first?.slot ?? 0, pattern: [...(first?.pattern ?? [])],
+    placedTasks: canonicalTimed(first?.placedTasks ?? []), meals: canonicalTimed(first?.meals ?? []),
+    candidateIds: candidates.map(({ mainTask }) => mainTask.id).sort() };
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
 const fits = (windows: readonly Window[] | undefined, start: number, end: number): boolean =>
   windows === undefined || windows.some((window) => window.start <= start && end <= window.end);
 const intervalsForParticipant = (tasks: readonly Readonly<ScheduledTask>[], participantId: string): ResidualObligationInterval[] =>
@@ -170,9 +185,10 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
     orderingDecisions: 0, candidatesRanked: 0, candidatesWithResidualTasks: 0, candidatesWithoutResidualTasks: 0,
     staticStartEvaluations: 0, staticStartsFound: 0, emptyStaticDomains: 0, decisionOrderChangedCount: 0,
     firstCandidateChangedCount: 0, selectedCandidateHadResidualTasksCount: 0,
-    usesIdealLatestFeederLowerBound: true, decisions: [], selectedProjectedPresenceLowerBoundByDepth: {},
+    usesIdealLatestFeederLowerBound: true, decisions: [], acceptedPathDecisions: [], selectedProjectedPresenceLowerBoundByDepth: {},
     selectedProjectedMaximumGapLowerBoundByDepth: {} };
   const keys = new WeakMap<ExactMainChoiceDescriptor, ResidualObligationAlignmentKey>();
+  const decisionsByDescriptor = new WeakMap<ExactMainChoiceDescriptor, ResidualOrderingDecision>();
   const key = (candidate: ExactMainChoiceDescriptor): ResidualObligationAlignmentKey => {
     const known = keys.get(candidate); if (known) return known;
     const evaluated = evaluateResidualObligationCandidate(problem, standaloneTasks, candidate, evidence);
@@ -188,17 +204,28 @@ export function createResidualObligationMainOrderer(problem: Readonly<PlannerNex
       evidence.candidatesWithoutResidualTasks += decisionKeys.filter(({ residualTaskCount }) => residualTaskCount === 0).length;
       if (baselineOrder.join("\0") !== contextualOrder.join("\0")) evidence.decisionOrderChangedCount += 1;
       if (baselineOrder[0] !== contextualOrder[0]) evidence.firstCandidateChangedCount += 1;
-      if (evidence.decisions.length < MAX_DIAGNOSTIC_DECISIONS) evidence.decisions.push({ depth: ordered[0]?.depth ?? 0,
+      const first = ordered[0];
+      const decision: ResidualOrderingDecision = { stateFingerprint: residualOrderingStateFingerprint(ordered), depth: first?.depth ?? 0,
+        slot: first?.slot ?? 0,
         baselineOrder, contextualOrder, keys: decisionKeys, selectedCandidateId: null,
-        explanation: "La obligación residual cambia solo el orden: todas las alternativas exactas siguen disponibles." });
+        selectedParticipantId: null, acceptedPath: false,
+        explanation: "La obligación residual cambia solo el orden: todas las alternativas exactas siguen disponibles." };
+      for (const descriptor of [...baseline, ...ordered]) decisionsByDescriptor.set(descriptor, decision);
+      if (evidence.decisions.length < MAX_DIAGNOSTIC_DECISIONS) evidence.decisions.push(decision);
     },
     onMainChoiceAccepted(candidate) {
       const selected = key(candidate), depth = String(candidate.depth);
       evidence.selectedProjectedPresenceLowerBoundByDepth[depth] = selected.projectedPresenceLowerBound;
       evidence.selectedProjectedMaximumGapLowerBoundByDepth[depth] = selected.projectedMaximumGapLowerBound;
       if (selected.residualTaskCount > 0) evidence.selectedCandidateHadResidualTasksCount += 1;
-      const decision = [...evidence.decisions].reverse().find((item) => item.depth === candidate.depth && item.contextualOrder.includes(candidate.mainTask.id));
-      if (decision) decision.selectedCandidateId = candidate.mainTask.id;
+      const decision = decisionsByDescriptor.get(candidate);
+      if (decision) {
+        decision.selectedCandidateId = candidate.mainTask.id;
+        decision.selectedParticipantId = candidate.mainTask.kind === "technical" ? null : candidate.mainTask.participantId;
+        decision.acceptedPath = true;
+        evidence.acceptedPathDecisions.push(decision);
+        evidence.acceptedPathDecisions.sort((a, b) => a.depth - b.depth || a.stateFingerprint.localeCompare(b.stateFingerprint));
+      }
     },
   };
   return { options, evidence };
