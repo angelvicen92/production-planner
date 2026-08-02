@@ -20,7 +20,7 @@ import {
   normalizeHeuristicSetting,
 } from "@shared/optimizer";
 import { buildDefaultPlanResourceItemSnapshotRows } from "./resourceAvailabilityWindow";
-import { buildPlanSpatialAvailabilitySnapshot, missingSpatialSnapshots, resolveEffectiveSpaceAvailabilityHierarchy } from "./spaceAvailabilityHierarchy";
+import { buildPlanSpatialAvailabilityInitializationBatch, buildPlanSpatialAvailabilitySnapshot, resolveEffectiveSpaceAvailabilityHierarchy, validateSpatialAvailabilityCatalog } from "./spaceAvailabilityHierarchy";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -55,6 +55,15 @@ function addMinutesToHHMM(base: string, durationMinutes: number): { hhmm: string
   const hh = Math.floor(normalized / 60);
   const mm = normalized % 60;
   return { hhmm: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`, seconds: 0 };
+}
+
+async function throwAfterPlanCreationFailure(planId: number, cause: unknown, fallbackMessage: string): Promise<never> {
+  const originalMessage = cause instanceof Error ? cause.message : fallbackMessage;
+  const { error: cleanupError } = await supabaseAdmin.from("plans").delete().eq("id", planId);
+  if (cleanupError) {
+    throw new Error(`${fallbackMessage}: ${originalMessage}; COMPENSATION_FAILED: ${cleanupError.message}; potentially orphaned plan ${planId}`);
+  }
+  throw new Error(originalMessage || fallbackMessage);
 }
 
 export type PlanningRunDiagnosticsRecord = Omit<EngineRunDiagnostics, "status"> & {
@@ -1204,8 +1213,7 @@ export class SupabaseStorage implements IStorage {
         if (spaceSnapshotError) throw spaceSnapshotError;
       }
     } catch (spatialError: any) {
-      await supabaseAdmin.from("plans").delete().eq("id", data.id);
-      throw new Error(spatialError?.message || "Failed to snapshot spatial availability for plan");
+      return throwAfterPlanCreationFailure(Number(data.id), spatialError, "Failed to snapshot spatial availability for plan");
     }
 
     // Snapshot de recursos por defecto -> unidades del plan (plan_resource_items)
@@ -1345,8 +1353,7 @@ export class SupabaseStorage implements IStorage {
         }
       }
     } catch (e: any) {
-      await supabaseAdmin.from("plans").delete().eq("id", data.id);
-      throw new Error(e?.message || "Failed to snapshot resources for plan");
+      return throwAfterPlanCreationFailure(Number(data.id), e, "Failed to snapshot resources for plan");
     }
 
     try {
@@ -1504,8 +1511,7 @@ export class SupabaseStorage implements IStorage {
         }
       }
     } catch (e: any) {
-      await supabaseAdmin.from("plans").delete().eq("id", data.id);
-      throw new Error(e?.message || "Failed to snapshot staff defaults for plan");
+      return throwAfterPlanCreationFailure(Number(data.id), e, "Failed to snapshot staff defaults for plan");
     }
 
     await this.syncPlanMealBreaks(Number((data as any).id));
@@ -2379,41 +2385,79 @@ export class SupabaseStorage implements IStorage {
     if (planError) throw planError;
     if (zoneError) throw zoneError;
     if (spaceError) throw spaceError;
-    const built = buildPlanSpatialAvailabilitySnapshot({
-      planId, requestedWorkDay: { start: plan.work_start, end: plan.work_end }, defaultWorkDay: { start: plan.work_start, end: plan.work_end },
-      zones: (zones ?? []).map((r: any) => ({ id: Number(r.id), defaultAvailabilityStart: r.default_availability_start, defaultAvailabilityEnd: r.default_availability_end })),
-      spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), defaultAvailabilityStart: r.default_availability_start, defaultAvailabilityEnd: r.default_availability_end })),
+    const batch = buildPlanSpatialAvailabilityInitializationBatch({
+      planId, workDay: { start: plan.work_start, end: plan.work_end },
+      zones: (zones ?? []).map((r: any) => ({ id: Number(r.id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })),
+      spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })),
+      existingZones: existingZones.map((r: any) => ({ zoneId: Number(r.zone_id), availabilityStart: r.availability_start, availabilityEnd: r.availability_end, source: String(r.source) })),
+      existingSpaces: existingSpaces.map((r: any) => ({ spaceId: Number(r.space_id), zoneId: Number(r.zone_id), availabilityStart: r.availability_start, availabilityEnd: r.availability_end, source: String(r.source) })),
     });
-    const zoneRows = missingSpatialSnapshots(built.zones, existingZones.map((r: any) => Number(r.zone_id)), "zone");
-    const spaceRows = missingSpatialSnapshots(built.spaces, existingSpaces.map((r: any) => Number(r.space_id)), "space");
-    if (zoneRows.length) { const { error } = await supabaseAdmin.from("plan_zone_settings").upsert(zoneRows, { onConflict: "plan_id,zone_id", ignoreDuplicates: true }); if (error) throw error; }
-    if (spaceRows.length) { const { error } = await supabaseAdmin.from("plan_space_settings").upsert(spaceRows, { onConflict: "plan_id,space_id", ignoreDuplicates: true }); if (error) throw error; }
-    return { zonesCreated: zoneRows.length, spacesCreated: spaceRows.length };
+    if (batch.zones.length) {
+      const { error } = await supabaseAdmin.from("plan_zone_settings").insert(batch.zones);
+      if (error) throw error;
+    }
+    if (batch.spaces.length) {
+      const { error: spaceInsertError } = await supabaseAdmin.from("plan_space_settings").insert(batch.spaces);
+      if (spaceInsertError) {
+        if (batch.zones.length) {
+          const newZoneIds = batch.zones.map((row) => row.zone_id);
+          const { error: cleanupError } = await supabaseAdmin.from("plan_zone_settings").delete().eq("plan_id", planId).in("zone_id", newZoneIds);
+          if (cleanupError) throw new Error(`SPATIAL_INITIALIZATION_FAILED: ${spaceInsertError.message}; COMPENSATION_FAILED: ${cleanupError.message}; plan ${planId}`);
+        }
+        throw spaceInsertError;
+      }
+    }
+    return { zonesCreated: batch.zones.length, spacesCreated: batch.spaces.length };
   }
 
   async updateProgramDefaultWorkday(start: string, end: string): Promise<void> {
-    const validation = resolveEffectiveSpaceAvailabilityHierarchy({ workDay: { start, end }, zoneAvailability: { start: null, end: null }, spaceAvailability: { start: null, end: null } });
-    if (!validation.valid) throw new Error(validation.reason);
+    const [{ data: zones, error: zoneError }, { data: spaces, error: spaceError }] = await Promise.all([
+      supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
+      supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
+    ]);
+    if (zoneError) throw zoneError; if (spaceError) throw spaceError;
+    validateSpatialAvailabilityCatalog({ workDay: { start, end }, zones: (zones ?? []).map((r: any) => ({ id: Number(r.id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })), spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })) });
     const { error } = await supabaseAdmin.from("program_settings").update({ default_work_start: start, default_work_end: end }).eq("id", 1);
     if (error) throw error;
   }
 
   async updateZoneDefaultAvailability(zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any> {
-    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) return null;
+    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) {
+      const { data, error } = await supabaseAdmin.from("zones").select("*").eq("id", zoneId).single(); if (error) throw error; return data;
+    }
+    const [{ data: settings, error: settingsError }, { data: zone, error: zoneError }, { data: spaces, error: spacesError }] = await Promise.all([
+      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
+      supabaseAdmin.from("zones").select("id").eq("id", zoneId).single(),
+      supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").eq("zone_id", zoneId).order("id"),
+    ]);
+    if (settingsError) throw settingsError; if (zoneError) throw zoneError; if (spacesError) throw spacesError;
+    validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }], spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })) });
     const { data, error } = await supabaseAdmin.from("zones").update({ default_availability_start: patch.availabilityStart, default_availability_end: patch.availabilityEnd }).eq("id", zoneId).select("*").single();
     if (error) throw error;
     return data;
   }
 
   async updateSpaceDefaultAvailability(spaceId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any> {
-    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) return null;
+    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) {
+      const { data, error } = await supabaseAdmin.from("spaces").select("*").eq("id", spaceId).single(); if (error) throw error; return data;
+    }
+    const [{ data: settings, error: settingsError }, { data: space, error: spaceError }] = await Promise.all([
+      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end").eq("id", 1).single(),
+      supabaseAdmin.from("spaces").select("id, zone_id").eq("id", spaceId).single(),
+    ]);
+    if (settingsError) throw settingsError; if (spaceError) throw spaceError;
+    const { data: zone, error: zoneError } = await supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").eq("id", space.zone_id).single();
+    if (zoneError) throw zoneError;
+    validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: zone.default_availability_start, availabilityEnd: zone.default_availability_end }], spaces: [{ id: Number(space.id), zoneId: Number(space.zone_id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }] });
     const { data, error } = await supabaseAdmin.from("spaces").update({ default_availability_start: patch.availabilityStart, default_availability_end: patch.availabilityEnd }).eq("id", spaceId).select("*").single();
     if (error) throw error;
     return data;
   }
 
   async updatePlanSpaceAvailability(planId: number, spaceId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any> {
-    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) return null;
+    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) {
+      const { data, error } = await supabaseAdmin.from("plan_space_settings").select("*").eq("plan_id", planId).eq("space_id", spaceId).single(); if (error) throw error; return data;
+    }
     const [{ data: plan, error: pe }, { data: space, error: se }] = await Promise.all([
       supabaseAdmin.from("plans").select("work_start, work_end").eq("id", planId).single(),
       supabaseAdmin.from("plan_space_settings").select("zone_id").eq("plan_id", planId).eq("space_id", spaceId).single(),
@@ -2428,7 +2472,9 @@ export class SupabaseStorage implements IStorage {
   }
 
   async updatePlanZoneAvailability(planId: number, zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any> {
-    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) return null;
+    if (patch.availabilityStart === undefined && patch.availabilityEnd === undefined) {
+      const { data, error } = await supabaseAdmin.from("plan_zone_settings").select("*").eq("plan_id", planId).eq("zone_id", zoneId).single(); if (error) throw error; return data;
+    }
     const [{ data: plan, error: pe }, { data: spaces, error: se }] = await Promise.all([
       supabaseAdmin.from("plans").select("work_start, work_end").eq("id", planId).single(),
       supabaseAdmin.from("plan_space_settings").select("space_id, availability_start, availability_end").eq("plan_id", planId).eq("zone_id", zoneId).order("space_id"),

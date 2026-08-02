@@ -57,18 +57,45 @@ export const availabilityWindowUpdateSchema = z
   .strict()
   .superRefine(validateResourceAvailabilityWindowPair);
 
+function validateDefaultWorkdayPair(
+  value: { defaultWorkStart?: string; defaultWorkEnd?: string },
+  context: z.RefinementCtx,
+): void {
+  const hasStart = value.defaultWorkStart !== undefined;
+  const hasEnd = value.defaultWorkEnd !== undefined;
+  if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
+  if (hasStart && hasEnd && value.defaultWorkStart! >= value.defaultWorkEnd!) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+}
+
+const defaultWorkdayFields = {
+  defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
+  defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
+};
+
 export const defaultWorkdayUpdateSchema = z
-  .object({
-    defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
-    defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
-  })
+  .object(defaultWorkdayFields)
   .strict()
-  .superRefine((value, context) => {
-    const hasStart = value.defaultWorkStart !== undefined;
-    const hasEnd = value.defaultWorkEnd !== undefined;
-    if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
-    if (hasStart && hasEnd && value.defaultWorkStart! >= value.defaultWorkEnd!) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
-  });
+  .superRefine(validateDefaultWorkdayPair);
+
+export const planZoneAvailabilityResponseSchema = z.object({
+  id: z.number(), planId: z.number(), zoneId: z.number(),
+  availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+  source: z.string(), createdAt: z.string(), updatedAt: z.string(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const planSpaceAvailabilityResponseSchema = z.object({
+  id: z.number(), planId: z.number(), spaceId: z.number(), zoneId: z.number(),
+  availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+  source: z.string(), createdAt: z.string(), updatedAt: z.string(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const defaultSpatialAvailabilityResponseSchema = z.object({
+  id: z.number(), availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const spatialAvailabilityInitializationResponseSchema = z.object({
+  zonesCreated: z.number().int().nonnegative(), spacesCreated: z.number().int().nonnegative(),
+}).strict();
 
 const resourceAvailabilityWindowFields = {
   availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
@@ -416,11 +443,11 @@ export const api = {
       },
     },
     spatialAvailability: {
-      listZones: { method: "GET" as const, path: "/api/plans/:id/zone-availability" },
-      listSpaces: { method: "GET" as const, path: "/api/plans/:id/space-availability" },
-      initialize: { method: "POST" as const, path: "/api/plans/:id/spatial-availability/init" },
-      updateZone: { method: "PATCH" as const, path: "/api/plans/:id/zones/:zoneId/availability", input: availabilityWindowUpdateSchema },
-      updateSpace: { method: "PATCH" as const, path: "/api/plans/:id/spaces/:spaceId/availability", input: availabilityWindowUpdateSchema },
+      listZones: { method: "GET" as const, path: "/api/plans/:id/zone-availability", responses: { 200: z.array(planZoneAvailabilityResponseSchema), 400: errorSchemas.validation } },
+      listSpaces: { method: "GET" as const, path: "/api/plans/:id/space-availability", responses: { 200: z.array(planSpaceAvailabilityResponseSchema), 400: errorSchemas.validation } },
+      initialize: { method: "POST" as const, path: "/api/plans/:id/spatial-availability/init", responses: { 200: spatialAvailabilityInitializationResponseSchema, 400: errorSchemas.validation } },
+      updateZone: { method: "PATCH" as const, path: "/api/plans/:id/zones/:zoneId/availability", input: availabilityWindowUpdateSchema, responses: { 200: planZoneAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
+      updateSpace: { method: "PATCH" as const, path: "/api/plans/:id/spaces/:spaceId/availability", input: availabilityWindowUpdateSchema, responses: { 200: planSpaceAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
     },
     generate: {
       method: "POST" as const,
@@ -971,8 +998,7 @@ export const api = {
       path: "/api/program-settings",
       input: z
         .object({
-          defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
-          defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
+          ...defaultWorkdayFields,
           mealStart: z
             .string()
             .regex(/^\d{2}:\d{2}$/)
@@ -1007,10 +1033,7 @@ export const api = {
           uiUnlocatedGroupOrderIndex: z.number().int().nullable().optional(),
         })
         .strict()
-        .superRefine((value, context) => {
-          if ((value.defaultWorkStart === undefined) !== (value.defaultWorkEnd === undefined)) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
-          if (value.defaultWorkStart !== undefined && value.defaultWorkEnd !== undefined && value.defaultWorkStart >= value.defaultWorkEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
-        }),
+        .superRefine(validateDefaultWorkdayPair),
       responses: {
         200: z.object({ success: z.boolean() }),
         400: errorSchemas.validation,
@@ -1136,7 +1159,6 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
-    availability: { method: "PATCH" as const, path: "/api/zones/:id/default-availability", input: availabilityWindowUpdateSchema },
   },
 
   vocalCoachRules: {
@@ -1222,7 +1244,7 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
-    availability: { method: "PATCH" as const, path: "/api/spaces/:id/default-availability", input: availabilityWindowUpdateSchema },
+    availability: { method: "PATCH" as const, path: "/api/zones/:id/default-availability", input: availabilityWindowUpdateSchema, responses: { 200: defaultSpatialAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
     delete: {
       method: "DELETE" as const,
       path: "/api/zones/:id",
@@ -1358,6 +1380,7 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    availability: { method: "PATCH" as const, path: "/api/spaces/:id/default-availability", input: availabilityWindowUpdateSchema, responses: { 200: defaultSpatialAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
 
     delete: {
       method: "DELETE" as const,

@@ -1,5 +1,7 @@
 export type AvailabilityWindow = Readonly<{ start: string; end: string }>;
 export type NullableAvailabilityWindow = Readonly<{ start: unknown; end: unknown }>;
+export type SpatialCatalogZone = Readonly<{ id: number; availabilityStart: unknown; availabilityEnd: unknown }>;
+export type SpatialCatalogSpace = Readonly<{ id: number; zoneId: number; availabilityStart: unknown; availabilityEnd: unknown }>;
 
 export type SpatialAvailabilityReason =
   | "INVALID_WORKDAY"
@@ -22,6 +24,7 @@ export type SpatialAvailabilityResult =
       space: Readonly<{ effectiveWindow: AvailabilityWindow; mode: "INHERITED_ZONE" | "EXPLICIT" }>;
     }>
   | Readonly<{ valid: false; reason: SpatialAvailabilityReason; workDay: AvailabilityWindow | null }>;
+export type SpatialAvailabilityInput = Readonly<{ workDay: NullableAvailabilityWindow; zoneAvailability: NullableAvailabilityWindow; spaceAvailability: NullableAvailabilityWindow }>;
 
 const TIME = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 const own = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
@@ -45,11 +48,7 @@ function validateChildPair(
   return { inherited: false, window: freezeWindow(value.start, value.end) };
 }
 
-export function resolveEffectiveSpaceAvailabilityHierarchy(input: Readonly<{
-  workDay: NullableAvailabilityWindow;
-  zoneAvailability: NullableAvailabilityWindow;
-  spaceAvailability: NullableAvailabilityWindow;
-}>): SpatialAvailabilityResult {
+export function resolveEffectiveSpaceAvailabilityHierarchy(input: SpatialAvailabilityInput): SpatialAvailabilityResult {
   const work = input.workDay;
   if (typeof work?.start !== "string" || typeof work?.end !== "string" || !TIME.test(work.start) || !TIME.test(work.end) || work.start >= work.end) {
     return invalid("INVALID_WORKDAY", null);
@@ -127,4 +126,68 @@ export function missingSpatialSnapshots<T extends { zone_id?: number; space_id?:
   const existing = new Set(existingIds);
   const key = kind === "zone" ? "zone_id" : "space_id";
   return Object.freeze(candidates.filter((row) => !existing.has(Number(row[key]))));
+}
+
+export function validateSpatialAvailabilityCatalog(input: Readonly<{
+  workDay: NullableAvailabilityWindow;
+  zones: readonly SpatialCatalogZone[];
+  spaces: readonly SpatialCatalogSpace[];
+}>): Readonly<{ workDay: AvailabilityWindow; zoneIds: readonly number[]; spaceIds: readonly number[] }> {
+  const zones = [...input.zones].sort((a, b) => a.id - b.id);
+  const spaces = [...input.spaces].sort((a, b) => a.id - b.id);
+  const byZone = new Map(zones.map((zone) => [zone.id, zone]));
+  for (const zone of zones) {
+    const result = resolveEffectiveSpaceAvailabilityHierarchy({
+      workDay: input.workDay,
+      zoneAvailability: { start: zone.availabilityStart, end: zone.availabilityEnd },
+      spaceAvailability: { start: null, end: null },
+    });
+    if (!result.valid) throw new Error(`${result.reason}: zone ${zone.id}`);
+  }
+  for (const space of spaces) {
+    const zone = byZone.get(space.zoneId);
+    if (!zone) throw new Error(`SPACE_ZONE_NOT_FOUND: space ${space.id}, zone ${space.zoneId}`);
+    const result = resolveEffectiveSpaceAvailabilityHierarchy({
+      workDay: input.workDay,
+      zoneAvailability: { start: zone.availabilityStart, end: zone.availabilityEnd },
+      spaceAvailability: { start: space.availabilityStart, end: space.availabilityEnd },
+    });
+    if (!result.valid) throw new Error(`${result.reason}: space ${space.id}, zone ${space.zoneId}`);
+  }
+  const workdayResult = resolveEffectiveSpaceAvailabilityHierarchy({ workDay: input.workDay, zoneAvailability: { start: null, end: null }, spaceAvailability: { start: null, end: null } });
+  if (!workdayResult.valid) throw new Error(workdayResult.reason);
+  return Object.freeze({ workDay: workdayResult.workDay, zoneIds: Object.freeze(zones.map(({ id }) => id)), spaceIds: Object.freeze(spaces.map(({ id }) => id)) });
+}
+
+export type ExistingZoneSnapshot = Readonly<{ zoneId: number; availabilityStart: unknown; availabilityEnd: unknown; source: string }>;
+export type ExistingSpaceSnapshot = Readonly<{ spaceId: number; zoneId: number; availabilityStart: unknown; availabilityEnd: unknown; source: string }>;
+
+export function buildPlanSpatialAvailabilityInitializationBatch(input: Readonly<{
+  planId: number;
+  workDay: NullableAvailabilityWindow;
+  zones: readonly SpatialCatalogZone[];
+  spaces: readonly SpatialCatalogSpace[];
+  existingZones: readonly ExistingZoneSnapshot[];
+  existingSpaces: readonly ExistingSpaceSnapshot[];
+}>): Readonly<{ zones: SpatialSnapshotBatch["zones"]; spaces: SpatialSnapshotBatch["spaces"] }> {
+  const existingZoneById = new Map(input.existingZones.map((row) => [row.zoneId, row]));
+  const existingSpaceById = new Map(input.existingSpaces.map((row) => [row.spaceId, row]));
+  const finalZones: SpatialCatalogZone[] = [...input.zones].sort((a, b) => a.id - b.id).map((zone) => {
+    const existing = existingZoneById.get(zone.id);
+    return existing ? { id: existing.zoneId, availabilityStart: existing.availabilityStart, availabilityEnd: existing.availabilityEnd } : zone;
+  });
+  for (const existing of input.existingZones) {
+    if (!finalZones.some((zone) => zone.id === existing.zoneId)) finalZones.push({ id: existing.zoneId, availabilityStart: existing.availabilityStart, availabilityEnd: existing.availabilityEnd });
+  }
+  const finalSpaces: SpatialCatalogSpace[] = [...input.spaces].sort((a, b) => a.id - b.id).map((space) => {
+    const existing = existingSpaceById.get(space.id);
+    return existing ? { id: existing.spaceId, zoneId: existing.zoneId, availabilityStart: existing.availabilityStart, availabilityEnd: existing.availabilityEnd } : space;
+  });
+  for (const existing of input.existingSpaces) {
+    if (!finalSpaces.some((space) => space.id === existing.spaceId)) finalSpaces.push({ id: existing.spaceId, zoneId: existing.zoneId, availabilityStart: existing.availabilityStart, availabilityEnd: existing.availabilityEnd });
+  }
+  validateSpatialAvailabilityCatalog({ workDay: input.workDay, zones: finalZones, spaces: finalSpaces });
+  const newZones = [...input.zones].filter((zone) => !existingZoneById.has(zone.id)).sort((a, b) => a.id - b.id).map((zone) => Object.freeze({ plan_id: input.planId, zone_id: zone.id, availability_start: zone.availabilityStart as string | null, availability_end: zone.availabilityEnd as string | null, source: "default" as const }));
+  const newSpaces = [...input.spaces].filter((space) => !existingSpaceById.has(space.id)).sort((a, b) => a.id - b.id).map((space) => Object.freeze({ plan_id: input.planId, space_id: space.id, zone_id: space.zoneId, availability_start: space.availabilityStart as string | null, availability_end: space.availabilityEnd as string | null, source: "default" as const }));
+  return Object.freeze({ zones: Object.freeze(newZones), spaces: Object.freeze(newSpaces) });
 }

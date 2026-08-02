@@ -3,7 +3,7 @@ import { pool } from "./db";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
-import { api } from "@shared/routes";
+import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
@@ -27,6 +27,16 @@ import {
   buildAvailabilityWindowPatch,
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
+
+function mapPlanZoneAvailability(row: any) {
+  return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
+}
+function mapPlanSpaceAvailability(row: any) {
+  return planSpaceAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), spaceId: Number(row.space_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
+}
+function mapDefaultSpatialAvailability(row: any) {
+  return defaultSpatialAvailabilityResponseSchema.parse({ id: Number(row.id), availabilityStart: row.default_availability_start ?? null, availabilityEnd: row.default_availability_end ?? null });
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -551,7 +561,7 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
   app.patch(api.zones.availability.path, async (req, res) => {
-    try { const input = api.zones.availability.input.parse(req.body); res.json(await storage.updateZoneDefaultAvailability(Number(req.params.id), input)); }
+    try { const input = api.zones.availability.input.parse(req.body); res.json(mapDefaultSpatialAvailability(await storage.updateZoneDefaultAvailability(Number(req.params.id), input))); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update zone availability" }); }
   });
 
@@ -586,7 +596,7 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
   app.patch(api.spaces.availability.path, async (req, res) => {
-    try { const input = api.spaces.availability.input.parse(req.body); res.json(await storage.updateSpaceDefaultAvailability(Number(req.params.id), input)); }
+    try { const input = api.spaces.availability.input.parse(req.body); res.json(mapDefaultSpatialAvailability(await storage.updateSpaceDefaultAvailability(Number(req.params.id), input))); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update space availability" }); }
   });
   
@@ -3216,23 +3226,23 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   app.get(api.plans.spatialAvailability.listZones.path, async (req, res) => {
-    try { res.json(await storage.getPlanZoneSettings(Number(req.params.id))); }
+    try { res.json((await storage.getPlanZoneSettings(Number(req.params.id))).map(mapPlanZoneAvailability)); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read zone availability" }); }
   });
   app.get(api.plans.spatialAvailability.listSpaces.path, async (req, res) => {
-    try { res.json(await storage.getPlanSpaceSettings(Number(req.params.id))); }
+    try { res.json((await storage.getPlanSpaceSettings(Number(req.params.id))).map(mapPlanSpaceAvailability)); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read space availability" }); }
   });
   app.post(api.plans.spatialAvailability.initialize.path, async (req, res) => {
-    try { res.json(await storage.initializePlanSpatialAvailabilitySnapshots(Number(req.params.id))); }
+    try { res.json(spatialAvailabilityInitializationResponseSchema.parse(await storage.initializePlanSpatialAvailabilitySnapshots(Number(req.params.id)))); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot initialize spatial availability" }); }
   });
   app.patch(api.plans.spatialAvailability.updateZone.path, async (req, res) => {
-    try { const input = api.plans.spatialAvailability.updateZone.input.parse(req.body); res.json(await storage.updatePlanZoneAvailability(Number(req.params.id), Number(req.params.zoneId), input)); }
+    try { const input = api.plans.spatialAvailability.updateZone.input.parse(req.body); res.json(mapPlanZoneAvailability(await storage.updatePlanZoneAvailability(Number(req.params.id), Number(req.params.zoneId), input))); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan zone availability" }); }
   });
   app.patch(api.plans.spatialAvailability.updateSpace.path, async (req, res) => {
-    try { const input = api.plans.spatialAvailability.updateSpace.input.parse(req.body); res.json(await storage.updatePlanSpaceAvailability(Number(req.params.id), Number(req.params.spaceId), input)); }
+    try { const input = api.plans.spatialAvailability.updateSpace.input.parse(req.body); res.json(mapPlanSpaceAvailability(await storage.updatePlanSpaceAvailability(Number(req.params.id), Number(req.params.spaceId), input))); }
     catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan space availability" }); }
   });
 
