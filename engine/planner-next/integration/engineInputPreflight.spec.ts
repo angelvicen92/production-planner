@@ -80,6 +80,65 @@ function identityKeys(source: EngineInput): string[] {
   return preflightEngineInputForPlannerNext(source).identityMap.map((entry) => `${entry.namespace}:${entry.sourceId}`);
 }
 
+test("SPEC10-005: conflicto espacio-zona activo es blocker exacto y determinista", () => {
+  const source = input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], zoneIdBySpaceId: { 20: 31 }, spaceResourceAssignments: { 20: [] } });
+  const first = preflightEngineInputForPlannerNext(source); const second = preflightEngineInputForPlannerNext(source);
+  const found = first.issues.find((entry) => entry.code === "INCONSISTENT_SPACE_ZONE_REFERENCE");
+  assert.deepEqual(found, { code: "INCONSISTENT_SPACE_ZONE_REFERENCE", entityKind: "task", entityId: "1", path: "tasks.1.zoneId", message: "Task zone contradicts the zone mapped from its exact space.", blocking: true, details: { explicitZoneId: 30, mappedZoneId: 31, spaceId: 20, taskId: 1, zoneResourcesApplied: false } });
+  assert.equal(first.status, "UNSUPPORTED"); assert.deepEqual(first, second);
+});
+
+test("SPEC10-005: conflicto espacio-zona de cancelled no produce issue", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "cancelled", spaceId: 20, zoneId: 30 })], zoneIdBySpaceId: { 20: 31 }, spaceResourceAssignments: { 20: [] } }));
+  assert.ok(!result.reasonCodes.includes("INCONSISTENT_SPACE_ZONE_REFERENCE"));
+});
+
+test("SPEC10-005: asignación directa cancelled no cambia el preflight completo", () => {
+  const base = input({ tasks: [task(1, { status: "cancelled" })] });
+  const changed = clone(base); changed.tasks[0].assignedResourceIds = [999, 998];
+  assert.deepEqual(preflightEngineInputForPlannerNext(base), preflightEngineInputForPlannerNext(changed));
+});
+
+test("SPEC10-005: referencia inexistente cancelled no crea blocker ni incrementa diagnostics", () => {
+  const base = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "cancelled" })] }));
+  const changed = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "cancelled", assignedResourceIds: [999] })] }));
+  assert.equal(changed.diagnostics.resourceAssignmentReferenceCount, base.diagnostics.resourceAssignmentReferenceCount);
+  assert.equal(changed.diagnostics.missingResourceReferenceCount, base.diagnostics.missingResourceReferenceCount);
+  assert.ok(!changed.issues.some((entry) => entry.code === "MISSING_RESOURCE_REFERENCE" && entry.path === "tasks.1.assignedResourceIds"));
+});
+
+test("SPEC10-005: referencia concreta inexistente activa conserva blocker", () => {
+  const found = issue(input({ tasks: [task(1, { assignedResourceIds: [999] })] }), "MISSING_RESOURCE_REFERENCE", "1");
+  assert.equal(found.path, "tasks.1.assignedResourceIds"); assert.deepEqual(found.details, { namespace: "plan-resource", referencedId: "999" });
+});
+
+test("SPEC10-005: mismo recurso en tres niveles mantiene identidad canónica única", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [9] })], spaceResourceAssignments: { 20: [9] }, zoneResourceAssignments: { 30: [9] }, planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true }] }));
+  assert.equal(result.identityMap.filter((entry) => entry.canonicalId === "plan-resource:9").length, 1);
+  assert.ok(!result.reasonCodes.includes("DUPLICATE_ID")); assert.equal(result.diagnostics.resourceAssignmentReferenceCount, 3);
+  assert.ok(!result.issues.some((entry) => entry.code === "MISSING_RESOURCE_REFERENCE" && entry.details?.referencedId === "9"));
+});
+
+test("SPEC10-005: misma obligación con procedencia distinta cambia sólo source fingerprint", () => {
+  const common = { tasks: [task(1, { zoneId: 30 })], planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true }] };
+  const direct = preflightEngineInputForPlannerNext(input({ ...common, tasks: [task(1, { zoneId: 30, assignedResourceIds: [9] })], zoneResourceAssignments: { 30: [] } }));
+  const zone = preflightEngineInputForPlannerNext(input({ ...common, zoneResourceAssignments: { 30: [9] } }));
+  assert.notEqual(direct.sourceFingerprint, zone.sourceFingerprint); assert.equal(direct.identityMapFingerprint, zone.identityMapFingerprint);
+  assert.deepEqual(direct.identityMap, zone.identityMap);
+});
+
+test("SPEC10-005: relación de coach sin canal efectivo no añade inferencias", () => {
+  const without = preflightEngineInputForPlannerNext(input({ planResourceItems: [{ id: 335, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true }] }));
+  const withReference = preflightEngineInputForPlannerNext(input({ vocalCoachPlanResourceItemIdByContestantId: { 7: 335 }, coachResourceIds: [335], planResourceItems: [{ id: 335, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true }] }));
+  assert.equal(withReference.diagnostics.resourceAssignmentReferenceCount, without.diagnostics.resourceAssignmentReferenceCount);
+  assert.ok(!withReference.issues.some((entry) => entry.path.includes("assignedResourceIds")));
+});
+
+test("SPEC10-005: inversión conserva conflicto y fingerprints", () => {
+  const source = input({ tasks: [task(2, { spaceId: 21, zoneId: 31 }), task(1, { spaceId: 20, zoneId: 30 })], zoneIdBySpaceId: { 20: 32, 21: 31 }, spaceResourceAssignments: { 20: [], 21: [] } });
+  assert.deepEqual(preflightEngineInputForPlannerNext(source), preflightEngineInputForPlannerNext(reversed(source)));
+});
+
 test("pureza: no modifica un EngineInput profundamente congelado", () => {
   const source = deepFreeze(input({ tasks: [task(1, { startPlanned: "09:00", endPlanned: "09:30" })] }));
   const before = clone(source);
