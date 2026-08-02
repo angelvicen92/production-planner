@@ -438,7 +438,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const coachMappingEntries = coachMappingPresent && coachMappingValid
     ? Object.entries(rawCoachMapping as Record<string, unknown>).sort(([left], [right]) => compare(left, right))
     : [];
-  const validExplicitCoachIds = new Set<number>();
+  const validExplicitRelationCoachIds = new Set<number>();
+  const auditedPositiveExplicitCoachIds = new Set<number>();
   if (coachMappingPresent && !coachMappingValid) {
     addIssue("MISSING_COACH_REFERENCE", "plan", input.planId, "vocalCoachPlanResourceItemIdByContestantId", "Contestant vocal-coach assignment mapping is not an indexable object.", {
       receivedType: rawCoachMapping === null ? "null" : Array.isArray(rawCoachMapping) ? "array" : typeof rawCoachMapping,
@@ -449,11 +450,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for (const [contestantKey, coachId] of coachMappingEntries) {
     const contestantId = Number(contestantKey);
     const contestantIdValid = /^[1-9]\d*$/.test(contestantKey) && Number.isFinite(contestantId) && Number.isInteger(contestantId);
-    if (!contestantIdValid) continue;
-    addIdentity("participant", contestantId, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
-    if (isPositiveInteger(coachId)) {
-      validExplicitCoachIds.add(coachId);
+    const coachReferenceValid = isPositiveInteger(coachId);
+    if (contestantIdValid) {
+      addIdentity("participant", contestantId, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
+    }
+    if (coachReferenceValid) {
+      auditedPositiveExplicitCoachIds.add(coachId);
       addIdentity("plan-resource", coachId, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
+      if (contestantIdValid) validExplicitRelationCoachIds.add(coachId);
     }
   }
   input.coachResourceIds?.forEach((id) => addIdentity("plan-resource", id, "coachResourceIds"));
@@ -855,7 +859,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     }
   }
   for (const id of input.coachResourceIds ?? []) {
-    if (!validExplicitCoachIds.has(id) && !planResourceIds.has(String(id))) {
+    if (!auditedPositiveExplicitCoachIds.has(id) && !planResourceIds.has(String(id))) {
       missingCoachReferenceCount++;
       addIssue("MISSING_COACH_REFERENCE", "plan-resource", id, "coachResourceIds", "Coach plan-resource reference does not exist.", { referencedId: String(id) });
     }
@@ -1170,7 +1174,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     pendingPlanningDiscardCount,
     lockCount: input.locks.length,
     participantCount: participantIds.size,
-    coachReferenceCount: coachMappingEntries.length + (input.coachResourceIds ?? []).filter((id) => !validExplicitCoachIds.has(id)).length,
+    coachReferenceCount: coachMappingEntries.length + (input.coachResourceIds ?? []).filter((id) => !validExplicitRelationCoachIds.has(id)).length,
     missingCoachReferenceCount,
     spaceCount: identities.get("space")?.size ?? 0,
     referencedSpaceCount: referencedSpaceIds.size,

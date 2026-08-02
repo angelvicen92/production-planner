@@ -1171,6 +1171,83 @@ for (const contestantKey of ["0", "-1", "1.5", "01", " 1 ", "NaN", "abc"]) {
   });
 }
 
+test("clave inválida conserva independientemente la identidad de un coach existente", () => {
+  const source = deepFreeze(input({
+    tasks: [],
+    planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "coach", isAvailable: true }],
+    vocalCoachPlanResourceItemIdByContestantId: { "01": 335 } as unknown as Record<number, number>,
+  }));
+  const before = clone(source);
+  const result = preflightEngineInputForPlannerNext(source);
+  const coachIssues = result.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "01");
+  assert.equal(coachIssues[0].path, "vocalCoachPlanResourceItemIdByContestantId.01");
+  assert.ok(!result.identityMap.some((entry) => entry.canonicalId === "participant:01"));
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.ok(!coachIssues.some((entry) => entry.details?.planResourceItemDefined === false));
+  assert.deepEqual(source, before);
+  assert.ok(Object.isFrozen(result));
+  assert.ok(Object.isFrozen(result.identityMap));
+  assert.ok(Object.isFrozen(result.issues));
+});
+
+test("clave inválida deduplica el blocker legacy equivalente sin convertir la relación en válida", () => {
+  const source = deepFreeze(input({
+    tasks: [],
+    coachResourceIds: [335],
+    planResourceItems: [],
+    vocalCoachPlanResourceItemIdByContestantId: { "01": 335 } as unknown as Record<number, number>,
+  }));
+  const before = clone(source);
+  const first = preflightEngineInputForPlannerNext(source);
+  const repeated = preflightEngineInputForPlannerNext(source);
+  const coachIssues = first.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "01");
+  assert.equal(coachIssues[0].path, "vocalCoachPlanResourceItemIdByContestantId.01");
+  assert.ok(first.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.ok(!first.identityMap.some((entry) => entry.canonicalId === "participant:01"));
+  assert.equal(first.diagnostics.missingCoachReferenceCount, 1);
+  assert.equal(first.diagnostics.coachReferenceCount, 2);
+  assert.deepEqual(first, repeated);
+  assert.deepEqual(source, before);
+});
+
+test("clave válida y coach inexistente deduplican exactamente el agregado legacy", () => {
+  const result = preflightEngineInputForPlannerNext(input({
+    tasks: [],
+    coachResourceIds: [335],
+    planResourceItems: [],
+    vocalCoachPlanResourceItemIdByContestantId: { 7: 335 },
+  }));
+  const coachIssues = result.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "7");
+  assert.deepEqual(coachIssues[0].details, { contestantId: 7, planResourceItemDefined: false, vocalCoachPlanResourceItemId: 335 });
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "participant:7"));
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.equal(result.diagnostics.coachReferenceCount, 1);
+  assert.equal(result.diagnostics.missingCoachReferenceCount, 1);
+});
+
+test("identidades válidas de coach son independientes de dos claves no canónicas", () => {
+  const withKey = (key: string): EngineInput => input({
+    tasks: [],
+    planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "coach", isAvailable: true }],
+    vocalCoachPlanResourceItemIdByContestantId: { [key]: 335 } as unknown as Record<number, number>,
+  });
+  const first = preflightEngineInputForPlannerNext(withKey("01"));
+  const second = preflightEngineInputForPlannerNext(withKey("02"));
+  assert.notEqual(first.sourceFingerprint, second.sourceFingerprint);
+  assert.deepEqual(first.identityMap, second.identityMap);
+  assert.equal(first.identityMapFingerprint, second.identityMapFingerprint);
+  for (const result of [first, second]) {
+    assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+    assert.ok(!result.identityMap.some((entry) => entry.namespace === "participant"));
+  }
+});
+
 for (const [label, coachId] of [
   ["zero", 0], ["negative", -1], ["decimal", 1.5], ["NaN", Number.NaN], ["infinite", Infinity],
   ["numeric string", "335"], ["null", null], ["object", {}], ["array", []],
