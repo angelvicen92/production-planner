@@ -1,5 +1,5 @@
 import { IStorage } from "../server/storage";
-import { EngineInput, PlanResourceItemInput } from "./types";
+import { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput } from "./types";
 import { resolveWeight } from "@shared/optimizer";
 
 type ContestantVocalCoachRow = Readonly<{
@@ -14,6 +14,27 @@ function readPresentField(row: PlanResourceItemRow, camelKey: string, snakeKey: 
   if (Object.prototype.hasOwnProperty.call(row, camelKey)) return row[camelKey];
   if (Object.prototype.hasOwnProperty.call(row, snakeKey)) return row[snakeKey];
   return undefined;
+}
+
+export function projectPlanZoneSettingsForEngineInput(rows: readonly PlanResourceItemRow[] | null | undefined): PlanZoneAvailabilityInput[] {
+  return (rows ?? []).map((row) => ({
+    id: readPresentField(row, "id", "id") as number | undefined,
+    zoneId: readPresentField(row, "zoneId", "zone_id") as number,
+    availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
+    availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
+    source: readPresentField(row, "source", "source") as string | undefined,
+  })).sort((a, b) => a.zoneId - b.zoneId);
+}
+
+export function projectPlanSpaceSettingsForEngineInput(rows: readonly PlanResourceItemRow[] | null | undefined): PlanSpaceAvailabilityInput[] {
+  return (rows ?? []).map((row) => ({
+    id: readPresentField(row, "id", "id") as number | undefined,
+    spaceId: readPresentField(row, "spaceId", "space_id") as number,
+    zoneId: readPresentField(row, "zoneId", "zone_id") as number,
+    availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
+    availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
+    source: readPresentField(row, "source", "source") as string | undefined,
+  })).sort((a, b) => a.spaceId - b.spaceId);
 }
 
 /** Projects the persisted per-plan snapshot without interpreting its availability. */
@@ -380,6 +401,13 @@ export async function buildEngineInput(
   const planResourceItems = projectPlanResourceItemsForEngineInput(
     (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) as unknown as readonly PlanResourceItemRow[],
   );
+  const [planZoneSettings, planSpaceSettings] = await Promise.all([
+    storage.getPlanZoneSettings(planId),
+    storage.getPlanSpaceSettings(planId),
+  ]).then(([zoneRows, spaceRows]) => [
+    projectPlanZoneSettingsForEngineInput(zoneRows),
+    projectPlanSpaceSettingsForEngineInput(spaceRows),
+  ] as const);
 
   const resourceItemIds = Array.from(
     new Set(
@@ -633,6 +661,8 @@ export async function buildEngineInput(
 
   return {
     planId: p.id,
+    planZoneSettings,
+    planSpaceSettings,
 
     workDay: {
       start: p.work_start ?? p.workStart,

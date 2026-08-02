@@ -480,13 +480,13 @@ test("recursos, asignaciones, alternativas y componentes auditan namespaces", ()
 test("espacio ausente, sólo referenciado y descrito sin disponibilidad", () => {
   const absent = preflightEngineInputForPlannerNext(input());
   assert.equal(absent.diagnostics.referencedSpaceCount, 0);
-  assert.ok(absent.issues.some((entry) => entry.code === "MISSING_SPACE_REFERENCE" && entry.path === "tasks.1.spaceId"));
+  assert.ok(!absent.reasonCodes.includes("MISSING_SPACE_REFERENCE"));
   const referenced = input({ tasks: [task(1, { spaceId: 20, zoneId: 20 })] });
-  assert.equal(issue(referenced, "MISSING_SPACE_REFERENCE", "1").path, "tasks.1.spaceId");
+  assert.equal(issue(referenced, "MISSING_SPACE_REFERENCE", "20").path, "planSpaceSettings.20");
   const described = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], spaceParentById: { 20: null } }));
   assert.equal(described.diagnostics.referencedSpaceCount, 1);
   assert.equal(described.diagnostics.describedSpaceCount, 1);
-  assert.ok(described.issues.some((entry) => entry.code === "MISSING_SPACE_AVAILABILITY" && entry.entityId === "20"));
+  assert.ok(described.issues.some((entry) => entry.code === "MISSING_SPACE_REFERENCE" && entry.entityId === "20"));
   assert.ok(described.identityMap.some((entry) => entry.namespace === "zone" && entry.sourceId === "30"));
 });
 
@@ -982,7 +982,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_PARTICIPANT_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
-      "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
       "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",
@@ -1009,6 +1008,11 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "usableRequiredPlanResourceCount": 1,
       "unusableRequiredPlanResourceCount": 0,
       "protectedTaskResourceAvailabilityConflictCount": 0,
+      "requiredSpaceCount": 1,
+      "usableRequiredSpaceCount": 1,
+      "unusableRequiredSpaceCount": 0,
+      "requiredZoneCount": 1,
+      "protectedTaskSpatialAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 2,
       "resourceComponentReferenceCount": 0,
@@ -1039,7 +1043,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "f9585b9e8ed4144eb1e9d29cbd881b5b8eaaf3fcbe1a16f3ed3c0708b5f510f3",
+    "sourceFingerprint": "ee7f89bdabfaa57bec7720013da926abb5beeb9e2504353c48a3fca4d42f79a8",
     "identityMapFingerprint": "68a72d0ac8f1d2246d5a7a8132c0090b43d76bb9a2dcb59f9f4b1cdb7b5c3b89"
   },
   "real-resource-lock-pressure": {
@@ -1050,7 +1054,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_PARTICIPANT_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
-      "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
       "MISSING_TRANSITION_CONFIGURATION",
       "UNREPRESENTABLE_RESOURCE_LOCK",
@@ -1078,6 +1081,11 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "usableRequiredPlanResourceCount": 2,
       "unusableRequiredPlanResourceCount": 0,
       "protectedTaskResourceAvailabilityConflictCount": 0,
+      "requiredSpaceCount": 3,
+      "usableRequiredSpaceCount": 3,
+      "unusableRequiredSpaceCount": 0,
+      "requiredZoneCount": 2,
+      "protectedTaskSpatialAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 3,
       "resourceComponentReferenceCount": 0,
@@ -1109,7 +1117,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "9920e258a361c548514d5f97fad2c3e597494472e4543a80fa74fd188d3dabdf",
+    "sourceFingerprint": "208712de676bfdd5d6edac56d9f50cc30b5dd076f1db13c9b8435649888b4614",
     "identityMapFingerprint": "794472d65522cebf41bbc687d25dccb474e8579766fd01de4a45fda48941cc65"
   },
   "real-protected-break-recovery": {
@@ -1120,7 +1128,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_PARTICIPANT_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
-      "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
       "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",
@@ -1147,6 +1154,11 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "usableRequiredPlanResourceCount": 2,
       "unusableRequiredPlanResourceCount": 0,
       "protectedTaskResourceAvailabilityConflictCount": 0,
+      "requiredSpaceCount": 2,
+      "usableRequiredSpaceCount": 2,
+      "unusableRequiredSpaceCount": 0,
+      "requiredZoneCount": 1,
+      "protectedTaskSpatialAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 2,
       "resourceComponentReferenceCount": 0,
@@ -1177,7 +1189,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "41bc95e7cadf5e0851e78c8b74732d8f9d3209c36c352b5df4b973f98dcfc898",
+    "sourceFingerprint": "d157c50703c595ba04dd4a80972a6b42cca90618bbf78b77095172a0464e1bb9",
     "identityMapFingerprint": "fd6782b3ba5a6104c13e70baeff7303baf48b9f1561eea76e37e4a33f58eb01a"
   }
 };
