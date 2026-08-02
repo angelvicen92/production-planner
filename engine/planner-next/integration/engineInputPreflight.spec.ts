@@ -3,6 +3,7 @@ import test from "node:test";
 import type { EngineInput, TaskInput } from "../../types";
 import { realProductionScenarios } from "../../orc/benchmarks/fixtures/real-scenarios/realProductionScenarios";
 import { preflightEngineInputForPlannerNext, type EngineInputPreflightIssue } from "./engineInputPreflight";
+import { projectPlanResourceItemsForEngineInput } from "../../buildInput";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const deepFreeze = <T>(value: T): T => {
@@ -979,7 +980,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
     "reasonCodes": [
       "MISSING_MAIN_FLOW_CONFIGURATION",
       "MISSING_PARTICIPANT_AVAILABILITY",
-      "MISSING_RESOURCE_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
@@ -1005,6 +1005,10 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "describedSpaceCount": 0,
       "zoneCount": 1,
       "planResourceCount": 3,
+      "requiredPlanResourceCount": 1,
+      "usableRequiredPlanResourceCount": 1,
+      "unusableRequiredPlanResourceCount": 0,
+      "protectedTaskResourceAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 2,
       "resourceComponentReferenceCount": 0,
@@ -1025,7 +1029,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingAvailabilityCounts": {
         "participants": 2,
         "spaces": 0,
-        "resources": 3
+        "resources": 0
       },
       "unsupportedCapabilityCodes": [
         "UNSUPPORTED_RESOURCE_REQUIREMENT",
@@ -1035,7 +1039,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "74fb3271d7a4441c2ea4b4c0c04db7193b4a9bf69d5a88bdf8a4850e260f0812",
+    "sourceFingerprint": "f9585b9e8ed4144eb1e9d29cbd881b5b8eaaf3fcbe1a16f3ed3c0708b5f510f3",
     "identityMapFingerprint": "68a72d0ac8f1d2246d5a7a8132c0090b43d76bb9a2dcb59f9f4b1cdb7b5c3b89"
   },
   "real-resource-lock-pressure": {
@@ -1044,7 +1048,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
     "reasonCodes": [
       "MISSING_MAIN_FLOW_CONFIGURATION",
       "MISSING_PARTICIPANT_AVAILABILITY",
-      "MISSING_RESOURCE_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
@@ -1071,6 +1074,10 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "describedSpaceCount": 0,
       "zoneCount": 2,
       "planResourceCount": 3,
+      "requiredPlanResourceCount": 2,
+      "usableRequiredPlanResourceCount": 2,
+      "unusableRequiredPlanResourceCount": 0,
+      "protectedTaskResourceAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 3,
       "resourceComponentReferenceCount": 0,
@@ -1091,7 +1098,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingAvailabilityCounts": {
         "participants": 3,
         "spaces": 0,
-        "resources": 3
+        "resources": 0
       },
       "unsupportedCapabilityCodes": [
         "UNREPRESENTABLE_RESOURCE_LOCK",
@@ -1102,7 +1109,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "968d5e471bfe73c829ec5ac1a1c35c2f8e1a1f617310b26c0543fcd0755fb9c0",
+    "sourceFingerprint": "9920e258a361c548514d5f97fad2c3e597494472e4543a80fa74fd188d3dabdf",
     "identityMapFingerprint": "794472d65522cebf41bbc687d25dccb474e8579766fd01de4a45fda48941cc65"
   },
   "real-protected-break-recovery": {
@@ -1111,7 +1118,6 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
     "reasonCodes": [
       "MISSING_MAIN_FLOW_CONFIGURATION",
       "MISSING_PARTICIPANT_AVAILABILITY",
-      "MISSING_RESOURCE_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
@@ -1137,6 +1143,10 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "describedSpaceCount": 0,
       "zoneCount": 1,
       "planResourceCount": 3,
+      "requiredPlanResourceCount": 2,
+      "usableRequiredPlanResourceCount": 2,
+      "unusableRequiredPlanResourceCount": 0,
+      "protectedTaskResourceAvailabilityConflictCount": 0,
       "resourceItemCount": 3,
       "resourceAssignmentReferenceCount": 2,
       "resourceComponentReferenceCount": 0,
@@ -1157,7 +1167,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingAvailabilityCounts": {
         "participants": 2,
         "spaces": 0,
-        "resources": 3
+        "resources": 0
       },
       "unsupportedCapabilityCodes": [
         "UNSUPPORTED_RESOURCE_REQUIREMENT",
@@ -1167,7 +1177,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "852d269d9f0c873423001cc173d6cf0c9918e6fd0f9e2b64761198badf9fc56b",
+    "sourceFingerprint": "41bc95e7cadf5e0851e78c8b74732d8f9d3209c36c352b5df4b973f98dcfc898",
     "identityMapFingerprint": "fd6782b3ba5a6104c13e70baeff7303baf48b9f1561eea76e37e4a33f58eb01a"
   }
 };
@@ -1408,11 +1418,17 @@ test("escenarios representativos quedan congelados exactamente", () => {
     assert.deepEqual(normal, inverted, scenario.id);
     assert.deepEqual(source, before, scenario.id);
     assert.equal(normal.status, "UNSUPPORTED", scenario.id);
-    const expectedIdentity = (EXPECTED_SCENARIOS[scenario.id] as { identityMapFingerprint: string }).identityMapFingerprint;
-    assert.equal(normal.identityMapFingerprint, expectedIdentity, scenario.id);
-    assert.ok(!normal.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"), scenario.id);
-    assert.equal(normal.diagnostics.unusableRequiredPlanResourceCount, 0, scenario.id);
-    assert.equal(normal.diagnostics.requiredPlanResourceCount, normal.diagnostics.usableRequiredPlanResourceCount, scenario.id);
+    assert.ok(Object.isFrozen(normal), scenario.id);
+    assert.ok(Object.isFrozen(normal.diagnostics), scenario.id);
+    assert.ok(Object.isFrozen(normal.issues), scenario.id);
+    assert.deepEqual({
+      scenarioId: scenario.id,
+      status: normal.status,
+      reasonCodes: normal.reasonCodes,
+      diagnostics: normal.diagnostics,
+      sourceFingerprint: normal.sourceFingerprint,
+      identityMapFingerprint: normal.identityMapFingerprint,
+    }, EXPECTED_SCENARIOS[scenario.id], scenario.id);
   }
 });
 
@@ -1469,4 +1485,81 @@ test("SPEC10-007: ventana e isAvailable cambian source pero no identidad", () =>
   const full = preflightEngineInputForPlannerNext(make(null, null)); const explicit = preflightEngineInputForPlannerNext(make("09:00", "17:00"));
   const disabled = preflightEngineInputForPlannerNext(make(null, null, false)); const omitted = preflightEngineInputForPlannerNext(make(undefined, undefined));
   for (const changed of [explicit, disabled, omitted]) { assert.notEqual(full.sourceFingerprint, changed.sourceFingerprint); assert.equal(full.identityMapFingerprint, changed.identityMapFingerprint); assert.deepEqual(full.identityMap, changed.identityMap); }
+});
+
+test("SPEC10-007: ausencia omitida, undefined y build projection son Evidence equivalente", () => {
+  const common = { id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true };
+  const make = (resource: typeof common) => input({ tasks: [task(1, { assignedResourceIds: [9] })], planResourceItems: [resource] });
+  const omitted = preflightEngineInputForPlannerNext(make(common));
+  const ownUndefined = preflightEngineInputForPlannerNext(make({ ...common, availabilityStart: undefined, availabilityEnd: undefined } as typeof common));
+  const projected = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { assignedResourceIds: [9] })], planResourceItems: projectPlanResourceItemsForEngineInput([common]) }));
+  assert.deepEqual(omitted, ownUndefined); assert.deepEqual(omitted, projected);
+  const fullDay = preflightEngineInputForPlannerNext(make({ ...common, availabilityStart: null, availabilityEnd: null } as typeof common));
+  assert.notEqual(omitted.sourceFingerprint, fullDay.sourceFingerprint);
+  assert.deepEqual(omitted.identityMap, fullDay.identityMap); assert.equal(omitted.identityMapFingerprint, fullDay.identityMapFingerprint);
+  assert.equal(omitted.diagnostics.unusableRequiredPlanResourceCount, 1); assert.equal(fullDay.diagnostics.usableRequiredPlanResourceCount, 1);
+});
+
+test("SPEC10-007: recurso requerido sólo por espacio exacto", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { spaceId: 20 })], spaceResourceAssignments: { 20: [9] },
+    zoneResourceAssignments: {}, planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "09:00", availabilityEnd: "17:00" }] }));
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(result.diagnostics.usableRequiredPlanResourceCount, 1);
+  assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 0); assert.ok(!result.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"));
+});
+
+test("SPEC10-007: recurso requerido sólo por zona efectiva", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { zoneId: 30 })], spaceResourceAssignments: {}, zoneResourceAssignments: { 30: [9] },
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: null, availabilityEnd: null }] }));
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(result.diagnostics.usableRequiredPlanResourceCount, 1);
+  assert.ok(!result.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"));
+});
+
+test("SPEC10-007: coach sólo de referencia no consume disponibilidad", () => {
+  const result = preflightEngineInputForPlannerNext(input({ vocalCoachPlanResourceItemIdByContestantId: { 7: 9 }, coachResourceIds: [9],
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "coach", isAvailable: true }] }));
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 0); assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 0);
+  assert.ok(!result.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"));
+});
+
+test("SPEC10-007: lock es el único origen requerido y publica su procedencia", () => {
+  const result = preflightEngineInputForPlannerNext(input({ locks: [{ id: 44, planId: 1, taskId: 1, lockType: "resource", lockedResourceId: 9 }],
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true }] }));
+  const primary = result.issues.filter((entry) => entry.code === "MISSING_RESOURCE_AVAILABILITY" && entry.entityId === "9");
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(primary.length, 1);
+  assert.deepEqual(primary[0].details?.requiredByTaskIds, []); assert.deepEqual(primary[0].details?.requiredByLockIds, [44]);
+});
+
+test("SPEC10-007: varias tareas comparten una sola causa primaria no utilizable", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(2, { assignedResourceIds: [9] }), task(1, { assignedResourceIds: [9] }), task(2, { assignedResourceIds: [9] })],
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: false, availabilityStart: null, availabilityEnd: null }] }));
+  const primary = result.issues.filter((entry) => entry.code === "MISSING_RESOURCE_AVAILABILITY" && entry.entityId === "9");
+  assert.equal(primary.length, 1); assert.deepEqual(primary[0].details?.requiredByTaskIds, [1, 2]);
+  assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 1); assert.equal(result.diagnostics.missingAvailabilityCounts.resources, 1);
+});
+
+test("SPEC10-007: intervalo protegido planificado se contiene o explica conflicto", () => {
+  const make = (startPlanned: string, endPlanned: string) => input({ tasks: [task(1, { status: "done", spaceId: 20, assignedResourceIds: [9], startPlanned, endPlanned })],
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "09:00", availabilityEnd: "12:00" }] });
+  assert.equal(preflightEngineInputForPlannerNext(make("09:30", "10:00")).diagnostics.protectedTaskResourceAvailabilityConflictCount, 0);
+  const outside = preflightEngineInputForPlannerNext(make("08:30", "10:00"));
+  const conflict = outside.issues.find((entry) => entry.path === "tasks.1.resourceAvailability.9")!;
+  assert.equal(outside.diagnostics.protectedTaskResourceAvailabilityConflictCount, 1);
+  assert.deepEqual(conflict.details, { assignmentSources: ["direct"], effectiveWindow: { start: "09:00", end: "12:00" }, intervalSource: "planned",
+    planResourceItemId: 9, protectedInterval: { start: "08:30", end: "10:00" }, taskId: 1 });
+});
+
+test("SPEC10-007: conflicto protegido conserva las tres procedencias una sola vez", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "in_progress", spaceId: 20, zoneId: 30, assignedResourceIds: [9], startPlanned: "08:30", endPlanned: "10:00" })],
+    spaceResourceAssignments: { 20: [9] }, zoneResourceAssignments: { 30: [9] },
+    planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "09:00", availabilityEnd: "12:00" }] }));
+  const conflicts = result.issues.filter((entry) => entry.path === "tasks.1.resourceAvailability.9");
+  assert.equal(conflicts.length, 1); assert.deepEqual(conflicts[0].details?.assignmentSources, ["direct", "space", "zone"]);
+});
+
+test("SPEC10-007: recurso requerido inexistente conserva identidad sin issue temporal inventada", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { assignedResourceIds: [999] })] }));
+  assert.ok(result.reasonCodes.includes("MISSING_RESOURCE_REFERENCE"));
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:999"));
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 1);
+  assert.ok(!result.issues.some((entry) => entry.code === "MISSING_RESOURCE_AVAILABILITY" && entry.entityId === "999"));
 });

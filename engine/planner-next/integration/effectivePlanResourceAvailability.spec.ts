@@ -37,3 +37,33 @@ test("SPEC10-007: pure, deterministic and deeply frozen", () => {
   assert.deepEqual(input, before); assert.deepEqual(first, second); assert.ok(Object.isFrozen(first));
   assert.ok(first.effectiveWindow && Object.isFrozen(first.effectiveWindow));
 });
+
+test("SPEC10-007: partial end, string/null and end contact retain exact causes", () => {
+  assert.equal((resolve(day, resource({ availabilityStart: undefined, availabilityEnd: "10:00" })) as any).reason, "PARTIAL_SNAPSHOT_WINDOW");
+  assert.equal((resolve(day, resource({ availabilityStart: "09:00", availabilityEnd: null })) as any).reason, "MIXED_NULL_AND_STRING");
+  assert.equal((resolve(day, resource({ availabilityStart: "18:30", availabilityEnd: "19:00" })) as any).reason, "EMPTY_WORKDAY_INTERSECTION");
+});
+
+test("SPEC10-007: invalid workdays and invalid snapshot precede disabled flag", () => {
+  assert.equal((resolve({ start: "8:30", end: "18:30" }, resource()) as any).reason, "INVALID_WORKDAY");
+  assert.equal((resolve({ start: "08:30", end: "08:30" }, resource()) as any).reason, "INVALID_WORKDAY");
+  const disabledInvalid = resolve(day, resource({ isAvailable: false, availabilityStart: "bad", availabilityEnd: "10:00" }));
+  assert.equal((disabledInvalid as any).reason, "INVALID_TIME_FORMAT");
+});
+
+test("SPEC10-007: runtime values are rejected without coercion", () => {
+  for (const value of [42, { time: "09:00" }, ["09:00"]]) {
+    const result = resolve(day, resource({ availabilityStart: value as never, availabilityEnd: "10:00" }));
+    assert.equal((result as any).reason, "INVALID_TIME_FORMAT");
+    assert.ok(Object.isFrozen(result));
+  }
+});
+
+test("SPEC10-007: frozen inputs produce deeply frozen unavailable and invalid outputs", () => {
+  const frozenDay = Object.freeze({ ...day });
+  const frozenResource = Object.freeze(resource({ isAvailable: false }));
+  const unavailable = resolve(frozenDay, frozenResource);
+  const invalid = resolve(frozenDay, Object.freeze(resource({ availabilityStart: "bad", availabilityEnd: "10:00" })));
+  assert.ok(Object.isFrozen(unavailable)); assert.ok(Object.isFrozen(invalid));
+  assert.deepEqual(frozenDay, day); assert.equal(frozenResource.isAvailable, false);
+});

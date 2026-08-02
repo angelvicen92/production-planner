@@ -242,13 +242,17 @@ function sourceProjection(input: EngineInput): unknown {
         : { startPlanned: task.startPlanned, endPlanned: task.endPlanned }),
     };
   });
+  const projectAvailabilityEndpoint = (
+    resource: EngineInput["planResourceItems"][number],
+    key: "availabilityStart" | "availabilityEnd",
+  ): unknown => resource[key] === undefined ? { absent: true } : resource[key];
   const planResourceItems = input.planResourceItems.map((resource) => ({
     id: resource.id,
     resourceItemId: resource.resourceItemId,
     typeId: resource.typeId,
     isAvailable: resource.isAvailable,
-    availabilityStart: Object.prototype.hasOwnProperty.call(resource, "availabilityStart") ? resource.availabilityStart : { absent: true },
-    availabilityEnd: Object.prototype.hasOwnProperty.call(resource, "availabilityEnd") ? resource.availabilityEnd : { absent: true },
+    availabilityStart: projectAvailabilityEndpoint(resource, "availabilityStart"),
+    availabilityEnd: projectAvailabilityEndpoint(resource, "availabilityEnd"),
   }));
   return stableValue({
     planId: input.planId,
