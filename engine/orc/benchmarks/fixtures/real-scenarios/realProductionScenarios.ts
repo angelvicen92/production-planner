@@ -14,9 +14,9 @@ const baseInput = (planId: number): EngineInput => ({
   zoneResourceTypeRequirements: {},
   spaceResourceTypeRequirements: {},
   planResourceItems: [
-    { id: 101, resourceItemId: 1001, typeId: 1, name: "Camera A", isAvailable: true },
-    { id: 102, resourceItemId: 1002, typeId: 1, name: "Camera B", isAvailable: true },
-    { id: 201, resourceItemId: 2001, typeId: 2, name: "Coach A", isAvailable: true },
+    { id: 101, resourceItemId: 1001, typeId: 1, name: "Camera A", isAvailable: true, availabilityStart: null, availabilityEnd: null },
+    { id: 102, resourceItemId: 1002, typeId: 1, name: "Camera B", isAvailable: true, availabilityStart: null, availabilityEnd: null },
+    { id: 201, resourceItemId: 2001, typeId: 2, name: "Coach A", isAvailable: true, availabilityStart: null, availabilityEnd: null },
   ],
   resourceItemComponents: {},
   groupingZoneIds: [101],

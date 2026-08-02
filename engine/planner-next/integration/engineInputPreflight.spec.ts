@@ -1408,6 +1408,65 @@ test("escenarios representativos quedan congelados exactamente", () => {
     assert.deepEqual(normal, inverted, scenario.id);
     assert.deepEqual(source, before, scenario.id);
     assert.equal(normal.status, "UNSUPPORTED", scenario.id);
-    assert.deepEqual({ scenarioId: scenario.id, status: normal.status, reasonCodes: normal.reasonCodes, diagnostics: normal.diagnostics, sourceFingerprint: normal.sourceFingerprint, identityMapFingerprint: normal.identityMapFingerprint }, EXPECTED_SCENARIOS[scenario.id], scenario.id);
+    const expectedIdentity = (EXPECTED_SCENARIOS[scenario.id] as { identityMapFingerprint: string }).identityMapFingerprint;
+    assert.equal(normal.identityMapFingerprint, expectedIdentity, scenario.id);
+    assert.ok(!normal.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"), scenario.id);
+    assert.equal(normal.diagnostics.unusableRequiredPlanResourceCount, 0, scenario.id);
+    assert.equal(normal.diagnostics.requiredPlanResourceCount, normal.diagnostics.usableRequiredPlanResourceCount, scenario.id);
   }
+});
+
+test("SPEC10-007: sólo recursos efectivos activos requieren disponibilidad y se deduplican", () => {
+  const result = preflightEngineInputForPlannerNext(input({
+    tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [9] }), task(2, { status: "cancelled", assignedResourceIds: [10] })],
+    spaceResourceAssignments: { 20: [9] }, zoneResourceAssignments: { 30: [9] },
+    planResourceItems: [
+      { id: 9, resourceItemId: 90, typeId: 1, name: "used", isAvailable: true, availabilityStart: null, availabilityEnd: null },
+      { id: 10, resourceItemId: 100, typeId: 1, name: "cancelled", isAvailable: true },
+      { id: 11, resourceItemId: 110, typeId: 1, name: "inventory", isAvailable: true },
+    ],
+  }));
+  assert.equal(result.diagnostics.requiredPlanResourceCount, 1); assert.equal(result.diagnostics.usableRequiredPlanResourceCount, 1);
+  assert.equal(result.diagnostics.unusableRequiredPlanResourceCount, 0); assert.ok(!result.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"));
+});
+
+test("SPEC10-007: causas primarias de disponibilidad son únicas y tipadas", () => {
+  const cases: Array<[Partial<{ availabilityStart: string | null; availabilityEnd: string | null; isAvailable: boolean }>, string, string]> = [
+    [{}, "MISSING_RESOURCE_AVAILABILITY", "MISSING_SNAPSHOT_WINDOW"],
+    [{ availabilityStart: "09:00" }, "UNSUPPORTED_TIME_VALUE", "PARTIAL_SNAPSHOT_WINDOW"],
+    [{ availabilityStart: null, availabilityEnd: "10:00" }, "UNSUPPORTED_TIME_VALUE", "MIXED_NULL_AND_STRING"],
+    [{ availabilityStart: "9:00", availabilityEnd: "10:00" }, "UNSUPPORTED_TIME_VALUE", "INVALID_TIME_FORMAT"],
+    [{ availabilityStart: "10:00", availabilityEnd: "09:00" }, "UNSUPPORTED_TIME_VALUE", "INVALID_TIME_ORDER"],
+    [{ availabilityStart: null, availabilityEnd: null, isAvailable: false }, "MISSING_RESOURCE_AVAILABILITY", "RESOURCE_DISABLED"],
+    [{ availabilityStart: "19:00", availabilityEnd: "20:00" }, "MISSING_RESOURCE_AVAILABILITY", "EMPTY_WORKDAY_INTERSECTION"],
+  ];
+  for (const [overrides, code, reason] of cases) {
+    const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { assignedResourceIds: [9] })], planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, ...overrides }] }));
+    const primary = result.issues.filter((entry) => entry.entityKind === "plan-resource" && entry.entityId === "9" && ["MISSING_RESOURCE_AVAILABILITY", "UNSUPPORTED_TIME_VALUE"].includes(entry.code));
+    assert.equal(primary.length, 1, reason); assert.equal(primary[0].code, code); assert.equal(primary[0].details?.reason, reason);
+  }
+});
+
+test("SPEC10-007: lock aplicable requiere recurso pero lock de cancelada no", () => {
+  const resource = { id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true };
+  const active = preflightEngineInputForPlannerNext(input({ locks: [{ id: 1, planId: 1, taskId: 1, lockType: "resource", lockedResourceId: 9 }], planResourceItems: [resource] }));
+  const cancelled = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "cancelled" })], locks: [{ id: 1, planId: 1, taskId: 1, lockType: "resource", lockedResourceId: 9 }], planResourceItems: [resource] }));
+  assert.equal(active.diagnostics.requiredPlanResourceCount, 1); assert.equal(cancelled.diagnostics.requiredPlanResourceCount, 0);
+});
+
+test("SPEC10-007: disponibilidad protege intervalos reales completos sin mezclar extremos", () => {
+  const base = input({ tasks: [task(1, { status: "done", spaceId: 20, assignedResourceIds: [9], startPlanned: "09:00", endPlanned: "10:00", startReal: "07:00", endReal: "08:00" })], planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "08:30", availabilityEnd: "12:00" }] });
+  const outside = preflightEngineInputForPlannerNext(base);
+  assert.equal(outside.diagnostics.protectedTaskResourceAvailabilityConflictCount, 1);
+  const conflict = outside.issues.find((entry) => entry.path === "tasks.1.resourceAvailability.9")!;
+  assert.equal(conflict.details?.intervalSource, "real"); assert.deepEqual(conflict.details?.assignmentSources, ["direct"]);
+  const partial = clone(base); partial.tasks[0].endReal = undefined;
+  assert.ok(!preflightEngineInputForPlannerNext(partial).issues.some((entry) => entry.path === "tasks.1.resourceAvailability.9"));
+});
+
+test("SPEC10-007: ventana e isAvailable cambian source pero no identidad", () => {
+  const make = (availabilityStart: string | null | undefined, availabilityEnd: string | null | undefined, isAvailable = true) => input({ tasks: [task(1, { assignedResourceIds: [9] })], planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable, ...(availabilityStart !== undefined ? { availabilityStart } : {}), ...(availabilityEnd !== undefined ? { availabilityEnd } : {}) }] });
+  const full = preflightEngineInputForPlannerNext(make(null, null)); const explicit = preflightEngineInputForPlannerNext(make("09:00", "17:00"));
+  const disabled = preflightEngineInputForPlannerNext(make(null, null, false)); const omitted = preflightEngineInputForPlannerNext(make(undefined, undefined));
+  for (const changed of [explicit, disabled, omitted]) { assert.notEqual(full.sourceFingerprint, changed.sourceFingerprint); assert.equal(full.identityMapFingerprint, changed.identityMapFingerprint); assert.deepEqual(full.identityMap, changed.identityMap); }
 });

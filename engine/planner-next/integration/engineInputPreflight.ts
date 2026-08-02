@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, ProtectedBreakInput, TimeWindow } from "../../types";
 import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
+import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -91,6 +92,10 @@ export interface EngineInputPreflightDiagnostics {
   describedSpaceCount: number;
   zoneCount: number;
   planResourceCount: number;
+  requiredPlanResourceCount: number;
+  usableRequiredPlanResourceCount: number;
+  unusableRequiredPlanResourceCount: number;
+  protectedTaskResourceAvailabilityConflictCount: number;
   resourceItemCount: number;
   resourceAssignmentReferenceCount: number;
   resourceComponentReferenceCount: number;
@@ -241,6 +246,9 @@ function sourceProjection(input: EngineInput): unknown {
     id: resource.id,
     resourceItemId: resource.resourceItemId,
     typeId: resource.typeId,
+    isAvailable: resource.isAvailable,
+    availabilityStart: Object.prototype.hasOwnProperty.call(resource, "availabilityStart") ? resource.availabilityStart : { absent: true },
+    availabilityEnd: Object.prototype.hasOwnProperty.call(resource, "availabilityEnd") ? resource.availabilityEnd : { absent: true },
   }));
   return stableValue({
     planId: input.planId,
@@ -954,7 +962,89 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (exclusive === false) addIssue("UNSUPPORTED_SPACE_OCCUPANCY", "space", spaceId, `spaceIsExclusiveById.${spaceId}`, "Non-exclusive space occupancy is not representable.", { exclusive });
   }
 
-  input.planResourceItems.forEach((resource) => addIssue("MISSING_RESOURCE_AVAILABILITY", "plan-resource", resource.id, `planResourceItems.${resource.id}.isAvailable`, "Boolean availability is not temporal availability."));
+  const requiredResources = new Map<number, { taskIds: Set<number>; lockIds: Set<number> }>();
+  const requireResource = (id: number, taskId?: number, lockId?: number): void => {
+    const entry = requiredResources.get(id) ?? { taskIds: new Set<number>(), lockIds: new Set<number>() };
+    if (taskId !== undefined) entry.taskIds.add(taskId);
+    if (lockId !== undefined) entry.lockIds.add(lockId);
+    requiredResources.set(id, entry);
+  };
+  effectiveTaskResourceAssignments.assignments.forEach((assignment) => assignment.effectiveResourceIds
+    .forEach((id) => requireResource(id, assignment.taskId)));
+  input.locks.forEach((lock) => {
+    const task = taskById.get(String(lock.taskId));
+    if ((lock.lockType === "resource" || lock.lockType === "full") && isPositiveInteger(lock.lockedResourceId)
+      && task && task.status !== "cancelled") requireResource(lock.lockedResourceId, undefined, lock.id);
+  });
+
+  const resourceById = new Map(input.planResourceItems.map((resource) => [resource.id, resource]));
+  const effectiveAvailabilityById = new Map<number, ReturnType<typeof resolveEffectivePlanResourceAvailability>>();
+  let usableRequiredPlanResourceCount = 0;
+  let unusableRequiredPlanResourceCount = 0;
+  [...requiredResources.entries()].sort(([left], [right]) => left - right).forEach(([id, requiredBy]) => {
+    const resource = resourceById.get(id);
+    if (!resource) {
+      unusableRequiredPlanResourceCount++;
+      return;
+    }
+    const availability = resolveEffectivePlanResourceAvailability(input.workDay, resource);
+    effectiveAvailabilityById.set(id, availability);
+    if (availability.status === "AVAILABLE") {
+      usableRequiredPlanResourceCount++;
+      return;
+    }
+    unusableRequiredPlanResourceCount++;
+    const details = {
+      planResourceItemId: id,
+      requiredByTaskIds: [...requiredBy.taskIds].sort((left, right) => left - right),
+      requiredByLockIds: [...requiredBy.lockIds].sort((left, right) => left - right),
+      availabilityStatus: availability.status,
+      reason: availability.reason,
+      isAvailable: resource.isAvailable,
+      availabilityStart: resource.availabilityStart,
+      availabilityEnd: resource.availabilityEnd,
+    };
+    const invalidTime = availability.status === "INVALID" && availability.reason !== "MISSING_SNAPSHOT_WINDOW";
+    addIssue(invalidTime ? "UNSUPPORTED_TIME_VALUE" : "MISSING_RESOURCE_AVAILABILITY", "plan-resource", id,
+      `planResourceItems.${id}.availability`, "Required plan resource has no usable effective availability.", details);
+  });
+
+  let protectedTaskResourceAvailabilityConflictCount = 0;
+  for (const assignment of effectiveTaskResourceAssignments.assignments) {
+    if (assignment.status !== "done" && assignment.status !== "in_progress") continue;
+    const task = taskById.get(String(assignment.taskId))!;
+    const completeReal = task.startReal != null && task.endReal != null;
+    const anyReal = task.startReal != null || task.endReal != null;
+    const completePlanned = task.startPlanned != null && task.endPlanned != null;
+    if ((anyReal && !completeReal) || (!completeReal && !completePlanned)) continue;
+    const protectedInterval = completeReal
+      ? { start: task.startReal!, end: task.endReal! }
+      : { start: task.startPlanned!, end: task.endPlanned! };
+    const protectedStart = toMinutes(protectedInterval.start);
+    const protectedEnd = toMinutes(protectedInterval.end);
+    if (protectedStart === null || protectedEnd === null || protectedStart >= protectedEnd) continue;
+    for (const resourceId of assignment.effectiveResourceIds) {
+      const availability = effectiveAvailabilityById.get(resourceId);
+      if (availability?.status !== "AVAILABLE") continue;
+      const availableStart = toMinutes(availability.effectiveWindow.start)!;
+      const availableEnd = toMinutes(availability.effectiveWindow.end)!;
+      if (protectedStart >= availableStart && protectedEnd <= availableEnd) continue;
+      protectedTaskResourceAvailabilityConflictCount++;
+      addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `tasks.${task.id}.resourceAvailability.${resourceId}`,
+        "Protected task interval is not contained by its effective resource availability.", {
+          taskId: task.id,
+          planResourceItemId: resourceId,
+          protectedInterval,
+          effectiveWindow: availability.effectiveWindow,
+          intervalSource: completeReal ? "real" : "planned",
+          assignmentSources: [
+            ...(assignment.directResourceIds.includes(resourceId) ? ["direct"] : []),
+            ...(assignment.spaceResourceIds.includes(resourceId) ? ["space"] : []),
+            ...(assignment.zoneResourceIds.includes(resourceId) ? ["zone"] : []),
+          ],
+        });
+    }
+  }
   const participantIds = identities.get("participant") ?? new Set<string>();
   const availabilityIds = new Set(mapKeys(input.contestantAvailabilityById));
   participantsRequiringAvailability.forEach((id) => {
@@ -1202,6 +1292,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     describedSpaceCount: describedSpaceIds.size,
     zoneCount: identities.get("zone")?.size ?? 0,
     planResourceCount: new Set(input.planResourceItems.map((resource) => String(resource.id))).size,
+    requiredPlanResourceCount: requiredResources.size,
+    usableRequiredPlanResourceCount,
+    unusableRequiredPlanResourceCount,
+    protectedTaskResourceAvailabilityConflictCount,
     resourceItemCount: new Set(input.planResourceItems.map((resource) => String(resource.resourceItemId))).size,
     resourceAssignmentReferenceCount,
     resourceComponentReferenceCount,
@@ -1222,7 +1316,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     missingAvailabilityCounts: {
       participants: participantMissingAvailability,
       spaces: describedSpaceIds.size,
-      resources: input.planResourceItems.length,
+      resources: unusableRequiredPlanResourceCount,
     },
     unsupportedCapabilityCodes: reasonCodes.filter((code) => code.startsWith("UNSUPPORTED_") || code.startsWith("UNREPRESENTABLE_")),
     readOnly: true,
