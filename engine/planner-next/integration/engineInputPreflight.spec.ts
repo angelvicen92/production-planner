@@ -1113,6 +1113,230 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
   }
 };
 
+
+test("mapping ausente conserva compatibilidad y mapping vacío cambia sólo source fingerprint", () => {
+  const absent = preflightEngineInputForPlannerNext(input());
+  const empty = preflightEngineInputForPlannerNext(input({ vocalCoachPlanResourceItemIdByContestantId: {} }));
+  assert.equal(absent.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE").length, 0);
+  assert.equal(empty.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE").length, 0);
+  assert.notEqual(absent.sourceFingerprint, empty.sourceFingerprint);
+  assert.deepEqual(absent.identityMap, empty.identityMap);
+  assert.equal(absent.identityMapFingerprint, empty.identityMapFingerprint);
+});
+
+test("mapping válido conserva participantes y plan-resources aunque compartan coach", () => {
+  const result = preflightEngineInputForPlannerNext(input({
+    tasks: [],
+    planResourceItems: [
+      { id: 335, resourceItemId: 35, typeId: 3, name: "A", isAvailable: false },
+      { id: 336, resourceItemId: 36, typeId: 3, name: "B", isAvailable: true },
+    ],
+    vocalCoachPlanResourceItemIdByContestantId: { 7: 335, 8: 335, 9: 336 },
+  }));
+  for (const canonicalId of ["participant:7", "participant:8", "participant:9", "plan-resource:335", "plan-resource:336"]) {
+    assert.ok(result.identityMap.some((entry) => entry.canonicalId === canonicalId), canonicalId);
+  }
+  assert.equal(result.diagnostics.coachReferenceCount, 3);
+  assert.equal(result.diagnostics.missingCoachReferenceCount, 0);
+  assert.equal(result.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE").length, 0);
+  assert.equal(result.issues.filter((entry) => entry.code === "MISSING_PARTICIPANT_AVAILABILITY").length, 0);
+});
+
+for (const [label, mapping, receivedType] of [
+  ["null", null, "null"], ["array", [], "array"], ["string", "x", "string"], ["number", 7, "number"],
+] as const) {
+  test(`contenedor runtime inválido: ${label}`, () => {
+    const source = input() as unknown as Record<string, unknown>;
+    source.vocalCoachPlanResourceItemIdByContestantId = mapping;
+    const coachIssues = preflightEngineInputForPlannerNext(source as unknown as EngineInput).issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+    assert.equal(coachIssues.length, 1);
+    assert.deepEqual(coachIssues[0], {
+      code: "MISSING_COACH_REFERENCE", entityKind: "plan", entityId: "1",
+      path: "vocalCoachPlanResourceItemIdByContestantId",
+      message: "Contestant vocal-coach assignment mapping is not an indexable object.", blocking: true,
+      details: { mappingPresent: true, mappingValid: false, receivedType },
+    });
+  });
+}
+
+for (const contestantKey of ["0", "-1", "1.5", "01", " 1 ", "NaN", "abc"]) {
+  test(`clave runtime inválida: ${JSON.stringify(contestantKey)}`, () => {
+    const source = input({ planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "x", isAvailable: true }] }) as unknown as Record<string, unknown>;
+    source.vocalCoachPlanResourceItemIdByContestantId = { [contestantKey]: 335 };
+    const found = issue(source as unknown as EngineInput, "MISSING_COACH_REFERENCE", contestantKey);
+    assert.equal(found.entityKind, "contestant");
+    assert.equal(found.path, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
+    assert.deepEqual(found.details, { contestantIdValid: false, receivedContestantId: contestantKey });
+    assert.ok(!preflightEngineInputForPlannerNext(source as unknown as EngineInput).identityMap.some((entry) => entry.canonicalId === `participant:${contestantKey}`));
+  });
+}
+
+test("clave inválida conserva independientemente la identidad de un coach existente", () => {
+  const source = deepFreeze(input({
+    tasks: [],
+    planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "coach", isAvailable: true }],
+    vocalCoachPlanResourceItemIdByContestantId: { "01": 335 } as unknown as Record<number, number>,
+  }));
+  const before = clone(source);
+  const result = preflightEngineInputForPlannerNext(source);
+  const coachIssues = result.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "01");
+  assert.equal(coachIssues[0].path, "vocalCoachPlanResourceItemIdByContestantId.01");
+  assert.ok(!result.identityMap.some((entry) => entry.canonicalId === "participant:01"));
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.ok(!coachIssues.some((entry) => entry.details?.planResourceItemDefined === false));
+  assert.deepEqual(source, before);
+  assert.ok(Object.isFrozen(result));
+  assert.ok(Object.isFrozen(result.identityMap));
+  assert.ok(Object.isFrozen(result.issues));
+});
+
+test("clave inválida deduplica el blocker legacy equivalente sin convertir la relación en válida", () => {
+  const source = deepFreeze(input({
+    tasks: [],
+    coachResourceIds: [335],
+    planResourceItems: [],
+    vocalCoachPlanResourceItemIdByContestantId: { "01": 335 } as unknown as Record<number, number>,
+  }));
+  const before = clone(source);
+  const first = preflightEngineInputForPlannerNext(source);
+  const repeated = preflightEngineInputForPlannerNext(source);
+  const coachIssues = first.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "01");
+  assert.equal(coachIssues[0].path, "vocalCoachPlanResourceItemIdByContestantId.01");
+  assert.ok(first.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.ok(!first.identityMap.some((entry) => entry.canonicalId === "participant:01"));
+  assert.equal(first.diagnostics.missingCoachReferenceCount, 1);
+  assert.equal(first.diagnostics.coachReferenceCount, 2);
+  assert.deepEqual(first, repeated);
+  assert.deepEqual(source, before);
+});
+
+test("clave válida y coach inexistente deduplican exactamente el agregado legacy", () => {
+  const result = preflightEngineInputForPlannerNext(input({
+    tasks: [],
+    coachResourceIds: [335],
+    planResourceItems: [],
+    vocalCoachPlanResourceItemIdByContestantId: { 7: 335 },
+  }));
+  const coachIssues = result.issues.filter((entry) => entry.code === "MISSING_COACH_REFERENCE");
+  assert.equal(coachIssues.length, 1);
+  assert.equal(coachIssues[0].entityId, "7");
+  assert.deepEqual(coachIssues[0].details, { contestantId: 7, planResourceItemDefined: false, vocalCoachPlanResourceItemId: 335 });
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "participant:7"));
+  assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+  assert.equal(result.diagnostics.coachReferenceCount, 1);
+  assert.equal(result.diagnostics.missingCoachReferenceCount, 1);
+});
+
+test("identidades válidas de coach son independientes de dos claves no canónicas", () => {
+  const withKey = (key: string): EngineInput => input({
+    tasks: [],
+    planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "coach", isAvailable: true }],
+    vocalCoachPlanResourceItemIdByContestantId: { [key]: 335 } as unknown as Record<number, number>,
+  });
+  const first = preflightEngineInputForPlannerNext(withKey("01"));
+  const second = preflightEngineInputForPlannerNext(withKey("02"));
+  assert.notEqual(first.sourceFingerprint, second.sourceFingerprint);
+  assert.deepEqual(first.identityMap, second.identityMap);
+  assert.equal(first.identityMapFingerprint, second.identityMapFingerprint);
+  for (const result of [first, second]) {
+    assert.ok(result.identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+    assert.ok(!result.identityMap.some((entry) => entry.namespace === "participant"));
+  }
+});
+
+for (const [label, coachId] of [
+  ["zero", 0], ["negative", -1], ["decimal", 1.5], ["NaN", Number.NaN], ["infinite", Infinity],
+  ["numeric string", "335"], ["null", null], ["object", {}], ["array", []],
+] as const) {
+  test(`valor runtime inválido: ${label}`, () => {
+    const source = input() as unknown as Record<string, unknown>;
+    source.vocalCoachPlanResourceItemIdByContestantId = { 7: coachId };
+    const found = issue(source as unknown as EngineInput, "MISSING_COACH_REFERENCE", "7");
+    assert.equal(found.path, "vocalCoachPlanResourceItemIdByContestantId.7");
+    assert.equal(found.details?.contestantId, 7);
+    assert.equal(found.details?.coachReferenceValid, false);
+  });
+}
+
+test("recurso asignado inexistente conserva referencia reversible y details exactos", () => {
+  const source = input({ tasks: [], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 } });
+  const found = issue(source, "MISSING_COACH_REFERENCE", "7");
+  assert.equal(found.path, "vocalCoachPlanResourceItemIdByContestantId.7");
+  assert.deepEqual(found.details, { contestantId: 7, planResourceItemDefined: false, vocalCoachPlanResourceItemId: 335 });
+  assert.ok(preflightEngineInputForPlannerNext(source).identityMap.some((entry) => entry.canonicalId === "plan-resource:335"));
+});
+
+test("agregado legacy y metadata no reconstruyen una relación", () => {
+  const source = input({
+    tasks: [task(1, { contestantId: 7, plannerNextKind: "vocal", assignedResourceIds: [335], resourceRequirements: { byItem: { 35: 1 } } }), task(2, { contestantId: 8 })],
+    coachResourceIds: [335, 336],
+    planResourceItems: [
+      { id: 335, resourceItemId: 35, typeId: 3, typeCode: "vc", typeName: "Vocal Coach", category: "coach", name: "Vocal Coach", isAvailable: true },
+      { id: 336, resourceItemId: 36, typeId: 3, name: "Other", isAvailable: true },
+    ],
+  });
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.ok(!Object.prototype.hasOwnProperty.call(source, "vocalCoachPlanResourceItemIdByContestantId"));
+  assert.equal(result.diagnostics.coachReferenceCount, 2);
+  assert.ok(!result.issues.some((entry) => entry.path.startsWith("vocalCoachPlanResourceItemIdByContestantId")));
+});
+
+test("intercambiar asignaciones cambia source pero no las identidades", () => {
+  const resources = [
+    { id: 335, resourceItemId: 35, typeId: 3, name: "A", isAvailable: true },
+    { id: 336, resourceItemId: 36, typeId: 3, name: "B", isAvailable: true },
+  ];
+  const left = preflightEngineInputForPlannerNext(input({ tasks: [], planResourceItems: resources, vocalCoachPlanResourceItemIdByContestantId: { 7: 335, 8: 336 } }));
+  const right = preflightEngineInputForPlannerNext(input({ tasks: [], planResourceItems: resources, vocalCoachPlanResourceItemIdByContestantId: { 7: 336, 8: 335 } }));
+  assert.notEqual(left.sourceFingerprint, right.sourceFingerprint);
+  assert.deepEqual(left.identityMap, right.identityMap);
+  assert.equal(left.identityMapFingerprint, right.identityMapFingerprint);
+});
+
+test("orden y display metadata no afectan Evidence de la relación", () => {
+  const first = input({ tasks: [], coachResourceIds: [336, 335], planResourceItems: [
+    { id: 336, resourceItemId: 36, typeId: 3, typeCode: "old", typeName: "Old", category: "old", name: "Old", isAvailable: true },
+    { id: 335, resourceItemId: 35, typeId: 3, name: "A", isAvailable: true },
+  ], vocalCoachPlanResourceItemIdByContestantId: { 7: 335, 8: 336 } });
+  const second = clone(first);
+  second.planResourceItems.reverse();
+  second.coachResourceIds?.reverse();
+  second.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(Object.entries(second.vocalCoachPlanResourceItemIdByContestantId ?? {}).reverse());
+  Object.assign(second.planResourceItems.find((entry) => entry.id === 336)!, { name: "Renamed", typeName: "New", typeCode: "new", category: "new" });
+  assert.deepEqual(preflightEngineInputForPlannerNext(first), preflightEngineInputForPlannerNext(second));
+});
+
+test("diagnostics deduplican mapping explícito y agregado legacy derivado", () => {
+  const resource = { id: 335, resourceItemId: 35, typeId: 3, name: "A", isAvailable: true };
+  const cases: Array<[Partial<EngineInput>, number, number]> = [
+    [{ tasks: [], planResourceItems: [resource], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 } }, 1, 0],
+    [{ tasks: [], planResourceItems: [resource], coachResourceIds: [335] }, 1, 0],
+    [{ tasks: [], planResourceItems: [resource], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 }, coachResourceIds: [335] }, 1, 0],
+    [{ tasks: [], planResourceItems: [resource], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 }, coachResourceIds: [335, 336] }, 2, 1],
+    [{ tasks: [], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 }, coachResourceIds: [335] }, 1, 1],
+    [{ tasks: [], planResourceItems: [resource], vocalCoachPlanResourceItemIdByContestantId: { 7: 335, 8: 335 }, coachResourceIds: [335] }, 2, 0],
+  ];
+  cases.forEach(([overrides, references, missing]) => {
+    const diagnostics = preflightEngineInputForPlannerNext(input(overrides)).diagnostics;
+    assert.equal(diagnostics.coachReferenceCount, references);
+    assert.equal(diagnostics.missingCoachReferenceCount, missing);
+  });
+});
+
+test("mapping congelado permanece inmutable y output frozen", () => {
+  const source = deepFreeze(input({ tasks: [], planResourceItems: [{ id: 335, resourceItemId: 35, typeId: 3, name: "A", isAvailable: true }], vocalCoachPlanResourceItemIdByContestantId: { 7: 335 } }));
+  const before = clone(source);
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.deepEqual(source, before);
+  assert.ok(Object.isFrozen(result));
+  assert.ok(Object.isFrozen(result.identityMap));
+  assert.ok(Object.isFrozen(result.issues));
+});
+
 test("escenarios representativos quedan congelados exactamente", () => {
   assert.equal(realProductionScenarios.length, 3);
   for (const scenario of realProductionScenarios) {

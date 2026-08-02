@@ -2,6 +2,32 @@ import { IStorage } from "../server/storage";
 import { EngineInput } from "./types";
 import { resolveWeight } from "@shared/optimizer";
 
+type ContestantVocalCoachRow = Readonly<{
+  id?: unknown;
+  vocalCoachPlanResourceItemId?: unknown;
+  vocal_coach_plan_resource_item_id?: unknown;
+}> | null | undefined;
+
+export function projectContestantVocalCoachAssignments(rows: readonly ContestantVocalCoachRow[] | null | undefined): {
+  vocalCoachPlanResourceItemIdByContestantId: Record<number, number>;
+  coachResourceIds: number[];
+} {
+  const assignments = new Map<number, number>();
+  for (const row of rows ?? []) {
+    if (!row) continue;
+    const contestantId = row.id;
+    const coachId = row.vocalCoachPlanResourceItemId ?? row.vocal_coach_plan_resource_item_id;
+    if (typeof contestantId !== "number" || !Number.isFinite(contestantId) || !Number.isInteger(contestantId) || contestantId <= 0) continue;
+    if (typeof coachId !== "number" || !Number.isFinite(coachId) || !Number.isInteger(coachId) || coachId <= 0) continue;
+    assignments.set(contestantId, coachId);
+  }
+  const orderedAssignments = [...assignments.entries()].sort(([left], [right]) => left - right);
+  return {
+    vocalCoachPlanResourceItemIdByContestantId: Object.fromEntries(orderedAssignments),
+    coachResourceIds: [...new Set(orderedAssignments.map(([, coachId]) => coachId))].sort((left, right) => left - right),
+  };
+}
+
 export async function buildEngineInput(
   planId: number,
   storage: IStorage,
@@ -27,13 +53,10 @@ export async function buildEngineInput(
   const contestants = await storage.getContestantsByPlan(planId);
   const contestantNameById = new Map<number, string>();
   const contestantAvailabilityById: Record<number, { start: string; end: string }> = {};
-  const coachResourceIds = new Set<number>();
+  const { vocalCoachPlanResourceItemIdByContestantId, coachResourceIds } = projectContestantVocalCoachAssignments(contestants as any[]);
 
   for (const c of contestants as any[]) {
     contestantNameById.set(Number(c.id), String(c.name ?? ""));
-
-    const coachResourceId = Number(c.vocalCoachPlanResourceItemId ?? c.vocal_coach_plan_resource_item_id ?? NaN);
-    if (Number.isFinite(coachResourceId) && coachResourceId > 0) coachResourceIds.add(coachResourceId);
 
     const cid = Number(c.id);
     if (!Number.isFinite(cid) || cid <= 0) continue;
@@ -658,7 +681,8 @@ export async function buildEngineInput(
     zoneResourceTypeRequirements,
     spaceResourceTypeRequirements,
         planResourceItems,
-        coachResourceIds: [...coachResourceIds].sort((a, b) => a - b),
+        coachResourceIds,
+        vocalCoachPlanResourceItemIdByContestantId,
         resourceItemComponents,
         resourceBundles,
         resourceBundleComponents,
