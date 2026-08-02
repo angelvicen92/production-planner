@@ -27,6 +27,7 @@ import {
   buildAvailabilityWindowPatch,
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
+import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -42,6 +43,10 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const sendSpatialAvailability = async (res: any, action: () => Promise<unknown>) => {
+    const result = await executeSpatialAvailabilityAction(action);
+    return res.status(result.status).json(result.body);
+  };
 
   
   const ensureAdmin = async (req: any, res: any): Promise<{ ok: true; userId: string } | { ok: false }> => {
@@ -561,8 +566,11 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
   app.patch(api.zones.availability.path, async (req, res) => {
-    try { const input = api.zones.availability.input.parse(req.body); res.json(mapDefaultSpatialAvailability(await storage.updateZoneDefaultAvailability(Number(req.params.id), input))); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update zone availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const id = parsePositiveIntegerRouteId(req.params.id, "zone id");
+      const input = parseSpatialRequestBody(api.zones.availability.input, req.body);
+      return mapDefaultSpatialAvailability(await storage.updateZoneDefaultAvailability(id, input));
+    });
   });
 
   // Spaces
@@ -596,8 +604,11 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
   app.patch(api.spaces.availability.path, async (req, res) => {
-    try { const input = api.spaces.availability.input.parse(req.body); res.json(mapDefaultSpatialAvailability(await storage.updateSpaceDefaultAvailability(Number(req.params.id), input))); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update space availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const id = parsePositiveIntegerRouteId(req.params.id, "space id");
+      const input = parseSpatialRequestBody(api.spaces.availability.input, req.body);
+      return mapDefaultSpatialAvailability(await storage.updateSpaceDefaultAvailability(id, input));
+    });
   });
   
   // Staff People (Producción / Redacción)
@@ -3226,24 +3237,43 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   app.get(api.plans.spatialAvailability.listZones.path, async (req, res) => {
-    try { res.json((await storage.getPlanZoneSettings(Number(req.params.id))).map(mapPlanZoneAvailability)); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read zone availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return (await storage.getPlanZoneSettings(planId)).map(mapPlanZoneAvailability);
+    });
   });
   app.get(api.plans.spatialAvailability.listSpaces.path, async (req, res) => {
-    try { res.json((await storage.getPlanSpaceSettings(Number(req.params.id))).map(mapPlanSpaceAvailability)); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read space availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return (await storage.getPlanSpaceSettings(planId)).map(mapPlanSpaceAvailability);
+    });
   });
   app.post(api.plans.spatialAvailability.initialize.path, async (req, res) => {
-    try { res.json(spatialAvailabilityInitializationResponseSchema.parse(await storage.initializePlanSpatialAvailabilitySnapshots(Number(req.params.id)))); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot initialize spatial availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return spatialAvailabilityInitializationResponseSchema.parse(await storage.initializePlanSpatialAvailabilitySnapshots(planId));
+    });
   });
   app.patch(api.plans.spatialAvailability.updateZone.path, async (req, res) => {
-    try { const input = api.plans.spatialAvailability.updateZone.input.parse(req.body); res.json(mapPlanZoneAvailability(await storage.updatePlanZoneAvailability(Number(req.params.id), Number(req.params.zoneId), input))); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan zone availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      const zoneId = parsePositiveIntegerRouteId(req.params.zoneId, "zone id");
+      const input = parseSpatialRequestBody(api.plans.spatialAvailability.updateZone.input, req.body);
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return mapPlanZoneAvailability(await storage.updatePlanZoneAvailability(planId, zoneId, input));
+    });
   });
   app.patch(api.plans.spatialAvailability.updateSpace.path, async (req, res) => {
-    try { const input = api.plans.spatialAvailability.updateSpace.input.parse(req.body); res.json(mapPlanSpaceAvailability(await storage.updatePlanSpaceAvailability(Number(req.params.id), Number(req.params.spaceId), input))); }
-    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan space availability" }); }
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      const spaceId = parsePositiveIntegerRouteId(req.params.spaceId, "space id");
+      const input = parseSpatialRequestBody(api.plans.spatialAvailability.updateSpace.input, req.body);
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return mapPlanSpaceAvailability(await storage.updatePlanSpaceAvailability(planId, spaceId, input));
+    });
   });
 
   // Update Plan (Work hours / Meal break / Cameras)
