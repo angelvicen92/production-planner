@@ -62,6 +62,10 @@ const scenarios = realProductionScenarios.map((scenario) => {
   assert.ok(Object.isFrozen(normal), `${scenario.id}: result is not frozen`);
   assert.ok(Object.isFrozen(normal.issues), `${scenario.id}: issues are not frozen`);
   assert.ok(Object.isFrozen(normal.identityMap), `${scenario.id}: identity map is not frozen`);
+  assert.equal(normal.status, "UNSUPPORTED", `${scenario.id}: remaining blockers must stay visible`);
+  assert.ok(!normal.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"), `${scenario.id}: snapshot availability was not projected`);
+  assert.equal(normal.diagnostics.requiredPlanResourceCount, normal.diagnostics.usableRequiredPlanResourceCount, `${scenario.id}: required resource unavailable`);
+  assert.equal(normal.diagnostics.unusableRequiredPlanResourceCount, 0, `${scenario.id}: unusable required resource`);
 
   return {
     scenarioId: scenario.id,
@@ -78,4 +82,4 @@ const scenarios = realProductionScenarios.map((scenario) => {
   };
 });
 
-process.stdout.write(`${JSON.stringify({ benchmark: "SPEC10-005-engine-input-preflight", scenarios }, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({ benchmark: "SPEC10-007-engine-input-resource-availability", scenarios }, null, 2)}\n`);

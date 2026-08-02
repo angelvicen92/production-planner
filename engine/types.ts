@@ -117,6 +117,8 @@ export interface PlanResourceItemInput {
   category?: string | null;
   name: string;
   isAvailable: boolean;
+  availabilityStart?: string | null;
+  availabilityEnd?: string | null;
 }
 
 export interface ResourceItemComponentInput {

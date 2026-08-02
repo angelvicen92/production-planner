@@ -1,5 +1,5 @@
 import { IStorage } from "../server/storage";
-import { EngineInput } from "./types";
+import { EngineInput, PlanResourceItemInput } from "./types";
 import { resolveWeight } from "@shared/optimizer";
 
 type ContestantVocalCoachRow = Readonly<{
@@ -7,6 +7,33 @@ type ContestantVocalCoachRow = Readonly<{
   vocalCoachPlanResourceItemId?: unknown;
   vocal_coach_plan_resource_item_id?: unknown;
 }> | null | undefined;
+
+type PlanResourceItemRow = Readonly<Record<string, unknown>>;
+
+function readPresentField(row: PlanResourceItemRow, camelKey: string, snakeKey: string): unknown {
+  if (Object.prototype.hasOwnProperty.call(row, camelKey)) return row[camelKey];
+  if (Object.prototype.hasOwnProperty.call(row, snakeKey)) return row[snakeKey];
+  return undefined;
+}
+
+/** Projects the persisted per-plan snapshot without interpreting its availability. */
+export function projectPlanResourceItemsForEngineInput(
+  rows: readonly PlanResourceItemRow[] | null | undefined,
+): PlanResourceItemInput[] {
+  const projected = (rows ?? []).map((row) => ({
+    id: readPresentField(row, "id", "id") as number,
+    resourceItemId: readPresentField(row, "resourceItemId", "resource_item_id") as number,
+    typeId: readPresentField(row, "typeId", "type_id") as number,
+    typeCode: readPresentField(row, "typeCode", "type_code") as string | null | undefined,
+    typeName: readPresentField(row, "typeName", "type_name") as string | null | undefined,
+    category: readPresentField(row, "category", "category") as string | null | undefined,
+    name: readPresentField(row, "name", "name") as string,
+    isAvailable: readPresentField(row, "isAvailable", "is_available") as boolean,
+    availabilityStart: readPresentField(row, "availabilityStart", "availability_start") as string | null | undefined,
+    availabilityEnd: readPresentField(row, "availabilityEnd", "availability_end") as string | null | undefined,
+  })).sort((left, right) => left.id - right.id);
+  return projected;
+}
 
 export function projectContestantVocalCoachAssignments(rows: readonly ContestantVocalCoachRow[] | null | undefined): {
   vocalCoachPlanResourceItemIdByContestantId: Record<number, number>;
@@ -350,7 +377,9 @@ export async function buildEngineInput(
   const spaceResourceTypeRequirements =
     (await safe(() => storage.getSpaceResourceTypeRequirementsForPlan(planId), {})) ?? {};
 
-  const planResourceItems = (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) ?? [];
+  const planResourceItems = projectPlanResourceItemsForEngineInput(
+    (await safe(() => storage.getPlanResourceItemsForPlan(planId), [])) as unknown as readonly PlanResourceItemRow[],
+  );
 
   const resourceItemIds = Array.from(
     new Set(
