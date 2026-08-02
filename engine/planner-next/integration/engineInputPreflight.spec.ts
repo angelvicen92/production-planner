@@ -558,6 +558,55 @@ test("identidad y fingerprints dependen sólo de configuración canónica audita
   assert.equal(baseline.sourceFingerprint, preflightEngineInputForPlannerNext(configuredInput(extra)).sourceFingerprint);
 });
 
+test("canonicaliza la referencia runtime de mainFlow.spaceId para el identity-map fingerprint", () => {
+  const numericInput = deepFreeze(configuredInput());
+  const stringInput = deepFreeze(configuredInput({
+    ...validPlannerNext(),
+    mainFlow: { ...validPlannerNext().mainFlow, spaceId: "2" },
+  }));
+  const numericBefore = clone(numericInput);
+  const stringBefore = clone(stringInput);
+
+  const numericResult = preflightEngineInputForPlannerNext(numericInput);
+  const stringResult = preflightEngineInputForPlannerNext(stringInput);
+
+  assert.deepEqual(numericResult.identityMap, stringResult.identityMap);
+  assert.equal(numericResult.identityMapFingerprint, stringResult.identityMapFingerprint);
+  assert.notEqual(numericResult.sourceFingerprint, stringResult.sourceFingerprint);
+  assert.ok(!numericResult.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+  assert.ok(stringResult.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+  assert.equal(stringResult.status, "UNSUPPORTED");
+  assert.deepEqual(numericInput, numericBefore);
+  assert.deepEqual(stringInput, stringBefore);
+  for (const result of [numericResult, stringResult]) {
+    assert.ok(Object.isFrozen(result));
+    assert.ok(Object.isFrozen(result.identityMap));
+    assert.ok(Object.isFrozen(result.diagnostics));
+    assert.ok(Object.isFrozen(result.issues));
+    result.identityMap.forEach((entry) => assert.ok(Object.isFrozen(entry)));
+    result.issues.forEach((entry) => {
+      assert.ok(Object.isFrozen(entry));
+      if (entry.details) assert.ok(Object.isFrozen(entry.details));
+    });
+  }
+});
+
+test("cambiar sólo searchBudget.bestK no cambia identidades", () => {
+  const baseline = preflightEngineInputForPlannerNext(configuredInput());
+  const changed = preflightEngineInputForPlannerNext(configuredInput({
+    ...validPlannerNext(),
+    searchBudget: { ...validPlannerNext().searchBudget, bestK: 2 },
+  }));
+
+  assert.notEqual(baseline.sourceFingerprint, changed.sourceFingerprint);
+  assert.deepEqual(baseline.identityMap, changed.identityMap);
+  assert.equal(baseline.identityMapFingerprint, changed.identityMapFingerprint);
+  assert.equal(baseline.diagnostics.searchBudgetConfigurationComplete, true);
+  assert.equal(changed.diagnostics.searchBudgetConfigurationComplete, true);
+  assert.ok(!baseline.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
+  assert.ok(!changed.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
+});
+
 test("operaciones ancladas runtime distinguen incompletitud y ambigüedad", () => {
   const incomplete = issue(runtimeInput(input(), { anchoredAccompaniments: [{ id: "a", anchorTaskId: 1 }] }), "INCOMPLETE_ANCHORED_OPERATION", "a");
   assert.equal(incomplete.path, "anchoredAccompaniments.0");

@@ -1130,7 +1130,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     sourceFingerprint: fingerprint(sourceProjection(input)),
     identityMapFingerprint: mainFlow?.spaceId === null || mainFlow?.spaceId === undefined || mainFlow.spaceId === ""
       ? fingerprint(identityMap)
-      : fingerprint({ identityMap, plannerNextMainFlowSpaceId: mainFlow.spaceId }),
+      : fingerprint({ identityMap, plannerNextMainFlowSpaceId: String(mainFlow.spaceId) }),
     readOnly: true,
   });
 }
