@@ -262,8 +262,15 @@ export interface EngineInput {
   // ✅ Inventario del plan (snapshot de resource_items -> plan_resource_items)
   planResourceItems: PlanResourceItemInput[];
 
-  // Identificadores estructurados derivados de la configuración vocal de concursantes.
+  /** Legacy aggregate of coach plan-resource IDs; it does not preserve contestant assignments. */
   coachResourceIds?: number[];
+
+  /**
+   * Keys are contestant IDs and values are IDs from the plan_resource_items snapshot.
+   * This relation comes from the explicit assignment made in the app; it is not a pool
+   * of interchangeable coaches and is not yet projected automatically onto tasks.
+   */
+  vocalCoachPlanResourceItemIdByContestantId?: Record<number, number>;
 
   // ✅ Componentes de recursos compuestos (por resource_item_id)
   // Key: parent resourceItemId -> components

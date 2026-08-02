@@ -196,6 +196,7 @@ function stableValue(value: unknown, path: readonly string[] = []): unknown {
 
 function sourceProjection(input: EngineInput): unknown {
   const runtime = input as unknown as Record<string, unknown>;
+  const mappingPresent = Object.prototype.hasOwnProperty.call(runtime, "vocalCoachPlanResourceItemIdByContestantId");
   const plannerNext = input.plannerNext as unknown;
   const plannerNextRecord = plannerNext && typeof plannerNext === "object" && !Array.isArray(plannerNext)
     ? plannerNext as unknown as Record<string, unknown> : undefined;
@@ -258,6 +259,7 @@ function sourceProjection(input: EngineInput): unknown {
     locks: input.locks,
     planResourceItems,
     coachResourceIds: input.coachResourceIds,
+    ...(mappingPresent ? { vocalCoachPlanResourceItemIdByContestantId: runtime.vocalCoachPlanResourceItemIdByContestantId } : {}),
     resourceItemComponents: input.resourceItemComponents,
     contestantAvailabilityById: input.contestantAvailabilityById,
     zoneResourceAssignments: input.zoneResourceAssignments,
@@ -344,6 +346,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const identities = new Map<EngineInputIdentityNamespace, Set<string>>();
   const authoritativeDefinitions = new Map<EngineInputIdentityNamespace, Set<string>>();
   const identityMap: EngineInputIdentity[] = [];
+  const participantsRequiringAvailability = new Set<string>();
 
   const addIssue = (
     code: EngineInputPreflightReasonCode,
@@ -400,6 +403,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("task", task.id, `${path}.id`, true);
     addIdentity("template", task.templateId, `${path}.templateId`);
     addIdentity("participant", task.contestantId, `${path}.contestantId`);
+    if (task.contestantId != null) participantsRequiringAvailability.add(String(task.contestantId));
     addIdentity("space", task.spaceId, `${path}.spaceId`);
     addIdentity("zone", task.zoneId, `${path}.zoneId`);
     addIdentity("break", task.breakId, `${path}.breakId`);
@@ -426,6 +430,32 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("resource-item", resource.resourceItemId, `planResourceItems.${resource.id}.resourceItemId`, true);
     addIdentity("resource-type", resource.typeId, `planResourceItems.${resource.id}.typeId`);
   });
+  const runtimeInput = input as unknown as Record<string, unknown>;
+  const coachMappingPresent = Object.prototype.hasOwnProperty.call(runtimeInput, "vocalCoachPlanResourceItemIdByContestantId");
+  const rawCoachMapping = runtimeInput.vocalCoachPlanResourceItemIdByContestantId;
+  const coachMappingValid = rawCoachMapping !== null && typeof rawCoachMapping === "object" && !Array.isArray(rawCoachMapping)
+    && (Object.getPrototypeOf(rawCoachMapping) === Object.prototype || Object.getPrototypeOf(rawCoachMapping) === null);
+  const coachMappingEntries = coachMappingPresent && coachMappingValid
+    ? Object.entries(rawCoachMapping as Record<string, unknown>).sort(([left], [right]) => compare(left, right))
+    : [];
+  const validExplicitCoachIds = new Set<number>();
+  if (coachMappingPresent && !coachMappingValid) {
+    addIssue("MISSING_COACH_REFERENCE", "plan", input.planId, "vocalCoachPlanResourceItemIdByContestantId", "Contestant vocal-coach assignment mapping is not an indexable object.", {
+      receivedType: rawCoachMapping === null ? "null" : Array.isArray(rawCoachMapping) ? "array" : typeof rawCoachMapping,
+      mappingPresent: true,
+      mappingValid: false,
+    });
+  }
+  for (const [contestantKey, coachId] of coachMappingEntries) {
+    const contestantId = Number(contestantKey);
+    const contestantIdValid = /^[1-9]\d*$/.test(contestantKey) && Number.isFinite(contestantId) && Number.isInteger(contestantId);
+    if (!contestantIdValid) continue;
+    addIdentity("participant", contestantId, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
+    if (isPositiveInteger(coachId)) {
+      validExplicitCoachIds.add(coachId);
+      addIdentity("plan-resource", coachId, `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`);
+    }
+  }
   input.coachResourceIds?.forEach((id) => addIdentity("plan-resource", id, "coachResourceIds"));
   addIdentity("template", input.mealTaskTemplateId, "mealTaskTemplateId");
   addIdentity("zone", input.optimizerMainZoneId, "optimizerMainZoneId");
@@ -505,13 +535,13 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (!entry) return;
     addIdentity("break", entry.id, `${path}.id`, true);
     addIdentity("participant", entry.contestantId, `${path}.contestantId`);
+    if (entry.contestantId != null) participantsRequiringAvailability.add(String(entry.contestantId));
     addIdentity("space", entry.spaceId, `${path}.spaceId`);
     addIdentity("zone", entry.zoneId, `${path}.zoneId`);
     addIdentity("itinerant-team", entry.itinerantTeamId, `${path}.itinerantTeamId`);
   };
   addBreakIdentities(input.actualMeal, "actualMeal");
   input.protectedBreaks?.forEach((entry) => addBreakIdentities(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
-  const runtimeInput = input as unknown as Record<string, unknown>;
   const integrationConfiguration = input.plannerNext as unknown;
   const integrationConfigurationRecord = integrationConfiguration && typeof integrationConfiguration === "object" && !Array.isArray(integrationConfiguration)
     ? integrationConfiguration as Record<string, unknown> : undefined;
@@ -798,8 +828,34 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
 
   let missingCoachReferenceCount = 0;
+  for (const [contestantKey, coachId] of coachMappingEntries) {
+    const contestantId = Number(contestantKey);
+    const path = `vocalCoachPlanResourceItemIdByContestantId.${contestantKey}`;
+    const contestantIdValid = /^[1-9]\d*$/.test(contestantKey) && Number.isFinite(contestantId) && Number.isInteger(contestantId);
+    if (!contestantIdValid) {
+      missingCoachReferenceCount++;
+      addIssue("MISSING_COACH_REFERENCE", "contestant", contestantKey, path, "Contestant vocal-coach assignment has an invalid contestant ID.", {
+        receivedContestantId: contestantKey,
+        contestantIdValid: false,
+      });
+    } else if (!isPositiveInteger(coachId)) {
+      missingCoachReferenceCount++;
+      addIssue("MISSING_COACH_REFERENCE", "contestant", contestantId, path, "Contestant vocal-coach assignment has an invalid plan-resource reference.", {
+        contestantId,
+        receivedVocalCoachPlanResourceItemId: coachId,
+        coachReferenceValid: false,
+      });
+    } else if (!planResourceIds.has(String(coachId))) {
+      missingCoachReferenceCount++;
+      addIssue("MISSING_COACH_REFERENCE", "contestant", contestantId, path, "Assigned vocal-coach plan-resource does not exist.", {
+        contestantId,
+        vocalCoachPlanResourceItemId: coachId,
+        planResourceItemDefined: false,
+      });
+    }
+  }
   for (const id of input.coachResourceIds ?? []) {
-    if (!planResourceIds.has(String(id))) {
+    if (!validExplicitCoachIds.has(id) && !planResourceIds.has(String(id))) {
       missingCoachReferenceCount++;
       addIssue("MISSING_COACH_REFERENCE", "plan-resource", id, "coachResourceIds", "Coach plan-resource reference does not exist.", { referencedId: String(id) });
     }
@@ -876,7 +932,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   input.planResourceItems.forEach((resource) => addIssue("MISSING_RESOURCE_AVAILABILITY", "plan-resource", resource.id, `planResourceItems.${resource.id}.isAvailable`, "Boolean availability is not temporal availability."));
   const participantIds = identities.get("participant") ?? new Set<string>();
   const availabilityIds = new Set(mapKeys(input.contestantAvailabilityById));
-  participantIds.forEach((id) => {
+  participantsRequiringAvailability.forEach((id) => {
     if (!availabilityIds.has(id)) addIssue("MISSING_PARTICIPANT_AVAILABILITY", "participant", id, `contestantAvailabilityById.${id}`, "Participant availability is absent.");
   });
 
@@ -1104,7 +1160,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     `${right.code}\0${right.entityKind}\0${right.entityId}\0${right.path}`,
   ));
   const reasonCodes = [...new Set(issues.map((issue) => issue.code))].sort(compare);
-  const participantMissingAvailability = [...participantIds].filter((id) => !availabilityIds.has(id)).length;
+  const participantMissingAvailability = [...participantsRequiringAvailability].filter((id) => !availabilityIds.has(id)).length;
 
   const diagnostics: EngineInputPreflightDiagnostics = {
     taskCount: input.tasks.length,
@@ -1114,7 +1170,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     pendingPlanningDiscardCount,
     lockCount: input.locks.length,
     participantCount: participantIds.size,
-    coachReferenceCount: input.coachResourceIds?.length ?? 0,
+    coachReferenceCount: coachMappingEntries.length + (input.coachResourceIds ?? []).filter((id) => !validExplicitCoachIds.has(id)).length,
     missingCoachReferenceCount,
     spaceCount: identities.get("space")?.size ?? 0,
     referencedSpaceCount: referencedSpaceIds.size,
