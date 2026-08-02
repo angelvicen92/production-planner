@@ -11,6 +11,7 @@ export type EngineInputPreflightReasonCode =
   | "INCOMPLETE_ANCHORED_OPERATION"
   | "INVALID_SEARCH_BUDGET"
   | "INVALID_SEARCH_POLICY_CONFIGURATION"
+  | "INVALID_TRANSITION_CONFIGURATION"
   | "MISSING_COACH_REFERENCE"
   | "MISSING_DEPENDENCY_REFERENCE"
   | "MISSING_MAIN_FLOW_CONFIGURATION"
@@ -24,6 +25,7 @@ export type EngineInputPreflightReasonCode =
   | "MISSING_SPACE_REFERENCE"
   | "MISSING_TASK_DURATION"
   | "MISSING_TASK_REFERENCE"
+  | "MISSING_TRANSITION_CONFIGURATION"
   | "PLAN_ID_MISMATCH"
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
@@ -95,10 +97,12 @@ export interface EngineInputPreflightDiagnostics {
   breakCount: number;
   transportConfigured: boolean;
   setupConfigurationDetected: boolean;
+  integrationConfigurationPresent: boolean;
   mainFlowConfigurationComplete: boolean;
   searchPolicyConfigurationPresent: boolean;
   searchBudgetConfigurationComplete: boolean;
   timeGridVerifiable: boolean;
+  transitionConfigurationComplete: boolean;
   anchoredOperationContractPresent: boolean;
   unresolvedTaskRoleCount: number;
   missingDurationTaskCount: number;
@@ -192,6 +196,12 @@ function stableValue(value: unknown, path: readonly string[] = []): unknown {
 
 function sourceProjection(input: EngineInput): unknown {
   const runtime = input as unknown as Record<string, unknown>;
+  const plannerNext = input.plannerNext as unknown;
+  const plannerNextRecord = plannerNext && typeof plannerNext === "object" && !Array.isArray(plannerNext)
+    ? plannerNext as unknown as Record<string, unknown> : undefined;
+  const projectRecord = (value: unknown, keys: readonly string[]): unknown => value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(keys.map((key) => [key, (value as Record<string, unknown>)[key]]))
+    : value;
   const anchoredAccompaniments = Array.isArray(runtime.anchoredAccompaniments)
     ? runtime.anchoredAccompaniments.map((entry) => entry && typeof entry === "object" ? Object.fromEntries(
       ["id", "anchorTaskId", "anchor", "beforeTaskIds", "afterTaskIds", "segments", "adjacency", "internalTransition", "resourceContinuity"]
@@ -287,14 +297,14 @@ function sourceProjection(input: EngineInput): unknown {
     departureMinGapMinutesPresent: input.departureMinGapMinutes != null,
     arrivalTaskTemplateNamePresent: input.arrivalTaskTemplateName !== undefined,
     departureTaskTemplateNamePresent: input.departureTaskTemplateName !== undefined,
-    searchPolicy: runtime.searchPolicy,
-    searchBudget: runtime.searchBudget && typeof runtime.searchBudget === "object" ? Object.fromEntries(
-      ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"].map((key) => [key, (runtime.searchBudget as Record<string, unknown>)[key]]),
-    ) : runtime.searchBudget,
-    mainFlow: runtime.mainFlow && typeof runtime.mainFlow === "object" ? Object.fromEntries(
-      ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"].map((key) => [key, (runtime.mainFlow as Record<string, unknown>)[key]]),
-    ) : runtime.mainFlow,
-    timeGridMinutes: runtime.timeGridMinutes,
+    plannerNext: plannerNextRecord ? {
+      searchPolicy: plannerNextRecord.searchPolicy,
+      searchBudget: projectRecord(plannerNextRecord.searchBudget, ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"]),
+      timeGridMinutes: plannerNextRecord.timeGridMinutes,
+      participantTransitionMinutes: plannerNextRecord.participantTransitionMinutes,
+      resourceTransitionMinutes: plannerNextRecord.resourceTransitionMinutes,
+      mainFlow: projectRecord(plannerNextRecord.mainFlow, ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"]),
+    } : plannerNext,
     anchoredAccompaniments,
   });
 }
@@ -501,9 +511,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   addBreakIdentities(input.actualMeal, "actualMeal");
   input.protectedBreaks?.forEach((entry) => addBreakIdentities(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
   const runtimeInput = input as unknown as Record<string, unknown>;
-  const runtimeMainFlow = runtimeInput.mainFlow as Record<string, unknown> | undefined;
-  addIdentity("space", runtimeMainFlow?.spaceId, "mainFlow.spaceId");
-  if (runtimeMainFlow?.spaceId != null) referencedSpaceIds.add(String(runtimeMainFlow.spaceId));
+  const integrationConfiguration = input.plannerNext as unknown;
+  const integrationConfigurationRecord = integrationConfiguration && typeof integrationConfiguration === "object" && !Array.isArray(integrationConfiguration)
+    ? integrationConfiguration as Record<string, unknown> : undefined;
+  const mainFlowValue = integrationConfigurationRecord?.mainFlow;
+  const mainFlow = mainFlowValue && typeof mainFlowValue === "object" && !Array.isArray(mainFlowValue)
+    ? mainFlowValue as Record<string, unknown> : undefined;
+  if (mainFlow?.spaceId !== null && mainFlow?.spaceId !== undefined && mainFlow.spaceId !== "") {
+    const sourceId = String(mainFlow.spaceId);
+    addIdentity("space", sourceId, "plannerNext.mainFlow.spaceId");
+  }
+  if (mainFlow?.spaceId != null) referencedSpaceIds.add(String(mainFlow.spaceId));
   const runtimeAnchors = runtimeInput.anchoredAccompaniments;
   if (Array.isArray(runtimeAnchors)) {
     runtimeAnchors.forEach((operation, index) => {
@@ -806,7 +824,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for (const [path, rawId] of [
     ["transportSpaceId", input.transportSpaceId],
     ["transportSettings.transportSpaceId", input.transportSettings?.transportSpaceId],
-    ["mainFlow.spaceId", runtimeMainFlow?.spaceId],
+    ["plannerNext.mainFlow.spaceId", mainFlow?.spaceId],
   ] as const) {
     if (rawId != null && !describedSpaceIds.has(String(rawId))) addIssue("MISSING_SPACE_REFERENCE", "plan", input.planId, path, "Configured space has no structured entity description.", { spaceId: String(rawId) });
   }
@@ -915,48 +933,80 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   );
   if (setupConfigurationDetected) addIssue("UNSUPPORTED_SETUP_MAPPING", "plan", input.planId, "groupingBySpaceId", "No explicit reversible setup-family mapping exists.");
 
-  const searchPolicy = runtimeInput.searchPolicy;
+  const integrationConfigurationPresent = integrationConfigurationRecord !== undefined;
+  const searchPolicy = integrationConfigurationRecord?.searchPolicy;
   const searchPolicyConfigurationPresent = searchPolicy === "COMPATIBILITY_PRESERVING" || searchPolicy === "EXACT_CONSTRUCTIVE";
   if (searchPolicy === undefined) {
-    addIssue("MISSING_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "searchPolicy", "Normalized Planner Next search policy is absent.");
+    addIssue("MISSING_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "plannerNext.searchPolicy", "Explicit Planner Next search policy is absent.");
   } else if (!searchPolicyConfigurationPresent) {
-    addIssue("INVALID_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "searchPolicy", "Search policy is not a supported explicit policy.", { receivedValue: searchPolicy });
+    addIssue("INVALID_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "plannerNext.searchPolicy", "Search policy is not a supported explicit policy.", { receivedValue: searchPolicy });
   }
 
   const budgetKeys = ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"] as const;
-  const searchBudget = runtimeInput.searchBudget;
+  const searchBudget = integrationConfigurationRecord?.searchBudget;
   const budgetRecord = searchBudget && typeof searchBudget === "object" && !Array.isArray(searchBudget)
     ? searchBudget as Record<string, unknown> : undefined;
-  const missingBudgetKeys = budgetKeys.filter((key) => !(budgetRecord && key in budgetRecord));
+  const missingBudgetKeys = budgetKeys.filter((key) => !(budgetRecord && key in budgetRecord && budgetRecord[key] !== undefined));
   const invalidBudgetEntries = budgetRecord
-    ? budgetKeys.filter((key) => key in budgetRecord && !isPositiveInteger(budgetRecord[key])).map((key) => ({ key, value: budgetRecord[key] }))
+    ? budgetKeys.filter((key) => key in budgetRecord && budgetRecord[key] !== undefined && !isPositiveInteger(budgetRecord[key])).map((key) => ({ key, value: budgetRecord[key] }))
     : [];
   const searchBudgetConfigurationComplete = Boolean(budgetRecord && !missingBudgetKeys.length && !invalidBudgetEntries.length);
   if (!budgetRecord || missingBudgetKeys.length) {
-    addIssue("MISSING_SEARCH_BUDGET_CONFIGURATION", "plan", input.planId, "searchBudget", "Complete Planner Next search budget is absent.", { missingKeys: missingBudgetKeys });
+    addIssue("MISSING_SEARCH_BUDGET_CONFIGURATION", "plan", input.planId, "plannerNext.searchBudget", "Complete Planner Next search budget is absent.", {
+      invalidEntries: invalidBudgetEntries,
+      missingKeys: missingBudgetKeys,
+      receivedValue: searchBudget,
+    });
   }
   if (invalidBudgetEntries.length) {
-    addIssue("INVALID_SEARCH_BUDGET", "plan", input.planId, "searchBudget", "Search budget contains non-positive, non-integer, or non-finite values.", { invalidEntries: invalidBudgetEntries });
-  }
-
-  const mainFlow = runtimeMainFlow;
-  const preferredEnd = mainFlow?.preferredEnd;
-  const preferredEndValid = typeof preferredEnd === "number" && Number.isFinite(preferredEnd)
-    && workDayStart !== null && workDayEnd !== null && preferredEnd >= workDayStart && preferredEnd <= workDayEnd;
-  if (preferredEndValid && !auditedTimeValues.includes(preferredEnd)) auditedTimeValues.push(preferredEnd);
-  const mainFlowConfigurationComplete = Boolean(
-    mainFlow && mainFlow.spaceId != null && describedSpaceIds.has(String(mainFlow.spaceId)) && preferredEndValid
-    && mainFlow.continuity === "REQUIRED" && isPositiveInteger(mainFlow.maxBlocksByKey)
-    && isPositiveInteger(mainFlow.minTasksPerBlock),
-  );
-  if (!mainFlowConfigurationComplete) {
-    addIssue("MISSING_MAIN_FLOW_CONFIGURATION", "plan", input.planId, "mainFlow", "Complete, valid Planner Next main-flow configuration is absent.", {
-      preferredEndValid,
-      spaceKnown: mainFlow?.spaceId != null && describedSpaceIds.has(String(mainFlow.spaceId)),
+    addIssue("INVALID_SEARCH_BUDGET", "plan", input.planId, "plannerNext.searchBudget", "Search budget contains non-positive, non-integer, or non-finite values.", {
+      invalidEntries: invalidBudgetEntries,
+      missingKeys: missingBudgetKeys,
+      receivedValue: searchBudget,
     });
   }
 
-  const grid = runtimeInput.timeGridMinutes;
+  const preferredEnd = mainFlow?.preferredEnd;
+  const preferredEndMinutes = toMinutes(preferredEnd);
+  const preferredEndValid = preferredEndMinutes !== null && workDayStart !== null && workDayEnd !== null
+    && preferredEndMinutes >= workDayStart && preferredEndMinutes <= workDayEnd;
+  if (preferredEndValid && !auditedTimeValues.includes(preferredEndMinutes)) auditedTimeValues.push(preferredEndMinutes);
+  const mainFlowMissingKeys = ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"]
+    .filter((key) => !(mainFlow && key in mainFlow && mainFlow[key] !== undefined));
+  const mainFlowInvalidKeys = [
+    ...(!mainFlow || !isPositiveInteger(mainFlow.spaceId) || !describedSpaceIds.has(String(mainFlow.spaceId)) ? ["spaceId"] : []),
+    ...(!preferredEndValid ? ["preferredEnd"] : []),
+    ...(mainFlow?.continuity !== "REQUIRED" ? ["continuity"] : []),
+    ...(!isPositiveInteger(mainFlow?.maxBlocksByKey) ? ["maxBlocksByKey"] : []),
+    ...(!isPositiveInteger(mainFlow?.minTasksPerBlock) ? ["minTasksPerBlock"] : []),
+  ];
+  const mainFlowConfigurationComplete = Boolean(
+    mainFlow && !mainFlowMissingKeys.length && !mainFlowInvalidKeys.length,
+  );
+  if (!mainFlowConfigurationComplete) {
+    addIssue("MISSING_MAIN_FLOW_CONFIGURATION", "plan", input.planId, "plannerNext.mainFlow", "Complete, valid Planner Next main-flow configuration is absent.", {
+      invalidKeys: mainFlowInvalidKeys,
+      missingKeys: mainFlowMissingKeys,
+      receivedValue: mainFlowValue,
+    });
+  }
+
+  const transitionKeys = ["participantTransitionMinutes", "resourceTransitionMinutes"] as const;
+  const missingTransitionKeys = transitionKeys.filter((key) => !(integrationConfigurationRecord && key in integrationConfigurationRecord && integrationConfigurationRecord[key] !== undefined));
+  const invalidTransitionEntries = transitionKeys
+    .filter((key) => integrationConfigurationRecord && key in integrationConfigurationRecord && integrationConfigurationRecord[key] !== undefined
+      && !(typeof integrationConfigurationRecord[key] === "number" && Number.isFinite(integrationConfigurationRecord[key])
+        && Number.isInteger(integrationConfigurationRecord[key]) && integrationConfigurationRecord[key] >= 0))
+    .map((key) => ({ key, value: integrationConfigurationRecord?.[key] }));
+  const transitionConfigurationComplete = !missingTransitionKeys.length && !invalidTransitionEntries.length;
+  if (missingTransitionKeys.length) {
+    addIssue("MISSING_TRANSITION_CONFIGURATION", "plan", input.planId, "plannerNext", "Explicit participant and resource transition configuration is incomplete.", { missingKeys: missingTransitionKeys });
+  }
+  if (invalidTransitionEntries.length) {
+    addIssue("INVALID_TRANSITION_CONFIGURATION", "plan", input.planId, "plannerNext", "Transition values must be finite non-negative integers.", { invalidEntries: invalidTransitionEntries });
+  }
+
+  const grid = integrationConfigurationRecord?.timeGridMinutes;
   const dayDuration = workDayStart !== null && workDayEnd !== null ? workDayEnd - workDayStart : null;
   const gridShapeValid = isPositiveInteger(grid) && dayDuration !== null && grid <= dayDuration;
   const incompatibleTimes = gridShapeValid && workDayStart !== null
@@ -964,7 +1014,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const incompatibleDurations = gridShapeValid ? auditedDurations.filter((value) => value % grid !== 0) : [];
   const timeGridVerifiable = Boolean(gridShapeValid && !incompatibleTimes.length && !incompatibleDurations.length);
   if (!timeGridVerifiable) {
-    addIssue("UNSUPPORTED_TIME_GRID", "plan", input.planId, "timeGrid", "Time grid is absent, invalid, or incompatible with audited values.", {
+    addIssue("UNSUPPORTED_TIME_GRID", "plan", input.planId, "plannerNext.timeGridMinutes", "Time grid is absent, invalid, or incompatible with audited values.", {
       incompatibleDurations,
       incompatibleTimes,
       receivedValue: grid,
@@ -1053,10 +1103,12 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     breakCount,
     transportConfigured,
     setupConfigurationDetected,
+    integrationConfigurationPresent,
     mainFlowConfigurationComplete,
     searchPolicyConfigurationPresent,
     searchBudgetConfigurationComplete,
     timeGridVerifiable,
+    transitionConfigurationComplete,
     anchoredOperationContractPresent,
     unresolvedTaskRoleCount: input.tasks.filter((task) => task.status !== "cancelled").length,
     missingDurationTaskCount,
@@ -1076,7 +1128,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     issues,
     reasonCodes,
     sourceFingerprint: fingerprint(sourceProjection(input)),
-    identityMapFingerprint: fingerprint(identityMap),
+    identityMapFingerprint: mainFlow?.spaceId === null || mainFlow?.spaceId === undefined || mainFlow.spaceId === ""
+      ? fingerprint(identityMap)
+      : fingerprint({ identityMap, plannerNextMainFlowSpaceId: mainFlow.spaceId }),
     readOnly: true,
   });
 }
