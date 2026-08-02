@@ -3190,7 +3190,10 @@ function mapDeleteError(err: any, fallback: string) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
-      res.status(500).json({ message: err?.message || "Internal Server Error" });
+      if (err instanceof SpatialAvailabilityValidationError) {
+        return res.status(400).json({ message: err.reasonCode });
+      }
+      res.status(500).json({ message: "Internal Server Error" });
     }
   });
 

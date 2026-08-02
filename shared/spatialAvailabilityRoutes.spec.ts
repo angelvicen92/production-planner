@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { api, availabilityWindowUpdateSchema, defaultWorkdayUpdateSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "./routes";
+import { api, availabilityWindowUpdateSchema, defaultWorkdayUpdateSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema, updatePlanSchema } from "./routes";
 
 test("availability update accepts omission, inheritance and explicit windows", () => {
   assert.deepEqual(availabilityWindowUpdateSchema.parse({}), {});
@@ -36,4 +36,12 @@ test("daily response contracts preserve complete camelCase zone and space snapsh
 test("initialization response accepts only non-negative integer counts", () => {
   assert.deepEqual(spatialAvailabilityInitializationResponseSchema.parse({ zonesCreated: 0, spacesCreated: 2 }), { zonesCreated: 0, spacesCreated: 2 });
   assert.equal(spatialAvailabilityInitializationResponseSchema.safeParse({ zonesCreated: -1, spacesCreated: 0 }).success, false);
+});
+test("plan create and update share canonical optional workday-pair semantics", () => {
+  const createBase = { date: "2026-08-02", mealStart: "13:00", mealEnd: "15:00" };
+  assert.equal(api.plans.create.input.safeParse(createBase).success, true);
+  assert.equal(api.plans.create.input.safeParse({ ...createBase, workStart: "09:00", workEnd: "21:00" }).success, true);
+  assert.equal(api.plans.create.input.safeParse({ ...createBase, workStart: "09:00" }).success, false);
+  assert.equal(updatePlanSchema.safeParse({}).success, true);
+  for (const value of [{ workStart: "09:00" }, { workStart: "99:99", workEnd: "21:00" }, { workStart: "09:00", workEnd: "09:00" }, { workStart: "21:00", workEnd: "09:00" }]) assert.equal(updatePlanSchema.safeParse(value).success, false);
 });

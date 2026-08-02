@@ -14,16 +14,23 @@ import {
   spaces,
 } from "./schema";
 
+const canonicalResourceAvailabilityTime = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
+
+function validateWorkdayPair(
+  value: Record<string, unknown>, startKey: string, endKey: string, context: z.RefinementCtx,
+): void {
+  const start = value[startKey];
+  const end = value[endKey];
+  const hasStart = start !== undefined;
+  const hasEnd = end !== undefined;
+  if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
+  if (typeof start === "string" && typeof end === "string" && start >= end) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+}
+
 export const updatePlanSchema = z
 .object({
-  workStart: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
-  workEnd: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
+  workStart: canonicalResourceAvailabilityTime.optional(),
+  workEnd: canonicalResourceAvailabilityTime.optional(),
   mealStart: z
     .string()
     .regex(/^\d{2}:\d{2}$/)
@@ -43,11 +50,8 @@ export const updatePlanSchema = z
   // ✅ Permite elegir motor por plan
   optimizerEngine: z.enum(["v3", "v4"]).optional(),
 })
-.strict();
-
-const canonicalResourceAvailabilityTime = z
-  .string()
-  .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
+.strict()
+.superRefine((value, context) => validateWorkdayPair(value, "workStart", "workEnd", context));
 
 export const availabilityWindowUpdateSchema = z
   .object({
@@ -61,10 +65,7 @@ function validateDefaultWorkdayPair(
   value: { defaultWorkStart?: string; defaultWorkEnd?: string },
   context: z.RefinementCtx,
 ): void {
-  const hasStart = value.defaultWorkStart !== undefined;
-  const hasEnd = value.defaultWorkEnd !== undefined;
-  if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
-  if (hasStart && hasEnd && value.defaultWorkStart! >= value.defaultWorkEnd!) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+  validateWorkdayPair(value, "defaultWorkStart", "defaultWorkEnd", context);
 }
 
 const defaultWorkdayFields = {
@@ -414,10 +415,7 @@ export const api = {
       method: "POST" as const,
       path: "/api/plans",
       input: insertPlanSchema.extend({ workStart: canonicalResourceAvailabilityTime.optional(), workEnd: canonicalResourceAvailabilityTime.optional() })
-        .superRefine((value, context) => {
-          if ((value.workStart === undefined) !== (value.workEnd === undefined)) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday override must provide start and end together" });
-          if (value.workStart !== undefined && value.workEnd !== undefined && value.workStart >= value.workEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
-        }),
+        .superRefine((value, context) => validateWorkdayPair(value, "workStart", "workEnd", context)),
       responses: {
         201: z.custom<typeof plans.$inferSelect>(),
         400: errorSchemas.validation,

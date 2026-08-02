@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildPlanSpatialAvailabilityInitializationBatch, buildPlanSpatialAvailabilitySnapshot, resolveEffectiveSpaceAvailabilityHierarchy, validateSpatialAvailabilityCatalog, type NullableAvailabilityWindow, type SpatialAvailabilityInput } from "./spaceAvailabilityHierarchy";
+import { runSpatialAvailabilityValidation, SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 
 const base: SpatialAvailabilityInput = { workDay: { start: "09:00", end: "21:00" }, zoneAvailability: { start: null, end: null }, spaceAvailability: { start: null, end: null } };
 const resolve = (patch: Partial<SpatialAvailabilityInput> = {}) => resolveEffectiveSpaceAvailabilityHierarchy({ ...base, ...patch });
@@ -66,6 +67,16 @@ test("snapshot builder copies defaults, frozen zone relation, null inheritance a
 test("snapshot builder honors complete override and rejects partial override", () => {
   const built = buildPlanSpatialAvailabilitySnapshot({ ...structuredClone(catalog), requestedWorkDay: { start: "08:00", end: "22:00" } }); assert.deepEqual([built.workStart, built.workEnd], ["08:00", "22:00"]);
   assert.throws(() => buildPlanSpatialAvailabilitySnapshot({ ...structuredClone(catalog), requestedWorkDay: { start: "08:00" } }), /WORKDAY_REQUEST_PARTIAL/);
+});
+test("plan creation preparation maps every catalog conflict to a typed safe reason", () => {
+  const cases = [
+    [{ ...structuredClone(catalog), requestedWorkDay: { start: "11:00", end: "19:00" } }, "ZONE_OUTSIDE_WORKDAY"],
+    [{ ...structuredClone(catalog), spaces: [{ id: 3, zoneId: 1, defaultAvailabilityStart: "09:00", defaultAvailabilityEnd: "21:00" }] }, "SPACE_OUTSIDE_ZONE"],
+    [{ ...structuredClone(catalog), spaces: [{ id: 3, zoneId: 99, defaultAvailabilityStart: null, defaultAvailabilityEnd: null }] }, "SPACE_ZONE_NOT_FOUND"],
+  ] as const;
+  for (const [input, reason] of cases) {
+    assert.throws(() => runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot(input)), (error) => error instanceof SpatialAvailabilityValidationError && error.reasonCode === reason);
+  }
 });
 test("one invalid catalog row rejects the complete logical batch", () => assert.throws(() => buildPlanSpatialAvailabilitySnapshot({ ...structuredClone(catalog), spaces: [...catalog.spaces, { id: 5, zoneId: 1, defaultAvailabilityStart: "09:00", defaultAvailabilityEnd: "21:00" }] }), /SPACE_OUTSIDE_ZONE/));
 test("global catalog validation checks proposed workday, zone and space changes without mutation", () => {

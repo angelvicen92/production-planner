@@ -65,6 +65,7 @@ async function throwAfterPlanCreationFailure(planId: number, cause: unknown, fal
   if (cleanupError) {
     throw new Error(`${fallbackMessage}: ${originalMessage}; COMPENSATION_FAILED: ${cleanupError.message}; potentially orphaned plan ${planId}`);
   }
+  if (cause instanceof SpatialAvailabilityValidationError) throw cause;
   throw new Error(originalMessage || fallbackMessage);
 }
 
@@ -1180,7 +1181,7 @@ export class SupabaseStorage implements IStorage {
       zones: (zoneCatalog ?? []).map((row: any) => ({ id: Number(row.id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
       spaces: (spaceCatalog ?? []).map((row: any) => ({ id: Number(row.id), zoneId: Number(row.zone_id), defaultAvailabilityStart: row.default_availability_start, defaultAvailabilityEnd: row.default_availability_end })),
     };
-    const validatedSnapshots = buildPlanSpatialAvailabilitySnapshot({ planId: 0, ...snapshotInput });
+    const validatedSnapshots = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot({ planId: 0, ...snapshotInput }));
     const { data, error } = await supabaseAdmin
       .from("plans")
       .insert({
@@ -1205,7 +1206,7 @@ export class SupabaseStorage implements IStorage {
     if (error) throw error;
 
     try {
-      const spatialSnapshots = buildPlanSpatialAvailabilitySnapshot({ planId: Number(data.id), ...snapshotInput });
+      const spatialSnapshots = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot({ planId: Number(data.id), ...snapshotInput }));
       if (spatialSnapshots.zones.length > 0) {
         const { error: zoneSnapshotError } = await supabaseAdmin.from("plan_zone_settings").insert(spatialSnapshots.zones);
         if (zoneSnapshotError) throw zoneSnapshotError;
@@ -2508,12 +2509,12 @@ export class SupabaseStorage implements IStorage {
     const oldWorkEnd = String((beforePlan as any)?.work_end ?? "").trim() || null;
 
     if (patch.workStart !== undefined || patch.workEnd !== undefined) {
-      if (patch.workStart === undefined || patch.workEnd === undefined) throw new Error("WORKDAY_REQUEST_PARTIAL");
+      if (patch.workStart === undefined || patch.workEnd === undefined) throw new SpatialAvailabilityValidationError("WORKDAY_REQUEST_PARTIAL");
       const [zoneRows, spaceRows] = await Promise.all([this.getPlanZoneSettings(planId), this.getPlanSpaceSettings(planId)]);
       const zones = new Map(zoneRows.map((row: any) => [Number(row.zone_id), row]));
       for (const space of spaceRows) {
         const zone = zones.get(Number((space as any).zone_id));
-        if (!zone) throw new Error(`SPACE_ZONE_NOT_FOUND: space ${(space as any).space_id}`);
+        if (!zone) throw new SpatialAvailabilityValidationError("SPACE_ZONE_NOT_FOUND", `SPACE_ZONE_NOT_FOUND: space ${(space as any).space_id}`);
         const result = resolveEffectiveSpaceAvailabilityHierarchy({
           workDay: { start: patch.workStart, end: patch.workEnd },
           zoneAvailability: { start: (zone as any).availability_start, end: (zone as any).availability_end },
