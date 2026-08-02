@@ -28,16 +28,6 @@ import {
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
 
-const availabilityWindowFields = {
-  availabilityStart: z.union([z.string(), z.null()]).optional(),
-  availabilityEnd: z.union([z.string(), z.null()]).optional(),
-};
-
-function hasEitherAvailabilityField(input: Record<string, unknown>): boolean {
-  return Object.prototype.hasOwnProperty.call(input, "availabilityStart")
-    || Object.prototype.hasOwnProperty.call(input, "availabilityEnd");
-}
-
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -2172,17 +2162,7 @@ function mapDeleteError(err: any, fallback: string) {
       const planId = Number(req.params.id);
       if (!Number.isFinite(planId)) return res.status(400).json({ message: "Invalid plan id" });
 
-      const input = z.object({
-        typeId: z.number().int().positive(),
-        name: z.string().min(1),
-        ...availabilityWindowFields,
-      }).strict().parse(req.body);
-
-      if (hasEitherAvailabilityField(input)
-        && !(Object.prototype.hasOwnProperty.call(input, "availabilityStart")
-          && Object.prototype.hasOwnProperty.call(input, "availabilityEnd"))) {
-        throw new Error("Availability start and end must be provided together");
-      }
+      const input = api.plans.resourceItems.create.input.parse(req.body);
 
       const row = buildAdHocPlanResourceItemRow({
         planId,
@@ -2211,11 +2191,7 @@ function mapDeleteError(err: any, fallback: string) {
       const itemId = Number(req.params.itemId);
       if (!Number.isFinite(planId) || !Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid id" });
 
-      const input = z.object({
-        isAvailable: z.boolean().optional(),
-        name: z.string().min(1).optional(),
-        ...availabilityWindowFields,
-      }).strict().parse(req.body);
+      const input = api.plans.resourceItems.update.input.parse(req.body);
 
       // Si quieren renombrar, solo permitimos en adhoc
       if (input.name !== undefined) {
@@ -2235,11 +2211,7 @@ function mapDeleteError(err: any, fallback: string) {
       const patch: any = {};
       if (input.isAvailable !== undefined) patch.is_available = input.isAvailable;
       if (input.name !== undefined) patch.name = input.name;
-      if (hasEitherAvailabilityField(input)) {
-        if (!(Object.prototype.hasOwnProperty.call(input, "availabilityStart")
-          && Object.prototype.hasOwnProperty.call(input, "availabilityEnd"))) {
-          throw new Error("Availability start and end must be updated together");
-        }
+      if (input.availabilityStart !== undefined || input.availabilityEnd !== undefined) {
         Object.assign(patch, buildAvailabilityWindowPatch({
           start: input.availabilityStart,
           end: input.availabilityEnd,
