@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, ProtectedBreakInput, TimeWindow } from "../../types";
+import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -9,6 +10,7 @@ export type EngineInputPreflightReasonCode =
   | "DUPLICATE_DEPENDENCY_REFERENCE"
   | "DUPLICATE_ID"
   | "INCOMPLETE_ANCHORED_OPERATION"
+  | "INCONSISTENT_SPACE_ZONE_REFERENCE"
   | "INVALID_SEARCH_BUDGET"
   | "INVALID_SEARCH_POLICY_CONFIGURATION"
   | "INVALID_TRANSITION_CONFIGURATION"
@@ -221,7 +223,8 @@ function sourceProjection(input: EngineInput): unknown {
       itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
       dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
       dependsOnTemplateIds: task.dependsOnTemplateIds, dependsOnTemplateId: task.dependsOnTemplateId,
-      assignedResourceIds: task.assignedResourceIds, fixedWindowStart: task.fixedWindowStart, fixedWindowEnd: task.fixedWindowEnd,
+      ...(task.status !== "cancelled" ? { assignedResourceIds: task.assignedResourceIds } : {}),
+      fixedWindowStart: task.fixedWindowStart, fixedWindowEnd: task.fixedWindowEnd,
       startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
       ...(task.status !== "cancelled" ? { plannerNextKind: task.plannerNextKind } : {}),
@@ -342,6 +345,7 @@ const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0;
 
 export function preflightEngineInputForPlannerNext(input: EngineInput): EngineInputPreflightResult {
+  const effectiveTaskResourceAssignments = resolveEffectiveTaskResourceAssignments(input);
   const issues: EngineInputPreflightIssue[] = [];
   const identities = new Map<EngineInputIdentityNamespace, Set<string>>();
   const authoritativeDefinitions = new Map<EngineInputIdentityNamespace, Set<string>>();
@@ -413,7 +417,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     (task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))
       .forEach((id) => addIdentity("template", id, `${path}.templateDependencies`));
     task.allowedItinerantTeamIds?.forEach((id) => addIdentity("itinerant-team", id, `${path}.allowedItinerantTeamIds`));
-    task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
+    if (task.status !== "cancelled") task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
     mapKeys(task.resourceRequirements?.byItem).forEach((id) => addIdentity("resource-item", id, `${path}.resourceRequirements.byItem`));
     mapKeys(task.resourceRequirements?.byType).forEach((id) => addIdentity("resource-type", id, `${path}.resourceRequirements.byType`));
     task.resourceRequirements?.anyOf?.flatMap((group) => group.resourceItemIds)
@@ -569,6 +573,21 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     });
   }
   identityMap.sort((left, right) => compare(`${left.namespace}\0${left.sourceId}`, `${right.namespace}\0${right.sourceId}`));
+
+  effectiveTaskResourceAssignments.zoneConflicts.forEach((conflict) => addIssue(
+    "INCONSISTENT_SPACE_ZONE_REFERENCE",
+    "task",
+    conflict.taskId,
+    conflict.path,
+    "Task zone contradicts the zone mapped from its exact space.",
+    {
+      taskId: conflict.taskId,
+      spaceId: conflict.spaceId,
+      explicitZoneId: conflict.explicitZoneId,
+      mappedZoneId: conflict.mappedZoneId,
+      zoneResourcesApplied: false,
+    },
+  ));
 
   const workDayStart = toMinutes(input.workDay?.start);
   const workDayEnd = toMinutes(input.workDay?.end);
@@ -761,9 +780,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
-    for (const id of task.assignedResourceIds ?? []) {
-      resourceAssignmentReferenceCount++;
-      if (!planResourceIds.has(String(id))) missingResource("task", task.id, `${path}.assignedResourceIds`, id, "plan-resource");
+    if (task.status !== "cancelled") {
+      for (const id of task.assignedResourceIds ?? []) {
+        resourceAssignmentReferenceCount++;
+        if (!planResourceIds.has(String(id))) missingResource("task", task.id, `${path}.assignedResourceIds`, id, "plan-resource");
+      }
     }
     const requirements = task.resourceRequirements;
     for (const [id, quantity] of Object.entries(requirements?.byItem ?? {})) {

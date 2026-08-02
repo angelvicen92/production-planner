@@ -13,3 +13,5 @@ export * from "./secondaryContinuity";
 export * from "./saturatedResourceWindowBlock";
 export { preflightEngineInputForPlannerNext } from "./integration/engineInputPreflight";
 export type { EngineInputPreflightDiagnostics, EngineInputPreflightIssue, EngineInputPreflightReasonCode, EngineInputPreflightResult, EngineInputPreflightStatus, EngineInputIdentity, EngineInputIdentityNamespace } from "./integration/engineInputPreflight";
+export { resolveEffectiveTaskResourceAssignments } from "./integration/effectiveTaskResourceAssignments";
+export type { EffectiveTaskResourceAssignment, EffectiveTaskResourceAssignmentResolution, EffectiveTaskResourceZoneConflict, EffectiveTaskResourceZoneResolution } from "./integration/effectiveTaskResourceAssignments";
