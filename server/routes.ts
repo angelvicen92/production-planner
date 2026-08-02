@@ -3,7 +3,7 @@ import { pool } from "./db";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
-import { api } from "@shared/routes";
+import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { buildEngineInput } from "../engine/buildInput";
@@ -27,11 +27,27 @@ import {
   buildAvailabilityWindowPatch,
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
+import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
+import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
+
+function mapPlanZoneAvailability(row: any) {
+  return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
+}
+function mapPlanSpaceAvailability(row: any) {
+  return planSpaceAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), spaceId: Number(row.space_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
+}
+function mapDefaultSpatialAvailability(row: any) {
+  return defaultSpatialAvailabilityResponseSchema.parse({ id: Number(row.id), availabilityStart: row.default_availability_start ?? null, availabilityEnd: row.default_availability_end ?? null });
+}
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const sendSpatialAvailability = async (res: any, action: () => Promise<unknown>) => {
+    const result = await executeSpatialAvailabilityAction(action);
+    return res.status(result.status).json(result.body);
+  };
 
   
   const ensureAdmin = async (req: any, res: any): Promise<{ ok: true; userId: string } | { ok: false }> => {
@@ -550,6 +566,13 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot update zone" });
     }
   });
+  app.patch(api.zones.availability.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const id = parsePositiveIntegerRouteId(req.params.id, "zone id");
+      const input = parseSpatialRequestBody(api.zones.availability.input, req.body);
+      return mapDefaultSpatialAvailability(await storage.updateZoneDefaultAvailability(id, input));
+    });
+  });
 
   // Spaces
   app.get(api.spaces.list.path, async (_req, res) => {
@@ -580,6 +603,13 @@ function mapDeleteError(err: any, fallback: string) {
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot update space" });
     }
+  });
+  app.patch(api.spaces.availability.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const id = parsePositiveIntegerRouteId(req.params.id, "space id");
+      const input = parseSpatialRequestBody(api.spaces.availability.input, req.body);
+      return mapDefaultSpatialAvailability(await storage.updateSpaceDefaultAvailability(id, input));
+    });
   });
   
   // Staff People (Producción / Redacción)
@@ -1738,6 +1768,8 @@ function mapDeleteError(err: any, fallback: string) {
 
       res.json({
         id: Number(data.id),
+        defaultWorkStart: data.default_work_start,
+        defaultWorkEnd: data.default_work_end,
         mealStart: String(data.meal_start),
         mealEnd: String(data.meal_end),
         mealMode: String(data.meal_mode ?? "flexible_meal_window"),
@@ -1768,51 +1800,11 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   app.patch(api.programSettings.update.path, async (req, res) => {
-    try {
-      const input = api.programSettings.update.input.parse(req.body);
-
-      const patch: any = {};
-      if (input.mealStart !== undefined) patch.meal_start = input.mealStart;
-      if (input.mealEnd !== undefined) patch.meal_end = input.mealEnd;
-      if (input.mealMode !== undefined) patch.meal_mode = input.mealMode;
-      if (input.contestantMealDurationMinutes !== undefined)
-        patch.contestant_meal_duration_minutes = input.contestantMealDurationMinutes;
-      if (input.contestantMealMaxSimultaneous !== undefined)
-        patch.contestant_meal_max_simultaneous = input.contestantMealMaxSimultaneous;
-      if (input.spaceMealBreakMinutes !== undefined)
-        patch.space_meal_break_minutes = input.spaceMealBreakMinutes;
-      if (input.itinerantMealBreakMinutes !== undefined)
-        patch.itinerant_meal_break_minutes = input.itinerantMealBreakMinutes;
-
-      if (input.mealTaskTemplateName !== undefined)
-        patch.meal_task_template_name = String(input.mealTaskTemplateName).trim();
-
-      if (input.clockMode !== undefined) patch.clock_mode = input.clockMode;
-      if (input.simulatedTime !== undefined) patch.simulated_time = input.simulatedTime;
-      if (input.uiItinerantGroupOrderIndex !== undefined)
-        patch.ui_itinerant_group_order_index = input.uiItinerantGroupOrderIndex;
-      if (input.uiUnlocatedGroupOrderIndex !== undefined)
-        patch.ui_unlocated_group_order_index = input.uiUnlocatedGroupOrderIndex;
-
-      if (input.clockMode === "manual" && input.simulatedTime) {
-        patch.simulated_set_at = new Date().toISOString();
-      }
-      if (input.clockMode === "auto") {
-        patch.simulated_time = null;
-        patch.simulated_set_at = null;
-      }
-
-      const { error } = await supabaseAdmin
-        .from("program_settings")
-        .update(patch)
-        .eq("id", 1);
-
-      if (error) throw error;
-
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Invalid input" });
-    }
+    return sendSpatialAvailability(res, async () => {
+      const input = parseSpatialRequestBody(api.programSettings.update.input, req.body);
+      await storage.updateProgramSettingsAtomic(input);
+      return { success: true };
+    });
   });
 
 
@@ -3198,8 +3190,51 @@ function mapDeleteError(err: any, fallback: string) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
-      res.status(500).json({ message: err?.message || "Internal Server Error" });
+      if (err instanceof SpatialAvailabilityValidationError) {
+        return res.status(400).json({ message: err.reasonCode });
+      }
+      res.status(500).json({ message: "Internal Server Error" });
     }
+  });
+
+  app.get(api.plans.spatialAvailability.listZones.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return (await storage.getPlanZoneSettings(planId)).map(mapPlanZoneAvailability);
+    });
+  });
+  app.get(api.plans.spatialAvailability.listSpaces.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return (await storage.getPlanSpaceSettings(planId)).map(mapPlanSpaceAvailability);
+    });
+  });
+  app.post(api.plans.spatialAvailability.initialize.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return spatialAvailabilityInitializationResponseSchema.parse(await storage.initializePlanSpatialAvailabilitySnapshots(planId));
+    });
+  });
+  app.patch(api.plans.spatialAvailability.updateZone.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      const zoneId = parsePositiveIntegerRouteId(req.params.zoneId, "zone id");
+      const input = parseSpatialRequestBody(api.plans.spatialAvailability.updateZone.input, req.body);
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return mapPlanZoneAvailability(await storage.updatePlanZoneAvailability(planId, zoneId, input));
+    });
+  });
+  app.patch(api.plans.spatialAvailability.updateSpace.path, async (req, res) => {
+    return sendSpatialAvailability(res, async () => {
+      const planId = parsePositiveIntegerRouteId(req.params.id, "plan id");
+      const spaceId = parsePositiveIntegerRouteId(req.params.spaceId, "space id");
+      const input = parseSpatialRequestBody(api.plans.spatialAvailability.updateSpace.input, req.body);
+      if (!(await ensureUserCanAccessPlan(String((req as any).user?.id ?? ""), planId))) throw new SpatialEntityNotFoundError();
+      return mapPlanSpaceAvailability(await storage.updatePlanSpaceAvailability(planId, spaceId, input));
+    });
   });
 
   // Update Plan (Work hours / Meal break / Cameras)
@@ -3213,6 +3248,9 @@ function mapDeleteError(err: any, fallback: string) {
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
+      }
+      if (err instanceof SpatialAvailabilityValidationError) {
+        return res.status(400).json({ message: err.reasonCode });
       }
       return res.status(500).json({ message: "Internal Server Error" });
     }

@@ -14,16 +14,23 @@ import {
   spaces,
 } from "./schema";
 
+const canonicalResourceAvailabilityTime = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
+
+function validateWorkdayPair(
+  value: Record<string, unknown>, startKey: string, endKey: string, context: z.RefinementCtx,
+): void {
+  const start = value[startKey];
+  const end = value[endKey];
+  const hasStart = start !== undefined;
+  const hasEnd = end !== undefined;
+  if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
+  if (typeof start === "string" && typeof end === "string" && start >= end) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+}
+
 export const updatePlanSchema = z
 .object({
-  workStart: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
-  workEnd: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional(),
+  workStart: canonicalResourceAvailabilityTime.optional(),
+  workEnd: canonicalResourceAvailabilityTime.optional(),
   mealStart: z
     .string()
     .regex(/^\d{2}:\d{2}$/)
@@ -43,11 +50,53 @@ export const updatePlanSchema = z
   // ✅ Permite elegir motor por plan
   optimizerEngine: z.enum(["v3", "v4"]).optional(),
 })
-.strict();
+.strict()
+.superRefine((value, context) => validateWorkdayPair(value, "workStart", "workEnd", context));
 
-const canonicalResourceAvailabilityTime = z
-  .string()
-  .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
+export const availabilityWindowUpdateSchema = z
+  .object({
+    availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
+    availabilityEnd: canonicalResourceAvailabilityTime.nullable().optional(),
+  })
+  .strict()
+  .superRefine(validateResourceAvailabilityWindowPair);
+
+function validateDefaultWorkdayPair(
+  value: { defaultWorkStart?: string; defaultWorkEnd?: string },
+  context: z.RefinementCtx,
+): void {
+  validateWorkdayPair(value, "defaultWorkStart", "defaultWorkEnd", context);
+}
+
+const defaultWorkdayFields = {
+  defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
+  defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
+};
+
+export const defaultWorkdayUpdateSchema = z
+  .object(defaultWorkdayFields)
+  .strict()
+  .superRefine(validateDefaultWorkdayPair);
+
+export const planZoneAvailabilityResponseSchema = z.object({
+  id: z.number(), planId: z.number(), zoneId: z.number(),
+  availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+  source: z.string(), createdAt: z.string(), updatedAt: z.string(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const planSpaceAvailabilityResponseSchema = z.object({
+  id: z.number(), planId: z.number(), spaceId: z.number(), zoneId: z.number(),
+  availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+  source: z.string(), createdAt: z.string(), updatedAt: z.string(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const defaultSpatialAvailabilityResponseSchema = z.object({
+  id: z.number(), availabilityStart: canonicalResourceAvailabilityTime.nullable(), availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
+}).strict().superRefine(validateResourceAvailabilityWindowPair);
+
+export const spatialAvailabilityInitializationResponseSchema = z.object({
+  zonesCreated: z.number().int().nonnegative(), spacesCreated: z.number().int().nonnegative(),
+}).strict();
 
 const resourceAvailabilityWindowFields = {
   availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
@@ -365,7 +414,8 @@ export const api = {
     create: {
       method: "POST" as const,
       path: "/api/plans",
-      input: insertPlanSchema,
+      input: insertPlanSchema.extend({ workStart: canonicalResourceAvailabilityTime.optional(), workEnd: canonicalResourceAvailabilityTime.optional() })
+        .superRefine((value, context) => validateWorkdayPair(value, "workStart", "workEnd", context)),
       responses: {
         201: z.custom<typeof plans.$inferSelect>(),
         400: errorSchemas.validation,
@@ -389,6 +439,13 @@ export const api = {
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       },
+    },
+    spatialAvailability: {
+      listZones: { method: "GET" as const, path: "/api/plans/:id/zone-availability", responses: { 200: z.array(planZoneAvailabilityResponseSchema), 400: errorSchemas.validation } },
+      listSpaces: { method: "GET" as const, path: "/api/plans/:id/space-availability", responses: { 200: z.array(planSpaceAvailabilityResponseSchema), 400: errorSchemas.validation } },
+      initialize: { method: "POST" as const, path: "/api/plans/:id/spatial-availability/init", responses: { 200: spatialAvailabilityInitializationResponseSchema, 400: errorSchemas.validation } },
+      updateZone: { method: "PATCH" as const, path: "/api/plans/:id/zones/:zoneId/availability", input: availabilityWindowUpdateSchema, responses: { 200: planZoneAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
+      updateSpace: { method: "PATCH" as const, path: "/api/plans/:id/spaces/:spaceId/availability", input: availabilityWindowUpdateSchema, responses: { 200: planSpaceAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
     },
     generate: {
       method: "POST" as const,
@@ -913,6 +970,8 @@ export const api = {
       responses: {
         200: z.object({
           id: z.number(),
+          defaultWorkStart: canonicalResourceAvailabilityTime,
+          defaultWorkEnd: canonicalResourceAvailabilityTime,
           mealStart: z.string(),
           mealEnd: z.string(),
           mealMode: z.enum(["global_hard_break", "flexible_meal_window"]),
@@ -937,6 +996,7 @@ export const api = {
       path: "/api/program-settings",
       input: z
         .object({
+          ...defaultWorkdayFields,
           mealStart: z
             .string()
             .regex(/^\d{2}:\d{2}$/)
@@ -970,7 +1030,8 @@ export const api = {
           uiItinerantGroupOrderIndex: z.number().int().nullable().optional(),
           uiUnlocatedGroupOrderIndex: z.number().int().nullable().optional(),
         })
-        .strict(),
+        .strict()
+        .superRefine(validateDefaultWorkdayPair),
       responses: {
         200: z.object({ success: z.boolean() }),
         400: errorSchemas.validation,
@@ -1181,6 +1242,7 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    availability: { method: "PATCH" as const, path: "/api/zones/:id/default-availability", input: availabilityWindowUpdateSchema, responses: { 200: defaultSpatialAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
     delete: {
       method: "DELETE" as const,
       path: "/api/zones/:id",
@@ -1316,6 +1378,7 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    availability: { method: "PATCH" as const, path: "/api/spaces/:id/default-availability", input: availabilityWindowUpdateSchema, responses: { 200: defaultSpatialAvailabilityResponseSchema, 400: errorSchemas.validation, 404: errorSchemas.notFound } },
 
     delete: {
       method: "DELETE" as const,

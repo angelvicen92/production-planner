@@ -80,6 +80,8 @@ export const planningRuns = pgTable("planning_runs", {
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),
+  defaultWorkStart: text("default_work_start").notNull().default("09:00"),
+  defaultWorkEnd: text("default_work_end").notNull().default("21:00"),
   mealStart: text("meal_start").notNull(),
   mealEnd: text("meal_end").notNull(),
   mealMode: text("meal_mode").notNull().default("flexible_meal_window"),
@@ -92,7 +94,10 @@ export const programSettings = pgTable("program_settings", {
   simulatedSetAt: timestamp("simulated_set_at", { withTimezone: true }),
   uiItinerantGroupOrderIndex: integer("ui_itinerant_group_order_index"),
   uiUnlocatedGroupOrderIndex: integer("ui_unlocated_group_order_index"),
-});
+}, (table) => ({
+  defaultWorkFormat: check("program_settings_default_work_format_check", sql`${table.defaultWorkStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.defaultWorkEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`),
+  defaultWorkOrder: check("program_settings_default_work_order_check", sql`${table.defaultWorkStart} < ${table.defaultWorkEnd}`),
+}));
 
 export const planBreaks = pgTable("plan_breaks", {
   id: serial("id").primaryKey(),
@@ -169,7 +174,13 @@ export const zones = pgTable("zones", {
   maxTemplateChanges: integer("max_template_changes").notNull().default(4),
   spaceMealBreakMinutes: integer("space_meal_break_minutes"),
   uiOrderIndex: integer("ui_order_index"),
-});
+  defaultAvailabilityStart: text("default_availability_start"),
+  defaultAvailabilityEnd: text("default_availability_end"),
+}, (table) => ({
+  availabilityPair: check("zones_default_availability_pair_check", sql`(${table.defaultAvailabilityStart} IS NULL) = (${table.defaultAvailabilityEnd} IS NULL)`),
+  availabilityFormat: check("zones_default_availability_format_check", sql`${table.defaultAvailabilityStart} IS NULL OR (${table.defaultAvailabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.defaultAvailabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("zones_default_availability_order_check", sql`${table.defaultAvailabilityStart} IS NULL OR ${table.defaultAvailabilityStart} < ${table.defaultAvailabilityEnd}`),
+}));
 
 // 3. spaces
 export const spaces = pgTable("spaces", {
@@ -186,7 +197,46 @@ export const spaces = pgTable("spaces", {
   groupingApplyToDescendants: boolean("grouping_apply_to_descendants")
     .notNull()
     .default(false),
-});
+  defaultAvailabilityStart: text("default_availability_start"),
+  defaultAvailabilityEnd: text("default_availability_end"),
+}, (table) => ({
+  availabilityPair: check("spaces_default_availability_pair_check", sql`(${table.defaultAvailabilityStart} IS NULL) = (${table.defaultAvailabilityEnd} IS NULL)`),
+  availabilityFormat: check("spaces_default_availability_format_check", sql`${table.defaultAvailabilityStart} IS NULL OR (${table.defaultAvailabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.defaultAvailabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("spaces_default_availability_order_check", sql`${table.defaultAvailabilityStart} IS NULL OR ${table.defaultAvailabilityStart} < ${table.defaultAvailabilityEnd}`),
+}));
+
+export const planZoneSettings = pgTable("plan_zone_settings", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  zoneId: integer("zone_id").notNull().references(() => zones.id),
+  availabilityStart: text("availability_start"),
+  availabilityEnd: text("availability_end"),
+  source: text("source").notNull().default("default"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planZoneUnique: uniqueIndex("plan_zone_settings_plan_zone_uidx").on(table.planId, table.zoneId),
+  availabilityPair: check("plan_zone_settings_availability_pair_check", sql`(${table.availabilityStart} IS NULL) = (${table.availabilityEnd} IS NULL)`),
+  availabilityFormat: check("plan_zone_settings_availability_format_check", sql`${table.availabilityStart} IS NULL OR (${table.availabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.availabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("plan_zone_settings_availability_order_check", sql`${table.availabilityStart} IS NULL OR ${table.availabilityStart} < ${table.availabilityEnd}`),
+}));
+
+export const planSpaceSettings = pgTable("plan_space_settings", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  spaceId: integer("space_id").notNull().references(() => spaces.id),
+  zoneId: integer("zone_id").notNull().references(() => zones.id),
+  availabilityStart: text("availability_start"),
+  availabilityEnd: text("availability_end"),
+  source: text("source").notNull().default("default"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  planSpaceUnique: uniqueIndex("plan_space_settings_plan_space_uidx").on(table.planId, table.spaceId),
+  availabilityPair: check("plan_space_settings_availability_pair_check", sql`(${table.availabilityStart} IS NULL) = (${table.availabilityEnd} IS NULL)`),
+  availabilityFormat: check("plan_space_settings_availability_format_check", sql`${table.availabilityStart} IS NULL OR (${table.availabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.availabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("plan_space_settings_availability_order_check", sql`${table.availabilityStart} IS NULL OR ${table.availabilityStart} < ${table.availabilityEnd}`),
+}));
 
 // 4. resources
 export const resources = pgTable("resources", {
@@ -424,6 +474,8 @@ export const plansRelations = relations(plans, ({ many }) => ({
   resourceAvailabilities: many(resourceAvailability),
   dailyTasks: many(dailyTasks),
   locks: many(locks),
+  zoneSettings: many(planZoneSettings),
+  spaceSettings: many(planSpaceSettings),
 }));
 
 export const zonesRelations = relations(zones, ({ many }) => ({
@@ -470,6 +522,8 @@ export const dailyTasksRelations = relations(dailyTasks, ({ one, many }) => ({
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
 export const insertSpaceSchema = createInsertSchema(spaces).omit({ id: true });
+export const insertPlanZoneSettingsSchema = createInsertSchema(planZoneSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlanSpaceSettingsSchema = createInsertSchema(planSpaceSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertResourceSchema = createInsertSchema(resources).omit({ id: true });
 export const insertResourceBundleSchema = createInsertSchema(resourceBundles).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertResourceBundleComponentSchema = createInsertSchema(resourceBundleComponents).omit({ id: true, createdAt: true });
@@ -518,6 +572,8 @@ export type PlanResourcePool = typeof planResourcePools.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
 export type Zone = typeof zones.$inferSelect;
 export type ProgramSettings = typeof programSettings.$inferSelect;
+export type PlanZoneSettings = typeof planZoneSettings.$inferSelect;
+export type PlanSpaceSettings = typeof planSpaceSettings.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
 export const insertContestantSchema = createInsertSchema(contestants).omit({ id: true });
 

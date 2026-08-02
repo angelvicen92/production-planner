@@ -38,5 +38,8 @@ jobs:
       - name: TypeScript check
         run: npm run check
 
+      - name: Migration sequence check
+        run: npm run check:migrations
+
       - name: Production build
         run: npm run build
