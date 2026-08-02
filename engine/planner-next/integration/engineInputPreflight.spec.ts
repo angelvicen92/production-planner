@@ -207,6 +207,143 @@ test("posible tarea técnica sin concursante no crea falso participante", () => 
   assert.ok(!result.reasonCodes.includes("MISSING_PARTICIPANT_REFERENCE"));
 });
 
+test("plannerNextKind ausente emite el blocker contractual exacto", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1)] }));
+  const found = result.issues.find((entry) => entry.code === "UNSUPPORTED_TASK_ROLE" && entry.entityId === "1");
+  assert.ok(found);
+  assert.equal(found.entityKind, "task");
+  assert.equal(found.path, "tasks.1.plannerNextKind");
+  assert.deepEqual(found.details, {
+    allowedValues: ["main", "vocal", "auxiliary", "technical"],
+    receivedValue: null,
+  });
+  assert.equal(result.diagnostics.unresolvedTaskRoleCount, 1);
+});
+
+for (const plannerNextKind of ["main", "vocal", "auxiliary", "technical"] as const) {
+  test(`plannerNextKind válido ${plannerNextKind} elimina exclusivamente el blocker de role`, () => {
+    const participant = plannerNextKind === "technical" ? {} : { contestantId: 7 };
+    const source = input({
+      tasks: [task(1, { plannerNextKind, ...participant })],
+      contestantAvailabilityById: plannerNextKind === "technical" ? {} : { 7: { start: "08:00", end: "18:00" } },
+    });
+    const result = preflightEngineInputForPlannerNext(source);
+    assert.ok(!result.reasonCodes.includes("UNSUPPORTED_TASK_ROLE"));
+    assert.equal(result.diagnostics.unresolvedTaskRoleCount, 0);
+    assert.equal(result.status, "UNSUPPORTED");
+  });
+}
+
+for (const [name, plannerNextKind] of [
+  ["undefined", undefined], ["null", null], ["vacío", ""], ["casing", "MAIN"],
+  ["operationalRole", "productive_task"], ["unknown", "unknown"], ["número", 1],
+  ["objeto", { kind: "main" }], ["array", ["main"]],
+] as const) {
+  test(`plannerNextKind runtime inválido: ${name}`, () => {
+    const runtimeTask = task(1) as unknown as Record<string, unknown>;
+    runtimeTask.plannerNextKind = plannerNextKind;
+    const result = preflightEngineInputForPlannerNext(input({ tasks: [runtimeTask as unknown as TaskInput] }));
+    const blockers = result.issues.filter((entry) => entry.code === "UNSUPPORTED_TASK_ROLE" && entry.entityId === "1");
+    assert.equal(blockers.length, 1);
+    assert.equal(blockers[0]?.path, "tasks.1.plannerNextKind");
+    assert.equal(result.diagnostics.unresolvedTaskRoleCount, 1);
+  });
+}
+
+for (const [name, suggestion] of [
+  ["operationalRole", { operationalRole: "productive_task" }],
+  ["main-flow flag", { countsForMainFlow: true }],
+  ["template name", { templateName: "Main vocal technical" }],
+  ["main space", { spaceId: 20 }], ["main zone", { zoneId: 30 }],
+  ["participant", { contestantId: 7 }], ["resource", { assignedResourceIds: [10] }],
+  ["dependency", { dependsOnTaskIds: [2] }],
+] as const) {
+  test(`plannerNextKind no se infiere desde ${name}`, () => {
+    const source = input({
+      tasks: [task(1, suggestion as Partial<TaskInput>), task(2)],
+      coachResourceIds: [10], groupingZoneIds: [30], spaceParentById: { 20: null },
+      planResourceItems: [{ id: 10, resourceItemId: 100, typeId: 2, name: "Coach", isAvailable: true }],
+    });
+    assert.ok(preflightEngineInputForPlannerNext(source).issues.some((entry) => entry.code === "UNSUPPORTED_TASK_ROLE" && entry.entityId === "1"));
+  });
+}
+
+for (const plannerNextKind of ["main", "vocal", "auxiliary"] as const) {
+  for (const [name, contestantId, valid] of [
+    ["válido", 7, true], ["ausente", undefined, false], ["cero", 0, false],
+    ["negativo", -1, false], ["decimal", 1.5, false], ["NaN", Number.NaN, false],
+    ["string runtime", "7", false],
+  ] as const) {
+    test(`${plannerNextKind} exige participante positivo entero: ${name}`, () => {
+      const runtimeTask = task(1, { plannerNextKind }) as unknown as Record<string, unknown>;
+      runtimeTask.contestantId = contestantId;
+      const result = preflightEngineInputForPlannerNext(input({
+        tasks: [runtimeTask as unknown as TaskInput],
+        contestantAvailabilityById: valid ? { 7: { start: "08:00", end: "18:00" } } : {},
+      }));
+      assert.equal(result.issues.some((entry) => entry.code === "MISSING_PARTICIPANT_REFERENCE" && entry.entityId === "1"), !valid);
+      assert.ok(!result.reasonCodes.includes("UNSUPPORTED_TASK_ROLE"));
+      assert.equal(result.diagnostics.unresolvedTaskRoleCount, 0);
+    });
+  }
+}
+
+test("technical sin participante conserva una clasificación compatible", () => {
+  const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { plannerNextKind: "technical" })] }));
+  assert.ok(!result.reasonCodes.includes("UNSUPPORTED_TASK_ROLE"));
+});
+
+for (const withAvailability of [false, true]) {
+  test(`technical con participante${withAvailability ? " y disponibilidad" : ""} rechaza la relación sin mutarla`, () => {
+    const source = input({ tasks: [task(1, { plannerNextKind: "technical", contestantId: 7 })], contestantAvailabilityById: withAvailability ? { 7: { start: "08:00", end: "18:00" } } : {} });
+    const before = clone(source);
+    const result = preflightEngineInputForPlannerNext(source);
+    const found = result.issues.find((entry) => entry.code === "UNSUPPORTED_TASK_ROLE" && entry.entityId === "1");
+    assert.equal(found?.path, "tasks.1.plannerNextKind");
+    assert.deepEqual(found?.details, { incompatibleFields: ["contestantId"], plannerNextKind: "technical" });
+    assert.equal(result.diagnostics.unresolvedTaskRoleCount, 1);
+    assert.deepEqual(source, before);
+    assert.ok(result.identityMap.some((entry) => entry.namespace === "participant" && entry.sourceId === "7"));
+  });
+}
+
+for (const status of ["pending", "interrupted", "in_progress", "done"] as const) {
+  test(`${status} exige plannerNextKind`, () => {
+    assert.ok(preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status })] })).reasonCodes.includes("UNSUPPORTED_TASK_ROLE"));
+  });
+}
+
+test("cancelled ignora plannerNextKind por completo", () => {
+  const base = input({ tasks: [task(1, { status: "cancelled" })] });
+  const classified = clone(base);
+  classified.tasks[0]!.plannerNextKind = "vocal";
+  assert.deepEqual(preflightEngineInputForPlannerNext(base), preflightEngineInputForPlannerNext(classified));
+});
+
+test("plannerNextKind cambia sólo el source fingerprint y nunca identidades", () => {
+  const values = [undefined, "main", "vocal", "auxiliary", "technical", "MAIN"] as const;
+  const results = values.map((plannerNextKind) => {
+    const runtimeTask = task(1, { contestantId: 7 }) as unknown as Record<string, unknown>;
+    runtimeTask.plannerNextKind = plannerNextKind;
+    return preflightEngineInputForPlannerNext(input({ tasks: [runtimeTask as unknown as TaskInput] }));
+  });
+  assert.equal(new Set(results.map((result) => result.sourceFingerprint)).size, values.length);
+  results.slice(1).forEach((result) => {
+    assert.deepEqual(result.identityMap, results[0]!.identityMap);
+    assert.equal(result.identityMapFingerprint, results[0]!.identityMapFingerprint);
+  });
+});
+
+test("plannerNextKind explícito preserva pureza, frozen e invariancia", () => {
+  const source = deepFreeze(input({ tasks: [task(2, { plannerNextKind: "technical" }), task(1, { plannerNextKind: "main", contestantId: 7 })], contestantAvailabilityById: { 7: { start: "08:00", end: "18:00" } } }));
+  const before = clone(source);
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.deepEqual(source, before);
+  assert.ok(Object.isFrozen(result));
+  assert.ok(Object.isFrozen(result.issues));
+  assert.deepEqual(result, preflightEngineInputForPlannerNext(reversed(source)));
+});
+
 test("dependencias: array autoritativo y fallback legacy", () => {
   const authoritative = input({ tasks: [task(1, { dependsOnTaskIds: [], dependsOnTaskId: 999 }), task(2)] });
   assert.ok(!preflightEngineInputForPlannerNext(authoritative).reasonCodes.includes("MISSING_DEPENDENCY_REFERENCE"));

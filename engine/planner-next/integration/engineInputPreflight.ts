@@ -223,6 +223,7 @@ function sourceProjection(input: EngineInput): unknown {
       assignedResourceIds: task.assignedResourceIds, fixedWindowStart: task.fixedWindowStart, fixedWindowEnd: task.fixedWindowEnd,
       startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
+      ...(task.status !== "cancelled" ? { plannerNextKind: task.plannerNextKind } : {}),
       blocksSpace: task.blocksSpace, allowsSpaceOverlap: task.allowsSpaceOverlap, spaceOccupancyMode: task.spaceOccupancyMode,
       transportGroupCapacityPresent: task.transportGroupCapacity != null,
       transportGroupingTargetPresent: task.transportGroupingTarget != null,
@@ -601,13 +602,38 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   let dependencyCount = 0;
   let missingDurationTaskCount = 0;
   let pendingPlanningDiscardCount = 0;
+  let unresolvedTaskRoleCount = 0;
   const validStatuses = new Set(["pending", "interrupted", "in_progress", "done", "cancelled"]);
+  const plannerNextTaskKinds = ["main", "vocal", "auxiliary", "technical"] as const;
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
     if (task.planId !== input.planId) addIssue("PLAN_ID_MISMATCH", "task", task.id, `${path}.planId`, "Task belongs to another plan.");
     if (!validStatuses.has(task.status)) addIssue("UNSUPPORTED_TASK_STATUS", "task", task.id, `${path}.status`, "Unknown task status.");
-    if (task.status !== "cancelled") addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `${path}.kind`, "Planner Next task kind is not explicit.");
+    if (task.status !== "cancelled") {
+      const plannerNextKind = (task as unknown as Record<string, unknown>).plannerNextKind;
+      const recognizedKind = typeof plannerNextKind === "string"
+        && plannerNextTaskKinds.some((allowed) => allowed === plannerNextKind);
+      if (!recognizedKind) {
+        unresolvedTaskRoleCount++;
+        addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `${path}.plannerNextKind`, "Planner Next task kind is absent or invalid.", {
+          allowedValues: plannerNextTaskKinds,
+          receivedValue: plannerNextKind === undefined ? null : plannerNextKind,
+        });
+      } else if (plannerNextKind === "technical" && task.contestantId != null) {
+        unresolvedTaskRoleCount++;
+        addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `${path}.plannerNextKind`, "Technical task cannot preserve a participant relation.", {
+          incompatibleFields: ["contestantId"],
+          plannerNextKind,
+        });
+      } else if (plannerNextKind !== "technical"
+        && (!Number.isFinite(task.contestantId) || !Number.isInteger(task.contestantId) || Number(task.contestantId) <= 0)) {
+        addIssue("MISSING_PARTICIPANT_REFERENCE", "task", task.id, `${path}.contestantId`, "Participant task lacks a valid participant reference.", {
+          plannerNextKind,
+          receivedValue: task.contestantId === undefined ? null : task.contestantId,
+        });
+      }
+    }
 
     if (task.status === "pending" || task.status === "interrupted") {
       if (task.startPlanned != null || task.endPlanned != null) pendingPlanningDiscardCount++;
@@ -1110,7 +1136,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     timeGridVerifiable,
     transitionConfigurationComplete,
     anchoredOperationContractPresent,
-    unresolvedTaskRoleCount: input.tasks.filter((task) => task.status !== "cancelled").length,
+    unresolvedTaskRoleCount,
     missingDurationTaskCount,
     missingAvailabilityCounts: {
       participants: participantMissingAvailability,
