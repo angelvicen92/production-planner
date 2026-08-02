@@ -359,6 +359,151 @@ test("fingerprint cambia con duración, dependencia, lock y scope", () => {
   ]) assert.notEqual(baseline, preflightEngineInputForPlannerNext(changed).sourceFingerprint);
 });
 
+const runtimeInput = (source: EngineInput, fields: Record<string, unknown>): EngineInput => Object.assign(source, fields);
+
+test("política runtime sólo acepta valores explícitos soportados", () => {
+  for (const value of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"]) {
+    const result = preflightEngineInputForPlannerNext(runtimeInput(input(), { searchPolicy: value }));
+    assert.equal(result.diagnostics.searchPolicyConfigurationPresent, true);
+    assert.ok(!result.reasonCodes.includes("INVALID_SEARCH_POLICY_CONFIGURATION"));
+  }
+  const invalid = issue(runtimeInput(input(), { searchPolicy: "AUTO" }), "INVALID_SEARCH_POLICY_CONFIGURATION");
+  assert.deepEqual(invalid.details, { receivedValue: "AUTO" });
+  assert.ok(!preflightEngineInputForPlannerNext(runtimeInput(input(), { searchPolicy: "AUTO" })).reasonCodes.includes("MISSING_SEARCH_POLICY_CONFIGURATION"));
+});
+
+test("presupuesto runtime distingue incompleto, inválido y completo", () => {
+  assert.deepEqual(issue(runtimeInput(input(), { searchBudget: { bestK: 1 } }), "MISSING_SEARCH_BUDGET_CONFIGURATION").details, {
+    missingKeys: ["maxBacktracks", "maxPatterns", "maxBranchExpansions"],
+  });
+  const invalid = issue(runtimeInput(input(), { searchBudget: { bestK: 0, maxBacktracks: 1.5, maxPatterns: Number.NaN, maxBranchExpansions: 2 } }), "INVALID_SEARCH_BUDGET");
+  assert.deepEqual(invalid.details, { invalidEntries: [{ key: "bestK", value: 0 }, { key: "maxBacktracks", value: 1.5 }, { key: "maxPatterns", value: "NaN" }] });
+  const complete = preflightEngineInputForPlannerNext(runtimeInput(input(), { searchBudget: { bestK: 1, maxBacktracks: 2, maxPatterns: 3, maxBranchExpansions: 4 } }));
+  assert.equal(complete.diagnostics.searchBudgetConfigurationComplete, true);
+  assert.ok(!complete.reasonCodes.includes("MISSING_SEARCH_BUDGET_CONFIGURATION"));
+  assert.ok(!complete.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
+});
+
+test("mainFlow sólo es completo con contenido válido y espacio descrito", () => {
+  const incomplete = issue(runtimeInput(input(), { mainFlow: { spaceId: "2" } }), "MISSING_MAIN_FLOW_CONFIGURATION");
+  assert.deepEqual(incomplete.details, { preferredEndValid: false, spaceKnown: false });
+  const source = input({ spaceParentById: { 2: null } });
+  const complete = preflightEngineInputForPlannerNext(runtimeInput(source, { mainFlow: { spaceId: "2", preferredEnd: 1020, continuity: "REQUIRED", maxBlocksByKey: 2, minTasksPerBlock: 1 } }));
+  assert.equal(complete.diagnostics.mainFlowConfigurationComplete, true);
+  assert.ok(!complete.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+});
+
+test("rejilla runtime exige forma y compatibilidad exactas", () => {
+  const absent = issue(input(), "UNSUPPORTED_TIME_GRID");
+  assert.equal(absent.path, "timeGrid");
+  assert.deepEqual(issue(runtimeInput(input(), { timeGridMinutes: 0 }), "UNSUPPORTED_TIME_GRID").details, { incompatibleDurations: [], incompatibleTimes: [], receivedValue: 0 });
+  const incompatible = issue(runtimeInput(input({ tasks: [task(1, { durationOverrideMin: 17 })] }), { timeGridMinutes: 5 }), "UNSUPPORTED_TIME_GRID");
+  assert.deepEqual(incompatible.details?.incompatibleDurations, [17]);
+  const compatible = preflightEngineInputForPlannerNext(runtimeInput(input(), { timeGridMinutes: 5 }));
+  assert.equal(compatible.diagnostics.timeGridVerifiable, true);
+});
+
+test("operaciones ancladas runtime distinguen incompletitud y ambigüedad", () => {
+  const incomplete = issue(runtimeInput(input(), { anchoredAccompaniments: [{ id: "a", anchorTaskId: 1 }] }), "INCOMPLETE_ANCHORED_OPERATION", "a");
+  assert.equal(incomplete.path, "anchoredAccompaniments.0");
+  const validOperation = { id: "a", anchorTaskId: 1, beforeTaskIds: [2], afterTaskIds: [3], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" };
+  const complete = preflightEngineInputForPlannerNext(runtimeInput(input({ tasks: [task(1), task(2), task(3)] }), { anchoredAccompaniments: [validOperation] }));
+  assert.equal(complete.diagnostics.anchoredOperationContractPresent, true);
+  const ambiguous = runtimeInput(input({ tasks: [task(1), task(2), task(3)] }), { anchoredAccompaniments: [validOperation, { ...validOperation }] });
+  assert.ok(preflightEngineInputForPlannerNext(ambiguous).reasonCodes.includes("AMBIGUOUS_ANCHORED_OPERATION"));
+});
+
+for (const [value, expected] of [[undefined, false], [0, false], [1, true], [2, true], [-1, true], [Number.NaN, true]] as const) {
+  test(`camerasOverride ${String(value)} audita cantidad sin elegir recurso`, () => {
+    const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { camerasOverride: value })] }));
+    assert.equal(result.issues.some((entry) => entry.code === "UNSUPPORTED_RESOURCE_REQUIREMENT" && entry.path === "tasks.1.camerasOverride"), expected);
+  });
+}
+
+for (const [field, value] of [["blocksSpace", false], ["allowsSpaceOverlap", true], ["spaceOccupancyMode", "shared"], ["spaceOccupancyMode", "non_blocking"]] as const) {
+  test(`ocupación de tarea ${field}=${String(value)} no se degrada a exclusiva`, () => {
+    const found = issue(input({ tasks: [task(1, { [field]: value })] }), "UNSUPPORTED_SPACE_OCCUPANCY", "1");
+    assert.equal(found.path, "tasks.1.spaceOccupancy");
+  });
+}
+
+test("espacio explícitamente no exclusivo no se degrada", () => {
+  assert.deepEqual(issue(input({ spaceIsExclusiveById: { 2: false } }), "UNSUPPORTED_SPACE_OCCUPANCY", "2").details, { exclusive: false });
+});
+
+test("transporte detecta aliases, pesos y metadata de tarea e inventaría IDs", () => {
+  const sources = [
+    input({ arrivalMinGapMinutes: 5 }), input({ departureMinGapMinutes: 5 }), input({ arrivalTaskTemplateName: "present" }),
+    input({ departureTaskTemplateName: "present" }), input({ optimizerWeights: { arrivalDepartureGrouping: 1 } }),
+    input({ tasks: [task(1, { transportGroupCapacity: 2 })] }), input({ tasks: [task(1, { transportGroupingTarget: 2 })] }),
+    input({ tasks: [task(1, { transportGroupingWeight: 1 })] }),
+  ];
+  sources.forEach((source) => assert.ok(preflightEngineInputForPlannerNext(source).reasonCodes.includes("UNSUPPORTED_TRANSPORT_CONTRACT")));
+  const configured = input({ transportSpaceId: 20, transportSettings: { source: "engine-buildInput-optimizer-transport", transportSpaceId: 21, arrivalTemplateId: 30, departureTemplateId: "31" } });
+  const keys = identityKeys(configured);
+  ["space:20", "space:21", "template:30", "template:31"].forEach((key) => assert.ok(keys.includes(key), key));
+});
+
+test("setup detecta zonas, niveles y pesos activos sin colapsar main zone a espacio", () => {
+  const sources = [input({ groupingZoneIds: [3] }), input({ optimizerGroupingLevel: 1 }), input({ optimizerWeights: { groupBySpaceActive: 1 } }), input({ maxTemplateChangesByZoneId: { 4: 2 } })];
+  sources.forEach((source) => assert.ok(preflightEngineInputForPlannerNext(source).reasonCodes.includes("UNSUPPORTED_SETUP_MAPPING")));
+  const keys = identityKeys(input({ optimizerMainZoneId: 2, groupingZoneIds: [3], maxTemplateChangesByZoneId: { 4: 2 } }));
+  ["zone:2", "zone:3", "zone:4"].forEach((key) => assert.ok(keys.includes(key), key));
+  assert.ok(!keys.includes("space:2"));
+});
+
+test("comidas adicionales auditan aliases, concursantes, zonas y tareas", () => {
+  const aliases = preflightEngineInputForPlannerNext(input({ actualMealStart: "13:00", actualMealEnd: "13:30" }));
+  assert.equal(aliases.diagnostics.breakCount, 1);
+  assert.deepEqual(issue(input({ protectedBreaks: [{ id: 1, start: "15:00", end: "15:10" }] }), "UNSUPPORTED_BREAK_SCOPE", "1").details, { scope: "unspecified-protected-break" });
+  assert.equal(issue(input({ contestantMealDurationMinutes: 30 }), "UNSUPPORTED_BREAK_SCOPE").path, "contestantMeal");
+  const zoned = input({ spaceMealBreakMinutesByZoneId: { 7: 30 } });
+  assert.equal(issue(zoned, "UNSUPPORTED_BREAK_SCOPE").path, "spaceMealBreakMinutesByZoneId");
+  assert.ok(identityKeys(zoned).includes("zone:7"));
+  assert.equal(issue(input({ tasks: [task(1, { breakKind: "space_meal", mealOccupiesSpace: true })] }), "UNSUPPORTED_BREAK_SCOPE", "1").path, "tasks.1.breakContract");
+});
+
+test("identity map incluye locks y dependencias aunque sus referencias falten", () => {
+  const source = input({ tasks: [task(1, { dependsOnTaskIds: [9], dependsOnTemplateIds: [19], dependsOnTemplateId: 20 })], locks: [{ id: 1, planId: 1, taskId: 8, lockType: "resource", lockedResourceId: 7 }] });
+  const keys = identityKeys(source);
+  ["task:8", "task:9", "plan-resource:7", "template:19"].forEach((key) => assert.ok(keys.includes(key), key));
+  assert.ok(!keys.includes("template:20"), "array dependency is authoritative over legacy template dependency");
+});
+
+test("diagnostics de recursos cuentan definiciones y no referencias inexistentes", () => {
+  const source = input({ planResourceItems: [{ id: 1, resourceItemId: 10, typeId: 100, name: "defined", isAvailable: true }], tasks: [task(1, { assignedResourceIds: [2, 3] })] });
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.equal(result.diagnostics.planResourceCount, 1);
+  assert.equal(result.diagnostics.resourceItemCount, 1);
+  assert.equal(result.diagnostics.missingResourceReferenceCount, 2);
+});
+
+test("fingerprint excluye bundles soft y unifica cualquier planning pending presente", () => {
+  const baselineInput = input({ tasks: [task(1, { startPlanned: "09:00" })] });
+  const baseline = preflightEngineInputForPlannerNext(baselineInput).sourceFingerprint;
+  const both = input({ tasks: [task(1, { startPlanned: "11:00", endPlanned: "11:30" })] });
+  assert.equal(baseline, preflightEngineInputForPlannerNext(both).sourceFingerprint);
+  const soft = clone(baselineInput);
+  soft.resourceBundles = [{ id: "bundle", name: "soft", metadata: { changed: true } }];
+  soft.resourceBundleLoadWarnings = [{ source: "resource_bundles", message: "soft" }];
+  assert.equal(baseline, preflightEngineInputForPlannerNext(soft).sourceFingerprint);
+  assert.notEqual(baseline, preflightEngineInputForPlannerNext(input()).sourceFingerprint);
+});
+
+test("tareas protegidas no mezclan extremos reales y planificados", () => {
+  const described = { 2: null };
+  for (const protectedTask of [
+    task(1, { status: "done", spaceId: 2, startReal: "09:00", endReal: "09:30" }),
+    task(1, { status: "done", spaceId: 2, startPlanned: "09:00", endPlanned: "09:30" }),
+  ]) assert.ok(!preflightEngineInputForPlannerNext(input({ tasks: [protectedTask], spaceParentById: described })).reasonCodes.includes("PROTECTED_TASK_WITHOUT_FIXED_PLANNING"));
+  for (const protectedTask of [
+    task(1, { status: "done", spaceId: 2, startReal: "09:00", endPlanned: "09:30" }),
+    task(1, { status: "done", spaceId: 2, endReal: "09:30", startPlanned: "09:00" }),
+  ]) assert.equal(issue(input({ tasks: [protectedTask], spaceParentById: described }), "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "1").path, "tasks.1.realPlanning");
+  assert.ok(preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "done", spaceId: 2, startReal: "10:00", endReal: "09:00" })], spaceParentById: described })).reasonCodes.includes("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"));
+  assert.ok(preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "done", startReal: "09:00", endReal: "09:30", assignedResourceIds: [99] })] })).reasonCodes.includes("MISSING_RESOURCE_REFERENCE"));
+});
+
 const EXPECTED_SCENARIOS: Record<string, unknown> = {
   "real-main-stage-with-backlog": {
     "scenarioId": "real-main-stage-with-backlog",
@@ -371,6 +516,8 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
+      "UNSUPPORTED_RESOURCE_REQUIREMENT",
+      "UNSUPPORTED_SETUP_MAPPING",
       "UNSUPPORTED_TASK_ROLE",
       "UNSUPPORTED_TIME_GRID"
     ],
@@ -396,7 +543,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "dependencyCount": 0,
       "breakCount": 0,
       "transportConfigured": false,
-      "setupConfigurationDetected": false,
+      "setupConfigurationDetected": true,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
@@ -410,12 +557,14 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
         "resources": 3
       },
       "unsupportedCapabilityCodes": [
+        "UNSUPPORTED_RESOURCE_REQUIREMENT",
+        "UNSUPPORTED_SETUP_MAPPING",
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "360a5a376e2714a6e9b849b7bd1a6af1b7052d766c98373f3b08572c2241ee3c",
+    "sourceFingerprint": "74fb3271d7a4441c2ea4b4c0c04db7193b4a9bf69d5a88bdf8a4850e260f0812",
     "identityMapFingerprint": "68a72d0ac8f1d2246d5a7a8132c0090b43d76bb9a2dcb59f9f4b1cdb7b5c3b89"
   },
   "real-resource-lock-pressure": {
@@ -431,6 +580,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_TASK_DURATION",
       "UNREPRESENTABLE_RESOURCE_LOCK",
       "UNREPRESENTABLE_SPACE_LOCK",
+      "UNSUPPORTED_SETUP_MAPPING",
       "UNSUPPORTED_TASK_ROLE",
       "UNSUPPORTED_TIME_GRID"
     ],
@@ -456,7 +606,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "dependencyCount": 0,
       "breakCount": 0,
       "transportConfigured": false,
-      "setupConfigurationDetected": false,
+      "setupConfigurationDetected": true,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
@@ -472,12 +622,13 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "unsupportedCapabilityCodes": [
         "UNREPRESENTABLE_RESOURCE_LOCK",
         "UNREPRESENTABLE_SPACE_LOCK",
+        "UNSUPPORTED_SETUP_MAPPING",
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "fffb162050a5ad34928c4ca035faa13f4c9b4af6ee5a1b3aa50198048ff011bc",
+    "sourceFingerprint": "968d5e471bfe73c829ec5ac1a1c35c2f8e1a1f617310b26c0543fcd0755fb9c0",
     "identityMapFingerprint": "794472d65522cebf41bbc687d25dccb474e8579766fd01de4a45fda48941cc65"
   },
   "real-protected-break-recovery": {
@@ -491,6 +642,8 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
+      "UNSUPPORTED_RESOURCE_REQUIREMENT",
+      "UNSUPPORTED_SETUP_MAPPING",
       "UNSUPPORTED_TASK_ROLE",
       "UNSUPPORTED_TIME_GRID"
     ],
@@ -516,7 +669,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "dependencyCount": 0,
       "breakCount": 1,
       "transportConfigured": false,
-      "setupConfigurationDetected": false,
+      "setupConfigurationDetected": true,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
@@ -530,12 +683,14 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
         "resources": 3
       },
       "unsupportedCapabilityCodes": [
+        "UNSUPPORTED_RESOURCE_REQUIREMENT",
+        "UNSUPPORTED_SETUP_MAPPING",
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
       "readOnly": true
     },
-    "sourceFingerprint": "a43fdb467155531899b9d86824865d7504c07988b07ece00a3c4283346df7838",
+    "sourceFingerprint": "852d269d9f0c873423001cc173d6cf0c9918e6fd0f9e2b64761198badf9fc56b",
     "identityMapFingerprint": "fd6782b3ba5a6104c13e70baeff7303baf48b9f1561eea76e37e4a33f58eb01a"
   }
 };

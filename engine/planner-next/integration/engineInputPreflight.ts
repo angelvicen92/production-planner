@@ -10,6 +10,7 @@ export type EngineInputPreflightReasonCode =
   | "DUPLICATE_ID"
   | "INCOMPLETE_ANCHORED_OPERATION"
   | "INVALID_SEARCH_BUDGET"
+  | "INVALID_SEARCH_POLICY_CONFIGURATION"
   | "MISSING_COACH_REFERENCE"
   | "MISSING_DEPENDENCY_REFERENCE"
   | "MISSING_MAIN_FLOW_CONFIGURATION"
@@ -34,6 +35,7 @@ export type EngineInputPreflightReasonCode =
   | "UNSUPPORTED_RESOURCE_REQUIREMENT"
   | "UNSUPPORTED_SETUP_MAPPING"
   | "UNSUPPORTED_SPACE_CAPACITY"
+  | "UNSUPPORTED_SPACE_OCCUPANCY"
   | "UNSUPPORTED_TASK_ROLE"
   | "UNSUPPORTED_TASK_STATUS"
   | "UNSUPPORTED_TIME_GRID"
@@ -167,14 +169,108 @@ function stableValue(value: unknown, path: readonly string[] = []): unknown {
 }
 
 function sourceProjection(input: EngineInput): unknown {
-  const projection = structuredClone(input) as EngineInput;
-  for (const task of projection.tasks) {
-    if (task.status === "pending" || task.status === "interrupted") {
-      task.startPlanned = task.startPlanned == null ? task.startPlanned : "PRESENT_DISCARDED";
-      task.endPlanned = task.endPlanned == null ? task.endPlanned : "PRESENT_DISCARDED";
-    }
-  }
-  return stableValue(projection);
+  const runtime = input as unknown as Record<string, unknown>;
+  const tasks = input.tasks.map((task) => {
+    const planifiable = task.status === "pending" || task.status === "interrupted";
+    return {
+      id: task.id, planId: task.planId, templateId: task.templateId, contestantId: task.contestantId,
+      zoneId: task.zoneId, spaceId: task.spaceId, status: task.status, durationOverrideMin: task.durationOverrideMin,
+      camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
+      itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds,
+      dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
+      dependsOnTemplateIds: task.dependsOnTemplateIds, dependsOnTemplateId: task.dependsOnTemplateId,
+      assignedResourceIds: task.assignedResourceIds, fixedWindowStart: task.fixedWindowStart, fixedWindowEnd: task.fixedWindowEnd,
+      startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
+      mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
+      blocksSpace: task.blocksSpace, allowsSpaceOverlap: task.allowsSpaceOverlap, spaceOccupancyMode: task.spaceOccupancyMode,
+      transportGroupCapacityPresent: task.transportGroupCapacity != null,
+      transportGroupingTargetPresent: task.transportGroupingTarget != null,
+      transportGroupingWeightPresent: task.transportGroupingWeight != null,
+      ...(planifiable
+        ? { hasDiscardablePriorPlanning: task.startPlanned != null || task.endPlanned != null }
+        : { startPlanned: task.startPlanned, endPlanned: task.endPlanned }),
+    };
+  });
+  const planResourceItems = input.planResourceItems.map((resource) => ({
+    id: resource.id,
+    resourceItemId: resource.resourceItemId,
+    typeId: resource.typeId,
+  }));
+  return stableValue({
+    planId: input.planId,
+    workDay: input.workDay,
+    mealMode: input.mealMode,
+    meal: input.meal,
+    mealWindow: input.mealWindow,
+    mealWindowStart: input.mealWindowStart,
+    mealWindowEnd: input.mealWindowEnd,
+    actualMeal: input.actualMeal && { ...input.actualMeal, label: undefined },
+    actualMealStart: input.actualMealStart,
+    actualMealEnd: input.actualMealEnd,
+    globalHardBreaks: input.globalHardBreaks,
+    protectedBreaks: input.protectedBreaks?.map((entry) => ({ ...entry, label: undefined })),
+    contestantMealDurationMinutes: input.contestantMealDurationMinutes,
+    contestantMealMaxSimultaneous: input.contestantMealMaxSimultaneous,
+    mealTaskTemplateId: input.mealTaskTemplateId,
+    tasks,
+    locks: input.locks,
+    planResourceItems,
+    coachResourceIds: input.coachResourceIds,
+    resourceItemComponents: input.resourceItemComponents,
+    contestantAvailabilityById: input.contestantAvailabilityById,
+    zoneResourceAssignments: input.zoneResourceAssignments,
+    spaceResourceAssignments: input.spaceResourceAssignments,
+    spaceParentById: input.spaceParentById,
+    spaceCapacityById: input.spaceCapacityById,
+    spaceConcurrencyById: input.spaceConcurrencyById,
+    spaceIsExclusiveById: input.spaceIsExclusiveById,
+    zoneIdBySpaceId: input.zoneIdBySpaceId,
+    spaceIdsByZoneId: input.spaceIdsByZoneId,
+    zoneResourceTypeRequirements: input.zoneResourceTypeRequirements,
+    spaceResourceTypeRequirements: input.spaceResourceTypeRequirements,
+    optimizerMainZoneId: input.optimizerMainZoneId,
+    optimizerGroupBySpaceAndTemplateActive: input.optimizerGroupBySpaceAndTemplate === true,
+    optimizerGroupingLevelActive: (input.optimizerGroupingLevel ?? 0) > 0,
+    groupingZoneIds: input.groupingZoneIds,
+    maxTemplateChangeZoneIds: mapKeys(input.maxTemplateChangesByZoneId),
+    groupingBySpaceIds: mapKeys(input.groupingBySpaceId),
+    minimizeChangesBySpaceIds: mapKeys(input.minimizeChangesBySpace),
+    spaceMealBreakZoneIds: mapKeys(input.spaceMealBreakMinutesByZoneId),
+    optimizerWeights: input.optimizerWeights && {
+      arrivalDepartureGroupingActive: input.optimizerWeights.arrivalDepartureGrouping != null,
+      groupBySpaceActive: (input.optimizerWeights.groupBySpaceActive ?? 0) !== 0,
+      groupBySpaceTemplateMatchActive: (input.optimizerWeights.groupBySpaceTemplateMatch ?? 0) !== 0,
+    },
+    transportSettings: input.transportSettings && {
+      present: true,
+      arrivalTemplateId: input.transportSettings.arrivalTemplateId,
+      departureTemplateId: input.transportSettings.departureTemplateId,
+      transportSpaceId: input.transportSettings.transportSpaceId,
+    },
+    transportSpaceId: input.transportSpaceId,
+    transportVanCapacityPresent: input.transportVanCapacity != null,
+    vanCapacityPresent: input.vanCapacity != null,
+    arrivalGroupingTargetPresent: input.arrivalGroupingTarget != null,
+    departureGroupingTargetPresent: input.departureGroupingTarget != null,
+    arrivalMinGapMinutesPresent: input.arrivalMinGapMinutes != null,
+    departureMinGapMinutesPresent: input.departureMinGapMinutes != null,
+    arrivalTaskTemplateNamePresent: input.arrivalTaskTemplateName !== undefined,
+    departureTaskTemplateNamePresent: input.departureTaskTemplateName !== undefined,
+    searchPolicy: runtime.searchPolicy,
+    searchBudget: runtime.searchBudget && typeof runtime.searchBudget === "object" ? Object.fromEntries(
+      ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"].map((key) => [key, (runtime.searchBudget as Record<string, unknown>)[key]]),
+    ) : runtime.searchBudget,
+    mainFlow: runtime.mainFlow && typeof runtime.mainFlow === "object" ? Object.fromEntries(
+      ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"].map((key) => [key, (runtime.mainFlow as Record<string, unknown>)[key]]),
+    ) : runtime.mainFlow,
+    timeGridMinutes: runtime.timeGridMinutes,
+    anchoredAccompaniments: Array.isArray(runtime.anchoredAccompaniments)
+      ? runtime.anchoredAccompaniments.map((entry) => entry && typeof entry === "object" ? Object.fromEntries(
+        ["id", "anchorTaskId", "anchor", "beforeTaskIds", "afterTaskIds", "segments", "adjacency", "internalTransition", "resourceContinuity"]
+          .map((key) => [key, (entry as Record<string, unknown>)[key]]),
+      ) : entry)
+      : runtime.anchoredAccompaniments,
+  });
 }
 
 function fingerprint(value: unknown): string {
@@ -203,24 +299,8 @@ function mapArrayValues(map: Record<number, number[]> | undefined): number[] {
   return Object.values(map ?? {}).flat();
 }
 
-function currentContractChecks(input: EngineInput) {
-  const record = input as unknown as Record<string, unknown>;
-  const mainFlowConfigurationComplete = Boolean(record.mainFlow && typeof record.mainFlow === "object");
-  const searchPolicyConfigurationPresent = typeof record.searchPolicy === "string";
-  const budget = record.searchBudget as Record<string, unknown> | undefined;
-  const searchBudgetConfigurationComplete = Boolean(
-    budget && ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"].every((key) => key in budget),
-  );
-  const anchoredOperationContractPresent = Array.isArray(record.anchoredAccompaniments);
-  const timeGridVerifiable = typeof record.timeGridMinutes === "number";
-  return {
-    anchoredOperationContractPresent,
-    mainFlowConfigurationComplete,
-    searchBudgetConfigurationComplete,
-    searchPolicyConfigurationPresent,
-    timeGridVerifiable,
-  };
-}
+const isPositiveInteger = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0;
 
 export function preflightEngineInputForPlannerNext(input: EngineInput): EngineInputPreflightResult {
   const issues: EngineInputPreflightIssue[] = [];
@@ -287,6 +367,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("zone", task.zoneId, `${path}.zoneId`);
     addIdentity("break", task.breakId, `${path}.breakId`);
     addIdentity("itinerant-team", task.itinerantTeamId, `${path}.itinerantTeamId`);
+    (task.dependsOnTaskIds ?? (task.dependsOnTaskId != null ? [task.dependsOnTaskId] : []))
+      .forEach((id) => addIdentity("task", id, `${path}.dependencies`));
+    (task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))
+      .forEach((id) => addIdentity("template", id, `${path}.templateDependencies`));
     task.allowedItinerantTeamIds?.forEach((id) => addIdentity("itinerant-team", id, `${path}.allowedItinerantTeamIds`));
     task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
     mapKeys(task.resourceRequirements?.byItem).forEach((id) => addIdentity("resource-item", id, `${path}.resourceRequirements.byItem`));
@@ -295,13 +379,26 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       .forEach((id) => addIdentity("resource-item", id, `${path}.resourceRequirements.anyOf`));
   }
 
-  input.locks.forEach((lock) => addIdentity("lock", lock.id, `locks.${lock.id}.id`, true));
+  input.locks.forEach((lock) => {
+    addIdentity("lock", lock.id, `locks.${lock.id}.id`, true);
+    addIdentity("task", lock.taskId, `locks.${lock.id}.taskId`);
+    addIdentity("plan-resource", lock.lockedResourceId, `locks.${lock.id}.lockedResourceId`);
+  });
   input.planResourceItems.forEach((resource) => {
     addIdentity("plan-resource", resource.id, `planResourceItems.${resource.id}.id`, true);
     addIdentity("resource-item", resource.resourceItemId, `planResourceItems.${resource.id}.resourceItemId`, true);
     addIdentity("resource-type", resource.typeId, `planResourceItems.${resource.id}.typeId`);
   });
   input.coachResourceIds?.forEach((id) => addIdentity("plan-resource", id, "coachResourceIds"));
+  addIdentity("template", input.mealTaskTemplateId, "mealTaskTemplateId");
+  addIdentity("zone", input.optimizerMainZoneId, "optimizerMainZoneId");
+  input.groupingZoneIds.forEach((id) => addIdentity("zone", id, "groupingZoneIds"));
+  mapKeys(input.maxTemplateChangesByZoneId).forEach((id) => addIdentity("zone", id, "maxTemplateChangesByZoneId"));
+  mapKeys(input.spaceMealBreakMinutesByZoneId).forEach((id) => addIdentity("zone", id, "spaceMealBreakMinutesByZoneId"));
+  addIdentity("space", input.transportSpaceId, "transportSpaceId");
+  addIdentity("space", input.transportSettings?.transportSpaceId, "transportSettings.transportSpaceId");
+  addIdentity("template", input.transportSettings?.arrivalTemplateId, "transportSettings.arrivalTemplateId");
+  addIdentity("template", input.transportSettings?.departureTemplateId, "transportSettings.departureTemplateId");
 
   for (const [parentId, components] of Object.entries(input.resourceItemComponents)) {
     addIdentity("resource-item", parentId, `resourceItemComponents.${parentId}`);
@@ -320,6 +417,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   input.tasks.forEach((task) => { if (task.spaceId != null) referencedSpaceIds.add(String(task.spaceId)); });
   input.protectedBreaks?.forEach((entry) => { if (entry.spaceId != null) referencedSpaceIds.add(String(entry.spaceId)); });
   if (input.actualMeal?.spaceId != null) referencedSpaceIds.add(String(input.actualMeal.spaceId));
+  if (input.transportSpaceId != null) referencedSpaceIds.add(String(input.transportSpaceId));
+  if (input.transportSettings?.transportSpaceId != null) referencedSpaceIds.add(String(input.transportSettings.transportSpaceId));
 
   for (const [spaceId, parentId] of Object.entries(input.spaceParentById ?? {})) {
     describedSpaceIds.add(spaceId);
@@ -375,10 +474,27 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   };
   addBreakIdentities(input.actualMeal, "actualMeal");
   input.protectedBreaks?.forEach((entry) => addBreakIdentities(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
+  const runtimeInput = input as unknown as Record<string, unknown>;
+  const runtimeMainFlow = runtimeInput.mainFlow as Record<string, unknown> | undefined;
+  addIdentity("space", runtimeMainFlow?.spaceId, "mainFlow.spaceId");
+  if (runtimeMainFlow?.spaceId != null) referencedSpaceIds.add(String(runtimeMainFlow.spaceId));
+  const runtimeAnchors = runtimeInput.anchoredAccompaniments;
+  if (Array.isArray(runtimeAnchors)) {
+    runtimeAnchors.forEach((operation, index) => {
+      if (!operation || typeof operation !== "object") return;
+      const record = operation as Record<string, unknown>;
+      addIdentity("task", record.anchorTaskId ?? record.anchor, `anchoredAccompaniments.${index}.anchor`);
+      for (const key of ["beforeTaskIds", "afterTaskIds", "segments"]) {
+        if (Array.isArray(record[key])) record[key].forEach((id) => addIdentity("task", id, `anchoredAccompaniments.${index}.${key}`));
+      }
+    });
+  }
   identityMap.sort((left, right) => compare(`${left.namespace}\0${left.sourceId}`, `${right.namespace}\0${right.sourceId}`));
 
   const workDayStart = toMinutes(input.workDay?.start);
   const workDayEnd = toMinutes(input.workDay?.end);
+  const auditedTimeValues: number[] = [];
+  const auditedDurations: number[] = [];
   const validateInterval = (
     window: TimeWindow | undefined,
     entityKind: string,
@@ -400,6 +516,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       });
       return false;
     }
+    auditedTimeValues.push(start, end);
     return true;
   };
 
@@ -457,6 +574,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         addIssue("UNSUPPORTED_TIME_VALUE", "task", task.id, `${path}.durationOverrideMin`, "Duration must be finite and positive.", {
           receivedValue: Number.isNaN(task.durationOverrideMin) ? "NaN" : task.durationOverrideMin,
         });
+      } else {
+        auditedDurations.push(task.durationOverrideMin);
       }
     }
 
@@ -464,12 +583,22 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       validateInterval({ start: task.fixedWindowStart ?? "", end: task.fixedWindowEnd ?? "" }, "task", task.id, `${path}.fixedWindow`);
     }
     if (task.status === "done" || task.status === "in_progress") {
-      const start = task.startReal ?? task.startPlanned;
-      const end = task.endReal ?? task.endPlanned;
-      if (!start || !end || task.spaceId == null) {
+      const hasAnyReal = task.startReal != null || task.endReal != null;
+      const hasCompleteReal = task.startReal != null && task.endReal != null;
+      const hasCompletePlanned = task.startPlanned != null && task.endPlanned != null;
+      if (hasAnyReal && !hasCompleteReal) {
+        addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `${path}.realPlanning`, "Protected task has only one real endpoint; real and planned times cannot be combined.", {
+          endReal: task.endReal ?? null,
+          startReal: task.startReal ?? null,
+        });
+      } else if ((!hasAnyReal && !hasCompletePlanned) || task.spaceId == null) {
         addIssue("PROTECTED_TASK_WITHOUT_FIXED_PLANNING", "task", task.id, path, "Protected task lacks complete fixed planning.");
-      } else if (!validateInterval({ start, end }, "task", task.id, `${path}.protectedPlanning`)) {
+      } else {
+        const start = hasCompleteReal ? task.startReal! : task.startPlanned!;
+        const end = hasCompleteReal ? task.endReal! : task.endPlanned!;
+        if (!validateInterval({ start, end }, "task", task.id, `${path}.protectedPlanning`)) {
         addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, path, "Protected planning cannot be represented exactly.");
+        }
       }
     }
 
@@ -547,7 +676,22 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         if (!resourceItemIds.has(String(id))) missingResource("task", task.id, `${path}.resourceRequirements.anyOf.${index}`, id, "resource-item");
       });
     });
-    if ((task.camerasOverride ?? 0) > 1) addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.camerasOverride`, "Camera quantity above one is not representable.", { quantity: task.camerasOverride });
+    if (task.camerasOverride != null) {
+      if (!Number.isFinite(task.camerasOverride) || task.camerasOverride < 0) {
+        addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.camerasOverride`, "Camera quantity is invalid.", { quantity: Number.isNaN(task.camerasOverride) ? "NaN" : task.camerasOverride });
+      } else if (task.camerasOverride > 0) {
+        addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.camerasOverride`, "Camera quantity has no explicit fixed resource identities.", { quantity: task.camerasOverride });
+      }
+    }
+    const unsupportedOccupancy = task.blocksSpace === false || task.allowsSpaceOverlap === true
+      || task.spaceOccupancyMode === "shared" || task.spaceOccupancyMode === "non_blocking";
+    if (unsupportedOccupancy) {
+      addIssue("UNSUPPORTED_SPACE_OCCUPANCY", "task", task.id, `${path}.spaceOccupancy`, "Task space occupancy cannot be represented as exclusive occupancy.", {
+        allowsSpaceOverlap: task.allowsSpaceOverlap,
+        blocksSpace: task.blocksSpace,
+        spaceOccupancyMode: task.spaceOccupancyMode,
+      });
+    }
   }
 
   const auditAssignments = (map: Record<number, number[]>, path: string, ownerKind: string): void => {
@@ -633,6 +777,13 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   };
   auditBreakSpace(input.actualMeal, "actualMeal");
   input.protectedBreaks?.forEach((entry) => auditBreakSpace(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
+  for (const [path, rawId] of [
+    ["transportSpaceId", input.transportSpaceId],
+    ["transportSettings.transportSpaceId", input.transportSettings?.transportSpaceId],
+    ["mainFlow.spaceId", runtimeMainFlow?.spaceId],
+  ] as const) {
+    if (rawId != null && !describedSpaceIds.has(String(rawId))) addIssue("MISSING_SPACE_REFERENCE", "plan", input.planId, path, "Configured space has no structured entity description.", { spaceId: String(rawId) });
+  }
   describedSpaceIds.forEach((spaceId) => addIssue("MISSING_SPACE_AVAILABILITY", "space", spaceId, `spaces.${spaceId}.availability`, "No temporal space availability contract exists."));
 
   const capacitySpaceIds = new Set([...mapKeys(input.spaceCapacityById), ...mapKeys(input.spaceConcurrencyById)]);
@@ -648,6 +799,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       }
     }
   }
+  for (const [spaceId, exclusive] of Object.entries(input.spaceIsExclusiveById ?? {})) {
+    if (exclusive === false) addIssue("UNSUPPORTED_SPACE_OCCUPANCY", "space", spaceId, `spaceIsExclusiveById.${spaceId}`, "Non-exclusive space occupancy is not representable.", { exclusive });
+  }
 
   input.planResourceItems.forEach((resource) => addIssue("MISSING_RESOURCE_AVAILABILITY", "plan-resource", resource.id, `planResourceItems.${resource.id}.isAvailable`, "Boolean availability is not temporal availability."));
   const participantIds = identities.get("participant") ?? new Set<string>();
@@ -656,41 +810,169 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (!availabilityIds.has(id)) addIssue("MISSING_PARTICIPANT_AVAILABILITY", "participant", id, `contestantAvailabilityById.${id}`, "Participant availability is absent.");
   });
 
-  const classifyBreak = (entry: ProtectedBreakInput, path: string): void => {
+  const classifyBreak = (entry: ProtectedBreakInput, path: string, concreteMeal = false): void => {
     const scoped = entry.contestantId != null || entry.spaceId != null || entry.zoneId != null || entry.itinerantTeamId != null;
-    if (scoped || entry.kind === "global" || entry.kind === "protected") {
+    if (scoped || entry.kind === "global" || entry.kind === "protected" || (!concreteMeal && entry.kind == null)) {
       addIssue("UNSUPPORTED_BREAK_SCOPE", "break", entry.id ?? `${entry.start}-${entry.end}`, path, "Break scope cannot map exactly to the single Planner Next protected meal.", {
-        scope: entry.contestantId != null ? "participant" : entry.spaceId != null ? "space" : entry.zoneId != null ? "zone" : entry.itinerantTeamId != null ? "itinerant-team" : entry.kind ?? "global",
+        scope: entry.contestantId != null ? "participant" : entry.spaceId != null ? "space" : entry.zoneId != null ? "zone" : entry.itinerantTeamId != null ? "itinerant-team" : entry.kind ?? "unspecified-protected-break",
       });
     }
   };
   if (input.mealMode === "flexible_meal_window" || input.mealWindow || input.mealWindowStart || input.mealWindowEnd) {
     addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "mealWindow", "Flexible meal window cannot map exactly to a fixed protected meal.", { scope: "flexible-window" });
   }
-  if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal");
+  if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal", true);
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
+  input.protectedBreaks?.filter((entry) => entry.kind === "meal" && entry.contestantId == null && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null)
+    .forEach((entry) => {
+      if (entry.start !== input.meal.start || entry.end !== input.meal.end) {
+        addIssue("UNSUPPORTED_BREAK_SCOPE", "break", entry.id ?? `${entry.start}-${entry.end}`, "protectedBreaks", "Legacy meal and protected meal describe different intervals.", {
+          legacyMeal: input.meal,
+          protectedMeal: { start: entry.start, end: entry.end },
+        });
+      }
+    });
   input.globalHardBreaks?.forEach((entry) => addIssue("UNSUPPORTED_BREAK_SCOPE", "break", `${entry.start}-${entry.end}`, `globalHardBreaks.${entry.start}-${entry.end}`, "Arbitrary global hard break cannot map to protectedMeal.", { scope: "global-hard-break" }));
-  const additionalBreakCount = (input.actualMeal ? 1 : 0) + (input.protectedBreaks?.length ?? 0) + (input.globalHardBreaks?.length ?? 0);
+  const aliasActualMealPresent = !input.actualMeal && input.actualMealStart != null && input.actualMealEnd != null;
+  const additionalBreakCount = (input.actualMeal || aliasActualMealPresent ? 1 : 0) + (input.protectedBreaks?.length ?? 0) + (input.globalHardBreaks?.length ?? 0);
   if (additionalBreakCount > 1) addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "breaks", "Multiple break contracts cannot collapse into one protected meal.", { breakCount: additionalBreakCount });
+  if (input.contestantMealDurationMinutes != null || input.contestantMealMaxSimultaneous != null) {
+    addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "contestantMeal", "Contestant meal duration/capacity has no exact Planner Next contract.", {
+      durationMinutes: input.contestantMealDurationMinutes,
+      maxSimultaneous: input.contestantMealMaxSimultaneous,
+    });
+  }
+  if (mapKeys(input.spaceMealBreakMinutesByZoneId).length) {
+    addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "spaceMealBreakMinutesByZoneId", "Zone-scoped space meals cannot become a global meal.");
+  }
+  for (const task of input.tasks) {
+    const breakConfigured = task.breakId != null || task.breakKind != null || task.mealOccupiesSpace != null
+      || task.operationalRole === "meal_break_placeholder" || task.operationalRole === "space_break_placeholder"
+      || task.operationalRole === "global_break_placeholder";
+    if (breakConfigured) addIssue("UNSUPPORTED_BREAK_SCOPE", "task", task.id, `tasks.${task.id}.breakContract`, "Task break/meal semantics have no exact Planner Next task mapping.", {
+      breakId: task.breakId,
+      breakKind: task.breakKind,
+      mealOccupiesSpace: task.mealOccupiesSpace,
+      operationalRole: task.operationalRole,
+    });
+  }
 
   const transportConfigured = Boolean(
     input.transportSettings || input.transportSpaceId != null || input.transportVanCapacity != null || input.vanCapacity != null
     || input.arrivalGroupingTarget != null || input.departureGroupingTarget != null
-    || input.tasks.some((task) => task.operationalRole === "transport_arrival" || task.operationalRole === "transport_departure"),
+    || input.arrivalMinGapMinutes != null || input.departureMinGapMinutes != null
+    || input.arrivalTaskTemplateName !== undefined || input.departureTaskTemplateName !== undefined
+    || input.optimizerWeights?.arrivalDepartureGrouping != null
+    || input.tasks.some((task) => task.operationalRole === "transport_arrival" || task.operationalRole === "transport_departure"
+      || task.transportGroupCapacity != null || task.transportGroupingTarget != null || task.transportGroupingWeight != null),
   );
   if (transportConfigured) addIssue("UNSUPPORTED_TRANSPORT_CONTRACT", "plan", input.planId, "transportSettings", "Planner Next has no equivalent transport contract.");
 
   const setupConfigurationDetected = Boolean(
     mapKeys(input.groupingBySpaceId).length || mapKeys(input.minimizeChangesBySpace).length
-    || input.optimizerGroupBySpaceAndTemplate || mapKeys(input.maxTemplateChangesByZoneId).length,
+    || input.groupingZoneIds.length || input.optimizerGroupBySpaceAndTemplate || (input.optimizerGroupingLevel ?? 0) > 0
+    || mapKeys(input.maxTemplateChangesByZoneId).length
+    || (input.optimizerWeights?.groupBySpaceTemplateMatch ?? 0) !== 0
+    || (input.optimizerWeights?.groupBySpaceActive ?? 0) !== 0,
   );
   if (setupConfigurationDetected) addIssue("UNSUPPORTED_SETUP_MAPPING", "plan", input.planId, "groupingBySpaceId", "No explicit reversible setup-family mapping exists.");
 
-  const contracts = currentContractChecks(input);
-  if (!contracts.timeGridVerifiable) addIssue("UNSUPPORTED_TIME_GRID", "plan", input.planId, "timeGrid", "No authoritative exported time-grid contract exists.");
-  if (!contracts.mainFlowConfigurationComplete) addIssue("MISSING_MAIN_FLOW_CONFIGURATION", "plan", input.planId, "mainFlow", "Complete Planner Next main-flow configuration is absent.");
-  if (!contracts.searchPolicyConfigurationPresent) addIssue("MISSING_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "searchPolicy", "Normalized Planner Next search policy is absent.");
-  if (!contracts.searchBudgetConfigurationComplete) addIssue("MISSING_SEARCH_BUDGET_CONFIGURATION", "plan", input.planId, "searchBudget", "Complete Planner Next search budget is absent.");
+  const searchPolicy = runtimeInput.searchPolicy;
+  const searchPolicyConfigurationPresent = searchPolicy === "COMPATIBILITY_PRESERVING" || searchPolicy === "EXACT_CONSTRUCTIVE";
+  if (searchPolicy === undefined) {
+    addIssue("MISSING_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "searchPolicy", "Normalized Planner Next search policy is absent.");
+  } else if (!searchPolicyConfigurationPresent) {
+    addIssue("INVALID_SEARCH_POLICY_CONFIGURATION", "plan", input.planId, "searchPolicy", "Search policy is not a supported explicit policy.", { receivedValue: searchPolicy });
+  }
+
+  const budgetKeys = ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"] as const;
+  const searchBudget = runtimeInput.searchBudget;
+  const budgetRecord = searchBudget && typeof searchBudget === "object" && !Array.isArray(searchBudget)
+    ? searchBudget as Record<string, unknown> : undefined;
+  const missingBudgetKeys = budgetKeys.filter((key) => !(budgetRecord && key in budgetRecord));
+  const invalidBudgetEntries = budgetRecord
+    ? budgetKeys.filter((key) => key in budgetRecord && !isPositiveInteger(budgetRecord[key])).map((key) => ({ key, value: budgetRecord[key] }))
+    : [];
+  const searchBudgetConfigurationComplete = Boolean(budgetRecord && !missingBudgetKeys.length && !invalidBudgetEntries.length);
+  if (!budgetRecord || missingBudgetKeys.length) {
+    addIssue("MISSING_SEARCH_BUDGET_CONFIGURATION", "plan", input.planId, "searchBudget", "Complete Planner Next search budget is absent.", { missingKeys: missingBudgetKeys });
+  }
+  if (invalidBudgetEntries.length) {
+    addIssue("INVALID_SEARCH_BUDGET", "plan", input.planId, "searchBudget", "Search budget contains non-positive, non-integer, or non-finite values.", { invalidEntries: invalidBudgetEntries });
+  }
+
+  const mainFlow = runtimeMainFlow;
+  const preferredEnd = mainFlow?.preferredEnd;
+  const preferredEndValid = typeof preferredEnd === "number" && Number.isFinite(preferredEnd)
+    && workDayStart !== null && workDayEnd !== null && preferredEnd >= workDayStart && preferredEnd <= workDayEnd;
+  const mainFlowConfigurationComplete = Boolean(
+    mainFlow && mainFlow.spaceId != null && describedSpaceIds.has(String(mainFlow.spaceId)) && preferredEndValid
+    && mainFlow.continuity === "REQUIRED" && isPositiveInteger(mainFlow.maxBlocksByKey)
+    && isPositiveInteger(mainFlow.minTasksPerBlock),
+  );
+  if (!mainFlowConfigurationComplete) {
+    addIssue("MISSING_MAIN_FLOW_CONFIGURATION", "plan", input.planId, "mainFlow", "Complete, valid Planner Next main-flow configuration is absent.", {
+      preferredEndValid,
+      spaceKnown: mainFlow?.spaceId != null && describedSpaceIds.has(String(mainFlow.spaceId)),
+    });
+  }
+
+  const grid = runtimeInput.timeGridMinutes;
+  const dayDuration = workDayStart !== null && workDayEnd !== null ? workDayEnd - workDayStart : null;
+  const gridShapeValid = isPositiveInteger(grid) && dayDuration !== null && grid <= dayDuration;
+  const incompatibleTimes = gridShapeValid && workDayStart !== null
+    ? auditedTimeValues.filter((value) => (value - workDayStart) % grid !== 0) : [];
+  const incompatibleDurations = gridShapeValid ? auditedDurations.filter((value) => value % grid !== 0) : [];
+  const timeGridVerifiable = Boolean(gridShapeValid && !incompatibleTimes.length && !incompatibleDurations.length);
+  if (!timeGridVerifiable) {
+    addIssue("UNSUPPORTED_TIME_GRID", "plan", input.planId, "timeGrid", "Time grid is absent, invalid, or incompatible with audited values.", {
+      incompatibleDurations,
+      incompatibleTimes,
+      receivedValue: grid,
+    });
+  }
+
+  let anchoredOperationContractPresent = false;
+  if (runtimeAnchors !== undefined) {
+    if (!Array.isArray(runtimeAnchors)) {
+      addIssue("INCOMPLETE_ANCHORED_OPERATION", "plan", input.planId, "anchoredAccompaniments", "Anchored operation contract must be an array.");
+    } else {
+      const operationIds = new Set<string>();
+      const memberOwners = new Map<string, string>();
+      anchoredOperationContractPresent = runtimeAnchors.length > 0;
+      runtimeAnchors.forEach((operation, index) => {
+        const path = `anchoredAccompaniments.${index}`;
+        if (!operation || typeof operation !== "object") {
+          anchoredOperationContractPresent = false;
+          addIssue("INCOMPLETE_ANCHORED_OPERATION", "anchored-operation", index, path, "Anchored operation entry is not structured.");
+          return;
+        }
+        const record = operation as Record<string, unknown>;
+        const id = String(record.id ?? index);
+        const anchor = record.anchorTaskId ?? record.anchor;
+        const before = record.beforeTaskIds;
+        const after = record.afterTaskIds;
+        const segments = record.segments;
+        const hasSegments = (Array.isArray(before) && Array.isArray(after)) || Array.isArray(segments);
+        const complete = record.id != null && anchor != null && hasSegments && record.adjacency === "REQUIRED"
+          && record.internalTransition === "INCLUDED" && record.resourceContinuity === "REQUIRED";
+        if (!complete) {
+          anchoredOperationContractPresent = false;
+          addIssue("INCOMPLETE_ANCHORED_OPERATION", "anchored-operation", id, path, "Anchored operation lacks required explicit fields.");
+        }
+        const members = [anchor, ...(Array.isArray(before) ? before : []), ...(Array.isArray(after) ? after : []), ...(Array.isArray(segments) ? segments : [])]
+          .filter((value) => value != null).map(String);
+        const ambiguous = operationIds.has(id) || new Set(members).size !== members.length
+          || members.some((member) => memberOwners.has(member) && memberOwners.get(member) !== id);
+        if (ambiguous) {
+          anchoredOperationContractPresent = false;
+          addIssue("AMBIGUOUS_ANCHORED_OPERATION", "anchored-operation", id, path, "Anchored operation reuses operation or task identities ambiguously.", { memberTaskIds: members });
+        }
+        operationIds.add(id);
+        members.forEach((member) => memberOwners.set(member, id));
+      });
+    }
+  }
 
   issues.sort((left, right) => compare(
     `${left.code}\0${left.entityKind}\0${left.entityId}\0${left.path}`,
@@ -713,8 +995,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     referencedSpaceCount: referencedSpaceIds.size,
     describedSpaceCount: describedSpaceIds.size,
     zoneCount: identities.get("zone")?.size ?? 0,
-    planResourceCount: identities.get("plan-resource")?.size ?? 0,
-    resourceItemCount: identities.get("resource-item")?.size ?? 0,
+    planResourceCount: new Set(input.planResourceItems.map((resource) => String(resource.id))).size,
+    resourceItemCount: new Set(input.planResourceItems.map((resource) => String(resource.resourceItemId))).size,
     resourceAssignmentReferenceCount,
     resourceComponentReferenceCount,
     missingResourceReferenceCount,
@@ -722,11 +1004,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     breakCount: additionalBreakCount,
     transportConfigured,
     setupConfigurationDetected,
-    mainFlowConfigurationComplete: contracts.mainFlowConfigurationComplete,
-    searchPolicyConfigurationPresent: contracts.searchPolicyConfigurationPresent,
-    searchBudgetConfigurationComplete: contracts.searchBudgetConfigurationComplete,
-    timeGridVerifiable: contracts.timeGridVerifiable,
-    anchoredOperationContractPresent: contracts.anchoredOperationContractPresent,
+    mainFlowConfigurationComplete,
+    searchPolicyConfigurationPresent,
+    searchBudgetConfigurationComplete,
+    timeGridVerifiable,
+    anchoredOperationContractPresent,
     unresolvedTaskRoleCount: input.tasks.filter((task) => task.status !== "cancelled").length,
     missingDurationTaskCount,
     missingAvailabilityCounts: {
