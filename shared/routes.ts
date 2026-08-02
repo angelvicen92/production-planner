@@ -45,6 +45,54 @@ export const updatePlanSchema = z
 })
 .strict();
 
+const canonicalResourceAvailabilityTime = z
+  .string()
+  .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
+
+const resourceAvailabilityWindowFields = {
+  availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
+  availabilityEnd: canonicalResourceAvailabilityTime.nullable().optional(),
+};
+
+function validateResourceAvailabilityWindowPair(
+  value: { availabilityStart?: string | null; availabilityEnd?: string | null },
+  context: z.RefinementCtx,
+): void {
+  const hasStart = Object.prototype.hasOwnProperty.call(value, "availabilityStart");
+  const hasEnd = Object.prototype.hasOwnProperty.call(value, "availabilityEnd");
+
+  if (hasStart !== hasEnd) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Availability start and end must be provided together",
+    });
+    return;
+  }
+  if (!hasStart || (value.availabilityStart === null && value.availabilityEnd === null)) {
+    return;
+  }
+  if (value.availabilityStart === null || value.availabilityEnd === null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Availability start and end must both be null or both be strings",
+    });
+    return;
+  }
+  if (typeof value.availabilityStart !== "string" || typeof value.availabilityEnd !== "string") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Availability start and end must be strings",
+    });
+    return;
+  }
+  if (value.availabilityStart >= value.availabilityEnd) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Availability start must be earlier than end",
+    });
+  }
+}
+
 export const errorSchemas = {
   validation: z.object({
     message: z.string(),
@@ -791,13 +839,15 @@ export const api = {
               resourceItemId: z.number().nullable(),
               name: z.string(),
               isAvailable: z.boolean(),
+              availabilityStart: canonicalResourceAvailabilityTime.nullable(),
+              availabilityEnd: canonicalResourceAvailabilityTime.nullable(),
               source: z.string(), // "default" | "adhoc"
               type: z.object({
                 id: z.number(),
                 code: z.string(),
                 name: z.string(),
               }),
-            }),
+            }).superRefine(validateResourceAvailabilityWindowPair),
           ),
         },
       },
@@ -808,8 +858,10 @@ export const api = {
           .object({
             typeId: z.number().int().positive(),
             name: z.string().min(1),
+            ...resourceAvailabilityWindowFields,
           })
-          .strict(),
+          .strict()
+          .superRefine(validateResourceAvailabilityWindowPair),
         responses: {
           200: z.object({ success: z.boolean(), id: z.number() }),
           400: errorSchemas.validation,
@@ -823,8 +875,10 @@ export const api = {
           .object({
             isAvailable: z.boolean().optional(),
             name: z.string().min(1).optional(),
+            ...resourceAvailabilityWindowFields,
           })
-          .strict(),
+          .strict()
+          .superRefine(validateResourceAvailabilityWindowPair),
         responses: {
           200: z.object({ success: z.boolean() }),
           400: errorSchemas.validation,

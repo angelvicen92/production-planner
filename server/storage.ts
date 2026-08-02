@@ -19,6 +19,7 @@ import {
   clampBasicLevel,
   normalizeHeuristicSetting,
 } from "@shared/optimizer";
+import { buildDefaultPlanResourceItemSnapshotRows } from "./resourceAvailabilityWindow";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -200,6 +201,8 @@ export interface IStorage {
       typeName?: string | null;
       name: string;
       isAvailable: boolean;
+      availabilityStart: string | null;
+      availabilityEnd: string | null;
     }>
   >;
 
@@ -1171,20 +1174,22 @@ export class SupabaseStorage implements IStorage {
     try {
       const { data: items, error: itemsErr } = await supabaseAdmin
         .from("resource_items")
-        .select("id, type_id, name")
+        .select("id, type_id, name, default_availability_start, default_availability_end")
         .eq("is_active", true);
 
       if (itemsErr) throw itemsErr;
 
       if (items && items.length > 0) {
-        const rows = items.map((i: any) => ({
-          plan_id: data.id,
-          type_id: i.type_id,
-          resource_item_id: i.id,
-          name: i.name,
-          is_available: true,
-          source: "default",
-        }));
+        const rows = buildDefaultPlanResourceItemSnapshotRows(
+          Number(data.id),
+          items.map((i: any) => ({
+            id: Number(i.id),
+            typeId: Number(i.type_id),
+            name: String(i.name),
+            defaultAvailabilityStart: i.default_availability_start,
+            defaultAvailabilityEnd: i.default_availability_end,
+          })),
+        );
 
         const { error: snapErr } = await supabaseAdmin
           .from("plan_resource_items")
@@ -2861,11 +2866,13 @@ export class SupabaseStorage implements IStorage {
       typeName?: string | null;
       name: string;
       isAvailable: boolean;
+      availabilityStart: string | null;
+      availabilityEnd: string | null;
     }>
   > {
     const { data, error } = await supabaseAdmin
       .from("plan_resource_items")
-      .select("id, resource_item_id, type_id, name, is_available, resource_types ( code, name )")
+      .select("id, resource_item_id, type_id, name, is_available, availability_start, availability_end, resource_types ( code, name )")
       .eq("plan_id", planId)
       .order("id", { ascending: true });
 
@@ -2879,6 +2886,8 @@ export class SupabaseStorage implements IStorage {
       typeName: r.resource_types?.name == null ? null : String(r.resource_types.name),
       name: String(r.name ?? ""),
       isAvailable: r.is_available !== false,
+      availabilityStart: r.availability_start ?? null,
+      availabilityEnd: r.availability_end ?? null,
     }));
   }
 

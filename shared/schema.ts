@@ -207,8 +207,29 @@ export const resourceItems = pgTable("resource_items", {
   typeId: bigint("type_id", { mode: "number" }).notNull().references(() => resourceTypes.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  defaultAvailabilityStart: text("default_availability_start"),
+  defaultAvailabilityEnd: text("default_availability_end"),
 }, (table) => ({
   typeIdx: index("idx_resource_items_type").on(table.typeId),
+  availabilityPair: check("resource_items_default_availability_pair_check", sql`(${table.defaultAvailabilityStart} IS NULL) = (${table.defaultAvailabilityEnd} IS NULL)`),
+  availabilityFormat: check("resource_items_default_availability_format_check", sql`${table.defaultAvailabilityStart} IS NULL OR (${table.defaultAvailabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.defaultAvailabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("resource_items_default_availability_order_check", sql`${table.defaultAvailabilityStart} IS NULL OR ${table.defaultAvailabilityStart} < ${table.defaultAvailabilityEnd}`),
+}));
+
+export const planResourceItems = pgTable("plan_resource_items", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  planId: bigint("plan_id", { mode: "number" }).notNull().references(() => plans.id, { onDelete: "cascade" }),
+  typeId: bigint("type_id", { mode: "number" }).notNull().references(() => resourceTypes.id),
+  resourceItemId: bigint("resource_item_id", { mode: "number" }).references(() => resourceItems.id, { onDelete: "set null" }),
+  name: text("name").notNull(),
+  isAvailable: boolean("is_available").notNull().default(true),
+  source: text("source").notNull().default("default"),
+  availabilityStart: text("availability_start"),
+  availabilityEnd: text("availability_end"),
+}, (table) => ({
+  availabilityPair: check("plan_resource_items_availability_pair_check", sql`(${table.availabilityStart} IS NULL) = (${table.availabilityEnd} IS NULL)`),
+  availabilityFormat: check("plan_resource_items_availability_format_check", sql`${table.availabilityStart} IS NULL OR (${table.availabilityStart} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND ${table.availabilityEnd} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')`),
+  availabilityOrder: check("plan_resource_items_availability_order_check", sql`${table.availabilityStart} IS NULL OR ${table.availabilityStart} < ${table.availabilityEnd}`),
 }));
 
 // 4.2 resource bundles (catálogo aditivo de equipos compuestos)

@@ -22,6 +22,11 @@ import {
   consumePlanningRollbackFailure,
   waitForPlanningCommitIdle,
 } from "./planning-run-commit";
+import {
+  buildAdHocPlanResourceItemRow,
+  buildAvailabilityWindowPatch,
+  buildDefaultPlanResourceItemSnapshotRows,
+} from "./resourceAvailabilityWindow";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1352,7 +1357,7 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const { data, error } = await supabaseAdmin
         .from("resource_types")
-        .select("id, code, name, is_active, resource_items(id, name, is_active)")
+        .select("id, code, name, is_active, resource_items(id, name, is_active, default_availability_start, default_availability_end)")
         .eq("is_active", true)
         .order("name", { ascending: true });
 
@@ -1365,6 +1370,8 @@ function mapDeleteError(err: any, fallback: string) {
             id: Number(i.id),
             name: String(i.name ?? ""),
             isActive: i.is_active !== false,
+            defaultAvailabilityStart: i.default_availability_start ?? null,
+            defaultAvailabilityEnd: i.default_availability_end ?? null,
           }))
           .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
@@ -1429,13 +1436,25 @@ function mapDeleteError(err: any, fallback: string) {
         .object({
           typeId: z.number().int().positive(),
           name: z.string().min(1),
+          defaultAvailabilityStart: z.union([z.string(), z.null()]).optional(),
+          defaultAvailabilityEnd: z.union([z.string(), z.null()]).optional(),
         })
         .strict()
         .parse(req.body);
 
+      const availabilityPatch = buildAvailabilityWindowPatch({
+        start: input.defaultAvailabilityStart,
+        end: input.defaultAvailabilityEnd,
+      });
       const { data, error } = await supabaseAdmin
         .from("resource_items")
-        .insert({ type_id: input.typeId, name: input.name, is_active: true })
+        .insert({
+          type_id: input.typeId,
+          name: input.name,
+          is_active: true,
+          default_availability_start: availabilityPatch.availability_start,
+          default_availability_end: availabilityPatch.availability_end,
+        })
         .select("*")
         .single();
 
@@ -1455,6 +1474,8 @@ function mapDeleteError(err: any, fallback: string) {
         .object({
           name: z.string().min(1).optional(),
           isActive: z.boolean().optional(),
+          defaultAvailabilityStart: z.union([z.string(), z.null()]).optional(),
+          defaultAvailabilityEnd: z.union([z.string(), z.null()]).optional(),
         })
         .strict()
         .parse(req.body);
@@ -1462,6 +1483,19 @@ function mapDeleteError(err: any, fallback: string) {
       const patch: any = {};
       if (input.name !== undefined) patch.name = input.name;
       if (input.isActive !== undefined) patch.is_active = input.isActive;
+      const hasDefaultStart = Object.prototype.hasOwnProperty.call(input, "defaultAvailabilityStart");
+      const hasDefaultEnd = Object.prototype.hasOwnProperty.call(input, "defaultAvailabilityEnd");
+      if (hasDefaultStart || hasDefaultEnd) {
+        if (!(hasDefaultStart && hasDefaultEnd)) {
+          throw new Error("Default availability start and end must be updated together");
+        }
+        const availabilityPatch = buildAvailabilityWindowPatch({
+          start: input.defaultAvailabilityStart,
+          end: input.defaultAvailabilityEnd,
+        });
+        patch.default_availability_start = availabilityPatch.availability_start;
+        patch.default_availability_end = availabilityPatch.availability_end;
+      }
 
       const { data, error } = await supabaseAdmin
         .from("resource_items")
@@ -2094,7 +2128,7 @@ function mapDeleteError(err: any, fallback: string) {
 
       const { data, error } = await supabaseAdmin
         .from("plan_resource_items")
-        .select("id, plan_id, type_id, resource_item_id, name, is_available, source, resource_types ( id, code, name )")
+        .select("id, plan_id, type_id, resource_item_id, name, is_available, source, availability_start, availability_end, resource_types ( id, code, name )")
         .eq("plan_id", planId)
         .order("id", { ascending: true });
 
@@ -2107,6 +2141,8 @@ function mapDeleteError(err: any, fallback: string) {
         resourceItemId: r.resource_item_id === null || r.resource_item_id === undefined ? null : Number(r.resource_item_id),
         name: String(r.name ?? ""),
         isAvailable: r.is_available !== false,
+        availabilityStart: r.availability_start ?? null,
+        availabilityEnd: r.availability_end ?? null,
         source: String(r.source ?? "default"),
         type: {
           id: Number(r.resource_types?.id),
@@ -2128,16 +2164,16 @@ function mapDeleteError(err: any, fallback: string) {
 
       const input = api.plans.resourceItems.create.input.parse(req.body);
 
+      const row = buildAdHocPlanResourceItemRow({
+        planId,
+        typeId: input.typeId,
+        name: input.name,
+        availability: { start: input.availabilityStart, end: input.availabilityEnd },
+      });
+
       const { data, error } = await supabaseAdmin
         .from("plan_resource_items")
-        .insert({
-          plan_id: planId,
-          type_id: input.typeId,
-          resource_item_id: null,
-          name: input.name,
-          is_available: true,
-          source: "adhoc",
-        })
+        .insert(row)
         .select("id")
         .single();
 
@@ -2175,6 +2211,12 @@ function mapDeleteError(err: any, fallback: string) {
       const patch: any = {};
       if (input.isAvailable !== undefined) patch.is_available = input.isAvailable;
       if (input.name !== undefined) patch.name = input.name;
+      if (input.availabilityStart !== undefined || input.availabilityEnd !== undefined) {
+        Object.assign(patch, buildAvailabilityWindowPatch({
+          start: input.availabilityStart,
+          end: input.availabilityEnd,
+        }));
+      }
 
       const { error } = await supabaseAdmin
         .from("plan_resource_items")
@@ -2240,19 +2282,21 @@ function mapDeleteError(err: any, fallback: string) {
 
       const { data: items, error: itemsErr } = await supabaseAdmin
         .from("resource_items")
-        .select("id, type_id, name")
+        .select("id, type_id, name, default_availability_start, default_availability_end")
         .eq("is_active", true);
 
       if (itemsErr) throw itemsErr;
 
-      const rows = (items ?? []).map((i: any) => ({
-        plan_id: planId,
-        type_id: i.type_id,
-        resource_item_id: i.id,
-        name: i.name,
-        is_available: true,
-        source: "default",
-      }));
+      const rows = buildDefaultPlanResourceItemSnapshotRows(
+        planId,
+        (items ?? []).map((i: any) => ({
+          id: Number(i.id),
+          typeId: Number(i.type_id),
+          name: String(i.name),
+          defaultAvailabilityStart: i.default_availability_start,
+          defaultAvailabilityEnd: i.default_availability_end,
+        })),
+      );
 
       if (rows.length > 0) {
         const { error: insErr } = await supabaseAdmin.from("plan_resource_items").insert(rows);
