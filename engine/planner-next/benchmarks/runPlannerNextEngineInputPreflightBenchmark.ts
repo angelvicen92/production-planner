@@ -78,4 +78,4 @@ const scenarios = realProductionScenarios.map((scenario) => {
   };
 });
 
-process.stdout.write(`${JSON.stringify({ benchmark: "SPEC10-001-engine-input-preflight", scenarios }, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({ benchmark: "SPEC10-002-engine-input-preflight", scenarios }, null, 2)}\n`);

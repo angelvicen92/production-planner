@@ -155,8 +155,38 @@ export interface ResourceBundleSpaceAffinityInput {
   metadata?: Record<string, unknown>;
 }
 
+export type PlannerNextSearchPolicyInput =
+  | "COMPATIBILITY_PRESERVING"
+  | "EXACT_CONSTRUCTIVE";
+
+export interface PlannerNextSearchBudgetInput {
+  bestK: number;
+  maxBacktracks: number;
+  maxPatterns: number;
+  maxBranchExpansions: number;
+}
+
+export interface PlannerNextMainFlowInput {
+  spaceId: number;
+  preferredEnd: string;
+  continuity: "REQUIRED";
+  maxBlocksByKey: number;
+  minTasksPerBlock: number;
+}
+
+export interface PlannerNextIntegrationConfigurationInput {
+  searchPolicy: PlannerNextSearchPolicyInput;
+  searchBudget: PlannerNextSearchBudgetInput;
+  timeGridMinutes: number;
+  participantTransitionMinutes: number;
+  resourceTransitionMinutes: number;
+  mainFlow: PlannerNextMainFlowInput;
+}
+
 export interface EngineInput {
   planId: number;
+  /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
+  plannerNext?: PlannerNextIntegrationConfigurationInput;
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";

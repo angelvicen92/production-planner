@@ -434,84 +434,177 @@ test("comida concreta y break scoped mantienen contratos separados", () => {
 
 const runtimeInput = (source: EngineInput, fields: Record<string, unknown>): EngineInput => Object.assign(source, fields);
 
-test("política runtime sólo acepta valores explícitos soportados", () => {
-  for (const value of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"]) {
-    const result = preflightEngineInputForPlannerNext(runtimeInput(input(), { searchPolicy: value }));
-    assert.equal(result.diagnostics.searchPolicyConfigurationPresent, true);
-    assert.ok(!result.reasonCodes.includes("INVALID_SEARCH_POLICY_CONFIGURATION"));
+const validPlannerNext = () => ({
+  searchPolicy: "COMPATIBILITY_PRESERVING" as const,
+  searchBudget: { bestK: 1, maxBacktracks: 2, maxPatterns: 3, maxBranchExpansions: 4 },
+  timeGridMinutes: 5,
+  participantTransitionMinutes: 0,
+  resourceTransitionMinutes: 5,
+  mainFlow: { spaceId: 2, preferredEnd: "17:00", continuity: "REQUIRED" as const, maxBlocksByKey: 2, minTasksPerBlock: 1 },
+});
+const configuredInput = (configuration: unknown = validPlannerNext(), overrides: Partial<EngineInput> = {}): EngineInput =>
+  runtimeInput(input({ spaceParentById: { 2: null }, ...overrides }), { plannerNext: configuration });
+
+test("contrato ausente y canales top-level legacy ignorados", () => {
+  const baseline = preflightEngineInputForPlannerNext(input());
+  for (const code of ["MISSING_SEARCH_POLICY_CONFIGURATION", "MISSING_SEARCH_BUDGET_CONFIGURATION", "MISSING_MAIN_FLOW_CONFIGURATION", "UNSUPPORTED_TIME_GRID", "MISSING_TRANSITION_CONFIGURATION"]) {
+    assert.ok(baseline.reasonCodes.includes(code as never), code);
   }
-  const invalid = issue(runtimeInput(input(), { searchPolicy: "AUTO" }), "INVALID_SEARCH_POLICY_CONFIGURATION");
-  assert.deepEqual(invalid.details, { receivedValue: "AUTO" });
-  assert.ok(!preflightEngineInputForPlannerNext(runtimeInput(input(), { searchPolicy: "AUTO" })).reasonCodes.includes("MISSING_SEARCH_POLICY_CONFIGURATION"));
-});
-
-test("presupuesto runtime distingue incompleto, inválido y completo", () => {
-  assert.deepEqual(issue(runtimeInput(input(), { searchBudget: { bestK: 1 } }), "MISSING_SEARCH_BUDGET_CONFIGURATION").details, {
-    missingKeys: ["maxBacktracks", "maxPatterns", "maxBranchExpansions"],
+  assert.equal(baseline.diagnostics.integrationConfigurationPresent, false);
+  assert.equal(baseline.diagnostics.transitionConfigurationComplete, false);
+  assert.notEqual(baseline.sourceFingerprint, preflightEngineInputForPlannerNext(runtimeInput(input(), { plannerNext: {} })).sourceFingerprint);
+  const legacy = runtimeInput(input(), {
+    searchPolicy: "EXACT_CONSTRUCTIVE", searchBudget: { bestK: 1, maxBacktracks: 2, maxPatterns: 3, maxBranchExpansions: 4 },
+    timeGridMinutes: 5, participantTransitionMinutes: 0, resourceTransitionMinutes: 0,
+    mainFlow: { spaceId: 2, preferredEnd: "17:00", continuity: "REQUIRED", maxBlocksByKey: 2, minTasksPerBlock: 1 },
   });
-  const invalid = issue(runtimeInput(input(), { searchBudget: { bestK: 0, maxBacktracks: 1.5, maxPatterns: Number.NaN, maxBranchExpansions: 2 } }), "INVALID_SEARCH_BUDGET");
-  assert.deepEqual(invalid.details, { invalidEntries: [{ key: "bestK", value: 0 }, { key: "maxBacktracks", value: 1.5 }, { key: "maxPatterns", value: "NaN" }] });
-  const complete = preflightEngineInputForPlannerNext(runtimeInput(input(), { searchBudget: { bestK: 1, maxBacktracks: 2, maxPatterns: 3, maxBranchExpansions: 4 } }));
-  assert.equal(complete.diagnostics.searchBudgetConfigurationComplete, true);
-  assert.ok(!complete.reasonCodes.includes("MISSING_SEARCH_BUDGET_CONFIGURATION"));
-  assert.ok(!complete.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
+  const ignored = preflightEngineInputForPlannerNext(legacy);
+  assert.deepEqual(ignored.reasonCodes, baseline.reasonCodes);
+  assert.equal(ignored.sourceFingerprint, baseline.sourceFingerprint);
 });
 
-test("mainFlow sólo es completo con contenido válido y espacio descrito", () => {
-  const incomplete = issue(runtimeInput(input(), { mainFlow: { spaceId: "2" } }), "MISSING_MAIN_FLOW_CONFIGURATION");
-  assert.deepEqual(incomplete.details, { preferredEndValid: false, spaceKnown: false });
-  const source = input({ spaceParentById: { 2: null } });
-  const complete = preflightEngineInputForPlannerNext(runtimeInput(source, { mainFlow: { spaceId: "2", preferredEnd: 1020, continuity: "REQUIRED", maxBlocksByKey: 2, minTasksPerBlock: 1 } }));
-  assert.equal(complete.diagnostics.mainFlowConfigurationComplete, true);
-  assert.ok(!complete.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+test("configuración completa válida elimina exclusivamente blockers de integración", () => {
+  const result = preflightEngineInputForPlannerNext(configuredInput());
+  for (const code of ["MISSING_SEARCH_POLICY_CONFIGURATION", "MISSING_SEARCH_BUDGET_CONFIGURATION", "INVALID_SEARCH_BUDGET", "INVALID_SEARCH_POLICY_CONFIGURATION", "MISSING_MAIN_FLOW_CONFIGURATION", "UNSUPPORTED_TIME_GRID", "MISSING_TRANSITION_CONFIGURATION", "INVALID_TRANSITION_CONFIGURATION"]) {
+    assert.ok(!result.reasonCodes.includes(code as never), code);
+  }
+  assert.equal(result.status, "UNSUPPORTED");
+  assert.equal(result.diagnostics.integrationConfigurationPresent, true);
+  assert.equal(result.diagnostics.transitionConfigurationComplete, true);
 });
 
-test("rejilla runtime exige forma y compatibilidad exactas", () => {
-  const absent = issue(input(), "UNSUPPORTED_TIME_GRID");
-  assert.equal(absent.path, "timeGrid");
-  assert.deepEqual(issue(runtimeInput(input(), { timeGridMinutes: 0 }), "UNSUPPORTED_TIME_GRID").details, { incompatibleDurations: [], incompatibleTimes: [], receivedValue: 0 });
-  const incompatible = issue(runtimeInput(input({ tasks: [task(1, { durationOverrideMin: 17 })] }), { timeGridMinutes: 5 }), "UNSUPPORTED_TIME_GRID");
-  assert.deepEqual(incompatible.details?.incompatibleDurations, [17]);
-  const compatible = preflightEngineInputForPlannerNext(runtimeInput(input(), { timeGridMinutes: 5 }));
-  assert.equal(compatible.diagnostics.timeGridVerifiable, true);
+test("política acepta sólo los dos valores explícitos", () => {
+  for (const value of ["COMPATIBILITY_PRESERVING", "EXACT_CONSTRUCTIVE"]) {
+    const result = preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), searchPolicy: value }));
+    assert.equal(result.diagnostics.searchPolicyConfigurationPresent, true);
+  }
+  for (const value of [undefined, "AUTO", null, 1, "exact_constructive"]) {
+    const configuration = { ...validPlannerNext(), searchPolicy: value };
+    const result = preflightEngineInputForPlannerNext(configuredInput(configuration));
+    assert.ok(result.reasonCodes.includes(value === undefined ? "MISSING_SEARCH_POLICY_CONFIGURATION" : "INVALID_SEARCH_POLICY_CONFIGURATION"));
+  }
 });
 
-const withMainFlowAndGrid = (preferredEnd: number, timeGridMinutes?: number): EngineInput => runtimeInput(
-  input({ spaceParentById: { 2: null } }),
-  {
-    mainFlow: { spaceId: "2", preferredEnd, continuity: "REQUIRED", maxBlocksByKey: 2, minTasksPerBlock: 1 },
-    ...(timeGridMinutes === undefined ? {} : { timeGridMinutes }),
-  },
-);
-
-test("preferredEnd alineado participa en una rejilla verificable", () => {
-  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1020, 5));
-  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
-  assert.equal(result.diagnostics.timeGridVerifiable, true);
+test("presupuesto distingue ausencia, incompletitud e inválidos y omite extras", () => {
+  assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), searchBudget: undefined })).reasonCodes.includes("MISSING_SEARCH_BUDGET_CONFIGURATION"));
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), searchBudget: { bestK: 1 } }), "MISSING_SEARCH_BUDGET_CONFIGURATION").details, { invalidEntries: [], missingKeys: ["maxBacktracks", "maxPatterns", "maxBranchExpansions"], receivedValue: { bestK: 1 } });
+  for (const value of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, "1"]) {
+    const found = issue(configuredInput({ ...validPlannerNext(), searchBudget: { ...validPlannerNext().searchBudget, bestK: value } }), "INVALID_SEARCH_BUDGET");
+    assert.equal((found.details?.invalidEntries as { key: string }[])[0].key, "bestK");
+  }
+  const plain = configuredInput();
+  const extra = configuredInput({ ...validPlannerNext(), searchBudget: { ...validPlannerNext().searchBudget, ignored: 99 } });
+  assert.equal(preflightEngineInputForPlannerNext(plain).sourceFingerprint, preflightEngineInputForPlannerNext(extra).sourceFingerprint);
 });
 
-test("preferredEnd no alineado invalida sólo la compatibilidad de rejilla", () => {
-  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1022, 5));
-  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
-  assert.equal(result.diagnostics.timeGridVerifiable, false);
-  assert.deepEqual(issue(withMainFlowAndGrid(1022, 5), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1022]);
+test("mainFlow exige espacio físico descrito y preferredEnd HH:mm dentro de jornada", () => {
+  for (const flow of [
+    { ...validPlannerNext().mainFlow, spaceId: undefined },
+    { ...validPlannerNext().mainFlow, spaceId: 3 },
+    { ...validPlannerNext().mainFlow, preferredEnd: "17:0" },
+    { ...validPlannerNext().mainFlow, preferredEnd: "19:00" },
+    { ...validPlannerNext().mainFlow, continuity: "OPTIONAL" },
+    { ...validPlannerNext().mainFlow, maxBlocksByKey: 0 },
+    { ...validPlannerNext().mainFlow, minTasksPerBlock: 1.5 },
+  ]) assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), mainFlow: flow })).reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+  const zoneOnly = configuredInput({ ...validPlannerNext(), mainFlow: { ...validPlannerNext().mainFlow, spaceId: 9 } }, { optimizerMainZoneId: 9 });
+  assert.ok(preflightEngineInputForPlannerNext(zoneOnly).reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
 });
 
-test("preferredEnd dentro de jornada pero fuera de grid queda explícito", () => {
-  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1001, 10));
-  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
-  assert.deepEqual(issue(withMainFlowAndGrid(1001, 10), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1001]);
+test("rejilla valida forma, jornada, duraciones, tiempos y preferredEnd desde inicio de jornada", () => {
+  for (const grid of [undefined, 0, -1, 1.5, 601]) {
+    assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), timeGridMinutes: grid })).reasonCodes.includes("UNSUPPORTED_TIME_GRID"));
+  }
+  assert.equal(preflightEngineInputForPlannerNext(configuredInput()).diagnostics.timeGridVerifiable, true);
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 5 }, { tasks: [task(1, { durationOverrideMin: 17 })] }), "UNSUPPORTED_TIME_GRID").details?.incompatibleDurations, [17]);
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 10 }, { globalHardBreaks: [{ start: "15:05", end: "15:15" }] }), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [905, 915]);
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 10, mainFlow: { ...validPlannerNext().mainFlow, preferredEnd: "17:01" } }), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1021]);
+  const offset = configuredInput({ ...validPlannerNext(), timeGridMinutes: 15, mainFlow: { ...validPlannerNext().mainFlow, preferredEnd: "17:05" } }, { workDay: { start: "08:05", end: "18:05" }, meal: { start: "13:05", end: "14:05" } });
+  assert.equal(preflightEngineInputForPlannerNext(offset).diagnostics.timeGridVerifiable, true);
 });
 
-test("preferredEnd igual al final de jornada es compatible", () => {
-  assert.equal(preflightEngineInputForPlannerNext(withMainFlowAndGrid(1080, 5)).diagnostics.timeGridVerifiable, true);
+test("transiciones requieren ambos enteros finitos no negativos", () => {
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), participantTransitionMinutes: undefined, resourceTransitionMinutes: undefined }), "MISSING_TRANSITION_CONFIGURATION").details, { missingKeys: ["participantTransitionMinutes", "resourceTransitionMinutes"] });
+  assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), resourceTransitionMinutes: undefined }), "MISSING_TRANSITION_CONFIGURATION").details, { missingKeys: ["resourceTransitionMinutes"] });
+  for (const pair of [[0, 0], [2, 3]]) assert.equal(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), participantTransitionMinutes: pair[0], resourceTransitionMinutes: pair[1] })).diagnostics.transitionConfigurationComplete, true);
+  for (const value of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, "1"]) {
+    assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), participantTransitionMinutes: value })).reasonCodes.includes("INVALID_TRANSITION_CONFIGURATION"));
+    assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), resourceTransitionMinutes: value })).reasonCodes.includes("INVALID_TRANSITION_CONFIGURATION"));
+  }
 });
 
-test("preferredEnd válido no inventa rejilla ausente", () => {
-  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1020));
-  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
-  assert.equal(result.diagnostics.timeGridVerifiable, false);
-  assert.ok(result.reasonCodes.includes("UNSUPPORTED_TIME_GRID"));
+test("identidad y fingerprints dependen sólo de configuración canónica auditada", () => {
+  const baseline = preflightEngineInputForPlannerNext(configuredInput());
+  assert.ok(baseline.identityMap.some((entry) => entry.namespace === "space" && entry.sourceId === "2"));
+  assert.ok(!baseline.identityMap.some((entry) => entry.namespace === "zone" && entry.sourceId === "2"));
+  assert.ok(!baseline.reasonCodes.includes("DUPLICATE_ID"));
+  for (const configuration of [
+    { ...validPlannerNext(), searchPolicy: "EXACT_CONSTRUCTIVE" },
+    { ...validPlannerNext(), searchBudget: { ...validPlannerNext().searchBudget, bestK: 9 } },
+    { ...validPlannerNext(), timeGridMinutes: 10 },
+    { ...validPlannerNext(), participantTransitionMinutes: 2 },
+    { ...validPlannerNext(), resourceTransitionMinutes: 2 },
+    { ...validPlannerNext(), mainFlow: { ...validPlannerNext().mainFlow, preferredEnd: "16:00" } },
+  ]) assert.notEqual(baseline.sourceFingerprint, preflightEngineInputForPlannerNext(configuredInput(configuration)).sourceFingerprint);
+  const policyChanged = preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), searchPolicy: "EXACT_CONSTRUCTIVE" }));
+  assert.equal(baseline.identityMapFingerprint, policyChanged.identityMapFingerprint);
+  const bothSpaces = { spaceParentById: { 2: null, 3: null } };
+  const spaceTwo = preflightEngineInputForPlannerNext(configuredInput(validPlannerNext(), bothSpaces));
+  const spaceThree = preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), mainFlow: { ...validPlannerNext().mainFlow, spaceId: 3 } }, bothSpaces));
+  assert.notEqual(spaceTwo.identityMapFingerprint, spaceThree.identityMapFingerprint);
+  const reversedConfiguration = { mainFlow: validPlannerNext().mainFlow, resourceTransitionMinutes: 5, participantTransitionMinutes: 0, timeGridMinutes: 5, searchBudget: validPlannerNext().searchBudget, searchPolicy: "COMPATIBILITY_PRESERVING" };
+  assert.equal(baseline.sourceFingerprint, preflightEngineInputForPlannerNext(configuredInput(reversedConfiguration)).sourceFingerprint);
+  const extra = { ...validPlannerNext(), ignored: true, mainFlow: { ...validPlannerNext().mainFlow, label: "ignored" } };
+  assert.equal(baseline.sourceFingerprint, preflightEngineInputForPlannerNext(configuredInput(extra)).sourceFingerprint);
+});
+
+test("canonicaliza la referencia runtime de mainFlow.spaceId para el identity-map fingerprint", () => {
+  const numericInput = deepFreeze(configuredInput());
+  const stringInput = deepFreeze(configuredInput({
+    ...validPlannerNext(),
+    mainFlow: { ...validPlannerNext().mainFlow, spaceId: "2" },
+  }));
+  const numericBefore = clone(numericInput);
+  const stringBefore = clone(stringInput);
+
+  const numericResult = preflightEngineInputForPlannerNext(numericInput);
+  const stringResult = preflightEngineInputForPlannerNext(stringInput);
+
+  assert.deepEqual(numericResult.identityMap, stringResult.identityMap);
+  assert.equal(numericResult.identityMapFingerprint, stringResult.identityMapFingerprint);
+  assert.notEqual(numericResult.sourceFingerprint, stringResult.sourceFingerprint);
+  assert.ok(!numericResult.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+  assert.ok(stringResult.reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
+  assert.equal(stringResult.status, "UNSUPPORTED");
+  assert.deepEqual(numericInput, numericBefore);
+  assert.deepEqual(stringInput, stringBefore);
+  for (const result of [numericResult, stringResult]) {
+    assert.ok(Object.isFrozen(result));
+    assert.ok(Object.isFrozen(result.identityMap));
+    assert.ok(Object.isFrozen(result.diagnostics));
+    assert.ok(Object.isFrozen(result.issues));
+    result.identityMap.forEach((entry) => assert.ok(Object.isFrozen(entry)));
+    result.issues.forEach((entry) => {
+      assert.ok(Object.isFrozen(entry));
+      if (entry.details) assert.ok(Object.isFrozen(entry.details));
+    });
+  }
+});
+
+test("cambiar sólo searchBudget.bestK no cambia identidades", () => {
+  const baseline = preflightEngineInputForPlannerNext(configuredInput());
+  const changed = preflightEngineInputForPlannerNext(configuredInput({
+    ...validPlannerNext(),
+    searchBudget: { ...validPlannerNext().searchBudget, bestK: 2 },
+  }));
+
+  assert.notEqual(baseline.sourceFingerprint, changed.sourceFingerprint);
+  assert.deepEqual(baseline.identityMap, changed.identityMap);
+  assert.equal(baseline.identityMapFingerprint, changed.identityMapFingerprint);
+  assert.equal(baseline.diagnostics.searchBudgetConfigurationComplete, true);
+  assert.equal(changed.diagnostics.searchBudgetConfigurationComplete, true);
+  assert.ok(!baseline.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
+  assert.ok(!changed.reasonCodes.includes("INVALID_SEARCH_BUDGET"));
 });
 
 test("operaciones ancladas runtime distinguen incompletitud y ambigüedad", () => {
@@ -695,6 +788,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
+      "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",
       "UNSUPPORTED_SETUP_MAPPING",
       "UNSUPPORTED_TASK_ROLE",
@@ -723,10 +817,12 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "breakCount": 1,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
+      "integrationConfigurationPresent": false,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
       "timeGridVerifiable": false,
+      "transitionConfigurationComplete": false,
       "anchoredOperationContractPresent": false,
       "unresolvedTaskRoleCount": 3,
       "missingDurationTaskCount": 2,
@@ -757,6 +853,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
+      "MISSING_TRANSITION_CONFIGURATION",
       "UNREPRESENTABLE_RESOURCE_LOCK",
       "UNREPRESENTABLE_SPACE_LOCK",
       "UNSUPPORTED_SETUP_MAPPING",
@@ -786,10 +883,12 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "breakCount": 1,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
+      "integrationConfigurationPresent": false,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
       "timeGridVerifiable": false,
+      "transitionConfigurationComplete": false,
       "anchoredOperationContractPresent": false,
       "unresolvedTaskRoleCount": 3,
       "missingDurationTaskCount": 3,
@@ -821,6 +920,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_SEARCH_POLICY_CONFIGURATION",
       "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
+      "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",
       "UNSUPPORTED_SETUP_MAPPING",
       "UNSUPPORTED_TASK_ROLE",
@@ -849,10 +949,12 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "breakCount": 1,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
+      "integrationConfigurationPresent": false,
       "mainFlowConfigurationComplete": false,
       "searchPolicyConfigurationPresent": false,
       "searchBudgetConfigurationComplete": false,
       "timeGridVerifiable": false,
+      "transitionConfigurationComplete": false,
       "anchoredOperationContractPresent": false,
       "unresolvedTaskRoleCount": 3,
       "missingDurationTaskCount": 2,
