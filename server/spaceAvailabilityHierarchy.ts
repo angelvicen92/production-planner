@@ -83,8 +83,8 @@ export function buildPlanSpatialAvailabilitySnapshot(input: {
   planId: number;
   requestedWorkDay: { start?: unknown; end?: unknown };
   defaultWorkDay: NullableAvailabilityWindow;
-  zones: Array<{ id: number; defaultAvailabilityStart: unknown; defaultAvailabilityEnd: unknown }>;
-  spaces: Array<{ id: number; zoneId: number; defaultAvailabilityStart: unknown; defaultAvailabilityEnd: unknown }>;
+  zones: ReadonlyArray<{ id: number; defaultAvailabilityStart: unknown; defaultAvailabilityEnd: unknown }>;
+  spaces: ReadonlyArray<{ id: number; zoneId: number; defaultAvailabilityStart: unknown; defaultAvailabilityEnd: unknown }>;
 }): SpatialSnapshotBatch {
   const hasStart = own(input.requestedWorkDay, "start") && input.requestedWorkDay.start !== undefined;
   const hasEnd = own(input.requestedWorkDay, "end") && input.requestedWorkDay.end !== undefined;

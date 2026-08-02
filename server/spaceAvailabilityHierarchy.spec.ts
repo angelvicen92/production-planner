@@ -75,7 +75,9 @@ test("plan creation preparation maps every catalog conflict to a typed safe reas
     [{ ...structuredClone(catalog), spaces: [{ id: 3, zoneId: 99, defaultAvailabilityStart: null, defaultAvailabilityEnd: null }] }, "SPACE_ZONE_NOT_FOUND"],
   ] as const;
   for (const [input, reason] of cases) {
+    const before = structuredClone(input);
     assert.throws(() => runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilitySnapshot(input)), (error) => error instanceof SpatialAvailabilityValidationError && error.reasonCode === reason);
+    assert.deepEqual(input, before);
   }
 });
 test("one invalid catalog row rejects the complete logical batch", () => assert.throws(() => buildPlanSpatialAvailabilitySnapshot({ ...structuredClone(catalog), spaces: [...catalog.spaces, { id: 5, zoneId: 1, defaultAvailabilityStart: "09:00", defaultAvailabilityEnd: "21:00" }] }), /SPACE_OUTSIDE_ZONE/));
