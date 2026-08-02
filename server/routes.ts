@@ -550,6 +550,10 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot update zone" });
     }
   });
+  app.patch(api.zones.availability.path, async (req, res) => {
+    try { const input = api.zones.availability.input.parse(req.body); res.json(await storage.updateZoneDefaultAvailability(Number(req.params.id), input)); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update zone availability" }); }
+  });
 
   // Spaces
   app.get(api.spaces.list.path, async (_req, res) => {
@@ -580,6 +584,10 @@ function mapDeleteError(err: any, fallback: string) {
     } catch (err: any) {
       return res.status(400).json({ message: err?.message || "Cannot update space" });
     }
+  });
+  app.patch(api.spaces.availability.path, async (req, res) => {
+    try { const input = api.spaces.availability.input.parse(req.body); res.json(await storage.updateSpaceDefaultAvailability(Number(req.params.id), input)); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update space availability" }); }
   });
   
   // Staff People (Producción / Redacción)
@@ -1738,6 +1746,8 @@ function mapDeleteError(err: any, fallback: string) {
 
       res.json({
         id: Number(data.id),
+        defaultWorkStart: data.default_work_start,
+        defaultWorkEnd: data.default_work_end,
         mealStart: String(data.meal_start),
         mealEnd: String(data.meal_end),
         mealMode: String(data.meal_mode ?? "flexible_meal_window"),
@@ -1772,6 +1782,9 @@ function mapDeleteError(err: any, fallback: string) {
       const input = api.programSettings.update.input.parse(req.body);
 
       const patch: any = {};
+      if (input.defaultWorkStart !== undefined && input.defaultWorkEnd !== undefined) {
+        await storage.updateProgramDefaultWorkday(input.defaultWorkStart, input.defaultWorkEnd);
+      }
       if (input.mealStart !== undefined) patch.meal_start = input.mealStart;
       if (input.mealEnd !== undefined) patch.meal_end = input.mealEnd;
       if (input.mealMode !== undefined) patch.meal_mode = input.mealMode;
@@ -3200,6 +3213,27 @@ function mapDeleteError(err: any, fallback: string) {
       }
       res.status(500).json({ message: err?.message || "Internal Server Error" });
     }
+  });
+
+  app.get(api.plans.spatialAvailability.listZones.path, async (req, res) => {
+    try { res.json(await storage.getPlanZoneSettings(Number(req.params.id))); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read zone availability" }); }
+  });
+  app.get(api.plans.spatialAvailability.listSpaces.path, async (req, res) => {
+    try { res.json(await storage.getPlanSpaceSettings(Number(req.params.id))); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot read space availability" }); }
+  });
+  app.post(api.plans.spatialAvailability.initialize.path, async (req, res) => {
+    try { res.json(await storage.initializePlanSpatialAvailabilitySnapshots(Number(req.params.id))); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot initialize spatial availability" }); }
+  });
+  app.patch(api.plans.spatialAvailability.updateZone.path, async (req, res) => {
+    try { const input = api.plans.spatialAvailability.updateZone.input.parse(req.body); res.json(await storage.updatePlanZoneAvailability(Number(req.params.id), Number(req.params.zoneId), input)); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan zone availability" }); }
+  });
+  app.patch(api.plans.spatialAvailability.updateSpace.path, async (req, res) => {
+    try { const input = api.plans.spatialAvailability.updateSpace.input.parse(req.body); res.json(await storage.updatePlanSpaceAvailability(Number(req.params.id), Number(req.params.spaceId), input)); }
+    catch (err: any) { res.status(400).json({ message: err?.message || "Cannot update plan space availability" }); }
   });
 
   // Update Plan (Work hours / Meal break / Cameras)

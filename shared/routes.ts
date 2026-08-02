@@ -49,6 +49,27 @@ const canonicalResourceAvailabilityTime = z
   .string()
   .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
 
+export const availabilityWindowUpdateSchema = z
+  .object({
+    availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
+    availabilityEnd: canonicalResourceAvailabilityTime.nullable().optional(),
+  })
+  .strict()
+  .superRefine(validateResourceAvailabilityWindowPair);
+
+export const defaultWorkdayUpdateSchema = z
+  .object({
+    defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
+    defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const hasStart = value.defaultWorkStart !== undefined;
+    const hasEnd = value.defaultWorkEnd !== undefined;
+    if (hasStart !== hasEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
+    if (hasStart && hasEnd && value.defaultWorkStart! >= value.defaultWorkEnd!) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+  });
+
 const resourceAvailabilityWindowFields = {
   availabilityStart: canonicalResourceAvailabilityTime.nullable().optional(),
   availabilityEnd: canonicalResourceAvailabilityTime.nullable().optional(),
@@ -365,7 +386,11 @@ export const api = {
     create: {
       method: "POST" as const,
       path: "/api/plans",
-      input: insertPlanSchema,
+      input: insertPlanSchema.extend({ workStart: canonicalResourceAvailabilityTime.optional(), workEnd: canonicalResourceAvailabilityTime.optional() })
+        .superRefine((value, context) => {
+          if ((value.workStart === undefined) !== (value.workEnd === undefined)) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday override must provide start and end together" });
+          if (value.workStart !== undefined && value.workEnd !== undefined && value.workStart >= value.workEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+        }),
       responses: {
         201: z.custom<typeof plans.$inferSelect>(),
         400: errorSchemas.validation,
@@ -389,6 +414,13 @@ export const api = {
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       },
+    },
+    spatialAvailability: {
+      listZones: { method: "GET" as const, path: "/api/plans/:id/zone-availability" },
+      listSpaces: { method: "GET" as const, path: "/api/plans/:id/space-availability" },
+      initialize: { method: "POST" as const, path: "/api/plans/:id/spatial-availability/init" },
+      updateZone: { method: "PATCH" as const, path: "/api/plans/:id/zones/:zoneId/availability", input: availabilityWindowUpdateSchema },
+      updateSpace: { method: "PATCH" as const, path: "/api/plans/:id/spaces/:spaceId/availability", input: availabilityWindowUpdateSchema },
     },
     generate: {
       method: "POST" as const,
@@ -913,6 +945,8 @@ export const api = {
       responses: {
         200: z.object({
           id: z.number(),
+          defaultWorkStart: canonicalResourceAvailabilityTime,
+          defaultWorkEnd: canonicalResourceAvailabilityTime,
           mealStart: z.string(),
           mealEnd: z.string(),
           mealMode: z.enum(["global_hard_break", "flexible_meal_window"]),
@@ -937,6 +971,8 @@ export const api = {
       path: "/api/program-settings",
       input: z
         .object({
+          defaultWorkStart: canonicalResourceAvailabilityTime.optional(),
+          defaultWorkEnd: canonicalResourceAvailabilityTime.optional(),
           mealStart: z
             .string()
             .regex(/^\d{2}:\d{2}$/)
@@ -970,7 +1006,11 @@ export const api = {
           uiItinerantGroupOrderIndex: z.number().int().nullable().optional(),
           uiUnlocatedGroupOrderIndex: z.number().int().nullable().optional(),
         })
-        .strict(),
+        .strict()
+        .superRefine((value, context) => {
+          if ((value.defaultWorkStart === undefined) !== (value.defaultWorkEnd === undefined)) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start and end must be provided together" });
+          if (value.defaultWorkStart !== undefined && value.defaultWorkEnd !== undefined && value.defaultWorkStart >= value.defaultWorkEnd) context.addIssue({ code: z.ZodIssueCode.custom, message: "Workday start must be earlier than end" });
+        }),
       responses: {
         200: z.object({ success: z.boolean() }),
         400: errorSchemas.validation,
@@ -1096,6 +1136,7 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    availability: { method: "PATCH" as const, path: "/api/zones/:id/default-availability", input: availabilityWindowUpdateSchema },
   },
 
   vocalCoachRules: {
@@ -1181,6 +1222,7 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    availability: { method: "PATCH" as const, path: "/api/spaces/:id/default-availability", input: availabilityWindowUpdateSchema },
     delete: {
       method: "DELETE" as const,
       path: "/api/zones/:id",
