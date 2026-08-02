@@ -148,6 +148,28 @@ const SET_ARRAY_KEYS = new Set([
 
 const compare = (left: string, right: string): number => left.localeCompare(right, "en");
 
+interface ConcreteMealRepresentation {
+  source: string;
+  start: string;
+  end: string;
+}
+
+function concreteMealRepresentations(input: EngineInput): ConcreteMealRepresentation[] {
+  const representations: ConcreteMealRepresentation[] = [{ source: "meal", ...input.meal }];
+  const isGlobal = (entry: ProtectedBreakInput): boolean => entry.contestantId == null
+    && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null;
+  if (input.actualMeal && isGlobal(input.actualMeal) && (input.actualMeal.kind == null || input.actualMeal.kind === "meal")) {
+    representations.push({ source: "actualMeal", start: input.actualMeal.start, end: input.actualMeal.end });
+  }
+  if (input.actualMealStart != null && input.actualMealEnd != null) {
+    representations.push({ source: "actualMealAliases", start: input.actualMealStart, end: input.actualMealEnd });
+  }
+  input.protectedBreaks?.filter((entry) => entry.kind === "meal" && isGlobal(entry)).forEach((entry) => {
+    representations.push({ source: `protectedBreak:${String(entry.id ?? `${entry.start}-${entry.end}`)}`, start: entry.start, end: entry.end });
+  });
+  return representations;
+}
+
 function stableValue(value: unknown, path: readonly string[] = []): unknown {
   if (Array.isArray(value)) {
     const values = value.map((item) => stableValue(item, path));
@@ -170,6 +192,15 @@ function stableValue(value: unknown, path: readonly string[] = []): unknown {
 
 function sourceProjection(input: EngineInput): unknown {
   const runtime = input as unknown as Record<string, unknown>;
+  const anchoredAccompaniments = Array.isArray(runtime.anchoredAccompaniments)
+    ? runtime.anchoredAccompaniments.map((entry) => entry && typeof entry === "object" ? Object.fromEntries(
+      ["id", "anchorTaskId", "anchor", "beforeTaskIds", "afterTaskIds", "segments", "adjacency", "internalTransition", "resourceContinuity"]
+        .map((key) => [key, (entry as Record<string, unknown>)[key]]),
+    ) : entry).sort((left, right) => compare(
+      String((left as Record<string, unknown> | null)?.id ?? ""),
+      String((right as Record<string, unknown> | null)?.id ?? ""),
+    ))
+    : runtime.anchoredAccompaniments;
   const tasks = input.tasks.map((task) => {
     const planifiable = task.status === "pending" || task.status === "interrupted";
     return {
@@ -264,12 +295,7 @@ function sourceProjection(input: EngineInput): unknown {
       ["spaceId", "preferredEnd", "continuity", "maxBlocksByKey", "minTasksPerBlock"].map((key) => [key, (runtime.mainFlow as Record<string, unknown>)[key]]),
     ) : runtime.mainFlow,
     timeGridMinutes: runtime.timeGridMinutes,
-    anchoredAccompaniments: Array.isArray(runtime.anchoredAccompaniments)
-      ? runtime.anchoredAccompaniments.map((entry) => entry && typeof entry === "object" ? Object.fromEntries(
-        ["id", "anchorTaskId", "anchor", "beforeTaskIds", "afterTaskIds", "segments", "adjacency", "internalTransition", "resourceContinuity"]
-          .map((key) => [key, (entry as Record<string, unknown>)[key]]),
-      ) : entry)
-      : runtime.anchoredAccompaniments,
+    anchoredAccompaniments,
   });
 }
 
@@ -823,19 +849,24 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
   if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal", true);
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
-  input.protectedBreaks?.filter((entry) => entry.kind === "meal" && entry.contestantId == null && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null)
-    .forEach((entry) => {
-      if (entry.start !== input.meal.start || entry.end !== input.meal.end) {
-        addIssue("UNSUPPORTED_BREAK_SCOPE", "break", entry.id ?? `${entry.start}-${entry.end}`, "protectedBreaks", "Legacy meal and protected meal describe different intervals.", {
-          legacyMeal: input.meal,
-          protectedMeal: { start: entry.start, end: entry.end },
-        });
-      }
-    });
+  const concreteMealsByInterval = new Map<string, { start: string; end: string; sources: string[] }>();
+  for (const representation of concreteMealRepresentations(input)) {
+    const key = `${representation.start}\0${representation.end}`;
+    const existing = concreteMealsByInterval.get(key) ?? { start: representation.start, end: representation.end, sources: [] };
+    existing.sources.push(representation.source);
+    existing.sources.sort(compare);
+    concreteMealsByInterval.set(key, existing);
+  }
+  const concreteMeals = [...concreteMealsByInterval.values()].sort((left, right) => compare(`${left.start}\0${left.end}`, `${right.start}\0${right.end}`));
+  if (concreteMeals.length > 1) {
+    addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "concreteMeals", "Concrete meal representations describe different intervals.", { representations: concreteMeals });
+  }
   input.globalHardBreaks?.forEach((entry) => addIssue("UNSUPPORTED_BREAK_SCOPE", "break", `${entry.start}-${entry.end}`, `globalHardBreaks.${entry.start}-${entry.end}`, "Arbitrary global hard break cannot map to protectedMeal.", { scope: "global-hard-break" }));
-  const aliasActualMealPresent = !input.actualMeal && input.actualMealStart != null && input.actualMealEnd != null;
-  const additionalBreakCount = (input.actualMeal || aliasActualMealPresent ? 1 : 0) + (input.protectedBreaks?.length ?? 0) + (input.globalHardBreaks?.length ?? 0);
-  if (additionalBreakCount > 1) addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "breaks", "Multiple break contracts cannot collapse into one protected meal.", { breakCount: additionalBreakCount });
+  const isGlobalConcreteMeal = (entry: ProtectedBreakInput): boolean => entry.kind === "meal"
+    && entry.contestantId == null && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null;
+  const nonConcreteProtectedBreakCount = input.protectedBreaks?.filter((entry) => !isGlobalConcreteMeal(entry)).length ?? 0;
+  const scopedActualMealCount = input.actualMeal && !concreteMealRepresentations({ ...input, protectedBreaks: [] }).some((entry) => entry.source === "actualMeal") ? 1 : 0;
+  const flexibleMealCount = input.mealMode === "flexible_meal_window" || input.mealWindow || input.mealWindowStart || input.mealWindowEnd ? 1 : 0;
   if (input.contestantMealDurationMinutes != null || input.contestantMealMaxSimultaneous != null) {
     addIssue("UNSUPPORTED_BREAK_SCOPE", "plan", input.planId, "contestantMeal", "Contestant meal duration/capacity has no exact Planner Next contract.", {
       durationMinutes: input.contestantMealDurationMinutes,
@@ -856,6 +887,13 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       operationalRole: task.operationalRole,
     });
   }
+  const taskBreakCount = input.tasks.filter((task) => task.breakId != null || task.breakKind != null || task.mealOccupiesSpace != null
+    || task.operationalRole === "meal_break_placeholder" || task.operationalRole === "space_break_placeholder"
+    || task.operationalRole === "global_break_placeholder").length;
+  const breakCount = concreteMeals.length + nonConcreteProtectedBreakCount + scopedActualMealCount
+    + (input.globalHardBreaks?.length ?? 0) + flexibleMealCount
+    + (input.contestantMealDurationMinutes != null || input.contestantMealMaxSimultaneous != null ? 1 : 0)
+    + mapKeys(input.spaceMealBreakMinutesByZoneId).length + taskBreakCount;
 
   const transportConfigured = Boolean(
     input.transportSettings || input.transportSpaceId != null || input.transportVanCapacity != null || input.vanCapacity != null
@@ -905,6 +943,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const preferredEnd = mainFlow?.preferredEnd;
   const preferredEndValid = typeof preferredEnd === "number" && Number.isFinite(preferredEnd)
     && workDayStart !== null && workDayEnd !== null && preferredEnd >= workDayStart && preferredEnd <= workDayEnd;
+  if (preferredEndValid && !auditedTimeValues.includes(preferredEnd)) auditedTimeValues.push(preferredEnd);
   const mainFlowConfigurationComplete = Boolean(
     mainFlow && mainFlow.spaceId != null && describedSpaceIds.has(String(mainFlow.spaceId)) && preferredEndValid
     && mainFlow.continuity === "REQUIRED" && isPositiveInteger(mainFlow.maxBlocksByKey)
@@ -953,15 +992,25 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         const before = record.beforeTaskIds;
         const after = record.afterTaskIds;
         const segments = record.segments;
-        const hasSegments = (Array.isArray(before) && Array.isArray(after)) || Array.isArray(segments);
-        const complete = record.id != null && anchor != null && hasSegments && record.adjacency === "REQUIRED"
+        const effectiveSegments = [
+          ...(Array.isArray(before) ? before : []),
+          ...(Array.isArray(after) ? after : []),
+          ...(Array.isArray(segments) ? segments : []),
+        ].map(String);
+        const hasEffectiveSegments = effectiveSegments.length > 0;
+        const referencedTaskIds = [anchor, ...effectiveSegments].filter((value) => value != null).map(String);
+        const missingTaskIds = [...new Set(referencedTaskIds.filter((taskId) => !taskById.has(taskId)))].sort(compare);
+        const complete = record.id != null && anchor != null && hasEffectiveSegments && !missingTaskIds.length
+          && record.adjacency === "REQUIRED"
           && record.internalTransition === "INCLUDED" && record.resourceContinuity === "REQUIRED";
         if (!complete) {
           anchoredOperationContractPresent = false;
-          addIssue("INCOMPLETE_ANCHORED_OPERATION", "anchored-operation", id, path, "Anchored operation lacks required explicit fields.");
+          addIssue("INCOMPLETE_ANCHORED_OPERATION", "anchored-operation", id, path, "Anchored operation lacks required fields, effective segments, or existing tasks.", {
+            hasEffectiveSegments,
+            missingTaskIds,
+          });
         }
-        const members = [anchor, ...(Array.isArray(before) ? before : []), ...(Array.isArray(after) ? after : []), ...(Array.isArray(segments) ? segments : [])]
-          .filter((value) => value != null).map(String);
+        const members = referencedTaskIds;
         const ambiguous = operationIds.has(id) || new Set(members).size !== members.length
           || members.some((member) => memberOwners.has(member) && memberOwners.get(member) !== id);
         if (ambiguous) {
@@ -1001,7 +1050,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     resourceComponentReferenceCount,
     missingResourceReferenceCount,
     dependencyCount,
-    breakCount: additionalBreakCount,
+    breakCount,
     transportConfigured,
     setupConfigurationDetected,
     mainFlowConfigurationComplete,

@@ -303,7 +303,7 @@ test("capacidad mayor que uno y aliases contradictorios", () => {
 test("breaks distinguen legacy, flexible, actual global/scoped y global hard", () => {
   assert.ok(!preflightEngineInputForPlannerNext(input()).reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
   assert.deepEqual(issue(input({ mealMode: "flexible_meal_window", mealWindow: { start: "12:00", end: "14:00" } }), "UNSUPPORTED_BREAK_SCOPE").details, { scope: "flexible-window" });
-  assert.ok(!preflightEngineInputForPlannerNext(input({ actualMeal: { id: 1, kind: "meal", start: "13:00", end: "13:30" } })).reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+  assert.ok(!preflightEngineInputForPlannerNext(input({ actualMeal: { id: 1, kind: "meal", start: "13:00", end: "14:00" } })).reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
   assert.deepEqual(issue(input({ actualMeal: { id: 1, kind: "meal", start: "13:00", end: "13:30", spaceId: 2 } }), "UNSUPPORTED_BREAK_SCOPE", "1").details, { scope: "space" });
   assert.deepEqual(issue(input({ globalHardBreaks: [{ start: "15:00", end: "15:10" }] }), "UNSUPPORTED_BREAK_SCOPE").details, { scope: "global-hard-break" });
 });
@@ -314,7 +314,7 @@ test("breaks participant, space, zone, itinerant y multiplicidad conservan scope
     assert.deepEqual(issue(input({ protectedBreaks: [entry] }), "UNSUPPORTED_BREAK_SCOPE", String(value)).details, { scope });
   }
   const multiple = preflightEngineInputForPlannerNext(input({ protectedBreaks: [{ id: 1, start: "15:00", end: "15:10", zoneId: 3 }, { id: 2, start: "16:00", end: "16:10", spaceId: 2 }] }));
-  assert.deepEqual(multiple.issues.find((entry) => entry.code === "UNSUPPORTED_BREAK_SCOPE" && entry.path === "breaks")?.details, { breakCount: 2 });
+  assert.equal(multiple.diagnostics.breakCount, 3);
 });
 
 test("transporte detectado sólo por contrato estructurado", () => {
@@ -357,6 +357,79 @@ test("fingerprint cambia con duración, dependencia, lock y scope", () => {
     input({ tasks: [task(1), task(2)], locks: [{ id: 1, planId: 1, taskId: 1, lockType: "space" }] }),
     input({ tasks: [task(1), task(2)], protectedBreaks: [{ id: 1, start: "15:00", end: "15:10", zoneId: 2 }] }),
   ]) assert.notEqual(baseline, preflightEngineInputForPlannerNext(changed).sourceFingerprint);
+});
+
+const concreteMealIssue = (source: EngineInput) => preflightEngineInputForPlannerNext(source).issues.find((entry) => entry.path === "concreteMeals");
+
+test("comida concreta: sólo meal cuenta un único contrato", () => {
+  const result = preflightEngineInputForPlannerNext(input());
+  assert.equal(result.diagnostics.breakCount, 1);
+  assert.equal(concreteMealIssue(input()), undefined);
+});
+
+for (const [name, overrides] of [
+  ["meal y actualMeal idénticos", { actualMeal: { id: 1, kind: "meal", start: "13:00", end: "14:00" } }],
+  ["meal y aliases idénticos", { actualMealStart: "13:00", actualMealEnd: "14:00" }],
+  ["actualMeal y aliases idénticos", { actualMeal: { id: 1, kind: "meal", start: "13:00", end: "14:00" }, actualMealStart: "13:00", actualMealEnd: "14:00" }],
+  ["meal y protected meal idénticos", { protectedBreaks: [{ id: 1, kind: "meal", start: "13:00", end: "14:00" }] }],
+  ["las cuatro representaciones idénticas", { actualMeal: { id: 1, kind: "meal", start: "13:00", end: "14:00" }, actualMealStart: "13:00", actualMealEnd: "14:00", protectedBreaks: [{ id: 2, kind: "meal", start: "13:00", end: "14:00" }] }],
+] as const) {
+  test(`comida concreta equivalente: ${name}`, () => {
+    const source = input(overrides);
+    const result = preflightEngineInputForPlannerNext(source);
+    assert.equal(concreteMealIssue(source), undefined);
+    assert.equal(result.diagnostics.breakCount, 1);
+  });
+}
+
+test("comidas concretas: meal y actualMeal diferentes producen un issue canónico", () => {
+  const source = input({ actualMeal: { id: 1, kind: "meal", start: "12:00", end: "12:30" } });
+  assert.deepEqual(concreteMealIssue(source)?.details, { representations: [
+    { end: "12:30", sources: ["actualMeal"], start: "12:00" },
+    { end: "14:00", sources: ["meal"], start: "13:00" },
+  ] });
+});
+
+test("comidas concretas: meal y aliases diferentes producen un issue canónico", () => {
+  const source = input({ actualMealStart: "12:00", actualMealEnd: "12:30" });
+  assert.deepEqual(concreteMealIssue(source)?.details, { representations: [
+    { end: "12:30", sources: ["actualMealAliases"], start: "12:00" },
+    { end: "14:00", sources: ["meal"], start: "13:00" },
+  ] });
+});
+
+test("comidas concretas: actualMeal y aliases contradictorios conservan ambas fuentes", () => {
+  const source = input({ actualMeal: { id: 1, kind: "meal", start: "13:00", end: "14:00" }, actualMealStart: "12:00", actualMealEnd: "12:30" });
+  assert.deepEqual(concreteMealIssue(source)?.details, { representations: [
+    { end: "12:30", sources: ["actualMealAliases"], start: "12:00" },
+    { end: "14:00", sources: ["actualMeal", "meal"], start: "13:00" },
+  ] });
+  assert.ok(preflightEngineInputForPlannerNext(source).issues.some((entry) => entry.path === "actualMealAliases"));
+});
+
+test("comidas concretas: dos protected meals diferentes producen un único issue", () => {
+  const source = input({ protectedBreaks: [
+    { id: 1, kind: "meal", start: "13:00", end: "14:00" },
+    { id: 2, kind: "meal", start: "15:00", end: "15:30" },
+  ] });
+  assert.equal(preflightEngineInputForPlannerNext(source).issues.filter((entry) => entry.path === "concreteMeals").length, 1);
+  assert.equal(preflightEngineInputForPlannerNext(source).diagnostics.breakCount, 2);
+});
+
+test("comida concreta y hard break global mantienen contratos separados", () => {
+  const source = input({ globalHardBreaks: [{ start: "15:00", end: "15:15" }] });
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.equal(concreteMealIssue(source), undefined);
+  assert.equal(result.diagnostics.breakCount, 2);
+  assert.ok(result.issues.some((entry) => entry.path === "globalHardBreaks.15:00-15:15"));
+});
+
+test("comida concreta y break scoped mantienen contratos separados", () => {
+  const source = input({ protectedBreaks: [{ id: 1, kind: "meal", start: "15:00", end: "15:15", contestantId: 5 }] });
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.equal(concreteMealIssue(source), undefined);
+  assert.equal(result.diagnostics.breakCount, 2);
+  assert.ok(result.issues.some((entry) => entry.entityId === "1" && entry.code === "UNSUPPORTED_BREAK_SCOPE"));
 });
 
 const runtimeInput = (source: EngineInput, fields: Record<string, unknown>): EngineInput => Object.assign(source, fields);
@@ -403,6 +476,44 @@ test("rejilla runtime exige forma y compatibilidad exactas", () => {
   assert.equal(compatible.diagnostics.timeGridVerifiable, true);
 });
 
+const withMainFlowAndGrid = (preferredEnd: number, timeGridMinutes?: number): EngineInput => runtimeInput(
+  input({ spaceParentById: { 2: null } }),
+  {
+    mainFlow: { spaceId: "2", preferredEnd, continuity: "REQUIRED", maxBlocksByKey: 2, minTasksPerBlock: 1 },
+    ...(timeGridMinutes === undefined ? {} : { timeGridMinutes }),
+  },
+);
+
+test("preferredEnd alineado participa en una rejilla verificable", () => {
+  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1020, 5));
+  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
+  assert.equal(result.diagnostics.timeGridVerifiable, true);
+});
+
+test("preferredEnd no alineado invalida sólo la compatibilidad de rejilla", () => {
+  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1022, 5));
+  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
+  assert.equal(result.diagnostics.timeGridVerifiable, false);
+  assert.deepEqual(issue(withMainFlowAndGrid(1022, 5), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1022]);
+});
+
+test("preferredEnd dentro de jornada pero fuera de grid queda explícito", () => {
+  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1001, 10));
+  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
+  assert.deepEqual(issue(withMainFlowAndGrid(1001, 10), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1001]);
+});
+
+test("preferredEnd igual al final de jornada es compatible", () => {
+  assert.equal(preflightEngineInputForPlannerNext(withMainFlowAndGrid(1080, 5)).diagnostics.timeGridVerifiable, true);
+});
+
+test("preferredEnd válido no inventa rejilla ausente", () => {
+  const result = preflightEngineInputForPlannerNext(withMainFlowAndGrid(1020));
+  assert.equal(result.diagnostics.mainFlowConfigurationComplete, true);
+  assert.equal(result.diagnostics.timeGridVerifiable, false);
+  assert.ok(result.reasonCodes.includes("UNSUPPORTED_TIME_GRID"));
+});
+
 test("operaciones ancladas runtime distinguen incompletitud y ambigüedad", () => {
   const incomplete = issue(runtimeInput(input(), { anchoredAccompaniments: [{ id: "a", anchorTaskId: 1 }] }), "INCOMPLETE_ANCHORED_OPERATION", "a");
   assert.equal(incomplete.path, "anchoredAccompaniments.0");
@@ -411,6 +522,73 @@ test("operaciones ancladas runtime distinguen incompletitud y ambigüedad", () =
   assert.equal(complete.diagnostics.anchoredOperationContractPresent, true);
   const ambiguous = runtimeInput(input({ tasks: [task(1), task(2), task(3)] }), { anchoredAccompaniments: [validOperation, { ...validOperation }] });
   assert.ok(preflightEngineInputForPlannerNext(ambiguous).reasonCodes.includes("AMBIGUOUS_ANCHORED_OPERATION"));
+});
+
+const anchoredOperation = (id: string, anchorTaskId: number, beforeTaskIds: number[], afterTaskIds: number[]) => ({
+  id, anchorTaskId, beforeTaskIds, afterTaskIds,
+  adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED",
+});
+
+for (const [name, operation, missingTaskIds] of [
+  ["anchor inexistente", anchoredOperation("a", 9, [2], []), ["9"]],
+  ["before inexistente", anchoredOperation("a", 1, [9], []), ["9"]],
+  ["after inexistente", anchoredOperation("a", 1, [], [9]), ["9"]],
+  ["varios IDs inexistentes", anchoredOperation("a", 8, [9], [7]), ["7", "8", "9"]],
+] as const) {
+  test(`operación anclada rechaza ${name}`, () => {
+    const source = runtimeInput(input({ tasks: [task(1), task(2)] }), { anchoredAccompaniments: [operation] });
+    const found = issue(source, "INCOMPLETE_ANCHORED_OPERATION", "a");
+    assert.deepEqual(found.details, { hasEffectiveSegments: true, missingTaskIds });
+    assert.equal(preflightEngineInputForPlannerNext(source).diagnostics.anchoredOperationContractPresent, false);
+  });
+}
+
+test("operación anclada sin contrato de segmentos es incompleta", () => {
+  const operation = { id: "a", anchorTaskId: 1, adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" };
+  assert.deepEqual(issue(runtimeInput(input(), { anchoredAccompaniments: [operation] }), "INCOMPLETE_ANCHORED_OPERATION", "a").details, {
+    hasEffectiveSegments: false, missingTaskIds: [],
+  });
+});
+
+test("operación anclada con before/after vacíos es incompleta", () => {
+  const source = runtimeInput(input(), { anchoredAccompaniments: [anchoredOperation("a", 1, [], [])] });
+  assert.deepEqual(issue(source, "INCOMPLETE_ANCHORED_OPERATION", "a").details, { hasEffectiveSegments: false, missingTaskIds: [] });
+});
+
+test("operación anclada completa exige y encuentra todas sus tareas", () => {
+  const source = runtimeInput(input({ tasks: [task(1), task(2), task(3)] }), { anchoredAccompaniments: [anchoredOperation("a", 1, [2], [3])] });
+  const result = preflightEngineInputForPlannerNext(source);
+  assert.equal(result.diagnostics.anchoredOperationContractPresent, true);
+  assert.ok(!result.reasonCodes.includes("INCOMPLETE_ANCHORED_OPERATION"));
+});
+
+test("operación anclada completa pero ambigua permanece rechazada", () => {
+  const operation = anchoredOperation("a", 1, [2], [2]);
+  const result = preflightEngineInputForPlannerNext(runtimeInput(input({ tasks: [task(1), task(2)] }), { anchoredAccompaniments: [operation] }));
+  assert.equal(result.diagnostics.anchoredOperationContractPresent, false);
+  assert.ok(result.reasonCodes.includes("AMBIGUOUS_ANCHORED_OPERATION"));
+});
+
+const twoIndependentAnchoredOperations = () => [
+  anchoredOperation("a", 1, [2], []),
+  anchoredOperation("b", 3, [], [4]),
+];
+
+test("dos operaciones ancladas válidas e independientes son completas", () => {
+  const source = runtimeInput(input({ tasks: [task(1), task(2), task(3), task(4)] }), { anchoredAccompaniments: twoIndependentAnchoredOperations() });
+  assert.equal(preflightEngineInputForPlannerNext(source).diagnostics.anchoredOperationContractPresent, true);
+});
+
+test("orden exterior de operaciones ancladas no cambia Evidence", () => {
+  const tasks = [task(1), task(2), task(3), task(4)];
+  const normal = runtimeInput(input({ tasks }), { anchoredAccompaniments: twoIndependentAnchoredOperations() });
+  const inverted = runtimeInput(input({ tasks: clone(tasks) }), { anchoredAccompaniments: twoIndependentAnchoredOperations().reverse() });
+  const normalResult = preflightEngineInputForPlannerNext(normal);
+  const invertedResult = preflightEngineInputForPlannerNext(inverted);
+  assert.deepEqual(normalResult, invertedResult);
+  assert.equal(normalResult.sourceFingerprint, invertedResult.sourceFingerprint);
+  assert.deepEqual(normalResult.identityMap, invertedResult.identityMap);
+  assert.deepEqual(normalResult.issues, invertedResult.issues);
 });
 
 for (const [value, expected] of [[undefined, false], [0, false], [1, true], [2, true], [-1, true], [Number.NaN, true]] as const) {
@@ -454,7 +632,8 @@ test("setup detecta zonas, niveles y pesos activos sin colapsar main zone a espa
 
 test("comidas adicionales auditan aliases, concursantes, zonas y tareas", () => {
   const aliases = preflightEngineInputForPlannerNext(input({ actualMealStart: "13:00", actualMealEnd: "13:30" }));
-  assert.equal(aliases.diagnostics.breakCount, 1);
+  assert.equal(aliases.diagnostics.breakCount, 2);
+  assert.ok(aliases.issues.some((entry) => entry.path === "concreteMeals"));
   assert.deepEqual(issue(input({ protectedBreaks: [{ id: 1, start: "15:00", end: "15:10" }] }), "UNSUPPORTED_BREAK_SCOPE", "1").details, { scope: "unspecified-protected-break" });
   assert.equal(issue(input({ contestantMealDurationMinutes: 30 }), "UNSUPPORTED_BREAK_SCOPE").path, "contestantMeal");
   const zoned = input({ spaceMealBreakMinutesByZoneId: { 7: 30 } });
@@ -541,7 +720,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "resourceComponentReferenceCount": 0,
       "missingResourceReferenceCount": 0,
       "dependencyCount": 0,
-      "breakCount": 0,
+      "breakCount": 1,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
       "mainFlowConfigurationComplete": false,
@@ -604,7 +783,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "resourceComponentReferenceCount": 0,
       "missingResourceReferenceCount": 0,
       "dependencyCount": 0,
-      "breakCount": 0,
+      "breakCount": 1,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
       "mainFlowConfigurationComplete": false,
