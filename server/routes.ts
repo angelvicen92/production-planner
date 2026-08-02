@@ -28,6 +28,7 @@ import {
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
 import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
+import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -1799,54 +1800,11 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   app.patch(api.programSettings.update.path, async (req, res) => {
-    try {
-      const input = api.programSettings.update.input.parse(req.body);
-
-      const patch: any = {};
-      if (input.defaultWorkStart !== undefined && input.defaultWorkEnd !== undefined) {
-        await storage.updateProgramDefaultWorkday(input.defaultWorkStart, input.defaultWorkEnd);
-      }
-      if (input.mealStart !== undefined) patch.meal_start = input.mealStart;
-      if (input.mealEnd !== undefined) patch.meal_end = input.mealEnd;
-      if (input.mealMode !== undefined) patch.meal_mode = input.mealMode;
-      if (input.contestantMealDurationMinutes !== undefined)
-        patch.contestant_meal_duration_minutes = input.contestantMealDurationMinutes;
-      if (input.contestantMealMaxSimultaneous !== undefined)
-        patch.contestant_meal_max_simultaneous = input.contestantMealMaxSimultaneous;
-      if (input.spaceMealBreakMinutes !== undefined)
-        patch.space_meal_break_minutes = input.spaceMealBreakMinutes;
-      if (input.itinerantMealBreakMinutes !== undefined)
-        patch.itinerant_meal_break_minutes = input.itinerantMealBreakMinutes;
-
-      if (input.mealTaskTemplateName !== undefined)
-        patch.meal_task_template_name = String(input.mealTaskTemplateName).trim();
-
-      if (input.clockMode !== undefined) patch.clock_mode = input.clockMode;
-      if (input.simulatedTime !== undefined) patch.simulated_time = input.simulatedTime;
-      if (input.uiItinerantGroupOrderIndex !== undefined)
-        patch.ui_itinerant_group_order_index = input.uiItinerantGroupOrderIndex;
-      if (input.uiUnlocatedGroupOrderIndex !== undefined)
-        patch.ui_unlocated_group_order_index = input.uiUnlocatedGroupOrderIndex;
-
-      if (input.clockMode === "manual" && input.simulatedTime) {
-        patch.simulated_set_at = new Date().toISOString();
-      }
-      if (input.clockMode === "auto") {
-        patch.simulated_time = null;
-        patch.simulated_set_at = null;
-      }
-
-      const { error } = await supabaseAdmin
-        .from("program_settings")
-        .update(patch)
-        .eq("id", 1);
-
-      if (error) throw error;
-
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Invalid input" });
-    }
+    return sendSpatialAvailability(res, async () => {
+      const input = parseSpatialRequestBody(api.programSettings.update.input, req.body);
+      await storage.updateProgramSettingsAtomic(input);
+      return { success: true };
+    });
   });
 
 
@@ -3287,6 +3245,9 @@ function mapDeleteError(err: any, fallback: string) {
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
+      }
+      if (err instanceof SpatialAvailabilityValidationError) {
+        return res.status(400).json({ message: err.reasonCode });
       }
       return res.status(500).json({ message: "Internal Server Error" });
     }

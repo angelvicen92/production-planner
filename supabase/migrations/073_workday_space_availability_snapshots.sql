@@ -1,5 +1,5 @@
 -- SPEC10-008: authoritative workday and spatial availability snapshots.
--- Intentionally server-side only in this iteration; no RLS policies are added.
+-- Server-only: user authorization is enforced by server routes before supabaseAdmin.
 
 ALTER TABLE public.program_settings
   ADD COLUMN IF NOT EXISTS default_work_start TEXT NOT NULL DEFAULT '09:00',
@@ -80,6 +80,13 @@ CREATE TABLE IF NOT EXISTS public.plan_space_settings (
   CONSTRAINT plan_space_settings_availability_format_check CHECK (availability_start IS NULL OR (availability_start ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' AND availability_end ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')),
   CONSTRAINT plan_space_settings_availability_order_check CHECK (availability_start IS NULL OR availability_start < availability_end)
 );
+
+ALTER TABLE public.plan_zone_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plan_space_settings ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.plan_zone_settings, public.plan_space_settings FROM anon, authenticated;
+REVOKE ALL ON SEQUENCE public.plan_zone_settings_id_seq, public.plan_space_settings_id_seq FROM anon, authenticated;
+GRANT ALL ON TABLE public.plan_zone_settings, public.plan_space_settings TO service_role;
+GRANT ALL ON SEQUENCE public.plan_zone_settings_id_seq, public.plan_space_settings_id_seq TO service_role;
 
 -- A NULL pair is the explicit inheritance marker. Existing plan workdays remain untouched.
 INSERT INTO public.plan_zone_settings (plan_id, zone_id, availability_start, availability_end, source)

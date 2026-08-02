@@ -31,6 +31,6 @@ La revisión de todos los archivos no encontró otra migración incorporada desp
 |---|---|---|
 | `069_id258_zone_meal_break_minutes.sql` | `071_id258_zone_meal_break_minutes.sql` | `159e9d53605f595fa8ec5e1b9dca1a745ccdea822c9965783d04df08a70c96eb` |
 | `066_resource_availability_snapshots.sql` | `072_resource_availability_snapshots.sql` | `261613e4b1105c353077eeb59c1cf18e7a4aa530c60b089107013df996f63a7e` |
-| `067_workday_space_availability_snapshots.sql` | `073_workday_space_availability_snapshots.sql` | `76e54bf79c83d92201d583313551438b878bb19cf804bc3c753f394f81dc5559` |
+| `067_workday_space_availability_snapshots.sql` | `073_workday_space_availability_snapshots.sql` | `76e54bf79c83d92201d583313551438b878bb19cf804bc3c753f394f81dc5559` (rename); current RLS-amended file: `97f2d92821d01a09e96bf9d93fff3ebcee55bd9a90ef1547619b43351ddeb8a1` |
 
 No se ejecutó ninguna migración ni se utilizó `supabase db push`. Tampoco se verificó el historial remoto de Supabase. La única referencia operativa asumida por instrucción es que `070_engine_v4_parallel_results.sql` es el último archivo aplicado. En un entorno con ese estado confirmado deben aplicarse en el futuro únicamente `071`, `072`, `073` y las sucesivas, en orden.

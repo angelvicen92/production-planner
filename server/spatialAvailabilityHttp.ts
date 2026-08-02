@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 
 export class SpatialEntityNotFoundError extends Error {
   constructor() { super("Not found"); }
@@ -20,6 +21,7 @@ export function parseSpatialRequestBody<T>(schema: z.ZodType<T>, body: unknown):
 
 export function spatialAvailabilityErrorResponse(error: unknown): Readonly<{ status: 400 | 404 | 500; body: { message: string } }> {
   if (error instanceof SpatialRequestValidationError) return { status: 400, body: { message: error.message || "Invalid request" } };
+  if (error instanceof SpatialAvailabilityValidationError) return { status: 400, body: { message: error.reasonCode } };
   const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
   if (error instanceof SpatialEntityNotFoundError || code === "PGRST116" || code === "42501") return { status: 404, body: { message: "Not found" } };
   return { status: 500, body: { message: "Internal Server Error" } };

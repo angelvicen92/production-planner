@@ -21,6 +21,8 @@ import {
 } from "@shared/optimizer";
 import { buildDefaultPlanResourceItemSnapshotRows } from "./resourceAvailabilityWindow";
 import { buildPlanSpatialAvailabilityInitializationBatch, buildPlanSpatialAvailabilitySnapshot, resolveEffectiveSpaceAvailabilityHierarchy, validateSpatialAvailabilityCatalog } from "./spaceAvailabilityHierarchy";
+import { runSpatialAvailabilityValidation, SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
+import { buildProgramSettingsAtomicPatch, type ProgramSettingsUpdateInput } from "./programSettingsUpdate";
 
 function getEuropeMadridTimeHHMM(): string {
   const formatted = new Intl.DateTimeFormat("en-GB", {
@@ -141,7 +143,7 @@ export interface IStorage {
   initializePlanSpatialAvailabilitySnapshots(planId: number): Promise<{ zonesCreated: number; spacesCreated: number }>;
   updatePlanZoneAvailability(planId: number, zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
   updatePlanSpaceAvailability(planId: number, spaceId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
-  updateProgramDefaultWorkday(start: string, end: string): Promise<void>;
+  updateProgramSettingsAtomic(input: ProgramSettingsUpdateInput): Promise<any>;
   updateZoneDefaultAvailability(zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
   updateSpaceDefaultAvailability(spaceId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any>;
 
@@ -2385,13 +2387,13 @@ export class SupabaseStorage implements IStorage {
     if (planError) throw planError;
     if (zoneError) throw zoneError;
     if (spaceError) throw spaceError;
-    const batch = buildPlanSpatialAvailabilityInitializationBatch({
+    const batch = runSpatialAvailabilityValidation(() => buildPlanSpatialAvailabilityInitializationBatch({
       planId, workDay: { start: plan.work_start, end: plan.work_end },
       zones: (zones ?? []).map((r: any) => ({ id: Number(r.id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })),
       spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })),
       existingZones: existingZones.map((r: any) => ({ zoneId: Number(r.zone_id), availabilityStart: r.availability_start, availabilityEnd: r.availability_end, source: String(r.source) })),
       existingSpaces: existingSpaces.map((r: any) => ({ spaceId: Number(r.space_id), zoneId: Number(r.zone_id), availabilityStart: r.availability_start, availabilityEnd: r.availability_end, source: String(r.source) })),
-    });
+    }));
     if (batch.zones.length) {
       const { error } = await supabaseAdmin.from("plan_zone_settings").insert(batch.zones);
       if (error) throw error;
@@ -2410,15 +2412,21 @@ export class SupabaseStorage implements IStorage {
     return { zonesCreated: batch.zones.length, spacesCreated: batch.spaces.length };
   }
 
-  async updateProgramDefaultWorkday(start: string, end: string): Promise<void> {
-    const [{ data: zones, error: zoneError }, { data: spaces, error: spaceError }] = await Promise.all([
-      supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
-      supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
-    ]);
-    if (zoneError) throw zoneError; if (spaceError) throw spaceError;
-    validateSpatialAvailabilityCatalog({ workDay: { start, end }, zones: (zones ?? []).map((r: any) => ({ id: Number(r.id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })), spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })) });
-    const { error } = await supabaseAdmin.from("program_settings").update({ default_work_start: start, default_work_end: end }).eq("id", 1);
+  async updateProgramSettingsAtomic(input: ProgramSettingsUpdateInput): Promise<any> {
+    let zones: any[] = []; let spaces: any[] = [];
+    if (input.defaultWorkStart !== undefined || input.defaultWorkEnd !== undefined) {
+      const [{ data: zoneRows, error: zoneError }, { data: spaceRows, error: spaceError }] = await Promise.all([
+        supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").order("id"),
+        supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").order("id"),
+      ]);
+      if (zoneError) throw zoneError; if (spaceError) throw spaceError;
+      zones = (zoneRows ?? []).map((r: any) => ({ id: Number(r.id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end }));
+      spaces = (spaceRows ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end }));
+    }
+    const patch = buildProgramSettingsAtomicPatch(input, zones, spaces, new Date().toISOString());
+    const { data, error } = await supabaseAdmin.from("program_settings").update(patch).eq("id", 1).select("*").single();
     if (error) throw error;
+    return data;
   }
 
   async updateZoneDefaultAvailability(zoneId: number, patch: { availabilityStart?: string | null; availabilityEnd?: string | null }): Promise<any> {
@@ -2431,7 +2439,7 @@ export class SupabaseStorage implements IStorage {
       supabaseAdmin.from("spaces").select("id, zone_id, default_availability_start, default_availability_end").eq("zone_id", zoneId).order("id"),
     ]);
     if (settingsError) throw settingsError; if (zoneError) throw zoneError; if (spacesError) throw spacesError;
-    validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }], spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })) });
+    runSpatialAvailabilityValidation(() => validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }], spaces: (spaces ?? []).map((r: any) => ({ id: Number(r.id), zoneId: Number(r.zone_id), availabilityStart: r.default_availability_start, availabilityEnd: r.default_availability_end })) }));
     const { data, error } = await supabaseAdmin.from("zones").update({ default_availability_start: patch.availabilityStart, default_availability_end: patch.availabilityEnd }).eq("id", zoneId).select("*").single();
     if (error) throw error;
     return data;
@@ -2448,7 +2456,7 @@ export class SupabaseStorage implements IStorage {
     if (settingsError) throw settingsError; if (spaceError) throw spaceError;
     const { data: zone, error: zoneError } = await supabaseAdmin.from("zones").select("id, default_availability_start, default_availability_end").eq("id", space.zone_id).single();
     if (zoneError) throw zoneError;
-    validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: zone.default_availability_start, availabilityEnd: zone.default_availability_end }], spaces: [{ id: Number(space.id), zoneId: Number(space.zone_id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }] });
+    runSpatialAvailabilityValidation(() => validateSpatialAvailabilityCatalog({ workDay: { start: settings.default_work_start, end: settings.default_work_end }, zones: [{ id: Number(zone.id), availabilityStart: zone.default_availability_start, availabilityEnd: zone.default_availability_end }], spaces: [{ id: Number(space.id), zoneId: Number(space.zone_id), availabilityStart: patch.availabilityStart, availabilityEnd: patch.availabilityEnd }] }));
     const { data, error } = await supabaseAdmin.from("spaces").update({ default_availability_start: patch.availabilityStart, default_availability_end: patch.availabilityEnd }).eq("id", spaceId).select("*").single();
     if (error) throw error;
     return data;
@@ -2466,7 +2474,7 @@ export class SupabaseStorage implements IStorage {
     const { data: zone, error: ze } = await supabaseAdmin.from("plan_zone_settings").select("availability_start, availability_end").eq("plan_id", planId).eq("zone_id", space.zone_id).single();
     if (ze) throw ze;
     const result = resolveEffectiveSpaceAvailabilityHierarchy({ workDay: { start: plan.work_start, end: plan.work_end }, zoneAvailability: { start: zone.availability_start, end: zone.availability_end }, spaceAvailability: { start: patch.availabilityStart, end: patch.availabilityEnd } });
-    if (!result.valid) throw new Error(result.reason);
+    if (!result.valid) throw new SpatialAvailabilityValidationError(result.reason);
     const { data, error } = await supabaseAdmin.from("plan_space_settings").update({ availability_start: patch.availabilityStart, availability_end: patch.availabilityEnd, source: "override", updated_at: new Date().toISOString() }).eq("plan_id", planId).eq("space_id", spaceId).select("*").single();
     if (error) throw error; return data;
   }
@@ -2482,7 +2490,7 @@ export class SupabaseStorage implements IStorage {
     if (pe) throw pe; if (se) throw se;
     for (const space of spaces ?? []) {
       const result = resolveEffectiveSpaceAvailabilityHierarchy({ workDay: { start: plan.work_start, end: plan.work_end }, zoneAvailability: { start: patch.availabilityStart, end: patch.availabilityEnd }, spaceAvailability: { start: space.availability_start, end: space.availability_end } });
-      if (!result.valid) throw new Error(`${result.reason}: space ${space.space_id}, zone ${zoneId}`);
+      if (!result.valid) throw new SpatialAvailabilityValidationError(result.reason, `${result.reason}: space ${space.space_id}, zone ${zoneId}`);
     }
     const { data, error } = await supabaseAdmin.from("plan_zone_settings").update({ availability_start: patch.availabilityStart, availability_end: patch.availabilityEnd, source: "override", updated_at: new Date().toISOString() }).eq("plan_id", planId).eq("zone_id", zoneId).select("*").single();
     if (error) throw error; return data;
@@ -2511,11 +2519,11 @@ export class SupabaseStorage implements IStorage {
           zoneAvailability: { start: (zone as any).availability_start, end: (zone as any).availability_end },
           spaceAvailability: { start: (space as any).availability_start, end: (space as any).availability_end },
         });
-        if (!result.valid) throw new Error(`${result.reason}: space ${(space as any).space_id}, zone ${(space as any).zone_id}`);
+        if (!result.valid) throw new SpatialAvailabilityValidationError(result.reason, `${result.reason}: space ${(space as any).space_id}, zone ${(space as any).zone_id}`);
       }
       for (const zone of zoneRows) {
         const result = resolveEffectiveSpaceAvailabilityHierarchy({ workDay: { start: patch.workStart, end: patch.workEnd }, zoneAvailability: { start: (zone as any).availability_start, end: (zone as any).availability_end }, spaceAvailability: { start: null, end: null } });
-        if (!result.valid) throw new Error(`${result.reason}: zone ${(zone as any).zone_id}`);
+        if (!result.valid) throw new SpatialAvailabilityValidationError(result.reason, `${result.reason}: zone ${(zone as any).zone_id}`);
       }
     }
 
