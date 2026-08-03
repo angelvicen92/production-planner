@@ -37,6 +37,21 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
   const plannerNextPreflightReasonCodes = problem ? preflightPlannerNextProblem(problem) : null;
   const coachUseCounts = new Map<string, number>();
   problem?.tasks.forEach((task) => { if (task.coachId) coachUseCounts.set(task.coachId, (coachUseCounts.get(task.coachId) ?? 0) + 1); });
+  const coachIds = new Set(problem?.coaches.map((coach) => coach.id) ?? []);
+  const resourceIds = new Set(problem?.resources.map((resource) => resource.id) ?? []);
+  const coachResourceOverlapCount = [...coachIds].filter((id) => resourceIds.has(id)).length;
+  const redundantCoachResourceLockIds = raw.locks.filter((lock) => {
+    if (lock.lockType !== "resource" || lock.lockedResourceId == null) return false;
+    return problem?.tasks.find((task) => task.id === `task:${lock.taskId}`)?.coachId === `plan-resource:${lock.lockedResourceId}`;
+  }).map((lock) => lock.id).sort((left, right) => left - right);
+  const preservedGenericLockedResourceIds = [...new Set(raw.locks.filter((lock) => lock.lockType === "resource" && lock.lockedResourceId != null)
+    .filter((lock) => problem?.tasks.find((task) => task.id === `task:${lock.taskId}`)?.requiredResourceIds?.includes(`plan-resource:${lock.lockedResourceId}`))
+    .map((lock) => `plan-resource:${lock.lockedResourceId}`))].sort();
+  const continuousAnchoredResourceIds = problem?.anchoredAccompaniments?.flatMap((operation) => {
+    const memberIds = [...operation.beforeTaskIds, operation.anchorTaskId, ...operation.afterTaskIds];
+    const sets = memberIds.map((id) => new Set(problem.tasks.find((task) => task.id === id)?.requiredResourceIds ?? []));
+    return sets.length ? [...sets[0]!].filter((resourceId) => sets.slice(1).every((set) => set.has(resourceId))) : [];
+  }).sort() ?? [];
   if (expected === "SUPPORTED") assert.deepEqual(plannerNextPreflightReasonCodes, [], `${id}: Planner Next preflight`);
   else { assert.equal(problem, null); assert.equal(result.problemFingerprint, null); assert.deepEqual(result.reasonCodes, engineInputPreflight.reasonCodes); }
   return {
@@ -53,10 +68,13 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
       protectedTasks: problem?.tasks.filter((task) => task.availability?.length === 1).length ?? 0,
       coaches: problem?.coaches.length ?? 0,
       sharedCoaches: [...coachUseCounts.values()].filter((count) => count > 2).length,
+      coachResourceOverlapCount,
     },
     timeGridMinutes: raw.plannerNext?.timeGridMinutes ?? null,
     supportedTimeGridMinutes: PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,
-    continuousAnchoredResourceIds: [] as string[],
+    redundantCoachResourceLockIds,
+    preservedGenericLockedResourceIds,
+    continuousAnchoredResourceIds,
     identityRoundTrip: result.identityMap.every((entry) => entry.canonicalId === `${entry.namespace}:${entry.sourceId}`),
     timeRoundTrip: problem ? problem.day.start === 480 && problem.day.end === 1080 : null,
     inputImmutable: true, outputReadOnly: true, repetitionIdentical: true, inversionIdentical: true,

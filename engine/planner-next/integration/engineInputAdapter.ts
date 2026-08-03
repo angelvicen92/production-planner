@@ -6,6 +6,7 @@ import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourc
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
+import { resolveProjectedPlannerNextTaskResources } from "./projectedTaskResources";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -113,26 +114,27 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const config = input.plannerNext!;
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
+  const assignmentByTaskId = new Map(assignments.map((entry) => [entry.taskId, entry]));
   const activeTasks = input.tasks.filter((task) => task.status !== "cancelled").sort((a, b) => a.id - b.id);
   const coachByParticipantId = new Map(Object.entries(input.vocalCoachPlanResourceItemIdByContestantId ?? {}).map(([participantId, coachId]) => [Number(participantId), coachId]));
-  const coachResourceIds = new Set(coachByParticipantId.values());
+  const participantIdsByCoachId = new Map<number, readonly number[]>();
+  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(coachId, Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)));
+  const projectionsByTaskId = new Map(activeTasks.map((task) => {
+    const projection = resolveProjectedPlannerNextTaskResources(task, assignmentByTaskId.get(task.id)!, input.locks, coachByParticipantId, participantIdsByCoachId);
+    if (projection.status !== "REPRESENTABLE") throw new Error(`Preflight accepted unsupported resource projection for task ${task.id}`);
+    return [task.id, projection] as const;
+  }));
+  const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]));
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId));
-  const requiredResourceIds = new Set(assignments.flatMap((entry) => [...entry.effectiveResourceIds]).filter((id) => !coachResourceIds.has(id)));
-  input.locks.filter((lock) => lock.lockType === "resource" && activeTasks.some((task) => task.id === lock.taskId))
-    .forEach((lock) => requiredResourceIds.add(lock.lockedResourceId!));
-  const resourceLocksByTask = new Map<number, number[]>();
-  input.locks.forEach((lock) => {
-    if (!activeTasks.some((task) => task.id === lock.taskId)) return;
-    if (lock.lockType === "resource") resourceLocksByTask.set(lock.taskId, [...(resourceLocksByTask.get(lock.taskId) ?? []), lock.lockedResourceId!]);
-  });
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]));
 
   const tasks: Task[] = activeTasks.map((source) => {
-    const assignment = assignments.find((entry) => entry.taskId === source.id)!;
+    const projection = projectionsByTaskId.get(source.id)!;
     const protectedInterval = source.status === "done" || source.status === "in_progress" ? resolveProtectedTaskInterval(source) : null;
     const fixedResolution = resolveEffectiveTaskFixedInterval(source, input.locks);
     const fixed = fixedResolution.status === "EXACT" ? fixedResolution.interval : undefined;
-    const coachResourceId = source.plannerNextKind === "main" || source.plannerNextKind === "vocal" ? coachByParticipantId.get(source.contestantId!) : undefined;
-    const resources = [...new Set([...assignment.effectiveResourceIds, ...(resourceLocksByTask.get(source.id) ?? [])])].filter((id) => id !== coachResourceId).sort((a, b) => a - b);
+    const coachResourceId = projection.coachResourceId;
+    const resources = projection.genericResourceIds;
     const base = {
       id: canonical("task", source.id),
       duration: protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
@@ -200,7 +202,12 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),
   };
-  const plannerNextReasonCodes = preflightPlannerNextProblem(problem);
+  const coachIds = new Set(problem.coaches.map((coach) => coach.id));
+  const channelOverlapIds = problem.resources.map((resource) => resource.id).filter((id) => coachIds.has(id)).sort(compare);
+  const canonicalPlannerNextReasonCodes = preflightPlannerNextProblem(problem);
+  const plannerNextReasonCodes: readonly string[] = channelOverlapIds.length
+    ? ["COACH_RESOURCE_CHANNEL_OVERLAP", ...canonicalPlannerNextReasonCodes]
+    : canonicalPlannerNextReasonCodes;
   if (plannerNextReasonCodes.length > 0) {
     const issue: EngineInputPreflightIssue = deepFreeze({ code: "ADAPTED_PROBLEM_NOT_REPRESENTABLE", entityKind: "plan", entityId: String(input.planId), path: "plannerNextProblem", message: "The adapted problem is rejected by the canonical Planner Next preflight.", blocking: true, details: { plannerNextReasonCodes } });
     const diagnostics = { ...preflight.diagnostics, unsupportedCapabilityCodes: [...new Set([...preflight.diagnostics.unsupportedCapabilityCodes, "ADAPTED_PROBLEM_NOT_REPRESENTABLE" as const])].sort(compare) };

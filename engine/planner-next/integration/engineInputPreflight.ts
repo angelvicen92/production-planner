@@ -5,6 +5,7 @@ import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourc
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./plannerNextCapabilities";
+import { resolveProjectedPlannerNextTaskResources, type ProjectedPlannerNextTaskResources } from "./projectedTaskResources";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -1140,6 +1141,12 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     .filter(([participantId, coachId]) => /^[1-9]\d*$/.test(participantId) && isPositiveInteger(coachId))
     .map(([participantId, coachId]) => [Number(participantId), coachId as number]));
   const active = input.tasks.filter((task) => task.status !== "cancelled");
+  const participantIdsByCoachId = new Map<number, readonly number[]>();
+  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
+    coachId,
+    Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)),
+  );
+  const projectedResourcesByTaskId = new Map<number, ProjectedPlannerNextTaskResources>();
   if (integrationConfigurationRecord !== undefined) for (const task of active) {
     const fixed = resolveEffectiveTaskFixedInterval(task, input.locks);
     if (fixed.status === "CONFLICT" || fixed.status === "INVALID") {
@@ -1149,25 +1156,15 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (task.plannerNextKind === "technical" && dependencies.some((id) => taskById.get(String(id))?.plannerNextKind !== "technical")) {
       addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `tasks.${task.id}.dependsOnTaskIds`, "Planner Next technical dependencies may reference only technical tasks.", { dependencyTaskIds: dependencies });
     }
-    if (task.plannerNextKind !== "main" && task.plannerNextKind !== "vocal") continue;
-    const participantId = task.contestantId!;
-    const coachId = coachByParticipantId.get(participantId);
-    const effectiveIds = assignmentByTaskId.get(task.id)?.effectiveResourceIds ?? [];
-    if (coachId === undefined || !effectiveIds.includes(coachId)) {
-      addIssue("UNSUPPORTED_COACH_RESOURCE_MAPPING", "task", task.id, `tasks.${task.id}.coach`, "Main and vocal tasks require their explicitly related coach in the effective task assignment.", { participantId, planResourceItemId: coachId ?? null, effectiveResourceIds: effectiveIds });
-    }
-    if (task.plannerNextKind === "vocal" && effectiveIds.some((id) => id !== coachId)) {
-      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.effectiveResourceIds`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId, planResourceItemId: coachId ?? null, additionalResourceIds: effectiveIds.filter((id) => id !== coachId) });
-    }
-  }
-  const participantIdsByCoachId = new Map<number, number[]>();
-  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(coachId, [...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b));
-  if (integrationConfigurationRecord !== undefined) for (const task of active) {
-    for (const coachId of [...participantIdsByCoachId.keys()].sort((a, b) => a - b)) {
-      if (!assignmentByTaskId.get(task.id)?.effectiveResourceIds.includes(coachId)) continue;
-      const relatedCoachId = task.contestantId == null ? undefined : coachByParticipantId.get(task.contestantId);
-      const compatible = (task.plannerNextKind === "main" || task.plannerNextKind === "vocal") && relatedCoachId === coachId;
-      if (!compatible) addIssue("UNSUPPORTED_COACH_RESOURCE_MAPPING", "task", task.id, `tasks.${task.id}.effectiveResourceIds`, "An explicit coach is consumed through an incompatible generic-resource channel.", { participantId: task.contestantId ?? null, relatedParticipantIds: participantIdsByCoachId.get(coachId), planResourceItemId: coachId });
+    const assignment = assignmentByTaskId.get(task.id);
+    if (assignment) {
+      const projection = resolveProjectedPlannerNextTaskResources(task, assignment, input.locks, coachByParticipantId, participantIdsByCoachId);
+      projectedResourcesByTaskId.set(task.id, projection);
+      if (projection.status === "UNSUPPORTED") {
+        addIssue(projection.reasonCode, "task", task.id, `tasks.${task.id}.projectedResources`, "Task resources cannot be represented without crossing the Planner Next coach and generic-resource channels.", projection.details);
+      } else if (task.plannerNextKind === "vocal" && projection.genericResourceIds.length > 0) {
+        addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.projectedResources`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId: task.contestantId ?? null, planResourceItemId: projection.coachResourceId ?? null, additionalResourceIds: projection.genericResourceIds });
+      }
     }
   }
   if (integrationConfigurationRecord !== undefined) for (const participantId of [...new Set(active.filter((task) => task.plannerNextKind === "main" || task.plannerNextKind === "vocal").map((task) => task.contestantId!))].sort((a, b) => a - b)) {
@@ -1377,8 +1374,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         const anchorTask = taskById.get(String(anchor));
         const participantCompatible = Boolean(anchorTask?.plannerNextKind === "main" && memberTasks.every((task) => task.contestantId === anchorTask.contestantId)
           && memberTasks.filter((task) => task.id !== anchorTask.id).every((task) => task.plannerNextKind === "auxiliary"));
-        const projectedResourceSets = memberTasks.map((task) => new Set((assignmentByTaskId.get(task.id)?.effectiveResourceIds ?? [])
-          .filter((resourceId) => !((task.plannerNextKind === "main" || task.plannerNextKind === "vocal") && resourceId === coachByParticipantId.get(task.contestantId!)))));
+        const projectedResourceSets = memberTasks.map((task) => {
+          const projection = projectedResourcesByTaskId.get(task.id);
+          return new Set(projection?.status === "REPRESENTABLE" ? projection.genericResourceIds : []);
+        });
         const continuousResourceIds = projectedResourceSets.length ? [...projectedResourceSets[0]!].filter((resourceId) => projectedResourceSets.slice(1).every((set) => set.has(resourceId))).sort((a, b) => a - b) : [];
         const resourceCompatible = continuousResourceIds.length > 0;
         const shapeValid = structured && validId && validAnchor && validBefore && validAfter

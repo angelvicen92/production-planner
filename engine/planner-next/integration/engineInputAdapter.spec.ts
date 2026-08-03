@@ -109,15 +109,75 @@ test("fixed interval resolver deduplicates equal sources and rejects conflicts o
 });
 
 test("locks, fixed windows and protected intervals must describe one exact obligation", () => {
-  const equal = createSupportedEngineInputAdapterFixture(); const target = equal.tasks.find((task) => task.id === 105)!; Object.assign(target, { fixedWindowStart: "10:00", fixedWindowEnd: "10:30" }); equal.locks.push({ id: 1, planId: 701, taskId: 105, lockType: "time", lockedStart: "10:00", lockedEnd: "10:30" });
+  const equal = createSupportedEngineInputAdapterFixture(); const target = equal.tasks.find((task) => task.id === 105)!; Object.assign(target, { fixedWindowStart: "10:00", fixedWindowEnd: "10:30" }); equal.locks.push({ id: 10, planId: 701, taskId: 105, lockType: "time", lockedStart: "10:00", lockedEnd: "10:30" });
   assert.deepEqual(supported(equal).problem.tasks.find((task) => task.id === "task:105")?.availability, [{ start: 600, end: 630 }]);
-  const conflict = clone(equal); conflict.locks.push({ id: 2, planId: 701, taskId: 105, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(conflict).problem, null);
-  const protectedConflict = createSupportedEngineInputAdapterFixture(); Object.assign(protectedConflict.tasks.find((task) => task.id === 101), { status: "done", startReal: "10:00", endReal: "10:30" }); protectedConflict.locks.push({ id: 3, planId: 701, taskId: 101, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(protectedConflict).problem, null);
+  const conflict = clone(equal); conflict.locks.push({ id: 11, planId: 701, taskId: 105, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(conflict).problem, null);
+  const protectedConflict = createSupportedEngineInputAdapterFixture(); Object.assign(protectedConflict.tasks.find((task) => task.id === 101), { status: "done", startReal: "10:00", endReal: "10:30" }); protectedConflict.locks.push({ id: 12, planId: 701, taskId: 101, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(protectedConflict).problem, null);
 });
 
 test("resource locks deduplicate and cancelled tasks remain absent", () => {
-  const input = createSupportedEngineInputAdapterFixture(); input.locks.push({ id: 1, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }, { id: 2, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }); input.tasks.push({ ...clone(input.tasks[4]!), id: 106, templateId: 906, status: "cancelled" });
+  const input = createSupportedEngineInputAdapterFixture(); input.locks.push({ id: 10, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }, { id: 11, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }); input.tasks.push({ ...clone(input.tasks[4]!), id: 106, templateId: 906, status: "cancelled" });
   const task = supported(input).problem.tasks.find((entry) => entry.id === "task:105")!; assert.equal(task.requiredResourceIds?.filter((id) => id === "plan-resource:504").length, 1); assert.ok(!supported(input).problem.tasks.some((entry) => entry.id === "task:106"));
+});
+
+test("resource locks share the coach channel without duplicating the coach", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  const first = supported(input);
+  const main = first.problem.tasks.find((task) => task.id === "task:101")!;
+  assert.equal(first.problem.coaches.length, 1);
+  assert.ok(!first.problem.resources.some((resource) => resource.id === main.coachId));
+  assert.ok(!(main.requiredResourceIds ?? []).includes(main.coachId!));
+
+  const duplicate = clone(input);
+  duplicate.locks.push({ id: 10, planId: 701, taskId: 101, lockType: "resource", lockedResourceId: 501 });
+  const duplicated = supported(duplicate);
+  assert.deepEqual(duplicated.problem, first.problem);
+  assert.equal(duplicated.problemFingerprint, first.problemFingerprint);
+});
+
+test("foreign coach resource locks block main, technical, and auxiliary tasks before adaptation", () => {
+  const distinctCoaches = (): EngineInput => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.vocalCoachPlanResourceItemIdByContestantId![202] = 502;
+    input.tasks.find((task) => task.id === 103)!.assignedResourceIds = [502];
+    input.tasks.find((task) => task.id === 104)!.assignedResourceIds = [502];
+    input.locks = input.locks.filter((lock) => lock.id !== 2);
+    return input;
+  };
+  const cases = [
+    { input: distinctCoaches(), taskId: 101 },
+    { input: distinctCoaches(), taskId: 105 },
+  ];
+  const auxiliary = distinctCoaches();
+  auxiliary.tasks.push({ id: 106, planId: 701, templateId: 906, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402 });
+  cases.push({ input: auxiliary, taskId: 106 });
+  for (const { input, taskId } of cases) {
+    input.locks.push({ id: 20 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 502 });
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.status, "UNSUPPORTED");
+    assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_COACH_RESOURCE_MAPPING"));
+    const issue = preflight.issues.find((entry) => entry.code === "UNSUPPORTED_COACH_RESOURCE_MAPPING" && entry.entityId === String(taskId));
+    assert.deepEqual(issue?.details, { taskId, participantId: taskId === 105 ? null : 201, relatedCoachResourceId: taskId === 105 ? null : 501, lockedCoachResourceId: 502, lockId: 20 + taskId, relatedParticipantIds: [202] });
+    assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null);
+  }
+});
+
+test("generic resource locks are projected once, preserve all distinct IDs, and ignore ordering and cancelled tasks", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.locks.push(
+    { id: 10, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 502 },
+    { id: 11, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+    { id: 12, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+  );
+  input.tasks.push({ ...clone(input.tasks.find((task) => task.id === 105)!), id: 106, templateId: 906, status: "cancelled" });
+  input.locks.push({ id: 13, planId: 701, taskId: 106, lockType: "resource", lockedResourceId: 501 });
+  const first = supported(input);
+  const technical = first.problem.tasks.find((task) => task.id === "task:105")!;
+  assert.deepEqual(technical.requiredResourceIds, ["plan-resource:502", "plan-resource:503", "plan-resource:504"]);
+  assert.equal(first.problem.resources.filter((resource) => resource.id === "plan-resource:504").length, 1);
+  assert.equal(first.problem.coaches.some((coach) => first.problem.resources.some((resource) => resource.id === coach.id)), false);
+  const reversed = clone(input); reversed.locks.reverse();
+  assert.deepEqual(supported(reversed), first);
 });
 
 function withAnchor(): EngineInput {
@@ -149,6 +209,30 @@ test("anchored continuity requires a non-empty generic-resource intersection", (
   assert.equal(adaptEngineInputToPlannerNextProblem(empty).problem, null);
   const disjoint = withAnchor(); disjoint.tasks.find((task) => task.id === 109)!.assignedResourceIds = [502]; assert.equal(adaptEngineInputToPlannerNextProblem(disjoint).problem, null);
   const missingMember = withAnchor(); missingMember.tasks.find((task) => task.id === 108)!.assignedResourceIds = [503]; assert.equal(adaptEngineInputToPlannerNextProblem(missingMember).problem, null);
+});
+
+test("anchored continuity uses the exact projected union of assignments and resource locks", () => {
+  const lockOnly = withAnchor();
+  lockOnly.spaceResourceAssignments = {};
+  for (const task of lockOnly.tasks.filter((task) => [106, 107, 108, 109].includes(task.id))) task.assignedResourceIds = [];
+  for (const taskId of [101, 106, 107, 108, 109]) lockOnly.locks.push({ id: 100 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 504 });
+  const locked = supported(lockOnly);
+  for (const taskId of [101, 106, 107, 108, 109]) assert.ok(locked.problem.tasks.find((task) => task.id === `task:${taskId}`)?.requiredResourceIds?.includes("plan-resource:504"));
+
+  const mixed = withAnchor();
+  mixed.spaceResourceAssignments = {};
+  mixed.tasks.find((task) => task.id === 107)!.assignedResourceIds = [503];
+  mixed.tasks.find((task) => task.id === 109)!.assignedResourceIds = [];
+  for (const taskId of [101, 107, 109]) mixed.locks.push({ id: 200 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 504 });
+  const mixedResult = supported(mixed);
+  assert.ok(mixedResult.problem.tasks.find((task) => task.id === "task:106")?.requiredResourceIds?.includes("plan-resource:502"));
+  assert.ok(mixedResult.problem.tasks.find((task) => task.id === "task:107")?.requiredResourceIds?.includes("plan-resource:503"));
+
+  const coachOnly = clone(lockOnly);
+  coachOnly.locks = coachOnly.locks.filter((lock) => lock.lockedResourceId !== 504);
+  for (const taskId of [101, 106, 107, 108, 109]) coachOnly.locks.push({ id: 300 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 501 });
+  assert.equal(preflightEngineInputForPlannerNext(coachOnly).status, "UNSUPPORTED");
+  assert.equal(adaptEngineInputToPlannerNextProblem(coachOnly).problem, null);
 });
 
 test("malformed anchored runtime contracts never throw and remain unsupported", () => {

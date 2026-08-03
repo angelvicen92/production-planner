@@ -27,7 +27,10 @@ export function createSupportedEngineInputAdapterFixture(): EngineInput {
       task(104, { plannerNextKind: "vocal", contestantId: 202, spaceId: 302, zoneId: 402, assignedResourceIds: [501] }),
       task(105, { plannerNextKind: "technical", spaceId: 303, zoneId: 403, assignedResourceIds: [503] }),
     ],
-    locks: [],
+    locks: [
+      { id: 1, planId: 701, taskId: 101, lockType: "resource", lockedResourceId: 501 },
+      { id: 2, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 502 },
+    ],
     planZoneSettings: [
       { zoneId: 401, availabilityStart: null, availabilityEnd: null, source: "fixture" },
       { zoneId: 402, availabilityStart: "09:00", availabilityEnd: "17:00", source: "fixture" },

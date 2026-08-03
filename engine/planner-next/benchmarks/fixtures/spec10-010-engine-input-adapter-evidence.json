@@ -9,21 +9,28 @@
       "status": "SUPPORTED",
       "reasonCodes": [],
       "plannerNextPreflightReasonCodes": [],
-      "sourceFingerprint": "b8d65657dc40dd680f8484d0c320c6679efb014278acf66bf40110508e08f091",
-      "identityMapFingerprint": "1fff0f3e7759a90de8926ce1892d9c9dd3604e298207984bece9432b7c8d0f5b",
-      "problemFingerprint": "d49a01eef7f063bbe89bd6791f126c64e79e4344a6026381002434557cfda18d",
+      "sourceFingerprint": "d001c32ea3bbbe5a1701c7b8276bd87987464cd06dda116fd463249434e74408",
+      "identityMapFingerprint": "67c4461232781a86f169b199c0731d4828a4bae06c43f960c5c1bc964752e17e",
+      "problemFingerprint": "2f17406862dfd02fbdacaa8bfd6d11772f9d51a6efd87af6c383ab318ae77974",
       "counts": {
         "spaces": 3,
         "participants": 2,
-        "resources": 2,
+        "resources": 3,
         "tasks": 5,
         "dependencies": 2,
         "protectedTasks": 0,
         "coaches": 1,
-        "sharedCoaches": 1
+        "sharedCoaches": 1,
+        "coachResourceOverlapCount": 0
       },
       "timeGridMinutes": 5,
       "supportedTimeGridMinutes": 5,
+      "redundantCoachResourceLockIds": [
+        1
+      ],
+      "preservedGenericLockedResourceIds": [
+        "plan-resource:502"
+      ],
       "continuousAnchoredResourceIds": [],
       "identityRoundTrip": true,
       "timeRoundTrip": true,
@@ -61,10 +68,13 @@
         "dependencies": 0,
         "protectedTasks": 0,
         "coaches": 0,
-        "sharedCoaches": 0
+        "sharedCoaches": 0,
+        "coachResourceOverlapCount": 0
       },
       "timeGridMinutes": null,
       "supportedTimeGridMinutes": 5,
+      "redundantCoachResourceLockIds": [],
+      "preservedGenericLockedResourceIds": [],
       "continuousAnchoredResourceIds": [],
       "identityRoundTrip": true,
       "timeRoundTrip": null,
@@ -102,10 +112,13 @@
         "dependencies": 0,
         "protectedTasks": 0,
         "coaches": 0,
-        "sharedCoaches": 0
+        "sharedCoaches": 0,
+        "coachResourceOverlapCount": 0
       },
       "timeGridMinutes": null,
       "supportedTimeGridMinutes": 5,
+      "redundantCoachResourceLockIds": [],
+      "preservedGenericLockedResourceIds": [],
       "continuousAnchoredResourceIds": [],
       "identityRoundTrip": true,
       "timeRoundTrip": null,
@@ -143,10 +156,13 @@
         "dependencies": 0,
         "protectedTasks": 0,
         "coaches": 0,
-        "sharedCoaches": 0
+        "sharedCoaches": 0,
+        "coachResourceOverlapCount": 0
       },
       "timeGridMinutes": null,
       "supportedTimeGridMinutes": 5,
+      "redundantCoachResourceLockIds": [],
+      "preservedGenericLockedResourceIds": [],
       "continuousAnchoredResourceIds": [],
       "identityRoundTrip": true,
       "timeRoundTrip": null,
