@@ -29,13 +29,14 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   const result = supported(input);
   assert.deepEqual(preflightPlannerNextProblem(result.problem), []);
   assert.equal(result.problem.tasks.length, 5);
-  assert.deepEqual(result.problem.coaches.map((coach) => coach.id), ["plan-resource:501", "plan-resource:502"]);
+  assert.deepEqual(result.problem.coaches.map((coach) => coach.id), ["plan-resource:501"]);
   for (const main of result.problem.tasks.filter((task) => task.kind === "main")) {
     const vocal = result.problem.tasks.find((task) => task.id === main.dependencies[0]);
     assert.equal(vocal?.kind, "vocal"); assert.equal(main.dependencies.length, 1); assert.equal(main.coachId, vocal?.coachId); assert.equal(main.blockKey, main.coachId);
   }
   assert.ok(result.problem.tasks.filter((task) => task.kind === "main").every((task) => !(task.requiredResourceIds ?? []).includes(task.coachId!)));
   assert.ok(result.problem.resources.every((resource) => !result.problem.coaches.some((coach) => coach.id === resource.id)));
+  assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
 test("domain divergence guard never publishes an invalid adapted problem", () => {
@@ -45,6 +46,13 @@ test("domain divergence guard never publishes an invalid adapted problem", () =>
   assert.equal(result.status, "UNSUPPORTED"); assert.equal(result.problem, null); assert.equal(result.problemFingerprint, null);
   assert.deepEqual(result.reasonCodes, ["ADAPTED_PROBLEM_NOT_REPRESENTABLE"]);
   assert.deepEqual(result.issues.at(-1)?.details, { plannerNextReasonCodes: ["INVALID_PREFERRED_END"] });
+  assert.ok(result.diagnostics.unsupportedCapabilityCodes.includes("ADAPTED_PROBLEM_NOT_REPRESENTABLE"));
+});
+
+test("only the canonical five-minute Planner Next grid is representable", () => {
+  const five = createSupportedEngineInputAdapterFixture(); assert.equal(preflightEngineInputForPlannerNext(five).status, "SUPPORTED"); assert.equal(adaptEngineInputToPlannerNextProblem(five).status, "SUPPORTED");
+  for (const grid of [10, 15]) { const input = createSupportedEngineInputAdapterFixture(); input.plannerNext!.timeGridMinutes = grid; const preflight = preflightEngineInputForPlannerNext(input); assert.equal(preflight.status, "UNSUPPORTED"); assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_TIME_GRID")); assert.deepEqual(preflight.issues.find((issue) => issue.code === "UNSUPPORTED_TIME_GRID")?.details, { incompatibleDurations: [], incompatibleTimes: [], requestedTimeGridMinutes: grid, supportedTimeGridMinutes: 5 }); const result = adaptEngineInputToPlannerNextProblem(input); assert.equal(result.problem, null); assert.equal(result.problemFingerprint, null); const inverted = clone(input); inverted.tasks.reverse(); inverted.planResourceItems.reverse(); assert.deepEqual(adaptEngineInputToPlannerNextProblem(inverted), result); }
+  const invalid = createSupportedEngineInputAdapterFixture(); invalid.plannerNext!.timeGridMinutes = 0; assert.equal(adaptEngineInputToPlannerNextProblem(invalid).problem, null);
 });
 
 test("unsupported product gate preserves reason codes and creates no partial problem", () => {
@@ -72,7 +80,8 @@ test("missing, duplicate, or incorrectly linked feeders block before adaptation"
   const missing = createSupportedEngineInputAdapterFixture(); missing.tasks = missing.tasks.filter((task) => task.id !== 102);
   const duplicate = createSupportedEngineInputAdapterFixture(); duplicate.tasks.push({ ...clone(duplicate.tasks.find((task) => task.id === 102)!), id: 106, templateId: 906 });
   const wrong = createSupportedEngineInputAdapterFixture(); wrong.tasks.find((task) => task.id === 101)!.dependsOnTaskIds = [105];
-  for (const input of [missing, duplicate, wrong]) { assert.equal(preflightEngineInputForPlannerNext(input).status, "UNSUPPORTED"); assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null); }
+  const orphanVocal = createSupportedEngineInputAdapterFixture(); orphanVocal.tasks = orphanVocal.tasks.filter((task) => task.id !== 101);
+  for (const input of [missing, duplicate, wrong, orphanVocal]) { assert.equal(preflightEngineInputForPlannerNext(input).status, "UNSUPPORTED"); assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null); }
 });
 
 test("auxiliary gets explicit neutral policy and technical dependencies remain typed", () => {
@@ -115,12 +124,16 @@ function withAnchor(): EngineInput {
   const input = createSupportedEngineInputAdapterFixture();
   for (const id of [106, 107, 108, 109]) input.tasks.push({ id, planId: 701, templateId: 900 + id, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402, assignedResourceIds: [504] });
   input.anchoredAccompaniments = [{ id: "operation-a", anchorTaskId: 101, beforeTaskIds: [106, 107], afterTaskIds: [108, 109], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" }];
+  input.tasks.find((task) => task.id === 106)!.assignedResourceIds = [504, 502];
+  input.tasks.find((task) => task.id === 107)!.assignedResourceIds = [504, 503];
   return input;
 }
 
 test("typed anchored operations preserve semantic sequence order", () => {
   const input = withAnchor(); const first = supported(input); const operation = first.problem.anchoredAccompaniments![0]!;
   assert.deepEqual(operation.beforeTaskIds, ["task:106", "task:107"]); assert.deepEqual(operation.afterTaskIds, ["task:108", "task:109"]); assert.deepEqual(preflightPlannerNextProblem(first.problem), []);
+  assert.deepEqual(first.problem.tasks.find((task) => task.id === "task:106")?.requiredResourceIds, ["plan-resource:502", "plan-resource:504"]);
+  assert.deepEqual(first.problem.tasks.find((task) => task.id === "task:107")?.requiredResourceIds, ["plan-resource:503", "plan-resource:504"]);
   const before = clone(input); before.anchoredAccompaniments![0]!.beforeTaskIds.reverse(); const after = clone(input); after.anchoredAccompaniments![0]!.afterTaskIds.reverse();
   assert.notEqual(supported(before).problemFingerprint, first.problemFingerprint); assert.notEqual(supported(after).problemFingerprint, first.problemFingerprint);
 });
@@ -129,6 +142,18 @@ test("anchored duplicate, incomplete and reused members block", () => {
   const duplicate = withAnchor(); duplicate.anchoredAccompaniments![0]!.beforeTaskIds = [106, 106];
   const reused = withAnchor(); reused.anchoredAccompaniments!.push({ ...clone(reused.anchoredAccompaniments![0]!), id: "operation-b" });
   for (const input of [duplicate, reused]) assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null);
+});
+
+test("anchored continuity requires a non-empty generic-resource intersection", () => {
+  const empty = withAnchor(); empty.spaceResourceAssignments = {}; for (const task of empty.tasks.filter((task) => [106, 107, 108, 109].includes(task.id))) task.assignedResourceIds = [];
+  assert.equal(adaptEngineInputToPlannerNextProblem(empty).problem, null);
+  const disjoint = withAnchor(); disjoint.tasks.find((task) => task.id === 109)!.assignedResourceIds = [502]; assert.equal(adaptEngineInputToPlannerNextProblem(disjoint).problem, null);
+  const missingMember = withAnchor(); missingMember.tasks.find((task) => task.id === 108)!.assignedResourceIds = [503]; assert.equal(adaptEngineInputToPlannerNextProblem(missingMember).problem, null);
+});
+
+test("malformed anchored runtime contracts never throw and remain unsupported", () => {
+  const malformed: unknown[] = [null, 7, { id: "x", anchorTaskId: 101, afterTaskIds: [] }, { id: "x", anchorTaskId: 101, beforeTaskIds: [] }, { id: "x", anchorTaskId: 101, beforeTaskIds: [0], afterTaskIds: [] }];
+  for (const operation of malformed) { const input = createSupportedEngineInputAdapterFixture() as EngineInput & { anchoredAccompaniments: unknown[] }; input.anchoredAccompaniments = [operation]; assert.doesNotThrow(() => preflightEngineInputForPlannerNext(input as EngineInput)); assert.equal(preflightEngineInputForPlannerNext(input as EngineInput).status, "UNSUPPORTED"); }
 });
 
 test("fingerprint is hard-sensitive, visual-insensitive, set-invariant and deeply frozen", () => {

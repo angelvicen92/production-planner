@@ -203,7 +203,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const plannerNextReasonCodes = preflightPlannerNextProblem(problem);
   if (plannerNextReasonCodes.length > 0) {
     const issue: EngineInputPreflightIssue = deepFreeze({ code: "ADAPTED_PROBLEM_NOT_REPRESENTABLE", entityKind: "plan", entityId: String(input.planId), path: "plannerNextProblem", message: "The adapted problem is rejected by the canonical Planner Next preflight.", blocking: true, details: { plannerNextReasonCodes } });
-    return deepFreeze({ ...envelope, issues: [...preflight.issues, issue], status: "UNSUPPORTED" as const, problem: null, reasonCodes: ["ADAPTED_PROBLEM_NOT_REPRESENTABLE"] as const, problemFingerprint: null });
+    const diagnostics = { ...preflight.diagnostics, unsupportedCapabilityCodes: [...new Set([...preflight.diagnostics.unsupportedCapabilityCodes, "ADAPTED_PROBLEM_NOT_REPRESENTABLE" as const])].sort(compare) };
+    return deepFreeze({ ...envelope, diagnostics, issues: [...preflight.issues, issue], status: "UNSUPPORTED" as const, problem: null, reasonCodes: ["ADAPTED_PROBLEM_NOT_REPRESENTABLE"] as const, problemFingerprint: null });
   }
   const problemFingerprint = fingerprintPlannerNextProblem(problem);
   return deepFreeze({ ...envelope, status: "SUPPORTED" as const, problem, reasonCodes: [] as const, problemFingerprint });

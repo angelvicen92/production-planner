@@ -4,6 +4,7 @@ import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResource
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./plannerNextCapabilities";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -1159,12 +1160,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.effectiveResourceIds`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId, planResourceItemId: coachId ?? null, additionalResourceIds: effectiveIds.filter((id) => id !== coachId) });
     }
   }
-  if (integrationConfigurationRecord !== undefined) for (const [participantId, coachId] of coachByParticipantId) {
-    const conflictingTaskIds = active.filter((task) => assignmentByTaskId.get(task.id)?.effectiveResourceIds.includes(coachId)
-      && !((task.plannerNextKind === "main" || task.plannerNextKind === "vocal") && task.contestantId === participantId)).map((task) => task.id).sort((a, b) => a - b);
-    if (conflictingTaskIds.length) addIssue("UNSUPPORTED_COACH_RESOURCE_MAPPING", "participant", participantId, `vocalCoachPlanResourceItemIdByContestantId.${participantId}`, "A coach cannot also be represented as an independent generic resource on unrelated tasks.", { participantId, planResourceItemId: coachId, conflictingTaskIds });
+  const participantIdsByCoachId = new Map<number, number[]>();
+  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(coachId, [...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b));
+  if (integrationConfigurationRecord !== undefined) for (const task of active) {
+    for (const coachId of [...participantIdsByCoachId.keys()].sort((a, b) => a - b)) {
+      if (!assignmentByTaskId.get(task.id)?.effectiveResourceIds.includes(coachId)) continue;
+      const relatedCoachId = task.contestantId == null ? undefined : coachByParticipantId.get(task.contestantId);
+      const compatible = (task.plannerNextKind === "main" || task.plannerNextKind === "vocal") && relatedCoachId === coachId;
+      if (!compatible) addIssue("UNSUPPORTED_COACH_RESOURCE_MAPPING", "task", task.id, `tasks.${task.id}.effectiveResourceIds`, "An explicit coach is consumed through an incompatible generic-resource channel.", { participantId: task.contestantId ?? null, relatedParticipantIds: participantIdsByCoachId.get(coachId), planResourceItemId: coachId });
+    }
   }
-  if (integrationConfigurationRecord !== undefined) for (const participantId of [...new Set(active.filter((task) => task.plannerNextKind === "main").map((task) => task.contestantId!))].sort((a, b) => a - b)) {
+  if (integrationConfigurationRecord !== undefined) for (const participantId of [...new Set(active.filter((task) => task.plannerNextKind === "main" || task.plannerNextKind === "vocal").map((task) => task.contestantId!))].sort((a, b) => a - b)) {
     const mains = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "main");
     const vocals = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "vocal");
     const main = mains[0], vocal = vocals[0];
@@ -1332,12 +1338,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const incompatibleTimes = gridShapeValid && workDayStart !== null
     ? auditedTimeValues.filter((value) => (value - workDayStart) % grid !== 0) : [];
   const incompatibleDurations = gridShapeValid ? auditedDurations.filter((value) => value % grid !== 0) : [];
-  const timeGridVerifiable = Boolean(gridShapeValid && !incompatibleTimes.length && !incompatibleDurations.length);
+  const supportedGrid = grid === PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
+  const timeGridVerifiable = Boolean(gridShapeValid && supportedGrid && !incompatibleTimes.length && !incompatibleDurations.length);
   if (!timeGridVerifiable) {
     addIssue("UNSUPPORTED_TIME_GRID", "plan", input.planId, "plannerNext.timeGridMinutes", "Time grid is absent, invalid, or incompatible with audited values.", {
       incompatibleDurations,
       incompatibleTimes,
-      receivedValue: grid,
+      requestedTimeGridMinutes: grid,
+      supportedTimeGridMinutes: PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,
     });
   }
 
@@ -1349,11 +1357,19 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       const operationIds = new Set<string>();
       const memberOwners = new Map<string, string>();
       anchoredOperationContractPresent = runtimeAnchors.length > 0;
-      runtimeAnchors.forEach((operation, index) => {
+      (runtimeAnchors as unknown[]).forEach((rawOperation, index) => {
         const path = `anchoredAccompaniments.${index}`;
-        const id = String(operation.id ?? index);
-        const anchor = operation.anchorTaskId;
-        const effectiveSegments = [...(Array.isArray(operation.beforeTaskIds) ? operation.beforeTaskIds : []), ...(Array.isArray(operation.afterTaskIds) ? operation.afterTaskIds : [])].map(String);
+        const structured = rawOperation !== null && typeof rawOperation === "object" && !Array.isArray(rawOperation);
+        const operation = structured ? rawOperation as Record<string, unknown> : {};
+        const validId = typeof operation.id === "string" && operation.id.trim() !== "";
+        const id = validId ? operation.id as string : String(index);
+        const validAnchor = isPositiveInteger(operation.anchorTaskId);
+        const anchor = validAnchor ? operation.anchorTaskId as number : null;
+        const validBefore = Array.isArray(operation.beforeTaskIds) && operation.beforeTaskIds.every(isPositiveInteger);
+        const validAfter = Array.isArray(operation.afterTaskIds) && operation.afterTaskIds.every(isPositiveInteger);
+        const before = validBefore ? operation.beforeTaskIds as number[] : [];
+        const after = validAfter ? operation.afterTaskIds as number[] : [];
+        const effectiveSegments = [...before, ...after].map(String);
         const hasEffectiveSegments = effectiveSegments.length > 0;
         const referencedTaskIds = [anchor, ...effectiveSegments].filter((value) => value != null).map(String);
         const missingTaskIds = [...new Set(referencedTaskIds.filter((taskId) => !taskById.has(taskId)))].sort(compare);
@@ -1361,18 +1377,20 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         const anchorTask = taskById.get(String(anchor));
         const participantCompatible = Boolean(anchorTask?.plannerNextKind === "main" && memberTasks.every((task) => task.contestantId === anchorTask.contestantId)
           && memberTasks.filter((task) => task.id !== anchorTask.id).every((task) => task.plannerNextKind === "auxiliary"));
-        const resourceSignatures = memberTasks.map((task) => (assignmentByTaskId.get(task.id)?.effectiveResourceIds ?? [])
-          .filter((id) => id !== coachByParticipantId.get(task.contestantId!)).join("\0"));
-        const resourceCompatible = resourceSignatures.length > 0 && new Set(resourceSignatures).size === 1;
-        const complete = operation.id != null && anchor != null && hasEffectiveSegments && !missingTaskIds.length
-          && operation.adjacency === "REQUIRED" && operation.internalTransition === "INCLUDED" && operation.resourceContinuity === "REQUIRED"
+        const projectedResourceSets = memberTasks.map((task) => new Set((assignmentByTaskId.get(task.id)?.effectiveResourceIds ?? [])
+          .filter((resourceId) => !((task.plannerNextKind === "main" || task.plannerNextKind === "vocal") && resourceId === coachByParticipantId.get(task.contestantId!)))));
+        const continuousResourceIds = projectedResourceSets.length ? [...projectedResourceSets[0]!].filter((resourceId) => projectedResourceSets.slice(1).every((set) => set.has(resourceId))).sort((a, b) => a - b) : [];
+        const resourceCompatible = continuousResourceIds.length > 0;
+        const shapeValid = structured && validId && validAnchor && validBefore && validAfter
+          && operation.adjacency === "REQUIRED" && operation.internalTransition === "INCLUDED" && operation.resourceContinuity === "REQUIRED";
+        const complete = shapeValid && hasEffectiveSegments && !missingTaskIds.length
           && (integrationConfigurationRecord === undefined || (participantCompatible && resourceCompatible));
         if (!complete) {
           anchoredOperationContractPresent = false;
           addIssue("INCOMPLETE_ANCHORED_OPERATION", "anchored-operation", id, path, "Anchored operation lacks required fields, effective segments, or existing tasks.", {
             hasEffectiveSegments,
             missingTaskIds,
-            ...(integrationConfigurationRecord !== undefined ? { participantCompatible, resourceCompatible } : {}),
+            ...(integrationConfigurationRecord !== undefined ? { participantCompatible, resourceCompatible, continuousResourceIds } : {}),
           });
         }
         const members = referencedTaskIds;

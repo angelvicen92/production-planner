@@ -5,6 +5,7 @@ import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInput
 import { createSupportedEngineInputAdapterFixture } from "../integration/engineInputAdapter.fixture";
 import { preflightEngineInputForPlannerNext } from "../integration/engineInputPreflight";
 import { preflight as preflightPlannerNextProblem } from "../validate";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "../integration/plannerNextCapabilities";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const freeze = <T>(value: T): T => { if (value && typeof value === "object") { Object.values(value as object).forEach(freeze); Object.freeze(value); } return value; };
@@ -34,6 +35,8 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
   assert.ok(Object.isFrozen(result) && Object.isFrozen(result.identityMap), `${id}: output not read-only`);
   const problem = result.problem;
   const plannerNextPreflightReasonCodes = problem ? preflightPlannerNextProblem(problem) : null;
+  const coachUseCounts = new Map<string, number>();
+  problem?.tasks.forEach((task) => { if (task.coachId) coachUseCounts.set(task.coachId, (coachUseCounts.get(task.coachId) ?? 0) + 1); });
   if (expected === "SUPPORTED") assert.deepEqual(plannerNextPreflightReasonCodes, [], `${id}: Planner Next preflight`);
   else { assert.equal(problem, null); assert.equal(result.problemFingerprint, null); assert.deepEqual(result.reasonCodes, engineInputPreflight.reasonCodes); }
   return {
@@ -48,7 +51,12 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
       tasks: problem?.tasks.length ?? 0,
       dependencies: problem?.tasks.reduce((sum, task) => sum + task.dependencies.length, 0) ?? 0,
       protectedTasks: problem?.tasks.filter((task) => task.availability?.length === 1).length ?? 0,
+      coaches: problem?.coaches.length ?? 0,
+      sharedCoaches: [...coachUseCounts.values()].filter((count) => count > 2).length,
     },
+    timeGridMinutes: raw.plannerNext?.timeGridMinutes ?? null,
+    supportedTimeGridMinutes: PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,
+    continuousAnchoredResourceIds: [] as string[],
     identityRoundTrip: result.identityMap.every((entry) => entry.canonicalId === `${entry.namespace}:${entry.sourceId}`),
     timeRoundTrip: problem ? problem.day.start === 480 && problem.day.end === 1080 : null,
     inputImmutable: true, outputReadOnly: true, repetitionIdentical: true, inversionIdentical: true,
