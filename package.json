@@ -52,7 +52,8 @@
     "benchmark:planner-next:focal-a2-spec08-foundation": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV3Benchmark.ts",
     "benchmark:planner-next:focal-a2-spec08-foundation-v4": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV4Benchmark.ts",
     "benchmark:planner-next:engine-input-adapter": "tsx engine/planner-next/benchmarks/runPlannerNextEngineInputAdapterBenchmark.ts",
-    "benchmark:planner-next:protected-resource-availability": "tsx engine/planner-next/benchmarks/runPlannerNextProtectedResourceAvailabilityBenchmark.ts"
+    "benchmark:planner-next:protected-resource-availability": "tsx engine/planner-next/benchmarks/runPlannerNextProtectedResourceAvailabilityBenchmark.ts",
+    "benchmark:planner-next:a2-coverage-audit": "tsx engine/planner-next/benchmarks/runFocalA2CoverageAuditBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
