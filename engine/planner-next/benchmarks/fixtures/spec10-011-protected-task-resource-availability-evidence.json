@@ -1,0 +1,137 @@
+{
+  "benchmark": "SPEC10-011-protected-task-resource-availability",
+  "baseSha": "8dfd7595c42ee40676cc308d1ddc70352ef865c7",
+  "classification": "DB Safe Merge",
+  "scenarios": [
+    {
+      "scenarioId": "done-generic-lock-compatible",
+      "status": "SUPPORTED",
+      "reasonCodes": [],
+      "protectedInterval": {
+        "start": "10:00",
+        "end": "10:30"
+      },
+      "resourceId": 504,
+      "resourceChannel": "generic",
+      "assignmentSources": [],
+      "resourceLockIds": [
+        20
+      ],
+      "conflictCount": 0,
+      "problemFingerprint": "96105f9bf8be6c138989b59b271544933b532c70f2e3657e340019ad18e0bdc5",
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    },
+    {
+      "scenarioId": "done-generic-lock-outside-availability",
+      "status": "UNSUPPORTED",
+      "reasonCodes": [
+        "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
+      ],
+      "protectedInterval": {
+        "start": "10:00",
+        "end": "10:30"
+      },
+      "resourceId": 504,
+      "resourceChannel": "generic",
+      "assignmentSources": [],
+      "resourceLockIds": [
+        20
+      ],
+      "conflictCount": 1,
+      "problemFingerprint": null,
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    },
+    {
+      "scenarioId": "in-progress-coach-lock-compatible",
+      "status": "SUPPORTED",
+      "reasonCodes": [],
+      "protectedInterval": {
+        "start": "10:00",
+        "end": "10:30"
+      },
+      "resourceId": 501,
+      "resourceChannel": "coach",
+      "assignmentSources": [
+        "direct"
+      ],
+      "resourceLockIds": [
+        1,
+        20
+      ],
+      "conflictCount": 0,
+      "problemFingerprint": "7a293ee6697eac21ddb40dfde6a3f93daf89bca5bd08e1a26e994401e40916fe",
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    },
+    {
+      "scenarioId": "done-coach-lock-outside-availability",
+      "status": "UNSUPPORTED",
+      "reasonCodes": [
+        "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
+      ],
+      "protectedInterval": {
+        "start": "10:00",
+        "end": "10:30"
+      },
+      "resourceId": 501,
+      "resourceChannel": "coach",
+      "assignmentSources": [
+        "direct"
+      ],
+      "resourceLockIds": [
+        1,
+        20
+      ],
+      "conflictCount": 1,
+      "problemFingerprint": null,
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    },
+    {
+      "scenarioId": "done-assignment-and-lock-deduplicated",
+      "status": "SUPPORTED",
+      "reasonCodes": [],
+      "protectedInterval": {
+        "start": "10:00",
+        "end": "10:30"
+      },
+      "resourceId": 503,
+      "resourceChannel": "generic",
+      "assignmentSources": [
+        "direct",
+        "zone"
+      ],
+      "resourceLockIds": [
+        20
+      ],
+      "conflictCount": 0,
+      "problemFingerprint": "2c1fea63a6174ffbb803f0eee48d796c9187d8a7f5a2c8cf13a1f9e261fac4f9",
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    },
+    {
+      "scenarioId": "cancelled-lock-ignored",
+      "status": "SUPPORTED",
+      "reasonCodes": [],
+      "protectedInterval": {},
+      "resourceId": 504,
+      "resourceChannel": "generic",
+      "assignmentSources": [],
+      "resourceLockIds": [
+        20
+      ],
+      "conflictCount": 0,
+      "problemFingerprint": "2f17406862dfd02fbdacaa8bfd6d11772f9d51a6efd87af6c383ab318ae77974",
+      "inputImmutable": true,
+      "repetitionIdentical": true,
+      "inversionIdentical": true
+    }
+  ]
+}

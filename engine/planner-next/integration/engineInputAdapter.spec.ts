@@ -120,6 +120,54 @@ test("resource locks deduplicate and cancelled tasks remain absent", () => {
   const task = supported(input).problem.tasks.find((entry) => entry.id === "task:105")!; assert.equal(task.requiredResourceIds?.filter((id) => id === "plan-resource:504").length, 1); assert.ok(!supported(input).problem.tasks.some((entry) => entry.id === "task:106"));
 });
 
+test("SPEC10-011 audits projected locked resources for protected tasks exactly once", () => {
+  const fixture = (status: "done" | "in_progress", start: string | null, end: string | null) => {
+    const input = createSupportedEngineInputAdapterFixture();
+    Object.assign(input.tasks.find((task) => task.id === 105), { status, startReal: "10:00", endReal: "10:30" });
+    input.locks.push(
+      { id: 12, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+      { id: 11, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+    );
+    Object.assign(input.planResourceItems.find((resource) => resource.id === 504), { availabilityStart: start, availabilityEnd: end });
+    return input;
+  };
+
+  for (const status of ["done", "in_progress"] as const) {
+    const compatible = fixture(status, "10:00", "10:30");
+    const adapted = supported(compatible);
+    assert.equal(adapted.problem.tasks.find((task) => task.id === "task:105")?.requiredResourceIds?.filter((id) => id === "plan-resource:504").length, 1);
+
+    const incompatible = fixture(status, "11:00", "12:00");
+    const preflight = preflightEngineInputForPlannerNext(incompatible);
+    const conflicts = preflight.issues.filter((entry) => entry.code === "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE" && entry.details?.planResourceItemId === 504);
+    assert.equal(preflight.status, "UNSUPPORTED"); assert.equal(preflight.diagnostics.protectedTaskResourceAvailabilityConflictCount, 1);
+    assert.equal(conflicts.length, 1); assert.deepEqual(conflicts[0]?.details?.resourceLockIds, [11, 12]);
+    assert.equal(conflicts[0]?.details?.resourceChannel, "generic"); assert.deepEqual(conflicts[0]?.details?.assignmentSources, []);
+    assert.equal(adaptEngineInputToPlannerNextProblem(incompatible).problem, null);
+    const inverted = clone(incompatible); inverted.locks.reverse();
+    assert.deepEqual(preflightEngineInputForPlannerNext(inverted), preflight);
+  }
+});
+
+test("SPEC10-011 reports assignment and redundant coach-lock diagnostics without duplicate conflicts", () => {
+  const generic = createSupportedEngineInputAdapterFixture();
+  Object.assign(generic.tasks.find((task) => task.id === 105), { status: "done", startReal: "10:00", endReal: "10:30" });
+  generic.locks.push({ id: 13, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 503 });
+  Object.assign(generic.planResourceItems.find((resource) => resource.id === 503), { availabilityStart: "11:00", availabilityEnd: "12:00" });
+  const genericResult = preflightEngineInputForPlannerNext(generic);
+  const genericIssue = genericResult.issues.find((entry) => entry.code === "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE" && entry.details?.planResourceItemId === 503)!;
+  assert.equal(genericResult.diagnostics.protectedTaskResourceAvailabilityConflictCount, 1);
+  assert.deepEqual(genericIssue.details?.assignmentSources, ["direct", "zone"]); assert.deepEqual(genericIssue.details?.resourceLockIds, [13]);
+
+  const coach = createSupportedEngineInputAdapterFixture();
+  Object.assign(coach.tasks.find((task) => task.id === 101), { status: "done", startReal: "10:00", endReal: "10:30" });
+  coach.locks.push({ id: 14, planId: 701, taskId: 101, lockType: "resource", lockedResourceId: 501 });
+  Object.assign(coach.planResourceItems.find((resource) => resource.id === 501), { availabilityStart: "11:00", availabilityEnd: "12:00" });
+  const coachResult = preflightEngineInputForPlannerNext(coach);
+  const coachIssues = coachResult.issues.filter((entry) => entry.code === "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE" && entry.details?.planResourceItemId === 501);
+  assert.equal(coachIssues.length, 1); assert.equal(coachIssues[0]?.details?.resourceChannel, "coach"); assert.deepEqual(coachIssues[0]?.details?.resourceLockIds, [1, 14]);
+});
+
 test("resource locks share the coach channel without duplicating the coach", () => {
   const input = createSupportedEngineInputAdapterFixture();
   const first = supported(input);

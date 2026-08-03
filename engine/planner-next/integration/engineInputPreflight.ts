@@ -1051,6 +1051,42 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (exclusive === false) addIssue("UNSUPPORTED_SPACE_OCCUPANCY", "space", spaceId, `spaceIsExclusiveById.${spaceId}`, "Non-exclusive space occupancy is not representable.", { exclusive });
   }
 
+  const assignmentByTaskId = new Map(effectiveTaskResourceAssignments.assignments.map((entry) => [entry.taskId, entry]));
+  const coachByParticipantId = new Map(coachMappingEntries
+    .filter(([participantId, coachId]) => /^[1-9]\d*$/.test(participantId) && isPositiveInteger(coachId))
+    .map(([participantId, coachId]) => [Number(participantId), coachId as number]));
+  const active = input.tasks.filter((task) => task.status !== "cancelled");
+  const participantIdsByCoachId = new Map<number, readonly number[]>();
+  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
+    coachId,
+    Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)),
+  );
+  const projectedResourcesByTaskId = new Map<number, ProjectedPlannerNextTaskResources>();
+  for (const task of active) {
+    const assignment = assignmentByTaskId.get(task.id);
+    if (assignment) projectedResourcesByTaskId.set(task.id,
+      resolveProjectedPlannerNextTaskResources(task, assignment, input.locks, coachByParticipantId, participantIdsByCoachId));
+  }
+  if (integrationConfigurationRecord !== undefined) for (const task of active) {
+    const fixed = resolveEffectiveTaskFixedInterval(task, input.locks);
+    if (fixed.status === "CONFLICT" || fixed.status === "INVALID") {
+      addIssue("UNREPRESENTABLE_TIME_LOCK", "task", task.id, `tasks.${task.id}.effectiveFixedInterval`, "Fixed temporal obligations are incomplete, invalid, contradictory, or incompatible with task duration.", { resolution: fixed.status, sources: fixed.sources });
+    }
+    const dependencies = [...new Set(task.dependsOnTaskIds ?? (task.dependsOnTaskId != null ? [task.dependsOnTaskId] : []))];
+    if (task.plannerNextKind === "technical" && dependencies.some((id) => taskById.get(String(id))?.plannerNextKind !== "technical")) {
+      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `tasks.${task.id}.dependsOnTaskIds`, "Planner Next technical dependencies may reference only technical tasks.", { dependencyTaskIds: dependencies });
+    }
+    const assignment = assignmentByTaskId.get(task.id);
+    if (assignment) {
+      const projection = projectedResourcesByTaskId.get(task.id)!;
+      if (projection.status === "UNSUPPORTED") {
+        addIssue(projection.reasonCode, "task", task.id, `tasks.${task.id}.projectedResources`, "Task resources cannot be represented without crossing the Planner Next coach and generic-resource channels.", projection.details);
+      } else if (task.plannerNextKind === "vocal" && projection.genericResourceIds.length > 0) {
+        addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.projectedResources`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId: task.contestantId ?? null, planResourceItemId: projection.coachResourceId ?? null, additionalResourceIds: projection.genericResourceIds });
+      }
+    }
+  }
+
   const requiredResources = new Map<number, { taskIds: Set<number>; lockIds: Set<number> }>();
   const requireResource = (id: number, taskId?: number, lockId?: number): void => {
     const entry = requiredResources.get(id) ?? { taskIds: new Set<number>(), lockIds: new Set<number>() };
@@ -1108,7 +1144,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const protectedStart = toMinutes(protectedInterval.start);
     const protectedEnd = toMinutes(protectedInterval.end);
     if (protectedStart === null || protectedEnd === null || protectedStart >= protectedEnd) continue;
-    for (const resourceId of assignment.effectiveResourceIds) {
+    const projection = projectedResourcesByTaskId.get(task.id);
+    if (projection?.status !== "REPRESENTABLE") continue;
+    const seenResourceIds = new Set<number>();
+    const hardResources = [
+      ...(projection.coachResourceId === undefined ? [] : [{ resourceId: projection.coachResourceId, resourceChannel: "coach" as const }]),
+      ...projection.genericResourceIds.map((resourceId) => ({ resourceId, resourceChannel: "generic" as const })),
+    ].filter(({ resourceId }) => !seenResourceIds.has(resourceId) && Boolean(seenResourceIds.add(resourceId)));
+    for (const { resourceId, resourceChannel } of hardResources) {
       const availability = effectiveAvailabilityById.get(resourceId);
       if (availability?.status !== "AVAILABLE") continue;
       const availableStart = toMinutes(availability.effectiveWindow.start)!;
@@ -1122,11 +1165,15 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
           protectedInterval,
           effectiveWindow: availability.effectiveWindow,
           intervalSource: protectedTime.source,
+          resourceChannel,
           assignmentSources: [
             ...(assignment.directResourceIds.includes(resourceId) ? ["direct"] : []),
             ...(assignment.spaceResourceIds.includes(resourceId) ? ["space"] : []),
             ...(assignment.zoneResourceIds.includes(resourceId) ? ["zone"] : []),
           ],
+          resourceLockIds: [...new Set(input.locks
+            .filter((lock) => lock.taskId === task.id && (lock.lockType === "resource" || lock.lockType === "full") && lock.lockedResourceId === resourceId)
+            .map((lock) => lock.id))].sort((left, right) => left - right),
         });
     }
   }
@@ -1136,37 +1183,6 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (!availabilityIds.has(id)) addIssue("MISSING_PARTICIPANT_AVAILABILITY", "participant", id, `contestantAvailabilityById.${id}`, "Participant availability is absent.");
   });
 
-  const assignmentByTaskId = new Map(effectiveTaskResourceAssignments.assignments.map((entry) => [entry.taskId, entry]));
-  const coachByParticipantId = new Map(coachMappingEntries
-    .filter(([participantId, coachId]) => /^[1-9]\d*$/.test(participantId) && isPositiveInteger(coachId))
-    .map(([participantId, coachId]) => [Number(participantId), coachId as number]));
-  const active = input.tasks.filter((task) => task.status !== "cancelled");
-  const participantIdsByCoachId = new Map<number, readonly number[]>();
-  for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
-    coachId,
-    Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)),
-  );
-  const projectedResourcesByTaskId = new Map<number, ProjectedPlannerNextTaskResources>();
-  if (integrationConfigurationRecord !== undefined) for (const task of active) {
-    const fixed = resolveEffectiveTaskFixedInterval(task, input.locks);
-    if (fixed.status === "CONFLICT" || fixed.status === "INVALID") {
-      addIssue("UNREPRESENTABLE_TIME_LOCK", "task", task.id, `tasks.${task.id}.effectiveFixedInterval`, "Fixed temporal obligations are incomplete, invalid, contradictory, or incompatible with task duration.", { resolution: fixed.status, sources: fixed.sources });
-    }
-    const dependencies = [...new Set(task.dependsOnTaskIds ?? (task.dependsOnTaskId != null ? [task.dependsOnTaskId] : []))];
-    if (task.plannerNextKind === "technical" && dependencies.some((id) => taskById.get(String(id))?.plannerNextKind !== "technical")) {
-      addIssue("UNSUPPORTED_TASK_ROLE", "task", task.id, `tasks.${task.id}.dependsOnTaskIds`, "Planner Next technical dependencies may reference only technical tasks.", { dependencyTaskIds: dependencies });
-    }
-    const assignment = assignmentByTaskId.get(task.id);
-    if (assignment) {
-      const projection = resolveProjectedPlannerNextTaskResources(task, assignment, input.locks, coachByParticipantId, participantIdsByCoachId);
-      projectedResourcesByTaskId.set(task.id, projection);
-      if (projection.status === "UNSUPPORTED") {
-        addIssue(projection.reasonCode, "task", task.id, `tasks.${task.id}.projectedResources`, "Task resources cannot be represented without crossing the Planner Next coach and generic-resource channels.", projection.details);
-      } else if (task.plannerNextKind === "vocal" && projection.genericResourceIds.length > 0) {
-        addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `tasks.${task.id}.projectedResources`, "Planner Next vocal feeders cannot preserve generic resources in addition to their explicit coach.", { participantId: task.contestantId ?? null, planResourceItemId: projection.coachResourceId ?? null, additionalResourceIds: projection.genericResourceIds });
-      }
-    }
-  }
   if (integrationConfigurationRecord !== undefined) for (const participantId of [...new Set(active.filter((task) => task.plannerNextKind === "main" || task.plannerNextKind === "vocal").map((task) => task.contestantId!))].sort((a, b) => a - b)) {
     const mains = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "main");
     const vocals = active.filter((task) => task.contestantId === participantId && task.plannerNextKind === "vocal");
