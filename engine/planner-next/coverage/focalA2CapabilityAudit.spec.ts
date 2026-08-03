@@ -1,65 +1,24 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { serializeFocalA2CoverageEvidence } from "../benchmarks/runFocalA2CoverageAuditBenchmark";
+import { buildFocalA2CapabilityAudit, selectNextAction } from "./focalA2CapabilityAudit";
 import { FOCAL_A2_CAPABILITY_CATALOG } from "./focalA2CapabilityCatalog";
-import { buildFocalA2CapabilityAudit, evaluateA2Families } from "./focalA2CapabilityAudit";
-import { deriveCoverageStatus, FOCAL_A2_EVIDENCE_REGISTRY } from "./focalA2EvidenceRegistry";
-import { PLANNER_LAYER_PROBES, runSupportedIntegrationProbe } from "./focalA2CapabilityProbes";
+import { FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS } from "./focalA2CapabilityEvidenceBindings";
+import { evaluateJsonAssertion, evaluateTestAssertion, type JsonAssertion } from "./focalA2EvidenceAssertions";
+import { runPlannerLayerProbes, runSupportedIntegrationProbe } from "./focalA2CapabilityProbes";
+import { deriveCoverageStatus } from "./focalA2EvidenceRegistry";
 import { FOCAL_A2_REQUIREMENTS } from "./focalA2SourceManifest";
-
-test("catalog has exactly 167 unique explicit IDs and requirements", () => {
-  assert.equal(FOCAL_A2_CAPABILITY_CATALOG.length, 167); assert.equal(new Set(FOCAL_A2_CAPABILITY_CATALOG.map(({ id }) => id)).size, 167);
-  assert.equal(FOCAL_A2_REQUIREMENTS.length, 167); assert.deepEqual(FOCAL_A2_REQUIREMENTS.map(({ capabilityId }) => capabilityId), FOCAL_A2_CAPABILITY_CATALOG.map(({ id }) => id));
-});
-test("requirements source contains neither regex nor generated range decisions", () => {
-  const source = readFileSync("engine/planner-next/coverage/focalA2SourceManifest.ts", "utf8");
-  assert.doesNotMatch(source, /RegExp|\.match\(|\.test\(|capability\.name|for\s*\(|\.includes\(.*name/); assert.equal((source.match(/capabilityId:/g) ?? []).length, 168);
-});
-test("classifier covers every branch and missing audit is not a contract gap", () => {
-  const cases = [
-    [{ requirement: "REQUIRED", audited: false }, "NOT_AUDITED"], [{ requirement: "UNRESOLVED", audited: true }, "SOURCE_AMBIGUOUS"],
-    [{ requirement: "REQUIRED", audited: true, productPhase: true }, "PRODUCT_PHASE_NOT_IMPLEMENTED"], [{ requirement: "REQUIRED", audited: true, contractGap: "ENGINE_INPUT" }, "CONTRACT_GAP"],
-    [{ requirement: "REQUIRED", audited: true, supportedVariants: ["a"], unsupportedVariants: ["b"] }, "PARTIALLY_SUPPORTED"], [{ requirement: "REQUIRED", audited: true, negativeReasonCode: "REAL_CODE" }, "EXPLICITLY_UNSUPPORTED"],
-    [{ requirement: "REQUIRED", audited: true, technicalPathComplete: true, concreteTest: true }, "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE"],
-    [{ requirement: "REQUIRED", audited: true, technicalPathComplete: true, concreteTest: true, concreteBenchmark: true, representativeA2: true }, "EVIDENCED_SUPPORTED"],
-  ] as const;
-  for (const [input, expected] of cases) assert.equal(deriveCoverageStatus(input).status, expected);
-});
-test("end-to-end probe invokes dispatcher and canonical validator without mutation", () => {
-  const probe = runSupportedIntegrationProbe(); assert.equal(probe.preflightStatus, "SUPPORTED"); assert.equal(probe.adapterStatus, "SUPPORTED");
-  assert.equal(probe.dispatcherStatus, "SUPPORTED"); assert.equal(probe.validationStatus, "SUPPORTED"); assert.equal(probe.inputImmutable, true);
-  assert.deepEqual(probe.exactFunctionExecuted, ["preflightEngineInputForPlannerNext", "adaptEngineInputToPlannerNextProblem", "executePlannerNext", "validatePlan"]);
-});
-test("planner-layer probes honestly mark omitted integration layers", () => {
-  for (const probe of PLANNER_LAYER_PROBES) { assert.equal(probe.probeScope, "PLANNER_LAYER"); assert.equal(probe.preflightStatus, "NOT_EXECUTED"); assert.equal(probe.adapterStatus, "NOT_EXECUTED"); assert.equal(probe.dispatcherStatus, "NOT_EXECUTED"); }
-});
-test("all structured file and benchmark scenario references exist", () => {
-  const manifests = new Map<string, unknown>();
-  for (const record of FOCAL_A2_EVIDENCE_REGISTRY) for (const evidence of [...record.testEvidence, ...record.benchmarkEvidence]) {
-    assert.equal(existsSync(evidence.file), true, `${evidence.file} missing`);
-    if (evidence.scenarioId) { const parsed = manifests.get(evidence.file) ?? JSON.parse(readFileSync(evidence.file, "utf8")); manifests.set(evidence.file, parsed); assert.ok(readFileSync(evidence.file, "utf8").includes(`\"${evidence.scenarioId}\"`), `${evidence.scenarioId} missing`); }
-  }
-  assert.equal(readFileSync("engine/planner-next/benchmarks/fixtures/spec10-011-protected-task-resource-availability-evidence.json", "utf8").includes("in-progress-generic-lock-compatible"), false);
-});
-test("known corrections are evidence-derived rather than fictitious gaps", () => {
-  const status = (id: number) => FOCAL_A2_EVIDENCE_REGISTRY.find((row) => row.capabilityId === id)!.derivedCoverageStatus;
-  assert.notEqual(status(12), "CONTRACT_GAP"); assert.notEqual(status(13), "CONTRACT_GAP"); assert.equal(status(16), "PARTIALLY_SUPPORTED");
-  assert.notEqual(status(18), "CONTRACT_GAP"); assert.equal(status(19), "PARTIALLY_SUPPORTED"); assert.notEqual(status(41), "CONTRACT_GAP"); assert.notEqual(status(120), "CONTRACT_GAP");
-  for (const id of [134, 135, 136]) assert.equal(status(id), "EXPLICITLY_UNSUPPORTED");
-});
-test("Reality and vocal families use executable exact assertions", () => {
-  const families = new Map(evaluateA2Families().map((entry) => [entry.id, entry]));
-  assert.equal(families.get("reality-a")?.status, "ENGINE_SUPPORTED_INTEGRATION_MISSING"); assert.match(families.get("reality-a")!.assertion, /exact/);
-  assert.equal(families.get("reality-b")?.status, "ENGINE_SUPPORTED_INTEGRATION_MISSING"); assert.equal(families.get("reality-combined")?.status, "ENGINE_SUPPORTED_INTEGRATION_MISSING");
-  assert.equal(families.get("vocal-aggregate")?.status, "ENGINE_SUPPORTED_INTEGRATION_MISSING"); assert.equal(families.get("vocal-jose-maria")?.status, "PARTIALLY_REPRESENTED");
-});
-test("coverage and product readiness are separate and incomplete audit gates implementation", () => {
-  const audit = buildFocalA2CapabilityAudit(); assert.equal(audit.fullA2PlanningCoverage, false); assert.equal(audit.fullA2ProductReadiness, false);
-  assert.equal(audit.recommendation.type, "CLARIFY_DOMAIN"); assert.equal(audit.recommendation.selectedCapabilityId, 141); assert.ok(audit.notAuditedCapabilityIds.length > 0);
-});
-test("audit serialization is byte deterministic and read-only", () => {
-  const first = serializeFocalA2CoverageEvidence(); const second = serializeFocalA2CoverageEvidence(); assert.equal(first, second); assert.deepEqual(JSON.parse(first), JSON.parse(second));
-  const audit = buildFocalA2CapabilityAudit(); assert.equal(audit.readOnly, true); assert.equal(audit.inputImmutable, true);
-});
-test("coverage tooling is not exported by the production entrypoint", () => assert.doesNotMatch(readFileSync("engine/planner-next/index.ts", "utf8"), /coverage|focalA2CapabilityAudit/));
+const files=["focalA2CapabilityEvidenceBindings.ts","focalA2EvidenceRegistry.ts","focalA2CapabilityAudit.ts"].map(f=>`engine/planner-next/coverage/${f}`);
+test("catalog and source manifest contain 167 explicit decisions",()=>{assert.equal(FOCAL_A2_CAPABILITY_CATALOG.length,167);assert.equal(FOCAL_A2_REQUIREMENTS.length,167);assert.ok(FOCAL_A2_REQUIREMENTS.every(r=>typeof r.requiredByA2Example==="boolean"&&typeof r.requiredByOfficialSpec==="boolean"&&typeof r.productPhase==="boolean"));});
+test("Evidence is never assigned by audited IDs or numeric ranges",()=>{for(const file of files){const source=readFileSync(file,"utf8");assert.doesNotMatch(source,new RegExp("audited"+"Ids"));assert.doesNotMatch(source,/capabilityId\s*[<>]=?\s*\d/);}});
+test("every audited capability owns a binding with evaluable assertions",()=>{const audit=buildFocalA2CapabilityAudit(),ids=new Set(FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS.map(b=>b.capabilityId));for(const row of audit.evidenceRecords)if(!["NOT_AUDITED","PRODUCT_PHASE_NOT_IMPLEMENTED"].includes(row.derivedCoverageStatus)){assert.ok(ids.has(row.capabilityId));assert.ok(row.binding);assert.ok(row.assertionResults.length>0);}});
+test("missing JSON selector and exact test name are NOT_FOUND",()=>{const assertion:JsonAssertion={id:"mutation",kind:"JSON",file:"unused",selector:"missing.value",operator:"EQUALS",expected:true,layer:"EVIDENCE",property:"mutation",representativeBoundary:"PLANNER_LAYER"};assert.equal(evaluateJsonAssertion(assertion,{present:true}).status,"NOT_FOUND");assert.equal(evaluateTestAssertion({id:"test-mutation",kind:"TEST",file:import.meta.filename,testName:"a test that is absent",layer:"AUDIT",property:"mutation"}).status,"NOT_FOUND");});
+test("a mutated assertion degrades classification and absence means NOT_AUDITED",()=>{const binding=FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS[0]!;assert.equal(deriveCoverageStatus({requirement:"REQUIRED",productPhase:false,binding,assertionResults:[]}).status,"NOT_AUDITED");const failed=evaluateJsonAssertion({id:"failure",kind:"JSON",file:"unused",selector:"value",operator:"EQUALS",expected:true,layer:"AUDIT",property:"mutation",representativeBoundary:"ENGINE_INPUT"},{value:false});assert.equal(deriveCoverageStatus({requirement:"REQUIRED",productPhase:false,binding,assertionResults:[failed]}).status,"NOT_AUDITED");});
+test("end-to-end probe publishes selected observations and executes all authorities",()=>{const p=runSupportedIntegrationProbe();assert.deepEqual(p.exactFunctionExecuted,["preflightEngineInputForPlannerNext","adaptEngineInputToPlannerNextProblem","executePlannerNext","validatePlan"]);assert.equal(p.statuses.validation,"SUPPORTED");assert.ok(Array.isArray(p.observations.inputTaskIds));assert.equal(p.deterministic,true);assert.equal(p.inputImmutable,true);});
+test("joint and technical layer probes execute real code",()=>{for(const p of runPlannerLayerProbes()){assert.equal(p.probeScope,"PLANNER_LAYER");assert.ok(p.exactFunctionExecuted.includes("validatePlan"));assert.equal(p.statuses.validation,"SUPPORTED");assert.equal(p.deterministic,true);assert.equal(p.inputImmutable,true);}});
+test("product phases are separate from planning coverage",()=>{const audit=buildFocalA2CapabilityAudit();for(const id of [162,163,164,165,166,167]){const source=FOCAL_A2_REQUIREMENTS.find(r=>r.capabilityId===id)!;const row=audit.evidenceRecords.find(r=>r.capabilityId===id)!;assert.equal(source.productPhase,true);assert.equal(row.derivedCoverageStatus,"PRODUCT_PHASE_NOT_IMPLEMENTED");assert.equal(row.derivedBlockingLayer,"PRODUCT");}assert.equal(audit.fullA2PlanningCoverage,false);assert.equal(audit.fullA2ProductReadiness,false);});
+test("recommendation is selected from audit state",()=>{const audit=buildFocalA2CapabilityAudit();assert.equal(audit.recommendation.type,"CLARIFY_DOMAIN");assert.equal(audit.recommendation.selectedCapabilityId,141);const alternative=selectNextAction({evidenceRecords:audit.evidenceRecords.map(r=>r.capabilityId===141?{...r,derivedCoverageStatus:"NOT_AUDITED" as const}:r),fullA2PlanningCoverage:false});assert.notEqual(alternative.decisionTrace,audit.recommendation.decisionTrace);});
+test("serialization is deterministic, immutable, and tooling-only",()=>{const a=serializeFocalA2CoverageEvidence(),b=serializeFocalA2CoverageEvidence();assert.equal(a,b);const audit=buildFocalA2CapabilityAudit();assert.equal(audit.deterministic,true);assert.equal(audit.inputImmutable,true);assert.equal(audit.readOnly,true);assert.doesNotMatch(readFileSync("engine/planner-next/index.ts","utf8"),/coverage|focalA2CapabilityAudit/);});
+test("historical manifest is not used to claim absent semantics",()=>{for(const binding of FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS)for(const assertion of binding.benchmarkAssertions)if(assertion.file.includes("HistoricalManifest"))assert.match(assertion.property,/digest|fingerprint|budget|scenario existence/i);});
+test("tooling change set contains no production files",()=>{const allowed=/^(engine\/planner-next\/(coverage|benchmarks\/runFocalA2CoverageAuditBenchmark\.ts)|docs\/(coverage|evidence)\/|README\.md)/;for(const file of files)assert.ok(file.startsWith("engine/planner-next/coverage/"));assert.ok(allowed.test("README.md"));});

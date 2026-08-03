@@ -3,45 +3,17 @@ import { executePlannerNext } from "../executePlannerNext";
 import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "../integration/engineInputAdapter.fixture";
 import { preflightEngineInputForPlannerNext } from "../integration/engineInputPreflight";
+import { synchronizedJointTasks } from "../jointTasks";
+import { planMainFlowAndFeeders } from "../planMainFlowAndFeeders";
+import { jointAuxiliaryTasksScenario } from "../scenarios/jointAuxiliaryTasksScenario";
+import { technicalChainScenario } from "../scenarios/technicalChainScenario";
+import { getTechnicalChains } from "../technicalChains";
 import { validatePlan } from "../validate";
 import type { LayerExecutionStatus } from "./focalA2EvidenceRegistry";
-
-export type ProbeScope = "END_TO_END" | "PLANNER_LAYER" | "SOURCE_ONLY";
-export interface CapabilityProbeResult {
-  readonly id: string; readonly probeScope: ProbeScope; readonly exactFunctionExecuted: readonly string[];
-  readonly nonEndToEndReason: string | null; readonly preflightStatus: LayerExecutionStatus;
-  readonly adapterStatus: LayerExecutionStatus; readonly dispatcherStatus: LayerExecutionStatus;
-  readonly validationStatus: LayerExecutionStatus; readonly reasonCodes: readonly string[]; readonly inputImmutable: boolean;
-}
-
-const snapshot = (value: unknown): string => JSON.stringify(value);
-
-/** Executes every integration boundary, including the official policy dispatcher. */
-function createPlanifiableIntegrationFixture(): EngineInput {
-  const fixture = structuredClone(createSupportedEngineInputAdapterFixture());
-  fixture.tasks = fixture.tasks.filter(({ id }) => id !== 105);
-  fixture.locks = fixture.locks.filter(({ taskId }) => taskId !== 105);
-  return fixture;
-}
-
-export function runSupportedIntegrationProbe(input: EngineInput = createPlanifiableIntegrationFixture()): CapabilityProbeResult {
-  const before = snapshot(input);
-  const preflight = preflightEngineInputForPlannerNext(input);
-  if (preflight.status !== "SUPPORTED") return Object.freeze({ id: "supported-engine-input", probeScope: "END_TO_END", exactFunctionExecuted: ["preflightEngineInputForPlannerNext"], nonEndToEndReason: null, preflightStatus: "UNSUPPORTED", adapterStatus: "NOT_EXECUTED", dispatcherStatus: "NOT_EXECUTED", validationStatus: "NOT_EXECUTED", reasonCodes: preflight.reasonCodes, inputImmutable: before === snapshot(input) });
-  const adapted = adaptEngineInputToPlannerNextProblem(input);
-  if (adapted.status !== "SUPPORTED") return Object.freeze({ id: "supported-engine-input", probeScope: "END_TO_END", exactFunctionExecuted: ["preflightEngineInputForPlannerNext", "adaptEngineInputToPlannerNextProblem"], nonEndToEndReason: null, preflightStatus: "SUPPORTED", adapterStatus: "UNSUPPORTED", dispatcherStatus: "NOT_EXECUTED", validationStatus: "NOT_EXECUTED", reasonCodes: adapted.reasonCodes, inputImmutable: before === snapshot(input) });
-  const execution = executePlannerNext(adapted.problem);
-  if (!execution.result) return Object.freeze({ id: "supported-engine-input", probeScope: "END_TO_END", exactFunctionExecuted: ["preflightEngineInputForPlannerNext", "adaptEngineInputToPlannerNextProblem", "executePlannerNext"], nonEndToEndReason: null, preflightStatus: "SUPPORTED", adapterStatus: "SUPPORTED", dispatcherStatus: "UNSUPPORTED", validationStatus: "NOT_EXECUTED", reasonCodes: execution.policyResolution.reasonCodes, inputImmutable: before === snapshot(input) });
-  const validation = validatePlan(adapted.problem, execution.result.scheduledTasks, "scheduledSetupPreparations" in execution.result ? execution.result.scheduledSetupPreparations : [], execution.result.scheduledSpaceMeals);
-  return Object.freeze({ id: "supported-engine-input", probeScope: "END_TO_END", exactFunctionExecuted: ["preflightEngineInputForPlannerNext", "adaptEngineInputToPlannerNextProblem", "executePlannerNext", "validatePlan"], nonEndToEndReason: null, preflightStatus: "SUPPORTED", adapterStatus: "SUPPORTED", dispatcherStatus: "SUPPORTED", validationStatus: validation.hardValid ? "SUPPORTED" : "FAILED", reasonCodes: validation.reasonCodes, inputImmutable: before === snapshot(input) });
-}
-
-export function plannerLayerProbeRecord(id: string, exactFunctionExecuted: string, reason: string): CapabilityProbeResult {
-  return Object.freeze({ id, probeScope: "PLANNER_LAYER", exactFunctionExecuted: [exactFunctionExecuted], nonEndToEndReason: reason, preflightStatus: "NOT_EXECUTED", adapterStatus: "NOT_EXECUTED", dispatcherStatus: "NOT_EXECUTED", validationStatus: "NOT_EXECUTED", reasonCodes: [], inputImmutable: true });
-}
-
-export const PLANNER_LAYER_PROBES = Object.freeze([
-  plannerLayerProbeRecord("joint-tasks", "synchronizedJointTasks", "Audits Planner Next joint semantics, not EngineInput integration."),
-  plannerLayerProbeRecord("technical-chain", "getTechnicalChains", "Audits the internal technical-chain authority only."),
-  plannerLayerProbeRecord("reality-families", "evaluateFocalA2RealityUnits", "Audits exact Focal unit composition from benchmark Evidence."),
-]);
+export interface CapabilityProbeResult {readonly id:string;readonly probeScope:"END_TO_END"|"PLANNER_LAYER";readonly exactFunctionExecuted:readonly string[];readonly statuses:Readonly<Record<string,LayerExecutionStatus>>;readonly observations:Readonly<Record<string,unknown>>;readonly reasonCodes:readonly string[];readonly deterministic:boolean;readonly inputImmutable:boolean}
+const snapshot=(v:unknown)=>JSON.stringify(v);
+function fixture():EngineInput{const value=structuredClone(createSupportedEngineInputAdapterFixture());value.tasks=value.tasks.filter(({id})=>id!==105);value.locks=value.locks.filter(({taskId})=>taskId!==105);return value;}
+export function runSupportedIntegrationProbe(input:EngineInput=fixture()):CapabilityProbeResult{const before=snapshot(input),preflight=preflightEngineInputForPlannerNext(input);if(preflight.status!=="SUPPORTED")return Object.freeze({id:"supported-engine-input",probeScope:"END_TO_END",exactFunctionExecuted:["preflightEngineInputForPlannerNext"],statuses:{preflight:"UNSUPPORTED"},observations:{inputTaskIds:input.tasks.map(t=>t.id)},reasonCodes:preflight.reasonCodes,deterministic:true,inputImmutable:before===snapshot(input)});const adapted=adaptEngineInputToPlannerNextProblem(input);if(adapted.status!=="SUPPORTED")throw new Error(`probe adapter rejected: ${adapted.reasonCodes.join(",")}`);const run=()=>executePlannerNext(adapted.problem),execution=run();if(!execution.result)throw new Error(`probe execution failed: ${execution.policyResolution.reasonCodes.join(",")}`);const validation=validatePlan(adapted.problem,execution.result.scheduledTasks,"scheduledSetupPreparations" in execution.result?execution.result.scheduledSetupPreparations:[],execution.result.scheduledSpaceMeals);const again=run();return Object.freeze({id:"supported-engine-input",probeScope:"END_TO_END",exactFunctionExecuted:["preflightEngineInputForPlannerNext","adaptEngineInputToPlannerNextProblem","executePlannerNext","validatePlan"],statuses:{preflight:"SUPPORTED",adapter:"SUPPORTED",dispatcher:"SUPPORTED",validation:validation.hardValid?"SUPPORTED":"FAILED"},observations:{inputTaskIds:input.tasks.map(t=>t.id),adaptedTaskIds:adapted.problem.tasks.map(t=>t.id),statuses:input.tasks.map(t=>[t.id,t.status??null]),kinds:adapted.problem.tasks.map(t=>[t.id,t.kind]),participants:adapted.problem.participants.map(p=>p.id),spaces:adapted.problem.spaces.map(s=>s.id),resources:adapted.problem.resources.map(r=>r.id),dependencies:adapted.problem.tasks.map(t=>[t.id,t.dependencies]),locks:input.locks,scheduledTaskIds:execution.result.scheduledTasks.map(t=>t.id),hardValid:validation.hardValid,policyResolution:execution.policyResolution},reasonCodes:validation.reasonCodes,deterministic:snapshot(execution)===snapshot(again),inputImmutable:before===snapshot(input)});}
+export function runJointTasksProbe():CapabilityProbeResult{const problem=jointAuxiliaryTasksScenario(),before=snapshot(problem),first=planMainFlowAndFeeders(problem),second=planMainFlowAndFeeders(problem),members=first.scheduledTasks.filter(t=>t.jointGroupId==="shared-operation-1"),validation=validatePlan(problem,first.scheduledTasks,first.scheduledSetupPreparations);return Object.freeze({id:"joint-tasks",probeScope:"PLANNER_LAYER",exactFunctionExecuted:["planMainFlowAndFeeders","synchronizedJointTasks","validatePlan"],statuses:{search:first.complete?"SUPPORTED":"FAILED",validation:validation.hardValid?"SUPPORTED":"FAILED"},observations:{members:members.map(t=>t.id),jointGroup:"shared-operation-1",start:members[0]?.start,end:members[0]?.end,space:members[0]?.spaceId,resources:members[0]?.requiredResourceIds,atomic:members.length===2&&synchronizedJointTasks(members[0]!,members[1]!)},reasonCodes:validation.reasonCodes,deterministic:snapshot(first.scheduledTasks)===snapshot(second.scheduledTasks)&&snapshot(first.reasonCodes)===snapshot(second.reasonCodes),inputImmutable:before===snapshot(problem)});}
+export function runTechnicalChainProbe():CapabilityProbeResult{const problem=technicalChainScenario(),before=snapshot(problem),chains=getTechnicalChains(problem.tasks),first=planMainFlowAndFeeders(problem),second=planMainFlowAndFeeders(problem),validation=validatePlan(problem,first.scheduledTasks,first.scheduledSetupPreparations);return Object.freeze({id:"technical-chain",probeScope:"PLANNER_LAYER",exactFunctionExecuted:["getTechnicalChains","planMainFlowAndFeeders","validatePlan"],statuses:{search:first.complete?"SUPPORTED":"FAILED",validation:validation.hardValid?"SUPPORTED":"FAILED"},observations:{taskIds:chains[0]?.map(t=>t.id)??[],dependencies:chains[0]?.map(t=>[t.id,t.dependencies])??[],scheduledOrder:first.scheduledTasks.filter(t=>chains[0]?.some(c=>c.id===t.id)).map(t=>t.id),atomic:(chains[0]?.length??0)>1&&chains[0]!.every(t=>first.scheduledTasks.some(s=>s.id===t.id))},reasonCodes:validation.reasonCodes,deterministic:snapshot(first.scheduledTasks)===snapshot(second.scheduledTasks)&&snapshot(first.reasonCodes)===snapshot(second.reasonCodes),inputImmutable:before===snapshot(problem)});}
+export const runPlannerLayerProbes=()=>Object.freeze([runJointTasksProbe(),runTechnicalChainProbe()]);
