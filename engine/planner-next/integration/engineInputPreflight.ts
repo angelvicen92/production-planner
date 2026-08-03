@@ -936,6 +936,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
 
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
+  spatial.defects.filter((defect) => defect.reason === "DUPLICATE_ZONE_SNAPSHOT" || defect.reason === "DUPLICATE_SPACE_SNAPSHOT")
+    .forEach((defect) => addIssue("DUPLICATE_ID", defect.entity, defect.entityId,
+      `${defect.entity === "zone" ? "planZoneSettings" : "planSpaceSettings"}.${String(defect.entityId)}`,
+      `Duplicate authoritative daily ${defect.entity} snapshot identity.`, { reason: defect.reason }));
   const requiredSpaces = new Map<number, Set<number>>();
   const requireSpace = (spaceId: number, taskId?: number): void => {
     const tasks = requiredSpaces.get(spaceId) ?? new Set<number>();
@@ -961,6 +965,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     requiredZoneIds.add(effective.zoneId);
     if (effective.effectiveWindow) { usableRequiredSpaceCount++; continue; }
     unusableRequiredSpaceCount++;
+    if (effective.defect?.reason === "DUPLICATE_SPACE_SNAPSHOT" || effective.defect?.reason === "DUPLICATE_ZONE_SNAPSHOT") continue;
     const temporal = effective.defect?.reason !== "MISSING_ZONE_SNAPSHOT";
     addIssue(temporal ? "UNSUPPORTED_TIME_VALUE" : "MISSING_SPACE_AVAILABILITY", "space", spaceId, `planSpaceSettings.${spaceId}.availability`, "Required daily space has no usable effective availability.", { spaceId, zoneId: effective.zoneId, reason: effective.defect?.reason });
   }

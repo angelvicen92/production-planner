@@ -490,6 +490,24 @@ test("espacio ausente, sólo referenciado y descrito sin disponibilidad", () => 
   assert.ok(described.identityMap.some((entry) => entry.namespace === "zone" && entry.sourceId === "30"));
 });
 
+test("SPEC10-009: snapshots diarios duplicados bloquean sin last-write-wins ni blockers espaciales falsos", () => {
+  const base = input({
+    tasks: [task(1, { spaceId: 20, zoneId: 30 })],
+    planZoneSettings: [{ id: 1, zoneId: 30, availabilityStart: null, availabilityEnd: null }, { id: 2, zoneId: 30, availabilityStart: "09:00", availabilityEnd: "17:00" }],
+    planSpaceSettings: [{ id: 3, spaceId: 20, zoneId: 30, availabilityStart: null, availabilityEnd: null }, { id: 4, spaceId: 20, zoneId: 30, availabilityStart: "10:00", availabilityEnd: "16:00" }],
+  });
+  const before = clone(base);
+  const normal = preflightEngineInputForPlannerNext(base);
+  const inverted = preflightEngineInputForPlannerNext(input({ ...base, planZoneSettings: [...base.planZoneSettings!].reverse(), planSpaceSettings: [...base.planSpaceSettings!].reverse() }));
+  const duplicateIssues = normal.issues.filter((entry) => entry.code === "DUPLICATE_ID" && (entry.entityKind === "zone" || entry.entityKind === "space"));
+  assert.deepEqual(duplicateIssues.map((entry) => entry.details?.reason), ["DUPLICATE_SPACE_SNAPSHOT", "DUPLICATE_ZONE_SNAPSHOT"]);
+  assert.equal(normal.issues.filter((entry) => entry.code === "MISSING_SPACE_REFERENCE" || entry.code === "MISSING_SPACE_AVAILABILITY").length, 0);
+  assert.equal(normal.diagnostics.usableRequiredSpaceCount, 0);
+  assert.equal(normal.diagnostics.unusableRequiredSpaceCount, 1);
+  assert.deepEqual(normal, inverted);
+  assert.deepEqual(base, before);
+});
+
 test("capacidad mayor que uno y aliases contradictorios", () => {
   assert.deepEqual(issue(input({ spaceCapacityById: { 20: 2 } }), "UNSUPPORTED_SPACE_CAPACITY", "20").details, { capacity: 2 });
   const contradiction = issue(input({ spaceCapacityById: { 20: 1 }, spaceConcurrencyById: { 20: 2 } }), "UNSUPPORTED_SPACE_CAPACITY", "20");
