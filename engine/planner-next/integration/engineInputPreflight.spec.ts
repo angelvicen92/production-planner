@@ -1659,7 +1659,7 @@ test("SPEC10-007: intervalo protegido planificado se contiene o explica conflict
   const outside = preflightEngineInputForPlannerNext(make("08:30", "10:00"));
   const conflict = outside.issues.find((entry) => entry.path === "tasks.1.resourceAvailability.9")!;
   assert.equal(outside.diagnostics.protectedTaskResourceAvailabilityConflictCount, 1);
-  assert.deepEqual(conflict.details, { assignmentSources: ["direct"], effectiveWindow: { start: "09:00", end: "12:00" }, intervalSource: "planned",
+  assert.deepEqual(conflict.details, { assignmentSources: ["direct"], resourceChannel: "generic", resourceLockIds: [], effectiveWindow: { start: "09:00", end: "12:00" }, intervalSource: "planned",
     planResourceItemId: 9, protectedInterval: { start: "08:30", end: "10:00" }, taskId: 1 });
 });
 
