@@ -205,10 +205,22 @@ export interface PlannerNextIntegrationConfigurationInput {
   mainFlow: PlannerNextMainFlowInput;
 }
 
+export interface EngineInputAnchoredAccompanimentInput {
+  id: string;
+  anchorTaskId: number;
+  beforeTaskIds: number[];
+  afterTaskIds: number[];
+  adjacency: "REQUIRED";
+  internalTransition: "INCLUDED";
+  resourceContinuity: "REQUIRED";
+}
+
 export interface EngineInput {
   planId: number;
   /** Explicit Planner Next integration contract. It is not populated by current productive paths. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
+  /** Explicit ordered Planner Next anchored-operation contract. */
+  anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   workDay: TimeWindow;
   /** Explicit meal semantics. Missing values retain the legacy global hard-break behavior. */
   mealMode?: "global_hard_break" | "flexible_meal_window";

@@ -3,6 +3,8 @@ import type { EngineInput } from "../../types";
 import { realProductionScenarios } from "../../orc/benchmarks/fixtures/real-scenarios/realProductionScenarios";
 import { adaptEngineInputToPlannerNextProblem } from "../integration/engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "../integration/engineInputAdapter.fixture";
+import { preflightEngineInputForPlannerNext } from "../integration/engineInputPreflight";
+import { preflight as preflightPlannerNextProblem } from "../validate";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const freeze = <T>(value: T): T => { if (value && typeof value === "object") { Object.values(value as object).forEach(freeze); Object.freeze(value); } return value; };
@@ -11,6 +13,7 @@ function reverse(source: EngineInput): EngineInput {
   const value = clone(source);
   value.tasks.reverse().forEach((task) => { task.dependsOnTaskIds?.reverse(); task.assignedResourceIds?.reverse(); });
   value.locks.reverse(); value.planResourceItems.reverse(); value.planZoneSettings?.reverse(); value.planSpaceSettings?.reverse();
+  value.anchoredAccompaniments?.reverse();
   value.spaceResourceAssignments = reverseRecord(value.spaceResourceAssignments) ?? {}; Object.values(value.spaceResourceAssignments).forEach((ids) => ids.reverse());
   value.zoneResourceAssignments = reverseRecord(value.zoneResourceAssignments) ?? {}; Object.values(value.zoneResourceAssignments).forEach((ids) => ids.reverse());
   value.contestantAvailabilityById = reverseRecord(value.contestantAvailabilityById);
@@ -19,6 +22,7 @@ function reverse(source: EngineInput): EngineInput {
 
 function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPORTED") {
   const input = freeze(clone(raw)); const before = clone(input);
+  const engineInputPreflight = preflightEngineInputForPlannerNext(input);
   const result = adaptEngineInputToPlannerNextProblem(input);
   const repeated = adaptEngineInputToPlannerNextProblem(input);
   const inverted = adaptEngineInputToPlannerNextProblem(freeze(reverse(input)));
@@ -26,10 +30,15 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
   assert.deepEqual(result, repeated, `${id}: repetition changed`);
   assert.deepEqual(result, inverted, `${id}: inversion changed`);
   assert.equal(result.status, expected, `${id}: status`);
+  assert.equal(engineInputPreflight.status, expected, `${id}: EngineInput preflight status`);
   assert.ok(Object.isFrozen(result) && Object.isFrozen(result.identityMap), `${id}: output not read-only`);
   const problem = result.problem;
+  const plannerNextPreflightReasonCodes = problem ? preflightPlannerNextProblem(problem) : null;
+  if (expected === "SUPPORTED") assert.deepEqual(plannerNextPreflightReasonCodes, [], `${id}: Planner Next preflight`);
+  else { assert.equal(problem, null); assert.equal(result.problemFingerprint, null); assert.deepEqual(result.reasonCodes, engineInputPreflight.reasonCodes); }
   return {
-    scenarioId: id, status: result.status, reasonCodes: result.reasonCodes,
+    scenarioId: id, engineInputPreflightStatus: engineInputPreflight.status, status: result.status, reasonCodes: result.reasonCodes,
+    plannerNextPreflightReasonCodes,
     sourceFingerprint: result.sourceFingerprint, identityMapFingerprint: result.identityMapFingerprint,
     problemFingerprint: result.problemFingerprint,
     counts: {
@@ -40,6 +49,8 @@ function evaluate(id: string, raw: EngineInput, expected: "SUPPORTED" | "UNSUPPO
       dependencies: problem?.tasks.reduce((sum, task) => sum + task.dependencies.length, 0) ?? 0,
       protectedTasks: problem?.tasks.filter((task) => task.availability?.length === 1).length ?? 0,
     },
+    identityRoundTrip: result.identityMap.every((entry) => entry.canonicalId === `${entry.namespace}:${entry.sourceId}`),
+    timeRoundTrip: problem ? problem.day.start === 480 && problem.day.end === 1080 : null,
     inputImmutable: true, outputReadOnly: true, repetitionIdentical: true, inversionIdentical: true,
   };
 }

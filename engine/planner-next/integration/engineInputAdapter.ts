@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, TimeWindow } from "../../types";
 import type { AnchoredAccompaniment, Minute, PlannerNextProblem, Task, Window } from "../contracts";
+import { preflight as preflightPlannerNextProblem } from "../validate";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
+import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -81,7 +83,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       ...(entry.requiredResourceIds ? { requiredResourceIds: [...entry.requiredResourceIds].sort(compare) } : {}),
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
     })),
-    ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds].sort(compare), afterTaskIds: [...entry.afterTaskIds].sort(compare) })) } : {}),
+    ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
   };
 }
 
@@ -112,24 +114,25 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
   const activeTasks = input.tasks.filter((task) => task.status !== "cancelled").sort((a, b) => a.id - b.id);
+  const coachByParticipantId = new Map(Object.entries(input.vocalCoachPlanResourceItemIdByContestantId ?? {}).map(([participantId, coachId]) => [Number(participantId), coachId]));
+  const coachResourceIds = new Set(coachByParticipantId.values());
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId));
-  const requiredResourceIds = new Set(assignments.flatMap((entry) => [...entry.effectiveResourceIds]));
+  const requiredResourceIds = new Set(assignments.flatMap((entry) => [...entry.effectiveResourceIds]).filter((id) => !coachResourceIds.has(id)));
   input.locks.filter((lock) => lock.lockType === "resource" && activeTasks.some((task) => task.id === lock.taskId))
     .forEach((lock) => requiredResourceIds.add(lock.lockedResourceId!));
   const resourceLocksByTask = new Map<number, number[]>();
-  const timeLocksByTask = new Map<number, TimeWindow>();
   input.locks.forEach((lock) => {
     if (!activeTasks.some((task) => task.id === lock.taskId)) return;
     if (lock.lockType === "resource") resourceLocksByTask.set(lock.taskId, [...(resourceLocksByTask.get(lock.taskId) ?? []), lock.lockedResourceId!]);
-    if (lock.lockType === "time") timeLocksByTask.set(lock.taskId, { start: lock.lockedStart!, end: lock.lockedEnd! });
   });
 
   const tasks: Task[] = activeTasks.map((source) => {
     const assignment = assignments.find((entry) => entry.taskId === source.id)!;
     const protectedInterval = source.status === "done" || source.status === "in_progress" ? resolveProtectedTaskInterval(source) : null;
-    const fixed = protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
-      ? protectedInterval.interval : timeLocksByTask.get(source.id) ?? (source.fixedWindowStart && source.fixedWindowEnd ? { start: source.fixedWindowStart, end: source.fixedWindowEnd } : undefined);
-    const resources = [...new Set([...assignment.effectiveResourceIds, ...(resourceLocksByTask.get(source.id) ?? [])])].sort((a, b) => a - b);
+    const fixedResolution = resolveEffectiveTaskFixedInterval(source, input.locks);
+    const fixed = fixedResolution.status === "EXACT" ? fixedResolution.interval : undefined;
+    const coachResourceId = source.plannerNextKind === "main" || source.plannerNextKind === "vocal" ? coachByParticipantId.get(source.contestantId!) : undefined;
+    const resources = [...new Set([...assignment.effectiveResourceIds, ...(resourceLocksByTask.get(source.id) ?? [])])].filter((id) => id !== coachResourceId).sort((a, b) => a - b);
     const base = {
       id: canonical("task", source.id),
       duration: protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
@@ -141,7 +144,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(fixed ? { availability: [window(fixed)] } : {}),
     };
     if (source.plannerNextKind === "technical") return { ...base, kind: "technical" as const };
-    return { ...base, kind: source.plannerNextKind!, participantId: canonical("participant", source.contestantId!) };
+    if (source.plannerNextKind === "main" || source.plannerNextKind === "vocal") {
+      const coachId = canonical("plan-resource", coachResourceId!);
+      return { ...base, kind: source.plannerNextKind, participantId: canonical("participant", source.contestantId!), coachId, ...(source.plannerNextKind === "main" ? { blockKey: coachId } : {}) };
+    }
+    return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!) };
   });
 
   const participants = [...new Set(activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!))]
@@ -152,17 +159,22 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable resource ${id}`);
     return { id: canonical("plan-resource", id), availability: [window(availability.effectiveWindow)], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
   });
+  const coaches = [...coachResourceIds].sort((a, b) => a - b).map((id) => {
+    const source = input.planResourceItems.find((entry) => entry.id === id)!;
+    const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
+    if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable coach ${id}`);
+    return { id: canonical("plan-resource", id), availability: [window(availability.effectiveWindow)] };
+  });
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
     if (!availability) throw new Error(`Preflight accepted unavailable space ${id}`);
     return { id: canonical("space", id), availability: [window(availability)] };
   });
-  const runtimeAnchors = (input as unknown as { anchoredAccompaniments?: Array<Record<string, unknown>> }).anchoredAccompaniments;
-  const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = runtimeAnchors?.map((entry) => ({
+  const anchoredAccompaniments: AnchoredAccompaniment[] | undefined = input.anchoredAccompaniments?.map((entry) => ({
     id: canonical("anchored-operation", String(entry.id)),
-    anchorTaskId: canonical("task", String(entry.anchorTaskId ?? entry.anchor)),
-    beforeTaskIds: ((entry.beforeTaskIds ?? []) as Array<string | number>).map((id) => canonical("task", id)).sort(compare),
-    afterTaskIds: ((entry.afterTaskIds ?? entry.segments ?? []) as Array<string | number>).map((id) => canonical("task", id)).sort(compare),
+    anchorTaskId: canonical("task", entry.anchorTaskId),
+    beforeTaskIds: entry.beforeTaskIds.map((id) => canonical("task", id)),
+    afterTaskIds: entry.afterTaskIds.map((id) => canonical("task", id)),
     adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED",
   })).sort((a, b) => compare(a.id, b.id));
 
@@ -172,7 +184,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     spaces,
     resources,
     participants,
-    coaches: [],
+    coaches,
     tasks,
     mainFlow: {
       spaceId: canonical("space", config.mainFlow.spaceId),
@@ -185,8 +197,14 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
+    ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),
   };
+  const plannerNextReasonCodes = preflightPlannerNextProblem(problem);
+  if (plannerNextReasonCodes.length > 0) {
+    const issue: EngineInputPreflightIssue = deepFreeze({ code: "ADAPTED_PROBLEM_NOT_REPRESENTABLE", entityKind: "plan", entityId: String(input.planId), path: "plannerNextProblem", message: "The adapted problem is rejected by the canonical Planner Next preflight.", blocking: true, details: { plannerNextReasonCodes } });
+    return deepFreeze({ ...envelope, issues: [...preflight.issues, issue], status: "UNSUPPORTED" as const, problem: null, reasonCodes: ["ADAPTED_PROBLEM_NOT_REPRESENTABLE"] as const, problemFingerprint: null });
+  }
   const problemFingerprint = fingerprintPlannerNextProblem(problem);
   return deepFreeze({ ...envelope, status: "SUPPORTED" as const, problem, reasonCodes: [] as const, problemFingerprint });
 }

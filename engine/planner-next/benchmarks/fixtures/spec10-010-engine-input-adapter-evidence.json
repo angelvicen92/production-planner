@@ -1,7 +1,3 @@
-
-> rest-express@1.0.0 benchmark:planner-next:engine-input-adapter
-> tsx engine/planner-next/benchmarks/runPlannerNextEngineInputAdapterBenchmark.ts
-
 {
   "benchmark": "SPEC10-010-engine-input-adapter",
   "baseSha": "1e1e7d543fd49304b4311d1dd80b66951ffcbf21",
@@ -9,19 +5,23 @@
   "scenarios": [
     {
       "scenarioId": "synthetic-supported",
+      "engineInputPreflightStatus": "SUPPORTED",
       "status": "SUPPORTED",
       "reasonCodes": [],
-      "sourceFingerprint": "f603b40990c55bfa8aeb9ca4f04b08db4f071def1d5a9fd412a9001d6bb9839e",
-      "identityMapFingerprint": "7ee137f855d0dde48babfddf1bd4980b56388e24096cad1e0159882c00bd2743",
-      "problemFingerprint": "f17259ee6508de75bed7a9d5a4f678028056c54fdbda157fda9d6964cee17c75",
+      "plannerNextPreflightReasonCodes": [],
+      "sourceFingerprint": "b1e5cfa4ff54152b0dbafa8bae4d31a037eb53577c7284489f6a1e7d6257b4fd",
+      "identityMapFingerprint": "1fff0f3e7759a90de8926ce1892d9c9dd3604e298207984bece9432b7c8d0f5b",
+      "problemFingerprint": "fa3e6bf9ec7526a6f1f61d97371bdaf2376c061cc14e56ebd37583d2118f4281",
       "counts": {
-        "spaces": 2,
+        "spaces": 3,
         "participants": 2,
-        "resources": 3,
-        "tasks": 3,
-        "dependencies": 1,
+        "resources": 2,
+        "tasks": 5,
+        "dependencies": 2,
         "protectedTasks": 0
       },
+      "identityRoundTrip": true,
+      "timeRoundTrip": true,
       "inputImmutable": true,
       "outputReadOnly": true,
       "repetitionIdentical": true,
@@ -29,6 +29,7 @@
     },
     {
       "scenarioId": "real-main-stage-with-backlog",
+      "engineInputPreflightStatus": "UNSUPPORTED",
       "status": "UNSUPPORTED",
       "reasonCodes": [
         "MISSING_MAIN_FLOW_CONFIGURATION",
@@ -43,6 +44,7 @@
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
+      "plannerNextPreflightReasonCodes": null,
       "sourceFingerprint": "ee7f89bdabfaa57bec7720013da926abb5beeb9e2504353c48a3fca4d42f79a8",
       "identityMapFingerprint": "68a72d0ac8f1d2246d5a7a8132c0090b43d76bb9a2dcb59f9f4b1cdb7b5c3b89",
       "problemFingerprint": null,
@@ -54,6 +56,8 @@
         "dependencies": 0,
         "protectedTasks": 0
       },
+      "identityRoundTrip": true,
+      "timeRoundTrip": null,
       "inputImmutable": true,
       "outputReadOnly": true,
       "repetitionIdentical": true,
@@ -61,6 +65,7 @@
     },
     {
       "scenarioId": "real-resource-lock-pressure",
+      "engineInputPreflightStatus": "UNSUPPORTED",
       "status": "UNSUPPORTED",
       "reasonCodes": [
         "MISSING_MAIN_FLOW_CONFIGURATION",
@@ -75,6 +80,7 @@
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
+      "plannerNextPreflightReasonCodes": null,
       "sourceFingerprint": "208712de676bfdd5d6edac56d9f50cc30b5dd076f1db13c9b8435649888b4614",
       "identityMapFingerprint": "794472d65522cebf41bbc687d25dccb474e8579766fd01de4a45fda48941cc65",
       "problemFingerprint": null,
@@ -86,6 +92,8 @@
         "dependencies": 0,
         "protectedTasks": 0
       },
+      "identityRoundTrip": true,
+      "timeRoundTrip": null,
       "inputImmutable": true,
       "outputReadOnly": true,
       "repetitionIdentical": true,
@@ -93,6 +101,7 @@
     },
     {
       "scenarioId": "real-protected-break-recovery",
+      "engineInputPreflightStatus": "UNSUPPORTED",
       "status": "UNSUPPORTED",
       "reasonCodes": [
         "MISSING_MAIN_FLOW_CONFIGURATION",
@@ -107,6 +116,7 @@
         "UNSUPPORTED_TASK_ROLE",
         "UNSUPPORTED_TIME_GRID"
       ],
+      "plannerNextPreflightReasonCodes": null,
       "sourceFingerprint": "d157c50703c595ba04dd4a80972a6b42cca90618bbf78b77095172a0464e1bb9",
       "identityMapFingerprint": "fd6782b3ba5a6104c13e70baeff7303baf48b9f1561eea76e37e4a33f58eb01a",
       "problemFingerprint": null,
@@ -118,6 +128,8 @@
         "dependencies": 0,
         "protectedTasks": 0
       },
+      "identityRoundTrip": true,
+      "timeRoundTrip": null,
       "inputImmutable": true,
       "outputReadOnly": true,
       "repetitionIdentical": true,
