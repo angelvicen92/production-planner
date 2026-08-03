@@ -32,16 +32,16 @@ test("aplica sólo el espacio exacto y conserva procedencia cruzada", () => {
 test("no hereda recursos del espacio padre", () => assert.deepEqual(resolveOne(input({ tasks: [task(1, { spaceId: 21 })], spaceParentById: { 21: 20 }, spaceResourceAssignments: { 20: [335] } })).spaceResourceIds, []));
 test("el hijo usa su asignación exacta aunque exista padre", () => assert.deepEqual(resolveOne(input({ tasks: [task(1, { spaceId: 21 })], spaceParentById: { 21: 20 }, spaceResourceAssignments: { 20: [335], 21: [336] } })).spaceResourceIds, [336]));
 test("zona explícita aplica su asignación", () => { const value = resolveOne(input({ tasks: [task(1, { zoneId: 30 })], zoneResourceAssignments: { 30: [3] } })); assert.equal(value.zoneResolution, "TASK"); assert.deepEqual(value.zoneResourceIds, [3]); });
-test("zona del mapping de espacio aplica su asignación", () => { const value = resolveOne(input({ tasks: [task(1, { spaceId: 20 })], zoneIdBySpaceId: { 20: 30 }, zoneResourceAssignments: { 30: [3] } })); assert.equal(value.zoneResolution, "SPACE_MAP"); assert.deepEqual(value.zoneResourceIds, [3]); });
-test("zonas explícita y mapeada coincidentes producen MATCH", () => assert.equal(resolveOne(input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], zoneIdBySpaceId: { 20: 30 } })).zoneResolution, "MATCH"));
+test("zona del mapping de espacio aplica su asignación", () => { const value = resolveOne(input({ tasks: [task(1, { spaceId: 20 })], planZoneSettings: [{ zoneId: 30, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 30, availabilityStart: null, availabilityEnd: null }], zoneResourceAssignments: { 30: [3] } })); assert.equal(value.zoneResolution, "DAILY_SPACE"); assert.deepEqual(value.zoneResourceIds, [3]); });
+test("zonas explícita y mapeada coincidentes producen MATCH", () => assert.equal(resolveOne(input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], planZoneSettings: [{ zoneId: 30, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 30, availabilityStart: null, availabilityEnd: null }] })).zoneResolution, "MATCH"));
 test("conflicto de zona no elige zona y conserva directo y espacio", () => {
-  const source = input({ tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [1] })], spaceResourceAssignments: { 20: [2] }, zoneIdBySpaceId: { 20: 31 }, zoneResourceAssignments: { 30: [3], 31: [4] } });
+  const source = input({ tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [1] })], spaceResourceAssignments: { 20: [2] }, planZoneSettings: [{ zoneId: 31, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 31, availabilityStart: null, availabilityEnd: null }], zoneResourceAssignments: { 30: [3], 31: [4] } });
   const result = resolveEffectiveTaskResourceAssignments(source); const value = result.assignments[0];
   assert.equal(value.zoneResolution, "CONFLICT"); assert.equal(value.effectiveZoneId, null); assert.deepEqual(value.zoneResourceIds, []); assert.deepEqual(value.effectiveResourceIds, [1, 2]);
   assert.deepEqual(result.zoneConflicts, [{ taskId: 1, spaceId: 20, explicitZoneId: 30, mappedZoneId: 31, path: "tasks.1.zoneId" }]);
 });
 test("unión exacta de tres niveles elimina sólo duplicados efectivos", () => {
-  const value = resolveOne(input({ tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [337] })], spaceResourceAssignments: { 20: [338] }, zoneResourceAssignments: { 30: [335, 338] } }));
+  const value = resolveOne(input({ tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [337] })], planZoneSettings: [{ zoneId: 30, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 30, availabilityStart: null, availabilityEnd: null }], spaceResourceAssignments: { 20: [338] }, zoneResourceAssignments: { 30: [335, 338] } }));
   assert.deepEqual(value.zoneResourceIds, [335, 338]); assert.deepEqual(value.effectiveResourceIds, [335, 337, 338]);
 });
 test("coach de referencia y agregado legacy no se consumen", () => assert.deepEqual(resolveOne(input({ vocalCoachPlanResourceItemIdByContestantId: { 7: 335 }, coachResourceIds: [335], tasks: [task(1, { contestantId: 7 })] })).effectiveResourceIds, []));
@@ -64,3 +64,38 @@ test("orden de tareas, arrays y maps no cambia el resultado", () => {
 test("es puro y devuelve output profundamente frozen", () => { const source = freeze(input({ tasks: [task(1, { assignedResourceIds: [2, 1] })] })); const before = structuredClone(source); const result = resolveEffectiveTaskResourceAssignments(source); assert.deepEqual(source, before); assert.ok(Object.isFrozen(result) && Object.isFrozen(result.assignments) && Object.isFrozen(result.assignments[0].effectiveResourceIds)); });
 test("propiedades runtime extra no participan", () => { const a = input(); const b = Object.assign(structuredClone(a), { runtime: { elapsed: 10 } }); assert.deepEqual(resolveEffectiveTaskResourceAssignments(a), resolveEffectiveTaskResourceAssignments(b)); });
 test("mismo efectivo conserva procedencia directa frente a zona", () => { const direct = resolveOne(input({ tasks: [task(1, { assignedResourceIds: [335] })] })); const zone = resolveOne(input({ tasks: [task(1, { zoneId: 30 })], zoneResourceAssignments: { 30: [335] } })); assert.deepEqual(direct.effectiveResourceIds, zone.effectiveResourceIds); assert.notDeepEqual(direct, zone); });
+
+test("SPEC10-009: snapshot diario es autoridad aunque cambie el catálogo legacy", () => {
+  const common = {
+    tasks: [task(1, { spaceId: 20 })],
+    planZoneSettings: [{ zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    zoneResourceAssignments: { 30: [3], 40: [4] },
+  };
+  const legacy30 = resolveOne(input({ ...common, zoneIdBySpaceId: { 20: 30 } }));
+  const legacy50 = resolveOne(input({ ...common, zoneIdBySpaceId: { 20: 50 } }));
+  assert.equal(legacy30.mappedZoneId, 40);
+  assert.equal(legacy30.zoneResolution, "DAILY_SPACE");
+  assert.deepEqual(legacy30.zoneResourceIds, [4]);
+  assert.deepEqual(legacy30, legacy50);
+});
+
+test("SPEC10-009: contradicción diaria conserva recursos directos y de espacio sin elegir zona", () => {
+  const source = input({
+    tasks: [task(1, { spaceId: 20, zoneId: 30, assignedResourceIds: [1] })],
+    planZoneSettings: [{ zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    zoneIdBySpaceId: { 20: 30 }, spaceResourceAssignments: { 20: [2] }, zoneResourceAssignments: { 30: [3], 40: [4] },
+  });
+  const result = resolveEffectiveTaskResourceAssignments(source);
+  assert.deepEqual(result.assignments[0].effectiveResourceIds, [1, 2]);
+  assert.deepEqual(result.assignments[0].zoneResourceIds, []);
+  assert.equal(result.zoneConflicts.length, 1);
+});
+
+test("SPEC10-009: snapshot ausente o duplicado nunca usa relación global", () => {
+  const base = { tasks: [task(1, { spaceId: 20 })], zoneIdBySpaceId: { 20: 30 }, zoneResourceAssignments: { 30: [3], 40: [4] } };
+  assert.deepEqual(resolveOne(input(base)).zoneResourceIds, []);
+  const duplicate = input({ ...base, planZoneSettings: [{ zoneId: 40, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }, { spaceId: 20, zoneId: 40, availabilityStart: "09:00", availabilityEnd: "17:00" }] });
+  assert.deepEqual(resolveOne(duplicate).zoneResourceIds, []);
+});

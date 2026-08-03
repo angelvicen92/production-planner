@@ -121,6 +121,24 @@ export interface PlanResourceItemInput {
   availabilityEnd?: string | null;
 }
 
+export interface PlanZoneAvailabilityInput {
+  id?: number;
+  zoneId: number;
+  availabilityStart?: string | null;
+  availabilityEnd?: string | null;
+  source?: string;
+}
+
+export interface PlanSpaceAvailabilityInput {
+  id?: number;
+  spaceId: number;
+  /** Authoritative per-day relation; catalog mappings must not replace it. */
+  zoneId: number;
+  availabilityStart?: string | null;
+  availabilityEnd?: string | null;
+  source?: string;
+}
+
 export interface ResourceItemComponentInput {
   componentResourceItemId: number; // resource_items.id
   quantity: number;
@@ -219,6 +237,9 @@ export interface EngineInput {
 
   tasks: TaskInput[];
   locks: LockInput[];
+  /** Authoritative daily spatial snapshots. */
+  planZoneSettings?: PlanZoneAvailabilityInput[];
+  planSpaceSettings?: PlanSpaceAvailabilityInput[];
 
   // ✅ Para mensajes explicables (dependencias, etc.)
   // Key: templateId -> templateName

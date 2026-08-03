@@ -30,6 +30,8 @@ export const realProductionScenarios: RealProductionScenario[] = [
     description: "Representative production day where one contestant has consecutive planned work and another pending task waits for placement.",
     input: {
       ...baseInput(12201),
+      planZoneSettings: [{ id: 12201101, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" }],
+      planSpaceSettings: [{ id: 122010001, spaceId: 10001, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" }],
       tasks: [
         { id: 1220101, planId: 12201, templateId: 501, status: "pending", contestantId: 301, contestantName: "Contestant A", zoneId: 101, spaceId: 10001, startPlanned: "09:00", endPlanned: "09:45", assignedResourceIds: [101] },
         { id: 1220102, planId: 12201, templateId: 502, status: "pending", contestantId: 301, contestantName: "Contestant A", zoneId: 101, spaceId: 10001, startPlanned: "10:00", endPlanned: "10:45", assignedResourceIds: [101] },
@@ -49,6 +51,15 @@ export const realProductionScenarios: RealProductionScenario[] = [
     description: "Representative resource pressure case with one locked shoot and adjacent planned tasks competing for camera continuity.",
     input: {
       ...baseInput(12202),
+      planZoneSettings: [
+        { id: 12202101, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+        { id: 12202102, zoneId: 102, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+      ],
+      planSpaceSettings: [
+        { id: 122020002, spaceId: 10002, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+        { id: 122020003, spaceId: 10003, zoneId: 102, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+        { id: 122020004, spaceId: 10004, zoneId: 102, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+      ],
       locks: [{ id: 122020201, planId: 12202, taskId: 1220202, lockType: "full", lockedStart: "11:00", lockedEnd: "11:45" }],
       tasks: [
         { id: 1220201, planId: 12202, templateId: 601, status: "pending", contestantId: 401, contestantName: "Contestant C", zoneId: 101, spaceId: 10002, startPlanned: "10:00", endPlanned: "10:45", assignedResourceIds: [101] },
@@ -69,6 +80,11 @@ export const realProductionScenarios: RealProductionScenario[] = [
     description: "Representative recovery case with a protected break splitting the production day and one recovery task awaiting placement.",
     input: {
       ...baseInput(12203),
+      planZoneSettings: [{ id: 12203101, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" }],
+      planSpaceSettings: [
+        { id: 122030005, spaceId: 10005, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+        { id: 122030006, spaceId: 10006, zoneId: 101, availabilityStart: null, availabilityEnd: null, source: "snapshot" },
+      ],
       protectedBreaks: [{ id: "global-meal", kind: "meal", label: "Production meal", start: "13:30", end: "14:30" }],
       tasks: [
         { id: 1220301, planId: 12203, templateId: 701, status: "pending", contestantId: 501, contestantName: "Contestant F", zoneId: 101, spaceId: 10005, startPlanned: "12:30", endPlanned: "13:15", assignedResourceIds: [101] },
