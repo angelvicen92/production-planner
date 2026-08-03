@@ -295,8 +295,6 @@ function sourceProjection(input: EngineInput): unknown {
     spaceCapacityById: input.spaceCapacityById,
     spaceConcurrencyById: input.spaceConcurrencyById,
     spaceIsExclusiveById: input.spaceIsExclusiveById,
-    zoneIdBySpaceId: input.zoneIdBySpaceId,
-    spaceIdsByZoneId: input.spaceIdsByZoneId,
     zoneResourceTypeRequirements: input.zoneResourceTypeRequirements,
     spaceResourceTypeRequirements: input.spaceResourceTypeRequirements,
     optimizerMainZoneId: input.optimizerMainZoneId,
@@ -355,6 +353,18 @@ function toMinutes(value: unknown): number | null {
   if (typeof value !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
   const [hours, minutes] = value.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+type ProtectedTaskIntervalResolution =
+  | Readonly<{ status: "COMPLETE_REAL" | "COMPLETE_PLANNED"; interval: TimeWindow; source: "real" | "planned" }>
+  | Readonly<{ status: "PARTIAL_REAL" | "MISSING" }>;
+
+export function resolveProtectedTaskInterval(task: EngineInput["tasks"][number]): ProtectedTaskIntervalResolution {
+  const anyReal = task.startReal != null || task.endReal != null;
+  if (anyReal && (task.startReal == null || task.endReal == null)) return Object.freeze({ status: "PARTIAL_REAL" });
+  if (task.startReal != null && task.endReal != null) return Object.freeze({ status: "COMPLETE_REAL", interval: Object.freeze({ start: task.startReal, end: task.endReal }), source: "real" });
+  if (task.startPlanned != null && task.endPlanned != null) return Object.freeze({ status: "COMPLETE_PLANNED", interval: Object.freeze({ start: task.startPlanned, end: task.endPlanned }), source: "planned" });
+  return Object.freeze({ status: "MISSING" });
 }
 
 function mapKeys(map: unknown): string[] {
@@ -535,18 +545,12 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     [input.minimizeChangesBySpace, "minimizeChangesBySpace"],
   ].forEach(([map, path]) => describeSpaceMap(map, path as string));
 
-  for (const [spaceId, zoneId] of Object.entries(input.zoneIdBySpaceId ?? {})) {
-    describedSpaceIds.add(spaceId);
-    addIdentity("space", spaceId, `zoneIdBySpaceId.${spaceId}`);
-    addIdentity("zone", zoneId, `zoneIdBySpaceId.${spaceId}`);
-  }
-  for (const [zoneId, spaceIds] of Object.entries(input.spaceIdsByZoneId ?? {})) {
-    addIdentity("zone", zoneId, `spaceIdsByZoneId.${zoneId}`);
-    spaceIds.forEach((spaceId) => {
-      describedSpaceIds.add(String(spaceId));
-      addIdentity("space", spaceId, `spaceIdsByZoneId.${zoneId}`);
-    });
-  }
+  input.planZoneSettings?.forEach((zone) => addIdentity("zone", zone.zoneId, `planZoneSettings.${zone.zoneId}`));
+  input.planSpaceSettings?.forEach((space) => {
+    describedSpaceIds.add(String(space.spaceId));
+    addIdentity("space", space.spaceId, `planSpaceSettings.${space.spaceId}`);
+    addIdentity("zone", space.zoneId, `planSpaceSettings.${space.spaceId}.zoneId`);
+  });
   for (const zoneId of new Set([
     ...mapKeys(input.zoneResourceAssignments),
     ...mapKeys(input.zoneResourceTypeRequirements),
@@ -730,19 +734,16 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       validateInterval({ start: task.fixedWindowStart ?? "", end: task.fixedWindowEnd ?? "" }, "task", task.id, `${path}.fixedWindow`);
     }
     if (task.status === "done" || task.status === "in_progress") {
-      const hasAnyReal = task.startReal != null || task.endReal != null;
-      const hasCompleteReal = task.startReal != null && task.endReal != null;
-      const hasCompletePlanned = task.startPlanned != null && task.endPlanned != null;
-      if (hasAnyReal && !hasCompleteReal) {
+      const protectedTime = resolveProtectedTaskInterval(task);
+      if (protectedTime.status === "PARTIAL_REAL") {
         addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `${path}.realPlanning`, "Protected task has only one real endpoint; real and planned times cannot be combined.", {
           endReal: task.endReal ?? null,
           startReal: task.startReal ?? null,
         });
-      } else if ((!hasAnyReal && !hasCompletePlanned) || task.spaceId == null) {
+      } else if (protectedTime.status === "MISSING" || task.spaceId == null) {
         addIssue("PROTECTED_TASK_WITHOUT_FIXED_PLANNING", "task", task.id, path, "Protected task lacks complete fixed planning.");
       } else {
-        const start = hasCompleteReal ? task.startReal! : task.startPlanned!;
-        const end = hasCompleteReal ? task.endReal! : task.endPlanned!;
+        const { start, end } = protectedTime.interval;
         if (!validateInterval({ start, end }, "task", task.id, `${path}.protectedPlanning`)) {
         addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, path, "Protected planning cannot be represented exactly.");
         }
@@ -970,26 +971,53 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIssue(temporal ? "UNSUPPORTED_TIME_VALUE" : "MISSING_SPACE_AVAILABILITY", "space", spaceId, `planSpaceSettings.${spaceId}.availability`, "Required daily space has no usable effective availability.", { spaceId, zoneId: effective.zoneId, reason: effective.defect?.reason });
   }
 
+  for (const lock of [...input.locks].sort((left, right) => left.id - right.id)) {
+    if (lock.lockType !== "time" && lock.lockType !== "full") continue;
+    const lockedStart = toMinutes(lock.lockedStart);
+    const lockedEnd = toMinutes(lock.lockedEnd);
+    if (lockedStart === null || lockedEnd === null || lockedStart >= lockedEnd) continue;
+    const task = taskById.get(String(lock.taskId));
+    if (!task || task.status === "cancelled") continue;
+    if (!isPositiveInteger(task.spaceId)) {
+      addIssue("UNREPRESENTABLE_TIME_LOCK", "lock", lock.id, `locks.${lock.id}.spatialAvailability`,
+        "Time lock has no concrete task space to audit against daily availability.", {
+          lockId: lock.id, taskId: task.id, spaceId: null, zoneId: null,
+          lockedInterval: { start: lock.lockedStart, end: lock.lockedEnd }, effectiveWindow: null,
+          reason: "MISSING_TASK_SPACE_REFERENCE",
+        });
+      continue;
+    }
+    const effective = spatial.spacesById.get(task.spaceId);
+    const effectiveStart = toMinutes(effective?.effectiveWindow?.start);
+    const effectiveEnd = toMinutes(effective?.effectiveWindow?.end);
+    const unavailableReason = !effective ? "MISSING_SPACE_SNAPSHOT" : effective.defect?.reason ?? "MISSING_EFFECTIVE_SPACE_WINDOW";
+    const outside = effectiveStart !== null && effectiveEnd !== null && (lockedStart < effectiveStart || lockedEnd > effectiveEnd);
+    if (effectiveStart !== null && effectiveEnd !== null && !outside) continue;
+    addIssue("UNREPRESENTABLE_TIME_LOCK", "lock", lock.id, `locks.${lock.id}.spatialAvailability`,
+      "Time lock is not contained by the authoritative daily space availability.", {
+        lockId: lock.id,
+        taskId: task.id,
+        spaceId: task.spaceId,
+        zoneId: effective?.zoneId ?? null,
+        lockedInterval: { start: lock.lockedStart, end: lock.lockedEnd },
+        effectiveWindow: effective?.effectiveWindow ?? null,
+        reason: outside ? "LOCK_OUTSIDE_EFFECTIVE_SPACE_WINDOW" : unavailableReason,
+      });
+  }
+
   let protectedTaskSpatialAvailabilityConflictCount = 0;
   for (const task of input.tasks) {
     if ((task.status !== "done" && task.status !== "in_progress") || task.spaceId == null) continue;
-    const completeReal = task.startReal != null && task.endReal != null;
-    const completePlanned = task.startPlanned != null && task.endPlanned != null;
-    if (!completeReal && !completePlanned) continue;
-    const protectedInterval = completeReal ? { start: task.startReal!, end: task.endReal! } : { start: task.startPlanned!, end: task.endPlanned! };
+    const protectedTime = resolveProtectedTaskInterval(task);
+    if (protectedTime.status === "PARTIAL_REAL" || protectedTime.status === "MISSING") continue;
+    const protectedInterval = protectedTime.interval;
     const effective = spatial.spacesById.get(task.spaceId);
     if (!effective?.effectiveWindow) continue;
     const start = toMinutes(protectedInterval.start), end = toMinutes(protectedInterval.end);
     const availableStart = toMinutes(effective.effectiveWindow.start), availableEnd = toMinutes(effective.effectiveWindow.end);
     if (start === null || end === null || availableStart === null || availableEnd === null || (start >= availableStart && end <= availableEnd)) continue;
     protectedTaskSpatialAvailabilityConflictCount++;
-    addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `tasks.${task.id}.spatialAvailability.${task.spaceId}`, "Protected task interval is not contained by its effective daily space availability.", { taskId: task.id, spaceId: task.spaceId, zoneId: effective.zoneId, protectedInterval, effectiveWindow: effective.effectiveWindow, intervalSource: completeReal ? "real" : "planned" });
-  }
-
-  for (const task of input.tasks) {
-    if (task.status === "cancelled" || task.spaceId == null || task.zoneId == null) continue;
-    const effective = spatial.spacesById.get(task.spaceId);
-    if (effective && effective.zoneId !== task.zoneId) addIssue("INCONSISTENT_SPACE_ZONE_REFERENCE", "task", task.id, `tasks.${task.id}.zoneId`, "Task zone contradicts the authoritative daily space zone.", { taskId: task.id, spaceId: task.spaceId, explicitZoneId: task.zoneId, mappedZoneId: effective.zoneId });
+    addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `tasks.${task.id}.spatialAvailability.${task.spaceId}`, "Protected task interval is not contained by its effective daily space availability.", { taskId: task.id, spaceId: task.spaceId, zoneId: effective.zoneId, protectedInterval, effectiveWindow: effective.effectiveWindow, intervalSource: protectedTime.source });
   }
 
   const capacitySpaceIds = new Set([...mapKeys(input.spaceCapacityById), ...mapKeys(input.spaceConcurrencyById)]);
@@ -1060,13 +1088,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for (const assignment of effectiveTaskResourceAssignments.assignments) {
     if (assignment.status !== "done" && assignment.status !== "in_progress") continue;
     const task = taskById.get(String(assignment.taskId))!;
-    const completeReal = task.startReal != null && task.endReal != null;
-    const anyReal = task.startReal != null || task.endReal != null;
-    const completePlanned = task.startPlanned != null && task.endPlanned != null;
-    if ((anyReal && !completeReal) || (!completeReal && !completePlanned)) continue;
-    const protectedInterval = completeReal
-      ? { start: task.startReal!, end: task.endReal! }
-      : { start: task.startPlanned!, end: task.endPlanned! };
+    const protectedTime = resolveProtectedTaskInterval(task);
+    if (protectedTime.status === "PARTIAL_REAL" || protectedTime.status === "MISSING") continue;
+    const protectedInterval = protectedTime.interval;
     const protectedStart = toMinutes(protectedInterval.start);
     const protectedEnd = toMinutes(protectedInterval.end);
     if (protectedStart === null || protectedEnd === null || protectedStart >= protectedEnd) continue;
@@ -1083,7 +1107,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
           planResourceItemId: resourceId,
           protectedInterval,
           effectiveWindow: availability.effectiveWindow,
-          intervalSource: completeReal ? "real" : "planned",
+          intervalSource: protectedTime.source,
           assignmentSources: [
             ...(assignment.directResourceIds.includes(resourceId) ? ["direct"] : []),
             ...(assignment.spaceResourceIds.includes(resourceId) ? ["space"] : []),

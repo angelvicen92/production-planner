@@ -1,6 +1,7 @@
 import type { EngineInput, TaskStatus } from "../../types";
+import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 
-export type EffectiveTaskResourceZoneResolution = "NONE" | "TASK" | "SPACE_MAP" | "MATCH" | "CONFLICT";
+export type EffectiveTaskResourceZoneResolution = "NONE" | "TASK" | "DAILY_SPACE" | "MATCH" | "CONFLICT";
 
 export interface EffectiveTaskResourceAssignment {
   taskId: number;
@@ -46,20 +47,25 @@ function mapValue(map: unknown, id: number | null): unknown {
 export function resolveEffectiveTaskResourceAssignments(input: EngineInput): EffectiveTaskResourceAssignmentResolution {
   const assignments: EffectiveTaskResourceAssignment[] = [];
   const zoneConflicts: EffectiveTaskResourceZoneConflict[] = [];
+  const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
 
   for (const task of input.tasks) {
     if (!(["pending", "interrupted", "in_progress", "done"] as const).includes(task.status as Exclude<TaskStatus, "cancelled">)) continue;
     const spaceId = isPositiveInteger(task.spaceId) ? task.spaceId : null;
     const explicitZoneId = isPositiveInteger(task.zoneId) ? task.zoneId : null;
-    const rawMappedZoneId = mapValue(input.zoneIdBySpaceId, spaceId);
-    const mappedZoneId = isPositiveInteger(rawMappedZoneId) ? rawMappedZoneId : null;
+    const dailySpace = spaceId === null ? undefined : spatial.spacesById.get(spaceId);
+    const duplicateSpace = dailySpace?.defect?.reason === "DUPLICATE_SPACE_SNAPSHOT";
+    const mappedZoneId = dailySpace && !duplicateSpace && isPositiveInteger(dailySpace.zoneId) ? dailySpace.zoneId : null;
+    const dailyHierarchyUsable = dailySpace?.effectiveWindow != null;
     let effectiveZoneId: number | null = null;
     let zoneResolution: EffectiveTaskResourceZoneResolution = "NONE";
 
-    if (explicitZoneId !== null && mappedZoneId !== null) {
+    if (spaceId !== null && mappedZoneId === null) {
+      zoneResolution = "NONE";
+    } else if (explicitZoneId !== null && mappedZoneId !== null) {
       if (explicitZoneId === mappedZoneId) {
-        effectiveZoneId = explicitZoneId;
-        zoneResolution = "MATCH";
+        effectiveZoneId = dailyHierarchyUsable ? mappedZoneId : null;
+        zoneResolution = dailyHierarchyUsable ? "MATCH" : "NONE";
       } else {
         zoneResolution = "CONFLICT";
         zoneConflicts.push(Object.freeze({ taskId: task.id, spaceId: spaceId!, explicitZoneId, mappedZoneId, path: `tasks.${task.id}.zoneId` }));
@@ -68,8 +74,8 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
       effectiveZoneId = explicitZoneId;
       zoneResolution = "TASK";
     } else if (mappedZoneId !== null) {
-      effectiveZoneId = mappedZoneId;
-      zoneResolution = "SPACE_MAP";
+      effectiveZoneId = dailyHierarchyUsable ? mappedZoneId : null;
+      zoneResolution = dailyHierarchyUsable ? "DAILY_SPACE" : "NONE";
     }
 
     const directResourceIds = normalizedIds(task.assignedResourceIds);

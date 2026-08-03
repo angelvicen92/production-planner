@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectPlanSpaceSettingsForEngineInput, projectPlanZoneSettingsForEngineInput } from "./buildInput";
+import { buildDailySpaceZoneIdMapForEngineInput, projectPlanSpaceSettingsForEngineInput, projectPlanZoneSettingsForEngineInput } from "./buildInput";
 
 test("SPEC10-009: daily zone and space projection preserves literal contracts and order", () => {
   const rows = Object.freeze([
@@ -12,6 +12,19 @@ test("SPEC10-009: daily zone and space projection preserves literal contracts an
     { id: 1, spaceId: 10, zoneId: 2, availabilityStart: undefined, availabilityEnd: "bad", source: "edited" },
     { id: 2, spaceId: 20, zoneId: 3, availabilityStart: null, availabilityEnd: null, source: "default" },
   ]);
+  assert.deepEqual(rows, before);
+});
+
+test("SPEC10-009: daily relation excludes duplicates and never consults a global catalog", () => {
+  const rows = Object.freeze([
+    Object.freeze({ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }),
+    Object.freeze({ spaceId: 21, zoneId: 41, availabilityStart: null, availabilityEnd: null }),
+    Object.freeze({ spaceId: 21, zoneId: 99, availabilityStart: null, availabilityEnd: null }),
+  ]);
+  const before = structuredClone(rows);
+  const relation = buildDailySpaceZoneIdMapForEngineInput(rows);
+  assert.equal(relation.get(20), 40);
+  assert.equal(relation.has(21), false);
   assert.deepEqual(rows, before);
 });
 

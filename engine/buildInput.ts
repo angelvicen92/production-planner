@@ -37,6 +37,12 @@ export function projectPlanSpaceSettingsForEngineInput(rows: readonly PlanResour
   })).sort((a, b) => a.spaceId - b.spaceId);
 }
 
+export function buildDailySpaceZoneIdMapForEngineInput(rows: readonly PlanSpaceAvailabilityInput[]): ReadonlyMap<number, number> {
+  const counts = new Map<number, number>();
+  rows.forEach((row) => counts.set(row.spaceId, (counts.get(row.spaceId) ?? 0) + 1));
+  return new Map(rows.filter((row) => counts.get(row.spaceId) === 1).map((row) => [row.spaceId, row.zoneId] as const));
+}
+
 /** Projects the persisted per-plan snapshot without interpreting its availability. */
 export function projectPlanResourceItemsForEngineInput(
   rows: readonly PlanResourceItemRow[] | null | undefined,
@@ -408,6 +414,7 @@ export async function buildEngineInput(
     projectPlanZoneSettingsForEngineInput(zoneRows),
     projectPlanSpaceSettingsForEngineInput(spaceRows),
   ] as const);
+  const dailyZoneIdBySpaceId = buildDailySpaceZoneIdMapForEngineInput(planSpaceSettings);
 
   const resourceItemIds = Array.from(
     new Set(
@@ -917,7 +924,9 @@ export async function buildEngineInput(
           ? Number(manualScopeId)
           : ((t.space_id ?? t.spaceId ?? null) as number | null);
         const normalizedSpaceId = Number(rawSpaceId);
-        const hasInvalidSpace = Number.isFinite(normalizedSpaceId) && normalizedSpaceId > 0 && !existingSpaceIds.has(normalizedSpaceId);
+        // Preserve concrete task identity even when the mutable global catalog no longer contains it.
+        // Planner Next resolves the authoritative daily relation from planSpaceSettings.
+        const hasInvalidSpace = !Number.isFinite(normalizedSpaceId) || normalizedSpaceId <= 0;
 
         return {
           id: t.id,
@@ -944,10 +953,7 @@ export async function buildEngineInput(
                 : null;
 
             const resolvedSpaceId = hasInvalidSpace ? null : normalizedSpaceId;
-            const zoneFromSpace =
-              resolvedSpaceId !== null
-                ? zoneIdBySpaceId[resolvedSpaceId] ?? null
-                : null;
+            const zoneFromSpace = resolvedSpaceId !== null ? dailyZoneIdBySpaceId.get(resolvedSpaceId) ?? null : null;
 
             const templateName = String(
               (isManualBlock

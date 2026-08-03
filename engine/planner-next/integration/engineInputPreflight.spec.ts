@@ -82,7 +82,7 @@ function identityKeys(source: EngineInput): string[] {
 }
 
 test("SPEC10-005: conflicto espacio-zona activo es blocker exacto y determinista", () => {
-  const source = input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], zoneIdBySpaceId: { 20: 31 }, spaceResourceAssignments: { 20: [] } });
+  const source = input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], planZoneSettings: [{ zoneId: 31, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 31, availabilityStart: null, availabilityEnd: null }], zoneIdBySpaceId: { 20: 99 }, spaceResourceAssignments: { 20: [] } });
   const first = preflightEngineInputForPlannerNext(source); const second = preflightEngineInputForPlannerNext(source);
   const found = first.issues.find((entry) => entry.code === "INCONSISTENT_SPACE_ZONE_REFERENCE");
   assert.deepEqual(found, { code: "INCONSISTENT_SPACE_ZONE_REFERENCE", entityKind: "task", entityId: "1", path: "tasks.1.zoneId", message: "Task zone contradicts the zone mapped from its exact space.", blocking: true, details: { explicitZoneId: 30, mappedZoneId: 31, spaceId: 20, taskId: 1, zoneResourcesApplied: false } });
@@ -198,7 +198,7 @@ test("identity map cubre referencias explícitas de tareas, mapas, componentes y
     resourceItemComponents: { 100: [{ componentResourceItemId: 101, quantity: 1 }] }, actualMeal: { id: 71, start: "13:00", end: "13:30", itinerantTeamId: 82 },
   });
   const keys = identityKeys(source);
-  for (const expected of ["break:70", "break:71", "itinerant-team:80", "itinerant-team:81", "itinerant-team:82", "plan-resource:10", "plan-resource:11", "resource-item:100", "resource-item:101", "resource-type:200", "space:20", "space:21", "space:22", "zone:30"]) assert.ok(keys.includes(expected), expected);
+  for (const expected of ["break:70", "break:71", "itinerant-team:80", "itinerant-team:81", "itinerant-team:82", "plan-resource:10", "plan-resource:11", "resource-item:100", "resource-item:101", "resource-type:200", "space:20", "space:21", "zone:30"]) assert.ok(keys.includes(expected), expected);
 });
 
 test("DUPLICATE_ID sólo para definiciones autoritativas", () => {
@@ -506,6 +506,63 @@ test("SPEC10-009: snapshots diarios duplicados bloquean sin last-write-wins ni b
   assert.equal(normal.diagnostics.unusableRequiredSpaceCount, 1);
   assert.deepEqual(normal, inverted);
   assert.deepEqual(base, before);
+});
+
+test("SPEC10-009: relación diaria gobierna recursos y el catálogo legacy es irrelevante", () => {
+  const common = input({
+    tasks: [task(1, { spaceId: 20, assignedResourceIds: [1] })],
+    planZoneSettings: [{ zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+    spaceResourceAssignments: { 20: [2] }, zoneResourceAssignments: { 30: [3], 40: [4] },
+    planResourceItems: [1, 2, 3, 4].map((id) => ({ id, resourceItemId: id, typeId: 1, name: `r${id}`, isAvailable: true, availabilityStart: null, availabilityEnd: null })),
+  });
+  const a = preflightEngineInputForPlannerNext({ ...common, zoneIdBySpaceId: { 20: 30 }, spaceIdsByZoneId: { 30: [20] } });
+  const b = preflightEngineInputForPlannerNext({ ...common, zoneIdBySpaceId: { 20: 99 }, spaceIdsByZoneId: { 99: [20] } });
+  assert.deepEqual(a, b);
+  assert.equal(a.reasonCodes.includes("INCONSISTENT_SPACE_ZONE_REFERENCE"), false);
+  assert.deepEqual(a.issues.filter((entry) => entry.entityKind === "plan-resource").map((entry) => entry.entityId), []);
+});
+
+test("SPEC10-009: partial-real no cae a planificación para espacio ni recursos", () => {
+  for (const real of [{ startReal: "08:30" }, { endReal: "10:00" }]) {
+    const source = input({
+      tasks: [task(1, { status: "done", spaceId: 20, zoneId: 40, startPlanned: "08:30", endPlanned: "10:00", assignedResourceIds: [9], ...real })],
+      planZoneSettings: [{ zoneId: 40, availabilityStart: "09:00", availabilityEnd: "17:00" }],
+      planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+      planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "09:00", availabilityEnd: "17:00" }],
+    });
+    const before = clone(source); const result = preflightEngineInputForPlannerNext(source);
+    assert.equal(result.issues.filter((entry) => entry.path === "tasks.1.realPlanning").length, 1);
+    assert.equal(result.issues.some((entry) => entry.path.includes("spatialAvailability") || entry.path.includes("resourceAvailability")), false);
+    assert.deepEqual(source, before);
+  }
+});
+
+test("SPEC10-009: locks time/full se auditan contra la ventana espacial diaria", () => {
+  const make = (lock: EngineInput["locks"][number], snapshot: "valid" | "missing" | "duplicate" = "valid", status: "pending" | "interrupted" = "pending") => input({
+    tasks: [task(1, { status, spaceId: 20, zoneId: 40 })], locks: [lock],
+    planZoneSettings: [{ zoneId: 40, availabilityStart: "09:00", availabilityEnd: "17:00" }],
+    planSpaceSettings: snapshot === "missing" ? [] : snapshot === "duplicate"
+      ? [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }, { spaceId: 20, zoneId: 40, availabilityStart: "10:00", availabilityEnd: "16:00" }]
+      : [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }],
+  });
+  for (const [lockType, status] of [["time", "pending"], ["full", "interrupted"]] as const) {
+    const inside = preflightEngineInputForPlannerNext(make({ id: 7, planId: 1, taskId: 1, lockType, lockedStart: "10:00", lockedEnd: "11:00" }, "valid", status));
+    assert.equal(inside.issues.some((entry) => entry.code === "UNREPRESENTABLE_TIME_LOCK"), false);
+    const outside = preflightEngineInputForPlannerNext(make({ id: 7, planId: 1, taskId: 1, lockType, lockedStart: "08:30", lockedEnd: "10:00" }, "valid", status));
+    const issue = outside.issues.filter((entry) => entry.code === "UNREPRESENTABLE_TIME_LOCK");
+    assert.equal(issue.length, 1); assert.equal(issue[0].path, "locks.7.spatialAvailability");
+    assert.deepEqual(issue[0].details, { effectiveWindow: { start: "09:00", end: "17:00" }, lockId: 7, lockedInterval: { start: "08:30", end: "10:00" }, reason: "LOCK_OUTSIDE_EFFECTIVE_SPACE_WINDOW", spaceId: 20, taskId: 1, zoneId: 40 });
+  }
+  for (const snapshot of ["missing", "duplicate"] as const) {
+    const result = preflightEngineInputForPlannerNext(make({ id: 8, planId: 1, taskId: 1, lockType: "time", lockedStart: "10:00", lockedEnd: "11:00" }, snapshot));
+    assert.equal(result.issues.filter((entry) => entry.code === "UNREPRESENTABLE_TIME_LOCK").length, 1);
+  }
+  for (const endpoints of [{ lockedStart: "10:00" }, { lockedStart: "bad", lockedEnd: "11:00" }]) {
+    const result = preflightEngineInputForPlannerNext(make({ id: 9, planId: 1, taskId: 1, lockType: "time", ...endpoints }));
+    assert.equal(result.issues.filter((entry) => entry.code === "UNREPRESENTABLE_TIME_LOCK").length, 1);
+    assert.equal(result.issues.find((entry) => entry.code === "UNREPRESENTABLE_TIME_LOCK")?.path, "locks.9");
+  }
 });
 
 test("capacidad mayor que uno y aliases contradictorios", () => {
@@ -1019,7 +1076,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingCoachReferenceCount": 0,
       "spaceCount": 1,
       "referencedSpaceCount": 1,
-      "describedSpaceCount": 0,
+      "describedSpaceCount": 1,
       "zoneCount": 1,
       "planResourceCount": 3,
       "requiredPlanResourceCount": 1,
@@ -1092,7 +1149,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingCoachReferenceCount": 0,
       "spaceCount": 3,
       "referencedSpaceCount": 3,
-      "describedSpaceCount": 0,
+      "describedSpaceCount": 3,
       "zoneCount": 2,
       "planResourceCount": 3,
       "requiredPlanResourceCount": 2,
@@ -1165,7 +1222,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingCoachReferenceCount": 0,
       "spaceCount": 2,
       "referencedSpaceCount": 2,
-      "describedSpaceCount": 0,
+      "describedSpaceCount": 2,
       "zoneCount": 1,
       "planResourceCount": 3,
       "requiredPlanResourceCount": 2,
@@ -1580,6 +1637,7 @@ test("SPEC10-007: intervalo protegido planificado se contiene o explica conflict
 
 test("SPEC10-007: conflicto protegido conserva las tres procedencias una sola vez", () => {
   const result = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { status: "in_progress", spaceId: 20, zoneId: 30, assignedResourceIds: [9], startPlanned: "08:30", endPlanned: "10:00" })],
+    planZoneSettings: [{ zoneId: 30, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 30, availabilityStart: null, availabilityEnd: null }],
     spaceResourceAssignments: { 20: [9] }, zoneResourceAssignments: { 30: [9] },
     planResourceItems: [{ id: 9, resourceItemId: 90, typeId: 1, name: "r", isAvailable: true, availabilityStart: "09:00", availabilityEnd: "12:00" }] }));
   const conflicts = result.issues.filter((entry) => entry.path === "tasks.1.resourceAvailability.9");
