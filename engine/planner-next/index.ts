@@ -15,3 +15,5 @@ export { preflightEngineInputForPlannerNext } from "./integration/engineInputPre
 export type { EngineInputPreflightDiagnostics, EngineInputPreflightIssue, EngineInputPreflightReasonCode, EngineInputPreflightResult, EngineInputPreflightStatus, EngineInputIdentity, EngineInputIdentityNamespace } from "./integration/engineInputPreflight";
 export { resolveEffectiveTaskResourceAssignments } from "./integration/effectiveTaskResourceAssignments";
 export type { EffectiveTaskResourceAssignment, EffectiveTaskResourceAssignmentResolution, EffectiveTaskResourceZoneConflict, EffectiveTaskResourceZoneResolution } from "./integration/effectiveTaskResourceAssignments";
+export { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./integration/engineInputAdapter";
+export type { EngineInputAdapterResult, EngineInputAdapterSupportedResult, EngineInputAdapterUnsupportedResult } from "./integration/engineInputAdapter";

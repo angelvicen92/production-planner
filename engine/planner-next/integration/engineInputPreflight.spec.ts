@@ -805,16 +805,20 @@ test("mainFlow exige espacio físico descrito y preferredEnd HH:mm dentro de jor
   assert.ok(preflightEngineInputForPlannerNext(zoneOnly).reasonCodes.includes("MISSING_MAIN_FLOW_CONFIGURATION"));
 });
 
-test("rejilla valida forma, jornada, duraciones, tiempos y preferredEnd desde inicio de jornada", () => {
+test("rejilla valida forma, alineación y capacidad canónica fija de cinco minutos", () => {
   for (const grid of [undefined, 0, -1, 1.5, 601]) {
     assert.ok(preflightEngineInputForPlannerNext(configuredInput({ ...validPlannerNext(), timeGridMinutes: grid })).reasonCodes.includes("UNSUPPORTED_TIME_GRID"));
   }
   assert.equal(preflightEngineInputForPlannerNext(configuredInput()).diagnostics.timeGridVerifiable, true);
+  for (const grid of [10, 15]) {
+    const found = issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: grid }), "UNSUPPORTED_TIME_GRID");
+    assert.equal(found.details?.requestedTimeGridMinutes, grid); assert.equal(found.details?.supportedTimeGridMinutes, 5);
+  }
   assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 5 }, { tasks: [task(1, { durationOverrideMin: 17 })] }), "UNSUPPORTED_TIME_GRID").details?.incompatibleDurations, [17]);
   assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 10 }, { globalHardBreaks: [{ start: "15:05", end: "15:15" }] }), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [905, 915]);
   assert.deepEqual(issue(configuredInput({ ...validPlannerNext(), timeGridMinutes: 10, mainFlow: { ...validPlannerNext().mainFlow, preferredEnd: "17:01" } }), "UNSUPPORTED_TIME_GRID").details?.incompatibleTimes, [1021]);
   const offset = configuredInput({ ...validPlannerNext(), timeGridMinutes: 15, mainFlow: { ...validPlannerNext().mainFlow, preferredEnd: "17:05" } }, { workDay: { start: "08:05", end: "18:05" }, meal: { start: "13:05", end: "14:05" } });
-  assert.equal(preflightEngineInputForPlannerNext(offset).diagnostics.timeGridVerifiable, true);
+  assert.equal(preflightEngineInputForPlannerNext(offset).diagnostics.timeGridVerifiable, false);
 });
 
 test("transiciones requieren ambos enteros finitos no negativos", () => {

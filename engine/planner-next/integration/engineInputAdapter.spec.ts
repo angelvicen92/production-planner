@@ -1,0 +1,255 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import type { EngineInput } from "../../types";
+import { preflight as preflightPlannerNextProblem } from "../validate";
+import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
+import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
+import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
+
+const clone = <T>(value: T): T => structuredClone(value);
+const freeze = <T>(value: T): T => { if (value && typeof value === "object") { Object.values(value as object).forEach(freeze); Object.freeze(value); } return value; };
+const supported = (input: EngineInput = createSupportedEngineInputAdapterFixture()) => {
+  const result = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(result.status, "SUPPORTED", result.status === "UNSUPPORTED" ? result.reasonCodes.join(",") : "");
+  assert.ok(result.problem);
+  return result as Extract<typeof result, { status: "SUPPORTED" }>;
+};
+
+test("strict time conversion round-trips every relevant boundary", () => {
+  for (const value of ["00:00", "08:00", "08:05", "12:59", "13:00", "18:00", "23:59"]) assert.equal(minuteToEngineTime(engineTimeToMinute(value)), value);
+  for (const invalid of ["8:00", "24:00", "12:60", "08:00:00"]) assert.throws(() => engineTimeToMinute(invalid), RangeError);
+  for (const invalid of [-1, 1.5, 1440]) assert.throws(() => minuteToEngineTime(invalid), RangeError);
+});
+
+test("synthetic fixture is accepted by both canonical preflights", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  assert.equal(preflightEngineInputForPlannerNext(input).status, "SUPPORTED");
+  const result = supported(input);
+  assert.deepEqual(preflightPlannerNextProblem(result.problem), []);
+  assert.equal(result.problem.tasks.length, 5);
+  assert.deepEqual(result.problem.coaches.map((coach) => coach.id), ["plan-resource:501"]);
+  for (const main of result.problem.tasks.filter((task) => task.kind === "main")) {
+    const vocal = result.problem.tasks.find((task) => task.id === main.dependencies[0]);
+    assert.equal(vocal?.kind, "vocal"); assert.equal(main.dependencies.length, 1); assert.equal(main.coachId, vocal?.coachId); assert.equal(main.blockKey, main.coachId);
+  }
+  assert.ok(result.problem.tasks.filter((task) => task.kind === "main").every((task) => !(task.requiredResourceIds ?? []).includes(task.coachId!)));
+  assert.ok(result.problem.resources.every((resource) => !result.problem.coaches.some((coach) => coach.id === resource.id)));
+  assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
+});
+
+test("domain divergence guard never publishes an invalid adapted problem", () => {
+  const input = createSupportedEngineInputAdapterFixture(); input.plannerNext!.mainFlow.preferredEnd = "14:30";
+  assert.equal(preflightEngineInputForPlannerNext(input).status, "SUPPORTED");
+  const result = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(result.status, "UNSUPPORTED"); assert.equal(result.problem, null); assert.equal(result.problemFingerprint, null);
+  assert.deepEqual(result.reasonCodes, ["ADAPTED_PROBLEM_NOT_REPRESENTABLE"]);
+  assert.deepEqual(result.issues.at(-1)?.details, { plannerNextReasonCodes: ["INVALID_PREFERRED_END"] });
+  assert.ok(result.diagnostics.unsupportedCapabilityCodes.includes("ADAPTED_PROBLEM_NOT_REPRESENTABLE"));
+});
+
+test("only the canonical five-minute Planner Next grid is representable", () => {
+  const five = createSupportedEngineInputAdapterFixture(); assert.equal(preflightEngineInputForPlannerNext(five).status, "SUPPORTED"); assert.equal(adaptEngineInputToPlannerNextProblem(five).status, "SUPPORTED");
+  for (const grid of [10, 15]) { const input = createSupportedEngineInputAdapterFixture(); input.plannerNext!.timeGridMinutes = grid; const preflight = preflightEngineInputForPlannerNext(input); assert.equal(preflight.status, "UNSUPPORTED"); assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_TIME_GRID")); assert.deepEqual(preflight.issues.find((issue) => issue.code === "UNSUPPORTED_TIME_GRID")?.details, { incompatibleDurations: [], incompatibleTimes: [], requestedTimeGridMinutes: grid, supportedTimeGridMinutes: 5 }); const result = adaptEngineInputToPlannerNextProblem(input); assert.equal(result.problem, null); assert.equal(result.problemFingerprint, null); const inverted = clone(input); inverted.tasks.reverse(); inverted.planResourceItems.reverse(); assert.deepEqual(adaptEngineInputToPlannerNextProblem(inverted), result); }
+  const invalid = createSupportedEngineInputAdapterFixture(); invalid.plannerNext!.timeGridMinutes = 0; assert.equal(adaptEngineInputToPlannerNextProblem(invalid).problem, null);
+});
+
+test("unsupported product gate preserves reason codes and creates no partial problem", () => {
+  const input = createSupportedEngineInputAdapterFixture(); delete input.plannerNext;
+  const before = preflightEngineInputForPlannerNext(input); const result = adaptEngineInputToPlannerNextProblem(input);
+  assert.equal(result.problem, null); assert.equal(result.problemFingerprint, null); assert.deepEqual(result.reasonCodes, before.reasonCodes); assert.deepEqual(result.identityMap, before.identityMap);
+});
+
+test("coach relation without effective assignment and effective assignment without relation block", () => {
+  const missingAssignment = createSupportedEngineInputAdapterFixture(); missingAssignment.tasks.find((task) => task.id === 101)!.assignedResourceIds = [];
+  assert.ok(preflightEngineInputForPlannerNext(missingAssignment).reasonCodes.includes("UNSUPPORTED_COACH_RESOURCE_MAPPING"));
+  const missingRelation = createSupportedEngineInputAdapterFixture(); delete missingRelation.vocalCoachPlanResourceItemIdByContestantId![201];
+  assert.ok(preflightEngineInputForPlannerNext(missingRelation).reasonCodes.includes("UNSUPPORTED_COACH_RESOURCE_MAPPING"));
+  assert.equal(adaptEngineInputToPlannerNextProblem(missingRelation).problem, null);
+});
+
+test("vocal generic resources and cross-channel coach use remain unsupported", () => {
+  const vocal = createSupportedEngineInputAdapterFixture(); vocal.tasks.find((task) => task.id === 102)!.assignedResourceIds = [501, 503];
+  assert.ok(preflightEngineInputForPlannerNext(vocal).reasonCodes.includes("UNSUPPORTED_RESOURCE_REQUIREMENT"));
+  const cross = createSupportedEngineInputAdapterFixture(); cross.tasks.find((task) => task.id === 105)!.assignedResourceIds = [501];
+  assert.ok(preflightEngineInputForPlannerNext(cross).reasonCodes.includes("UNSUPPORTED_COACH_RESOURCE_MAPPING"));
+});
+
+test("missing, duplicate, or incorrectly linked feeders block before adaptation", () => {
+  const missing = createSupportedEngineInputAdapterFixture(); missing.tasks = missing.tasks.filter((task) => task.id !== 102);
+  const duplicate = createSupportedEngineInputAdapterFixture(); duplicate.tasks.push({ ...clone(duplicate.tasks.find((task) => task.id === 102)!), id: 106, templateId: 906 });
+  const wrong = createSupportedEngineInputAdapterFixture(); wrong.tasks.find((task) => task.id === 101)!.dependsOnTaskIds = [105];
+  const orphanVocal = createSupportedEngineInputAdapterFixture(); orphanVocal.tasks = orphanVocal.tasks.filter((task) => task.id !== 101);
+  for (const input of [missing, duplicate, wrong, orphanVocal]) { assert.equal(preflightEngineInputForPlannerNext(input).status, "UNSUPPORTED"); assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null); }
+});
+
+test("auxiliary gets explicit neutral policy and technical dependencies remain typed", () => {
+  const auxiliary = createSupportedEngineInputAdapterFixture(); auxiliary.tasks.push({ id: 106, planId: 701, templateId: 906, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402 });
+  const adapted = supported(auxiliary); assert.deepEqual(adapted.problem.auxiliaryPolicy, { participantPresencePreference: "OFF" }); assert.deepEqual(preflightPlannerNextProblem(adapted.problem), []);
+  const technical = createSupportedEngineInputAdapterFixture(); technical.tasks.find((task) => task.id === 105)!.dependsOnTaskIds = [101];
+  assert.equal(preflightEngineInputForPlannerNext(technical).status, "UNSUPPORTED");
+});
+
+test("pending and interrupted discard old planned seeds", () => {
+  for (const status of ["pending", "interrupted"] as const) { const input = createSupportedEngineInputAdapterFixture(); const task = input.tasks.find((entry) => entry.id === 102)!; Object.assign(task, { status, startPlanned: "10:00", endPlanned: "10:30" }); const result = supported(input); assert.equal(result.problem.tasks.find((entry) => entry.id === "task:102")?.availability, undefined); }
+});
+
+for (const status of ["done", "in_progress"] as const) test(`${status} remains exactly fixed`, () => {
+  const input = createSupportedEngineInputAdapterFixture(); Object.assign(input.tasks.find((task) => task.id === 101), { status, startReal: "10:00", endReal: "10:30", durationOverrideMin: null });
+  const task = supported(input).problem.tasks.find((entry) => entry.id === "task:101")!; assert.deepEqual(task.availability, [{ start: 600, end: 630 }]); assert.equal(task.duration, 30); assert.equal(task.spaceId, "space:301");
+});
+
+test("fixed interval resolver deduplicates equal sources and rejects conflicts order-independently", () => {
+  const input = createSupportedEngineInputAdapterFixture(); const task = input.tasks.find((entry) => entry.id === 105)!;
+  const equal = [{ id: 1, planId: 701, taskId: 105, lockType: "time" as const, lockedStart: "10:00", lockedEnd: "10:30" }, { id: 2, planId: 701, taskId: 105, lockType: "time" as const, lockedStart: "10:00", lockedEnd: "10:30" }];
+  assert.equal(resolveEffectiveTaskFixedInterval(task, equal).status, "EXACT"); assert.deepEqual(resolveEffectiveTaskFixedInterval(task, equal), resolveEffectiveTaskFixedInterval(task, [...equal].reverse()));
+  assert.equal(resolveEffectiveTaskFixedInterval(task, [{ ...equal[0]!, lockedEnd: "10:35" }]).status, "INVALID");
+  assert.equal(resolveEffectiveTaskFixedInterval(task, [equal[0]!, { ...equal[1]!, lockedStart: "11:00", lockedEnd: "11:30" }]).status, "CONFLICT");
+});
+
+test("locks, fixed windows and protected intervals must describe one exact obligation", () => {
+  const equal = createSupportedEngineInputAdapterFixture(); const target = equal.tasks.find((task) => task.id === 105)!; Object.assign(target, { fixedWindowStart: "10:00", fixedWindowEnd: "10:30" }); equal.locks.push({ id: 10, planId: 701, taskId: 105, lockType: "time", lockedStart: "10:00", lockedEnd: "10:30" });
+  assert.deepEqual(supported(equal).problem.tasks.find((task) => task.id === "task:105")?.availability, [{ start: 600, end: 630 }]);
+  const conflict = clone(equal); conflict.locks.push({ id: 11, planId: 701, taskId: 105, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(conflict).problem, null);
+  const protectedConflict = createSupportedEngineInputAdapterFixture(); Object.assign(protectedConflict.tasks.find((task) => task.id === 101), { status: "done", startReal: "10:00", endReal: "10:30" }); protectedConflict.locks.push({ id: 12, planId: 701, taskId: 101, lockType: "time", lockedStart: "11:00", lockedEnd: "11:30" }); assert.equal(adaptEngineInputToPlannerNextProblem(protectedConflict).problem, null);
+});
+
+test("resource locks deduplicate and cancelled tasks remain absent", () => {
+  const input = createSupportedEngineInputAdapterFixture(); input.locks.push({ id: 10, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }, { id: 11, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 }); input.tasks.push({ ...clone(input.tasks[4]!), id: 106, templateId: 906, status: "cancelled" });
+  const task = supported(input).problem.tasks.find((entry) => entry.id === "task:105")!; assert.equal(task.requiredResourceIds?.filter((id) => id === "plan-resource:504").length, 1); assert.ok(!supported(input).problem.tasks.some((entry) => entry.id === "task:106"));
+});
+
+test("resource locks share the coach channel without duplicating the coach", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  const first = supported(input);
+  const main = first.problem.tasks.find((task) => task.id === "task:101")!;
+  assert.equal(first.problem.coaches.length, 1);
+  assert.ok(!first.problem.resources.some((resource) => resource.id === main.coachId));
+  assert.ok(!(main.requiredResourceIds ?? []).includes(main.coachId!));
+
+  const duplicate = clone(input);
+  duplicate.locks.push({ id: 10, planId: 701, taskId: 101, lockType: "resource", lockedResourceId: 501 });
+  const duplicated = supported(duplicate);
+  assert.deepEqual(duplicated.problem, first.problem);
+  assert.equal(duplicated.problemFingerprint, first.problemFingerprint);
+});
+
+test("foreign coach resource locks block main, technical, and auxiliary tasks before adaptation", () => {
+  const distinctCoaches = (): EngineInput => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.vocalCoachPlanResourceItemIdByContestantId![202] = 502;
+    input.tasks.find((task) => task.id === 103)!.assignedResourceIds = [502];
+    input.tasks.find((task) => task.id === 104)!.assignedResourceIds = [502];
+    input.locks = input.locks.filter((lock) => lock.id !== 2);
+    return input;
+  };
+  const cases = [
+    { input: distinctCoaches(), taskId: 101 },
+    { input: distinctCoaches(), taskId: 105 },
+  ];
+  const auxiliary = distinctCoaches();
+  auxiliary.tasks.push({ id: 106, planId: 701, templateId: 906, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402 });
+  cases.push({ input: auxiliary, taskId: 106 });
+  for (const { input, taskId } of cases) {
+    input.locks.push({ id: 20 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 502 });
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.status, "UNSUPPORTED");
+    assert.ok(preflight.reasonCodes.includes("UNSUPPORTED_COACH_RESOURCE_MAPPING"));
+    const issue = preflight.issues.find((entry) => entry.code === "UNSUPPORTED_COACH_RESOURCE_MAPPING" && entry.entityId === String(taskId));
+    assert.deepEqual(issue?.details, { taskId, participantId: taskId === 105 ? null : 201, relatedCoachResourceId: taskId === 105 ? null : 501, lockedCoachResourceId: 502, lockId: 20 + taskId, relatedParticipantIds: [202] });
+    assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null);
+  }
+});
+
+test("generic resource locks are projected once, preserve all distinct IDs, and ignore ordering and cancelled tasks", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.locks.push(
+    { id: 10, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 502 },
+    { id: 11, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+    { id: 12, planId: 701, taskId: 105, lockType: "resource", lockedResourceId: 504 },
+  );
+  input.tasks.push({ ...clone(input.tasks.find((task) => task.id === 105)!), id: 106, templateId: 906, status: "cancelled" });
+  input.locks.push({ id: 13, planId: 701, taskId: 106, lockType: "resource", lockedResourceId: 501 });
+  const first = supported(input);
+  const technical = first.problem.tasks.find((task) => task.id === "task:105")!;
+  assert.deepEqual(technical.requiredResourceIds, ["plan-resource:502", "plan-resource:503", "plan-resource:504"]);
+  assert.equal(first.problem.resources.filter((resource) => resource.id === "plan-resource:504").length, 1);
+  assert.equal(first.problem.coaches.some((coach) => first.problem.resources.some((resource) => resource.id === coach.id)), false);
+  const reversed = clone(input); reversed.locks.reverse();
+  assert.deepEqual(supported(reversed), first);
+});
+
+function withAnchor(): EngineInput {
+  const input = createSupportedEngineInputAdapterFixture();
+  for (const id of [106, 107, 108, 109]) input.tasks.push({ id, planId: 701, templateId: 900 + id, status: "pending", durationOverrideMin: 30, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402, assignedResourceIds: [504] });
+  input.anchoredAccompaniments = [{ id: "operation-a", anchorTaskId: 101, beforeTaskIds: [106, 107], afterTaskIds: [108, 109], adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED" }];
+  input.tasks.find((task) => task.id === 106)!.assignedResourceIds = [504, 502];
+  input.tasks.find((task) => task.id === 107)!.assignedResourceIds = [504, 503];
+  return input;
+}
+
+test("typed anchored operations preserve semantic sequence order", () => {
+  const input = withAnchor(); const first = supported(input); const operation = first.problem.anchoredAccompaniments![0]!;
+  assert.deepEqual(operation.beforeTaskIds, ["task:106", "task:107"]); assert.deepEqual(operation.afterTaskIds, ["task:108", "task:109"]); assert.deepEqual(preflightPlannerNextProblem(first.problem), []);
+  assert.deepEqual(first.problem.tasks.find((task) => task.id === "task:106")?.requiredResourceIds, ["plan-resource:502", "plan-resource:504"]);
+  assert.deepEqual(first.problem.tasks.find((task) => task.id === "task:107")?.requiredResourceIds, ["plan-resource:503", "plan-resource:504"]);
+  const before = clone(input); before.anchoredAccompaniments![0]!.beforeTaskIds.reverse(); const after = clone(input); after.anchoredAccompaniments![0]!.afterTaskIds.reverse();
+  assert.notEqual(supported(before).problemFingerprint, first.problemFingerprint); assert.notEqual(supported(after).problemFingerprint, first.problemFingerprint);
+});
+
+test("anchored duplicate, incomplete and reused members block", () => {
+  const duplicate = withAnchor(); duplicate.anchoredAccompaniments![0]!.beforeTaskIds = [106, 106];
+  const reused = withAnchor(); reused.anchoredAccompaniments!.push({ ...clone(reused.anchoredAccompaniments![0]!), id: "operation-b" });
+  for (const input of [duplicate, reused]) assert.equal(adaptEngineInputToPlannerNextProblem(input).problem, null);
+});
+
+test("anchored continuity requires a non-empty generic-resource intersection", () => {
+  const empty = withAnchor(); empty.spaceResourceAssignments = {}; for (const task of empty.tasks.filter((task) => [106, 107, 108, 109].includes(task.id))) task.assignedResourceIds = [];
+  assert.equal(adaptEngineInputToPlannerNextProblem(empty).problem, null);
+  const disjoint = withAnchor(); disjoint.tasks.find((task) => task.id === 109)!.assignedResourceIds = [502]; assert.equal(adaptEngineInputToPlannerNextProblem(disjoint).problem, null);
+  const missingMember = withAnchor(); missingMember.tasks.find((task) => task.id === 108)!.assignedResourceIds = [503]; assert.equal(adaptEngineInputToPlannerNextProblem(missingMember).problem, null);
+});
+
+test("anchored continuity uses the exact projected union of assignments and resource locks", () => {
+  const lockOnly = withAnchor();
+  lockOnly.spaceResourceAssignments = {};
+  for (const task of lockOnly.tasks.filter((task) => [106, 107, 108, 109].includes(task.id))) task.assignedResourceIds = [];
+  for (const taskId of [101, 106, 107, 108, 109]) lockOnly.locks.push({ id: 100 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 504 });
+  const locked = supported(lockOnly);
+  for (const taskId of [101, 106, 107, 108, 109]) assert.ok(locked.problem.tasks.find((task) => task.id === `task:${taskId}`)?.requiredResourceIds?.includes("plan-resource:504"));
+
+  const mixed = withAnchor();
+  mixed.spaceResourceAssignments = {};
+  mixed.tasks.find((task) => task.id === 107)!.assignedResourceIds = [503];
+  mixed.tasks.find((task) => task.id === 109)!.assignedResourceIds = [];
+  for (const taskId of [101, 107, 109]) mixed.locks.push({ id: 200 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 504 });
+  const mixedResult = supported(mixed);
+  assert.ok(mixedResult.problem.tasks.find((task) => task.id === "task:106")?.requiredResourceIds?.includes("plan-resource:502"));
+  assert.ok(mixedResult.problem.tasks.find((task) => task.id === "task:107")?.requiredResourceIds?.includes("plan-resource:503"));
+
+  const coachOnly = clone(lockOnly);
+  coachOnly.locks = coachOnly.locks.filter((lock) => lock.lockedResourceId !== 504);
+  for (const taskId of [101, 106, 107, 108, 109]) coachOnly.locks.push({ id: 300 + taskId, planId: 701, taskId, lockType: "resource", lockedResourceId: 501 });
+  assert.equal(preflightEngineInputForPlannerNext(coachOnly).status, "UNSUPPORTED");
+  assert.equal(adaptEngineInputToPlannerNextProblem(coachOnly).problem, null);
+});
+
+test("malformed anchored runtime contracts never throw and remain unsupported", () => {
+  const malformed: unknown[] = [null, 7, { id: "x", anchorTaskId: 101, afterTaskIds: [] }, { id: "x", anchorTaskId: 101, beforeTaskIds: [] }, { id: "x", anchorTaskId: 101, beforeTaskIds: [0], afterTaskIds: [] }];
+  for (const operation of malformed) { const input = createSupportedEngineInputAdapterFixture() as EngineInput & { anchoredAccompaniments: unknown[] }; input.anchoredAccompaniments = [operation]; assert.doesNotThrow(() => preflightEngineInputForPlannerNext(input as EngineInput)); assert.equal(preflightEngineInputForPlannerNext(input as EngineInput).status, "UNSUPPORTED"); }
+});
+
+test("fingerprint is hard-sensitive, visual-insensitive, set-invariant and deeply frozen", () => {
+  const input = createSupportedEngineInputAdapterFixture(); const first = supported(input);
+  const visual = clone(input); visual.planResourceItems.forEach((resource) => { resource.name += " display"; }); assert.equal(supported(visual).problemFingerprint, first.problemFingerprint);
+  const hard = clone(input); hard.plannerNext!.searchBudget.maxPatterns++; assert.notEqual(supported(hard).problemFingerprint, first.problemFingerprint);
+  const reversed = clone(input); reversed.tasks.reverse(); reversed.planResourceItems.reverse(); reversed.planSpaceSettings!.reverse(); reversed.planZoneSettings!.reverse(); assert.deepEqual(supported(reversed), first);
+  const immutable = freeze(clone(input)); const snapshot = clone(immutable); const output = supported(immutable); assert.deepEqual(immutable, snapshot); assert.ok(Object.isFrozen(output) && Object.isFrozen(output.problem) && Object.isFrozen(output.problem.tasks[0]));
+  assert.equal(output.problemFingerprint, fingerprintPlannerNextProblem(output.problem));
+});
+
+test("versioned Evidence is pure parseable JSON with exact scenarios and no runtime", () => {
+  const raw = readFileSync(new URL("../benchmarks/fixtures/spec10-010-engine-input-adapter-evidence.json", import.meta.url), "utf8"); const evidence = JSON.parse(raw);
+  assert.equal(evidence.benchmark, "SPEC10-010-engine-input-adapter"); assert.deepEqual(evidence.scenarios.map((scenario: { scenarioId: string }) => scenario.scenarioId), ["synthetic-supported", "real-main-stage-with-backlog", "real-resource-lock-pressure", "real-protected-break-recovery"]); assert.ok(!raw.includes("npm run")); assert.ok(!/runtime|timestamp|generatedAt/i.test(raw));
+});
