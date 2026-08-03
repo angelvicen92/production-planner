@@ -50,7 +50,8 @@
     "benchmark:planner-next:focal-a2-required-audit": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2RequiredAuditBenchmark.ts",
     "benchmark:planner-next:focal-a2-band-semantics": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2RequiredAuditBenchmark.ts",
     "benchmark:planner-next:focal-a2-spec08-foundation": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV3Benchmark.ts",
-    "benchmark:planner-next:focal-a2-spec08-foundation-v4": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV4Benchmark.ts"
+    "benchmark:planner-next:focal-a2-spec08-foundation-v4": "tsx engine/planner-next/benchmarks/runPlannerNextFocalA2Spec08FoundationV4Benchmark.ts",
+    "benchmark:planner-next:engine-input-adapter": "tsx engine/planner-next/benchmarks/runPlannerNextEngineInputAdapterBenchmark.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

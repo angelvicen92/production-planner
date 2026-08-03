@@ -49,6 +49,7 @@ export type EngineInputPreflightReasonCode =
   | "UNSUPPORTED_TRANSPORT_CONTRACT";
 
 export type EngineInputIdentityNamespace =
+  | "anchored-operation"
   | "break"
   | "itinerant-team"
   | "lock"
@@ -136,6 +137,7 @@ export interface EngineInputPreflightResult {
 }
 
 const PREFIX: Record<EngineInputIdentityNamespace, string> = {
+  "anchored-operation": "anchored-operation",
   break: "break",
   "itinerant-team": "itinerant-team",
   lock: "lock",
@@ -594,6 +596,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     runtimeAnchors.forEach((operation, index) => {
       if (!operation || typeof operation !== "object") return;
       const record = operation as Record<string, unknown>;
+      addIdentity("anchored-operation", record.id, `anchoredAccompaniments.${index}.id`, true);
       addIdentity("task", record.anchorTaskId ?? record.anchor, `anchoredAccompaniments.${index}.anchor`);
       for (const key of ["beforeTaskIds", "afterTaskIds", "segments"]) {
         if (Array.isArray(record[key])) record[key].forEach((id) => addIdentity("task", id, `anchoredAccompaniments.${index}.${key}`));
