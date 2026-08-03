@@ -25,6 +25,16 @@ test("SPEC10-009: daily relation excludes duplicates and never consults a global
   const relation = buildDailySpaceZoneIdMapForEngineInput(rows);
   assert.equal(relation.get(20), 40);
   assert.equal(relation.has(21), false);
+  assert.equal(relation.size, 1);
+  assert.deepEqual([...relation], [[20, 40]]);
+  const runtime = relation as unknown as Record<string, unknown>;
+  assert.equal(runtime.set, undefined); assert.equal(runtime.delete, undefined); assert.equal(runtime.clear, undefined);
+  assert.throws(() => (runtime.set as Function)(22, 42), TypeError);
+  assert.throws(() => (runtime.delete as Function)(20), TypeError);
+  assert.throws(() => (runtime.clear as Function)(), TypeError);
+  assert.equal(Object.getOwnPropertyNames(relation).some((key) => /map|value|back/i.test(key)), false);
+  assert.deepEqual([...relation], [[20, 40]]);
+  assert.deepEqual([...buildDailySpaceZoneIdMapForEngineInput([...rows].reverse())], [[20, 40]]);
   assert.deepEqual(rows, before);
 });
 

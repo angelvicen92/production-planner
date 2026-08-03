@@ -1,5 +1,6 @@
 import type { PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, TimeWindow } from "../../types";
 import { resolveEffectiveSpaceAvailabilityHierarchy, type AvailabilityWindow, type SpatialAvailabilityReason } from "../../../shared/spatialAvailabilityHierarchy";
+import { immutableMapView } from "../../../shared/immutableMapView";
 
 export type EffectiveSpatialDefectReason = SpatialAvailabilityReason | "MISSING_ZONE_SNAPSHOT" | "DUPLICATE_ZONE_SNAPSHOT" | "DUPLICATE_SPACE_SNAPSHOT";
 export interface EffectiveSpatialDefect { readonly entity: "workday" | "zone" | "space"; readonly entityId: number | null; readonly reason: EffectiveSpatialDefectReason }
@@ -8,27 +9,6 @@ export interface EffectiveSpaceAvailability { readonly spaceId: number; readonly
 export interface EffectivePlanSpatialAvailability { readonly zonesById: ReadonlyMap<number, EffectiveZoneAvailability>; readonly spacesById: ReadonlyMap<number, EffectiveSpaceAvailability>; readonly defects: readonly EffectiveSpatialDefect[] }
 
 const freeze = <T extends object>(value: T): Readonly<T> => Object.freeze(value);
-
-/** Runtime read-only view: unlike Object.freeze(Map), it exposes no mutators or backing-map escape. */
-class ImmutableMapView<K, V> implements ReadonlyMap<K, V> {
-  readonly #values: Map<K, V>;
-  constructor(entries: Iterable<readonly [K, V]>) {
-    this.#values = new Map(entries);
-    Object.freeze(this);
-  }
-  get size(): number { return this.#values.size; }
-  get(key: K): V | undefined { return this.#values.get(key); }
-  has(key: K): boolean { return this.#values.has(key); }
-  entries(): MapIterator<[K, V]> { return this.#values.entries(); }
-  keys(): MapIterator<K> { return this.#values.keys(); }
-  values(): MapIterator<V> { return this.#values.values(); }
-  [Symbol.iterator](): MapIterator<[K, V]> { return this.#values[Symbol.iterator](); }
-  forEach(callbackfn: (value: V, key: K, map: ReadonlyMap<K, V>) => void, thisArg?: unknown): void {
-    this.#values.forEach((value, key) => callbackfn.call(thisArg, value, key, this));
-  }
-}
-
-const immutableMap = <K, V>(map: Map<K, V>): ReadonlyMap<K, V> => new ImmutableMapView(map.entries());
 
 export function resolveEffectivePlanSpatialAvailability(workDay: TimeWindow, zones: readonly PlanZoneAvailabilityInput[] = [], spaces: readonly PlanSpaceAvailabilityInput[] = []): EffectivePlanSpatialAvailability {
   const zonesById = new Map<number, EffectiveZoneAvailability>();
@@ -70,7 +50,7 @@ export function resolveEffectivePlanSpatialAvailability(workDay: TimeWindow, zon
     if (defect) defects.push(defect);
     spacesById.set(space.spaceId, freeze({ spaceId: space.spaceId, zoneId: space.zoneId, effectiveWindow: result.valid ? result.space.effectiveWindow : null, mode: result.valid ? result.space.mode : null, source: space.source, ...(defect ? { defect } : {}) }));
   }
-  return freeze({ zonesById: immutableMap(zonesById), spacesById: immutableMap(spacesById), defects: Object.freeze(defects) });
+  return freeze({ zonesById: immutableMapView(zonesById), spacesById: immutableMapView(spacesById), defects: Object.freeze(defects) });
 }
 
 function countIds<T>(values: readonly T[], id: (value: T) => number): Map<number, number> {

@@ -1,6 +1,7 @@
 import { IStorage } from "../server/storage";
 import { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput } from "./types";
 import { resolveWeight } from "@shared/optimizer";
+import { immutableMapView } from "@shared/immutableMapView";
 
 type ContestantVocalCoachRow = Readonly<{
   id?: unknown;
@@ -40,7 +41,7 @@ export function projectPlanSpaceSettingsForEngineInput(rows: readonly PlanResour
 export function buildDailySpaceZoneIdMapForEngineInput(rows: readonly PlanSpaceAvailabilityInput[]): ReadonlyMap<number, number> {
   const counts = new Map<number, number>();
   rows.forEach((row) => counts.set(row.spaceId, (counts.get(row.spaceId) ?? 0) + 1));
-  return new Map(rows.filter((row) => counts.get(row.spaceId) === 1).map((row) => [row.spaceId, row.zoneId] as const));
+  return immutableMapView(rows.filter((row) => counts.get(row.spaceId) === 1).map((row) => [row.spaceId, row.zoneId] as const));
 }
 
 /** Projects the persisted per-plan snapshot without interpreting its availability. */

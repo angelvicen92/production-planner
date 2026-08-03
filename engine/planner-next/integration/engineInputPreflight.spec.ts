@@ -480,7 +480,7 @@ test("recursos, asignaciones, alternativas y componentes auditan namespaces", ()
 test("espacio ausente, sólo referenciado y descrito sin disponibilidad", () => {
   const absent = preflightEngineInputForPlannerNext(input());
   assert.equal(absent.diagnostics.referencedSpaceCount, 0);
-  assert.ok(!absent.reasonCodes.includes("MISSING_SPACE_REFERENCE"));
+  assert.equal(absent.issues.filter((entry) => entry.code === "MISSING_SPACE_REFERENCE" && entry.path === "tasks.1.spaceId").length, 1);
   const referenced = input({ tasks: [task(1, { spaceId: 20, zoneId: 20 })] });
   assert.equal(issue(referenced, "MISSING_SPACE_REFERENCE", "20").path, "planSpaceSettings.20");
   const described = preflightEngineInputForPlannerNext(input({ tasks: [task(1, { spaceId: 20, zoneId: 30 })], spaceParentById: { 20: null } }));
@@ -488,6 +488,28 @@ test("espacio ausente, sólo referenciado y descrito sin disponibilidad", () => 
   assert.equal(described.diagnostics.describedSpaceCount, 1);
   assert.ok(described.issues.some((entry) => entry.code === "MISSING_SPACE_REFERENCE" && entry.entityId === "20"));
   assert.ok(described.identityMap.some((entry) => entry.namespace === "zone" && entry.sourceId === "30"));
+});
+
+test("SPEC10-009: toda tarea activa sin identidad espacial positiva bloquea exactamente una vez", () => {
+  const invalidCases: Array<[TaskInput["status"], unknown, Partial<TaskInput>]> = [
+    ["pending", undefined, {}], ["interrupted", undefined, {}],
+    ["in_progress", undefined, { startPlanned: "09:00", endPlanned: "10:00" }],
+    ["done", undefined, { startPlanned: "09:00", endPlanned: "10:00" }],
+    ["pending", undefined, { plannerNextKind: "technical" }], ["pending", 0, {}], ["pending", -2, {}], ["pending", Number.NaN, {}],
+  ];
+  const tasks = invalidCases.map(([status, spaceId, extra], index) => task(index + 1, { status, spaceId: spaceId as number, ...extra }));
+  tasks.push(task(99, { status: "cancelled" }));
+  const source = input({ tasks }); const before = clone(source);
+  const normal = preflightEngineInputForPlannerNext(source);
+  const inverted = preflightEngineInputForPlannerNext(input({ ...source, tasks: [...tasks].reverse() }));
+  const missing = normal.issues.filter((entry) => entry.code === "MISSING_SPACE_REFERENCE");
+  assert.deepEqual(missing.map((entry) => entry.entityId), tasks.filter((entry) => entry.status !== "cancelled").map((entry) => String(entry.id)));
+  missing.forEach((entry) => assert.equal(entry.path, `tasks.${entry.entityId}.spaceId`));
+  assert.equal(missing.some((entry) => entry.entityId === "99"), false);
+  assert.equal(normal.issues.some((entry) => entry.code === "MISSING_SPACE_AVAILABILITY"), false);
+  assert.deepEqual({ required: normal.diagnostics.requiredSpaceCount, usable: normal.diagnostics.usableRequiredSpaceCount, unusable: normal.diagnostics.unusableRequiredSpaceCount }, { required: 0, usable: 0, unusable: 0 });
+  assert.equal(normal.identityMap.some((entry) => entry.namespace === "space"), false);
+  assert.deepEqual(normal, inverted); assert.deepEqual(source, before);
 });
 
 test("SPEC10-009: snapshots diarios duplicados bloquean sin last-write-wins ni blockers espaciales falsos", () => {
@@ -1057,6 +1079,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_PARTICIPANT_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
+      "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
       "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",
@@ -1203,6 +1226,7 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "MISSING_PARTICIPANT_AVAILABILITY",
       "MISSING_SEARCH_BUDGET_CONFIGURATION",
       "MISSING_SEARCH_POLICY_CONFIGURATION",
+      "MISSING_SPACE_REFERENCE",
       "MISSING_TASK_DURATION",
       "MISSING_TRANSITION_CONFIGURATION",
       "UNSUPPORTED_RESOURCE_REQUIREMENT",

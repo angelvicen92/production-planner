@@ -442,7 +442,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     addIdentity("template", task.templateId, `${path}.templateId`);
     addIdentity("participant", task.contestantId, `${path}.contestantId`);
     if (task.contestantId != null) participantsRequiringAvailability.add(String(task.contestantId));
-    addIdentity("space", task.spaceId, `${path}.spaceId`);
+    if (isPositiveInteger(task.spaceId)) addIdentity("space", task.spaceId, `${path}.spaceId`);
     addIdentity("zone", task.zoneId, `${path}.zoneId`);
     addIdentity("break", task.breakId, `${path}.breakId`);
     addIdentity("itinerant-team", task.itinerantTeamId, `${path}.itinerantTeamId`);
@@ -523,7 +523,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     }
   };
 
-  input.tasks.forEach((task) => { if (task.spaceId != null) referencedSpaceIds.add(String(task.spaceId)); });
+  input.tasks.forEach((task) => { if (isPositiveInteger(task.spaceId)) referencedSpaceIds.add(String(task.spaceId)); });
   input.protectedBreaks?.forEach((entry) => { if (entry.spaceId != null) referencedSpaceIds.add(String(entry.spaceId)); });
   if (input.actualMeal?.spaceId != null) referencedSpaceIds.add(String(input.actualMeal.spaceId));
   if (input.transportSpaceId != null) referencedSpaceIds.add(String(input.transportSpaceId));
@@ -740,7 +740,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
           endReal: task.endReal ?? null,
           startReal: task.startReal ?? null,
         });
-      } else if (protectedTime.status === "MISSING" || task.spaceId == null) {
+      } else if (protectedTime.status === "MISSING") {
         addIssue("PROTECTED_TASK_WITHOUT_FIXED_PLANNING", "task", task.id, path, "Protected task lacks complete fixed planning.");
       } else {
         const { start, end } = protectedTime.interval;
@@ -947,7 +947,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (taskId !== undefined) tasks.add(taskId);
     requiredSpaces.set(spaceId, tasks);
   };
-  input.tasks.filter((task) => task.status !== "cancelled" && task.spaceId != null).forEach((task) => requireSpace(task.spaceId!, task.id));
+  input.tasks.filter((task) => task.status !== "cancelled").forEach((task) => {
+    if (isPositiveInteger(task.spaceId)) {
+      requireSpace(task.spaceId, task.id);
+      return;
+    }
+    addIssue("MISSING_SPACE_REFERENCE", "task", task.id, `tasks.${task.id}.spaceId`,
+      "Active task lacks the concrete physical-space identity required by Planner Next.");
+  });
   const requireBreakSpace = (entry: ProtectedBreakInput | undefined): void => { if (entry?.spaceId != null) requireSpace(entry.spaceId); };
   requireBreakSpace(input.actualMeal);
   input.protectedBreaks?.forEach(requireBreakSpace);

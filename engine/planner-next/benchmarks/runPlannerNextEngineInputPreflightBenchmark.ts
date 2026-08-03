@@ -68,7 +68,11 @@ const scenarios = realProductionScenarios.map((scenario) => {
   assert.ok(!normal.reasonCodes.includes("MISSING_RESOURCE_AVAILABILITY"), `${scenario.id}: snapshot availability was not projected`);
   assert.equal(normal.diagnostics.requiredPlanResourceCount, normal.diagnostics.usableRequiredPlanResourceCount, `${scenario.id}: required resource unavailable`);
   assert.equal(normal.diagnostics.unusableRequiredPlanResourceCount, 0, `${scenario.id}: unusable required resource`);
-  assert.ok(!normal.reasonCodes.includes("MISSING_SPACE_REFERENCE"), `${scenario.id}: daily space reference was not projected`);
+  const tasksMissingConcreteSpace = input.tasks.filter((task) => task.status !== "cancelled"
+    && (typeof task.spaceId !== "number" || !Number.isInteger(task.spaceId) || task.spaceId <= 0));
+  const missingSpaceIssues = normal.issues.filter((issue) => issue.code === "MISSING_SPACE_REFERENCE");
+  assert.deepEqual(missingSpaceIssues.map((issue) => issue.entityId), tasksMissingConcreteSpace.map((task) => String(task.id)).sort(), `${scenario.id}: active tasks without space are not represented exactly`);
+  assert.ok(missingSpaceIssues.every((issue) => issue.path === `tasks.${issue.entityId}.spaceId`), `${scenario.id}: missing-space issue path`);
   assert.ok(!normal.reasonCodes.includes("MISSING_SPACE_AVAILABILITY"), `${scenario.id}: daily spatial hierarchy was not resolved`);
   assert.equal(normal.diagnostics.requiredSpaceCount, normal.diagnostics.usableRequiredSpaceCount, `${scenario.id}: required space unavailable`);
   assert.equal(normal.diagnostics.unusableRequiredSpaceCount, 0, `${scenario.id}: unusable required space`);
