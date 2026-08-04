@@ -1,30 +1,35 @@
-# SPEC10-016 — Full A2 canonical template
+# SPEC10-016 — Plantilla canónica completa A2
 
-## Expressed day
+## Día expresado
 
-The canonical anonymous manifest expands to 19 contestants, 266 contestant tasks, 3 technical tasks and 269 total tasks. It carries durations, spaces, resources, participant ownership, dependencies, anchored Reality Plató operations, joint C06/C10 operations, setup-family rules, Totales synchronization, coach transition rules, transport policy requirements and meal obligations without planned times, locks or a human schedule seed.
+La plantilla anónima expresa 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
 
-## Representability gate
+## Required creation inputs
 
-Status: **BLOCKED**. The motor was **not executed** because at least one lossless-representation blocker exists.
+- **daily_participant_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **daily_resource_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **daily_space_availability**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **effective_day_window**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **execution_date**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **future_productive_ids**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **general_meal_window**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
+- **out_transport_policy**: La fuente exige este dato al crear el día, pero no fija un valor productivo.
 
-- **SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY** (SOURCE_CONFIGURATION) — La fuente obliga a configurar este dato al crear el día y no fija un valor productivo. Loss if approximated: Inventarlo convertiría una decisión de producción en dato canónico.
-- **ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED** (ENGINE_INPUT) — Planner Next tiene jointGroupId, pero TaskInput/EngineInput no lo transporta. Loss if approximated: Aproximarlo como dependencias permitiría inicios no simultáneos.
-- **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED** (ENGINE_INPUT) — Planner Next puede recibir setupFamilyId y Space.setupPolicy, pero EngineInput no proyecta familias ni política de preparación. Loss if approximated: Sin familias/reentry/preparación se pierde el montaje hard de Plató 15.
-- **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT) — No existe contrato equivalente para alinear rondas entre dos espacios independientes. Loss if approximated: Modelarlo con dependencias impondría orden, no simultaneidad de rondas.
-- **ADAPTER_COACH_TRANSITION_SCOPE_LOSS** (ADAPTER) — El adaptador sólo emite resourceTransitionMinutes global para recursos genéricos y coach como canal separado; no expresa transición específica Caracola→Estudio 7 por coach. Loss if approximated: Un margen global afectaría recursos no relacionados o no distinguiría origen/destino.
+Estos datos son inputs de creación del futuro día y no se seleccionan como siguiente capacidad técnica.
 
-## Not implemented
+## Implementation blockers
 
-This iteration does not create EngineInput, does not run preflight/adapter/executePlannerNext, does not write DB data, does not add UI/API/persistence and does not implement the future button.
+Estado de representabilidad: **BLOCKED**. La puerta ejecutada devuelve **REJECTED_BLOCKED**, con executorCallCount=0, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
-## Next real blocker
+- **ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED** (ENGINE_INPUT): Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo. Pérdida si se aproxima: Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.
+- **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED** (ENGINE_INPUT): Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada. Pérdida si se aproxima: Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.
+- **PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED** (PLANNER_NEXT): No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes. Pérdida si se aproxima: Las dependencias impondrían precedencia, no sincronización de arranque entre salas.
+- **ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS** (ADAPTER): El probe del adaptador demuestra que sólo se proyecta resourceTransitionMinutes global; no hay canal para una transición específica por origen/destino y por coach. Pérdida si se aproxima: Un margen global sobrerrestringe recursos no afectados o no distingue la ruta Caracola→Estudio 7.
 
-Resolve **SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY** from the A2 full-day blocker list before attempting the creation button.
+## Siguiente blocker técnico razonado
+
+El siguiente paso de menor riesgo es **ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED**: Planner Next ya soporta grupos conjuntos mediante jointGroupId, no requiere nuevas reglas de búsqueda, exige una ampliación contractual menor en EngineInput/adaptador y desbloquea semántica real de C06/C10 que hoy se perdería si se aproximara con dependencias.
+
+## No implementado
+
+No se implementa botón, DB, API, UI, persistencia, contratos productivos, preflight productivo, adaptador productivo ni ejecución del motor para un subconjunto parcial.

@@ -2698,9 +2698,9 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - La Evidence SPEC10-015 ocupa 2.837 bytes (`5e746184fe0db082835251fb51c13a7caa194c2d02d1dc9adffb84bdddd94bb6`). La auditoría ocupa 378.660 bytes (`225bd06bebb96289f6d00fc1ff3b3254519541da4abee159c3c4e45af4d5b16c`): 134, 135 y 136 derivan a `EVIDENCED_SUPPORTED`, `scoped-meals` deriva a `EVIDENCED_SUPPORTED` y la recomendación genérica es `AUDIT_MISSING_EVIDENCE` para la primera capacidad estable sin Evidence.
 - **Límites:** no cambia DB, schema, migraciones, RLS, UI, API, publicación, ORC, V3, V4, scoring, presupuestos ni Focal protegido.
 
-## SPEC10-016 — Full A2 canonical template
+## SPEC10-016 — Plantilla canónica completa A2
 
-- Adds an anonymous, deterministic full-day A2 canonical template under `engine/planner-next/benchmarks/focal-a2/full-day/`.
-- The template expands to 19 contestants, 266 contestant tasks, 3 technical tasks and 269 total tasks without planned times, locks or human seed order.
-- The representability gate is currently `BLOCKED`; the benchmark records the EngineInput/adapter/Planner Next blockers and does not execute the planner while lossless conversion is unavailable.
-- Evidence is regenerated with `npm run benchmark:planner-next:a2-full-template`.
+- La unidad focal `engine/planner-next/benchmarks/focal-a2/full-day/` define manifest, expansión, validador y puerta de representabilidad para el día A2 completo sin nombres reales, horarios seed, locks ni IDs productivos.
+- La expansión validada contiene 19 concursantes, 266 tareas de concursante, 3 tareas técnicas y 269 registros totales con semántica explícita de transporte, comida individual, flujo principal, operaciones ancladas, conjuntas, setup y cadena técnica.
+- La representabilidad permanece `BLOCKED`; la puerta ejecutada rechaza antes de crear EngineInput parcial y antes de llamar a preflight, adaptador o motor.
+- Evidence y cobertura se regeneran con `npm run benchmark:planner-next:a2-full-template`; el siguiente blocker técnico razonado es proyectar `jointGroupId` desde EngineInput/adaptador porque Planner Next ya lo soporta.

@@ -1,5 +1,5 @@
 {
-  "contractVersion": "SPEC10-016.full-a2-template.v1",
+  "contractVersion": "SPEC10-016.full-a2-template.v2",
   "sourceDocuments": [
     {
       "path": "docs/source/DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md",
@@ -10,93 +10,348 @@
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
     }
   ],
-  "manifestFingerprint": "84e43069f53e88c58637de9cca01ccc64a05bbd4adeba47b5ab3b346c126b954",
-  "expansionFingerprint": "18fdb697d2966f5a18cedfc06406b50bc28af75bf28083d7675aad1a9e3e8f50",
+  "manifestFingerprint": "ec8fe0b91bf3be4a4751bd6fa13c8ee16f2f5210ceed006510203e336fe8c858",
+  "expansionFingerprint": "a2985c43ce60b7153ea6ce3c9c90460c8222795bfbf8cec33789ffc6746c7cdd",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
   "totalTaskCount": 269,
   "countsByType": {
-    "CROMA": 19,
-    "ENSAYO_ESTUDIO_7": 19,
-    "ESTILISMO_ENTRADA": 19,
-    "ESTILISMO_SALIDA": 19,
-    "GIRATUTO": 7,
     "IN": 19,
-    "OUT": 19,
-    "PASILLO": 19,
+    "ESTILISMO_ENTRADA": 19,
+    "CROMA": 19,
     "PRUEBA_VOCAL_LUCIA": 8,
+    "PRUEBA_VOCAL_JOSE_MARIA": 11,
+    "ENSAYO_ESTUDIO_7": 19,
+    "REDES": 18,
+    "PASILLO": 19,
+    "TOTALES_1": 10,
+    "TOTALES_COREO": 9,
+    "SODEXO": 19,
+    "GIRATUTO": 7,
+    "SILLON": 9,
+    "ESTRELLAS": 8,
+    "CORNER_INFLUENCER": 10,
+    "CORNER_MUSIC": 2,
+    "CORNER_INFLUENCER_MUSIC": 2,
     "REALITY_PLATO_ANTES": 3,
     "REALITY_PLATO_DESPUES": 3,
-    "REDES": 18,
-    "SODEXO": 19,
-    "TOTALES_1": 10,
-    "CORNER_INFLUENCER": 10,
-    "ESTRELLAS": 8,
-    "SILLON": 9,
-    "TOTALES_COREO": 9,
-    "CORNER_INFLUENCER_MUSIC": 2,
-    "ALFOMBRA_ROJA_EVA": 2,
-    "CORNER_MUSIC": 2,
-    "PRUEBA_VOCAL_JOSE_MARIA": 11,
-    "ALFOMBRA_ROJA_CONJUNTA": 2,
     "REALITY_HALL": 2,
-    "TOTALES_POST_CONJUNTO": 2,
     "REALITY_INFLUENCER": 1,
     "REALITY_MANZANO": 1,
     "REALITY_BUGGY": 1,
     "REALITY_CONTROL_EVA": 1,
-    "ALFOMBRA_ROJA": 1,
     "REALITY_CORNER_MUSIC": 1,
-    "TECH_DESMONTAJE_TRASLADO": 1,
+    "ALFOMBRA_ROJA": 1,
+    "ALFOMBRA_ROJA_EVA": 2,
+    "ALFOMBRA_ROJA_CONJUNTA": 2,
+    "TOTALES_POST_CONJUNTO": 2,
+    "ESTILISMO_SALIDA": 19,
+    "OUT": 19,
     "TECH_REALITY_EVA": 1,
+    "TECH_DESMONTAJE_TRASLADO": 1,
     "TECH_TOTALES_POST": 1
+  },
+  "canonicalResources": [
+    {
+      "id": "cam-2",
+      "label": "CAM 2",
+      "kind": "camera",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "cam-3",
+      "label": "CAM 3",
+      "kind": "camera",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "cam-4",
+      "label": "CAM 4",
+      "kind": "camera",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "coach-jose-maria",
+      "label": "Coach José María",
+      "kind": "coach",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "coach-lucia",
+      "label": "Coach Lucía",
+      "kind": "coach",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "eva",
+      "label": "EVA",
+      "kind": "presenter",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "reality-unit",
+      "label": "Unidad Reality",
+      "kind": "technical_unit",
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "son-1",
+      "label": "SON 1",
+      "kind": "sound",
+      "availability": "creation_input_required"
+    }
+  ],
+  "canonicalOperations": {
+    "anchoredOperations": [
+      {
+        "id": "anchored.reality-plato.C01",
+        "participantId": "C01",
+        "beforeTaskIds": [
+          "C01.reality_plato_antes"
+        ],
+        "anchorTaskId": "C01.ensayo_estudio_7",
+        "afterTaskIds": [
+          "C01.reality_plato_despues"
+        ],
+        "adjacency": "REQUIRED",
+        "internalTransition": "INCLUDED",
+        "resourceContinuity": "REQUIRED",
+        "orderedTaskIds": [
+          "C01.reality_plato_antes",
+          "C01.ensayo_estudio_7",
+          "C01.reality_plato_despues"
+        ]
+      },
+      {
+        "id": "anchored.reality-plato.C05",
+        "participantId": "C05",
+        "beforeTaskIds": [
+          "C05.reality_plato_antes"
+        ],
+        "anchorTaskId": "C05.ensayo_estudio_7",
+        "afterTaskIds": [
+          "C05.reality_plato_despues"
+        ],
+        "adjacency": "REQUIRED",
+        "internalTransition": "INCLUDED",
+        "resourceContinuity": "REQUIRED",
+        "orderedTaskIds": [
+          "C05.reality_plato_antes",
+          "C05.ensayo_estudio_7",
+          "C05.reality_plato_despues"
+        ]
+      },
+      {
+        "id": "anchored.reality-plato.C08",
+        "participantId": "C08",
+        "beforeTaskIds": [
+          "C08.reality_plato_antes"
+        ],
+        "anchorTaskId": "C08.ensayo_estudio_7",
+        "afterTaskIds": [
+          "C08.reality_plato_despues"
+        ],
+        "adjacency": "REQUIRED",
+        "internalTransition": "INCLUDED",
+        "resourceContinuity": "REQUIRED",
+        "orderedTaskIds": [
+          "C08.reality_plato_antes",
+          "C08.ensayo_estudio_7",
+          "C08.reality_plato_despues"
+        ]
+      }
+    ],
+    "jointOperations": [
+      {
+        "id": "joint.alfombra-roja.C06-C10",
+        "taskType": "ALFOMBRA_ROJA_CONJUNTA",
+        "memberParticipantIds": [
+          "C06",
+          "C10"
+        ],
+        "taskIds": [
+          "C06.alfombra_roja_conjunta",
+          "C10.alfombra_roja_conjunta"
+        ],
+        "duration": 10,
+        "spaceId": "alfombra-roja",
+        "synchronizedStartAndEnd": true
+      },
+      {
+        "id": "joint.totales-post.C06-C10",
+        "taskType": "TOTALES_POST_CONJUNTO",
+        "memberParticipantIds": [
+          "C06",
+          "C10"
+        ],
+        "taskIds": [
+          "C06.totales_post_conjunto",
+          "C10.totales_post_conjunto"
+        ],
+        "duration": 5,
+        "spaceId": "totales-post",
+        "synchronizedStartAndEnd": true,
+        "sequenceAfterJointGroupId": "joint.alfombra-roja.C06-C10"
+      }
+    ],
+    "technicalChains": [
+      {
+        "id": "technical.reality-eva-transfer-totales-post",
+        "orderedTaskIds": [
+          "TECH.tech_reality_eva",
+          "TECH.tech_desmontaje_traslado",
+          "TECH.tech_totales_post"
+        ],
+        "adjacency": "REQUIRED",
+        "resourceContinuity": "REQUIRED",
+        "requiredResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1",
+          "eva"
+        ]
+      }
+    ]
   },
   "invariants": [
     {
-      "code": "COUNTS",
-      "passed": true
+      "code": "PARTICIPANT_SET",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "PARTICIPANTS",
-      "passed": true
+      "code": "UNIQUE_TASK_IDS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "DEPENDENCIES",
-      "passed": true
+      "code": "GLOBAL_COUNTS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "ANCHORED",
-      "passed": true
+      "code": "COUNTS_BY_TYPE",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "JOINT",
-      "passed": true
+      "code": "DURATION_CATALOG",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "SETUP",
-      "passed": true
+      "code": "PARTICIPANT_TASK_MATRIX",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "SYNC",
-      "passed": true
+      "code": "COACH_ASSIGNMENT",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "COACH_TRANSITION",
-      "passed": true
+      "code": "SODEXO_MEALS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "IN_POLICY",
-      "passed": true
+      "code": "REDES_EXCEPTION",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     },
     {
-      "code": "EDITORIAL_IGNORED",
-      "passed": true
+      "code": "DEPENDENCY_CLOSURE",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "ANCHORED_OPERATIONS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "JOINT_OPERATIONS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "SETUP_RULES",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "TOTALES_RULES",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "COACH_TRANSITION_RULE",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "TRANSPORT_RULE",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "TECHNICAL_CHAIN",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "KNOWN_RESOURCES",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
+      "code": "NO_EDITORIAL_OR_SEED",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
     }
   ],
   "validationStatus": "VALID",
   "validationIssues": [],
-  "externalConfigurationRequired": [
+  "requiredCreationInputs": [
     "daily_participant_availability",
     "daily_resource_availability",
     "daily_space_availability",
@@ -107,110 +362,91 @@
     "out_transport_policy"
   ],
   "representabilityStatus": "BLOCKED",
-  "blockersByLayer": {
-    "SOURCE_CONFIGURATION": [
-      "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
-      "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
-      "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
-      "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
-      "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
-      "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
-      "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
-      "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY"
-    ],
-    "ENGINE_INPUT": [
-      "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
-      "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"
-    ],
-    "PLANNER_NEXT": [
-      "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"
-    ],
-    "ADAPTER": [
-      "ADAPTER_COACH_TRANSITION_SCOPE_LOSS"
-    ]
-  },
-  "blockers": [
+  "requiredCreationInputBlockers": [
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "daily_participant_availability",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "daily_resource_availability",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "daily_space_availability",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "effective_day_window",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "execution_date",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "future_productive_ids",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "general_meal_window",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
     },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
       "layer": "SOURCE_CONFIGURATION",
       "affectedRule": "out_transport_policy",
       "canonicalIds": [],
-      "operationalExplanation": "La fuente obliga a configurar este dato al crear el día y no fija un valor productivo.",
-      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico."
-    },
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    }
+  ],
+  "implementationBlockers": [
     {
       "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
       "layer": "ENGINE_INPUT",
-      "affectedRule": "joint synchronized tasks",
+      "affectedRule": "operaciones conjuntas C06/C10",
       "canonicalIds": [
         "C06.alfombra_roja_conjunta",
-        "C06.totales_post_conjunto",
         "C10.alfombra_roja_conjunta",
+        "C06.totales_post_conjunto",
         "C10.totales_post_conjunto"
       ],
-      "operationalExplanation": "Planner Next tiene jointGroupId, pero TaskInput/EngineInput no lo transporta.",
-      "semanticLoss": "Aproximarlo como dependencias permitiría inicios no simultáneos."
+      "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
+      "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+      "implementationRank": 1
     },
     {
       "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
       "layer": "ENGINE_INPUT",
-      "affectedRule": "Sillón/Estrellas setup families",
+      "affectedRule": "familias Sillón/Estrellas y preparación de set",
       "canonicalIds": [
         "C02.estrellas",
         "C02.sillon",
@@ -230,13 +466,14 @@
         "C17.estrellas",
         "C18.sillon"
       ],
-      "operationalExplanation": "Planner Next puede recibir setupFamilyId y Space.setupPolicy, pero EngineInput no proyecta familias ni política de preparación.",
-      "semanticLoss": "Sin familias/reentry/preparación se pierde el montaje hard de Plató 15."
+      "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+      "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+      "implementationRank": 2
     },
     {
       "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
       "layer": "PLANNER_NEXT",
-      "affectedRule": "Totales 1/Coreo round synchronization",
+      "affectedRule": "sincronización de rondas Totales 1/Coreo",
       "canonicalIds": [
         "C01.totales_1",
         "C02.totales_coreo",
@@ -258,13 +495,14 @@
         "C18.totales_coreo",
         "C19.totales_coreo"
       ],
-      "operationalExplanation": "No existe contrato equivalente para alinear rondas entre dos espacios independientes.",
-      "semanticLoss": "Modelarlo con dependencias impondría orden, no simultaneidad de rondas."
+      "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
+      "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+      "implementationRank": 4
     },
     {
-      "code": "ADAPTER_COACH_TRANSITION_SCOPE_LOSS",
+      "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
       "layer": "ADAPTER",
-      "affectedRule": "coach Caracola to Estudio 7 transition",
+      "affectedRule": "transición coach Caracola → Estudio 7",
       "canonicalIds": [
         "C01.ensayo_estudio_7",
         "C01.prueba_vocal_lucia",
@@ -305,21 +543,440 @@
         "C19.ensayo_estudio_7",
         "C19.prueba_vocal_jose_maria"
       ],
-      "operationalExplanation": "El adaptador sólo emite resourceTransitionMinutes global para recursos genéricos y coach como canal separado; no expresa transición específica Caracola→Estudio 7 por coach.",
-      "semanticLoss": "Un margen global afectaría recursos no relacionados o no distinguiría origen/destino."
+      "operationalExplanation": "El probe del adaptador demuestra que sólo se proyecta resourceTransitionMinutes global; no hay canal para una transición específica por origen/destino y por coach.",
+      "semanticLoss": "Un margen global sobrerrestringe recursos no afectados o no distingue la ruta Caracola→Estudio 7.",
+      "implementationRank": 3
     }
   ],
-  "engineExecution": {
-    "called": false,
-    "reason": "representability status is BLOCKED"
+  "nextImplementationBlocker": {
+    "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+    "layer": "ENGINE_INPUT",
+    "affectedRule": "operaciones conjuntas C06/C10",
+    "canonicalIds": [
+      "C06.alfombra_roja_conjunta",
+      "C10.alfombra_roja_conjunta",
+      "C06.totales_post_conjunto",
+      "C10.totales_post_conjunto"
+    ],
+    "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
+    "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+    "implementationRank": 1
   },
+  "adapterProbe": {
+    "executed": true,
+    "supported": true,
+    "projectedGlobalResourceTransitionMinutes": 30,
+    "supportsSpecificCoachRouteTransition": false
+  },
+  "representabilityGate": {
+    "status": "REJECTED_BLOCKED",
+    "analysis": {
+      "status": "BLOCKED",
+      "requiredCreationInputs": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_participant_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_resource_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_space_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "effective_day_window",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "execution_date",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "future_productive_ids",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "general_meal_window",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "out_transport_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        }
+      ],
+      "implementationBlockers": [
+        {
+          "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "operaciones conjuntas C06/C10",
+          "canonicalIds": [
+            "C06.alfombra_roja_conjunta",
+            "C10.alfombra_roja_conjunta",
+            "C06.totales_post_conjunto",
+            "C10.totales_post_conjunto"
+          ],
+          "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
+          "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+          "implementationRank": 1
+        },
+        {
+          "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "familias Sillón/Estrellas y preparación de set",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+          "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+          "implementationRank": 2
+        },
+        {
+          "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "sincronización de rondas Totales 1/Coreo",
+          "canonicalIds": [
+            "C01.totales_1",
+            "C02.totales_coreo",
+            "C03.totales_1",
+            "C04.totales_coreo",
+            "C05.totales_1",
+            "C06.totales_coreo",
+            "C07.totales_1",
+            "C08.totales_coreo",
+            "C09.totales_1",
+            "C10.totales_coreo",
+            "C11.totales_1",
+            "C12.totales_1",
+            "C13.totales_1",
+            "C14.totales_coreo",
+            "C15.totales_1",
+            "C16.totales_coreo",
+            "C17.totales_1",
+            "C18.totales_coreo",
+            "C19.totales_coreo"
+          ],
+          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
+          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+          "implementationRank": 4
+        },
+        {
+          "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
+          "layer": "ADAPTER",
+          "affectedRule": "transición coach Caracola → Estudio 7",
+          "canonicalIds": [
+            "C01.ensayo_estudio_7",
+            "C01.prueba_vocal_lucia",
+            "C02.ensayo_estudio_7",
+            "C02.prueba_vocal_lucia",
+            "C03.ensayo_estudio_7",
+            "C03.prueba_vocal_lucia",
+            "C04.ensayo_estudio_7",
+            "C04.prueba_vocal_lucia",
+            "C05.ensayo_estudio_7",
+            "C05.prueba_vocal_jose_maria",
+            "C06.ensayo_estudio_7",
+            "C06.prueba_vocal_jose_maria",
+            "C07.ensayo_estudio_7",
+            "C07.prueba_vocal_jose_maria",
+            "C08.ensayo_estudio_7",
+            "C08.prueba_vocal_jose_maria",
+            "C09.ensayo_estudio_7",
+            "C09.prueba_vocal_jose_maria",
+            "C10.ensayo_estudio_7",
+            "C10.prueba_vocal_jose_maria",
+            "C11.ensayo_estudio_7",
+            "C11.prueba_vocal_jose_maria",
+            "C12.ensayo_estudio_7",
+            "C12.prueba_vocal_lucia",
+            "C13.ensayo_estudio_7",
+            "C13.prueba_vocal_lucia",
+            "C14.ensayo_estudio_7",
+            "C14.prueba_vocal_lucia",
+            "C15.ensayo_estudio_7",
+            "C15.prueba_vocal_lucia",
+            "C16.ensayo_estudio_7",
+            "C16.prueba_vocal_jose_maria",
+            "C17.ensayo_estudio_7",
+            "C17.prueba_vocal_jose_maria",
+            "C18.ensayo_estudio_7",
+            "C18.prueba_vocal_jose_maria",
+            "C19.ensayo_estudio_7",
+            "C19.prueba_vocal_jose_maria"
+          ],
+          "operationalExplanation": "El probe del adaptador demuestra que sólo se proyecta resourceTransitionMinutes global; no hay canal para una transición específica por origen/destino y por coach.",
+          "semanticLoss": "Un margen global sobrerrestringe recursos no afectados o no distingue la ruta Caracola→Estudio 7.",
+          "implementationRank": 3
+        }
+      ],
+      "blockers": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_participant_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_RESOURCE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_resource_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_SPACE_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_space_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_EFFECTIVE_DAY_WINDOW",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "effective_day_window",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_EXECUTION_DATE",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "execution_date",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_FUTURE_PRODUCTIVE_IDS",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "future_productive_ids",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_GENERAL_MEAL_WINDOW",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "general_meal_window",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_OUT_TRANSPORT_POLICY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "out_transport_policy",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
+        {
+          "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "operaciones conjuntas C06/C10",
+          "canonicalIds": [
+            "C06.alfombra_roja_conjunta",
+            "C10.alfombra_roja_conjunta",
+            "C06.totales_post_conjunto",
+            "C10.totales_post_conjunto"
+          ],
+          "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
+          "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+          "implementationRank": 1
+        },
+        {
+          "code": "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED",
+          "layer": "ENGINE_INPUT",
+          "affectedRule": "familias Sillón/Estrellas y preparación de set",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "Planner Next tiene setupFamilyId y Space.setupPolicy, pero EngineInput no transporta la familia ni la política de preparación/reentrada.",
+          "semanticLoss": "Sin ese contrato se perderían el bloque de montaje, los 10 minutos entre familias o la prohibición de reentrada.",
+          "implementationRank": 2
+        },
+        {
+          "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "sincronización de rondas Totales 1/Coreo",
+          "canonicalIds": [
+            "C01.totales_1",
+            "C02.totales_coreo",
+            "C03.totales_1",
+            "C04.totales_coreo",
+            "C05.totales_1",
+            "C06.totales_coreo",
+            "C07.totales_1",
+            "C08.totales_coreo",
+            "C09.totales_1",
+            "C10.totales_coreo",
+            "C11.totales_1",
+            "C12.totales_1",
+            "C13.totales_1",
+            "C14.totales_coreo",
+            "C15.totales_1",
+            "C16.totales_coreo",
+            "C17.totales_1",
+            "C18.totales_coreo",
+            "C19.totales_coreo"
+          ],
+          "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
+          "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
+          "implementationRank": 4
+        },
+        {
+          "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
+          "layer": "ADAPTER",
+          "affectedRule": "transición coach Caracola → Estudio 7",
+          "canonicalIds": [
+            "C01.ensayo_estudio_7",
+            "C01.prueba_vocal_lucia",
+            "C02.ensayo_estudio_7",
+            "C02.prueba_vocal_lucia",
+            "C03.ensayo_estudio_7",
+            "C03.prueba_vocal_lucia",
+            "C04.ensayo_estudio_7",
+            "C04.prueba_vocal_lucia",
+            "C05.ensayo_estudio_7",
+            "C05.prueba_vocal_jose_maria",
+            "C06.ensayo_estudio_7",
+            "C06.prueba_vocal_jose_maria",
+            "C07.ensayo_estudio_7",
+            "C07.prueba_vocal_jose_maria",
+            "C08.ensayo_estudio_7",
+            "C08.prueba_vocal_jose_maria",
+            "C09.ensayo_estudio_7",
+            "C09.prueba_vocal_jose_maria",
+            "C10.ensayo_estudio_7",
+            "C10.prueba_vocal_jose_maria",
+            "C11.ensayo_estudio_7",
+            "C11.prueba_vocal_jose_maria",
+            "C12.ensayo_estudio_7",
+            "C12.prueba_vocal_lucia",
+            "C13.ensayo_estudio_7",
+            "C13.prueba_vocal_lucia",
+            "C14.ensayo_estudio_7",
+            "C14.prueba_vocal_lucia",
+            "C15.ensayo_estudio_7",
+            "C15.prueba_vocal_lucia",
+            "C16.ensayo_estudio_7",
+            "C16.prueba_vocal_jose_maria",
+            "C17.ensayo_estudio_7",
+            "C17.prueba_vocal_jose_maria",
+            "C18.ensayo_estudio_7",
+            "C18.prueba_vocal_jose_maria",
+            "C19.ensayo_estudio_7",
+            "C19.prueba_vocal_jose_maria"
+          ],
+          "operationalExplanation": "El probe del adaptador demuestra que sólo se proyecta resourceTransitionMinutes global; no hay canal para una transición específica por origen/destino y por coach.",
+          "semanticLoss": "Un margen global sobrerrestringe recursos no afectados o no distingue la ruta Caracola→Estudio 7.",
+          "implementationRank": 3
+        }
+      ],
+      "nextImplementationBlocker": {
+        "code": "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED",
+        "layer": "ENGINE_INPUT",
+        "affectedRule": "operaciones conjuntas C06/C10",
+        "canonicalIds": [
+          "C06.alfombra_roja_conjunta",
+          "C10.alfombra_roja_conjunta",
+          "C06.totales_post_conjunto",
+          "C10.totales_post_conjunto"
+        ],
+        "operationalExplanation": "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
+        "semanticLoss": "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+        "implementationRank": 1
+      },
+      "adapterProbe": {
+        "executed": true,
+        "supported": true,
+        "projectedGlobalResourceTransitionMinutes": 30,
+        "supportsSpecificCoachRouteTransition": false
+      }
+    },
+    "executorCallCount": 0,
+    "engineInputBuilt": false,
+    "preflightCalled": false,
+    "adapterCalled": false,
+    "executePlannerNextCalled": false
+  },
+  "noEngineInputPartial": true,
   "noSeedSchedule": true,
   "noLocks": true,
   "determinism": {
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "reversedManifestExpansionFingerprint": "18fdb697d2966f5a18cedfc06406b50bc28af75bf28083d7675aad1a9e3e8f50",
+    "shuffledExpansionFingerprint": "a2985c43ce60b7153ea6ce3c9c90460c8222795bfbf8cec33789ffc6746c7cdd",
     "matches": true
   },
   "inputImmutable": {

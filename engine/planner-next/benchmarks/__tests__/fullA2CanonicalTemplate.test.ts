@@ -1,11 +1,120 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { analyzeCanonicalFullA2Representability, canonicalFingerprint, createCanonicalFullA2Template, expandCanonicalFullA2Template, validateCanonicalFullA2Template } from "../focal-a2/full-day/canonicalFullA2Template";
+import {
+  analyzeCanonicalFullA2Representability,
+  canonicalFingerprint,
+  createCanonicalFullA2Template,
+  expandCanonicalFullA2Template,
+  runRepresentabilityGate,
+  taskId,
+  validateExpandedCanonicalFullA2Template,
+  type ExpandedCanonicalFullA2Template,
+} from "../focal-a2/full-day/canonicalFullA2Template";
 
-test("expands exact anonymous deterministic full A2 counts",()=>{ const t=createCanonicalFullA2Template(); const e=expandCanonicalFullA2Template(t); assert.equal(e.participants.length,19); assert.equal(e.tasks.filter(x=>x.participantId).length,266); assert.equal(e.tasks.filter(x=>!x.participantId).length,3); assert.equal(e.tasks.length,269); assert.equal(e.countsByType.REDES,18); assert.equal(e.countsByType.TOTALES_1,10); assert.equal(e.countsByType.TOTALES_COREO,9); assert.equal(e.countsByType.SILLON,9); assert.equal(e.countsByType.ESTRELLAS,8); assert.equal(e.countsByType.PRUEBA_VOCAL_LUCIA,8); assert.equal(e.countsByType.PRUEBA_VOCAL_JOSE_MARIA,11); assert.equal(validateCanonicalFullA2Template(t).status,"VALID"); });
-test("rejects critical negative mutations",()=>{ const t=createCanonicalFullA2Template(); const dup:any={...t, assignments:{...t.assignments, C05:{...t.assignments.C05, corner:["CORNER_MUSIC","REDES"]}}}; assert.equal(validateCanonicalFullA2Template(dup).status,"INVALID"); const bad:any={...t, taskTypes:{...t.taskTypes, SODEXO:{...t.taskTypes.SODEXO,duration:5}}}; assert.match(validateCanonicalFullA2Template(bad).issues.map(i=>i.code).join(","),/DURATION_CHANGED|COUNT_MISMATCH/); });
-test("contains no real names, planned times, locks or editorial constraints",()=>{ const blob=JSON.stringify(expandCanonicalFullA2Template()); for(const forbidden of ["Cristina","Moisés","Ángel","Julio","José Javier","Pere","startPlanned","endPlanned","NO P.15","guitarra","vestuario"]) assert.equal(blob.includes(forbidden),false,forbidden); });
-test("stable ids, determinism, order invariance and immutable output",()=>{ const t=createCanonicalFullA2Template(); const a=expandCanonicalFullA2Template(t); const b=expandCanonicalFullA2Template(createCanonicalFullA2Template()); assert.equal(canonicalFingerprint(a),canonicalFingerprint(b)); const rev={...t,participants:[...t.participants].reverse()}; assert.equal(canonicalFingerprint(a),canonicalFingerprint(expandCanonicalFullA2Template(rev))); assert.throws(()=>{(a.tasks as any).push({});}); assert.deepEqual(a.tasks.map(x=>x.id),[...a.tasks.map(x=>x.id)].sort((l,r)=>l.localeCompare(r,"en"))); });
-test("classifies source configuration separately from contract gaps and forbids partial engine execution",()=>{ const r=analyzeCanonicalFullA2Representability(); assert.equal(r.status,"BLOCKED"); assert.equal(r.engineExecuted,false); assert.ok(r.blockers.some(b=>b.layer==="SOURCE_CONFIGURATION")); assert.ok(r.blockers.some(b=>b.code==="ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED")); assert.ok(r.blockers.some(b=>b.code==="ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED")); assert.ok(r.blockers.some(b=>b.code==="ADAPTER_COACH_TRANSITION_SCOPE_LOSS")); assert.ok(r.blockers.some(b=>b.code==="PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED")); });
-test("generated artifacts are hashable and match current expansion",()=>{ const e=JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json","utf8")); assert.equal(e.totalTaskCount,269); assert.equal(e.expansionFingerprint,canonicalFingerprint(expandCanonicalFullA2Template())); });
+function cloneExpansion(): ExpandedCanonicalFullA2Template {
+  return structuredClone(expandCanonicalFullA2Template(createCanonicalFullA2Template())) as ExpandedCanonicalFullA2Template;
+}
+
+function assertInvariantFails(mutator: (expansion: any) => void, invariantCode: string, issueCode?: string): void {
+  const expansion: any = cloneExpansion();
+  mutator(expansion);
+  const result = validateExpandedCanonicalFullA2Template(expansion);
+  const invariant = result.invariants.find((entry) => entry.code === invariantCode);
+  assert.equal(result.status, "INVALID");
+  assert.equal(invariant?.passed, false, `Expected invariant ${invariantCode} to fail`);
+  if (issueCode) assert.ok(invariant?.issueCodes.includes(issueCode), `Expected ${issueCode}, got ${invariant?.issueCodes.join(",")}`);
+}
+
+test("expands exact semantic full A2 template", () => {
+  const template = createCanonicalFullA2Template();
+  const expansion = expandCanonicalFullA2Template(template);
+  const validation = validateExpandedCanonicalFullA2Template(expansion);
+  assert.equal(template.participants.join(","), "C01,C02,C03,C04,C05,C06,C07,C08,C09,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19");
+  assert.equal(expansion.participants.length, 19);
+  assert.equal(expansion.tasks.filter((task) => task.participantId).length, 266);
+  assert.equal(expansion.tasks.filter((task) => !task.participantId).length, 3);
+  assert.equal(expansion.tasks.length, 269);
+  assert.equal(expansion.countsByType.SODEXO, 19);
+  assert.equal(expansion.countsByType.REDES, 18);
+  assert.equal(expansion.countsByType.SILLON, 9);
+  assert.equal(expansion.countsByType.ESTRELLAS, 8);
+  assert.equal(expansion.anchoredOperations.length, 3);
+  assert.equal(expansion.jointOperations.length, 2);
+  assert.equal(expansion.technicalChains.length, 1);
+  assert.equal(validation.status, "VALID", validation.issues.map((issue) => `${issue.code}:${issue.entityId}`).join("\n"));
+  assert.ok(validation.invariants.every((entry) => entry.evaluated && entry.passed));
+});
+
+test("dependency graph closes all participant obligations before OUT", () => {
+  const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
+  for (const participantId of expansion.participants) {
+    const exitStyling = expansion.tasks.find((task) => task.id === taskId(participantId, "ESTILISMO_SALIDA"))!;
+    const participantObligations = expansion.tasks.filter((task) => task.participantId === participantId && task.type !== "ESTILISMO_SALIDA" && task.type !== "OUT");
+    assert.deepEqual(exitStyling.dependencies, participantObligations.map((task) => task.id).sort());
+    assert.ok(expansion.tasks.find((task) => task.id === taskId(participantId, "OUT"))!.dependencies.includes(exitStyling.id));
+  }
+});
+
+test("negative mutations fail the targeted invariant families", () => {
+  assertInvariantFails((e) => { e.tasks = e.tasks.filter((task: any) => task.id !== taskId("C01", "CROMA")); e.countsByType.CROMA -= 1; }, "PARTICIPANT_TASK_MATRIX", "PARTICIPANT_MATRIX_MISMATCH");
+  assertInvariantFails((e) => { e.tasks.push({ ...e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")) }); }, "UNIQUE_TASK_IDS", "DUPLICATE_TASK_ID");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).duration = 11; }, "DURATION_CATALOG", "DURATION_CHANGED");
+  assertInvariantFails((e) => { e.tasks.filter((task: any) => task.participantId === "C01" && task.coachId).forEach((task: any) => { task.coachId = "coach-jose-maria"; task.requiredResourceIds = ["coach-jose-maria"]; }); e.tasks.filter((task: any) => task.participantId === "C05" && task.coachId).forEach((task: any) => { task.coachId = "coach-lucia"; task.requiredResourceIds = ["coach-lucia"]; }); }, "COACH_ASSIGNMENT", "COACH_ASSIGNMENT_MISMATCH");
+  assertInvariantFails((e) => { const exit = e.tasks.find((task: any) => task.id === taskId("C06", "ESTILISMO_SALIDA")); exit.dependencies = exit.dependencies.filter((id: string) => id !== taskId("C06", "REALITY_HALL")); }, "DEPENDENCY_CLOSURE", "EXIT_STYLING_CLOSURE_LOST");
+  assertInvariantFails((e) => { const main = e.tasks.find((task: any) => task.id === taskId("C01", "ENSAYO_ESTUDIO_7")); main.dependencies = main.dependencies.filter((id: string) => id !== taskId("C01", "PRUEBA_VOCAL_LUCIA")); }, "DEPENDENCY_CLOSURE", "VOCAL_TO_MAIN_DEPENDENCY_LOST");
+  assertInvariantFails((e) => { const main = e.tasks.find((task: any) => task.id === taskId("C01", "ENSAYO_ESTUDIO_7")); main.dependencies = main.dependencies.filter((id: string) => id !== taskId("C01", "REALITY_PLATO_ANTES")); }, "ANCHORED_OPERATIONS", "ANCHORED_BEFORE_TO_ANCHOR_DEPENDENCY_LOST");
+  assertInvariantFails((e) => { const after = e.tasks.find((task: any) => task.id === taskId("C01", "REALITY_PLATO_DESPUES")); after.dependencies = after.dependencies.filter((id: string) => id !== taskId("C01", "ENSAYO_ESTUDIO_7")); }, "ANCHORED_OPERATIONS", "ANCHORED_ANCHOR_TO_AFTER_DEPENDENCY_LOST");
+  assertInvariantFails((e) => { const post = e.tasks.find((task: any) => task.id === taskId("C06", "TOTALES_POST_CONJUNTO")); post.dependencies = post.dependencies.filter((id: string) => id !== taskId("C06", "ALFOMBRA_ROJA_CONJUNTA")); }, "JOINT_OPERATIONS", "JOINT_SEQUENCE_DEPENDENCY_LOST");
+  assertInvariantFails((e) => { e.jointOperations[0].memberParticipantIds = ["C06", "C11"]; }, "JOINT_OPERATIONS", "JOINT_MEMBER_SET_INVALID");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C02", "SILLON")).setupFamilyId = undefined; }, "SETUP_RULES", "SETUP_FAMILY_LOST");
+  assertInvariantFails((e) => { e.rules.setup.reentry = "ALLOWED"; }, "SETUP_RULES", "SETUP_REENTRY_ALLOWED");
+  assertInvariantFails((e) => { e.rules.setup.preparationMinutesBetweenFamilies = 5; }, "SETUP_RULES", "SETUP_PREPARATION_CHANGED");
+  assertInvariantFails((e) => { e.rules.totalesSynchronization.synchronizedRounds = false; }, "TOTALES_RULES", "TOTALES_SYNCHRONIZATION_LOST");
+  assertInvariantFails((e) => { e.rules.coachTransition.minutes = 15; }, "COACH_TRANSITION_RULE", "COACH_TRANSITION_RULE_CHANGED");
+  assertInvariantFails((e) => { e.rules.inTransport.minParticipantsPerGroup = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_CONTINUITY_LOST");
+  assertInvariantFails((e) => { const sodexo = e.tasks.find((task: any) => task.id === taskId("C01", "SODEXO")); sodexo.operationalKind = "auxiliary"; sodexo.meal.occupiesExclusiveSpace = true; }, "SODEXO_MEALS", "SODEXO_SEMANTICS_INVALID");
+  assertInvariantFails((e) => { (e as any).leakedName = "Cristina"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
+  assertInvariantFails((e) => { (e.tasks[0] as any).startPlanned = "09:00"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
+});
+
+test("deterministic, order-invariant, immutable and anonymous", () => {
+  const template = createCanonicalFullA2Template();
+  const expansion = expandCanonicalFullA2Template(template);
+  const shuffled = expandCanonicalFullA2Template({ ...template, participants: [...template.participants].reverse(), assignments: [...template.assignments].reverse(), spaces: [...template.spaces].reverse(), resources: [...template.resources].reverse() });
+  assert.equal(canonicalFingerprint(expansion), canonicalFingerprint(expandCanonicalFullA2Template(createCanonicalFullA2Template())));
+  assert.equal(canonicalFingerprint(expansion), canonicalFingerprint(shuffled));
+  assert.throws(() => { (expansion.tasks as any).push({}); });
+  const serialized = JSON.stringify(expansion);
+  for (const forbidden of ["Cristina", "Moisés", "Ángel", "Julio", "José Javier", "Pere", "startPlanned", "endPlanned", "referenceOrder", "NO P.15", "guitarra", "vestuario"]) assert.equal(serialized.includes(forbidden), false, forbidden);
+});
+
+test("representability separates source configuration, implementation blockers and blocks partial execution", () => {
+  const expansion = expandCanonicalFullA2Template(createCanonicalFullA2Template());
+  const analysis = analyzeCanonicalFullA2Representability(expansion);
+  let callCount = 0;
+  const gate = runRepresentabilityGate(analysis, () => { callCount += 1; throw new Error("executor must not be called"); });
+  assert.equal(analysis.status, "BLOCKED");
+  assert.ok(analysis.requiredCreationInputs.every((blocker) => blocker.layer === "SOURCE_CONFIGURATION"));
+  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED"));
+  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED"));
+  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS"));
+  assert.ok(analysis.implementationBlockers.some((blocker) => blocker.code === "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED"));
+  assert.equal(analysis.nextImplementationBlocker?.code, "ENGINE_INPUT_JOINT_GROUP_NOT_PROJECTED");
+  assert.equal(gate.status, "REJECTED_BLOCKED");
+  assert.equal(gate.executorCallCount, 0);
+  assert.equal(callCount, 0);
+  assert.equal(gate.engineInputBuilt, false);
+  assert.equal(gate.preflightCalled, false);
+  assert.equal(gate.adapterCalled, false);
+  assert.equal(gate.executePlannerNextCalled, false);
+});
+
+test("generated artifacts are reproducible against current expansion", () => {
+  const evidence = JSON.parse(readFileSync("docs/evidence/SPEC10-016-full-a2-canonical-template.json", "utf8"));
+  assert.equal(evidence.totalTaskCount, 269);
+  assert.equal(evidence.expansionFingerprint, canonicalFingerprint(expandCanonicalFullA2Template(createCanonicalFullA2Template())));
+  assert.equal(evidence.representabilityGate.executorCallCount, 0);
+  assert.equal(evidence.noEngineInputPartial, true);
+});
