@@ -1,11 +1,20 @@
-import type { AnchoredOperationContract, CanonicalFullA2Template, CanonicalTask, ExpandedCanonicalFullA2Template, JointOperationContract, ParticipantId, TaskType, TechnicalChainContract } from "./types";
+import type {
+  AnchoredOperationContract,
+  CanonicalFullA2Template,
+  CanonicalItinerantOperation,
+  CanonicalTask,
+  ExpandedCanonicalFullA2Template,
+  JointOperationContract,
+  ParticipantId,
+  TaskType,
+  TechnicalChainContract,
+} from "./types";
 import { EXPECTED_PARTICIPANT_TASK_MATRIX } from "./manifest";
 
 export function taskId(participantId: string, type: TaskType): string {
   return `${participantId}.${type.toLowerCase()}`;
 }
 
-const ANCHORED_PARTICIPANTS = ["C01", "C05", "C08"] as const;
 const TECHNICAL_CHAIN_ID = "technical.reality-eva-transfer-totales-post";
 const TECHNICAL_RESOURCE_IDS = ["cam-3", "cam-4", "son-1", "eva"] as const;
 
@@ -21,10 +30,18 @@ function sorted<T>(values: readonly T[], key: (value: T) => string): T[] {
   return [...values].sort((left, right) => key(left).localeCompare(key(right), "en"));
 }
 
+function operationByTaskId(template: CanonicalFullA2Template): Map<string, CanonicalItinerantOperation> {
+  const map = new Map<string, CanonicalItinerantOperation>();
+  for (const operation of template.itinerantOperations) {
+    for (const id of operation.taskIds) map.set(id, operation);
+  }
+  return map;
+}
+
 function participantTasks(template: CanonicalFullA2Template, participantId: ParticipantId): CanonicalTask[] {
   const assignment = template.assignments.find((entry) => entry.participantId === participantId);
   const sourceTypes = EXPECTED_PARTICIPANT_TASK_MATRIX[participantId] ?? [];
-  const allTaskIds = new Set(sourceTypes.map((type) => taskId(participantId, type)));
+  const operationLookup = operationByTaskId(template);
   const vocalType: TaskType | null = sourceTypes.includes("PRUEBA_VOCAL_LUCIA")
     ? "PRUEBA_VOCAL_LUCIA"
     : sourceTypes.includes("PRUEBA_VOCAL_JOSE_MARIA") ? "PRUEBA_VOCAL_JOSE_MARIA" : null;
@@ -37,8 +54,7 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     if (type === "PRUEBA_VOCAL_LUCIA" || type === "PRUEBA_VOCAL_JOSE_MARIA") dependencies.add(taskId(participantId, "IN"));
     if (!["IN", "ESTILISMO_ENTRADA", "PRUEBA_VOCAL_LUCIA", "PRUEBA_VOCAL_JOSE_MARIA"].includes(type)) dependencies.add(taskId(participantId, "ESTILISMO_ENTRADA"));
     if (type === "ENSAYO_ESTUDIO_7" && vocalType) dependencies.add(taskId(participantId, vocalType));
-    if (type === "REALITY_PLATO_ANTES") dependencies.add(taskId(participantId, "ESTILISMO_ENTRADA"));
-    if (type === "ENSAYO_ESTUDIO_7" && allTaskIds.has(taskId(participantId, "REALITY_PLATO_ANTES"))) dependencies.add(taskId(participantId, "REALITY_PLATO_ANTES"));
+    if (type === "ENSAYO_ESTUDIO_7" && sourceTypes.includes("REALITY_PLATO_ANTES")) dependencies.add(taskId(participantId, "REALITY_PLATO_ANTES"));
     if (type === "REALITY_PLATO_DESPUES") dependencies.add(taskId(participantId, "ENSAYO_ESTUDIO_7"));
     if (type === "TOTALES_POST_CONJUNTO") dependencies.add(taskId(participantId, "ALFOMBRA_ROJA_CONJUNTA"));
     if (type === "ESTILISMO_SALIDA") {
@@ -51,13 +67,13 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
     const coachId = type === "PRUEBA_VOCAL_LUCIA" || type === "PRUEBA_VOCAL_JOSE_MARIA" || type === "ENSAYO_ESTUDIO_7"
       ? assignment?.coachId
       : undefined;
-    const anchored = ANCHORED_PARTICIPANTS.includes(participantId as typeof ANCHORED_PARTICIPANTS[number])
-      && (type === "REALITY_PLATO_ANTES" || type === "ENSAYO_ESTUDIO_7" || type === "REALITY_PLATO_DESPUES");
     const jointGroupId = type === "ALFOMBRA_ROJA_CONJUNTA"
       ? "joint.alfombra-roja.C06-C10"
       : type === "TOTALES_POST_CONJUNTO" ? "joint.totales-post.C06-C10" : undefined;
-    const requiredResourceIds = new Set(definition.knownResourceIds);
+    const operation = operationLookup.get(id);
+    const requiredResourceIds = new Set<string>(definition.knownResourceIds);
     if (type === "ENSAYO_ESTUDIO_7" && coachId) requiredResourceIds.add(coachId);
+    for (const resourceId of operation?.memberResourceIds ?? []) requiredResourceIds.add(resourceId);
 
     return {
       id,
@@ -72,8 +88,8 @@ function participantTasks(template: CanonicalFullA2Template, participantId: Part
       blockKey: type === "ENSAYO_ESTUDIO_7" ? coachId : undefined,
       setupFamilyId: type === "SILLON" ? "sillon" : type === "ESTRELLAS" ? "estrellas" : undefined,
       jointGroupId,
-      anchoredOperationId: anchored ? `anchored.reality-plato.${participantId}` : undefined,
-      itinerantUnitId: type.startsWith("REALITY_") ? "reality-unit" : undefined,
+      anchoredOperationId: operation?.kind === "anchored" ? `anchored.reality-plato.${participantId}` : undefined,
+      itinerantUnitId: operation?.itinerantUnitId,
       meal: type === "SODEXO" ? { kind: "participant_meal", duration: 40, occupiesExclusiveSpace: false } : undefined,
       transport: type === "IN" ? { direction: "arrival" } : type === "OUT" ? { direction: "departure" } : undefined,
       isAnchoredSegment: type === "REALITY_PLATO_ANTES" || type === "REALITY_PLATO_DESPUES" ? true : undefined,
@@ -102,18 +118,23 @@ function technicalTasks(template: CanonicalFullA2Template): CanonicalTask[] {
   });
 }
 
-function anchoredOperations(): AnchoredOperationContract[] {
-  return ANCHORED_PARTICIPANTS.map((participantId) => ({
-    id: `anchored.reality-plato.${participantId}`,
-    participantId,
-    beforeTaskIds: [taskId(participantId, "REALITY_PLATO_ANTES")],
-    anchorTaskId: taskId(participantId, "ENSAYO_ESTUDIO_7"),
-    afterTaskIds: [taskId(participantId, "REALITY_PLATO_DESPUES")],
-    adjacency: "REQUIRED",
-    internalTransition: "INCLUDED",
-    resourceContinuity: "REQUIRED",
-    orderedTaskIds: [taskId(participantId, "REALITY_PLATO_ANTES"), taskId(participantId, "ENSAYO_ESTUDIO_7"), taskId(participantId, "REALITY_PLATO_DESPUES")],
-  }));
+function anchoredOperations(template: CanonicalFullA2Template): AnchoredOperationContract[] {
+  return template.itinerantOperations.filter((operation) => operation.kind === "anchored").map((operation) => {
+    const participantId = operation.participantId;
+    return {
+      id: `anchored.reality-plato.${participantId}`,
+      participantId,
+      beforeTaskIds: [taskId(participantId, "REALITY_PLATO_ANTES")],
+      anchorTaskId: taskId(participantId, "ENSAYO_ESTUDIO_7"),
+      afterTaskIds: [taskId(participantId, "REALITY_PLATO_DESPUES")],
+      adjacency: "REQUIRED",
+      internalTransition: "INCLUDED",
+      resourceContinuity: "REQUIRED",
+      orderedTaskIds: [taskId(participantId, "REALITY_PLATO_ANTES"), taskId(participantId, "ENSAYO_ESTUDIO_7"), taskId(participantId, "REALITY_PLATO_DESPUES")],
+      itinerantUnitId: operation.itinerantUnitId,
+      memberResourceIds: [...operation.memberResourceIds],
+    };
+  });
 }
 
 function jointOperations(): JointOperationContract[] {
@@ -164,11 +185,13 @@ export function expandCanonicalFullA2Template(template: CanonicalFullA2Template)
     tasks,
     taskIds: tasks.map((task) => task.id),
     countsByType,
-    anchoredOperations: anchoredOperations(),
+    anchoredOperations: sorted(anchoredOperations(template), (operation) => operation.id),
     jointOperations: jointOperations(),
     technicalChains: technicalChains(),
     spaces: sorted(template.spaces, (space) => space.id),
     resources: sorted(template.resources, (resource) => resource.id),
+    itinerantUnits: sorted(template.itinerantUnits, (unit) => unit.id),
+    itinerantOperations: sorted(template.itinerantOperations, (operation) => operation.id),
     rules: template.rules,
     requiredCreationInputs: [...template.requiredCreationInputs].sort(),
   });

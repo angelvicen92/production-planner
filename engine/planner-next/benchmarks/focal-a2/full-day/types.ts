@@ -47,6 +47,8 @@ export type TaskType =
   | "ALFOMBRA_ROJA_EVA"
   | "ALFOMBRA_ROJA_CONJUNTA"
   | "TOTALES_POST_CONJUNTO"
+  | "ESTILISMO_SALIDA"
+  | "OUT"
   | "TECH_REALITY_EVA"
   | "TECH_DESMONTAJE_TRASLADO"
   | "TECH_TOTALES_POST";
@@ -104,7 +106,7 @@ export interface CanonicalSpace {
 export interface CanonicalResource {
   readonly id: string;
   readonly label: string;
-  readonly kind: "camera" | "sound" | "coach" | "presenter" | "technical_unit";
+  readonly kind: "camera" | "sound" | "coach" | "presenter";
   readonly availability: "creation_input_required";
 }
 
@@ -118,6 +120,25 @@ export interface AnchoredOperationContract {
   readonly internalTransition: "INCLUDED";
   readonly resourceContinuity: "REQUIRED";
   readonly orderedTaskIds: readonly string[];
+  readonly itinerantUnitId: string;
+  readonly memberResourceIds: readonly string[];
+}
+
+
+export interface CanonicalItinerantUnit {
+  readonly id: string;
+  readonly label: string;
+  readonly memberResourceIds: readonly string[];
+  readonly availability: "creation_input_required";
+}
+
+export interface CanonicalItinerantOperation {
+  readonly id: string;
+  readonly itinerantUnitId: string;
+  readonly participantId: ParticipantId;
+  readonly taskIds: readonly string[];
+  readonly kind: "standalone" | "anchored";
+  readonly memberResourceIds: readonly string[];
 }
 
 export interface JointOperationContract {
@@ -151,7 +172,9 @@ export interface CanonicalTemplateRules {
   };
   readonly setup: {
     readonly spaceId: "p15-estrellas-sillon";
-    readonly familyOrder: readonly ["sillon", "estrellas"];
+    readonly families: readonly ["sillon", "estrellas"];
+    readonly oneBlockPerFamily: true;
+    readonly orderConstraint: "UNSPECIFIED";
     readonly reentry: "FORBIDDEN";
     readonly preparationMinutesBetweenFamilies: 10;
   };
@@ -186,6 +209,8 @@ export interface CanonicalFullA2Template {
   readonly taskTypes: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>;
   readonly spaces: readonly CanonicalSpace[];
   readonly resources: readonly CanonicalResource[];
+  readonly itinerantUnits: readonly CanonicalItinerantUnit[];
+  readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly assignments: readonly CanonicalParticipantAssignment[];
   readonly requiredCreationInputs: readonly string[];
   readonly rules: CanonicalTemplateRules;
@@ -202,6 +227,8 @@ export interface ExpandedCanonicalFullA2Template {
   readonly technicalChains: readonly TechnicalChainContract[];
   readonly spaces: readonly CanonicalSpace[];
   readonly resources: readonly CanonicalResource[];
+  readonly itinerantUnits: readonly CanonicalItinerantUnit[];
+  readonly itinerantOperations: readonly CanonicalItinerantOperation[];
   readonly rules: CanonicalTemplateRules;
   readonly requiredCreationInputs: readonly string[];
 }
@@ -249,7 +276,9 @@ export interface RepresentabilityAnalysis {
     readonly executed: true;
     readonly supported: boolean;
     readonly projectedGlobalResourceTransitionMinutes: number | null;
-    readonly supportsSpecificCoachRouteTransition: false;
+    readonly supportsSpecificCoachRouteTransition: boolean;
+    readonly problemHasRouteSpecificCoachTransition: boolean;
+    readonly coachResourcesHaveOriginDestinationRule: boolean;
   };
 }
 
@@ -263,7 +292,14 @@ export interface RepresentabilityGateResult {
   readonly executePlannerNextCalled: boolean;
 }
 
-export type RepresentabilityExecutor = (analysis: Extract<RepresentabilityAnalysis, { status: "FULLY_REPRESENTABLE" }>) => unknown;
+export interface RepresentabilityExecutorTrace {
+  readonly engineInputBuilt: boolean;
+  readonly preflightCalled: boolean;
+  readonly adapterCalled: boolean;
+  readonly executePlannerNextCalled: boolean;
+}
+
+export type RepresentabilityExecutor = (analysis: RepresentabilityAnalysis) => RepresentabilityExecutorTrace;
 
 export type TaskInputHasJointGroupId = "jointGroupId" extends keyof TaskInput ? true : false;
 export type TaskInputHasSetupFamilyId = "setupFamilyId" extends keyof TaskInput ? true : false;

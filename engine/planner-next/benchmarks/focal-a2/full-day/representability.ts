@@ -22,11 +22,17 @@ function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
     resourceTransitionMinutes: 30,
   };
   const result = adaptEngineInputToPlannerNextProblem(fixture);
+  const problem = result.status === "SUPPORTED" ? result.problem as unknown as Record<string, unknown> : {};
+  const resources = Array.isArray(problem.resources) ? problem.resources as readonly Record<string, unknown>[] : [];
+  const problemHasRouteSpecificCoachTransition = ["coachRouteTransitions", "resourceRouteTransitions", "routeTransitionRules"].some((key) => key in problem);
+  const coachResourcesHaveOriginDestinationRule = resources.some((resource) => resource.type === "coach" && ("fromSpaceId" in resource || "toSpaceId" in resource || "transitionScope" in resource));
   return {
     executed: true,
     supported: result.status === "SUPPORTED",
     projectedGlobalResourceTransitionMinutes: result.status === "SUPPORTED" ? result.problem.resourceTransitionMinutes : null,
-    supportsSpecificCoachRouteTransition: false,
+    supportsSpecificCoachRouteTransition: problemHasRouteSpecificCoachTransition && coachResourcesHaveOriginDestinationRule,
+    problemHasRouteSpecificCoachTransition,
+    coachResourcesHaveOriginDestinationRule,
   };
 }
 
@@ -63,6 +69,19 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       implementationRank: 2,
     }));
   }
+
+  if (expansion.rules.setup.orderConstraint === "UNSPECIFIED") {
+    implementationBlockers.push(blocker({
+      code: "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+      layer: "PLANNER_NEXT",
+      affectedRule: "orden flexible entre familias Sillón/Estrellas",
+      canonicalIds: expansion.tasks.filter((task) => task.setupFamilyId).map((task) => task.id),
+      operationalExplanation: "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
+      semanticLoss: "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
+      implementationRank: 4,
+    }));
+  }
+
   if (!contractFieldPresence.plannerNextProblemHasRoundSynchronization) {
     implementationBlockers.push(blocker({
       code: "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
@@ -71,7 +90,7 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       canonicalIds: expansion.tasks.filter((task) => task.type === "TOTALES_1" || task.type === "TOTALES_COREO").map((task) => task.id),
       operationalExplanation: "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
       semanticLoss: "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-      implementationRank: 4,
+      implementationRank: 5,
     }));
   }
 
@@ -113,14 +132,14 @@ export function runRepresentabilityGate(analysis: RepresentabilityAnalysis, exec
     });
   }
   callCount += 1;
-  executor(analysis as never);
+  const trace = executor(analysis);
   return deepFreeze({
     status: "EXECUTED",
     analysis,
     executorCallCount: callCount,
-    engineInputBuilt: true,
-    preflightCalled: true,
-    adapterCalled: true,
-    executePlannerNextCalled: true,
+    engineInputBuilt: trace.engineInputBuilt,
+    preflightCalled: trace.preflightCalled,
+    adapterCalled: trace.adapterCalled,
+    executePlannerNextCalled: trace.executePlannerNextCalled,
   });
 }

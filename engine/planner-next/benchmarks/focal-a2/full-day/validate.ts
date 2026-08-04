@@ -1,4 +1,4 @@
-import { EXPECTED_COACH_BY_PARTICIPANT, EXPECTED_COUNTS_BY_TYPE, EXPECTED_PARTICIPANT_TASK_MATRIX, TASK_TYPES } from "./manifest";
+import { CANONICAL_ITINERANT_OPERATIONS, CANONICAL_ITINERANT_UNITS, EXPECTED_COACH_BY_PARTICIPANT, EXPECTED_COUNTS_BY_TYPE, EXPECTED_PARTICIPANT_TASK_MATRIX, TASK_TYPES } from "./manifest";
 import { taskId } from "./expand";
 import type { CanonicalTask, ExpandedCanonicalFullA2Template, ParticipantId, TaskType, ValidationInvariantResult, ValidationIssue, ValidationResult } from "./types";
 import { PARTICIPANT_IDS } from "./types";
@@ -87,10 +87,18 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     if (expansion.tasks.length !== 269) issues.push(issue("GLOBAL_COUNTS", "TOTAL_TASK_COUNT_MISMATCH", "tasks", `Expected 269 total tasks, got ${expansion.tasks.length}.`));
     return issues;
   }],
-  ["COUNTS_BY_TYPE", (expansion) => Object.entries(EXPECTED_COUNTS_BY_TYPE).flatMap(([type, expected]) => {
-    const actual = expansion.countsByType[type as TaskType] ?? 0;
-    return actual === expected ? [] : [issue("COUNTS_BY_TYPE", "COUNT_BY_TYPE_MISMATCH", type, `Expected ${expected} tasks of type ${type}, got ${actual}.`)];
-  })],
+  ["COUNTS_BY_TYPE", (expansion) => {
+    const recomputed = Object.fromEntries(Object.keys(EXPECTED_COUNTS_BY_TYPE).map((type) => [type, 0])) as Record<TaskType, number>;
+    for (const task of expansion.tasks) recomputed[task.type] = (recomputed[task.type] ?? 0) + 1;
+    return Object.entries(EXPECTED_COUNTS_BY_TYPE).flatMap(([type, expected]) => {
+      const actual = recomputed[type as TaskType] ?? 0;
+      const derived = expansion.countsByType[type as TaskType] ?? 0;
+      const issues: ValidationIssue[] = [];
+      if (actual !== expected) issues.push(issue("COUNTS_BY_TYPE", "COUNT_BY_TYPE_MISMATCH", type, `Expected ${expected} tasks of type ${type}, got ${actual}.`));
+      if (derived !== actual) issues.push(issue("COUNTS_BY_TYPE", "DERIVED_COUNT_BY_TYPE_STALE", type, `Derived countsByType has ${derived}, recomputed ${actual}.`));
+      return issues;
+    });
+  }],
   ["DURATION_CATALOG", (expansion) => expansion.tasks.flatMap((task) => {
     const expected = TASK_TYPES[task.type]?.duration;
     return task.duration === expected ? [] : [issue("DURATION_CATALOG", "DURATION_CHANGED", task.id, `Expected duration ${expected}, got ${task.duration}.`)];
@@ -160,7 +168,13 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     }
     return issues;
   }],
-  ["ANCHORED_OPERATIONS", (expansion) => expansion.anchoredOperations.flatMap((operation) => {
+  ["ANCHORED_OPERATIONS", (expansion) => {
+    const expectedIds = ["anchored.reality-plato.C01", "anchored.reality-plato.C05", "anchored.reality-plato.C08"];
+    const actualIds = expansion.anchoredOperations.map((operation) => operation.id).sort();
+    const setIssues: ValidationIssue[] = JSON.stringify(actualIds) === JSON.stringify(expectedIds)
+      ? []
+      : [issue("ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID", "anchoredOperations", "Anchored operations must be exactly C01, C05 and C08.")];
+    return [...setIssues, ...expansion.anchoredOperations.flatMap((operation) => {
     const tasks = operation.orderedTaskIds.map((id) => expansion.tasks.find((task) => task.id === id));
     const [before, anchor, after] = tasks;
     const issues: ValidationIssue[] = [];
@@ -172,10 +186,20 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     if (after && (after.type !== "REALITY_PLATO_DESPUES" || after.duration !== 15 || after.participantId !== operation.participantId)) issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_AFTER_INVALID", after.id, "Invalid Reality after segment."));
     if (anchor && before && !anchor.dependencies.includes(before.id)) issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_BEFORE_TO_ANCHOR_DEPENDENCY_LOST", anchor.id, "Anchor must depend on before segment."));
     if (after && anchor && !after.dependencies.includes(anchor.id)) issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_ANCHOR_TO_AFTER_DEPENDENCY_LOST", after.id, "After segment must depend on anchor."));
+    const expectedOperation = CANONICAL_ITINERANT_OPERATIONS.find((entry) => entry.kind === "anchored" && entry.participantId === operation.participantId);
+    if (!expectedOperation || operation.itinerantUnitId !== expectedOperation.itinerantUnitId || operation.memberResourceIds.join(",") !== expectedOperation.memberResourceIds.join(",")) issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_ITINERANT_CONTRACT_INVALID", operation.id, "Anchored operation lost itinerant unit identity or member resources."));
+    if (anchor && expectedOperation && expectedOperation.memberResourceIds.some((resourceId) => !anchor.requiredResourceIds.includes(resourceId))) issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_ANCHOR_RESOURCE_CONTINUITY_LOST", anchor.id, "Anchor lost itinerant unit member resources."));
     if (operation.adjacency !== "REQUIRED" || operation.internalTransition !== "INCLUDED" || operation.resourceContinuity !== "REQUIRED") issues.push(issue("ANCHORED_OPERATIONS", "ANCHORED_CONTINUITY_CONTRACT_LOST", operation.id, "Anchored operation continuity contract is not exact."));
     return issues;
-  })],
-  ["JOINT_OPERATIONS", (expansion) => expansion.jointOperations.flatMap((operation) => {
+  })];
+  }],
+  ["JOINT_OPERATIONS", (expansion) => {
+    const expectedIds = ["joint.alfombra-roja.C06-C10", "joint.totales-post.C06-C10"];
+    const actualIds = expansion.jointOperations.map((operation) => operation.id).sort();
+    const setIssues: ValidationIssue[] = JSON.stringify(actualIds) === JSON.stringify(expectedIds)
+      ? []
+      : [issue("JOINT_OPERATIONS", "JOINT_OPERATION_SET_INVALID", "jointOperations", "Joint operations must be exactly Alfombra Roja and Totales Post for C06/C10.")];
+    return [...setIssues, ...expansion.jointOperations.flatMap((operation) => {
     const tasks = operation.taskIds.map((id) => expansion.tasks.find((task) => task.id === id));
     const issues: ValidationIssue[] = [];
     if (operation.memberParticipantIds.join(",") !== "C06,C10") issues.push(issue("JOINT_OPERATIONS", "JOINT_MEMBER_SET_INVALID", operation.id, "Joint member set must be C06 and C10."));
@@ -189,14 +213,24 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     }
     if (operation.synchronizedStartAndEnd !== true) issues.push(issue("JOINT_OPERATIONS", "JOINT_SYNCHRONIZATION_LOST", operation.id, "Joint operation must preserve same future start and end."));
     return issues;
-  })],
+  })];
+  }],
   ["SETUP_RULES", (expansion) => {
     const setupTasks = expansion.tasks.filter((task) => task.type === "SILLON" || task.type === "ESTRELLAS");
     const issues: ValidationIssue[] = [];
     if (expansion.rules.setup.spaceId !== "p15-estrellas-sillon") issues.push(issue("SETUP_RULES", "SETUP_SPACE_LOST", "rules.setup", "Setup space must be shared by Sillón and Estrellas."));
+    if (expansion.rules.setup.families.join(",") !== "sillon,estrellas") issues.push(issue("SETUP_RULES", "SETUP_FAMILY_SET_INVALID", "rules.setup.families", "Setup families must be Sillón and Estrellas without a hard order."));
+    if (expansion.rules.setup.oneBlockPerFamily !== true) issues.push(issue("SETUP_RULES", "SETUP_ONE_BLOCK_POLICY_LOST", "rules.setup.oneBlockPerFamily", "Each setup family must remain a single block."));
+    if (expansion.rules.setup.orderConstraint !== "UNSPECIFIED") issues.push(issue("SETUP_RULES", "SETUP_ORDER_HARD_CODED", "rules.setup.orderConstraint", "Setup order must remain unspecified by the source."));
     if (expansion.rules.setup.reentry !== "FORBIDDEN") issues.push(issue("SETUP_RULES", "SETUP_REENTRY_ALLOWED", "rules.setup.reentry", "Setup reentry must be forbidden."));
     if (expansion.rules.setup.preparationMinutesBetweenFamilies !== 10) issues.push(issue("SETUP_RULES", "SETUP_PREPARATION_CHANGED", "rules.setup.preparationMinutesBetweenFamilies", "Setup preparation must be 10 minutes."));
-    if (setupTasks.some((task) => !task.setupFamilyId || task.spaceId !== "p15-estrellas-sillon")) issues.push(issue("SETUP_RULES", "SETUP_FAMILY_LOST", ids(setupTasks).join(","), "Every setup task must keep setupFamilyId and shared space."));
+    for (const task of setupTasks) {
+      if (task.spaceId !== "p15-estrellas-sillon") issues.push(issue("SETUP_RULES", "SETUP_SPACE_LOST", task.id, "Setup task lost shared setup space."));
+      if (task.type === "SILLON" && task.setupFamilyId !== "sillon") issues.push(issue("SETUP_RULES", "SETUP_FAMILY_MISMATCH", task.id, "Sillón must use setupFamilyId sillon."));
+      if (task.type === "ESTRELLAS" && task.setupFamilyId !== "estrellas") issues.push(issue("SETUP_RULES", "SETUP_FAMILY_MISMATCH", task.id, "Estrellas must use setupFamilyId estrellas."));
+    }
+    const cornerTasks = expansion.tasks.filter((task) => task.type === "CORNER_INFLUENCER" || task.type === "CORNER_MUSIC" || task.type === "CORNER_INFLUENCER_MUSIC");
+    if (cornerTasks.some((task) => task.setupFamilyId || task.jointGroupId)) issues.push(issue("SETUP_RULES", "CORNER_SETUP_POLICY_INVALID", ids(cornerTasks).join(","), "Corner tasks must not receive setup or mandatory grouping."));
     if (expansion.rules.cornerSetupPolicy.setupRequired !== false || expansion.rules.cornerSetupPolicy.mandatoryGrouping !== false) issues.push(issue("SETUP_RULES", "CORNER_SETUP_POLICY_INVALID", "rules.cornerSetupPolicy", "Corner tasks must not receive setup or mandatory grouping."));
     return issues;
   }],
@@ -213,7 +247,13 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   ["TRANSPORT_RULE", (expansion) => expansion.rules.inTransport.minParticipantsPerGroup === 3 && expansion.rules.inTransport.minMinutesBetweenGroups === 30 && expansion.rules.outTransport === "creation_input_required" && expansion.tasks.filter((task) => task.type === "IN").every((task) => task.operationalKind === "transport_arrival" && task.transport?.direction === "arrival") && expansion.tasks.filter((task) => task.type === "OUT").every((task) => task.operationalKind === "transport_departure" && task.transport?.direction === "departure")
     ? []
     : [issue("TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED", "rules.inTransport", "Transport semantics or IN policy changed.")]],
-  ["TECHNICAL_CHAIN", (expansion) => expansion.technicalChains.flatMap((chain) => {
+  ["TECHNICAL_CHAIN", (expansion) => {
+    const expectedIds = ["technical.reality-eva-transfer-totales-post"];
+    const actualIds = expansion.technicalChains.map((chain) => chain.id).sort();
+    const setIssues: ValidationIssue[] = JSON.stringify(actualIds) === JSON.stringify(expectedIds)
+      ? []
+      : [issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_SET_INVALID", "technicalChains", "Technical chain set must contain the exact official continuous chain.")];
+    return [...setIssues, ...expansion.technicalChains.flatMap((chain) => {
     const chainTasks = chain.orderedTaskIds.map((id) => expansion.tasks.find((task) => task.id === id));
     const issues: ValidationIssue[] = [];
     if (chainTasks.some((task) => !task || task.participantId !== undefined || task.operationalKind !== "technical")) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", chain.id, "Technical chain member missing or attributed to participant."));
@@ -226,7 +266,50 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
       if (task && !task.dependencies.includes(previousId)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_DEPENDENCY_LOST", task.id, "Technical chain dependency lost."));
     }
     return issues;
-  })],
+  })];
+  }],
+  ["ITINERANT_UNITS", (expansion) => {
+    const issues: ValidationIssue[] = [];
+    const expectedUnitIds = CANONICAL_ITINERANT_UNITS.map((unit) => unit.id).sort();
+    const actualUnitIds = expansion.itinerantUnits.map((unit) => unit.id).sort();
+    if (JSON.stringify(actualUnitIds) !== JSON.stringify(expectedUnitIds)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", "itinerantUnits", "Itinerant units must be exactly A, B and combined."));
+    const resourceIds = new Set(expansion.resources.map((resource) => resource.id));
+    if (!resourceIds.has("son-2")) issues.push(issue("ITINERANT_UNITS", "ITINERANT_RESOURCE_SET_INVALID", "resources.son-2", "SON 2 must be a canonical resource."));
+    for (const unit of CANONICAL_ITINERANT_UNITS) {
+      const actual = expansion.itinerantUnits.find((entry) => entry.id === unit.id);
+      if (!actual || actual.memberResourceIds.join(",") !== unit.memberResourceIds.join(",") || actual.availability !== "creation_input_required") issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_SET_INVALID", unit.id, "Itinerant unit composition must match SPEC-08."));
+    }
+    const unitIds = new Set(expectedUnitIds);
+    for (const resource of expansion.resources) if (unitIds.has(resource.id)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_REGISTERED_AS_RESOURCE", resource.id, "Itinerant unit identity must not be a hard resource."));
+    const expectedOperationIds = CANONICAL_ITINERANT_OPERATIONS.map((operation) => operation.id).sort();
+    const actualOperationIds = expansion.itinerantOperations.map((operation) => operation.id).sort();
+    if (JSON.stringify(actualOperationIds) !== JSON.stringify(expectedOperationIds)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID", "itinerantOperations", "Itinerant operations must match the official SPEC-08 assignments exactly."));
+    const claimedTaskIds = new Map<string, string>();
+    for (const operation of expansion.itinerantOperations) {
+      const expected = CANONICAL_ITINERANT_OPERATIONS.find((entry) => entry.id === operation.id);
+      if (!expected || operation.itinerantUnitId !== expected.itinerantUnitId || operation.participantId !== expected.participantId || operation.memberResourceIds.join(",") !== expected.memberResourceIds.join(",") || operation.taskIds.join(",") !== expected.taskIds.join(",")) {
+        issues.push(issue("ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID", operation.id, "Itinerant operation identity, members or tasks changed."));
+      }
+      for (const taskIdValue of operation.taskIds) {
+        if (claimedTaskIds.has(taskIdValue)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_TASK_ASSIGNED_TO_MULTIPLE_UNITS", taskIdValue, "A task cannot belong to two itinerant units."));
+        claimedTaskIds.set(taskIdValue, operation.id);
+        const task = expansion.tasks.find((entry) => entry.id === taskIdValue);
+        if (!task) {
+          issues.push(issue("ITINERANT_UNITS", "ITINERANT_OPERATION_TASK_MISSING", taskIdValue, "Itinerant operation task is missing."));
+          continue;
+        }
+        if (task.itinerantUnitId !== operation.itinerantUnitId) issues.push(issue("ITINERANT_UNITS", "ITINERANT_TASK_UNIT_MISMATCH", task.id, "Task itinerantUnitId does not match explicit operation."));
+        for (const resourceId of operation.memberResourceIds) if (!task.requiredResourceIds.includes(resourceId)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_MEMBER_RESOURCE_LOST", task.id, `Task lost itinerant member resource ${resourceId}.`));
+      }
+    }
+    for (const task of expansion.tasks) {
+      for (const resourceId of task.requiredResourceIds) if (unitIds.has(resourceId)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_UNIT_USED_AS_HARD_RESOURCE", task.id, "Itinerant unit identity must not be in requiredResourceIds."));
+      const evaAllowed = task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA" || task.type.startsWith("TECH_");
+      if (task.requiredResourceIds.includes("eva") && !evaAllowed) issues.push(issue("ITINERANT_UNITS", "EVA_RESOURCE_ON_NON_EVA_TASK", task.id, "EVA must only be added to tasks that explicitly require EVA."));
+      if (task.itinerantUnitId && !claimedTaskIds.has(task.id)) issues.push(issue("ITINERANT_UNITS", "ITINERANT_TASK_WITHOUT_EXPLICIT_OPERATION", task.id, "Itinerant task must be assigned through an explicit operation descriptor."));
+    }
+    return issues;
+  }],
   ["KNOWN_RESOURCES", (expansion) => {
     const issues: ValidationIssue[] = [];
     const croma = expansion.tasks.filter((task) => task.type === "CROMA");
@@ -239,7 +322,9 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   }],
   ["NO_EDITORIAL_OR_SEED", (expansion) => {
     const serialized = JSON.stringify(expansion);
-    const forbidden = ["Cristina", "Moisés", "Ángel", "Julio", "José Javier", "Pere", "startPlanned", "endPlanned", "referenceOrder", "NO P.15", "guitarra", "vestuario"];
+    const forbidden = [
+      "Cristina Zuloaga", "Moisés Salazar Ramírez", "Ángel González", "Carmen María Saborido", "Julio Gómez", "Lina Isabel García-Salcedo", "Naomi Inés Carretero", "José Javier Cuenca", "Luis Belda", "Gisela Montserrat", "Linet Varela", "Marta Fornali", "Eva Martín Fernández", "Noa Marcos Díez", "Claudia Torrent", "Adrián Darrel", "Nela García", "Daniel Hernán Barres", "Pere Portero", "startPlanned", "endPlanned", "referenceOrder", "NO P.15", "guitarra", "vestuario"
+    ];
     const issues: ValidationIssue[] = [];
     for (const value of forbidden) if (serialized.includes(value)) issues.push(issue("NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK", value, `Forbidden value leaked: ${value}.`));
     if (expansion.tasks.some((task) => task.editorialTags.length > 0)) issues.push(issue("NO_EDITORIAL_OR_SEED", "EDITORIAL_CONSTRAINT_LEAK", "editorialTags", "Editorial data became a constraint."));

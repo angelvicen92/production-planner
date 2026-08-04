@@ -37,6 +37,8 @@ const shuffledTemplate = {
   assignments: [...template.assignments].reverse(),
   spaces: [...template.spaces].reverse(),
   resources: [...template.resources].reverse(),
+  itinerantUnits: [...template.itinerantUnits].reverse(),
+  itinerantOperations: [...template.itinerantOperations].reverse(),
 };
 const shuffledExpansion = expandCanonicalFullA2Template(shuffledTemplate);
 const mutationBlocked = (() => {
@@ -59,10 +61,28 @@ const evidence = {
   totalTaskCount: expansion.tasks.length,
   countsByType: expansion.countsByType,
   canonicalResources: expansion.resources,
+  itinerantUnits: expansion.itinerantUnits,
+  itinerantOperations: expansion.itinerantOperations,
+  unitIdNotHardResource: expansion.itinerantUnits.every((unit) => !expansion.resources.some((resource) => resource.id === unit.id) && expansion.tasks.every((task) => !task.requiredResourceIds.includes(unit.id))),
+  effectiveResourcesByItinerantOperation: expansion.itinerantOperations.map((operation) => ({
+    operationId: operation.id,
+    itinerantUnitId: operation.itinerantUnitId,
+    memberResourceIds: operation.memberResourceIds,
+    taskResources: operation.taskIds.map((taskId) => ({ taskId, requiredResourceIds: expansion.tasks.find((task) => task.id === taskId)?.requiredResourceIds ?? [] })),
+  })),
+  anchorEffectiveResources: expansion.anchoredOperations.map((operation) => ({
+    operationId: operation.id,
+    anchorTaskId: operation.anchorTaskId,
+    itinerantUnitId: operation.itinerantUnitId,
+    memberResourceIds: operation.memberResourceIds,
+    requiredResourceIds: expansion.tasks.find((task) => task.id === operation.anchorTaskId)?.requiredResourceIds ?? [],
+  })),
+  setupWithoutHardOrder: expansion.rules.setup.orderConstraint === "UNSPECIFIED" && expansion.rules.setup.oneBlockPerFamily === true,
   canonicalOperations: {
     anchoredOperations: expansion.anchoredOperations,
     jointOperations: expansion.jointOperations,
     technicalChains: expansion.technicalChains,
+    itinerantOperations: expansion.itinerantOperations,
   },
   invariants: validation.invariants,
   validationStatus: validation.status,
@@ -87,6 +107,24 @@ const evidence = {
   inputImmutable: {
     expansionMutationBlocked: mutationBlocked,
   },
+  negativeMutationCoverage: [
+    "anchoredOperations.empty",
+    "anchoredOperations.omitC05",
+    "jointOperations.empty",
+    "technicalChains.empty",
+    "itinerantUnits.empty",
+    "itinerantOperations.c05WrongUnit",
+    "itinerantResources.removeSon2",
+    "anchoredAnchor.removeCam3",
+    "requiredResourceIds.unitAsHardResource",
+    "resources.unitRegisteredAsResource",
+    "itinerantOperations.taskInTwoUnits",
+    "setup.sillonAsEstrellas",
+    "setup.cornerMusicFamily",
+    "setup.orderConstraintHardcoded",
+    "setup.oneBlockPerFamilyLost",
+    "counts.recomputedAgainstTasks",
+  ],
 };
 
 writeStable("docs/evidence/SPEC10-016-full-a2-canonical-template.json", JSON.stringify(evidence, null, 2));
@@ -105,6 +143,10 @@ writeStable("docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md", `# SPEC10-016 — Pl
 
 La plantilla anónima expresa ${evidence.participantCount} concursantes, ${evidence.contestantTaskCount} tareas de concursante, ${evidence.technicalTaskCount} tareas técnicas y ${evidence.totalTaskCount} tareas totales. La expansión conserva semántica operativa de transporte, comida individual, flujo principal, pruebas vocales, segmentos anclados, operaciones conjuntas, cadena técnica, espacios, recursos conocidos, setup, sincronización de Totales y transición de coaches sin horarios seed, locks ni nombres reales.
 
+## Unidades itinerantes A2
+
+Se conservan tres composiciones explícitas, sin registrarlas como recursos hard: **reality-unit-a** (cam-3, son-1), **reality-unit-b** (cam-4, son-2) y **reality-unit-combined** (cam-3, cam-4, son-1). Cada operación itinerante declara sus tareas y recursos miembros; los anchors C01/C05/C08 retienen esos recursos además del coach de Estudio 7. EVA se añade sólo a operaciones que la requieren explícitamente.
+
 ## Required creation inputs
 
 ${requiredRows}
@@ -116,6 +158,8 @@ Estos datos son inputs de creación del futuro día y no se seleccionan como sig
 Estado de representabilidad: **${representability.status}**. La puerta ejecutada devuelve **${gate.status}**, con executorCallCount=${gate.executorCallCount}, sin EngineInput parcial, sin preflight, sin adaptador y sin executePlannerNext.
 
 ${implementationRows}
+
+La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true, orderConstraint=UNSPECIFIED, reentry=FORBIDDEN y 10 minutos entre familias; no se impone Sillón antes que Estrellas.
 
 ## Siguiente blocker técnico razonado
 

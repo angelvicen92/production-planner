@@ -1,4 +1,4 @@
-import type { CanonicalFullA2Template, CanonicalParticipantAssignment, CanonicalResource, CanonicalSpace, CanonicalTaskTypeDefinition, TaskType } from "./types";
+import type { CanonicalFullA2Template, CanonicalItinerantOperation, CanonicalItinerantUnit, CanonicalParticipantAssignment, CanonicalResource, CanonicalSpace, CanonicalTaskTypeDefinition, TaskType } from "./types";
 import { CONTRACT_VERSION, PARTICIPANT_IDS } from "./types";
 
 export const EXPECTED_COUNTS_BY_TYPE: Readonly<Record<TaskType, number>> = Object.freeze({
@@ -100,14 +100,14 @@ export const TASK_TYPES: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>
   CORNER_INFLUENCER: { label: "Corner Influencer", duration: 10, spaceId: "p14-recursos", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   CORNER_MUSIC: { label: "Corner Music", duration: 10, spaceId: "p14-recursos", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   CORNER_INFLUENCER_MUSIC: { label: "Corner Influencer + Music", duration: 15, spaceId: "p14-recursos", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
-  REALITY_PLATO_ANTES: { label: "Reality Plató - antes", duration: 15, spaceId: "reality-plato", operationalKind: "anchored_segment", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_PLATO_DESPUES: { label: "Reality Plató - después", duration: 15, spaceId: "reality-plato", operationalKind: "anchored_segment", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_HALL: { label: "Reality Hall", duration: 30, spaceId: "reality-hall-p14", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_INFLUENCER: { label: "Reality Influencer", duration: 30, spaceId: "reality-influencer", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_MANZANO: { label: "Reality Manzano", duration: 30, spaceId: "reality-manzano", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_BUGGY: { label: "Reality Buggy", duration: 30, spaceId: "reality-buggy", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
-  REALITY_CONTROL_EVA: { label: "Reality Control con EVA", duration: 30, spaceId: "reality-control", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit", "eva"], blocksParticipant: true },
-  REALITY_CORNER_MUSIC: { label: "Reality Corner Music", duration: 30, spaceId: "reality-corner-music", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["reality-unit"], blocksParticipant: true },
+  REALITY_PLATO_ANTES: { label: "Reality Plató - antes", duration: 15, spaceId: "reality-plato", operationalKind: "anchored_segment", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_PLATO_DESPUES: { label: "Reality Plató - después", duration: 15, spaceId: "reality-plato", operationalKind: "anchored_segment", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_HALL: { label: "Reality Hall", duration: 30, spaceId: "reality-hall-p14", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_INFLUENCER: { label: "Reality Influencer", duration: 30, spaceId: "reality-influencer", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_MANZANO: { label: "Reality Manzano", duration: 30, spaceId: "reality-manzano", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_BUGGY: { label: "Reality Buggy", duration: 30, spaceId: "reality-buggy", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
+  REALITY_CONTROL_EVA: { label: "Reality Control con EVA", duration: 30, spaceId: "reality-control", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["eva"], blocksParticipant: true },
+  REALITY_CORNER_MUSIC: { label: "Reality Corner Music", duration: 30, spaceId: "reality-corner-music", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   ALFOMBRA_ROJA: { label: "Alfombra Roja", duration: 10, spaceId: "alfombra-roja", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   ALFOMBRA_ROJA_EVA: { label: "Alfombra Roja con EVA", duration: 15, spaceId: "alfombra-roja", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["eva"], blocksParticipant: true },
   ALFOMBRA_ROJA_CONJUNTA: { label: "Alfombra Roja conjunta", duration: 10, spaceId: "alfombra-roja", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
@@ -151,10 +151,32 @@ export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "creation_input_required" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "creation_input_required" },
   { id: "son-1", label: "SON 1", kind: "sound", availability: "creation_input_required" },
+  { id: "son-2", label: "SON 2", kind: "sound", availability: "creation_input_required" },
   { id: "eva", label: "EVA", kind: "presenter", availability: "creation_input_required" },
   { id: "coach-lucia", label: "Coach Lucía", kind: "coach", availability: "creation_input_required" },
   { id: "coach-jose-maria", label: "Coach José María", kind: "coach", availability: "creation_input_required" },
-  { id: "reality-unit", label: "Unidad Reality", kind: "technical_unit", availability: "creation_input_required" },
+]);
+
+
+export const CANONICAL_ITINERANT_UNITS: readonly CanonicalItinerantUnit[] = Object.freeze([
+  { id: "reality-unit-a", label: "Unidad Reality A", memberResourceIds: ["cam-3", "son-1"], availability: "creation_input_required" },
+  { id: "reality-unit-b", label: "Unidad Reality B", memberResourceIds: ["cam-4", "son-2"], availability: "creation_input_required" },
+  { id: "reality-unit-combined", label: "Unidad Reality combinada", memberResourceIds: ["cam-3", "cam-4", "son-1"], availability: "creation_input_required" },
+]);
+
+export const CANONICAL_ITINERANT_OPERATIONS: readonly CanonicalItinerantOperation[] = Object.freeze([
+  { id: "itinerant.reality-unit-a.C01.reality-plato", itinerantUnitId: "reality-unit-a", participantId: "C01", taskIds: ["C01.reality_plato_antes", "C01.ensayo_estudio_7", "C01.reality_plato_despues"], kind: "anchored", memberResourceIds: ["cam-3", "son-1"] },
+  { id: "itinerant.reality-unit-a.C09.reality-influencer", itinerantUnitId: "reality-unit-a", participantId: "C09", taskIds: ["C09.reality_influencer"], kind: "standalone", memberResourceIds: ["cam-3", "son-1"] },
+  { id: "itinerant.reality-unit-a.C08.reality-plato", itinerantUnitId: "reality-unit-a", participantId: "C08", taskIds: ["C08.reality_plato_antes", "C08.ensayo_estudio_7", "C08.reality_plato_despues"], kind: "anchored", memberResourceIds: ["cam-3", "son-1"] },
+  { id: "itinerant.reality-unit-a.C19.reality-corner-music", itinerantUnitId: "reality-unit-a", participantId: "C19", taskIds: ["C19.reality_corner_music"], kind: "standalone", memberResourceIds: ["cam-3", "son-1"] },
+  { id: "itinerant.reality-unit-b.C10.reality-manzano", itinerantUnitId: "reality-unit-b", participantId: "C10", taskIds: ["C10.reality_manzano"], kind: "standalone", memberResourceIds: ["cam-4", "son-2"] },
+  { id: "itinerant.reality-unit-b.C05.reality-plato", itinerantUnitId: "reality-unit-b", participantId: "C05", taskIds: ["C05.reality_plato_antes", "C05.ensayo_estudio_7", "C05.reality_plato_despues"], kind: "anchored", memberResourceIds: ["cam-4", "son-2"] },
+  { id: "itinerant.reality-unit-b.C17.reality-hall", itinerantUnitId: "reality-unit-b", participantId: "C17", taskIds: ["C17.reality_hall"], kind: "standalone", memberResourceIds: ["cam-4", "son-2"] },
+  { id: "itinerant.reality-unit-combined.C06.reality-hall", itinerantUnitId: "reality-unit-combined", participantId: "C06", taskIds: ["C06.reality_hall"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
+  { id: "itinerant.reality-unit-combined.C12.reality-control-eva", itinerantUnitId: "reality-unit-combined", participantId: "C12", taskIds: ["C12.reality_control_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
+  { id: "itinerant.reality-unit-combined.C11.reality-buggy", itinerantUnitId: "reality-unit-combined", participantId: "C11", taskIds: ["C11.reality_buggy"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
+  { id: "itinerant.reality-unit-combined.C04.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C04", taskIds: ["C04.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
+  { id: "itinerant.reality-unit-combined.C13.alfombra-roja-eva", itinerantUnitId: "reality-unit-combined", participantId: "C13", taskIds: ["C13.alfombra_roja_eva"], kind: "standalone", memberResourceIds: ["cam-3", "cam-4", "son-1"] },
 ]);
 
 function assignment(participantId: string): CanonicalParticipantAssignment {
@@ -184,11 +206,14 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
     taskTypes: TASK_TYPES,
     spaces: CANONICAL_SPACES,
     resources: CANONICAL_RESOURCES,
+    itinerantUnits: CANONICAL_ITINERANT_UNITS,
+    itinerantOperations: CANONICAL_ITINERANT_OPERATIONS,
     assignments: PARTICIPANT_IDS.map(assignment),
     requiredCreationInputs: [
       "daily_participant_availability",
       "daily_resource_availability",
       "daily_space_availability",
+      "daily_itinerant_unit_availability",
       "effective_day_window",
       "execution_date",
       "future_productive_ids",
@@ -207,7 +232,9 @@ export function createCanonicalFullA2Template(): CanonicalFullA2Template {
       },
       setup: {
         spaceId: "p15-estrellas-sillon",
-        familyOrder: ["sillon", "estrellas"],
+        families: ["sillon", "estrellas"],
+        oneBlockPerFamily: true,
+        orderConstraint: "UNSPECIFIED",
         reentry: "FORBIDDEN",
         preparationMinutesBetweenFamilies: 10,
       },

@@ -10,8 +10,8 @@
       "sha256": "c192c4b463c6078695bc274b17169bcb2d3395fb808988f1f406071231dd88f5"
     }
   ],
-  "manifestFingerprint": "ec8fe0b91bf3be4a4751bd6fa13c8ee16f2f5210ceed006510203e336fe8c858",
-  "expansionFingerprint": "a2985c43ce60b7153ea6ce3c9c90460c8222795bfbf8cec33789ffc6746c7cdd",
+  "manifestFingerprint": "78be2d84814efd013f0d1df731ad3d2d1f330591963abe335ba08c59ded07af4",
+  "expansionFingerprint": "1a7ddf8f4da921cbb559c4e92e758431200a6cf6a34048160578067339293ecf",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 3,
@@ -90,18 +90,527 @@
       "availability": "creation_input_required"
     },
     {
-      "id": "reality-unit",
-      "label": "Unidad Reality",
-      "kind": "technical_unit",
-      "availability": "creation_input_required"
-    },
-    {
       "id": "son-1",
       "label": "SON 1",
       "kind": "sound",
       "availability": "creation_input_required"
+    },
+    {
+      "id": "son-2",
+      "label": "SON 2",
+      "kind": "sound",
+      "availability": "creation_input_required"
     }
   ],
+  "itinerantUnits": [
+    {
+      "id": "reality-unit-a",
+      "label": "Unidad Reality A",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "reality-unit-b",
+      "label": "Unidad Reality B",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ],
+      "availability": "creation_input_required"
+    },
+    {
+      "id": "reality-unit-combined",
+      "label": "Unidad Reality combinada",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "availability": "creation_input_required"
+    }
+  ],
+  "itinerantOperations": [
+    {
+      "id": "itinerant.reality-unit-a.C01.reality-plato",
+      "itinerantUnitId": "reality-unit-a",
+      "participantId": "C01",
+      "taskIds": [
+        "C01.reality_plato_antes",
+        "C01.ensayo_estudio_7",
+        "C01.reality_plato_despues"
+      ],
+      "kind": "anchored",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-a.C08.reality-plato",
+      "itinerantUnitId": "reality-unit-a",
+      "participantId": "C08",
+      "taskIds": [
+        "C08.reality_plato_antes",
+        "C08.ensayo_estudio_7",
+        "C08.reality_plato_despues"
+      ],
+      "kind": "anchored",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-a.C09.reality-influencer",
+      "itinerantUnitId": "reality-unit-a",
+      "participantId": "C09",
+      "taskIds": [
+        "C09.reality_influencer"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-a.C19.reality-corner-music",
+      "itinerantUnitId": "reality-unit-a",
+      "participantId": "C19",
+      "taskIds": [
+        "C19.reality_corner_music"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-b.C05.reality-plato",
+      "itinerantUnitId": "reality-unit-b",
+      "participantId": "C05",
+      "taskIds": [
+        "C05.reality_plato_antes",
+        "C05.ensayo_estudio_7",
+        "C05.reality_plato_despues"
+      ],
+      "kind": "anchored",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-b.C10.reality-manzano",
+      "itinerantUnitId": "reality-unit-b",
+      "participantId": "C10",
+      "taskIds": [
+        "C10.reality_manzano"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-b.C17.reality-hall",
+      "itinerantUnitId": "reality-unit-b",
+      "participantId": "C17",
+      "taskIds": [
+        "C17.reality_hall"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "participantId": "C04",
+      "taskIds": [
+        "C04.alfombra_roja_eva"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-combined.C06.reality-hall",
+      "itinerantUnitId": "reality-unit-combined",
+      "participantId": "C06",
+      "taskIds": [
+        "C06.reality_hall"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-combined.C11.reality-buggy",
+      "itinerantUnitId": "reality-unit-combined",
+      "participantId": "C11",
+      "taskIds": [
+        "C11.reality_buggy"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-combined.C12.reality-control-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "participantId": "C12",
+      "taskIds": [
+        "C12.reality_control_eva"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ]
+    },
+    {
+      "id": "itinerant.reality-unit-combined.C13.alfombra-roja-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "participantId": "C13",
+      "taskIds": [
+        "C13.alfombra_roja_eva"
+      ],
+      "kind": "standalone",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ]
+    }
+  ],
+  "unitIdNotHardResource": true,
+  "effectiveResourcesByItinerantOperation": [
+    {
+      "operationId": "itinerant.reality-unit-a.C01.reality-plato",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C01.reality_plato_antes",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        },
+        {
+          "taskId": "C01.ensayo_estudio_7",
+          "requiredResourceIds": [
+            "cam-3",
+            "coach-lucia",
+            "son-1"
+          ]
+        },
+        {
+          "taskId": "C01.reality_plato_despues",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-a.C08.reality-plato",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C08.reality_plato_antes",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        },
+        {
+          "taskId": "C08.ensayo_estudio_7",
+          "requiredResourceIds": [
+            "cam-3",
+            "coach-jose-maria",
+            "son-1"
+          ]
+        },
+        {
+          "taskId": "C08.reality_plato_despues",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-a.C09.reality-influencer",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C09.reality_influencer",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-a.C19.reality-corner-music",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C19.reality_corner_music",
+          "requiredResourceIds": [
+            "cam-3",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-b.C05.reality-plato",
+      "itinerantUnitId": "reality-unit-b",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C05.reality_plato_antes",
+          "requiredResourceIds": [
+            "cam-4",
+            "son-2"
+          ]
+        },
+        {
+          "taskId": "C05.ensayo_estudio_7",
+          "requiredResourceIds": [
+            "cam-4",
+            "coach-jose-maria",
+            "son-2"
+          ]
+        },
+        {
+          "taskId": "C05.reality_plato_despues",
+          "requiredResourceIds": [
+            "cam-4",
+            "son-2"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-b.C10.reality-manzano",
+      "itinerantUnitId": "reality-unit-b",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C10.reality_manzano",
+          "requiredResourceIds": [
+            "cam-4",
+            "son-2"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-b.C17.reality-hall",
+      "itinerantUnitId": "reality-unit-b",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C17.reality_hall",
+          "requiredResourceIds": [
+            "cam-4",
+            "son-2"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C04.alfombra_roja_eva",
+          "requiredResourceIds": [
+            "cam-3",
+            "cam-4",
+            "eva",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-combined.C06.reality-hall",
+      "itinerantUnitId": "reality-unit-combined",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C06.reality_hall",
+          "requiredResourceIds": [
+            "cam-3",
+            "cam-4",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-combined.C11.reality-buggy",
+      "itinerantUnitId": "reality-unit-combined",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C11.reality_buggy",
+          "requiredResourceIds": [
+            "cam-3",
+            "cam-4",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-combined.C12.reality-control-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C12.reality_control_eva",
+          "requiredResourceIds": [
+            "cam-3",
+            "cam-4",
+            "eva",
+            "son-1"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "itinerant.reality-unit-combined.C13.alfombra-roja-eva",
+      "itinerantUnitId": "reality-unit-combined",
+      "memberResourceIds": [
+        "cam-3",
+        "cam-4",
+        "son-1"
+      ],
+      "taskResources": [
+        {
+          "taskId": "C13.alfombra_roja_eva",
+          "requiredResourceIds": [
+            "cam-3",
+            "cam-4",
+            "eva",
+            "son-1"
+          ]
+        }
+      ]
+    }
+  ],
+  "anchorEffectiveResources": [
+    {
+      "operationId": "anchored.reality-plato.C01",
+      "anchorTaskId": "C01.ensayo_estudio_7",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "requiredResourceIds": [
+        "cam-3",
+        "coach-lucia",
+        "son-1"
+      ]
+    },
+    {
+      "operationId": "anchored.reality-plato.C05",
+      "anchorTaskId": "C05.ensayo_estudio_7",
+      "itinerantUnitId": "reality-unit-b",
+      "memberResourceIds": [
+        "cam-4",
+        "son-2"
+      ],
+      "requiredResourceIds": [
+        "cam-4",
+        "coach-jose-maria",
+        "son-2"
+      ]
+    },
+    {
+      "operationId": "anchored.reality-plato.C08",
+      "anchorTaskId": "C08.ensayo_estudio_7",
+      "itinerantUnitId": "reality-unit-a",
+      "memberResourceIds": [
+        "cam-3",
+        "son-1"
+      ],
+      "requiredResourceIds": [
+        "cam-3",
+        "coach-jose-maria",
+        "son-1"
+      ]
+    }
+  ],
+  "setupWithoutHardOrder": true,
   "canonicalOperations": {
     "anchoredOperations": [
       {
@@ -121,6 +630,11 @@
           "C01.reality_plato_antes",
           "C01.ensayo_estudio_7",
           "C01.reality_plato_despues"
+        ],
+        "itinerantUnitId": "reality-unit-a",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
         ]
       },
       {
@@ -140,6 +654,11 @@
           "C05.reality_plato_antes",
           "C05.ensayo_estudio_7",
           "C05.reality_plato_despues"
+        ],
+        "itinerantUnitId": "reality-unit-b",
+        "memberResourceIds": [
+          "cam-4",
+          "son-2"
         ]
       },
       {
@@ -159,6 +678,11 @@
           "C08.reality_plato_antes",
           "C08.ensayo_estudio_7",
           "C08.reality_plato_despues"
+        ],
+        "itinerantUnitId": "reality-unit-a",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
         ]
       }
     ],
@@ -210,6 +734,175 @@
           "cam-4",
           "son-1",
           "eva"
+        ]
+      }
+    ],
+    "itinerantOperations": [
+      {
+        "id": "itinerant.reality-unit-a.C01.reality-plato",
+        "itinerantUnitId": "reality-unit-a",
+        "participantId": "C01",
+        "taskIds": [
+          "C01.reality_plato_antes",
+          "C01.ensayo_estudio_7",
+          "C01.reality_plato_despues"
+        ],
+        "kind": "anchored",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-a.C08.reality-plato",
+        "itinerantUnitId": "reality-unit-a",
+        "participantId": "C08",
+        "taskIds": [
+          "C08.reality_plato_antes",
+          "C08.ensayo_estudio_7",
+          "C08.reality_plato_despues"
+        ],
+        "kind": "anchored",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-a.C09.reality-influencer",
+        "itinerantUnitId": "reality-unit-a",
+        "participantId": "C09",
+        "taskIds": [
+          "C09.reality_influencer"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-a.C19.reality-corner-music",
+        "itinerantUnitId": "reality-unit-a",
+        "participantId": "C19",
+        "taskIds": [
+          "C19.reality_corner_music"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-b.C05.reality-plato",
+        "itinerantUnitId": "reality-unit-b",
+        "participantId": "C05",
+        "taskIds": [
+          "C05.reality_plato_antes",
+          "C05.ensayo_estudio_7",
+          "C05.reality_plato_despues"
+        ],
+        "kind": "anchored",
+        "memberResourceIds": [
+          "cam-4",
+          "son-2"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-b.C10.reality-manzano",
+        "itinerantUnitId": "reality-unit-b",
+        "participantId": "C10",
+        "taskIds": [
+          "C10.reality_manzano"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-4",
+          "son-2"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-b.C17.reality-hall",
+        "itinerantUnitId": "reality-unit-b",
+        "participantId": "C17",
+        "taskIds": [
+          "C17.reality_hall"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-4",
+          "son-2"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-combined.C04.alfombra-roja-eva",
+        "itinerantUnitId": "reality-unit-combined",
+        "participantId": "C04",
+        "taskIds": [
+          "C04.alfombra_roja_eva"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-combined.C06.reality-hall",
+        "itinerantUnitId": "reality-unit-combined",
+        "participantId": "C06",
+        "taskIds": [
+          "C06.reality_hall"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-combined.C11.reality-buggy",
+        "itinerantUnitId": "reality-unit-combined",
+        "participantId": "C11",
+        "taskIds": [
+          "C11.reality_buggy"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-combined.C12.reality-control-eva",
+        "itinerantUnitId": "reality-unit-combined",
+        "participantId": "C12",
+        "taskIds": [
+          "C12.reality_control_eva"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1"
+        ]
+      },
+      {
+        "id": "itinerant.reality-unit-combined.C13.alfombra-roja-eva",
+        "itinerantUnitId": "reality-unit-combined",
+        "participantId": "C13",
+        "taskIds": [
+          "C13.alfombra_roja_eva"
+        ],
+        "kind": "standalone",
+        "memberResourceIds": [
+          "cam-3",
+          "cam-4",
+          "son-1"
         ]
       }
     ]
@@ -335,6 +1028,13 @@
       "affectedCanonicalIds": []
     },
     {
+      "code": "ITINERANT_UNITS",
+      "passed": true,
+      "evaluated": true,
+      "issueCodes": [],
+      "affectedCanonicalIds": []
+    },
+    {
       "code": "KNOWN_RESOURCES",
       "passed": true,
       "evaluated": true,
@@ -352,6 +1052,7 @@
   "validationStatus": "VALID",
   "validationIssues": [],
   "requiredCreationInputs": [
+    "daily_itinerant_unit_availability",
     "daily_participant_availability",
     "daily_resource_availability",
     "daily_space_availability",
@@ -363,6 +1064,14 @@
   ],
   "representabilityStatus": "BLOCKED",
   "requiredCreationInputBlockers": [
+    {
+      "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
+      "layer": "SOURCE_CONFIGURATION",
+      "affectedRule": "daily_itinerant_unit_availability",
+      "canonicalIds": [],
+      "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+      "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+    },
     {
       "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
       "layer": "SOURCE_CONFIGURATION",
@@ -471,6 +1180,33 @@
       "implementationRank": 2
     },
     {
+      "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+      "layer": "PLANNER_NEXT",
+      "affectedRule": "orden flexible entre familias Sillón/Estrellas",
+      "canonicalIds": [
+        "C02.estrellas",
+        "C02.sillon",
+        "C05.estrellas",
+        "C05.sillon",
+        "C06.estrellas",
+        "C07.estrellas",
+        "C07.sillon",
+        "C09.estrellas",
+        "C09.sillon",
+        "C10.estrellas",
+        "C10.sillon",
+        "C11.sillon",
+        "C13.estrellas",
+        "C13.sillon",
+        "C15.sillon",
+        "C17.estrellas",
+        "C18.sillon"
+      ],
+      "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
+      "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
+      "implementationRank": 4
+    },
+    {
       "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
       "layer": "PLANNER_NEXT",
       "affectedRule": "sincronización de rondas Totales 1/Coreo",
@@ -497,7 +1233,7 @@
       ],
       "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
       "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-      "implementationRank": 4
+      "implementationRank": 5
     },
     {
       "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
@@ -566,13 +1302,23 @@
     "executed": true,
     "supported": true,
     "projectedGlobalResourceTransitionMinutes": 30,
-    "supportsSpecificCoachRouteTransition": false
+    "supportsSpecificCoachRouteTransition": false,
+    "problemHasRouteSpecificCoachTransition": false,
+    "coachResourcesHaveOriginDestinationRule": false
   },
   "representabilityGate": {
     "status": "REJECTED_BLOCKED",
     "analysis": {
       "status": "BLOCKED",
       "requiredCreationInputs": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_itinerant_unit_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
         {
           "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
           "layer": "SOURCE_CONFIGURATION",
@@ -681,6 +1427,33 @@
           "implementationRank": 2
         },
         {
+          "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "orden flexible entre familias Sillón/Estrellas",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
+          "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
+          "implementationRank": 4
+        },
+        {
           "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
           "affectedRule": "sincronización de rondas Totales 1/Coreo",
@@ -707,7 +1480,7 @@
           ],
           "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
           "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-          "implementationRank": 4
+          "implementationRank": 5
         },
         {
           "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
@@ -759,6 +1532,14 @@
         }
       ],
       "blockers": [
+        {
+          "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_ITINERANT_UNIT_AVAILABILITY",
+          "layer": "SOURCE_CONFIGURATION",
+          "affectedRule": "daily_itinerant_unit_availability",
+          "canonicalIds": [],
+          "operationalExplanation": "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
+          "semanticLoss": "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla."
+        },
         {
           "code": "SOURCE_CONFIGURATION_REQUIRED_DAILY_PARTICIPANT_AVAILABILITY",
           "layer": "SOURCE_CONFIGURATION",
@@ -865,6 +1646,33 @@
           "implementationRank": 2
         },
         {
+          "code": "PLANNER_NEXT_FLEXIBLE_SETUP_ORDER_UNSUPPORTED",
+          "layer": "PLANNER_NEXT",
+          "affectedRule": "orden flexible entre familias Sillón/Estrellas",
+          "canonicalIds": [
+            "C02.estrellas",
+            "C02.sillon",
+            "C05.estrellas",
+            "C05.sillon",
+            "C06.estrellas",
+            "C07.estrellas",
+            "C07.sillon",
+            "C09.estrellas",
+            "C09.sillon",
+            "C10.estrellas",
+            "C10.sillon",
+            "C11.sillon",
+            "C13.estrellas",
+            "C13.sillon",
+            "C15.sillon",
+            "C17.estrellas",
+            "C18.sillon"
+          ],
+          "operationalExplanation": "La fuente no fija si Sillón precede a Estrellas o al revés, mientras Space.setupPolicy exige familyOrder exacto para representar la transición de familias.",
+          "semanticLoss": "Elegir un orden convertiría el planning humano en restricción hard e impediría al motor evaluar ambos órdenes válidos.",
+          "implementationRank": 4
+        },
+        {
           "code": "PLANNER_NEXT_TOTALES_ROUND_SYNC_UNSUPPORTED",
           "layer": "PLANNER_NEXT",
           "affectedRule": "sincronización de rondas Totales 1/Coreo",
@@ -891,7 +1699,7 @@
           ],
           "operationalExplanation": "No existe contrato PlannerNextProblem equivalente para rondas simultáneas entre dos espacios independientes.",
           "semanticLoss": "Las dependencias impondrían precedencia, no sincronización de arranque entre salas.",
-          "implementationRank": 4
+          "implementationRank": 5
         },
         {
           "code": "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
@@ -960,7 +1768,9 @@
         "executed": true,
         "supported": true,
         "projectedGlobalResourceTransitionMinutes": 30,
-        "supportsSpecificCoachRouteTransition": false
+        "supportsSpecificCoachRouteTransition": false,
+        "problemHasRouteSpecificCoachTransition": false,
+        "coachResourcesHaveOriginDestinationRule": false
       }
     },
     "executorCallCount": 0,
@@ -976,10 +1786,28 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "a2985c43ce60b7153ea6ce3c9c90460c8222795bfbf8cec33789ffc6746c7cdd",
+    "shuffledExpansionFingerprint": "1a7ddf8f4da921cbb559c4e92e758431200a6cf6a34048160578067339293ecf",
     "matches": true
   },
   "inputImmutable": {
     "expansionMutationBlocked": true
-  }
+  },
+  "negativeMutationCoverage": [
+    "anchoredOperations.empty",
+    "anchoredOperations.omitC05",
+    "jointOperations.empty",
+    "technicalChains.empty",
+    "itinerantUnits.empty",
+    "itinerantOperations.c05WrongUnit",
+    "itinerantResources.removeSon2",
+    "anchoredAnchor.removeCam3",
+    "requiredResourceIds.unitAsHardResource",
+    "resources.unitRegisteredAsResource",
+    "itinerantOperations.taskInTwoUnits",
+    "setup.sillonAsEstrellas",
+    "setup.cornerMusicFamily",
+    "setup.orderConstraintHardcoded",
+    "setup.oneBlockPerFamilyLost",
+    "counts.recomputedAgainstTasks"
+  ]
 }
