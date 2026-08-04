@@ -1,0 +1,108 @@
+{
+  "benchmark": "SPEC10-014-fixed-resource-meals",
+  "executions": [
+    {
+      "policy": "COMPATIBILITY_PRESERVING",
+      "resourceId": "shared-meal-resource",
+      "interval": {
+        "start": 720,
+        "end": 780
+      },
+      "sourceWindows": [
+        {
+          "start": 540,
+          "end": 1020
+        }
+      ],
+      "adaptedWindows": [
+        {
+          "start": 540,
+          "end": 720
+        },
+        {
+          "start": 780,
+          "end": 1020
+        }
+      ],
+      "rejectedCandidate": {
+        "start": 750,
+        "end": 780
+      },
+      "acceptedCandidate": {
+        "start": 780,
+        "end": 810
+      },
+      "resourceTasks": [
+        {
+          "id": "before",
+          "start": 690,
+          "end": 720
+        },
+        {
+          "id": "after",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "presenceBlocks": 1,
+      "internalGapMinutes": 0,
+      "authorizedMealMinutes": 60,
+      "branches": 1576,
+      "complete": true,
+      "hardValid": true,
+      "inputImmutable": true
+    },
+    {
+      "policy": "EXACT_CONSTRUCTIVE",
+      "resourceId": "shared-meal-resource",
+      "interval": {
+        "start": 720,
+        "end": 780
+      },
+      "sourceWindows": [
+        {
+          "start": 540,
+          "end": 1020
+        }
+      ],
+      "adaptedWindows": [
+        {
+          "start": 540,
+          "end": 720
+        },
+        {
+          "start": 780,
+          "end": 1020
+        }
+      ],
+      "rejectedCandidate": {
+        "start": 750,
+        "end": 780
+      },
+      "acceptedCandidate": {
+        "start": 780,
+        "end": 810
+      },
+      "resourceTasks": [
+        {
+          "id": "before",
+          "start": 690,
+          "end": 720
+        },
+        {
+          "id": "after",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "presenceBlocks": 1,
+      "internalGapMinutes": 0,
+      "authorizedMealMinutes": 60,
+      "branches": 273,
+      "complete": true,
+      "hardValid": true,
+      "inputImmutable": true
+    }
+  ],
+  "deterministic": true
+}

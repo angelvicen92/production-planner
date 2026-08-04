@@ -10,6 +10,7 @@ import { resolveProjectedPlannerNextTaskResources } from "./projectedTaskResourc
 import { engineTimeToMinute, minuteToEngineTime } from "./engineTime";
 import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
+import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -78,6 +79,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
     })),
     ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`) } : {}),
+    ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
   };
 }
@@ -109,10 +111,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const linkedBreakIds=new Set(input.tasks.filter(task=>isFlexibleParticipantMealTask(input,task)&&task.breakId!=null).map(task=>String(task.breakId)));
   const participantMeals = resolveParticipantScopedMeals({ ...input, actualMeal: input.actualMeal&&linkedBreakIds.has(String(input.actualMeal.id))?undefined:input.actualMeal, protectedBreaks: input.protectedBreaks?.filter(entry=>!linkedBreakIds.has(String(entry.id))) });
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
+  const resourceMealResolution = resolveAssignedResourceMealBreaks(input);
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
   const assignmentByTaskId = new Map(assignments.map((entry) => [entry.taskId, entry]));
-  const activeTasks = input.tasks.filter((task) => task.status !== "cancelled" && !isFlexibleParticipantMealTask(input, task)).sort((a, b) => a.id - b.id);
+  const activeTasks = input.tasks.filter((task) => task.status !== "cancelled" && !isFlexibleParticipantMealTask(input, task) && task.breakKind !== "resource_meal").sort((a, b) => a.id - b.id);
   const coachByParticipantId = new Map(Object.entries(input.vocalCoachPlanResourceItemIdByContestantId ?? {}).map(([participantId, coachId]) => [Number(participantId), coachId]));
   const participantIdsByCoachId = new Map<number, readonly number[]>();
   for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(coachId, Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)));
@@ -121,9 +124,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     if (projection.status !== "REPRESENTABLE") throw new Error(`Preflight accepted unsupported resource projection for task ${task.id}`);
     return [task.id, projection] as const;
   }));
-  const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]));
+  const configuredCoachIds=new Set(Object.values(input.vocalCoachPlanResourceItemIdByContestantId??{}));
+  const mealResourceIds=new Set(resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]));
+  const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id))));
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(config.mainFlow.spaceId));
-  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]));
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
 
   const tasks: Task[] = activeTasks.map((source) => {
     const projection = projectionsByTaskId.get(source.id)!;
@@ -156,13 +161,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable resource ${id}`);
-    return { id: canonical("plan-resource", id), availability: [window(availability.effectiveWindow)], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
+    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])], presencePreference: "OFF" as const, transitionMinutes: config.resourceTransitionMinutes };
   });
   const coaches = [...coachResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable coach ${id}`);
-    return { id: canonical("plan-resource", id), availability: [window(availability.effectiveWindow)] };
+    return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])] };
   });
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {
     const availability = spatial.spacesById.get(id)?.effectiveWindow;
@@ -197,6 +202,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
     ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),
+    ...(resourceMealResolution.meals.length ? { resourceMeals: resourceMealResolution.meals.map(meal=>({id:canonical("break",meal.breakId),sourceTaskId:canonical("task",meal.sourceTaskId),resourceIds:meal.resourceIds.map(id=>canonical("plan-resource",id)),interval:{...meal.minuteInterval},status:meal.taskStatus as "pending"|"interrupted"|"done"|"in_progress"})) } : {}),
     ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),
   };

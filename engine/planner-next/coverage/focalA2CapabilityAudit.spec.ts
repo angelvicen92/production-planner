@@ -93,7 +93,7 @@ test("pilot 134: flexible participant meal task executes under both policies", (
 
 test("pilot 135: resource meal executes and reports break scope", () => {
   const probe = probeById().get("meal-resource")!;
-  assert.deepEqual(probe.reasonCodes, ["UNSUPPORTED_BREAK_SCOPE"]);
+  assert.deepEqual(probe.reasonCodes, []);
   assert.equal(probe.observations.every((entry) => entry.pass), true);
 });
 
@@ -114,11 +114,11 @@ test("scoped meal observations read mutable windows and exact identities from ex
 
   const resource = indexProbeObservations([runScopedMealProbe("resource")]);
   const changedResource = indexProbeObservations([runScopedMealProbe("resource", { start: "16:05", end: "16:35", resourceId: 504 })]);
-  assert.deepEqual(resource.get("meal.resource.window")?.observed, { start: "15:00", end: "15:30" });
-  assert.deepEqual(changedResource.get("meal.resource.window")?.observed, { start: "16:05", end: "16:35" });
-  assert.equal(resource.get("meal.resource.identity")?.observed, 503);
-  assert.equal(changedResource.get("meal.resource.identity")?.observed, 504);
-  assert.equal(changedResource.get("meal.resource.entity")?.observed, "105");
+  assert.deepEqual(resource.get("meal.resource.window")?.observed, { start: 900, end: 930 });
+  assert.deepEqual(changedResource.get("meal.resource.window")?.observed, { start: 965, end: 995 });
+  assert.equal(resource.get("meal.resource.identity")?.observed, "task:106");
+  assert.equal(changedResource.get("meal.resource.identity")?.observed, "task:106");
+  assert.equal(changedResource.get("meal.resource.entity")?.observed, "break:135");
 
   const itinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit")]);
   const changedItinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit", { start: "16:10", end: "16:40", itinerantTeamId: 8 })]);
@@ -127,7 +127,8 @@ test("scoped meal observations read mutable windows and exact identities from ex
   assert.equal(changedItinerant.get("meal.itinerant-unit.identity")?.observed, 8);
   assert.equal(changedItinerant.get("meal.itinerant-unit.entity")?.observed, "unit-meal");
   assert.deepEqual(runScopedMealProbe("participant").reasonCodes, []);
-  for (const probe of [runScopedMealProbe("resource"), runScopedMealProbe("itinerant-unit")]) assert.ok(probe.reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+  assert.deepEqual(runScopedMealProbe("resource").reasonCodes, []);
+  assert.ok(runScopedMealProbe("itinerant-unit").reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
 });
 
 test("pilot source assertions use exact official anchors and limited A2 claims", () => {
@@ -200,7 +201,8 @@ test("meal classification comes only from executed probe observations", () => {
   assert.doesNotMatch(registrySource, /UNSUPPORTED_BREAK_SCOPE|\[134\s*,\s*135\s*,\s*136\]/);
   const audit = buildFocalA2CapabilityAudit();
   assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 134)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
-  for (const id of [135, 136]) assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === id)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
+  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 135)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
+  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 136)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
 });
 
 test("probe mutation or missing selector degrades capability", () => {

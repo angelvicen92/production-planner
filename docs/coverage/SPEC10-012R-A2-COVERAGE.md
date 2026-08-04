@@ -9,10 +9,10 @@ PR #616 y la primera revisión de este PR aportaron andamiaje provisional, pero 
 - Capacidades auditadas: **12, 13, 14, 16, 18, 19, 20, 41, 120, 121, 122, 123, 134, 135, 136**.
 - Bindings literales: **15**.
 - Source assertions revisadas: **26**.
-- Probe observations ejecutadas: **58**.
+- Probe observations ejecutadas: **60**.
 - Test assertions: **15**.
 - Benchmark assertions: **15**.
-- Resultados de assertions: `{"PASS":112,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
+- Resultados de assertions: `{"PASS":114,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
 
 Las 15 test references sólo demuestran que existe la definición exacta del test; la ejecución se informa separadamente en la validación local. Los probes y benchmark assertions son la Evidence ejecutable principal.
 
@@ -54,9 +54,9 @@ Capacidades visibles en A2: **120, 123, 134**.
 - `NOT_AUDITED`: **146**.
 - Fases de producto: **162, 163, 164, 165, 166, 167**.
 - Requisitos: `{"REQUIRED":15,"NOT_REQUIRED":0,"UNRESOLVED":152}`.
-- Estados: `{"EVIDENCED_SUPPORTED":11,"CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE":0,"PARTIALLY_SUPPORTED":2,"EXPLICITLY_UNSUPPORTED":2,"CONTRACT_GAP":0,"SOURCE_AMBIGUOUS":0,"NOT_AUDITED":146,"PRODUCT_PHASE_NOT_IMPLEMENTED":6}`.
+- Estados: `{"EVIDENCED_SUPPORTED":12,"CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE":0,"PARTIALLY_SUPPORTED":2,"EXPLICITLY_UNSUPPORTED":1,"CONTRACT_GAP":0,"SOURCE_AMBIGUOUS":0,"NOT_AUDITED":146,"PRODUCT_PHASE_NOT_IMPLEMENTED":6}`.
 - Familias piloto: `{"EVIDENCED_SUPPORTED":2,"PARTIALLY_SUPPORTED":3}`.
-- Recomendación: **IMPLEMENT_CAPABILITY**, capacidad **135** — Implement the demonstrated required blocker: resource-scoped meal.
+- Recomendación: **IMPLEMENT_CAPABILITY**, capacidad **136** — Implement the demonstrated required blocker: unit-scoped meal.
 
 ### Estados piloto
 
@@ -73,7 +73,7 @@ Capacidades visibles en A2: **120, 123, 134**.
 - 122: `EVIDENCED_SUPPORTED`.
 - 123: `PARTIALLY_SUPPORTED`.
 - 134: `EVIDENCED_SUPPORTED`.
-- 135: `EXPLICITLY_UNSUPPORTED`.
+- 135: `EVIDENCED_SUPPORTED`.
 - 136: `EXPLICITLY_UNSUPPORTED`.
 
 La capacidad 121 usa frontera representativa **PLANNER_LAYER**; no se atribuye al boundary EngineInput.
@@ -81,13 +81,13 @@ La capacidad 121 usa frontera representativa **PLANNER_LAYER**; no se atribuye a
 ### Comidas observadas desde el input ejecutado
 
 - meal-participant: scope=`"participant:201"`, entity=`"participant-meal:106"`, identity=`"task:106"`, window=`{"start":900,"end":930}`, reasons=`[]`.
-- meal-resource: scope=`"resource_meal"`, entity=`"105"`, identity=`503`, window=`{"start":"15:00","end":"15:30"}`, reasons=`["UNSUPPORTED_BREAK_SCOPE"]`.
+- meal-resource: scope=`["plan-resource:503"]`, entity=`"break:135"`, identity=`"task:106"`, window=`{"start":900,"end":930}`, reasons=`[]`.
 - meal-itinerant-unit: scope=`"itinerant-team"`, entity=`"unit-meal"`, identity=`7`, window=`{"start":"15:00","end":"15:30"}`, reasons=`["UNSUPPORTED_BREAK_SCOPE"]`.
 
-Ranking evaluado: `[{"capabilityId":135,"capability":"resource-scoped meal","ranking":[-1,0,135]},{"capabilityId":136,"capability":"unit-scoped meal","ranking":[-1,0,136]}]`. Decision trace: `["collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence","evaluate ranked candidates: resource-scoped meal, unit-scoped meal","rank higher A2 visibility before official-only impact","prefer directly observed rejection over inferred contract risk","select resource-scoped meal from the resulting deterministic order"]`.
+Ranking evaluado: `[{"capabilityId":136,"capability":"unit-scoped meal","ranking":[-1,0,136]}]`. Decision trace: `["collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence","evaluate ranked candidates: unit-scoped meal","rank higher A2 visibility before official-only impact","prefer directly observed rejection over inferred contract risk","select unit-scoped meal from the resulting deterministic order"]`.
 
 Todo lo que no pertenece al piloto queda sin binding y `NOT_AUDITED / AUDIT`, salvo 162–167 como `PRODUCT_PHASE_NOT_IMPLEMENTED / PRODUCT`. No se auditan aquí vocal, main, Reality, joint tasks, espacios ni validación completa. La ampliación será incremental.
 
 ## Focal y límites
 
-Los datos Focal se leen de `planner-next-focal-a2-itinerant-spec08-foundation-v4.json`: `{"status":"FOCAL_A2_SPEC08_MAIN_ANCHORED_ACCOMPANIMENT_ACCEPTED","scenarioCount":33,"accepted":true,"complete":true,"hardValid":true,"plannedTaskCount":53,"unplannedTaskCount":0,"branchesExplored":28432,"maxBranchExpansions":300000,"humanScheduleUsedAsSeed":false,"anchoredAccompanimentPlannedCount":3,"anchoredAccompanimentScheduledSegmentCount":6,"fallbackUsed":false}`. No se copian expectativas como observaciones. Este PR sólo modifica tooling, Evidence y documentación; no implementa capacidades ni cambia producción.
+Los datos Focal se leen de `planner-next-focal-a2-itinerant-spec08-foundation-v4.json`: `{"status":"FOCAL_A2_SPEC08_MAIN_ANCHORED_ACCOMPANIMENT_ACCEPTED","scenarioCount":33,"accepted":true,"complete":true,"hardValid":true,"plannedTaskCount":53,"unplannedTaskCount":0,"branchesExplored":28432,"maxBranchExpansions":300000,"humanScheduleUsedAsSeed":false,"anchoredAccompanimentPlannedCount":3,"anchoredAccompanimentScheduledSegmentCount":6,"fallbackUsed":false}`. No se copian expectativas como observaciones. La capacidad 135 implementa únicamente comidas fijas por recurso; no amplía los demás scopes ni cambia DB, UI o API.

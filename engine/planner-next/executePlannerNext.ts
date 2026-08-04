@@ -8,12 +8,13 @@ import {
   resolvePlannerSearchPolicy,
   type PlannerSearchPolicyResolution,
 } from "./searchPolicy";
-import type { ScheduledParticipantMeal, ScheduledTask } from "./contracts";
+import type { ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledTask } from "./contracts";
 
-function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[] } {
-  if (!result.complete) return { ...result, scheduledTasks: [], ...( "scheduledSetupPreparations" in result ? { scheduledSetupPreparations: [] } : {}), scheduledSpaceMeals: [], scheduledParticipantMeals: [] };
+function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[]; scheduledResourceMeals?:ScheduledResourceMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[];scheduledResourceMeals:ScheduledResourceMeal[] } {
+  if (!result.complete) return { ...result, scheduledTasks: [], ...( "scheduledSetupPreparations" in result ? { scheduledSetupPreparations: [] } : {}), scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[] };
   if ((problem.participantMeals?.length ?? 0) > 0 && !result.scheduledParticipantMeals) throw new Error("Constructive search omitted the accepted participant-meal witness");
-  return { ...result, scheduledParticipantMeals: result.scheduledParticipantMeals ?? [] };
+  const scheduledResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+  return { ...result, scheduledParticipantMeals: result.scheduledParticipantMeals ?? [],scheduledResourceMeals };
 }
 
 export type PlannerNextExecution =

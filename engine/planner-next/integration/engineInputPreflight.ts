@@ -8,6 +8,7 @@ import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./plannerNextCapabilit
 import { resolveProjectedPlannerNextTaskResources, type ProjectedPlannerNextTaskResources } from "./projectedTaskResources";
 import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
+import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -39,6 +40,8 @@ export type EngineInputPreflightReasonCode =
   | "MISSING_TRANSITION_CONFIGURATION"
   | "PLAN_ID_MISMATCH"
   | "PARTICIPANT_MEAL_IDENTITY_CONFLICT"
+  | "RESOURCE_MEAL_IDENTITY_CONFLICT"
+  | "UNREPRESENTABLE_RESOURCE_BREAK"
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
   | "PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL"
@@ -407,6 +410,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const participantsRequiringAvailability = new Set<string>();
   const flexibleParticipantMealTaskIds = new Set(input.tasks.filter((task) => isFlexibleParticipantMealTask(input, task)).map((task) => task.id));
   const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
+  const resourceMealTaskIds = new Set(input.tasks.filter(task=>task.breakKind==="resource_meal").map(task=>task.id));
+  const resourceMeals = resolveAssignedResourceMealBreaks(input);
 
   const addIssue = (
     code: EngineInputPreflightReasonCode,
@@ -714,7 +719,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const path = `tasks.${task.id}`;
     if (task.planId !== input.planId) addIssue("PLAN_ID_MISMATCH", "task", task.id, `${path}.planId`, "Task belongs to another plan.");
     if (!validStatuses.has(task.status)) addIssue("UNSUPPORTED_TASK_STATUS", "task", task.id, `${path}.status`, "Unknown task status.");
-    if (task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id)) {
+    if (task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id) && !resourceMealTaskIds.has(task.id)) {
       const plannerNextKind = (task as unknown as Record<string, unknown>).plannerNextKind;
       const recognizedKind = typeof plannerNextKind === "string"
         && plannerNextTaskKinds.some((allowed) => allowed === plannerNextKind);
@@ -741,7 +746,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
     if (task.status === "pending" || task.status === "interrupted") {
       if (task.startPlanned != null || task.endPlanned != null) pendingPlanningDiscardCount++;
-      const effectiveDuration = task.durationOverrideMin ?? (flexibleParticipantMealTaskIds.has(task.id) ? input.contestantMealDurationMinutes : undefined);
+      const effectiveDuration = task.durationOverrideMin ?? (flexibleParticipantMealTaskIds.has(task.id) ? input.contestantMealDurationMinutes : resourceMealTaskIds.has(task.id)?0:undefined);
       if (effectiveDuration == null) {
         missingDurationTaskCount++;
         addIssue("MISSING_TASK_DURATION", "task", task.id, `${path}.durationOverrideMin`, "Authoritative duration is absent.");
@@ -829,6 +834,13 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
   for (const task of input.tasks) {
     const path = `tasks.${task.id}`;
+    if(resourceMealTaskIds.has(task.id)){
+      const meal=resourceMeals.meals.find(entry=>entry.sourceTaskId===task.id);
+      if(task.status!=="cancelled"&&meal?.status!=="SUPPORTED") addIssue(meal?.defects.includes("INVALID_ID")?"RESOURCE_MEAL_IDENTITY_CONFLICT":"UNREPRESENTABLE_RESOURCE_BREAK","task",task.id,`${path}.breakContract`,"Fixed resource meal is not exactly representable.",{defects:meal?.defects??["INVALID_TIME"]});
+      if(task.status!=="cancelled")for(const id of task.assignedResourceIds??[]){resourceAssignmentReferenceCount++;if(!planResourceIds.has(String(id)))missingResource("task",task.id,`${path}.assignedResourceIds`,id,"plan-resource");}
+      if(meal?.status==="SUPPORTED")for(const protectedTask of input.tasks.filter(candidate=>candidate.id!==task.id&&(candidate.status==="done"||candidate.status==="in_progress"))){const fixed=resolveEffectiveTaskFixedInterval(protectedTask,input.locks);if(fixed.status!=="EXACT")continue;const interval={start:engineTimeToMinute(fixed.interval.start),end:engineTimeToMinute(fixed.interval.end)};const shared=(protectedTask.assignedResourceIds??[]).filter(id=>meal.resourceIds.includes(id));if(shared.length&&interval.start<meal.minuteInterval.end&&meal.minuteInterval.start<interval.end)addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE","task",protectedTask.id,`${path}.protectedTaskConflict`,"A fixed resource meal overlaps a protected task using the same resource.",{resourceIds:shared,mealTaskId:task.id,protectedTaskId:protectedTask.id,mealInterval:meal.minuteInterval,protectedTaskInterval:interval});}
+      continue;
+    }
     if (flexibleParticipantMealTaskIds.has(task.id)) {
       const hardResources = (task.assignedResourceIds?.length ?? 0) > 0 || Object.keys(task.resourceRequirements?.byItem ?? {}).length > 0 || Object.keys(task.resourceRequirements?.byType ?? {}).length > 0 || (task.resourceRequirements?.anyOf?.length ?? 0) > 0;
       if (hardResources || task.spaceId != null || task.blocksSpace === true || task.mealOccupiesSpace === true) addIssue("UNREPRESENTABLE_PARTICIPANT_MEAL_TASK", "task", task.id, `${path}.participantMealChannels`, "Participant meal must not consume space or resources.", { spaceId: task.spaceId ?? null, assignedResourceIds: task.assignedResourceIds ?? [], hardResources });
@@ -977,7 +989,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     requiredSpaces.set(spaceId, tasks);
   };
   input.tasks.filter((task) => task.status !== "cancelled").forEach((task) => {
-    if (flexibleParticipantMealTaskIds.has(task.id)) return;
+    if (flexibleParticipantMealTaskIds.has(task.id) || resourceMealTaskIds.has(task.id)) return;
     if (isPositiveInteger(task.spaceId)) {
       requireSpace(task.spaceId, task.id);
       return;
@@ -1078,7 +1090,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const coachByParticipantId = new Map(coachMappingEntries
     .filter(([participantId, coachId]) => /^[1-9]\d*$/.test(participantId) && isPositiveInteger(coachId))
     .map(([participantId, coachId]) => [Number(participantId), coachId as number]));
-  const active = input.tasks.filter((task) => task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id));
+  const active = input.tasks.filter((task) => task.status !== "cancelled" && !flexibleParticipantMealTaskIds.has(task.id) && !resourceMealTaskIds.has(task.id));
   const participantIdsByCoachId = new Map<number, readonly number[]>();
   for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(
     coachId,
@@ -1302,7 +1314,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const breakConfigured = task.breakId != null || task.breakKind != null || task.mealOccupiesSpace != null
       || task.operationalRole === "meal_break_placeholder" || task.operationalRole === "space_break_placeholder"
       || task.operationalRole === "global_break_placeholder";
-    if (breakConfigured && !flexibleParticipantMealTaskIds.has(task.id)) addIssue("UNSUPPORTED_BREAK_SCOPE", "task", task.id, `tasks.${task.id}.breakContract`, "Task break/meal semantics have no exact Planner Next task mapping.", {
+    if (breakConfigured && !flexibleParticipantMealTaskIds.has(task.id) && !resourceMealTaskIds.has(task.id)) addIssue("UNSUPPORTED_BREAK_SCOPE", "task", task.id, `tasks.${task.id}.breakContract`, "Task break/meal semantics have no exact Planner Next task mapping.", {
       breakId: task.breakId,
       breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace,

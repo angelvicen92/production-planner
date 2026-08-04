@@ -433,7 +433,8 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       presence[id] = participantPresenceSpan(id, ordered);
     }
     const values = Object.values(presence);
-    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered, meals);
+    const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered, meals,fixedResourceMeals);
     const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const secondaryStartById: Record<string, number | null> = {}, secondaryEndById: Record<string, number | null> = {}, secondaryGapsById: Record<string, number> = {}, secondaryBlocksById: Record<string, number> = {};

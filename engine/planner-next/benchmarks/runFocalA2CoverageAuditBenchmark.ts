@@ -72,7 +72,7 @@ Todo lo que no pertenece al piloto queda sin binding y \`NOT_AUDITED / AUDIT\`, 
 
 ## Focal y límites
 
-Los datos Focal se leen de \`${audit.focalEvidence.file}\`: \`${JSON.stringify(audit.focalEvidence.observations)}\`. No se copian expectativas como observaciones. Este PR sólo modifica tooling, Evidence y documentación; no implementa capacidades ni cambia producción.
+Los datos Focal se leen de \`${audit.focalEvidence.file}\`: \`${JSON.stringify(audit.focalEvidence.observations)}\`. No se copian expectativas como observaciones. La capacidad 135 implementa únicamente comidas fijas por recurso; no amplía los demás scopes ni cambia DB, UI o API.
 `);
   return { bytes: Buffer.byteLength(json), sha256: createHash("sha256").update(json).digest("hex") };
 }

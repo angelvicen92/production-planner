@@ -4,6 +4,7 @@ import type {
   ScheduledSetupPreparation,
   ScheduledSpaceMeal,
   ScheduledParticipantMeal,
+  ScheduledResourceMeal,
   ScheduledTask,
   Space,
   Resource,
@@ -146,6 +147,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if ((meal.status==="pending"||meal.status==="interrupted")&&meal.fixedInterval) reasons.add("FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL");
     if (meal.fixedInterval && (invalidWindow(meal.fixedInterval, day) || meal.fixedInterval.end - meal.fixedInterval.start !== meal.duration || meal.fixedInterval.start < meal.window.start || meal.fixedInterval.end > meal.window.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
   }
+  const resourceMeals=Array.isArray(problem.resourceMeals)?problem.resourceMeals:[];
+  if(hasDuplicateIds(resourceMeals)||new Set(resourceMeals.map(meal=>meal.sourceTaskId)).size!==resourceMeals.length)reasons.add("RESOURCE_MEAL_IDENTITY_CONFLICT");
+  for(const meal of resourceMeals){if(typeof meal.id!=="string"||!meal.id||typeof meal.sourceTaskId!=="string"||!meal.sourceTaskId||!Array.isArray(meal.resourceIds)||meal.resourceIds.length===0||new Set(meal.resourceIds).size!==meal.resourceIds.length||meal.resourceIds.some(id=>!resourceIds.has(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(!["pending","interrupted","done","in_progress"].includes(meal.status))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
+  for(let i=0;i<resourceMeals.length;i++)for(let j=i+1;j<resourceMeals.length;j++){const a=resourceMeals[i]!,b=resourceMeals[j]!;if(a.interval.start<b.interval.end&&b.interval.start<a.interval.end&&a.resourceIds.some(id=>b.resourceIds.includes(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
     if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Math.ceil((w!.start as number)/5)*5+duration<=(w!.end as number);const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId){if(!mainFlowMealAligned(problem))reasons.add("MAIN_FLOW_MEAL_ALIGNMENT_INVALID");if(space.setupPolicy!==undefined||space.secondaryContinuity!==undefined&&space.secondaryContinuity!=="OFF")reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="main"||!t.participantId||!t.coachId||!t.blockKey))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}else{if(space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="auxiliary"||t.jointGroupId!==undefined||t.setupFamilyId!==undefined||!Array.isArray(t.dependencies)||t.dependencies.length>0||t.coachId!==undefined)||(space.secondaryContinuity==="REQUIRED"&&own.length<2))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}}
@@ -267,7 +272,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = []): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals?: ScheduledResourceMeal[]): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -284,6 +289,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let technicalChain = 0;
   let spaceMeal = 0;
   let participantMeal = 0;
+  let resourceMeal = 0;
+  const publishedResourceMeals=resourceMeals??(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -499,6 +506,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for (const expected of expectedParticipantMeals.values()) if (actualCounts.get(expected.sourceTaskId) !== 1) participantMeal += 1;
   const points = participantMeals.flatMap((meal) => [{ minute: meal.start, delta: 1 }, { minute: meal.end, delta: -1 }]).sort((a,b)=>a.minute-b.minute||a.delta-b.delta);
   let concurrent=0;for(const point of points){concurrent+=point.delta;if(concurrent>(problem.participantMealCapacity?.maxSimultaneous??0)){participantMeal+=1;break;}}
+  const expectedResourceMeals=problem.resourceMeals??[];
+  const key=(meal:{id:string;sourceTaskId:string;resourceIds:string[];start:number;end:number;duration:number})=>JSON.stringify({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds].sort(),start:meal.start,end:meal.end,duration:meal.duration});
+  const expectedKeys=expectedResourceMeals.map(meal=>key({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:meal.resourceIds,start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+  const actualKeys=publishedResourceMeals.map(key);resourceMeal+=expectedKeys.filter((value,index)=>actualKeys.filter(x=>x===value).length!==1||expectedKeys.indexOf(value)!==index).length;resourceMeal+=actualKeys.filter(value=>!expectedKeys.includes(value)).length;
+  for(const meal of publishedResourceMeals)for(const task of scheduled)if(task.start<meal.end&&meal.start<task.end&&((task.requiredResourceIds??[]).some(id=>meal.resourceIds.includes(id))||(task.coachId!==undefined&&meal.resourceIds.includes(task.coachId))))resourceMeal++;
 
   let anchoredAccompaniment=0;
   for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));}if(invalid)anchoredAccompaniment+=1;}
@@ -523,9 +535,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (mainFlowMeal) reasonCodes.push("MAIN_FLOW_MEAL_VIOLATION");
   if (anchoredAccompaniment) reasonCodes.push("ANCHORED_ACCOMPANIMENT_VIOLATION");
   if (participantMeal) reasonCodes.push("PARTICIPANT_MEAL_VIOLATION");
+  if (resourceMeal) reasonCodes.push("RESOURCE_MEAL_VIOLATION");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
-    const presence = evaluateResourcePresence(resource, scheduled, meals);
+    const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals);
     if (!presence.requiredPolicySatisfied) reasonCodes.push(`RESOURCE_REQUIRED_PRESENCE_VIOLATION:${resource.id}`);
   }
   return {
@@ -549,6 +562,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     mainFlowMealViolationCount:mainFlowMeal,
     anchoredAccompanimentViolationCount:anchoredAccompaniment,
     participantMealViolationCount: participantMeal,
+    resourceMealViolationCount: resourceMeal,
     reasonCodes: reasonCodes.sort(),
   };
 }
