@@ -4,8 +4,9 @@ import { requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey } from "./jointTasks";
 import { canPlaceSpaceMeal, pendingSpaceMealIds, spaceMealPotentialStarts } from "./spaceMeals";
 import { generateTechnicalChainCandidates, getTechnicalChains, technicalChainWorkItemKey } from "./technicalChains";
+import { assessParticipantMealFutureFeasibility } from "./participantMeals";
 
-export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space" | "technical-chain" | "space-meal"; alternativeCount: number; feasible: boolean }
+export interface FutureWorkItemAssessment { key: string; kind: "task" | "joint" | "space" | "technical-chain" | "space-meal" | "participant-meals"; alternativeCount: number; feasible: boolean; blockingMealTaskIds?: string[]; capacity?: number; branchesConsumed?: number; exhausted?: boolean; reasonCodes?: string[] }
 export interface FutureFeasibilityAssessment { feasible: boolean; blockingWorkItemKeys: string[]; minimumAlternativeCount: number; totalAlternativeCount: number; assessments: FutureWorkItemAssessment[]; branchesConsumed: number; exhausted: boolean }
 export interface FutureBudget { remaining: number }
 export type BlockProbe = (tasks: Task[], placed: ScheduledTask[], budget: FutureBudget, limit: number) => { count: number; exhausted: boolean };
@@ -43,6 +44,11 @@ export function assessFutureFeasibility(problem: PlannerNextProblem, placed: Sch
     assessments.push({ key: `space:${spaceId}`, kind: "space", alternativeCount: probe.count, feasible: probe.count > 0 });
   }
   for(const spaceId of pendingSpaceMealIds(problem,scheduledSpaceMeals)){let count=0;for(const start of spaceMealPotentialStarts(problem,spaceId)){if(budget.remaining===0)return result(assessments,before,budget,true);budget.remaining-=1;if(canPlaceSpaceMeal(problem,spaceId,start,placed,scheduledSpaceMeals)){count+=1;if(count>=problem.budget.bestK)break}}assessments.push({key:`meal:${spaceId}`,kind:"space-meal",alternativeCount:count,feasible:count>0});}
+  if ((problem.participantMeals?.length ?? 0) > 0) {
+    const witness = assessParticipantMealFutureFeasibility(problem, placed, budget, "PROBE");
+    assessments.push({ key: "participant-meals", kind: "participant-meals", alternativeCount: Object.values(witness.candidateCountByTaskId).reduce((sum,count)=>sum+count,0), feasible: witness.complete, blockingMealTaskIds: [...witness.blockingMealTaskIds], capacity: problem.participantMealCapacity?.maxSimultaneous ?? 0, branchesConsumed: witness.branchesExplored, exhausted: witness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"), reasonCodes: [...witness.reasonCodes] });
+    if (witness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return result(assessments,before,budget,true);
+  }
   return result(assessments, before, budget, false);
 }
 function result(assessments: FutureWorkItemAssessment[], before: number, budget: FutureBudget, exhausted: boolean): FutureFeasibilityAssessment {

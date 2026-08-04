@@ -7,6 +7,7 @@ import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
 import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
+import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const freeze = <T>(value: T): T => { if (value && typeof value === "object") { Object.values(value as object).forEach(freeze); Object.freeze(value); } return value; };
@@ -301,3 +302,45 @@ test("versioned Evidence is pure parseable JSON with exact scenarios and no runt
   const raw = readFileSync(new URL("../benchmarks/fixtures/spec10-010-engine-input-adapter-evidence.json", import.meta.url), "utf8"); const evidence = JSON.parse(raw);
   assert.equal(evidence.benchmark, "SPEC10-010-engine-input-adapter"); assert.deepEqual(evidence.scenarios.map((scenario: { scenarioId: string }) => scenario.scenarioId), ["synthetic-supported", "real-main-stage-with-backlog", "real-resource-lock-pressure", "real-protected-break-recovery"]); assert.ok(!raw.includes("npm run")); assert.ok(!/runtime|timestamp|generatedAt/i.test(raw));
 });
+
+test("participant-scoped meals split only the assigned participant and preserve break identity", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.protectedBreaks = [{ id: "meal-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" }];
+  const result = supported(input);
+  assert.deepEqual(result.problem.participants.find((entry) => entry.id === "participant:201")?.availability, [{ start: 480, end: 870 }, { start: 900, end: 1020 }]);
+  assert.deepEqual(result.problem.participants.find((entry) => entry.id === "participant:202")?.availability, [{ start: 540, end: 990 }]);
+  assert.ok(result.identityMap.some((entry) => entry.namespace === "break" && entry.sourceId === "meal-201" && entry.canonicalId === "break:meal-201"));
+  assert.deepEqual(result.problem.protectedMeal, { start: 780, end: 840 });
+});
+
+test("participant meal order is fingerprint-invariant while changing its interval is hard-sensitive", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.protectedBreaks = [
+    { id: "late", kind: "meal", contestantId: 201, start: "15:00", end: "15:30" },
+    { id: "early", kind: "meal", contestantId: 201, start: "11:00", end: "11:30" },
+  ];
+  const first = supported(input);
+  const reversed = clone(input); reversed.protectedBreaks!.reverse();
+  assert.equal(supported(reversed).problemFingerprint, first.problemFingerprint);
+  assert.equal(supported(reversed).sourceFingerprint, first.sourceFingerprint);
+  const changed = clone(input); changed.protectedBreaks![0].start = "15:30"; changed.protectedBreaks![0].end = "16:00";
+  assert.notEqual(supported(changed).problemFingerprint, first.problemFingerprint);
+  assert.notEqual(supported(changed).sourceFingerprint, first.sourceFingerprint);
+});
+
+test("flexible participant meal task adapts separately with reversible identity and no space or resources", () => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.mealMode = "flexible_meal_window"; input.mealWindow = { start: "14:00", end: "16:00" };
+    input.mealTaskTemplateId = 999; input.contestantMealDurationMinutes = 45; input.contestantMealMaxSimultaneous = 1;
+    input.tasks.push({ id: 106, planId: 701, templateId: 999, status: "pending", contestantId: 201, operationalRole: "meal_break_placeholder" });
+    const before = structuredClone(input); const adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(adapted.status, "SUPPORTED", adapted.reasonCodes.join(",")); if (adapted.status !== "SUPPORTED") return;
+    assert.equal(adapted.problem.tasks.some(task=>task.id==="task:106"),false);
+    assert.deepEqual(adapted.problem.participantMeals?.map(meal=>({sourceTaskId:meal.sourceTaskId,participantId:meal.participantId,duration:meal.duration,window:meal.window})),[{sourceTaskId:"task:106",participantId:"participant:201",duration:45,window:{start:840,end:960}}]);
+    assert.ok(adapted.identityMap.some(entry=>entry.namespace==="task"&&entry.sourceId==="106"&&entry.canonicalId==="task:106"));
+    assert.deepEqual(input,before);
+});
+
+test("flexible meal classification requires explicit mode and never accepts generic breakKind meal",()=>{const input=createSupportedEngineInputAdapterFixture();const task={id:999,planId:701,templateId:999,status:"pending" as const,contestantId:201,operationalRole:"meal_break_placeholder" as const};input.mealMode="global_hard_break";input.mealTaskTemplateId=999;assert.equal(isFlexibleParticipantMealTask(input,task),false);input.mealMode="flexible_meal_window";assert.equal(isFlexibleParticipantMealTask(input,task),true);assert.equal(isFlexibleParticipantMealTask({...input,mealTaskTemplateId:undefined},{...task,operationalRole:"productive_task",breakKind:"meal"}),false);});
+
+test("protected meal task deduplicates an explicitly linked assigned break and rejects an unlinked duplicate",()=>{const input=createSupportedEngineInputAdapterFixture();input.mealMode="flexible_meal_window";input.mealWindow={start:"14:00",end:"16:00"};input.mealTaskTemplateId=999;input.contestantMealDurationMinutes=30;input.contestantMealMaxSimultaneous=1;input.tasks.push({id:106,planId:701,templateId:999,status:"done",contestantId:201,operationalRole:"meal_break_placeholder",breakId:77,startReal:"14:30",endReal:"15:00"});input.protectedBreaks=[{id:77,kind:"meal",contestantId:201,start:"14:30",end:"15:00"}];const linked=adaptEngineInputToPlannerNextProblem(input);assert.equal(linked.status,"SUPPORTED");if(linked.status==="SUPPORTED"){assert.equal(linked.problem.participantMeals?.length,1);assert.deepEqual(linked.problem.participantMeals?.[0].fixedInterval,{start:870,end:900});assert.deepEqual(linked.problem.participants.find(x=>x.id==="participant:201")?.availability,[{start:480,end:1020}]);}const unlinked=structuredClone(input);unlinked.tasks.at(-1)!.breakId=undefined;const rejected=adaptEngineInputToPlannerNextProblem(unlinked);assert.equal(rejected.status,"UNSUPPORTED");assert.ok(rejected.reasonCodes.includes("PARTICIPANT_MEAL_IDENTITY_CONFLICT"));});

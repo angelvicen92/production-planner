@@ -23,6 +23,7 @@ import { buildTimeline, candidateCuts, hasMainFlowMeal, type MainFlowTimeline } 
 
 import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
+import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
 import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
@@ -200,6 +201,7 @@ function emptyMetrics(
     technicalChainCount:0,technicalChainPlannedCount:0,technicalChainScheduledTaskCount:0,technicalChainCandidateCountWhenSelectedByRootId:{},technicalChainTaskIdsByRootId:{},technicalChainStartByRootId:{},technicalChainEndByRootId:{},technicalChainBranchesExplored:0,
     spaceMealCount:Array.isArray(problem.spaces)?problem.spaces.filter(x=>x?.mealPolicy!==undefined).length:0,spaceMealPlannedCount:0,spaceMealCandidateCountWhenSelectedBySpaceId:{},spaceMealStartBySpaceId:{},spaceMealEndBySpaceId:{},spaceMealMinutesBySpaceId:{},spaceMealBranchesExplored:0,
     anchoredAccompanimentCount:Array.isArray(problem.anchoredAccompaniments)?problem.anchoredAccompaniments.length:0,anchoredAccompanimentPlannedCount:0,anchoredAccompanimentScheduledSegmentCount:0,anchoredAccompanimentCandidatePositionsEvaluated:0,anchoredAccompanimentRejectedPositionCount:0,anchoredAccompanimentAnchorTaskIdById:{},anchoredAccompanimentBeforeTaskIdsById:{},anchoredAccompanimentAfterTaskIdsById:{},anchoredAccompanimentOperationStartById:{},anchoredAccompanimentAnchorStartById:{},anchoredAccompanimentAnchorEndById:{},anchoredAccompanimentOperationEndById:{},anchoredAccompanimentTotalDurationById:{},anchoredAccompanimentAdjacencySatisfiedById:{},anchoredAccompanimentParticipantSatisfiedById:{},anchoredAccompanimentSpacesSatisfiedById:{},anchoredAccompanimentResourcesSatisfiedById:{},anchoredAccompanimentTaskWindowsSatisfiedById:{},anchoredAccompanimentCompleteById:{},anchoredAccompanimentRejectedReasonCountByCode:{},
+    participantMealCount:Array.isArray(problem.participantMeals)?problem.participantMeals.length:0,participantMealPlannedCount:0,participantMealProtectedCount:Array.isArray(problem.participantMeals)?problem.participantMeals.filter(x=>x.fixedInterval).length:0,participantMealCandidateCount:0,participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealMaximumSimultaneous:0,participantMealCapacityLimit:problem.participantMealCapacity?.maxSimultaneous??0,participantMealStartByTaskId:{},participantMealEndByTaskId:{},participantMealRejectedReasonCountByCode:{},participantMealBlockingTaskIds:Object.keys(counters?.blockers??{}).filter(x=>x.startsWith("participant-meals:")).map(x=>x.slice("participant-meals:".length)).sort(),participantMealAcceptedWitnessFingerprint:null,
     futureFeasibilityChecks: counters?.futureChecks ?? 0, futureFeasibilityBranchesExplored: counters?.futureBranches ?? 0, futureInfeasibleCandidatesPruned: counters?.futurePruned ?? 0, futureTopRankedCandidatesPruned: counters?.futureTopPruned ?? 0, futureBlockerCountByWorkItemKey: counters?.blockers ?? {}, acceptedPathMinimumFutureAlternativeCount: counters?.acceptedMinimum ?? 0,
     reasonCodes: reasons,
   };
@@ -216,6 +218,7 @@ function failure(
     scheduledTasks: [],
     scheduledSetupPreparations: [],
     scheduledSpaceMeals: [],
+    scheduledParticipantMeals: [],
     metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
   };
 }
@@ -231,6 +234,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       scheduledTasks: [],
       scheduledSetupPreparations: [],
       scheduledSpaceMeals: [],
+      scheduledParticipantMeals: [],
       metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
     };
   }
@@ -391,8 +395,18 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
     const all = auxiliary?.tasks ?? null;
     const preparations = auxiliary?.preparations ?? [];
     const meals=auxiliary?.meals??[];
-    const validation = all ? validatePlan(problem, all, preparations,meals) : null;
-    if (!all || !validation?.hardValid) {
+    let participantMealWitness: ParticipantMealWitness | null = null;
+    if (all) {
+      const budget = { remaining: Math.max(0, problem.budget.maxBranchExpansions - counters.branches) };
+      participantMealWitness = assessParticipantMealFutureFeasibility(problem, all, budget, "MATERIALIZE");
+      counters.branches += participantMealWitness.branchesExplored;
+      counters.futureBranches += participantMealWitness.branchesExplored;
+      counters.futureChecks += 1;
+      if (!participantMealWitness.complete) { counters.futurePruned += 1; for (const id of participantMealWitness.blockingMealTaskIds) counters.blockers[`participant-meals:${id}`]=(counters.blockers[`participant-meals:${id}`]??0)+1; }
+      if (participantMealWitness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return failure(problem,begun,"FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED",counters);
+    }
+    const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled]) : null;
+    if (!all || !participantMealWitness?.complete || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
       if (!hasNext) break;
       if (counters.backtracks >= problem.budget.maxBacktracks) {
@@ -507,9 +521,10 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       technicalChainBranchesExplored:auxiliary?.technicalChainBranches??0,
       spaceMealCount:problem.spaces.filter(s=>s.mealPolicy!==undefined).length,spaceMealPlannedCount:meals.length,spaceMealCandidateCountWhenSelectedBySpaceId:auxiliary?.mealCandidateCounts??{},spaceMealStartBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.start])),spaceMealEndBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.end])),spaceMealMinutesBySpaceId:Object.fromEntries(meals.map(m=>[m.spaceId,m.duration])),spaceMealBranchesExplored:auxiliary?.spaceMealBranches??0,
       futureFeasibilityChecks: counters.futureChecks, futureFeasibilityBranchesExplored: counters.futureBranches, futureInfeasibleCandidatesPruned: counters.futurePruned, futureTopRankedCandidatesPruned: counters.futureTopPruned, futureBlockerCountByWorkItemKey: counters.blockers, acceptedPathMinimumFutureAlternativeCount: counters.acceptedMinimum,
+      participantMealCount:problem.participantMeals?.length??0,participantMealPlannedCount:participantMealWitness.scheduled.length,participantMealProtectedCount:(problem.participantMeals??[]).filter(x=>x.fixedInterval).length,participantMealCandidateCount:Object.values(participantMealWitness.candidateCountByTaskId).reduce((a,b)=>a+b,0),participantMealBranchesExplored:participantMealWitness.branchesExplored,participantMealFutureFeasibilityChecks:1,participantMealFutureInfeasibleBranches:0,participantMealMaximumSimultaneous:participantMealWitness.maximumSimultaneous,participantMealCapacityLimit:problem.participantMealCapacity?.maxSimultaneous??0,participantMealStartByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.start])),participantMealEndByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.end])),participantMealRejectedReasonCountByCode:{},participantMealBlockingTaskIds:Object.keys(counters.blockers).filter(x=>x.startsWith("participant-meals:")).map(x=>x.slice("participant-meals:".length)).sort(),participantMealAcceptedWitnessFingerprint:participantMealWitnessFingerprint(participantMealWitness.scheduled),
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled], metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }

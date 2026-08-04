@@ -9,10 +9,10 @@ PR #616 y la primera revisión de este PR aportaron andamiaje provisional, pero 
 - Capacidades auditadas: **12, 13, 14, 16, 18, 19, 20, 41, 120, 121, 122, 123, 134, 135, 136**.
 - Bindings literales: **15**.
 - Source assertions revisadas: **26**.
-- Probe observations ejecutadas: **56**.
+- Probe observations ejecutadas: **58**.
 - Test assertions: **15**.
 - Benchmark assertions: **15**.
-- Resultados de assertions: `{"PASS":110,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
+- Resultados de assertions: `{"PASS":112,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
 
 Las 15 test references sólo demuestran que existe la definición exacta del test; la ejecución se informa separadamente en la validación local. Los probes y benchmark assertions son la Evidence ejecutable principal.
 
@@ -54,9 +54,9 @@ Capacidades visibles en A2: **120, 123, 134**.
 - `NOT_AUDITED`: **146**.
 - Fases de producto: **162, 163, 164, 165, 166, 167**.
 - Requisitos: `{"REQUIRED":15,"NOT_REQUIRED":0,"UNRESOLVED":152}`.
-- Estados: `{"EVIDENCED_SUPPORTED":10,"CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE":0,"PARTIALLY_SUPPORTED":2,"EXPLICITLY_UNSUPPORTED":3,"CONTRACT_GAP":0,"SOURCE_AMBIGUOUS":0,"NOT_AUDITED":146,"PRODUCT_PHASE_NOT_IMPLEMENTED":6}`.
-- Familias piloto: `{"EVIDENCED_SUPPORTED":2,"PARTIALLY_SUPPORTED":2,"EXPLICITLY_UNSUPPORTED":1}`.
-- Recomendación: **IMPLEMENT_CAPABILITY**, capacidad **134** — Implement the demonstrated required blocker: participant-scoped meal.
+- Estados: `{"EVIDENCED_SUPPORTED":11,"CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE":0,"PARTIALLY_SUPPORTED":2,"EXPLICITLY_UNSUPPORTED":2,"CONTRACT_GAP":0,"SOURCE_AMBIGUOUS":0,"NOT_AUDITED":146,"PRODUCT_PHASE_NOT_IMPLEMENTED":6}`.
+- Familias piloto: `{"EVIDENCED_SUPPORTED":2,"PARTIALLY_SUPPORTED":3}`.
+- Recomendación: **IMPLEMENT_CAPABILITY**, capacidad **135** — Implement the demonstrated required blocker: resource-scoped meal.
 
 ### Estados piloto
 
@@ -72,7 +72,7 @@ Capacidades visibles en A2: **120, 123, 134**.
 - 121: `EVIDENCED_SUPPORTED`.
 - 122: `EVIDENCED_SUPPORTED`.
 - 123: `PARTIALLY_SUPPORTED`.
-- 134: `EXPLICITLY_UNSUPPORTED`.
+- 134: `EVIDENCED_SUPPORTED`.
 - 135: `EXPLICITLY_UNSUPPORTED`.
 - 136: `EXPLICITLY_UNSUPPORTED`.
 
@@ -80,11 +80,11 @@ La capacidad 121 usa frontera representativa **PLANNER_LAYER**; no se atribuye a
 
 ### Comidas observadas desde el input ejecutado
 
-- meal-participant: scope=`"participant"`, entity=`"participant-meal"`, identity=`201`, window=`{"start":"15:00","end":"15:30"}`, reason=`UNSUPPORTED_BREAK_SCOPE`.
-- meal-resource: scope=`"resource_meal"`, entity=`"105"`, identity=`503`, window=`{"start":"15:00","end":"15:30"}`, reason=`UNSUPPORTED_BREAK_SCOPE`.
-- meal-itinerant-unit: scope=`"itinerant-team"`, entity=`"unit-meal"`, identity=`7`, window=`{"start":"15:00","end":"15:30"}`, reason=`UNSUPPORTED_BREAK_SCOPE`.
+- meal-participant: scope=`"participant:201"`, entity=`"participant-meal:106"`, identity=`"task:106"`, window=`{"start":900,"end":930}`, reasons=`[]`.
+- meal-resource: scope=`"resource_meal"`, entity=`"105"`, identity=`503`, window=`{"start":"15:00","end":"15:30"}`, reasons=`["UNSUPPORTED_BREAK_SCOPE"]`.
+- meal-itinerant-unit: scope=`"itinerant-team"`, entity=`"unit-meal"`, identity=`7`, window=`{"start":"15:00","end":"15:30"}`, reasons=`["UNSUPPORTED_BREAK_SCOPE"]`.
 
-Ranking evaluado: `[{"capabilityId":134,"capability":"participant-scoped meal","ranking":[-3,0,134]},{"capabilityId":135,"capability":"resource-scoped meal","ranking":[-1,0,135]},{"capabilityId":136,"capability":"unit-scoped meal","ranking":[-1,0,136]}]`. Decision trace: `["collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence","evaluate ranked candidates: participant-scoped meal, resource-scoped meal, unit-scoped meal","rank higher A2 visibility before official-only impact","prefer directly observed rejection over inferred contract risk","select participant-scoped meal from the resulting deterministic order"]`.
+Ranking evaluado: `[{"capabilityId":135,"capability":"resource-scoped meal","ranking":[-1,0,135]},{"capabilityId":136,"capability":"unit-scoped meal","ranking":[-1,0,136]}]`. Decision trace: `["collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence","evaluate ranked candidates: resource-scoped meal, unit-scoped meal","rank higher A2 visibility before official-only impact","prefer directly observed rejection over inferred contract risk","select resource-scoped meal from the resulting deterministic order"]`.
 
 Todo lo que no pertenece al piloto queda sin binding y `NOT_AUDITED / AUDIT`, salvo 162–167 como `PRODUCT_PHASE_NOT_IMPLEMENTED / PRODUCT`. No se auditan aquí vocal, main, Reality, joint tasks, espacios ni validación completa. La ampliación será incremental.
 

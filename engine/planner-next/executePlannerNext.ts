@@ -8,6 +8,13 @@ import {
   resolvePlannerSearchPolicy,
   type PlannerSearchPolicyResolution,
 } from "./searchPolicy";
+import type { ScheduledParticipantMeal, ScheduledTask } from "./contracts";
+
+function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[] } {
+  if (!result.complete) return { ...result, scheduledTasks: [], ...( "scheduledSetupPreparations" in result ? { scheduledSetupPreparations: [] } : {}), scheduledSpaceMeals: [], scheduledParticipantMeals: [] };
+  if ((problem.participantMeals?.length ?? 0) > 0 && !result.scheduledParticipantMeals) throw new Error("Constructive search omitted the accepted participant-meal witness");
+  return { ...result, scheduledParticipantMeals: result.scheduledParticipantMeals ?? [] };
+}
 
 export type PlannerNextExecution =
   | {
@@ -37,13 +44,13 @@ export function executePlannerNext(problem: PlannerNextProblem): PlannerNextExec
     return {
       kind: "COMPATIBILITY_PRESERVING",
       policyResolution,
-      result: planCompatibilityPreserving(problem),
+      result: withParticipantMeals(problem, planCompatibilityPreserving(problem)),
     };
   }
 
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-    result: constructExactItinerantPlan(problem),
+    result: withParticipantMeals(problem, constructExactItinerantPlan(problem)),
   };
 }
