@@ -2853,15 +2853,16 @@
         "meal.participant.scope",
         "meal.participant.window",
         "meal.participant.identity",
-        "meal.participant.entity"
+        "meal.participant.entity",
+        "meal.participant.bothPolicies"
       ],
       "testAssertions": [
         {
           "id": "test-134",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
-          "testName": "pilot 134: participant meal executes and reports break scope",
-          "property": "participant meal rejection is observed",
-          "layer": "PREFLIGHT"
+          "testName": "pilot 134: flexible participant meal task executes under both policies",
+          "property": "source task becomes a validated participant-meal obligation",
+          "layer": "VALIDATION"
         }
       ],
       "benchmarkAssertions": [
@@ -2872,10 +2873,8 @@
           "probeId": "meal-participant",
           "selector": "reasonCodes",
           "operator": "EQUALS",
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "property": "participant meal reason comes from probe",
+          "expected": [],
+          "property": "supported participant meal has no preflight reason",
           "layer": "EVIDENCE",
           "boundary": "ENGINE_INPUT"
         }
@@ -2884,15 +2883,16 @@
         "SOURCE",
         "PREFLIGHT",
         "ADAPTER",
+        "VALIDATION",
         "EVIDENCE"
       ],
-      "supportedVariantObservationIds": [],
-      "unsupportedVariantObservationIds": [
-        "meal.participant.reason"
+      "supportedVariantObservationIds": [
+        "meal.participant.bothPolicies"
       ],
+      "unsupportedVariantObservationIds": [],
       "contractGapObservationIds": [],
       "representativeBoundary": "ENGINE_INPUT",
-      "notes": "Required participant scope is explicitly rejected by executed preflight."
+      "notes": "A normalized source task is adapted, jointly scheduled and hard-validated under both policies."
     },
     {
       "capabilityId": 135,
@@ -3638,16 +3638,18 @@
       "id": "meal-participant",
       "functionsExecuted": [
         "preflightEngineInputForPlannerNext",
-        "adaptEngineInputToPlannerNextProblem"
+        "adaptEngineInputToPlannerNextProblem",
+        "executePlannerNext",
+        "validatePlan"
       ],
       "observations": [
         {
           "id": "meal.participant.preflightStatus",
           "probeId": "meal-participant",
           "layer": "PREFLIGHT",
-          "property": "participant meal is rejected by executed preflight",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "flexible participant meal is supported",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -3655,9 +3657,9 @@
           "id": "meal.participant.reason",
           "probeId": "meal-participant",
           "layer": "PREFLIGHT",
-          "property": "participant meal reports executed break-scope reason",
-          "observed": true,
-          "expected": true,
+          "property": "valid flexible participant meal has no reason",
+          "observed": [],
+          "expected": [],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -3665,34 +3667,34 @@
           "id": "meal.participant.adapterStatus",
           "probeId": "meal-participant",
           "layer": "ADAPTER",
-          "property": "participant meal cannot publish a PlannerNextProblem",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "adapter publishes meal obligation",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.scope",
           "probeId": "meal-participant",
-          "layer": "PREFLIGHT",
-          "property": "participant meal scope is read from the executed input or issue",
-          "observed": "participant",
-          "expected": "participant",
+          "layer": "ADAPTER",
+          "property": "meal occupies participant only",
+          "observed": "participant:201",
+          "expected": "participant:201",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.window",
           "probeId": "meal-participant",
-          "layer": "PREFLIGHT",
-          "property": "participant meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "effective flexible window is preserved",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "pass": true,
           "boundary": "ENGINE_INPUT"
@@ -3700,27 +3702,61 @@
         {
           "id": "meal.participant.identity",
           "probeId": "meal-participant",
-          "layer": "PREFLIGHT",
-          "property": "participant meal preserves its concrete scoped identity",
-          "observed": 201,
-          "expected": 201,
+          "layer": "ADAPTER",
+          "property": "source task identity is reversible",
+          "observed": "task:106",
+          "expected": "task:106",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.entity",
           "probeId": "meal-participant",
-          "layer": "PREFLIGHT",
-          "property": "participant meal issue preserves its exact entity ID",
-          "observed": "participant-meal",
-          "expected": "participant-meal",
+          "layer": "ADAPTER",
+          "property": "meal obligation has stable identity",
+          "observed": "participant-meal:106",
+          "expected": "participant-meal:106",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.bothPolicies",
+          "probeId": "meal-participant",
+          "layer": "VALIDATION",
+          "property": "both policies complete and validate",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            }
+          ],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "reasonCodes": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "reasonCodes": [],
       "deterministic": true,
       "inputImmutable": true
     },
@@ -4332,9 +4368,9 @@
       "id": "meal.participant.preflightStatus",
       "probeId": "meal-participant",
       "layer": "PREFLIGHT",
-      "property": "participant meal is rejected by executed preflight",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "flexible participant meal is supported",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -4342,9 +4378,9 @@
       "id": "meal.participant.reason",
       "probeId": "meal-participant",
       "layer": "PREFLIGHT",
-      "property": "participant meal reports executed break-scope reason",
-      "observed": true,
-      "expected": true,
+      "property": "valid flexible participant meal has no reason",
+      "observed": [],
+      "expected": [],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -4352,34 +4388,34 @@
       "id": "meal.participant.adapterStatus",
       "probeId": "meal-participant",
       "layer": "ADAPTER",
-      "property": "participant meal cannot publish a PlannerNextProblem",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "adapter publishes meal obligation",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.scope",
       "probeId": "meal-participant",
-      "layer": "PREFLIGHT",
-      "property": "participant meal scope is read from the executed input or issue",
-      "observed": "participant",
-      "expected": "participant",
+      "layer": "ADAPTER",
+      "property": "meal occupies participant only",
+      "observed": "participant:201",
+      "expected": "participant:201",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.window",
       "probeId": "meal-participant",
-      "layer": "PREFLIGHT",
-      "property": "participant meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "effective flexible window is preserved",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "pass": true,
       "boundary": "ENGINE_INPUT"
@@ -4387,20 +4423,56 @@
     {
       "id": "meal.participant.identity",
       "probeId": "meal-participant",
-      "layer": "PREFLIGHT",
-      "property": "participant meal preserves its concrete scoped identity",
-      "observed": 201,
-      "expected": 201,
+      "layer": "ADAPTER",
+      "property": "source task identity is reversible",
+      "observed": "task:106",
+      "expected": "task:106",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.entity",
       "probeId": "meal-participant",
-      "layer": "PREFLIGHT",
-      "property": "participant meal issue preserves its exact entity ID",
-      "observed": "participant-meal",
-      "expected": "participant-meal",
+      "layer": "ADAPTER",
+      "property": "meal obligation has stable identity",
+      "observed": "participant-meal:106",
+      "expected": "participant-meal:106",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.participant.bothPolicies",
+      "probeId": "meal-participant",
+      "layer": "VALIDATION",
+      "property": "both policies complete and validate",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        }
+      ],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -5713,11 +5785,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "participant meal is rejected by executed preflight",
+      "property": "flexible participant meal is supported",
       "file": null,
       "selector": "meal.participant.preflightStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5726,11 +5798,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "participant meal reports executed break-scope reason",
+      "property": "valid flexible participant meal has no reason",
       "file": null,
       "selector": "meal.participant.reason",
-      "observed": true,
-      "expected": true,
+      "observed": [],
+      "expected": [],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5739,11 +5811,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "participant meal cannot publish a PlannerNextProblem",
+      "property": "adapter publishes meal obligation",
       "file": null,
       "selector": "meal.participant.adapterStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5751,12 +5823,12 @@
       "id": "meal.participant.scope",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "participant meal scope is read from the executed input or issue",
+      "layer": "ADAPTER",
+      "property": "meal occupies participant only",
       "file": null,
       "selector": "meal.participant.scope",
-      "observed": "participant",
-      "expected": "participant",
+      "observed": "participant:201",
+      "expected": "participant:201",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5764,17 +5836,17 @@
       "id": "meal.participant.window",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "participant meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "effective flexible window is preserved",
       "file": null,
       "selector": "meal.participant.window",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
@@ -5783,12 +5855,12 @@
       "id": "meal.participant.identity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "participant meal preserves its concrete scoped identity",
+      "layer": "ADAPTER",
+      "property": "source task identity is reversible",
       "file": null,
       "selector": "meal.participant.identity",
-      "observed": 201,
-      "expected": 201,
+      "observed": "task:106",
+      "expected": "task:106",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5796,12 +5868,51 @@
       "id": "meal.participant.entity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "participant meal issue preserves its exact entity ID",
+      "layer": "ADAPTER",
+      "property": "meal obligation has stable identity",
       "file": null,
       "selector": "meal.participant.entity",
-      "observed": "participant-meal",
-      "expected": "participant-meal",
+      "observed": "participant-meal:106",
+      "expected": "participant-meal:106",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.participant.bothPolicies",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "VALIDATION",
+      "property": "both policies complete and validate",
+      "file": null,
+      "selector": "meal.participant.bothPolicies",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 3
+        }
+      ],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5809,10 +5920,10 @@
       "id": "test-134",
       "kind": "TEST",
       "status": "PASS",
-      "layer": "PREFLIGHT",
+      "layer": "VALIDATION",
       "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
-      "selector": "pilot 134: participant meal executes and reports break scope",
+      "selector": "pilot 134: flexible participant meal task executes under both policies",
       "observed": true,
       "expected": true,
       "reason": "Exact test definition exists; execution is validated separately",
@@ -5823,15 +5934,11 @@
       "kind": "BENCHMARK",
       "status": "PASS",
       "layer": "EVIDENCE",
-      "property": "participant meal reason comes from probe",
+      "property": "supported participant meal has no preflight reason",
       "file": null,
       "selector": "reasonCodes",
-      "observed": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
-      "expected": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "observed": [],
+      "expected": [],
       "reason": "Observed benchmark value matches",
       "boundary": "ENGINE_INPUT"
     },
@@ -6130,7 +6237,7 @@
     }
   ],
   "assertionCounts": {
-    "PASS": 110,
+    "PASS": 111,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -9574,15 +9681,16 @@
           "meal.participant.scope",
           "meal.participant.window",
           "meal.participant.identity",
-          "meal.participant.entity"
+          "meal.participant.entity",
+          "meal.participant.bothPolicies"
         ],
         "testAssertions": [
           {
             "id": "test-134",
             "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
-            "testName": "pilot 134: participant meal executes and reports break scope",
-            "property": "participant meal rejection is observed",
-            "layer": "PREFLIGHT"
+            "testName": "pilot 134: flexible participant meal task executes under both policies",
+            "property": "source task becomes a validated participant-meal obligation",
+            "layer": "VALIDATION"
           }
         ],
         "benchmarkAssertions": [
@@ -9593,10 +9701,8 @@
             "probeId": "meal-participant",
             "selector": "reasonCodes",
             "operator": "EQUALS",
-            "expected": [
-              "UNSUPPORTED_BREAK_SCOPE"
-            ],
-            "property": "participant meal reason comes from probe",
+            "expected": [],
+            "property": "supported participant meal has no preflight reason",
             "layer": "EVIDENCE",
             "boundary": "ENGINE_INPUT"
           }
@@ -9605,15 +9711,16 @@
           "SOURCE",
           "PREFLIGHT",
           "ADAPTER",
+          "VALIDATION",
           "EVIDENCE"
         ],
-        "supportedVariantObservationIds": [],
-        "unsupportedVariantObservationIds": [
-          "meal.participant.reason"
+        "supportedVariantObservationIds": [
+          "meal.participant.bothPolicies"
         ],
+        "unsupportedVariantObservationIds": [],
         "contractGapObservationIds": [],
         "representativeBoundary": "ENGINE_INPUT",
-        "notes": "Required participant scope is explicitly rejected by executed preflight."
+        "notes": "A normalized source task is adapted, jointly scheduled and hard-validated under both policies."
       },
       "assertionResults": [
         {
@@ -9647,11 +9754,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "participant meal is rejected by executed preflight",
+          "property": "flexible participant meal is supported",
           "file": null,
           "selector": "meal.participant.preflightStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9660,11 +9767,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "participant meal reports executed break-scope reason",
+          "property": "valid flexible participant meal has no reason",
           "file": null,
           "selector": "meal.participant.reason",
-          "observed": true,
-          "expected": true,
+          "observed": [],
+          "expected": [],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9673,11 +9780,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "participant meal cannot publish a PlannerNextProblem",
+          "property": "adapter publishes meal obligation",
           "file": null,
           "selector": "meal.participant.adapterStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9685,12 +9792,12 @@
           "id": "meal.participant.scope",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "participant meal scope is read from the executed input or issue",
+          "layer": "ADAPTER",
+          "property": "meal occupies participant only",
           "file": null,
           "selector": "meal.participant.scope",
-          "observed": "participant",
-          "expected": "participant",
+          "observed": "participant:201",
+          "expected": "participant:201",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9698,17 +9805,17 @@
           "id": "meal.participant.window",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "participant meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "effective flexible window is preserved",
           "file": null,
           "selector": "meal.participant.window",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
@@ -9717,12 +9824,12 @@
           "id": "meal.participant.identity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "participant meal preserves its concrete scoped identity",
+          "layer": "ADAPTER",
+          "property": "source task identity is reversible",
           "file": null,
           "selector": "meal.participant.identity",
-          "observed": 201,
-          "expected": 201,
+          "observed": "task:106",
+          "expected": "task:106",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9730,12 +9837,51 @@
           "id": "meal.participant.entity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "participant meal issue preserves its exact entity ID",
+          "layer": "ADAPTER",
+          "property": "meal obligation has stable identity",
           "file": null,
           "selector": "meal.participant.entity",
-          "observed": "participant-meal",
-          "expected": "participant-meal",
+          "observed": "participant-meal:106",
+          "expected": "participant-meal:106",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.bothPolicies",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "VALIDATION",
+          "property": "both policies complete and validate",
+          "file": null,
+          "selector": "meal.participant.bothPolicies",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 3
+            }
+          ],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9743,10 +9889,10 @@
           "id": "test-134",
           "kind": "TEST",
           "status": "PASS",
-          "layer": "PREFLIGHT",
+          "layer": "VALIDATION",
           "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
-          "selector": "pilot 134: participant meal executes and reports break scope",
+          "selector": "pilot 134: flexible participant meal task executes under both policies",
           "observed": true,
           "expected": true,
           "reason": "Exact test definition exists; execution is validated separately",
@@ -9757,21 +9903,17 @@
           "kind": "BENCHMARK",
           "status": "PASS",
           "layer": "EVIDENCE",
-          "property": "participant meal reason comes from probe",
+          "property": "supported participant meal has no preflight reason",
           "file": null,
           "selector": "reasonCodes",
-          "observed": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
+          "observed": [],
+          "expected": [],
           "reason": "Observed benchmark value matches",
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "derivedCoverageStatus": "EXPLICITLY_UNSUPPORTED",
-      "derivedBlockingLayer": "PREFLIGHT",
+      "derivedCoverageStatus": "EVIDENCED_SUPPORTED",
+      "derivedBlockingLayer": "NONE",
       "technicallyAudited": true,
       "sourceReviewed": true,
       "missingEvidence": [],
@@ -10663,9 +10805,9 @@
         135,
         136
       ],
-      "status": "EXPLICITLY_UNSUPPORTED",
+      "status": "PARTIALLY_SUPPORTED",
       "memberStatuses": {
-        "134": "EXPLICITLY_UNSUPPORTED",
+        "134": "EVIDENCED_SUPPORTED",
         "135": "EXPLICITLY_UNSUPPORTED",
         "136": "EXPLICITLY_UNSUPPORTED"
       },
@@ -10839,10 +10981,10 @@
     "UNRESOLVED": 152
   },
   "statusCounts": {
-    "EVIDENCED_SUPPORTED": 10,
+    "EVIDENCED_SUPPORTED": 11,
     "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE": 0,
     "PARTIALLY_SUPPORTED": 2,
-    "EXPLICITLY_UNSUPPORTED": 3,
+    "EXPLICITLY_UNSUPPORTED": 2,
     "CONTRACT_GAP": 0,
     "SOURCE_AMBIGUOUS": 0,
     "NOT_AUDITED": 146,
@@ -10850,23 +10992,13 @@
   },
   "familyCounts": {
     "EVIDENCED_SUPPORTED": 2,
-    "PARTIALLY_SUPPORTED": 2,
-    "EXPLICITLY_UNSUPPORTED": 1
+    "PARTIALLY_SUPPORTED": 3
   },
   "recommendation": {
     "type": "IMPLEMENT_CAPABILITY",
-    "selectedCapabilityId": 134,
-    "selectedAction": "Implement the demonstrated required blocker: participant-scoped meal",
+    "selectedCapabilityId": 135,
+    "selectedAction": "Implement the demonstrated required blocker: resource-scoped meal",
     "evaluatedCandidates": [
-      {
-        "capabilityId": 134,
-        "capability": "participant-scoped meal",
-        "ranking": [
-          -3,
-          0,
-          134
-        ]
-      },
       {
         "capabilityId": 135,
         "capability": "resource-scoped meal",
@@ -10888,10 +11020,10 @@
     ],
     "decisionTrace": [
       "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
-      "evaluate ranked candidates: participant-scoped meal, resource-scoped meal, unit-scoped meal",
+      "evaluate ranked candidates: resource-scoped meal, unit-scoped meal",
       "rank higher A2 visibility before official-only impact",
       "prefer directly observed rejection over inferred contract risk",
-      "select participant-scoped meal from the resulting deterministic order"
+      "select resource-scoped meal from the resulting deterministic order"
     ]
   },
   "focalEvidence": {

@@ -14,9 +14,9 @@ export function generateFocalA2CoverageEvidence(path = SPEC10_012R_EVIDENCE_PATH
   const audit = JSON.parse(json);
   const sourceLines = audit.sourceAssertions.map((assertion: { capabilityId: number; document: string; section: string; claim: string; sourceType: string }) => `- ${assertion.capabilityId}: \`${assertion.document} :: ${assertion.section}\` (${assertion.sourceType}) — ${assertion.claim}.`).join("\n");
   const capabilityLines = audit.evidenceRecords.filter((record: { capabilityId: number }) => audit.pilotCapabilityIds.includes(record.capabilityId)).map((record: { capabilityId: number; derivedCoverageStatus: string }) => `- ${record.capabilityId}: \`${record.derivedCoverageStatus}\`.`).join("\n");
-  const mealLines = audit.probes.filter((probe: { id: string }) => probe.id.startsWith("meal-")).map((probe: { id: string; observations: Array<{ id: string; observed: unknown }> }) => {
+  const mealLines = audit.probes.filter((probe: { id: string }) => probe.id.startsWith("meal-")).map((probe: { id: string; observations: Array<{ id: string; observed: unknown }>; reasonCodes: string[] }) => {
     const read = (suffix: string) => probe.observations.find((observation) => observation.id.endsWith(suffix))?.observed ?? null;
-    return `- ${probe.id}: scope=\`${JSON.stringify(read(".scope"))}\`, entity=\`${JSON.stringify(read(".entity"))}\`, identity=\`${JSON.stringify(read(".identity"))}\`, window=\`${JSON.stringify(read(".window"))}\`, reason=\`UNSUPPORTED_BREAK_SCOPE\`.`;
+    return `- ${probe.id}: scope=\`${JSON.stringify(read(".scope"))}\`, entity=\`${JSON.stringify(read(".entity"))}\`, identity=\`${JSON.stringify(read(".identity"))}\`, window=\`${JSON.stringify(read(".window"))}\`, reasons=\`${JSON.stringify(probe.reasonCodes)}\`.`;
   }).join("\n");
   mkdirSync("docs/evidence", { recursive: true });
   writeFileSync(path, json);

@@ -3,6 +3,7 @@ import type {
   PlannerNextProblem,
   ScheduledSetupPreparation,
   ScheduledSpaceMeal,
+  ScheduledParticipantMeal,
   ScheduledTask,
   Space,
   Resource,
@@ -25,6 +26,7 @@ import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle 
 import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
 import { taskFitsAvailability, validateTaskAvailability } from "./taskAvailability";
+import { scheduleParticipantMeals } from "./participantMeals";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -132,6 +134,15 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const resourceIds = new Set(resources.map(({ id }) => id));
   const technicalIds = new Set(tasks.filter(t=>t?.kind==="technical").map(t=>t.id));
   const mainSpaceId = problem.mainFlow?.spaceId;
+  const participantMeals = Array.isArray(problem.participantMeals) ? problem.participantMeals : [];
+  if (hasDuplicateIds(participantMeals)) reasons.add("DUPLICATE_PARTICIPANT_MEAL_ID");
+  if (new Set(participantMeals.map((meal) => meal.sourceTaskId)).size !== participantMeals.length) reasons.add("PARTICIPANT_MEAL_IDENTITY_CONFLICT");
+  if (participantMeals.length > 0 && (!problem.participantMealCapacity || !Number.isInteger(problem.participantMealCapacity.maxSimultaneous) || problem.participantMealCapacity.maxSimultaneous <= 0)) reasons.add("INVALID_PARTICIPANT_MEAL_CAPACITY");
+  for (const meal of participantMeals) {
+    if (!participantIds.has(meal.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
+    if (!Number.isInteger(meal.duration) || meal.duration <= 0 || invalidWindow(meal.window, day) || meal.duration > meal.window.end - meal.window.start) reasons.add("INVALID_PARTICIPANT_MEAL_OBLIGATION");
+    if (meal.fixedInterval && (invalidWindow(meal.fixedInterval, day) || meal.fixedInterval.end - meal.fixedInterval.start !== meal.duration || meal.fixedInterval.start < meal.window.start || meal.fixedInterval.end > meal.window.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
+  }
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
     if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Math.ceil((w!.start as number)/5)*5+duration<=(w!.end as number);const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId){if(!mainFlowMealAligned(problem))reasons.add("MAIN_FLOW_MEAL_ALIGNMENT_INVALID");if(space.setupPolicy!==undefined||space.secondaryContinuity!==undefined&&space.secondaryContinuity!=="OFF")reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="main"||!t.participantId||!t.coachId||!t.blockKey))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}else{if(space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="auxiliary"||t.jointGroupId!==undefined||t.setupFamilyId!==undefined||!Array.isArray(t.dependencies)||t.dependencies.length>0||t.coachId!==undefined)||(space.secondaryContinuity==="REQUIRED"&&own.length<2))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}}
@@ -253,7 +264,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[]): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals?: ScheduledParticipantMeal[]): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -269,6 +280,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let technicalOperation = 0;
   let technicalChain = 0;
   let spaceMeal = 0;
+  let participantMeal = 0;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));
@@ -470,6 +482,22 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
 
   const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
 
+  const expectedParticipantMeals = new Map((participantMeals === undefined ? [] : problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
+  const actualCounts = new Map<string, number>();
+  for (const meal of participantMeals ?? []) {
+    actualCounts.set(meal.sourceTaskId, (actualCounts.get(meal.sourceTaskId) ?? 0) + 1);
+    const expected = expectedParticipantMeals.get(meal.sourceTaskId);
+    const person = participants.get(meal.participantId);
+    if (!expected || meal.id !== expected.id || meal.participantId !== expected.participantId || meal.duration !== expected.duration || meal.end - meal.start !== expected.duration
+      || meal.start < expected.window.start || meal.end > expected.window.end || !person || !contains(person.availability, meal.start, meal.end)
+      || (expected.fixedInterval && (meal.start !== expected.fixedInterval.start || meal.end !== expected.fixedInterval.end))
+      || scheduled.some((task) => task.participantId === meal.participantId && overlaps(task, meal))) participantMeal += 1;
+  }
+  for (const expected of expectedParticipantMeals.values()) if (actualCounts.get(expected.sourceTaskId) !== 1) participantMeal += 1;
+  const points = (participantMeals ?? []).flatMap((meal) => [{ minute: meal.start, delta: 1 }, { minute: meal.end, delta: -1 }]).sort((a,b)=>a.minute-b.minute||a.delta-b.delta);
+  let concurrent=0;for(const point of points){concurrent+=point.delta;if(concurrent>(problem.participantMealCapacity?.maxSimultaneous??0)){participantMeal+=1;break;}}
+  if (participantMeals === undefined && (problem.participantMeals?.length ?? 0) > 0 && !scheduleParticipantMeals(problem, scheduled).complete) participantMeal += 1;
+
   let anchoredAccompaniment=0;
   for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));}if(invalid)anchoredAccompaniment+=1;}
   const reasonCodes: string[] = [];
@@ -492,6 +520,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (spaceMeal) reasonCodes.push("SPACE_MEAL_VIOLATION");
   if (mainFlowMeal) reasonCodes.push("MAIN_FLOW_MEAL_VIOLATION");
   if (anchoredAccompaniment) reasonCodes.push("ANCHORED_ACCOMPANIMENT_VIOLATION");
+  if (participantMeal) reasonCodes.push("PARTICIPANT_MEAL_VIOLATION");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
     const presence = evaluateResourcePresence(resource, scheduled, meals);
@@ -517,6 +546,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     spaceMealViolationCount:spaceMeal,
     mainFlowMealViolationCount:mainFlowMeal,
     anchoredAccompanimentViolationCount:anchoredAccompaniment,
+    participantMealViolationCount: participantMeal,
     reasonCodes: reasonCodes.sort(),
   };
 }

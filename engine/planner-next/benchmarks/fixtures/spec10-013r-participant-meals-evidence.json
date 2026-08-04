@@ -1,0 +1,214 @@
+{
+  "benchmark": "SPEC10-013R-flexible-participant-meals",
+  "executions": [
+    {
+      "policy": "COMPATIBILITY_PRESERVING",
+      "inputSemanticFingerprint": "7ba6cfff3cbe5a7f250863d6a98554b246a680ae2467b64a0ce4a4cc74c0d667",
+      "problemFingerprint": "7ba6cfff3cbe5a7f250863d6a98554b246a680ae2467b64a0ce4a4cc74c0d667",
+      "taskIds": [
+        "task:meal-a",
+        "task:meal-c",
+        "task:meal-e"
+      ],
+      "participantIds": [
+        "participant-a",
+        "participant-c",
+        "participant-e"
+      ],
+      "durations": {
+        "task:meal-a": 30,
+        "task:meal-c": 30,
+        "task:meal-e": 30
+      },
+      "windows": {
+        "task:meal-a": {
+          "start": 780,
+          "end": 990
+        },
+        "task:meal-c": {
+          "start": 780,
+          "end": 990
+        },
+        "task:meal-e": {
+          "start": 780,
+          "end": 990
+        }
+      },
+      "capacity": 2,
+      "candidatesByMeal": {
+        "task:meal-a": 21,
+        "task:meal-e": 29,
+        "task:meal-c": 31
+      },
+      "witness": [
+        {
+          "id": "participant-meal:task:meal-a",
+          "sourceTaskId": "task:meal-a",
+          "participantId": "participant-a",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-e",
+          "sourceTaskId": "task:meal-e",
+          "participantId": "participant-e",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-c",
+          "sourceTaskId": "task:meal-c",
+          "participantId": "participant-c",
+          "duration": 30,
+          "start": 810,
+          "end": 840
+        }
+      ],
+      "selectionOrder": [
+        "task:meal-a",
+        "task:meal-e",
+        "task:meal-c"
+      ],
+      "scheduledParticipantMeals": [
+        {
+          "id": "participant-meal:task:meal-a",
+          "sourceTaskId": "task:meal-a",
+          "participantId": "participant-a",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-e",
+          "sourceTaskId": "task:meal-e",
+          "participantId": "participant-e",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-c",
+          "sourceTaskId": "task:meal-c",
+          "participantId": "participant-c",
+          "duration": 30,
+          "start": 810,
+          "end": 840
+        }
+      ],
+      "maximumSimultaneous": 2,
+      "branches": 3,
+      "backtracks": 0,
+      "complete": true,
+      "hardValid": true,
+      "reasonCodes": [],
+      "inputImmutable": true
+    },
+    {
+      "policy": "EXACT_CONSTRUCTIVE",
+      "inputSemanticFingerprint": "6a3543fe327ba42b12ac0b141d8b8d87b5878ab2facb48755340ee7f2038ad1b",
+      "problemFingerprint": "6a3543fe327ba42b12ac0b141d8b8d87b5878ab2facb48755340ee7f2038ad1b",
+      "taskIds": [
+        "task:meal-a",
+        "task:meal-c",
+        "task:meal-e"
+      ],
+      "participantIds": [
+        "participant-a",
+        "participant-c",
+        "participant-e"
+      ],
+      "durations": {
+        "task:meal-a": 30,
+        "task:meal-c": 30,
+        "task:meal-e": 30
+      },
+      "windows": {
+        "task:meal-a": {
+          "start": 780,
+          "end": 990
+        },
+        "task:meal-c": {
+          "start": 780,
+          "end": 990
+        },
+        "task:meal-e": {
+          "start": 780,
+          "end": 990
+        }
+      },
+      "capacity": 2,
+      "candidatesByMeal": {
+        "task:meal-a": 23,
+        "task:meal-e": 29,
+        "task:meal-c": 31
+      },
+      "witness": [
+        {
+          "id": "participant-meal:task:meal-a",
+          "sourceTaskId": "task:meal-a",
+          "participantId": "participant-a",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-e",
+          "sourceTaskId": "task:meal-e",
+          "participantId": "participant-e",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-c",
+          "sourceTaskId": "task:meal-c",
+          "participantId": "participant-c",
+          "duration": 30,
+          "start": 810,
+          "end": 840
+        }
+      ],
+      "selectionOrder": [
+        "task:meal-a",
+        "task:meal-e",
+        "task:meal-c"
+      ],
+      "scheduledParticipantMeals": [
+        {
+          "id": "participant-meal:task:meal-a",
+          "sourceTaskId": "task:meal-a",
+          "participantId": "participant-a",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-e",
+          "sourceTaskId": "task:meal-e",
+          "participantId": "participant-e",
+          "duration": 30,
+          "start": 780,
+          "end": 810
+        },
+        {
+          "id": "participant-meal:task:meal-c",
+          "sourceTaskId": "task:meal-c",
+          "participantId": "participant-c",
+          "duration": 30,
+          "start": 810,
+          "end": 840
+        }
+      ],
+      "maximumSimultaneous": 2,
+      "branches": 3,
+      "backtracks": 0,
+      "complete": true,
+      "hardValid": true,
+      "reasonCodes": [],
+      "inputImmutable": true
+    }
+  ],
+  "deterministic": true
+}

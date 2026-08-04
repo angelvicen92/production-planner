@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
   createExactSearchLedger,
@@ -91,6 +91,7 @@ export interface ExactItinerantPlanResult {
   complete: boolean;
   scheduledTasks: ScheduledTask[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
+  scheduledParticipantMeals?: ScheduledParticipantMeal[];
   remainingTaskIds: string[];
   evidence: ExactItinerantPlanEvidence;
 }

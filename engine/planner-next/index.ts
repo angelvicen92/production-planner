@@ -8,6 +8,7 @@ export * from "./resourcePresence";
 export * from "./placement";
 export * from "./participantPresence";
 export * from "./participantItineraryQuality";
+export * from "./participantMeals";
 export * from "./placeAuxiliaryTasks";
 export * from "./secondaryContinuity";
 export * from "./saturatedResourceWindowBlock";

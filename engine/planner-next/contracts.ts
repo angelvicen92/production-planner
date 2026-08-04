@@ -101,6 +101,27 @@ export interface PlannerNextProblem {
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];
   searchPolicy?: PlannerSearchPolicy;
+  participantMeals?: ParticipantMealObligation[];
+  participantMealCapacity?: { maxSimultaneous: number };
+}
+
+export interface ParticipantMealObligation {
+  id: string;
+  sourceTaskId: string;
+  participantId: string;
+  duration: Minute;
+  window: Window;
+  status: "pending" | "interrupted" | "done" | "in_progress";
+  fixedInterval?: Window;
+}
+
+export interface ScheduledParticipantMeal {
+  id: string;
+  sourceTaskId: string;
+  participantId: string;
+  duration: Minute;
+  start: Minute;
+  end: Minute;
 }
 
 export type ScheduledTask = Task & {
@@ -130,6 +151,7 @@ export interface ValidationSummary {
   spaceMealViolationCount: number;
   mainFlowMealViolationCount: number;
   anchoredAccompanimentViolationCount: number;
+  participantMealViolationCount?: number;
   reasonCodes: string[];
 }
 
@@ -247,6 +269,7 @@ export interface PlanMetrics extends ValidationSummary {
   anchoredAccompanimentAnchorTaskIdById:Record<string,string>; anchoredAccompanimentBeforeTaskIdsById:Record<string,string[]>; anchoredAccompanimentAfterTaskIdsById:Record<string,string[]>;
   anchoredAccompanimentOperationStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorEndById:Record<string,Minute|null>; anchoredAccompanimentOperationEndById:Record<string,Minute|null>; anchoredAccompanimentTotalDurationById:Record<string,number>;
   anchoredAccompanimentAdjacencySatisfiedById:Record<string,boolean>; anchoredAccompanimentParticipantSatisfiedById:Record<string,boolean>; anchoredAccompanimentSpacesSatisfiedById:Record<string,boolean>; anchoredAccompanimentResourcesSatisfiedById:Record<string,boolean>; anchoredAccompanimentTaskWindowsSatisfiedById:Record<string,boolean>; anchoredAccompanimentCompleteById:Record<string,boolean>; anchoredAccompanimentRejectedReasonCountByCode:Record<string,number>;
+  participantMealCount?: number; participantMealPlannedCount?: number; participantMealProtectedCount?: number; participantMealCandidateCount?: number; participantMealBranchesExplored?: number; participantMealFutureFeasibilityChecks?: number; participantMealFutureInfeasibleBranches?: number; participantMealMaximumSimultaneous?: number; participantMealCapacityLimit?: number; participantMealStartByTaskId?: Record<string,Minute>; participantMealEndByTaskId?: Record<string,Minute>; participantMealRejectedReasonCountByCode?: Record<string,number>;
 }
 
 export interface PlanResult {
@@ -254,5 +277,6 @@ export interface PlanResult {
   scheduledTasks: ScheduledTask[];
   scheduledSetupPreparations: ScheduledSetupPreparation[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
+  scheduledParticipantMeals?: ScheduledParticipantMeal[];
   metrics: PlanMetrics;
 }

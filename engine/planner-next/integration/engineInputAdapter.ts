@@ -8,7 +8,8 @@ import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResource
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { resolveProjectedPlannerNextTaskResources } from "./projectedTaskResources";
 import { engineTimeToMinute, minuteToEngineTime } from "./engineTime";
-import { resolveParticipantScopedMeals } from "./participantScopedMeals";
+import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
+import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -76,6 +77,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
       ...(entry.requiredResourceIds ? { requiredResourceIds: [...entry.requiredResourceIds].sort(compare) } : {}),
       ...(entry.availability ? { availability: sorted(entry.availability, (item) => `${item.start}:${item.end}`) } : {}),
     })),
+    ...(problem.participantMeals ? { participantMeals: sorted(problem.participantMeals, (entry) => `${entry.participantId}\0${entry.sourceTaskId}`) } : {}),
     ...(problem.anchoredAccompaniments ? { anchoredAccompaniments: sorted(problem.anchoredAccompaniments, (entry) => entry.id).map((entry) => ({ ...entry, beforeTaskIds: [...entry.beforeTaskIds], afterTaskIds: [...entry.afterTaskIds] })) } : {}),
   };
 }
@@ -105,10 +107,11 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   };
   const config = input.plannerNext!;
   const participantMeals = resolveParticipantScopedMeals(input);
+  const flexibleParticipantMeals = resolveFlexibleParticipantMealTasks(input);
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
   const assignmentByTaskId = new Map(assignments.map((entry) => [entry.taskId, entry]));
-  const activeTasks = input.tasks.filter((task) => task.status !== "cancelled").sort((a, b) => a.id - b.id);
+  const activeTasks = input.tasks.filter((task) => task.status !== "cancelled" && !isFlexibleParticipantMealTask(input, task)).sort((a, b) => a.id - b.id);
   const coachByParticipantId = new Map(Object.entries(input.vocalCoachPlanResourceItemIdByContestantId ?? {}).map(([participantId, coachId]) => [Number(participantId), coachId]));
   const participantIdsByCoachId = new Map<number, readonly number[]>();
   for (const [participantId, coachId] of coachByParticipantId) participantIdsByCoachId.set(coachId, Object.freeze([...(participantIdsByCoachId.get(coachId) ?? []), participantId].sort((a, b) => a - b)));
@@ -146,7 +149,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!) };
   });
 
-  const participants = [...new Set(activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!))]
+  const participants = [...new Set([...activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!), ...flexibleParticipantMeals.obligations.map((meal) => Number(meal.participantId.split(":").at(-1)))])]
     .sort((a, b) => a - b).map((id) => ({ id: canonical("participant", id), availability: [...(participantMeals.availabilityByParticipantId.get(id) ?? [window(input.contestantAvailabilityById![id])])] }));
   const resources = [...requiredResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
@@ -192,6 +195,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     budget: { ...config.searchBudget },
     searchPolicy: config.searchPolicy,
+    ...(flexibleParticipantMeals.obligations.length ? { participantMeals: flexibleParticipantMeals.obligations, participantMealCapacity: { maxSimultaneous: input.contestantMealMaxSimultaneous! } } : {}),
     ...(activeTasks.some((task) => task.plannerNextKind === "auxiliary") ? { auxiliaryPolicy: { participantPresencePreference: "OFF" as const } } : {}),
     ...(anchoredAccompaniments?.length ? { anchoredAccompaniments } : {}),
   };

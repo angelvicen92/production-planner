@@ -85,9 +85,9 @@ test("pilot 123: ordinary technical name is distinct from transport contract", (
   assert.equal(values.get("transport.structuredRejected")?.observed, true);
 });
 
-test("pilot 134: participant meal executes and reports break scope", () => {
+test("pilot 134: flexible participant meal task executes under both policies", () => {
   const probe = probeById().get("meal-participant")!;
-  assert.deepEqual(probe.reasonCodes, ["UNSUPPORTED_BREAK_SCOPE"]);
+  assert.deepEqual(probe.reasonCodes, []);
   assert.equal(probe.observations.every((entry) => entry.pass), true);
 });
 
@@ -106,11 +106,11 @@ test("pilot 136: itinerant unit meal executes and reports break scope", () => {
 test("scoped meal observations read mutable windows and exact identities from executed inputs", () => {
   const participant = indexProbeObservations([runScopedMealProbe("participant")]);
   const changedParticipant = indexProbeObservations([runScopedMealProbe("participant", { start: "16:00", end: "16:20", participantId: 202 })]);
-  assert.deepEqual(participant.get("meal.participant.window")?.observed, { start: "15:00", end: "15:30" });
-  assert.deepEqual(changedParticipant.get("meal.participant.window")?.observed, { start: "16:00", end: "16:20" });
-  assert.equal(participant.get("meal.participant.identity")?.observed, 201);
-  assert.equal(changedParticipant.get("meal.participant.identity")?.observed, 202);
-  assert.equal(changedParticipant.get("meal.participant.entity")?.observed, "participant-meal");
+  assert.deepEqual(participant.get("meal.participant.window")?.observed, { start: 900, end: 930 });
+  assert.deepEqual(changedParticipant.get("meal.participant.window")?.observed, { start: 960, end: 980 });
+  assert.equal(participant.get("meal.participant.identity")?.observed, "task:106");
+  assert.equal(changedParticipant.get("meal.participant.identity")?.observed, "task:106");
+  assert.equal(changedParticipant.get("meal.participant.entity")?.observed, "participant-meal:106");
 
   const resource = indexProbeObservations([runScopedMealProbe("resource")]);
   const changedResource = indexProbeObservations([runScopedMealProbe("resource", { start: "16:05", end: "16:35", resourceId: 504 })]);
@@ -126,7 +126,8 @@ test("scoped meal observations read mutable windows and exact identities from ex
   assert.equal(itinerant.get("meal.itinerant-unit.identity")?.observed, 7);
   assert.equal(changedItinerant.get("meal.itinerant-unit.identity")?.observed, 8);
   assert.equal(changedItinerant.get("meal.itinerant-unit.entity")?.observed, "unit-meal");
-  for (const probe of [runScopedMealProbe("participant"), runScopedMealProbe("resource"), runScopedMealProbe("itinerant-unit")]) assert.ok(probe.reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+  assert.deepEqual(runScopedMealProbe("participant").reasonCodes, []);
+  for (const probe of [runScopedMealProbe("resource"), runScopedMealProbe("itinerant-unit")]) assert.ok(probe.reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
 });
 
 test("pilot source assertions use exact official anchors and limited A2 claims", () => {
@@ -198,7 +199,8 @@ test("meal classification comes only from executed probe observations", () => {
   const registrySource = readFileSync("engine/planner-next/coverage/focalA2EvidenceRegistry.ts", "utf8");
   assert.doesNotMatch(registrySource, /UNSUPPORTED_BREAK_SCOPE|\[134\s*,\s*135\s*,\s*136\]/);
   const audit = buildFocalA2CapabilityAudit();
-  for (const id of [134, 135, 136]) assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === id)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
+  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 134)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
+  for (const id of [135, 136]) assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === id)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
 });
 
 test("probe mutation or missing selector degrades capability", () => {
@@ -260,10 +262,9 @@ test("all probes are deterministic and inputs remain immutable", () => {
   assert.equal(serializeFocalA2CoverageEvidence(), serializeFocalA2CoverageEvidence());
 });
 
-test("tooling isolation inspects the actual diff against the merged base", () => {
+test("functional correction remains isolated from DB, UI and API", () => {
   const changed = execFileSync("git", ["diff", "--name-only", "f3924c0394c548b218e81af19f2ea364ae2c86dd"], { encoding: "utf8" }).trim().split("\n").filter(Boolean);
-  const allowed = /^(README\.md|docs\/(coverage|evidence)\/|engine\/planner-next\/coverage\/|engine\/planner-next\/benchmarks\/runFocalA2CoverageAuditBenchmark\.ts$)/;
   assert.ok(changed.length > 0);
-  for (const file of changed) assert.match(file, allowed, `productive file changed: ${file}`);
+  for (const file of changed) assert.doesNotMatch(file, /^(migrations\/|client\/|server\/|shared\/schema)/, `forbidden surface changed: ${file}`);
   assert.doesNotMatch(readFileSync("engine/planner-next/index.ts", "utf8"), /focalA2CapabilityAudit|coverage/);
 });

@@ -326,3 +326,16 @@ test("participant meal order is fingerprint-invariant while changing its interva
   assert.notEqual(supported(changed).problemFingerprint, first.problemFingerprint);
   assert.notEqual(supported(changed).sourceFingerprint, first.sourceFingerprint);
 });
+
+test("flexible participant meal task adapts separately with reversible identity and no space or resources", () => {
+    const input = createSupportedEngineInputAdapterFixture();
+    input.mealMode = "flexible_meal_window"; input.mealWindow = { start: "14:00", end: "16:00" };
+    input.mealTaskTemplateId = 999; input.contestantMealDurationMinutes = 45; input.contestantMealMaxSimultaneous = 1;
+    input.tasks.push({ id: 106, planId: 701, templateId: 999, status: "pending", contestantId: 201, operationalRole: "meal_break_placeholder" });
+    const before = structuredClone(input); const adapted = adaptEngineInputToPlannerNextProblem(input);
+    assert.equal(adapted.status, "SUPPORTED", adapted.reasonCodes.join(",")); if (adapted.status !== "SUPPORTED") return;
+    assert.equal(adapted.problem.tasks.some(task=>task.id==="task:106"),false);
+    assert.deepEqual(adapted.problem.participantMeals?.map(meal=>({sourceTaskId:meal.sourceTaskId,participantId:meal.participantId,duration:meal.duration,window:meal.window})),[{sourceTaskId:"task:106",participantId:"participant:201",duration:45,window:{start:840,end:960}}]);
+    assert.ok(adapted.identityMap.some(entry=>entry.namespace==="task"&&entry.sourceId==="106"&&entry.canonicalId==="task:106"));
+    assert.deepEqual(input,before);
+});

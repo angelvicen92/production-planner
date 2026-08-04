@@ -7,6 +7,8 @@ import { planMainFlowAndFeeders } from "../planMainFlowAndFeeders";
 import { technicalChainScenario } from "../scenarios/technicalChainScenario";
 import { getTechnicalChains } from "../technicalChains";
 import { validatePlan } from "../validate";
+import { participantMealA2Scenario } from "../scenarios/participantMealA2Scenario";
+import { engineTimeToMinute } from "../integration/engineTime";
 
 export interface ProbeObservation {
   readonly id: string;
@@ -216,7 +218,8 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
   const end = options.end ?? "15:30";
   const input = baseFixture();
   if (scope === "participant") {
-    input.protectedBreaks = [{ id: "participant-meal", kind: "meal", start, end, contestantId: options.participantId ?? 201 }];
+    input.mealMode="flexible_meal_window";input.mealWindow={start,end};input.mealTaskTemplateId=999;input.contestantMealDurationMinutes=engineTimeToMinute(end)-engineTimeToMinute(start);input.contestantMealMaxSimultaneous=2;
+    input.tasks.push({id:106,planId:input.planId,templateId:999,status:"pending",contestantId:options.participantId??201,operationalRole:"meal_break_placeholder"});
   } else if (scope === "itinerant-unit") {
     input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start, end, itinerantTeamId: options.itinerantTeamId ?? 7 }];
   } else {
@@ -233,6 +236,20 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
   const firstPreflight = preflightEngineInputForPlannerNext(input);
   const firstAdapter = adaptEngineInputToPlannerNextProblem(input);
   const secondPreflight = preflightEngineInputForPlannerNext(input);
+  if (scope === "participant") {
+    const runs=["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"].map(policy=>{const problem=participantMealA2Scenario(policy as "COMPATIBILITY_PRESERVING"|"EXACT_CONSTRUCTIVE");const execution=executePlannerNext(problem);const result=execution.result!;const validation=validatePlan(problem,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals);return {policy,complete:result.complete,hardValid:validation.hardValid,mealCount:result.scheduledParticipantMeals?.length??0};});
+    const obligation=firstAdapter.status==="SUPPORTED"?firstAdapter.problem.participantMeals?.[0]:undefined;
+    return Object.freeze({id,functionsExecuted:["preflightEngineInputForPlannerNext","adaptEngineInputToPlannerNextProblem","executePlannerNext","validatePlan"],observations:Object.freeze([
+      observe(id,"meal.participant.preflightStatus","PREFLIGHT","flexible participant meal is supported",firstPreflight.status,"SUPPORTED"),
+      observe(id,"meal.participant.reason","PREFLIGHT","valid flexible participant meal has no reason",firstPreflight.reasonCodes,[]),
+      observe(id,"meal.participant.adapterStatus","ADAPTER","adapter publishes meal obligation",firstAdapter.status,"SUPPORTED"),
+      observe(id,"meal.participant.scope","ADAPTER","meal occupies participant only",obligation?.participantId,`participant:${options.participantId??201}`),
+      observe(id,"meal.participant.window","ADAPTER","effective flexible window is preserved",obligation?.window,{start:engineTimeToMinute(start),end:engineTimeToMinute(end)}),
+      observe(id,"meal.participant.identity","ADAPTER","source task identity is reversible",obligation?.sourceTaskId,"task:106"),
+      observe(id,"meal.participant.entity","ADAPTER","meal obligation has stable identity",obligation?.id,"participant-meal:106"),
+      observe(id,"meal.participant.bothPolicies","VALIDATION","both policies complete and validate",runs,[{policy:"COMPATIBILITY_PRESERVING",complete:true,hardValid:true,mealCount:3},{policy:"EXACT_CONSTRUCTIVE",complete:true,hardValid:true,mealCount:3}]),
+    ]),reasonCodes:firstPreflight.reasonCodes,deterministic:stable(firstPreflight)===stable(secondPreflight),inputImmutable:before===stable(input)});
+  }
   const issue = firstPreflight.issues.find((entry) => entry.code === "UNSUPPORTED_BREAK_SCOPE");
   const protectedBreak = input.protectedBreaks?.[0];
   const resourceTask = input.tasks.find((entry) => entry.id === 105);

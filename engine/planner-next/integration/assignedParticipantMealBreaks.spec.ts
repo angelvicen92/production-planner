@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
-import { resolveParticipantScopedMeals } from "./participantScopedMeals";
+import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 
 test("resuelve comidas de participante y divide su disponibilidad sin mutar el input", () => {
   const input = createSupportedEngineInputAdapterFixture();
