@@ -158,9 +158,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-12-done-protected"
+        "source-12-spec10-protected",
+        "source-12-spec07-protected"
       ],
-      "a2RequirementReason": "SPEC-07 :: estados operativos y replanificación :: done nunca se modifica",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -170,9 +171,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-13-in-progress-protected"
+        "source-13-spec10-protected",
+        "source-13-spec07-protected"
       ],
-      "a2RequirementReason": "SPEC-07 :: estados operativos y replanificación :: in_progress nunca se modifica",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -182,9 +184,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-14-cancelled-excluded"
+        "source-14-spec10-not-plannable"
       ],
-      "a2RequirementReason": "SPEC-07 :: estados operativos y replanificación :: cancelled queda fuera de obligaciones pendientes",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -206,9 +208,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-16-time-lock"
+        "source-16-spec10-time-lock"
       ],
-      "a2RequirementReason": "SPEC-10 :: locks :: lock temporal exacto y persistente",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -230,9 +232,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-18-resource-lock"
+        "source-18-spec10-resource-lock"
       ],
-      "a2RequirementReason": "SPEC-10 :: locks :: lock de recurso explícito",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -242,9 +244,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-19-full-lock"
+        "source-19-spec10-full-lock"
       ],
-      "a2RequirementReason": "SPEC-10 :: locks :: full lock separa tiempo espacio y recurso",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -254,9 +256,11 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-20-combined-locks"
+        "source-20-spec10-locks",
+        "source-20-spec10-time-lock",
+        "source-20-spec10-resource-lock"
       ],
-      "a2RequirementReason": "SPEC-10 :: locks :: combinación de locks compatibles e incompatibles",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -506,9 +510,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-41-coach-availability"
+        "source-41-spec10-resources"
       ],
-      "a2RequirementReason": "SPEC-08 :: recursos y coaches :: disponibilidad efectiva del coach",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1454,9 +1458,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-120-technical-without-participant"
+        "source-120-spec07-technical",
+        "source-120-a2-programming-test"
       ],
-      "a2RequirementReason": "ENSAYO_A2_LV.pdf p.1 :: PROGRAMACIÓN + PRUEBA :: operación técnica sin participante",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1466,9 +1471,11 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-121-technical-chain"
+        "source-121-spec07-technical",
+        "source-121-spec10-dependencies",
+        "source-121-spec07-flow-dependencies"
       ],
-      "a2RequirementReason": "SPEC-08 :: operaciones técnicas :: cadena técnica completa",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1478,9 +1485,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-122-technical-dependency"
+        "source-122-spec10-dependencies",
+        "source-122-spec07-technical"
       ],
-      "a2RequirementReason": "SPEC-08 :: operaciones técnicas :: dependencia tipada entre operaciones",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1490,9 +1498,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-123-transport-distinction"
+        "source-123-a2-disassembly-transfer",
+        "source-123-spec07-explicit-transfer"
       ],
-      "a2RequirementReason": "ENSAYO_A2_LV.pdf p.1 :: PROGRAMACIÓN + PRUEBA :: desmontaje/traslado técnico distinto de transporte estructurado",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1622,9 +1631,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-134-participant-meal"
+        "source-134-spec07-contestants",
+        "source-134-a2-sodexo"
       ],
-      "a2RequirementReason": "SPEC-07 :: 19.5 Concursantes :: comida por participante",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1634,9 +1644,9 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-135-resource-meal"
+        "source-135-spec10-breaks"
       ],
-      "a2RequirementReason": "SPEC-10 :: 14. Comidas y pausas protegidas :: comida por recurso",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -1646,9 +1656,10 @@
       "requiredByOfficialSpec": true,
       "a2RequirementStatus": "REQUIRED",
       "a2RequirementEvidence": [
-        "source-136-itinerant-meal"
+        "source-136-spec10-breaks",
+        "source-136-spec08-meals"
       ],
-      "a2RequirementReason": "SPEC-10 :: 14. Comidas y pausas protegidas :: comida por unidad itinerante",
+      "a2RequirementReason": "Fuentes exactas revisadas para el piloto; cada afirmación queda limitada por su source assertion.",
       "productPhase": false
     },
     {
@@ -2026,116 +2037,220 @@
   ],
   "sourceAssertions": [
     {
-      "id": "source-12-done-protected",
+      "id": "source-12-spec10-protected",
+      "capabilityId": 12,
+      "document": "SPEC-10",
+      "section": "8.1. Protegidas",
+      "claim": "done es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-12-spec07-protected",
       "capabilityId": 12,
       "document": "SPEC-07",
-      "section": "estados operativos y replanificación",
-      "claim": "done nunca se modifica"
+      "section": "11. Fase 0 — Estado protegido",
+      "claim": "done pertenece al estado protegido",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-13-in-progress-protected",
+      "id": "source-13-spec10-protected",
+      "capabilityId": 13,
+      "document": "SPEC-10",
+      "section": "8.1. Protegidas",
+      "claim": "in_progress es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-13-spec07-protected",
       "capabilityId": 13,
       "document": "SPEC-07",
-      "section": "estados operativos y replanificación",
-      "claim": "in_progress nunca se modifica"
+      "section": "11. Fase 0 — Estado protegido",
+      "claim": "in_progress pertenece al estado protegido",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-14-cancelled-excluded",
+      "id": "source-14-spec10-not-plannable",
       "capabilityId": 14,
-      "document": "SPEC-07",
-      "section": "estados operativos y replanificación",
-      "claim": "cancelled queda fuera de obligaciones pendientes"
+      "document": "SPEC-10",
+      "section": "8.3. No planificables",
+      "claim": "cancelled se excluye o se representa mediante regla explícita; su tratamiento no se infiere del nombre",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-16-time-lock",
+      "id": "source-16-spec10-time-lock",
       "capabilityId": 16,
       "document": "SPEC-10",
-      "section": "locks",
-      "claim": "lock temporal exacto y persistente"
+      "section": "9.1. Lock de tiempo",
+      "claim": "el lock de tiempo fija exactamente el intervalo autorizado",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-18-resource-lock",
+      "id": "source-18-spec10-resource-lock",
       "capabilityId": 18,
       "document": "SPEC-10",
-      "section": "locks",
-      "claim": "lock de recurso explícito"
+      "section": "9.3. Lock de recurso",
+      "claim": "el lock de recurso conserva el recurso requerido",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-19-full-lock",
+      "id": "source-19-spec10-full-lock",
       "capabilityId": 19,
       "document": "SPEC-10",
-      "section": "locks",
-      "claim": "full lock separa tiempo espacio y recurso"
+      "section": "9.4. Lock completo",
+      "claim": "conserva tiempo, espacio y recursos aplicables; una dimensión no representable sin pérdida hace la adaptación unsupported",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-20-combined-locks",
+      "id": "source-20-spec10-locks",
       "capabilityId": 20,
       "document": "SPEC-10",
-      "section": "locks",
-      "claim": "combinación de locks compatibles e incompatibles"
+      "section": "9. Locks",
+      "claim": "cada lock se traduce explícitamente y ninguno se transforma en preferencia soft",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-41-coach-availability",
+      "id": "source-20-spec10-time-lock",
+      "capabilityId": 20,
+      "document": "SPEC-10",
+      "section": "9.1. Lock de tiempo",
+      "claim": "la dimensión temporal conserva exactamente el intervalo autorizado",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-20-spec10-resource-lock",
+      "capabilityId": 20,
+      "document": "SPEC-10",
+      "section": "9.3. Lock de recurso",
+      "claim": "la dimensión de recurso conserva el recurso requerido",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-41-spec10-resources",
       "capabilityId": 41,
-      "document": "SPEC-08",
-      "section": "recursos y coaches",
-      "claim": "disponibilidad efectiva del coach"
+      "document": "SPEC-10",
+      "section": "12. Recursos",
+      "claim": "cada recurso conserva identidad, disponibilidad, tipo o rol y asignaciones; coaches se resuelven por relaciones explícitas",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-120-technical-without-participant",
+      "id": "source-120-spec07-technical",
+      "capabilityId": 120,
+      "document": "SPEC-07",
+      "section": "6.9 Operación técnica",
+      "claim": "una operación técnica puede no pertenecer a ningún concursante",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-120-a2-programming-test",
       "capabilityId": 120,
       "document": "ENSAYO_A2_LV.pdf p.1",
       "section": "PROGRAMACIÓN + PRUEBA",
-      "claim": "operación técnica sin participante"
+      "claim": "A2 contiene una operación técnica denominada PROGRAMACIÓN + PRUEBA",
+      "sourceType": "A2_EXAMPLE"
     },
     {
-      "id": "source-121-technical-chain",
+      "id": "source-121-spec07-technical",
       "capabilityId": 121,
-      "document": "SPEC-08",
-      "section": "operaciones técnicas",
-      "claim": "cadena técnica completa"
+      "document": "SPEC-07",
+      "section": "6.9 Operación técnica",
+      "claim": "las operaciones técnicas son tareas explícitas",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-122-technical-dependency",
+      "id": "source-121-spec10-dependencies",
+      "capabilityId": 121,
+      "document": "SPEC-10",
+      "section": "13. Dependencias",
+      "claim": "las dependencias normalizadas se conservan por identidad de tarea",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-121-spec07-flow-dependencies",
+      "capabilityId": 121,
+      "document": "SPEC-07",
+      "section": "13. Fase 2 — Dependencias del flujo principal",
+      "claim": "una secuencia se deriva de dependencias explícitas y no del nombre",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-122-spec10-dependencies",
       "capabilityId": 122,
-      "document": "SPEC-08",
-      "section": "operaciones técnicas",
-      "claim": "dependencia tipada entre operaciones"
+      "document": "SPEC-10",
+      "section": "13. Dependencias",
+      "claim": "el adaptador conserva todas las dependencias normalizadas por identidad de tarea",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-123-transport-distinction",
+      "id": "source-122-spec07-technical",
+      "capabilityId": 122,
+      "document": "SPEC-07",
+      "section": "6.9 Operación técnica",
+      "claim": "la tarea dependiente puede ser una operación técnica",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-123-a2-disassembly-transfer",
       "capabilityId": 123,
       "document": "ENSAYO_A2_LV.pdf p.1",
-      "section": "PROGRAMACIÓN + PRUEBA",
-      "claim": "desmontaje/traslado técnico distinto de transporte estructurado"
+      "section": "DESMONTAJE Y TRASLADO",
+      "claim": "A2 contiene una obligación denominada DESMONTAJE Y TRASLADO",
+      "sourceType": "A2_EXAMPLE"
     },
     {
-      "id": "source-134-participant-meal",
+      "id": "source-123-spec07-explicit-transfer",
+      "capabilityId": 123,
+      "document": "SPEC-07",
+      "section": "18.4 Traslado técnico explícito",
+      "claim": "desmontar, transportar o volver a montar se modela como tarea explícita con duración y recursos; el nombre no activa un contrato estructurado",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-134-spec07-contestants",
       "capabilityId": 134,
       "document": "SPEC-07",
       "section": "19.5 Concursantes",
-      "claim": "comida por participante"
+      "claim": "la comida de concursante es una obligación por participante",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-135-resource-meal",
+      "id": "source-134-a2-sodexo",
+      "capabilityId": 134,
+      "document": "DESGLOSE A2.pdf p.1",
+      "section": "bloques Sodexo individualizados",
+      "claim": "A2 muestra bloques individuales de Sodexo",
+      "sourceType": "A2_EXAMPLE"
+    },
+    {
+      "id": "source-135-spec10-breaks",
       "capabilityId": 135,
       "document": "SPEC-10",
       "section": "14. Comidas y pausas protegidas",
-      "claim": "comida por recurso"
+      "claim": "el adaptador distingue pausa por recurso y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
+      "sourceType": "OFFICIAL_SPEC"
     },
     {
-      "id": "source-136-itinerant-meal",
+      "id": "source-136-spec10-breaks",
       "capabilityId": 136,
       "document": "SPEC-10",
       "section": "14. Comidas y pausas protegidas",
-      "claim": "comida por unidad itinerante"
+      "claim": "el adaptador distingue comida de unidad itinerante y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
+      "sourceType": "OFFICIAL_SPEC"
+    },
+    {
+      "id": "source-136-spec08-meals",
+      "capabilityId": 136,
+      "document": "SPEC-08",
+      "section": "20. Comidas",
+      "claim": "las comidas itinerantes son obligaciones operativas explícitas",
+      "sourceType": "OFFICIAL_SPEC"
     }
   ],
   "bindings": [
     {
       "capabilityId": 12,
       "sourceEvidenceIds": [
-        "source-12-done-protected"
+        "source-12-spec10-protected",
+        "source-12-spec07-protected"
       ],
       "probeObservationIds": [
         "protected.done.availability",
@@ -2182,7 +2297,8 @@
     {
       "capabilityId": 13,
       "sourceEvidenceIds": [
-        "source-13-in-progress-protected"
+        "source-13-spec10-protected",
+        "source-13-spec07-protected"
       ],
       "probeObservationIds": [
         "protected.in_progress.availability",
@@ -2229,7 +2345,7 @@
     {
       "capabilityId": 14,
       "sourceEvidenceIds": [
-        "source-14-cancelled-excluded"
+        "source-14-spec10-not-plannable"
       ],
       "probeObservationIds": [
         "protected.cancelled.problemAbsent",
@@ -2275,7 +2391,7 @@
     {
       "capabilityId": 16,
       "sourceEvidenceIds": [
-        "source-16-time-lock"
+        "source-16-spec10-time-lock"
       ],
       "probeObservationIds": [
         "lock.time.valid.interval",
@@ -2326,7 +2442,7 @@
     {
       "capabilityId": 18,
       "sourceEvidenceIds": [
-        "source-18-resource-lock"
+        "source-18-spec10-resource-lock"
       ],
       "probeObservationIds": [
         "lock.resource.deduplicated"
@@ -2370,7 +2486,7 @@
     {
       "capabilityId": 19,
       "sourceEvidenceIds": [
-        "source-19-full-lock"
+        "source-19-spec10-full-lock"
       ],
       "probeObservationIds": [
         "lock.full.timeDimension",
@@ -2421,7 +2537,9 @@
     {
       "capabilityId": 20,
       "sourceEvidenceIds": [
-        "source-20-combined-locks"
+        "source-20-spec10-locks",
+        "source-20-spec10-time-lock",
+        "source-20-spec10-resource-lock"
       ],
       "probeObservationIds": [
         "lock.combined.compatible",
@@ -2469,7 +2587,7 @@
     {
       "capabilityId": 41,
       "sourceEvidenceIds": [
-        "source-41-coach-availability"
+        "source-41-spec10-resources"
       ],
       "probeObservationIds": [
         "coach.availability.projected",
@@ -2519,7 +2637,8 @@
     {
       "capabilityId": 120,
       "sourceEvidenceIds": [
-        "source-120-technical-without-participant"
+        "source-120-spec07-technical",
+        "source-120-a2-programming-test"
       ],
       "probeObservationIds": [
         "technical.kind",
@@ -2569,7 +2688,9 @@
     {
       "capabilityId": 121,
       "sourceEvidenceIds": [
-        "source-121-technical-chain"
+        "source-121-spec07-technical",
+        "source-121-spec10-dependencies",
+        "source-121-spec07-flow-dependencies"
       ],
       "probeObservationIds": [
         "technical.chain.ids",
@@ -2600,7 +2721,7 @@
           ],
           "property": "chain member IDs are concrete",
           "layer": "EVIDENCE",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         }
       ],
       "requiredLayers": [
@@ -2620,7 +2741,8 @@
     {
       "capabilityId": 122,
       "sourceEvidenceIds": [
-        "source-122-technical-dependency"
+        "source-122-spec10-dependencies",
+        "source-122-spec07-technical"
       ],
       "probeObservationIds": [
         "technical.dependency.typed",
@@ -2669,7 +2791,8 @@
     {
       "capabilityId": 123,
       "sourceEvidenceIds": [
-        "source-123-transport-distinction"
+        "source-123-a2-disassembly-transfer",
+        "source-123-spec07-explicit-transfer"
       ],
       "probeObservationIds": [
         "transport.ordinaryTechnicalSupported",
@@ -2720,13 +2843,16 @@
     {
       "capabilityId": 134,
       "sourceEvidenceIds": [
-        "source-134-participant-meal"
+        "source-134-spec07-contestants",
+        "source-134-a2-sodexo"
       ],
       "probeObservationIds": [
         "meal.participant.preflightStatus",
         "meal.participant.reason",
         "meal.participant.adapterStatus",
+        "meal.participant.scope",
         "meal.participant.window",
+        "meal.participant.identity",
         "meal.participant.entity"
       ],
       "testAssertions": [
@@ -2771,13 +2897,15 @@
     {
       "capabilityId": 135,
       "sourceEvidenceIds": [
-        "source-135-resource-meal"
+        "source-135-spec10-breaks"
       ],
       "probeObservationIds": [
         "meal.resource.preflightStatus",
         "meal.resource.reason",
         "meal.resource.adapterStatus",
+        "meal.resource.scope",
         "meal.resource.window",
+        "meal.resource.identity",
         "meal.resource.entity"
       ],
       "testAssertions": [
@@ -2822,13 +2950,16 @@
     {
       "capabilityId": 136,
       "sourceEvidenceIds": [
-        "source-136-itinerant-meal"
+        "source-136-spec10-breaks",
+        "source-136-spec08-meals"
       ],
       "probeObservationIds": [
         "meal.itinerant-unit.preflightStatus",
         "meal.itinerant-unit.reason",
         "meal.itinerant-unit.adapterStatus",
+        "meal.itinerant-unit.scope",
         "meal.itinerant-unit.window",
+        "meal.itinerant-unit.identity",
         "meal.itinerant-unit.entity"
       ],
       "testAssertions": [
@@ -2898,7 +3029,8 @@
               "end": 630
             }
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "protected.done.duration",
@@ -2907,7 +3039,8 @@
           "property": "done derives duration from the protected interval",
           "observed": 30,
           "expected": 30,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "protected.done.dispatcherNoPartial",
@@ -2922,7 +3055,8 @@
             "complete": false,
             "scheduledCount": 0
           },
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -2955,7 +3089,8 @@
               "end": 630
             }
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "protected.in_progress.duration",
@@ -2964,7 +3099,8 @@
           "property": "in_progress derives duration from the protected interval",
           "observed": 30,
           "expected": 30,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "protected.in_progress.dispatcherNoPartial",
@@ -2979,7 +3115,8 @@
             "complete": false,
             "scheduledCount": 0
           },
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3002,7 +3139,8 @@
           "property": "cancelled task is absent from PlannerNextProblem",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "protected.cancelled.resultAbsent",
@@ -3011,7 +3149,8 @@
           "property": "cancelled task and its lock create no scheduled obligation",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3044,7 +3183,8 @@
               "end": 630
             }
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3065,7 +3205,8 @@
           "property": "contradictory time obligations are rejected",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3090,7 +3231,8 @@
           "property": "resource lock is projected once",
           "observed": 1,
           "expected": 1,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3111,7 +3253,8 @@
           "property": "space lock reports its real unsupported reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3134,7 +3277,8 @@
           "property": "full lock time dimension is representable",
           "observed": false,
           "expected": false,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "lock.full.resourceDimension",
@@ -3143,7 +3287,8 @@
           "property": "full lock resource dimension is representable",
           "observed": false,
           "expected": false,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "lock.full.spaceDimension",
@@ -3152,7 +3297,8 @@
           "property": "full lock space dimension reports the contract gap",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3177,7 +3323,8 @@
           "property": "compatible time and resource locks adapt together",
           "observed": "SUPPORTED",
           "expected": "SUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3198,7 +3345,8 @@
           "property": "incompatible combined locks report the executed reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3231,7 +3379,8 @@
               "end": 720
             }
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "coach.notDuplicated",
@@ -3240,7 +3389,8 @@
           "property": "coach identity is not duplicated as generic resource",
           "observed": false,
           "expected": false,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3263,7 +3413,8 @@
           "property": "plannerNextKind technical remains typed",
           "observed": "technical",
           "expected": "technical",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.noParticipant",
@@ -3272,7 +3423,8 @@
           "property": "technical task has no participant",
           "observed": false,
           "expected": false,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.resource",
@@ -3287,7 +3439,8 @@
             "plan-resource:502",
             "plan-resource:503"
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.scheduled",
@@ -3296,7 +3449,8 @@
           "property": "technical task is executed",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.hardValid",
@@ -3305,7 +3459,8 @@
           "property": "technical result is hard-valid",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3333,7 +3488,8 @@
             "technical-chain-positioning",
             "technical-chain-camera-test"
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.dependencies",
@@ -3346,7 +3502,8 @@
           "expected": [
             "technical-chain-positioning"
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.complete",
@@ -3355,7 +3512,8 @@
           "property": "technical chain is scheduled completely",
           "observed": 2,
           "expected": 2,
-          "pass": true
+          "pass": true,
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.ordered",
@@ -3364,7 +3522,8 @@
           "property": "predecessor ends before dependent starts",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.hardValid",
@@ -3373,7 +3532,8 @@
           "property": "technical chain is hard-valid",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "PLANNER_LAYER"
         }
       ],
       "reasonCodes": [],
@@ -3400,7 +3560,8 @@
           "expected": [
             "task:105"
           ],
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.dependency.ordered",
@@ -3409,7 +3570,8 @@
           "property": "technical predecessor ends before dependent starts",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "technical.dependency.hardValid",
@@ -3418,7 +3580,8 @@
           "property": "integrated dependency plan is hard-valid",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -3441,7 +3604,8 @@
           "property": "ordinary technical name does not activate transport semantics",
           "observed": "SUPPORTED",
           "expected": "SUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "transport.structuredRejected",
@@ -3450,7 +3614,8 @@
           "property": "structured transport contract reports its real reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "transport.ordinaryHardValid",
@@ -3459,7 +3624,8 @@
           "property": "ordinary technical operation remains hard-valid",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3482,7 +3648,8 @@
           "property": "participant meal is rejected by executed preflight",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.reason",
@@ -3491,7 +3658,8 @@
           "property": "participant meal reports executed break-scope reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.adapterStatus",
@@ -3500,13 +3668,24 @@
           "property": "participant meal cannot publish a PlannerNextProblem",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.scope",
+          "probeId": "meal-participant",
+          "layer": "PREFLIGHT",
+          "property": "participant meal scope is read from the executed input or issue",
+          "observed": "participant",
+          "expected": "participant",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.window",
           "probeId": "meal-participant",
           "layer": "PREFLIGHT",
-          "property": "participant meal window is retained in the probed input",
+          "property": "participant meal window is read from the executed input",
           "observed": {
             "start": "15:00",
             "end": "15:30"
@@ -3515,16 +3694,28 @@
             "start": "15:00",
             "end": "15:30"
           },
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.identity",
+          "probeId": "meal-participant",
+          "layer": "PREFLIGHT",
+          "property": "participant meal preserves its concrete scoped identity",
+          "observed": 201,
+          "expected": 201,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.participant.entity",
           "probeId": "meal-participant",
           "layer": "PREFLIGHT",
-          "property": "participant meal issue retains an entity",
-          "observed": true,
-          "expected": true,
-          "pass": true
+          "property": "participant meal issue preserves its exact entity ID",
+          "observed": "participant-meal",
+          "expected": "participant-meal",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3547,7 +3738,8 @@
           "property": "resource meal is rejected by executed preflight",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.reason",
@@ -3556,7 +3748,8 @@
           "property": "resource meal reports executed break-scope reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.adapterStatus",
@@ -3565,13 +3758,24 @@
           "property": "resource meal cannot publish a PlannerNextProblem",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.scope",
+          "probeId": "meal-resource",
+          "layer": "PREFLIGHT",
+          "property": "resource meal scope is read from the executed input or issue",
+          "observed": "resource_meal",
+          "expected": "resource_meal",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.window",
           "probeId": "meal-resource",
           "layer": "PREFLIGHT",
-          "property": "resource meal window is retained in the probed input",
+          "property": "resource meal window is read from the executed input",
           "observed": {
             "start": "15:00",
             "end": "15:30"
@@ -3580,16 +3784,28 @@
             "start": "15:00",
             "end": "15:30"
           },
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.identity",
+          "probeId": "meal-resource",
+          "layer": "PREFLIGHT",
+          "property": "resource meal preserves its concrete scoped identity",
+          "observed": 503,
+          "expected": 503,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.entity",
           "probeId": "meal-resource",
           "layer": "PREFLIGHT",
-          "property": "resource meal issue retains an entity",
-          "observed": true,
-          "expected": true,
-          "pass": true
+          "property": "resource meal issue preserves its exact entity ID",
+          "observed": "105",
+          "expected": "105",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3612,7 +3828,8 @@
           "property": "itinerant-unit meal is rejected by executed preflight",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.reason",
@@ -3621,7 +3838,8 @@
           "property": "itinerant-unit meal reports executed break-scope reason",
           "observed": true,
           "expected": true,
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.adapterStatus",
@@ -3630,13 +3848,24 @@
           "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
           "observed": "UNSUPPORTED",
           "expected": "UNSUPPORTED",
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.scope",
+          "probeId": "meal-itinerant-unit",
+          "layer": "PREFLIGHT",
+          "property": "itinerant-unit meal scope is read from the executed input or issue",
+          "observed": "itinerant-team",
+          "expected": "itinerant-team",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.window",
           "probeId": "meal-itinerant-unit",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal window is retained in the probed input",
+          "property": "itinerant-unit meal window is read from the executed input",
           "observed": {
             "start": "15:00",
             "end": "15:30"
@@ -3645,16 +3874,28 @@
             "start": "15:00",
             "end": "15:30"
           },
-          "pass": true
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.identity",
+          "probeId": "meal-itinerant-unit",
+          "layer": "PREFLIGHT",
+          "property": "itinerant-unit meal preserves its concrete scoped identity",
+          "observed": 7,
+          "expected": 7,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.entity",
           "probeId": "meal-itinerant-unit",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal issue retains an entity",
-          "observed": true,
-          "expected": true,
-          "pass": true
+          "property": "itinerant-unit meal issue preserves its exact entity ID",
+          "observed": "unit-meal",
+          "expected": "unit-meal",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [
@@ -3682,7 +3923,8 @@
           "end": 630
         }
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.done.duration",
@@ -3691,7 +3933,8 @@
       "property": "done derives duration from the protected interval",
       "observed": 30,
       "expected": 30,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.done.dispatcherNoPartial",
@@ -3706,7 +3949,8 @@
         "complete": false,
         "scheduledCount": 0
       },
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.in_progress.availability",
@@ -3725,7 +3969,8 @@
           "end": 630
         }
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.in_progress.duration",
@@ -3734,7 +3979,8 @@
       "property": "in_progress derives duration from the protected interval",
       "observed": 30,
       "expected": 30,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.in_progress.dispatcherNoPartial",
@@ -3749,7 +3995,8 @@
         "complete": false,
         "scheduledCount": 0
       },
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.cancelled.problemAbsent",
@@ -3758,7 +4005,8 @@
       "property": "cancelled task is absent from PlannerNextProblem",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "protected.cancelled.resultAbsent",
@@ -3767,7 +4015,8 @@
       "property": "cancelled task and its lock create no scheduled obligation",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.time.valid.interval",
@@ -3786,7 +4035,8 @@
           "end": 630
         }
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.time.contradictory.reason",
@@ -3795,7 +4045,8 @@
       "property": "contradictory time obligations are rejected",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.resource.deduplicated",
@@ -3804,7 +4055,8 @@
       "property": "resource lock is projected once",
       "observed": 1,
       "expected": 1,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.space.reason",
@@ -3813,7 +4065,8 @@
       "property": "space lock reports its real unsupported reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.full.timeDimension",
@@ -3822,7 +4075,8 @@
       "property": "full lock time dimension is representable",
       "observed": false,
       "expected": false,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.full.resourceDimension",
@@ -3831,7 +4085,8 @@
       "property": "full lock resource dimension is representable",
       "observed": false,
       "expected": false,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.full.spaceDimension",
@@ -3840,7 +4095,8 @@
       "property": "full lock space dimension reports the contract gap",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.combined.compatible",
@@ -3849,7 +4105,8 @@
       "property": "compatible time and resource locks adapt together",
       "observed": "SUPPORTED",
       "expected": "SUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "lock.combined.incompatible",
@@ -3858,7 +4115,8 @@
       "property": "incompatible combined locks report the executed reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "coach.availability.projected",
@@ -3877,7 +4135,8 @@
           "end": 720
         }
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "coach.notDuplicated",
@@ -3886,7 +4145,8 @@
       "property": "coach identity is not duplicated as generic resource",
       "observed": false,
       "expected": false,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.kind",
@@ -3895,7 +4155,8 @@
       "property": "plannerNextKind technical remains typed",
       "observed": "technical",
       "expected": "technical",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.noParticipant",
@@ -3904,7 +4165,8 @@
       "property": "technical task has no participant",
       "observed": false,
       "expected": false,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.resource",
@@ -3919,7 +4181,8 @@
         "plan-resource:502",
         "plan-resource:503"
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.scheduled",
@@ -3928,7 +4191,8 @@
       "property": "technical task is executed",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.hardValid",
@@ -3937,7 +4201,8 @@
       "property": "technical result is hard-valid",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.chain.ids",
@@ -3952,7 +4217,8 @@
         "technical-chain-positioning",
         "technical-chain-camera-test"
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.dependencies",
@@ -3965,7 +4231,8 @@
       "expected": [
         "technical-chain-positioning"
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.complete",
@@ -3974,7 +4241,8 @@
       "property": "technical chain is scheduled completely",
       "observed": 2,
       "expected": 2,
-      "pass": true
+      "pass": true,
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.ordered",
@@ -3983,7 +4251,8 @@
       "property": "predecessor ends before dependent starts",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.hardValid",
@@ -3992,7 +4261,8 @@
       "property": "technical chain is hard-valid",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.dependency.typed",
@@ -4005,7 +4275,8 @@
       "expected": [
         "task:105"
       ],
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.dependency.ordered",
@@ -4014,7 +4285,8 @@
       "property": "technical predecessor ends before dependent starts",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "technical.dependency.hardValid",
@@ -4023,7 +4295,8 @@
       "property": "integrated dependency plan is hard-valid",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "transport.ordinaryTechnicalSupported",
@@ -4032,7 +4305,8 @@
       "property": "ordinary technical name does not activate transport semantics",
       "observed": "SUPPORTED",
       "expected": "SUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "transport.structuredRejected",
@@ -4041,7 +4315,8 @@
       "property": "structured transport contract reports its real reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "transport.ordinaryHardValid",
@@ -4050,7 +4325,8 @@
       "property": "ordinary technical operation remains hard-valid",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.preflightStatus",
@@ -4059,7 +4335,8 @@
       "property": "participant meal is rejected by executed preflight",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.reason",
@@ -4068,7 +4345,8 @@
       "property": "participant meal reports executed break-scope reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.adapterStatus",
@@ -4077,13 +4355,24 @@
       "property": "participant meal cannot publish a PlannerNextProblem",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.participant.scope",
+      "probeId": "meal-participant",
+      "layer": "PREFLIGHT",
+      "property": "participant meal scope is read from the executed input or issue",
+      "observed": "participant",
+      "expected": "participant",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.window",
       "probeId": "meal-participant",
       "layer": "PREFLIGHT",
-      "property": "participant meal window is retained in the probed input",
+      "property": "participant meal window is read from the executed input",
       "observed": {
         "start": "15:00",
         "end": "15:30"
@@ -4092,16 +4381,28 @@
         "start": "15:00",
         "end": "15:30"
       },
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.participant.identity",
+      "probeId": "meal-participant",
+      "layer": "PREFLIGHT",
+      "property": "participant meal preserves its concrete scoped identity",
+      "observed": 201,
+      "expected": 201,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.participant.entity",
       "probeId": "meal-participant",
       "layer": "PREFLIGHT",
-      "property": "participant meal issue retains an entity",
-      "observed": true,
-      "expected": true,
-      "pass": true
+      "property": "participant meal issue preserves its exact entity ID",
+      "observed": "participant-meal",
+      "expected": "participant-meal",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.preflightStatus",
@@ -4110,7 +4411,8 @@
       "property": "resource meal is rejected by executed preflight",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.reason",
@@ -4119,7 +4421,8 @@
       "property": "resource meal reports executed break-scope reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.adapterStatus",
@@ -4128,13 +4431,24 @@
       "property": "resource meal cannot publish a PlannerNextProblem",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.scope",
+      "probeId": "meal-resource",
+      "layer": "PREFLIGHT",
+      "property": "resource meal scope is read from the executed input or issue",
+      "observed": "resource_meal",
+      "expected": "resource_meal",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.window",
       "probeId": "meal-resource",
       "layer": "PREFLIGHT",
-      "property": "resource meal window is retained in the probed input",
+      "property": "resource meal window is read from the executed input",
       "observed": {
         "start": "15:00",
         "end": "15:30"
@@ -4143,16 +4457,28 @@
         "start": "15:00",
         "end": "15:30"
       },
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.identity",
+      "probeId": "meal-resource",
+      "layer": "PREFLIGHT",
+      "property": "resource meal preserves its concrete scoped identity",
+      "observed": 503,
+      "expected": 503,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.entity",
       "probeId": "meal-resource",
       "layer": "PREFLIGHT",
-      "property": "resource meal issue retains an entity",
-      "observed": true,
-      "expected": true,
-      "pass": true
+      "property": "resource meal issue preserves its exact entity ID",
+      "observed": "105",
+      "expected": "105",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.preflightStatus",
@@ -4161,7 +4487,8 @@
       "property": "itinerant-unit meal is rejected by executed preflight",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.reason",
@@ -4170,7 +4497,8 @@
       "property": "itinerant-unit meal reports executed break-scope reason",
       "observed": true,
       "expected": true,
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.adapterStatus",
@@ -4179,13 +4507,24 @@
       "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
       "observed": "UNSUPPORTED",
       "expected": "UNSUPPORTED",
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.scope",
+      "probeId": "meal-itinerant-unit",
+      "layer": "PREFLIGHT",
+      "property": "itinerant-unit meal scope is read from the executed input or issue",
+      "observed": "itinerant-team",
+      "expected": "itinerant-team",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.window",
       "probeId": "meal-itinerant-unit",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal window is retained in the probed input",
+      "property": "itinerant-unit meal window is read from the executed input",
       "observed": {
         "start": "15:00",
         "end": "15:30"
@@ -4194,25 +4533,50 @@
         "start": "15:00",
         "end": "15:30"
       },
-      "pass": true
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.identity",
+      "probeId": "meal-itinerant-unit",
+      "layer": "PREFLIGHT",
+      "property": "itinerant-unit meal preserves its concrete scoped identity",
+      "observed": 7,
+      "expected": 7,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.entity",
       "probeId": "meal-itinerant-unit",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal issue retains an entity",
-      "observed": true,
-      "expected": true,
-      "pass": true
+      "property": "itinerant-unit meal issue preserves its exact entity ID",
+      "observed": "unit-meal",
+      "expected": "unit-meal",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
     }
   ],
   "assertionResults": [
     {
-      "id": "source-12-done-protected",
+      "id": "source-12-spec10-protected",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "done nunca se modifica",
+      "property": "done es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+      "file": null,
+      "selector": null,
+      "observed": 12,
+      "expected": 12,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-12-spec07-protected",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "done pertenece al estado protegido",
       "file": null,
       "selector": null,
       "observed": 12,
@@ -4280,12 +4644,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "done interval is immutable",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 12: done remains exactly fixed",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4302,11 +4666,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-13-in-progress-protected",
+      "id": "source-13-spec10-protected",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "in_progress nunca se modifica",
+      "property": "in_progress es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+      "file": null,
+      "selector": null,
+      "observed": 13,
+      "expected": 13,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-13-spec07-protected",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "in_progress pertenece al estado protegido",
       "file": null,
       "selector": null,
       "observed": 13,
@@ -4374,12 +4751,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "in-progress interval is immutable",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 13: in progress remains exactly fixed",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4396,11 +4773,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-14-cancelled-excluded",
+      "id": "source-14-spec10-not-plannable",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "cancelled queda fuera de obligaciones pendientes",
+      "property": "cancelled se excluye o se representa mediante regla explícita; su tratamiento no se infiere del nombre",
       "file": null,
       "selector": null,
       "observed": 14,
@@ -4439,12 +4816,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "cancelled task creates no planner obligation",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 14: cancelled is excluded with its locks",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4461,11 +4838,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-16-time-lock",
+      "id": "source-16-spec10-time-lock",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "lock temporal exacto y persistente",
+      "property": "el lock de tiempo fija exactamente el intervalo autorizado",
       "file": null,
       "selector": null,
       "observed": 16,
@@ -4514,12 +4891,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "time-lock variants execute",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 16: time lock distinguishes exact and contradictory obligations",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4546,11 +4923,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-18-resource-lock",
+      "id": "source-18-spec10-resource-lock",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "lock de recurso explícito",
+      "property": "el lock de recurso conserva el recurso requerido",
       "file": null,
       "selector": null,
       "observed": 18,
@@ -4576,12 +4953,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "resource lock projects once",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 18: resource lock deduplicates",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4598,11 +4975,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-19-full-lock",
+      "id": "source-19-spec10-full-lock",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "full lock separa tiempo espacio y recurso",
+      "property": "conserva tiempo, espacio y recursos aplicables; una dimensión no representable sin pérdida hace la adaptación unsupported",
       "file": null,
       "selector": null,
       "observed": 19,
@@ -4654,12 +5031,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "full lock separates time, resource and space",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 19: full lock reports dimensions separately",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4680,11 +5057,37 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-20-combined-locks",
+      "id": "source-20-spec10-locks",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "combinación de locks compatibles e incompatibles",
+      "property": "cada lock se traduce explícitamente y ninguno se transforma en preferencia soft",
+      "file": null,
+      "selector": null,
+      "observed": 20,
+      "expected": 20,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-20-spec10-time-lock",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "la dimensión temporal conserva exactamente el intervalo autorizado",
+      "file": null,
+      "selector": null,
+      "observed": 20,
+      "expected": 20,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-20-spec10-resource-lock",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "la dimensión de recurso conserva el recurso requerido",
       "file": null,
       "selector": null,
       "observed": 20,
@@ -4723,12 +5126,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "combined locks preserve compatible composition",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 20: combined locks execute compatible and incompatible cases",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4749,11 +5152,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-41-coach-availability",
+      "id": "source-41-spec10-resources",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "disponibilidad efectiva del coach",
+      "property": "cada recurso conserva identidad, disponibilidad, tipo o rol y asignaciones; coaches se resuelven por relaciones explícitas",
       "file": null,
       "selector": null,
       "observed": 41,
@@ -4802,12 +5205,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "coach uses effective resource availability",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 41: coach availability is projected without duplication",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4834,11 +5237,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-120-technical-without-participant",
+      "id": "source-120-spec07-technical",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "operación técnica sin participante",
+      "property": "una operación técnica puede no pertenecer a ningún concursante",
+      "file": null,
+      "selector": null,
+      "observed": 120,
+      "expected": 120,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-120-a2-programming-test",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "A2 contiene una operación técnica denominada PROGRAMACIÓN + PRUEBA",
       "file": null,
       "selector": null,
       "observed": 120,
@@ -4922,12 +5338,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "VALIDATION",
-      "property": "technical EngineInput task is typed and scheduled",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 120: technical task without participant executes",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -4944,11 +5360,37 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-121-technical-chain",
+      "id": "source-121-spec07-technical",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "cadena técnica completa",
+      "property": "las operaciones técnicas son tareas explícitas",
+      "file": null,
+      "selector": null,
+      "observed": 121,
+      "expected": 121,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-121-spec10-dependencies",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "las dependencias normalizadas se conservan por identidad de tarea",
+      "file": null,
+      "selector": null,
+      "observed": 121,
+      "expected": 121,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-121-spec07-flow-dependencies",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "una secuencia se deriva de dependencias explícitas y no del nombre",
       "file": null,
       "selector": null,
       "observed": 121,
@@ -4973,7 +5415,7 @@
         "technical-chain-camera-test"
       ],
       "reason": "Executed observation matches expected value",
-      "boundary": "ENGINE_INPUT"
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.complete",
@@ -4986,7 +5428,7 @@
       "observed": 2,
       "expected": 2,
       "reason": "Executed observation matches expected value",
-      "boundary": "ENGINE_INPUT"
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.ordered",
@@ -4999,7 +5441,7 @@
       "observed": true,
       "expected": true,
       "reason": "Executed observation matches expected value",
-      "boundary": "ENGINE_INPUT"
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "technical.chain.hardValid",
@@ -5012,19 +5454,19 @@
       "observed": true,
       "expected": true,
       "reason": "Executed observation matches expected value",
-      "boundary": "ENGINE_INPUT"
+      "boundary": "PLANNER_LAYER"
     },
     {
       "id": "test-121",
       "kind": "TEST",
       "status": "PASS",
       "layer": "VALIDATION",
-      "property": "technical chain authority and search execute",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 121: technical chain is complete and ordered",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5044,14 +5486,27 @@
         "technical-chain-camera-test"
       ],
       "reason": "Observed benchmark value matches",
-      "boundary": "ENGINE_INPUT"
+      "boundary": "PLANNER_LAYER"
     },
     {
-      "id": "source-122-technical-dependency",
+      "id": "source-122-spec10-dependencies",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "dependencia tipada entre operaciones",
+      "property": "el adaptador conserva todas las dependencias normalizadas por identidad de tarea",
+      "file": null,
+      "selector": null,
+      "observed": 122,
+      "expected": 122,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-122-spec07-technical",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "la tarea dependiente puede ser una operación técnica",
       "file": null,
       "selector": null,
       "observed": 122,
@@ -5107,12 +5562,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "VALIDATION",
-      "property": "EngineInput dependency survives adaptation and execution",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 122: technical dependency remains typed and hard-valid",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5133,11 +5588,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-123-transport-distinction",
+      "id": "source-123-a2-disassembly-transfer",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "desmontaje/traslado técnico distinto de transporte estructurado",
+      "property": "A2 contiene una obligación denominada DESMONTAJE Y TRASLADO",
+      "file": null,
+      "selector": null,
+      "observed": 123,
+      "expected": 123,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-123-spec07-explicit-transfer",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "desmontar, transportar o volver a montar se modela como tarea explícita con duración y recursos; el nombre no activa un contrato estructurado",
       "file": null,
       "selector": null,
       "observed": 123,
@@ -5189,12 +5657,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "names do not activate transport semantics",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 123: ordinary technical name is distinct from transport contract",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5215,11 +5683,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-134-participant-meal",
+      "id": "source-134-spec07-contestants",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "comida por participante",
+      "property": "la comida de concursante es una obligación por participante",
+      "file": null,
+      "selector": null,
+      "observed": 134,
+      "expected": 134,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-134-a2-sodexo",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "A2 muestra bloques individuales de Sodexo",
       "file": null,
       "selector": null,
       "observed": 134,
@@ -5267,11 +5748,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.participant.scope",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "participant meal scope is read from the executed input or issue",
+      "file": null,
+      "selector": "meal.participant.scope",
+      "observed": "participant",
+      "expected": "participant",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.participant.window",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "participant meal window is retained in the probed input",
+      "property": "participant meal window is read from the executed input",
       "file": null,
       "selector": "meal.participant.window",
       "observed": {
@@ -5286,15 +5780,28 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.participant.identity",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "participant meal preserves its concrete scoped identity",
+      "file": null,
+      "selector": "meal.participant.identity",
+      "observed": 201,
+      "expected": 201,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.participant.entity",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "participant meal issue retains an entity",
+      "property": "participant meal issue preserves its exact entity ID",
       "file": null,
       "selector": "meal.participant.entity",
-      "observed": true,
-      "expected": true,
+      "observed": "participant-meal",
+      "expected": "participant-meal",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5303,12 +5810,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "participant meal rejection is observed",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 134: participant meal executes and reports break scope",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5329,11 +5836,11 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-135-resource-meal",
+      "id": "source-135-spec10-breaks",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "comida por recurso",
+      "property": "el adaptador distingue pausa por recurso y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
       "file": null,
       "selector": null,
       "observed": 135,
@@ -5381,11 +5888,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.resource.scope",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "resource meal scope is read from the executed input or issue",
+      "file": null,
+      "selector": "meal.resource.scope",
+      "observed": "resource_meal",
+      "expected": "resource_meal",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.resource.window",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "resource meal window is retained in the probed input",
+      "property": "resource meal window is read from the executed input",
       "file": null,
       "selector": "meal.resource.window",
       "observed": {
@@ -5400,15 +5920,28 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.resource.identity",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "resource meal preserves its concrete scoped identity",
+      "file": null,
+      "selector": "meal.resource.identity",
+      "observed": 503,
+      "expected": 503,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.resource.entity",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "resource meal issue retains an entity",
+      "property": "resource meal issue preserves its exact entity ID",
       "file": null,
       "selector": "meal.resource.entity",
-      "observed": true,
-      "expected": true,
+      "observed": "105",
+      "expected": "105",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5417,12 +5950,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "resource-bound meal rejection is observed",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 135: resource meal executes and reports break scope",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5443,11 +5976,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
-      "id": "source-136-itinerant-meal",
+      "id": "source-136-spec10-breaks",
       "kind": "SOURCE",
       "status": "PASS",
       "layer": "SOURCE",
-      "property": "comida por unidad itinerante",
+      "property": "el adaptador distingue comida de unidad itinerante y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
+      "file": null,
+      "selector": null,
+      "observed": 136,
+      "expected": 136,
+      "reason": "Explicit reviewed source assertion matches capability",
+      "boundary": null
+    },
+    {
+      "id": "source-136-spec08-meals",
+      "kind": "SOURCE",
+      "status": "PASS",
+      "layer": "SOURCE",
+      "property": "las comidas itinerantes son obligaciones operativas explícitas",
       "file": null,
       "selector": null,
       "observed": 136,
@@ -5495,11 +6041,24 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.itinerant-unit.scope",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "itinerant-unit meal scope is read from the executed input or issue",
+      "file": null,
+      "selector": "meal.itinerant-unit.scope",
+      "observed": "itinerant-team",
+      "expected": "itinerant-team",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.itinerant-unit.window",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal window is retained in the probed input",
+      "property": "itinerant-unit meal window is read from the executed input",
       "file": null,
       "selector": "meal.itinerant-unit.window",
       "observed": {
@@ -5514,15 +6073,28 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.itinerant-unit.identity",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "PREFLIGHT",
+      "property": "itinerant-unit meal preserves its concrete scoped identity",
+      "file": null,
+      "selector": "meal.itinerant-unit.identity",
+      "observed": 7,
+      "expected": 7,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "meal.itinerant-unit.entity",
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal issue retains an entity",
+      "property": "itinerant-unit meal issue preserves its exact entity ID",
       "file": null,
       "selector": "meal.itinerant-unit.entity",
-      "observed": true,
-      "expected": true,
+      "observed": "unit-meal",
+      "expected": "unit-meal",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -5531,12 +6103,12 @@
       "kind": "TEST",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "itinerant-team meal rejection is observed",
+      "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 136: itinerant unit meal executes and reports break scope",
       "observed": true,
       "expected": true,
-      "reason": "Exact functional test name exists",
+      "reason": "Exact test definition exists; execution is validated separately",
       "boundary": null
     },
     {
@@ -5558,7 +6130,7 @@
     }
   ],
   "assertionCounts": {
-    "PASS": 93,
+    "PASS": 110,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -5712,7 +6284,8 @@
       "binding": {
         "capabilityId": 12,
         "sourceEvidenceIds": [
-          "source-12-done-protected"
+          "source-12-spec10-protected",
+          "source-12-spec07-protected"
         ],
         "probeObservationIds": [
           "protected.done.availability",
@@ -5758,11 +6331,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-12-done-protected",
+          "id": "source-12-spec10-protected",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "done nunca se modifica",
+          "property": "done es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+          "file": null,
+          "selector": null,
+          "observed": 12,
+          "expected": 12,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-12-spec07-protected",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "done pertenece al estado protegido",
           "file": null,
           "selector": null,
           "observed": 12,
@@ -5830,12 +6416,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "done interval is immutable",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 12: done remains exactly fixed",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -5864,7 +6450,8 @@
       "binding": {
         "capabilityId": 13,
         "sourceEvidenceIds": [
-          "source-13-in-progress-protected"
+          "source-13-spec10-protected",
+          "source-13-spec07-protected"
         ],
         "probeObservationIds": [
           "protected.in_progress.availability",
@@ -5910,11 +6497,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-13-in-progress-protected",
+          "id": "source-13-spec10-protected",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "in_progress nunca se modifica",
+          "property": "in_progress es protegida; conserva inicio, final, espacio, recursos, locks y relaciones y no puede reordenarse, desplazarse, reasignarse ni desaparecer",
+          "file": null,
+          "selector": null,
+          "observed": 13,
+          "expected": 13,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-13-spec07-protected",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "in_progress pertenece al estado protegido",
           "file": null,
           "selector": null,
           "observed": 13,
@@ -5982,12 +6582,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "in-progress interval is immutable",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 13: in progress remains exactly fixed",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6016,7 +6616,7 @@
       "binding": {
         "capabilityId": 14,
         "sourceEvidenceIds": [
-          "source-14-cancelled-excluded"
+          "source-14-spec10-not-plannable"
         ],
         "probeObservationIds": [
           "protected.cancelled.problemAbsent",
@@ -6061,11 +6661,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-14-cancelled-excluded",
+          "id": "source-14-spec10-not-plannable",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "cancelled queda fuera de obligaciones pendientes",
+          "property": "cancelled se excluye o se representa mediante regla explícita; su tratamiento no se infiere del nombre",
           "file": null,
           "selector": null,
           "observed": 14,
@@ -6104,12 +6704,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "cancelled task creates no planner obligation",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 14: cancelled is excluded with its locks",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6151,7 +6751,7 @@
       "binding": {
         "capabilityId": 16,
         "sourceEvidenceIds": [
-          "source-16-time-lock"
+          "source-16-spec10-time-lock"
         ],
         "probeObservationIds": [
           "lock.time.valid.interval",
@@ -6201,11 +6801,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-16-time-lock",
+          "id": "source-16-spec10-time-lock",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "lock temporal exacto y persistente",
+          "property": "el lock de tiempo fija exactamente el intervalo autorizado",
           "file": null,
           "selector": null,
           "observed": 16,
@@ -6254,12 +6854,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "time-lock variants execute",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 16: time lock distinguishes exact and contradictory obligations",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6311,7 +6911,7 @@
       "binding": {
         "capabilityId": 18,
         "sourceEvidenceIds": [
-          "source-18-resource-lock"
+          "source-18-spec10-resource-lock"
         ],
         "probeObservationIds": [
           "lock.resource.deduplicated"
@@ -6354,11 +6954,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-18-resource-lock",
+          "id": "source-18-spec10-resource-lock",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "lock de recurso explícito",
+          "property": "el lock de recurso conserva el recurso requerido",
           "file": null,
           "selector": null,
           "observed": 18,
@@ -6384,12 +6984,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "resource lock projects once",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 18: resource lock deduplicates",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6418,7 +7018,7 @@
       "binding": {
         "capabilityId": 19,
         "sourceEvidenceIds": [
-          "source-19-full-lock"
+          "source-19-spec10-full-lock"
         ],
         "probeObservationIds": [
           "lock.full.timeDimension",
@@ -6468,11 +7068,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-19-full-lock",
+          "id": "source-19-spec10-full-lock",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "full lock separa tiempo espacio y recurso",
+          "property": "conserva tiempo, espacio y recursos aplicables; una dimensión no representable sin pérdida hace la adaptación unsupported",
           "file": null,
           "selector": null,
           "observed": 19,
@@ -6524,12 +7124,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "full lock separates time, resource and space",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 19: full lock reports dimensions separately",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6562,7 +7162,9 @@
       "binding": {
         "capabilityId": 20,
         "sourceEvidenceIds": [
-          "source-20-combined-locks"
+          "source-20-spec10-locks",
+          "source-20-spec10-time-lock",
+          "source-20-spec10-resource-lock"
         ],
         "probeObservationIds": [
           "lock.combined.compatible",
@@ -6609,11 +7211,37 @@
       },
       "assertionResults": [
         {
-          "id": "source-20-combined-locks",
+          "id": "source-20-spec10-locks",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "combinación de locks compatibles e incompatibles",
+          "property": "cada lock se traduce explícitamente y ninguno se transforma en preferencia soft",
+          "file": null,
+          "selector": null,
+          "observed": 20,
+          "expected": 20,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-20-spec10-time-lock",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "la dimensión temporal conserva exactamente el intervalo autorizado",
+          "file": null,
+          "selector": null,
+          "observed": 20,
+          "expected": 20,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-20-spec10-resource-lock",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "la dimensión de recurso conserva el recurso requerido",
           "file": null,
           "selector": null,
           "observed": 20,
@@ -6652,12 +7280,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "combined locks preserve compatible composition",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 20: combined locks execute compatible and incompatible cases",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -6950,7 +7578,7 @@
       "binding": {
         "capabilityId": 41,
         "sourceEvidenceIds": [
-          "source-41-coach-availability"
+          "source-41-spec10-resources"
         ],
         "probeObservationIds": [
           "coach.availability.projected",
@@ -6999,11 +7627,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-41-coach-availability",
+          "id": "source-41-spec10-resources",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "disponibilidad efectiva del coach",
+          "property": "cada recurso conserva identidad, disponibilidad, tipo o rol y asignaciones; coaches se resuelven por relaciones explícitas",
           "file": null,
           "selector": null,
           "observed": 41,
@@ -7052,12 +7680,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "coach uses effective resource availability",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 41: coach availability is projected without duplication",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -8110,7 +8738,8 @@
       "binding": {
         "capabilityId": 120,
         "sourceEvidenceIds": [
-          "source-120-technical-without-participant"
+          "source-120-spec07-technical",
+          "source-120-a2-programming-test"
         ],
         "probeObservationIds": [
           "technical.kind",
@@ -8159,11 +8788,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-120-technical-without-participant",
+          "id": "source-120-spec07-technical",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "operación técnica sin participante",
+          "property": "una operación técnica puede no pertenecer a ningún concursante",
+          "file": null,
+          "selector": null,
+          "observed": 120,
+          "expected": 120,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-120-a2-programming-test",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "A2 contiene una operación técnica denominada PROGRAMACIÓN + PRUEBA",
           "file": null,
           "selector": null,
           "observed": 120,
@@ -8247,12 +8889,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "VALIDATION",
-          "property": "technical EngineInput task is typed and scheduled",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 120: technical task without participant executes",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -8281,7 +8923,9 @@
       "binding": {
         "capabilityId": 121,
         "sourceEvidenceIds": [
-          "source-121-technical-chain"
+          "source-121-spec07-technical",
+          "source-121-spec10-dependencies",
+          "source-121-spec07-flow-dependencies"
         ],
         "probeObservationIds": [
           "technical.chain.ids",
@@ -8312,7 +8956,7 @@
             ],
             "property": "chain member IDs are concrete",
             "layer": "EVIDENCE",
-            "boundary": "ENGINE_INPUT"
+            "boundary": "PLANNER_LAYER"
           }
         ],
         "requiredLayers": [
@@ -8331,11 +8975,37 @@
       },
       "assertionResults": [
         {
-          "id": "source-121-technical-chain",
+          "id": "source-121-spec07-technical",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "cadena técnica completa",
+          "property": "las operaciones técnicas son tareas explícitas",
+          "file": null,
+          "selector": null,
+          "observed": 121,
+          "expected": 121,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-121-spec10-dependencies",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "las dependencias normalizadas se conservan por identidad de tarea",
+          "file": null,
+          "selector": null,
+          "observed": 121,
+          "expected": 121,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-121-spec07-flow-dependencies",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "una secuencia se deriva de dependencias explícitas y no del nombre",
           "file": null,
           "selector": null,
           "observed": 121,
@@ -8360,7 +9030,7 @@
             "technical-chain-camera-test"
           ],
           "reason": "Executed observation matches expected value",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.complete",
@@ -8373,7 +9043,7 @@
           "observed": 2,
           "expected": 2,
           "reason": "Executed observation matches expected value",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.ordered",
@@ -8386,7 +9056,7 @@
           "observed": true,
           "expected": true,
           "reason": "Executed observation matches expected value",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "technical.chain.hardValid",
@@ -8399,19 +9069,19 @@
           "observed": true,
           "expected": true,
           "reason": "Executed observation matches expected value",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         },
         {
           "id": "test-121",
           "kind": "TEST",
           "status": "PASS",
           "layer": "VALIDATION",
-          "property": "technical chain authority and search execute",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 121: technical chain is complete and ordered",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -8431,11 +9101,11 @@
             "technical-chain-camera-test"
           ],
           "reason": "Observed benchmark value matches",
-          "boundary": "ENGINE_INPUT"
+          "boundary": "PLANNER_LAYER"
         }
       ],
-      "derivedCoverageStatus": "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE",
-      "derivedBlockingLayer": "EVIDENCE",
+      "derivedCoverageStatus": "EVIDENCED_SUPPORTED",
+      "derivedBlockingLayer": "NONE",
       "technicallyAudited": true,
       "sourceReviewed": true,
       "missingEvidence": [],
@@ -8446,7 +9116,8 @@
       "binding": {
         "capabilityId": 122,
         "sourceEvidenceIds": [
-          "source-122-technical-dependency"
+          "source-122-spec10-dependencies",
+          "source-122-spec07-technical"
         ],
         "probeObservationIds": [
           "technical.dependency.typed",
@@ -8494,11 +9165,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-122-technical-dependency",
+          "id": "source-122-spec10-dependencies",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "dependencia tipada entre operaciones",
+          "property": "el adaptador conserva todas las dependencias normalizadas por identidad de tarea",
+          "file": null,
+          "selector": null,
+          "observed": 122,
+          "expected": 122,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-122-spec07-technical",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "la tarea dependiente puede ser una operación técnica",
           "file": null,
           "selector": null,
           "observed": 122,
@@ -8554,12 +9238,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "VALIDATION",
-          "property": "EngineInput dependency survives adaptation and execution",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 122: technical dependency remains typed and hard-valid",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -8592,7 +9276,8 @@
       "binding": {
         "capabilityId": 123,
         "sourceEvidenceIds": [
-          "source-123-transport-distinction"
+          "source-123-a2-disassembly-transfer",
+          "source-123-spec07-explicit-transfer"
         ],
         "probeObservationIds": [
           "transport.ordinaryTechnicalSupported",
@@ -8642,11 +9327,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-123-transport-distinction",
+          "id": "source-123-a2-disassembly-transfer",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "desmontaje/traslado técnico distinto de transporte estructurado",
+          "property": "A2 contiene una obligación denominada DESMONTAJE Y TRASLADO",
+          "file": null,
+          "selector": null,
+          "observed": 123,
+          "expected": 123,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-123-spec07-explicit-transfer",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "desmontar, transportar o volver a montar se modela como tarea explícita con duración y recursos; el nombre no activa un contrato estructurado",
           "file": null,
           "selector": null,
           "observed": 123,
@@ -8698,12 +9396,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "names do not activate transport semantics",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 123: ordinary technical name is distinct from transport contract",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -8866,13 +9564,16 @@
       "binding": {
         "capabilityId": 134,
         "sourceEvidenceIds": [
-          "source-134-participant-meal"
+          "source-134-spec07-contestants",
+          "source-134-a2-sodexo"
         ],
         "probeObservationIds": [
           "meal.participant.preflightStatus",
           "meal.participant.reason",
           "meal.participant.adapterStatus",
+          "meal.participant.scope",
           "meal.participant.window",
+          "meal.participant.identity",
           "meal.participant.entity"
         ],
         "testAssertions": [
@@ -8916,11 +9617,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-134-participant-meal",
+          "id": "source-134-spec07-contestants",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "comida por participante",
+          "property": "la comida de concursante es una obligación por participante",
+          "file": null,
+          "selector": null,
+          "observed": 134,
+          "expected": 134,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-134-a2-sodexo",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "A2 muestra bloques individuales de Sodexo",
           "file": null,
           "selector": null,
           "observed": 134,
@@ -8968,11 +9682,24 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.participant.scope",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "participant meal scope is read from the executed input or issue",
+          "file": null,
+          "selector": "meal.participant.scope",
+          "observed": "participant",
+          "expected": "participant",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.participant.window",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "participant meal window is retained in the probed input",
+          "property": "participant meal window is read from the executed input",
           "file": null,
           "selector": "meal.participant.window",
           "observed": {
@@ -8987,15 +9714,28 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.participant.identity",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "participant meal preserves its concrete scoped identity",
+          "file": null,
+          "selector": "meal.participant.identity",
+          "observed": 201,
+          "expected": 201,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.participant.entity",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "participant meal issue retains an entity",
+          "property": "participant meal issue preserves its exact entity ID",
           "file": null,
           "selector": "meal.participant.entity",
-          "observed": true,
-          "expected": true,
+          "observed": "participant-meal",
+          "expected": "participant-meal",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9004,12 +9744,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "participant meal rejection is observed",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 134: participant meal executes and reports break scope",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -9042,13 +9782,15 @@
       "binding": {
         "capabilityId": 135,
         "sourceEvidenceIds": [
-          "source-135-resource-meal"
+          "source-135-spec10-breaks"
         ],
         "probeObservationIds": [
           "meal.resource.preflightStatus",
           "meal.resource.reason",
           "meal.resource.adapterStatus",
+          "meal.resource.scope",
           "meal.resource.window",
+          "meal.resource.identity",
           "meal.resource.entity"
         ],
         "testAssertions": [
@@ -9092,11 +9834,11 @@
       },
       "assertionResults": [
         {
-          "id": "source-135-resource-meal",
+          "id": "source-135-spec10-breaks",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "comida por recurso",
+          "property": "el adaptador distingue pausa por recurso y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
           "file": null,
           "selector": null,
           "observed": 135,
@@ -9144,11 +9886,24 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.resource.scope",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "resource meal scope is read from the executed input or issue",
+          "file": null,
+          "selector": "meal.resource.scope",
+          "observed": "resource_meal",
+          "expected": "resource_meal",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.resource.window",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "resource meal window is retained in the probed input",
+          "property": "resource meal window is read from the executed input",
           "file": null,
           "selector": "meal.resource.window",
           "observed": {
@@ -9163,15 +9918,28 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.resource.identity",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "resource meal preserves its concrete scoped identity",
+          "file": null,
+          "selector": "meal.resource.identity",
+          "observed": 503,
+          "expected": 503,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.resource.entity",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "resource meal issue retains an entity",
+          "property": "resource meal issue preserves its exact entity ID",
           "file": null,
           "selector": "meal.resource.entity",
-          "observed": true,
-          "expected": true,
+          "observed": "105",
+          "expected": "105",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9180,12 +9948,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "resource-bound meal rejection is observed",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 135: resource meal executes and reports break scope",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -9218,13 +9986,16 @@
       "binding": {
         "capabilityId": 136,
         "sourceEvidenceIds": [
-          "source-136-itinerant-meal"
+          "source-136-spec10-breaks",
+          "source-136-spec08-meals"
         ],
         "probeObservationIds": [
           "meal.itinerant-unit.preflightStatus",
           "meal.itinerant-unit.reason",
           "meal.itinerant-unit.adapterStatus",
+          "meal.itinerant-unit.scope",
           "meal.itinerant-unit.window",
+          "meal.itinerant-unit.identity",
           "meal.itinerant-unit.entity"
         ],
         "testAssertions": [
@@ -9268,11 +10039,24 @@
       },
       "assertionResults": [
         {
-          "id": "source-136-itinerant-meal",
+          "id": "source-136-spec10-breaks",
           "kind": "SOURCE",
           "status": "PASS",
           "layer": "SOURCE",
-          "property": "comida por unidad itinerante",
+          "property": "el adaptador distingue comida de unidad itinerante y rechaza con UNSUPPORTED_BREAK_SCOPE si no puede conservar el ámbito",
+          "file": null,
+          "selector": null,
+          "observed": 136,
+          "expected": 136,
+          "reason": "Explicit reviewed source assertion matches capability",
+          "boundary": null
+        },
+        {
+          "id": "source-136-spec08-meals",
+          "kind": "SOURCE",
+          "status": "PASS",
+          "layer": "SOURCE",
+          "property": "las comidas itinerantes son obligaciones operativas explícitas",
           "file": null,
           "selector": null,
           "observed": 136,
@@ -9320,11 +10104,24 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.itinerant-unit.scope",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "itinerant-unit meal scope is read from the executed input or issue",
+          "file": null,
+          "selector": "meal.itinerant-unit.scope",
+          "observed": "itinerant-team",
+          "expected": "itinerant-team",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.itinerant-unit.window",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal window is retained in the probed input",
+          "property": "itinerant-unit meal window is read from the executed input",
           "file": null,
           "selector": "meal.itinerant-unit.window",
           "observed": {
@@ -9339,15 +10136,28 @@
           "boundary": "ENGINE_INPUT"
         },
         {
+          "id": "meal.itinerant-unit.identity",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "PREFLIGHT",
+          "property": "itinerant-unit meal preserves its concrete scoped identity",
+          "file": null,
+          "selector": "meal.itinerant-unit.identity",
+          "observed": 7,
+          "expected": 7,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
           "id": "meal.itinerant-unit.entity",
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal issue retains an entity",
+          "property": "itinerant-unit meal issue preserves its exact entity ID",
           "file": null,
           "selector": "meal.itinerant-unit.entity",
-          "observed": true,
-          "expected": true,
+          "observed": "unit-meal",
+          "expected": "unit-meal",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -9356,12 +10166,12 @@
           "kind": "TEST",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "itinerant-team meal rejection is observed",
+          "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 136: itinerant unit meal executes and reports break scope",
           "observed": true,
           "expected": true,
-          "reason": "Exact functional test name exists",
+          "reason": "Exact test definition exists; execution is validated separately",
           "boundary": null
         },
         {
@@ -9839,7 +10649,7 @@
       "status": "PARTIALLY_SUPPORTED",
       "memberStatuses": {
         "120": "EVIDENCED_SUPPORTED",
-        "121": "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE",
+        "121": "EVIDENCED_SUPPORTED",
         "122": "EVIDENCED_SUPPORTED",
         "123": "PARTIALLY_SUPPORTED"
       },
@@ -10029,8 +10839,8 @@
     "UNRESOLVED": 152
   },
   "statusCounts": {
-    "EVIDENCED_SUPPORTED": 9,
-    "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE": 1,
+    "EVIDENCED_SUPPORTED": 10,
+    "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE": 0,
     "PARTIALLY_SUPPORTED": 2,
     "EXPLICITLY_UNSUPPORTED": 3,
     "CONTRACT_GAP": 0,
@@ -10047,8 +10857,38 @@
     "type": "IMPLEMENT_CAPABILITY",
     "selectedCapabilityId": 134,
     "selectedAction": "Implement the demonstrated required blocker: participant-scoped meal",
+    "evaluatedCandidates": [
+      {
+        "capabilityId": 134,
+        "capability": "participant-scoped meal",
+        "ranking": [
+          -3,
+          0,
+          134
+        ]
+      },
+      {
+        "capabilityId": 135,
+        "capability": "resource-scoped meal",
+        "ranking": [
+          -1,
+          0,
+          135
+        ]
+      },
+      {
+        "capabilityId": 136,
+        "capability": "unit-scoped meal",
+        "ranking": [
+          -1,
+          0,
+          136
+        ]
+      }
+    ],
     "decisionTrace": [
       "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
+      "evaluate ranked candidates: participant-scoped meal, resource-scoped meal, unit-scoped meal",
       "rank higher A2 visibility before official-only impact",
       "prefer directly observed rejection over inferred contract risk",
       "select participant-scoped meal from the resulting deterministic order"

@@ -16,6 +16,7 @@ export interface ProbeObservation {
   readonly observed: unknown;
   readonly expected: unknown;
   readonly pass: boolean;
+  readonly boundary: "ENGINE_INPUT" | "PLANNER_LAYER" | "A2";
 }
 
 export interface CapabilityProbeResult {
@@ -29,8 +30,8 @@ export interface CapabilityProbeResult {
 
 const stable = (value: unknown): string => JSON.stringify(value);
 const integrationFingerprint = (value: ReturnType<typeof executeIntegration>): string => stable({ preflight: value.preflight, adapted: value.adapted, kind: value.execution?.kind ?? null, scheduledTasks: value.execution?.result?.scheduledTasks ?? null, hardValid: value.validation?.hardValid ?? null, validationReasons: value.validation?.reasonCodes ?? null });
-const observe = (probeId: string, id: string, layer: ProbeObservation["layer"], property: string, observed: unknown, expected: unknown): ProbeObservation =>
-  Object.freeze({ id, probeId, layer, property, observed, expected, pass: stable(observed) === stable(expected) });
+const observe = (probeId: string, id: string, layer: ProbeObservation["layer"], property: string, observed: unknown, expected: unknown, boundary: ProbeObservation["boundary"] = "ENGINE_INPUT"): ProbeObservation =>
+  Object.freeze({ id, probeId, layer, property, observed, expected, pass: stable(observed) === stable(expected), boundary });
 
 function baseFixture(): EngineInput {
   const input = structuredClone(createSupportedEngineInputAdapterFixture());
@@ -162,11 +163,11 @@ export function runTechnicalChainProbe(): CapabilityProbeResult {
   const ids = chains[0]?.map((task) => task.id) ?? [];
   const scheduled = first.scheduledTasks.filter((task) => ids.includes(task.id));
   return Object.freeze({ id: "technical-chain", functionsExecuted: ["getTechnicalChains", "planMainFlowAndFeeders", "validatePlan"], observations: Object.freeze([
-    observe("technical-chain", "technical.chain.ids", "SEARCH", "technical chain members are identified", ids, ["technical-chain-positioning", "technical-chain-camera-test"]),
-    observe("technical-chain", "technical.chain.dependencies", "SEARCH", "technical chain dependency is preserved", chains[0]?.[1]?.dependencies, ["technical-chain-positioning"]),
-    observe("technical-chain", "technical.chain.complete", "SEARCH", "technical chain is scheduled completely", scheduled.length, ids.length),
-    observe("technical-chain", "technical.chain.ordered", "VALIDATION", "predecessor ends before dependent starts", scheduled[0]!.end <= scheduled[1]!.start, true),
-    observe("technical-chain", "technical.chain.hardValid", "VALIDATION", "technical chain is hard-valid", validation.hardValid, true),
+    observe("technical-chain", "technical.chain.ids", "SEARCH", "technical chain members are identified", ids, ["technical-chain-positioning", "technical-chain-camera-test"], "PLANNER_LAYER"),
+    observe("technical-chain", "technical.chain.dependencies", "SEARCH", "technical chain dependency is preserved", chains[0]?.[1]?.dependencies, ["technical-chain-positioning"], "PLANNER_LAYER"),
+    observe("technical-chain", "technical.chain.complete", "SEARCH", "technical chain is scheduled completely", scheduled.length, ids.length, "PLANNER_LAYER"),
+    observe("technical-chain", "technical.chain.ordered", "VALIDATION", "predecessor ends before dependent starts", scheduled[0]!.end <= scheduled[1]!.start, true, "PLANNER_LAYER"),
+    observe("technical-chain", "technical.chain.hardValid", "VALIDATION", "technical chain is hard-valid", validation.hardValid, true, "PLANNER_LAYER"),
   ]), reasonCodes: validation.reasonCodes, deterministic: stable(first.scheduledTasks) === stable(second.scheduledTasks), inputImmutable: before === stable(problem) });
 }
 
@@ -201,31 +202,64 @@ export function runTransportDistinctionProbe(): CapabilityProbeResult {
   ]), reasonCodes: structuredResult.preflight.reasonCodes, deterministic: true, inputImmutable: beforeOrdinary === stable(ordinary) && beforeStructured === stable(structured) });
 }
 
-function scopedMealProbe(id: string, scope: "participant" | "resource" | "itinerant-unit", configure: (input: EngineInput) => void): CapabilityProbeResult {
+export interface ScopedMealProbeOptions {
+  readonly start?: string;
+  readonly end?: string;
+  readonly participantId?: number;
+  readonly resourceId?: number;
+  readonly itinerantTeamId?: number;
+}
+
+export function runScopedMealProbe(scope: "participant" | "resource" | "itinerant-unit", options: ScopedMealProbeOptions = {}): CapabilityProbeResult {
+  const id = `meal-${scope}`;
+  const start = options.start ?? "15:00";
+  const end = options.end ?? "15:30";
   const input = baseFixture();
-  configure(input);
+  if (scope === "participant") {
+    input.protectedBreaks = [{ id: "participant-meal", kind: "meal", start, end, contestantId: options.participantId ?? 201 }];
+  } else if (scope === "itinerant-unit") {
+    input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start, end, itinerantTeamId: options.itinerantTeamId ?? 7 }];
+  } else {
+    const task = input.tasks.find((entry) => entry.id === 105)!;
+    Object.assign(task, {
+      breakId: 135,
+      breakKind: "resource_meal",
+      assignedResourceIds: [options.resourceId ?? 503],
+      fixedWindowStart: start,
+      fixedWindowEnd: end,
+    });
+  }
   const before = stable(input);
   const firstPreflight = preflightEngineInputForPlannerNext(input);
   const firstAdapter = adaptEngineInputToPlannerNextProblem(input);
   const secondPreflight = preflightEngineInputForPlannerNext(input);
   const issue = firstPreflight.issues.find((entry) => entry.code === "UNSUPPORTED_BREAK_SCOPE");
+  const protectedBreak = input.protectedBreaks?.[0];
+  const resourceTask = input.tasks.find((entry) => entry.id === 105);
+  const observedScope = scope === "resource" ? resourceTask?.breakKind : issue?.details?.scope;
+  const observedWindow = scope === "resource"
+    ? { start: resourceTask?.fixedWindowStart, end: resourceTask?.fixedWindowEnd }
+    : { start: protectedBreak?.start, end: protectedBreak?.end };
+  const observedIdentity = scope === "participant"
+    ? protectedBreak?.contestantId
+    : scope === "itinerant-unit"
+      ? protectedBreak?.itinerantTeamId
+      : resourceTask?.assignedResourceIds?.[0];
+  const expectedIdentity = scope === "participant" ? options.participantId ?? 201 : scope === "itinerant-unit" ? options.itinerantTeamId ?? 7 : options.resourceId ?? 503;
+  const expectedEntityId = scope === "participant" ? "participant-meal" : scope === "itinerant-unit" ? "unit-meal" : "105";
   return Object.freeze({ id, functionsExecuted: ["preflightEngineInputForPlannerNext", "adaptEngineInputToPlannerNextProblem"], observations: Object.freeze([
     observe(id, `meal.${scope}.preflightStatus`, "PREFLIGHT", `${scope} meal is rejected by executed preflight`, firstPreflight.status, "UNSUPPORTED"),
     observe(id, `meal.${scope}.reason`, "PREFLIGHT", `${scope} meal reports executed break-scope reason`, firstPreflight.reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"), true),
     observe(id, `meal.${scope}.adapterStatus`, "ADAPTER", `${scope} meal cannot publish a PlannerNextProblem`, firstAdapter.status, "UNSUPPORTED"),
-    observe(id, `meal.${scope}.window`, "PREFLIGHT", `${scope} meal window is retained in the probed input`, { start: "15:00", end: "15:30" }, { start: "15:00", end: "15:30" }),
-    observe(id, `meal.${scope}.entity`, "PREFLIGHT", `${scope} meal issue retains an entity`, issue?.entityId != null, true),
+    observe(id, `meal.${scope}.scope`, "PREFLIGHT", `${scope} meal scope is read from the executed input or issue`, observedScope, scope === "itinerant-unit" ? "itinerant-team" : scope === "resource" ? "resource_meal" : "participant"),
+    observe(id, `meal.${scope}.window`, "PREFLIGHT", `${scope} meal window is read from the executed input`, observedWindow, { start, end }),
+    observe(id, `meal.${scope}.identity`, "PREFLIGHT", `${scope} meal preserves its concrete scoped identity`, observedIdentity, expectedIdentity),
+    observe(id, `meal.${scope}.entity`, "PREFLIGHT", `${scope} meal issue preserves its exact entity ID`, issue?.entityId, expectedEntityId),
   ]), reasonCodes: firstPreflight.reasonCodes, deterministic: stable(firstPreflight) === stable(secondPreflight), inputImmutable: before === stable(input) });
 }
 
 export function runScopedMealProbes(): readonly CapabilityProbeResult[] {
-  const participant = scopedMealProbe("meal-participant", "participant", (input) => { input.protectedBreaks = [{ id: "participant-meal", kind: "meal", start: "15:00", end: "15:30", contestantId: 201 }]; });
-  const resource = scopedMealProbe("meal-resource", "resource", (input) => {
-    const task = input.tasks.find((entry) => entry.id === 105)!;
-    Object.assign(task, { breakId: 135, breakKind: "resource_meal", assignedResourceIds: [503] });
-  });
-  const itinerant = scopedMealProbe("meal-itinerant-unit", "itinerant-unit", (input) => { input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start: "15:00", end: "15:30", itinerantTeamId: 7 }]; });
-  return Object.freeze([participant, resource, itinerant]);
+  return Object.freeze([runScopedMealProbe("participant"), runScopedMealProbe("resource"), runScopedMealProbe("itinerant-unit")]);
 }
 
 export function runFocalA2PilotProbes(): readonly CapabilityProbeResult[] {

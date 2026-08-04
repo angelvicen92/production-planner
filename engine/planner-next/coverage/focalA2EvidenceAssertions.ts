@@ -25,6 +25,7 @@ export interface SourceAssertion {
   readonly document: string;
   readonly section: string;
   readonly claim: string;
+  readonly sourceType: "OFFICIAL_SPEC" | "A2_EXAMPLE";
 }
 
 export interface TestAssertion {
@@ -83,14 +84,14 @@ export function resolveEvidenceSelector(value: unknown, selector: string): { fou
 export function evaluateSourceAssertion(id: string, capabilityId: number, assertions: ReadonlyMap<string, SourceAssertion>): AssertionResult {
   const assertion = assertions.get(id);
   if (!assertion) return result(id, "SOURCE", "NOT_FOUND", "SOURCE", "source assertion reference resolves", undefined, capabilityId, "Source assertion does not exist");
-  const valid = assertion.capabilityId === capabilityId && assertion.document.trim() !== "" && assertion.section.trim() !== "" && assertion.claim.trim() !== "";
+  const valid = assertion.capabilityId === capabilityId && assertion.document.trim() !== "" && assertion.section.trim() !== "" && assertion.claim.trim() !== "" && ["OFFICIAL_SPEC", "A2_EXAMPLE"].includes(assertion.sourceType);
   return result(id, "SOURCE", valid ? "PASS" : "FAIL", "SOURCE", assertion.claim, assertion.capabilityId, capabilityId, valid ? "Explicit reviewed source assertion matches capability" : "Source assertion is incomplete or belongs to another capability");
 }
 
 export function evaluateProbeObservation(id: string, observations: ReadonlyMap<string, ProbeObservation>): AssertionResult {
   const observation = observations.get(id);
   if (!observation) return result(id, "PROBE", "NOT_FOUND", "EVIDENCE", "probe observation reference resolves", undefined, true, "Probe observation does not exist");
-  return result(id, "PROBE", observation.pass ? "PASS" : "FAIL", observation.layer, observation.property, observation.observed, observation.expected, observation.pass ? "Executed observation matches expected value" : "Executed observation differs from expected value", null, id, "ENGINE_INPUT");
+  return result(id, "PROBE", observation.pass ? "PASS" : "FAIL", observation.layer, observation.property, observation.observed, observation.expected, observation.pass ? "Executed observation matches expected value" : "Executed observation differs from expected value", null, id, observation.boundary);
 }
 
 export function evaluateTestAssertion(assertion: TestAssertion): AssertionResult {
@@ -98,7 +99,7 @@ export function evaluateTestAssertion(assertion: TestAssertion): AssertionResult
   const source = readFileSync(assertion.file, "utf8");
   const escaped = assertion.testName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const found = new RegExp(`(?:test|it)\\(\\s*[\"']${escaped}[\"']`).test(source);
-  return result(assertion.id, "TEST", found ? "PASS" : "NOT_FOUND", assertion.layer, assertion.property, found, true, found ? "Exact functional test name exists" : "Exact functional test name does not exist", assertion.file, assertion.testName);
+  return result(assertion.id, "TEST", found ? "PASS" : "NOT_FOUND", assertion.layer, "exact test definition exists", found, true, found ? "Exact test definition exists; execution is validated separately" : "Exact test definition does not exist", assertion.file, assertion.testName);
 }
 
 function compare(operator: BenchmarkAssertion["operator"], observed: unknown, expected: unknown): boolean {
@@ -118,6 +119,13 @@ export function evaluateBenchmarkAssertion(assertion: BenchmarkAssertion, probes
   }
   const selected = resolveEvidenceSelector(root, assertion.selector);
   if (!selected.found) return result(assertion.id, "BENCHMARK", "NOT_FOUND", assertion.layer, assertion.property, undefined, assertion.expected, "Benchmark selector does not exist", assertion.file, assertion.selector, assertion.boundary);
+  if (assertion.source === "PROBE") {
+    const observationId = assertion.selector.match(/\[id=([^\]]+)]/)?.[1];
+    const observation = observationId && root && typeof root === "object" && Array.isArray((root as { observations?: unknown[] }).observations)
+      ? (root as { observations: ProbeObservation[] }).observations.find((entry) => entry.id === observationId)
+      : undefined;
+    if (observation && observation.boundary !== assertion.boundary) return result(assertion.id, "BENCHMARK", "FAIL", assertion.layer, assertion.property, observation.boundary, assertion.boundary, "Benchmark boundary differs from executed probe observation boundary", assertion.file, assertion.selector, assertion.boundary);
+  }
   const pass = compare(assertion.operator, selected.value, assertion.expected);
   return result(assertion.id, "BENCHMARK", pass ? "PASS" : "FAIL", assertion.layer, assertion.property, selected.value, assertion.expected, pass ? "Observed benchmark value matches" : "Observed benchmark value differs", assertion.file, assertion.selector, assertion.boundary);
 }

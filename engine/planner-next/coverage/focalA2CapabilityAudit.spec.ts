@@ -8,7 +8,7 @@ import { FOCAL_A2_CAPABILITY_CATALOG } from "./focalA2CapabilityCatalog";
 import { FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS } from "./focalA2CapabilityEvidenceBindings";
 import { evaluateCapabilityBinding } from "./focalA2EvidenceRegistry";
 import { evaluateProbeObservation } from "./focalA2EvidenceAssertions";
-import { indexProbeObservations, runFocalA2PilotProbes } from "./focalA2CapabilityProbes";
+import { indexProbeObservations, runFocalA2PilotProbes, runScopedMealProbe } from "./focalA2CapabilityProbes";
 import { FOCAL_A2_REQUIREMENTS, FOCAL_A2_SOURCE_ASSERTIONS } from "./focalA2SourceManifest";
 
 const PILOT_IDS = [12, 13, 14, 16, 18, 19, 20, 41, 120, 121, 122, 123, 134, 135, 136] as const;
@@ -103,6 +103,62 @@ test("pilot 136: itinerant unit meal executes and reports break scope", () => {
   assert.equal(probe.observations.every((entry) => entry.pass), true);
 });
 
+test("scoped meal observations read mutable windows and exact identities from executed inputs", () => {
+  const participant = indexProbeObservations([runScopedMealProbe("participant")]);
+  const changedParticipant = indexProbeObservations([runScopedMealProbe("participant", { start: "16:00", end: "16:20", participantId: 202 })]);
+  assert.deepEqual(participant.get("meal.participant.window")?.observed, { start: "15:00", end: "15:30" });
+  assert.deepEqual(changedParticipant.get("meal.participant.window")?.observed, { start: "16:00", end: "16:20" });
+  assert.equal(participant.get("meal.participant.identity")?.observed, 201);
+  assert.equal(changedParticipant.get("meal.participant.identity")?.observed, 202);
+  assert.equal(changedParticipant.get("meal.participant.entity")?.observed, "participant-meal");
+
+  const resource = indexProbeObservations([runScopedMealProbe("resource")]);
+  const changedResource = indexProbeObservations([runScopedMealProbe("resource", { start: "16:05", end: "16:35", resourceId: 504 })]);
+  assert.deepEqual(resource.get("meal.resource.window")?.observed, { start: "15:00", end: "15:30" });
+  assert.deepEqual(changedResource.get("meal.resource.window")?.observed, { start: "16:05", end: "16:35" });
+  assert.equal(resource.get("meal.resource.identity")?.observed, 503);
+  assert.equal(changedResource.get("meal.resource.identity")?.observed, 504);
+  assert.equal(changedResource.get("meal.resource.entity")?.observed, "105");
+
+  const itinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit")]);
+  const changedItinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit", { start: "16:10", end: "16:40", itinerantTeamId: 8 })]);
+  assert.deepEqual(changedItinerant.get("meal.itinerant-unit.window")?.observed, { start: "16:10", end: "16:40" });
+  assert.equal(itinerant.get("meal.itinerant-unit.identity")?.observed, 7);
+  assert.equal(changedItinerant.get("meal.itinerant-unit.identity")?.observed, 8);
+  assert.equal(changedItinerant.get("meal.itinerant-unit.entity")?.observed, "unit-meal");
+  for (const probe of [runScopedMealProbe("participant"), runScopedMealProbe("resource"), runScopedMealProbe("itinerant-unit")]) assert.ok(probe.reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+});
+
+test("pilot source assertions use exact official anchors and limited A2 claims", () => {
+  const byCapability = (id: number) => FOCAL_A2_SOURCE_ASSERTIONS.filter((entry) => entry.capabilityId === id);
+  const has = (id: number, document: string, section: string) => byCapability(id).some((entry) => entry.document === document && entry.section === section);
+  assert.ok(has(12, "SPEC-10", "8.1. Protegidas")); assert.ok(has(13, "SPEC-10", "8.1. Protegidas"));
+  assert.ok(has(14, "SPEC-10", "8.3. No planificables")); assert.ok(has(16, "SPEC-10", "9.1. Lock de tiempo"));
+  assert.ok(has(18, "SPEC-10", "9.3. Lock de recurso")); assert.ok(has(19, "SPEC-10", "9.4. Lock completo"));
+  assert.ok(has(41, "SPEC-10", "12. Recursos")); assert.ok(has(120, "SPEC-07", "6.9 Operación técnica"));
+  assert.ok(has(122, "SPEC-10", "13. Dependencias")); assert.ok(has(123, "SPEC-07", "18.4 Traslado técnico explícito"));
+  assert.ok(has(123, "ENSAYO_A2_LV.pdf p.1", "DESMONTAJE Y TRASLADO")); assert.ok(has(134, "SPEC-07", "19.5 Concursantes"));
+  assert.ok(has(135, "SPEC-10", "14. Comidas y pausas protegidas")); assert.ok(has(136, "SPEC-10", "14. Comidas y pausas protegidas"));
+  assert.equal(byCapability(120).find((entry) => entry.sourceType === "A2_EXAMPLE")?.claim.includes("sin participante"), false);
+  assert.equal(byCapability(123).some((entry) => entry.section === "PROGRAMACIÓN + PRUEBA"), false);
+  assert.deepEqual(FOCAL_A2_REQUIREMENTS.filter((entry) => entry.requiredByA2Example).map((entry) => entry.capabilityId), [120, 123, 134]);
+});
+
+test("Evidence boundaries preserve Planner-layer technical-chain authority", () => {
+  const probes = runFocalA2PilotProbes();
+  const chain = probes.find((probe) => probe.id === "technical-chain")!;
+  assert.ok(chain.observations.every((entry) => entry.boundary === "PLANNER_LAYER"));
+  assert.ok(probes.filter((probe) => probe.id !== "technical-chain").flatMap((probe) => probe.observations).every((entry) => entry.boundary === "ENGINE_INPUT"));
+  const binding = FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS.find((entry) => entry.capabilityId === 121)!;
+  assert.equal(binding.representativeBoundary, "PLANNER_LAYER");
+  assert.equal(binding.benchmarkAssertions[0]?.boundary, "PLANNER_LAYER");
+  const evaluated = evaluateCapabilityBinding(binding, probes);
+  assert.equal(evaluated.find((entry) => entry.id === "technical.chain.ids")?.boundary, "PLANNER_LAYER");
+  assert.equal(evaluated.find((entry) => entry.id === "benchmark-121")?.boundary, "PLANNER_LAYER");
+  const wrongBoundary = { ...binding, benchmarkAssertions: [{ ...binding.benchmarkAssertions[0]!, boundary: "ENGINE_INPUT" as const }] };
+  assert.equal(evaluateCapabilityBinding(wrongBoundary, probes).find((entry) => entry.id === "benchmark-121")?.status, "FAIL");
+});
+
 test("pilot contains exactly fifteen literal distinct bindings", () => {
   assert.equal(FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS.length, 15);
   assert.deepEqual(FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS.map((binding) => binding.capabilityId), [...PILOT_IDS]);
@@ -171,12 +227,28 @@ test("Focal observations are read from accepted artifact rather than hardcoded",
   const audit = buildFocalA2CapabilityAudit();
   assert.equal(audit.focalEvidence.observations.accepted, artifact.acceptance.accepted);
   assert.equal(audit.focalEvidence.observations.scenarioCount, artifact.scenarioCount);
+  const scenario = artifact.scenarios[artifact.activeScenarioId];
+  assert.deepEqual(audit.focalEvidence.observations, {
+    status: artifact.status ?? null,
+    scenarioCount: artifact.scenarioCount ?? null,
+    accepted: artifact.acceptance?.accepted ?? null,
+    complete: scenario?.complete ?? null,
+    hardValid: scenario?.hardValid ?? null,
+    plannedTaskCount: scenario?.plannedTaskCount ?? null,
+    unplannedTaskCount: scenario?.metrics?.unplannedTaskCount ?? null,
+    branchesExplored: scenario?.branchesExplored ?? null,
+    maxBranchExpansions: scenario?.maxBranchExpansions ?? null,
+    humanScheduleUsedAsSeed: scenario?.humanScheduleUsedAsSeed ?? null,
+    anchoredAccompanimentPlannedCount: scenario?.metrics?.anchoredAccompanimentPlannedCount ?? null,
+    anchoredAccompanimentScheduledSegmentCount: scenario?.metrics?.anchoredAccompanimentScheduledSegmentCount ?? null,
+    fallbackUsed: scenario?.metrics?.feederClosureFallbackUsed ?? null,
+  });
 });
 
 test("source manifest keeps 167 rows and distinguishes reviewed from not audited", () => {
   assert.equal(FOCAL_A2_CAPABILITY_CATALOG.length, 167);
   assert.equal(FOCAL_A2_REQUIREMENTS.length, 167);
-  assert.equal(FOCAL_A2_SOURCE_ASSERTIONS.length, 15);
+  assert.equal(FOCAL_A2_SOURCE_ASSERTIONS.length, 26);
   assert.deepEqual(FOCAL_A2_REQUIREMENTS.filter((entry) => entry.sourceAuditStatus === "REVIEWED").map((entry) => entry.capabilityId), [...PILOT_IDS]);
   assert.ok(FOCAL_A2_REQUIREMENTS.filter((entry) => entry.sourceAuditStatus === "NOT_AUDITED").every((entry) => entry.a2RequirementEvidence[0]?.startsWith("SOURCE_NOT_AUDITED")));
 });

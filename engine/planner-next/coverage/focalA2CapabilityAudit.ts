@@ -70,8 +70,13 @@ export function selectNextAction(records: readonly CapabilityEvidenceRecord[]) {
       type: "IMPLEMENT_CAPABILITY" as RecommendationType,
       selectedCapabilityId: selected.capabilityId,
       selectedAction: `Implement the demonstrated required blocker: ${capability.name}`,
+      evaluatedCandidates: Object.freeze(requiredUnsupported.map((record) => {
+        const candidate = FOCAL_A2_CAPABILITY_CATALOG.find((entry) => entry.id === record.capabilityId)!;
+        return Object.freeze({ capabilityId: record.capabilityId, capability: candidate.name, ranking: recommendationPriority(record) });
+      })),
       decisionTrace: Object.freeze([
         "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
+        `evaluate ranked candidates: ${requiredUnsupported.map((record) => FOCAL_A2_CAPABILITY_CATALOG.find((entry) => entry.id === record.capabilityId)!.name).join(", ")}`,
         "rank higher A2 visibility before official-only impact",
         "prefer directly observed rejection over inferred contract risk",
         `select ${capability.name} from the resulting deterministic order`,

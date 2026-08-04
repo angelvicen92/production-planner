@@ -12,6 +12,12 @@ export function serializeFocalA2CoverageEvidence(): string {
 export function generateFocalA2CoverageEvidence(path = SPEC10_012R_EVIDENCE_PATH) {
   const json = serializeFocalA2CoverageEvidence();
   const audit = JSON.parse(json);
+  const sourceLines = audit.sourceAssertions.map((assertion: { capabilityId: number; document: string; section: string; claim: string; sourceType: string }) => `- ${assertion.capabilityId}: \`${assertion.document} :: ${assertion.section}\` (${assertion.sourceType}) — ${assertion.claim}.`).join("\n");
+  const capabilityLines = audit.evidenceRecords.filter((record: { capabilityId: number }) => audit.pilotCapabilityIds.includes(record.capabilityId)).map((record: { capabilityId: number; derivedCoverageStatus: string }) => `- ${record.capabilityId}: \`${record.derivedCoverageStatus}\`.`).join("\n");
+  const mealLines = audit.probes.filter((probe: { id: string }) => probe.id.startsWith("meal-")).map((probe: { id: string; observations: Array<{ id: string; observed: unknown }> }) => {
+    const read = (suffix: string) => probe.observations.find((observation) => observation.id.endsWith(suffix))?.observed ?? null;
+    return `- ${probe.id}: scope=\`${JSON.stringify(read(".scope"))}\`, entity=\`${JSON.stringify(read(".entity"))}\`, identity=\`${JSON.stringify(read(".identity"))}\`, window=\`${JSON.stringify(read(".window"))}\`, reason=\`UNSUPPORTED_BREAK_SCOPE\`.`;
+  }).join("\n");
   mkdirSync("docs/evidence", { recursive: true });
   writeFileSync(path, json);
   mkdirSync("docs/coverage", { recursive: true });
@@ -31,6 +37,14 @@ PR #616 y la primera revisión de este PR aportaron andamiaje provisional, pero 
 - Benchmark assertions: **${audit.bindings.flatMap((binding: { benchmarkAssertions: unknown[] }) => binding.benchmarkAssertions).length}**.
 - Resultados de assertions: \`${JSON.stringify(audit.assertionCounts)}\`.
 
+Las 15 test references sólo demuestran que existe la definición exacta del test; la ejecución se informa separadamente en la validación local. Los probes y benchmark assertions son la Evidence ejecutable principal.
+
+## Fuentes exactas revisadas
+
+${sourceLines}
+
+Capacidades visibles en A2: **${audit.requirements.filter((requirement: { requiredByA2Example: boolean }) => requirement.requiredByA2Example).map((requirement: { capabilityId: number }) => requirement.capabilityId).join(", ")}**.
+
 ## Cobertura derivada
 
 - Técnicamente auditadas: **${audit.technicallyAuditedCapabilityCount}**.
@@ -41,6 +55,18 @@ PR #616 y la primera revisión de este PR aportaron andamiaje provisional, pero 
 - Estados: \`${JSON.stringify(audit.statusCounts)}\`.
 - Familias piloto: \`${JSON.stringify(audit.familyCounts)}\`.
 - Recomendación: **${audit.recommendation.type}**, capacidad **${audit.recommendation.selectedCapabilityId}** — ${audit.recommendation.selectedAction}.
+
+### Estados piloto
+
+${capabilityLines}
+
+La capacidad 121 usa frontera representativa **PLANNER_LAYER**; no se atribuye al boundary EngineInput.
+
+### Comidas observadas desde el input ejecutado
+
+${mealLines}
+
+Ranking evaluado: \`${JSON.stringify(audit.recommendation.evaluatedCandidates ?? [])}\`. Decision trace: \`${JSON.stringify(audit.recommendation.decisionTrace)}\`.
 
 Todo lo que no pertenece al piloto queda sin binding y \`NOT_AUDITED / AUDIT\`, salvo 162–167 como \`PRODUCT_PHASE_NOT_IMPLEMENTED / PRODUCT\`. No se auditan aquí vocal, main, Reality, joint tasks, espacios ni validación completa. La ampliación será incremental.
 
