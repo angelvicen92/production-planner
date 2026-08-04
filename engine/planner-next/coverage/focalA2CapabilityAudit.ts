@@ -1,23 +1,152 @@
-import { itinerantUnitProfiles, realityReferenceValidation } from "../benchmarks/focal-a2/focalA2RealityReference";
+import { readFileSync } from "node:fs";
+import { FOCAL_A2_CAPABILITY_CATALOG } from "./focalA2CapabilityCatalog";
 import { FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS } from "./focalA2CapabilityEvidenceBindings";
-import { runPlannerLayerProbes, runSupportedIntegrationProbe } from "./focalA2CapabilityProbes";
-import { buildEvidenceRegistry, type CoverageStatus } from "./focalA2EvidenceRegistry";
-import { FOCAL_A2_REQUIREMENTS, FOCAL_A2_SOURCE_FACTS, type A2RequirementStatus } from "./focalA2SourceManifest";
-export type FamilyStatus="COVERED_END_TO_END"|"ENGINE_SUPPORTED_INTEGRATION_MISSING"|"INTEGRATED_NOT_A2_EVIDENCED"|"PARTIALLY_REPRESENTED"|"NOT_REPRESENTED"|"SOURCE_UNRESOLVED"|"NOT_AUDITED";
-export type RecommendationType="IMPLEMENT_CAPABILITY"|"CLARIFY_DOMAIN"|"AUDIT_MISSING_EVIDENCE"|"PRODUCT_INTEGRATION";
-interface FamilyDefinition{readonly familyId:string;readonly requiredCapabilityIds:readonly number[];readonly sourceAssertionIds:readonly string[];readonly fixtureAssertionIds:readonly string[];readonly requiredEvidenceBoundary:"PLANNER_LAYER"|"ENGINE_INPUT"|"PRODUCT"}
-export const A2_FAMILY_DEFINITIONS:readonly FamilyDefinition[]=[
- {familyId:"vocal-aggregate",requiredCapabilityIds:[34,35,36,40,41],sourceAssertionIds:["vocal-count"],fixtureAssertionIds:["vocal-19"],requiredEvidenceBoundary:"PLANNER_LAYER"},
- {familyId:"main-plato-7",requiredCapabilityIds:[23,25,26,27,28,29,31,32,33],sourceAssertionIds:["main-count"],fixtureAssertionIds:["main-19"],requiredEvidenceBoundary:"PLANNER_LAYER"},
- {familyId:"reality-a",requiredCapabilityIds:[94,95,96],sourceAssertionIds:["reality-a-source"],fixtureAssertionIds:["reality-a-profile"],requiredEvidenceBoundary:"PLANNER_LAYER"},
- {familyId:"reality-b",requiredCapabilityIds:[97,98,99],sourceAssertionIds:["reality-b-source"],fixtureAssertionIds:["reality-b-profile"],requiredEvidenceBoundary:"PLANNER_LAYER"},
- {familyId:"reality-combined",requiredCapabilityIds:[100,101,102],sourceAssertionIds:["reality-combined-source"],fixtureAssertionIds:["reality-combined-profile"],requiredEvidenceBoundary:"PLANNER_LAYER"},
- {familyId:"joint",requiredCapabilityIds:[115,116,117,118,119],sourceAssertionIds:[],fixtureAssertionIds:["joint-probe"],requiredEvidenceBoundary:"ENGINE_INPUT"},
- {familyId:"technical",requiredCapabilityIds:[120,121,122,123],sourceAssertionIds:[],fixtureAssertionIds:["technical-probe"],requiredEvidenceBoundary:"ENGINE_INPUT"},
- {familyId:"meals",requiredCapabilityIds:[130,131,132,133,134,135,136,137,138,139,140],sourceAssertionIds:["meal-scope"],fixtureAssertionIds:["UNSUPPORTED_BREAK_SCOPE"],requiredEvidenceBoundary:"ENGINE_INPUT"},
- {familyId:"eligibility",requiredCapabilityIds:[141],sourceAssertionIds:["eligibility-boundary"],fixtureAssertionIds:[],requiredEvidenceBoundary:"ENGINE_INPUT"},
-];
-const counts=<T extends string>(values:readonly T[])=>values.reduce((a,v)=>(a[v]=(a[v]??0)+1,a),{} as Record<T,number>);
-export function evaluateA2Families(records=buildEvidenceRegistry(runSupportedIntegrationProbe())){const byId=new Map(records.map(r=>[r.capabilityId,r]));return A2_FAMILY_DEFINITIONS.map(def=>{const rows=def.requiredCapabilityIds.map(id=>byId.get(id)!).filter(Boolean),missing=rows.filter(r=>r.derivedCoverageStatus==="NOT_AUDITED").map(r=>r.capabilityId),ambiguous=rows.some(r=>r.derivedCoverageStatus==="SOURCE_AMBIGUOUS"),unsupported=rows.some(r=>r.derivedCoverageStatus==="EXPLICITLY_UNSUPPORTED"),supported=rows.every(r=>r.derivedCoverageStatus==="EVIDENCED_SUPPORTED");const status:FamilyStatus=ambiguous?"SOURCE_UNRESOLVED":missing.length?"NOT_AUDITED":unsupported?"PARTIALLY_REPRESENTED":supported?"COVERED_END_TO_END":"INTEGRATED_NOT_A2_EVIDENCED";const unit=def.familyId==="reality-a"?itinerantUnitProfiles[0]:def.familyId==="reality-b"?itinerantUnitProfiles[1]:def.familyId==="reality-combined"?itinerantUnitProfiles[2]:undefined;return Object.freeze({...def,status,representedTaskCount:def.familyId==="vocal-aggregate"?FOCAL_A2_SOURCE_FACTS.vocalTaskCount:def.familyId==="main-plato-7"?FOCAL_A2_SOURCE_FACTS.mainTaskCount:null,missingCapabilities:missing,failedAssertions:rows.flatMap(r=>r.assertionResults.filter(a=>a.status!=="PASS").map(a=>a.id)),integrationBoundary:def.requiredEvidenceBoundary,limitations:status==="COVERED_END_TO_END"?[]:["family status is derived from capability assertions"],observedFixture:unit?{memberResourceIds:unit.memberResourceIds,availability:unit.availability}:def.familyId==="vocal-aggregate"?{aggregateCount:19,joseMariaCount:null,luciaCount:null}:null});});}
-export function selectNextAction(audit:{evidenceRecords:ReturnType<typeof buildEvidenceRegistry>;fullA2PlanningCoverage:boolean}){const ambiguity=audit.evidenceRecords.find(r=>r.capabilityId===141&&r.derivedCoverageStatus==="SOURCE_AMBIGUOUS")??audit.evidenceRecords.find(r=>r.derivedCoverageStatus==="SOURCE_AMBIGUOUS");if(ambiguity)return Object.freeze({type:"CLARIFY_DOMAIN" as RecommendationType,selectedCapabilityId:ambiguity.capabilityId,selectedQuestion:"Must eligibility reach Planner Next, or does EngineInput contain only applicable tasks?",decisionTrace:["SOURCE_AMBIGUOUS can change the contract","priority 1 selects CLARIFY_DOMAIN",`selected lowest governing ambiguity ${ambiguity.capabilityId}`]});const missing=audit.evidenceRecords.find(r=>r.derivedCoverageStatus==="NOT_AUDITED");if(missing)return Object.freeze({type:"AUDIT_MISSING_EVIDENCE" as RecommendationType,selectedCapabilityId:missing.capabilityId,selectedQuestion:"Which executable Evidence closes this binding?",decisionTrace:["critical Evidence is absent","priority 2 selects AUDIT_MISSING_EVIDENCE"]});const gap=audit.evidenceRecords.find(r=>["EXPLICITLY_UNSUPPORTED","CONTRACT_GAP"].includes(r.derivedCoverageStatus));if(gap)return Object.freeze({type:"IMPLEMENT_CAPABILITY" as RecommendationType,selectedCapabilityId:gap.capabilityId,selectedQuestion:null,decisionTrace:["clear demonstrated gap","priority 3 selects implementation"]});return Object.freeze({type:"PRODUCT_INTEGRATION" as RecommendationType,selectedCapabilityId:162,selectedQuestion:null,decisionTrace:["planning closed","priority 4 selects product integration"]});}
-export function buildFocalA2CapabilityAudit(){const endToEnd=runSupportedIntegrationProbe(),layerProbes=runPlannerLayerProbes(),evidenceRecords=buildEvidenceRegistry(endToEnd),families=evaluateA2Families(evidenceRecords);const requirementCounts={REQUIRED:0,NOT_REQUIRED:0,UNRESOLVED:0,...counts(FOCAL_A2_REQUIREMENTS.map(r=>r.a2RequirementStatus))} satisfies Record<A2RequirementStatus,number>;const statusCounts={EVIDENCED_SUPPORTED:0,CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE:0,PARTIALLY_SUPPORTED:0,EXPLICITLY_UNSUPPORTED:0,CONTRACT_GAP:0,SOURCE_AMBIGUOUS:0,NOT_AUDITED:0,PRODUCT_PHASE_NOT_IMPLEMENTED:0,...counts(evidenceRecords.map(r=>r.derivedCoverageStatus))} satisfies Record<CoverageStatus,number>;const notAudited=evidenceRecords.filter(r=>r.derivedCoverageStatus==="NOT_AUDITED").map(r=>r.capabilityId),planning=evidenceRecords.filter(r=>r.derivedCoverageStatus!=="PRODUCT_PHASE_NOT_IMPLEMENTED"),fullA2PlanningCoverage=planning.every(r=>r.derivedBlockingLayer==="NONE");const base={evidenceRecords,fullA2PlanningCoverage};const assertionResults=evidenceRecords.flatMap(r=>r.assertionResults);return Object.freeze({schemaVersion:"SPEC10-012R2-evidence-v2",classification:"DB Safe Merge",requirements:FOCAL_A2_REQUIREMENTS,bindings:FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS,assertionResults,assertionCounts:{PASS:assertionResults.filter(a=>a.status==="PASS").length,FAIL:assertionResults.filter(a=>a.status==="FAIL").length,NOT_FOUND:assertionResults.filter(a=>a.status==="NOT_FOUND").length,NOT_EXECUTED:assertionResults.filter(a=>a.status==="NOT_EXECUTED").length},evidenceRecords,probes:[endToEnd,...layerProbes],families,auditedCapabilityCount:evidenceRecords.filter(r=>r.derivedCoverageStatus!=="NOT_AUDITED"&&r.derivedCoverageStatus!=="PRODUCT_PHASE_NOT_IMPLEMENTED").length,notAuditedCapabilityIds:notAudited,requirementCounts,statusCounts,familyCounts:counts(families.map(f=>f.status)),fullA2PlanningCoverage,fullA2ProductReadiness:fullA2PlanningCoverage&&evidenceRecords.filter(r=>r.derivedCoverageStatus==="PRODUCT_PHASE_NOT_IMPLEMENTED").length===0,recommendation:selectNextAction(base),focalAssertions:{realityReferenceValidation,accepted:true,scenarioCount:33,taskCount:53,mainCount:19,vocalCount:19,standaloneItinerantCount:9,anchoredSegments:6,anchors:3,itinerantOperations:12,itinerantMinutes:375,pending:0,hardValid:true,deterministic:true,branchBudgetMaximum:300000,humanSeed:false,partialPlan:false,fallback:false},deterministic:endToEnd.deterministic&&layerProbes.every(p=>p.deterministic),inputImmutable:endToEnd.inputImmutable&&layerProbes.every(p=>p.inputImmutable),readOnly:true});}
+import { runFocalA2PilotProbes } from "./focalA2CapabilityProbes";
+import { buildEvidenceRegistry, type CapabilityEvidenceRecord, type CoverageStatus } from "./focalA2EvidenceRegistry";
+import { FOCAL_A2_REQUIREMENTS, FOCAL_A2_SOURCE_ASSERTIONS, type A2RequirementStatus } from "./focalA2SourceManifest";
+
+export type FamilyStatus = "EVIDENCED_SUPPORTED" | "PARTIALLY_SUPPORTED" | "EXPLICITLY_UNSUPPORTED" | "NOT_AUDITED";
+export type RecommendationType = "IMPLEMENT_CAPABILITY" | "AUDIT_MISSING_EVIDENCE" | "CLARIFY_DOMAIN";
+
+interface PilotFamilyDefinition {
+  readonly familyId: string;
+  readonly requiredCapabilityIds: readonly number[];
+}
+
+export const PILOT_FAMILY_DEFINITIONS: readonly PilotFamilyDefinition[] = Object.freeze([
+  { familyId: "protected-task-status", requiredCapabilityIds: [12, 13, 14] },
+  { familyId: "locks", requiredCapabilityIds: [16, 18, 19, 20] },
+  { familyId: "coach-availability", requiredCapabilityIds: [41] },
+  { familyId: "technical-operations", requiredCapabilityIds: [120, 121, 122, 123] },
+  { familyId: "scoped-meals", requiredCapabilityIds: [134, 135, 136] },
+]);
+
+export function evaluatePilotFamilies(records: readonly CapabilityEvidenceRecord[]) {
+  const byId = new Map(records.map((record) => [record.capabilityId, record]));
+  return Object.freeze(PILOT_FAMILY_DEFINITIONS.map((definition) => {
+    const members = definition.requiredCapabilityIds.map((id) => byId.get(id)!);
+    const statuses = members.map((member) => member.derivedCoverageStatus);
+    const status: FamilyStatus = statuses.some((value) => value === "NOT_AUDITED")
+      ? "NOT_AUDITED"
+      : statuses.every((value) => value === "EXPLICITLY_UNSUPPORTED")
+        ? "EXPLICITLY_UNSUPPORTED"
+        : statuses.some((value) => value === "PARTIALLY_SUPPORTED" || value === "CONTRACT_GAP" || value === "EXPLICITLY_UNSUPPORTED")
+          ? "PARTIALLY_SUPPORTED"
+          : "EVIDENCED_SUPPORTED";
+    return Object.freeze({
+      ...definition,
+      status,
+      memberStatuses: Object.fromEntries(members.map((member) => [member.capabilityId, member.derivedCoverageStatus])),
+      failedAssertions: members.flatMap((member) => member.assertionResults.filter((assertion) => assertion.status !== "PASS").map((assertion) => assertion.id)),
+      derived: true as const,
+    });
+  }));
+}
+
+const recommendationPriority = (record: CapabilityEvidenceRecord): readonly [number, number, number] => {
+  const requirement = FOCAL_A2_REQUIREMENTS.find((entry) => entry.capabilityId === record.capabilityId)!;
+  const impact = Number(requirement.requiredByA2Example) * 2 + Number(requirement.requiredByOfficialSpec);
+  const risk = record.derivedCoverageStatus === "EXPLICITLY_UNSUPPORTED" ? 0 : 1;
+  return [-impact, risk, record.capabilityId];
+};
+
+const compareTuple = (left: readonly number[], right: readonly number[]): number => {
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+};
+
+export function selectNextAction(records: readonly CapabilityEvidenceRecord[]) {
+  const requiredUnsupported = records
+    .filter((record) => record.derivedCoverageStatus === "EXPLICITLY_UNSUPPORTED")
+    .filter((record) => FOCAL_A2_REQUIREMENTS.find((entry) => entry.capabilityId === record.capabilityId)?.a2RequirementStatus === "REQUIRED")
+    .sort((left, right) => compareTuple(recommendationPriority(left), recommendationPriority(right)));
+  if (requiredUnsupported[0]) {
+    const selected = requiredUnsupported[0];
+    const capability = FOCAL_A2_CAPABILITY_CATALOG.find((entry) => entry.id === selected.capabilityId)!;
+    return Object.freeze({
+      type: "IMPLEMENT_CAPABILITY" as RecommendationType,
+      selectedCapabilityId: selected.capabilityId,
+      selectedAction: `Implement the demonstrated required blocker: ${capability.name}`,
+      decisionTrace: Object.freeze([
+        "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
+        "rank higher A2 visibility before official-only impact",
+        "prefer directly observed rejection over inferred contract risk",
+        `select ${capability.name} from the resulting deterministic order`,
+      ]),
+    });
+  }
+  const missing = records.find((record) => record.derivedCoverageStatus === "NOT_AUDITED");
+  if (missing) return Object.freeze({ type: "AUDIT_MISSING_EVIDENCE" as RecommendationType, selectedCapabilityId: missing.capabilityId, selectedAction: "Audit the next missing capability binding", decisionTrace: Object.freeze(["no required executed rejection remains", "select first stable NOT_AUDITED catalog row"]) });
+  const ambiguous = records.find((record) => record.derivedCoverageStatus === "SOURCE_AMBIGUOUS");
+  return Object.freeze({ type: "CLARIFY_DOMAIN" as RecommendationType, selectedCapabilityId: ambiguous?.capabilityId ?? null, selectedAction: "Clarify reviewed source ambiguity", decisionTrace: Object.freeze(["no required rejection or missing Evidence remains", "review source ambiguity"]) });
+}
+
+function readFocalEvidence() {
+  const file = "planner-next-focal-a2-itinerant-spec08-foundation-v4.json";
+  const artifact = JSON.parse(readFileSync(file, "utf8"));
+  const scenario = artifact.scenarios?.[artifact.activeScenarioId];
+  return Object.freeze({
+    file,
+    activeScenarioId: artifact.activeScenarioId ?? null,
+    observations: Object.freeze({
+      status: artifact.status ?? null,
+      scenarioCount: artifact.scenarioCount ?? null,
+      accepted: artifact.acceptance?.accepted ?? null,
+      complete: scenario?.complete ?? null,
+      hardValid: scenario?.hardValid ?? null,
+      plannedTaskCount: scenario?.plannedTaskCount ?? null,
+      unplannedTaskCount: scenario?.metrics?.unplannedTaskCount ?? null,
+      branchesExplored: scenario?.branchesExplored ?? null,
+      maxBranchExpansions: scenario?.maxBranchExpansions ?? null,
+      humanScheduleUsedAsSeed: scenario?.humanScheduleUsedAsSeed ?? null,
+      anchoredAccompanimentPlannedCount: scenario?.metrics?.anchoredAccompanimentPlannedCount ?? null,
+      anchoredAccompanimentScheduledSegmentCount: scenario?.metrics?.anchoredAccompanimentScheduledSegmentCount ?? null,
+      fallbackUsed: scenario?.metrics?.feederClosureFallbackUsed ?? null,
+    }),
+  });
+}
+
+const countBy = <T extends string>(values: readonly T[]): Record<T, number> => values.reduce((counts, value) => ({ ...counts, [value]: (counts[value] ?? 0) + 1 }), {} as Record<T, number>);
+
+export function buildFocalA2CapabilityAudit() {
+  const probes = runFocalA2PilotProbes();
+  const evidenceRecords = buildEvidenceRegistry(probes);
+  const assertionResults = evidenceRecords.flatMap((record) => record.assertionResults);
+  const families = evaluatePilotFamilies(evidenceRecords);
+  const technicallyAuditedCapabilityCount = evidenceRecords.filter((record) => record.technicallyAudited).length;
+  const sourceReviewedCapabilityCount = evidenceRecords.filter((record) => record.sourceReviewed).length;
+  const notAuditedCapabilityIds = evidenceRecords.filter((record) => record.derivedCoverageStatus === "NOT_AUDITED").map((record) => record.capabilityId);
+  const statusCounts = { EVIDENCED_SUPPORTED: 0, CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE: 0, PARTIALLY_SUPPORTED: 0, EXPLICITLY_UNSUPPORTED: 0, CONTRACT_GAP: 0, SOURCE_AMBIGUOUS: 0, NOT_AUDITED: 0, PRODUCT_PHASE_NOT_IMPLEMENTED: 0, ...countBy(evidenceRecords.map((record) => record.derivedCoverageStatus)) } satisfies Record<CoverageStatus, number>;
+  const requirementCounts = { REQUIRED: 0, NOT_REQUIRED: 0, UNRESOLVED: 0, ...countBy(FOCAL_A2_REQUIREMENTS.map((row) => row.a2RequirementStatus)) } satisfies Record<A2RequirementStatus, number>;
+  return Object.freeze({
+    schemaVersion: "SPEC10-012R2-evidence-pilot-v3",
+    classification: "DB Safe Merge",
+    pilotCapabilityIds: FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS.map((binding) => binding.capabilityId),
+    requirements: FOCAL_A2_REQUIREMENTS,
+    sourceAssertions: FOCAL_A2_SOURCE_ASSERTIONS,
+    bindings: FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS,
+    probes,
+    probeObservations: probes.flatMap((probe) => probe.observations),
+    assertionResults,
+    assertionCounts: { PASS: assertionResults.filter((entry) => entry.status === "PASS").length, FAIL: assertionResults.filter((entry) => entry.status === "FAIL").length, NOT_FOUND: assertionResults.filter((entry) => entry.status === "NOT_FOUND").length, NOT_EXECUTED: assertionResults.filter((entry) => entry.status === "NOT_EXECUTED").length },
+    evidenceRecords,
+    families,
+    auditedCapabilityCount: technicallyAuditedCapabilityCount,
+    technicallyAuditedCapabilityCount,
+    sourceReviewedCapabilityCount,
+    notAuditedCapabilityCount: notAuditedCapabilityIds.length,
+    notAuditedCapabilityIds,
+    productPhaseCapabilityIds: evidenceRecords.filter((record) => record.derivedCoverageStatus === "PRODUCT_PHASE_NOT_IMPLEMENTED").map((record) => record.capabilityId),
+    requirementCounts,
+    statusCounts,
+    familyCounts: countBy(families.map((family) => family.status)),
+    recommendation: selectNextAction(evidenceRecords),
+    focalEvidence: readFocalEvidence(),
+    deterministic: probes.every((probe) => probe.deterministic),
+    inputImmutable: probes.every((probe) => probe.inputImmutable),
+    readOnly: true,
+  });
+}

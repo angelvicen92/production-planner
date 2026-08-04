@@ -1,6 +1,223 @@
 import type { FocalA2CapabilityId } from "./focalA2CapabilityCatalog";
-import type { ContractAssertion, EvidenceLayer, JsonAssertion, TestAssertion } from "./focalA2EvidenceAssertions";
-export interface CapabilityEvidenceBinding { readonly capabilityId:FocalA2CapabilityId; readonly sourceEvidenceIds:readonly string[]; readonly probeObservationIds:readonly string[]; readonly testAssertions:readonly TestAssertion[]; readonly benchmarkAssertions:readonly JsonAssertion[]; readonly contractAssertions:readonly ContractAssertion[]; readonly requiredLayers:readonly EvidenceLayer[]; readonly representativeBoundary:"PLANNER_LAYER"|"ENGINE_INPUT"|"PRODUCT"; readonly notes:string }
-const ids:readonly FocalA2CapabilityId[]=[1,4,5,6,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,25,26,27,28,29,31,32,33,34,35,36,40,41,43,47,51,53,56,71,72,73,74,75,76,78,79,80,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,130,131,132,133,134,135,136,137,138,139,140,141,150,151,152,153,154,155,156,157,158,159,160,161];
-/** Bindings identify evaluable observations only; no status or support flag is stored here. */
-export const FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS:readonly CapabilityEvidenceBinding[]=Object.freeze(ids.map(capabilityId=>Object.freeze({capabilityId,sourceEvidenceIds:[`source-${capabilityId}`],probeObservationIds:[`base.inputTaskIds`],testAssertions:[],benchmarkAssertions:[],contractAssertions:[{id:`contract-${capabilityId}`,kind:"CONTRACT",file:"engine/planner-next/coverage/focalA2CapabilityCatalog.ts",symbol:`id: ${capabilityId},`,layer:"AUDIT",property:"stable capability catalog row exists"}],requiredLayers:["AUDIT"],representativeBoundary:"ENGINE_INPUT",notes:"Conservative binding: catalog existence is audited; unsupported semantics are not inferred."})));
+import type { BenchmarkAssertion, EvidenceLayer, TestAssertion } from "./focalA2EvidenceAssertions";
+
+export interface CapabilityEvidenceBinding {
+  readonly capabilityId: FocalA2CapabilityId;
+  readonly sourceEvidenceIds: readonly string[];
+  readonly probeObservationIds: readonly string[];
+  readonly testAssertions: readonly TestAssertion[];
+  readonly benchmarkAssertions: readonly BenchmarkAssertion[];
+  readonly requiredLayers: readonly EvidenceLayer[];
+  readonly supportedVariantObservationIds: readonly string[];
+  readonly unsupportedVariantObservationIds: readonly string[];
+  readonly contractGapObservationIds: readonly string[];
+  readonly representativeBoundary: "PLANNER_LAYER" | "ENGINE_INPUT" | "A2";
+  readonly notes: string;
+}
+
+const pilotTestFile = "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts";
+const testAssertion = (id: string, testName: string, property: string, layer: EvidenceLayer): TestAssertion => ({
+  id, file: pilotTestFile, testName, property, layer,
+});
+const probeBenchmark = (id: string, probeId: string, selector: string, expected: unknown, property: string, layer: EvidenceLayer): BenchmarkAssertion => ({
+  id, source: "PROBE", file: null, probeId, selector, operator: "EQUALS", expected, property, layer, boundary: "ENGINE_INPUT",
+});
+
+/** Fifteen literal pilot bindings. No capability list or uniform mapping generates these rows. */
+export const FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS: readonly CapabilityEvidenceBinding[] = Object.freeze([
+  {
+    capabilityId: 12,
+    sourceEvidenceIds: ["source-12-done-protected"],
+    probeObservationIds: ["protected.done.availability", "protected.done.duration", "protected.done.dispatcherNoPartial"],
+    testAssertions: [testAssertion("test-12", "pilot 12: done remains exactly fixed", "done interval is immutable", "ADAPTER")],
+    benchmarkAssertions: [probeBenchmark("benchmark-12", "protected-done", "observations.[id=protected.done.availability].pass", true, "done observation passes in serialized probe", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "SEARCH", "EVIDENCE"],
+    supportedVariantObservationIds: ["protected.done.availability"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Protected done obligation is preserved; dispatcher non-publication is observed rather than hidden.",
+  },
+  {
+    capabilityId: 13,
+    sourceEvidenceIds: ["source-13-in-progress-protected"],
+    probeObservationIds: ["protected.in_progress.availability", "protected.in_progress.duration", "protected.in_progress.dispatcherNoPartial"],
+    testAssertions: [testAssertion("test-13", "pilot 13: in progress remains exactly fixed", "in-progress interval is immutable", "ADAPTER")],
+    benchmarkAssertions: [probeBenchmark("benchmark-13", "protected-in_progress", "observations.[id=protected.in_progress.duration].observed", 30, "protected duration is observed", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "SEARCH", "EVIDENCE"],
+    supportedVariantObservationIds: ["protected.in_progress.availability"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Protected in-progress obligation is preserved exactly.",
+  },
+  {
+    capabilityId: 14,
+    sourceEvidenceIds: ["source-14-cancelled-excluded"],
+    probeObservationIds: ["protected.cancelled.problemAbsent", "protected.cancelled.resultAbsent"],
+    testAssertions: [testAssertion("test-14", "pilot 14: cancelled is excluded with its locks", "cancelled task creates no planner obligation", "ADAPTER")],
+    benchmarkAssertions: [probeBenchmark("benchmark-14", "protected-cancelled", "observations.[id=protected.cancelled.problemAbsent].observed", true, "cancelled task is absent", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "SEARCH", "EVIDENCE"],
+    supportedVariantObservationIds: ["protected.cancelled.problemAbsent"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Cancelled task and attached lock are ignored.",
+  },
+  {
+    capabilityId: 16,
+    sourceEvidenceIds: ["source-16-time-lock"],
+    probeObservationIds: ["lock.time.valid.interval", "lock.time.contradictory.reason"],
+    testAssertions: [testAssertion("test-16", "pilot 16: time lock distinguishes exact and contradictory obligations", "time-lock variants execute", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-16", "lock-time-valid", "observations.[id=lock.time.valid.interval].observed", [{ start: 600, end: 630 }], "valid time lock interval is recorded", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: ["lock.time.valid.interval"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Valid exact lock is supported; contradictory input is correctly rejected.",
+  },
+  {
+    capabilityId: 18,
+    sourceEvidenceIds: ["source-18-resource-lock"],
+    probeObservationIds: ["lock.resource.deduplicated"],
+    testAssertions: [testAssertion("test-18", "pilot 18: resource lock deduplicates", "resource lock projects once", "ADAPTER")],
+    benchmarkAssertions: [probeBenchmark("benchmark-18", "lock-resource-valid", "observations.[id=lock.resource.deduplicated].observed", 1, "resource identity count is concrete", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: ["lock.resource.deduplicated"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Repeated resource lock is hard-projected once.",
+  },
+  {
+    capabilityId: 19,
+    sourceEvidenceIds: ["source-19-full-lock"],
+    probeObservationIds: ["lock.full.timeDimension", "lock.full.resourceDimension", "lock.full.spaceDimension"],
+    testAssertions: [testAssertion("test-19", "pilot 19: full lock reports dimensions separately", "full lock separates time, resource and space", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-19", "lock-full", "reasonCodes", ["UNREPRESENTABLE_SPACE_LOCK"], "full-lock blocker is the executed space reason", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "EVIDENCE"],
+    supportedVariantObservationIds: ["lock.full.timeDimension", "lock.full.resourceDimension"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: ["lock.full.spaceDimension"],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Time and resource dimensions pass; EngineInput has no exact space-lock payload.",
+  },
+  {
+    capabilityId: 20,
+    sourceEvidenceIds: ["source-20-combined-locks"],
+    probeObservationIds: ["lock.combined.compatible", "lock.combined.incompatible"],
+    testAssertions: [testAssertion("test-20", "pilot 20: combined locks execute compatible and incompatible cases", "combined locks preserve compatible composition", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-20", "locks-combined-incompatible", "reasonCodes", ["UNREPRESENTABLE_TIME_LOCK"], "incompatible combination records real reason", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: ["lock.combined.compatible"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Compatible composition adapts; contradictory time sources reject deterministically.",
+  },
+  {
+    capabilityId: 41,
+    sourceEvidenceIds: ["source-41-coach-availability"],
+    probeObservationIds: ["coach.availability.projected", "coach.notDuplicated"],
+    testAssertions: [testAssertion("test-41", "pilot 41: coach availability is projected without duplication", "coach uses effective resource availability", "ADAPTER")],
+    benchmarkAssertions: [probeBenchmark("benchmark-41", "coach-availability", "observations.[id=coach.availability.projected].observed", [{ start: 600, end: 720 }], "coach window is a real observed value", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: ["coach.availability.projected"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Coach identity stays outside generic resources.",
+  },
+  {
+    capabilityId: 120,
+    sourceEvidenceIds: ["source-120-technical-without-participant"],
+    probeObservationIds: ["technical.kind", "technical.noParticipant", "technical.resource", "technical.scheduled", "technical.hardValid"],
+    testAssertions: [testAssertion("test-120", "pilot 120: technical task without participant executes", "technical EngineInput task is typed and scheduled", "VALIDATION")],
+    benchmarkAssertions: [probeBenchmark("benchmark-120", "technical-task", "observations.[id=technical.hardValid].observed", true, "technical result is hard-valid", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "SEARCH", "VALIDATION", "EVIDENCE"],
+    supportedVariantObservationIds: ["technical.hardValid"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Technical task has explicit space/resources and no participant.",
+  },
+  {
+    capabilityId: 121,
+    sourceEvidenceIds: ["source-121-technical-chain"],
+    probeObservationIds: ["technical.chain.ids", "technical.chain.complete", "technical.chain.ordered", "technical.chain.hardValid"],
+    testAssertions: [testAssertion("test-121", "pilot 121: technical chain is complete and ordered", "technical chain authority and search execute", "VALIDATION")],
+    benchmarkAssertions: [probeBenchmark("benchmark-121", "technical-chain", "observations.[id=technical.chain.ids].observed", ["technical-chain-positioning", "technical-chain-camera-test"], "chain member IDs are concrete", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "SEARCH", "VALIDATION", "EVIDENCE"],
+    supportedVariantObservationIds: ["technical.chain.complete"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "PLANNER_LAYER",
+    notes: "Planner-layer chain Evidence; EngineInput integration is audited separately by 122.",
+  },
+  {
+    capabilityId: 122,
+    sourceEvidenceIds: ["source-122-technical-dependency"],
+    probeObservationIds: ["technical.dependency.typed", "technical.dependency.ordered", "technical.dependency.hardValid"],
+    testAssertions: [testAssertion("test-122", "pilot 122: technical dependency remains typed and hard-valid", "EngineInput dependency survives adaptation and execution", "VALIDATION")],
+    benchmarkAssertions: [probeBenchmark("benchmark-122", "technical-dependency-integration", "observations.[id=technical.dependency.typed].observed", ["task:105"], "dependency selector reads the real adapted value", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "ADAPTER", "VALIDATION", "EVIDENCE"],
+    supportedVariantObservationIds: ["technical.dependency.hardValid"],
+    unsupportedVariantObservationIds: [],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Two technical tasks execute with predecessor ordering.",
+  },
+  {
+    capabilityId: 123,
+    sourceEvidenceIds: ["source-123-transport-distinction"],
+    probeObservationIds: ["transport.ordinaryTechnicalSupported", "transport.structuredRejected", "transport.ordinaryHardValid"],
+    testAssertions: [testAssertion("test-123", "pilot 123: ordinary technical name is distinct from transport contract", "names do not activate transport semantics", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-123", "transport-distinction", "reasonCodes", ["UNSUPPORTED_TRANSPORT_CONTRACT"], "structured transport reason is executed", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "VALIDATION", "EVIDENCE"],
+    supportedVariantObservationIds: ["transport.ordinaryTechnicalSupported"],
+    unsupportedVariantObservationIds: ["transport.structuredRejected"],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Ordinary desmontaje/traslado is technical; structured transport is unsupported.",
+  },
+  {
+    capabilityId: 134,
+    sourceEvidenceIds: ["source-134-participant-meal"],
+    probeObservationIds: ["meal.participant.preflightStatus", "meal.participant.reason", "meal.participant.adapterStatus", "meal.participant.window", "meal.participant.entity"],
+    testAssertions: [testAssertion("test-134", "pilot 134: participant meal executes and reports break scope", "participant meal rejection is observed", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-134", "meal-participant", "reasonCodes", ["UNSUPPORTED_BREAK_SCOPE"], "participant meal reason comes from probe", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: [],
+    unsupportedVariantObservationIds: ["meal.participant.reason"],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Required participant scope is explicitly rejected by executed preflight.",
+  },
+  {
+    capabilityId: 135,
+    sourceEvidenceIds: ["source-135-resource-meal"],
+    probeObservationIds: ["meal.resource.preflightStatus", "meal.resource.reason", "meal.resource.adapterStatus", "meal.resource.window", "meal.resource.entity"],
+    testAssertions: [testAssertion("test-135", "pilot 135: resource meal executes and reports break scope", "resource-bound meal rejection is observed", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-135", "meal-resource", "reasonCodes", ["UNSUPPORTED_BREAK_SCOPE"], "resource meal reason comes from task break probe", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: [],
+    unsupportedVariantObservationIds: ["meal.resource.reason"],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Resource-bound meal is represented as an explicit resource task-break contract and rejected.",
+  },
+  {
+    capabilityId: 136,
+    sourceEvidenceIds: ["source-136-itinerant-meal"],
+    probeObservationIds: ["meal.itinerant-unit.preflightStatus", "meal.itinerant-unit.reason", "meal.itinerant-unit.adapterStatus", "meal.itinerant-unit.window", "meal.itinerant-unit.entity"],
+    testAssertions: [testAssertion("test-136", "pilot 136: itinerant unit meal executes and reports break scope", "itinerant-team meal rejection is observed", "PREFLIGHT")],
+    benchmarkAssertions: [probeBenchmark("benchmark-136", "meal-itinerant-unit", "reasonCodes", ["UNSUPPORTED_BREAK_SCOPE"], "itinerant meal reason comes from probe", "EVIDENCE")],
+    requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "EVIDENCE"],
+    supportedVariantObservationIds: [],
+    unsupportedVariantObservationIds: ["meal.itinerant-unit.reason"],
+    contractGapObservationIds: [],
+    representativeBoundary: "ENGINE_INPUT",
+    notes: "Required itinerant scope is explicitly rejected by executed preflight.",
+  },
+]);
