@@ -10,6 +10,7 @@ import type {
   ScheduledResourceMeal,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
+import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { evaluateResourcePresence, presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
 import { preflight, validatePlan } from "./validate";
 import { canPlaceTask } from "./placement";
@@ -221,6 +222,7 @@ function failure(
     scheduledSpaceMeals: [],
     scheduledParticipantMeals: [],
     scheduledResourceMeals: [],
+    scheduledItinerantUnitMeals: [],
     metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
   };
 }
@@ -239,6 +241,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       scheduledSpaceMeals: [],
       scheduledParticipantMeals: [],
       scheduledResourceMeals: [],
+      scheduledItinerantUnitMeals: [],
       metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
     };
   }
@@ -409,7 +412,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       if (!participantMealWitness.complete) { counters.futurePruned += 1; for (const id of participantMealWitness.blockingMealTaskIds) counters.blockers[`participant-meals:${id}`]=(counters.blockers[`participant-meals:${id}`]??0)+1; }
       if (participantMealWitness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return failure(problem,begun,"FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED",counters);
     }
-    const fixedItinerantMeals=(problem.itinerantUnitMeals??[]).map(meal=>({id:meal.id,itinerantUnitId:meal.itinerantUnitId,start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+    const fixedItinerantMeals=materializeScheduledItinerantUnitMeals(problem);
     const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals) : null;
     if (!all || !participantMealWitness?.complete || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
@@ -479,7 +482,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       feederClosureFallbackUsed:feederFallbackUsed,feederClosureBranchesExplored:feederBranches,feederClosureCompleteCandidateCount:feederFallbackUsed?feederCompleteCount:1,feederClosureMaximumPartialStates:feederMaximumStates,feederClosureSelectedOrder:alternative.feederSelectedOrder??[],feederClosureZeroAlternativeTaskIds:[],feederClosureRejectedStateBlockerIds:[...feederRejectedIds].sort(),
       searchStopReason: "SOLUTION_FOUND",
       runtimeMs: performance.now() - begun,
-      planFingerprint: fingerprint(ordered, preparations,meals),
+      planFingerprint: fingerprint(ordered,preparations,meals,fixedItinerantMeals),
       auxiliaryTaskCount: problem.tasks.filter((x) => x.kind === "auxiliary").length,
       auxiliaryPlannedTaskCount: ordered.filter((x) => x.kind === "auxiliary").length,
       auxiliaryBranchesExplored: counters.auxiliaryBranches,
@@ -529,7 +532,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       participantMealCount:problem.participantMeals?.length??0,participantMealPlannedCount:participantMealWitness.scheduled.length,participantMealProtectedCount:(problem.participantMeals??[]).filter(x=>x.fixedInterval).length,participantMealCandidateCount:Object.values(participantMealWitness.candidateCountByTaskId).reduce((a,b)=>a+b,0),participantMealBranchesExplored:participantMealWitness.branchesExplored,participantMealFutureFeasibilityChecks:1,participantMealFutureInfeasibleBranches:0,participantMealMaximumSimultaneous:participantMealWitness.maximumSimultaneous,participantMealCapacityLimit:problem.participantMealCapacity?.maxSimultaneous??0,participantMealStartByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.start])),participantMealEndByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.end])),participantMealRejectedReasonCountByCode:{},participantMealBlockingTaskIds:Object.keys(counters.blockers).filter(x=>x.startsWith("participant-meals:")).map(x=>x.slice("participant-meals:".length)).sort(),participantMealAcceptedWitnessFingerprint:participantMealWitnessFingerprint(participantMealWitness.scheduled),
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled],scheduledResourceMeals:fixedResourceMeals, metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled],scheduledResourceMeals:fixedResourceMeals,scheduledItinerantUnitMeals:fixedItinerantMeals,metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }

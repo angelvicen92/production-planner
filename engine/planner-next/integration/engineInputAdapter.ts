@@ -184,7 +184,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     beforeTaskIds: entry.beforeTaskIds.map((id) => canonical("task", id)),
     afterTaskIds: entry.afterTaskIds.map((id) => canonical("task", id)),
     adjacency: "REQUIRED", internalTransition: "INCLUDED", resourceContinuity: "REQUIRED",
-    ...(()=>{const ids=[entry.anchorTaskId,...entry.beforeTaskIds,...entry.afterTaskIds];const units=[...new Set(input.tasks.filter(task=>ids.includes(task.id)&&task.itinerantTeamId!=null).map(task=>task.itinerantTeamId!))];return units.length===1?{itinerantUnitId:canonical("itinerant-team",units[0]!)}:{};})(),
+    ...(()=>{const segmentIds=[...entry.beforeTaskIds,...entry.afterTaskIds],segments=segmentIds.map(id=>input.tasks.find(task=>task.id===id)?.itinerantTeamId),declared=segments.filter((id):id is number=>id!=null),anchor=input.tasks.find(task=>task.id===entry.anchorTaskId)?.itinerantTeamId;const unit=declared[0]??anchor;return unit!=null&&declared.length===segments.length&&declared.every(id=>id===unit)&&(anchor==null||anchor===unit)?{itinerantUnitId:canonical("itinerant-team",unit)}:{};})(),
   })).sort((a, b) => compare(a.id, b.id));
 
   const problem: PlannerNextProblem = {
