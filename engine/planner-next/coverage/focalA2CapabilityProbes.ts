@@ -8,6 +8,7 @@ import { technicalChainScenario } from "../scenarios/technicalChainScenario";
 import { getTechnicalChains } from "../technicalChains";
 import { validatePlan } from "../validate";
 import { participantMealA2Scenario } from "../scenarios/participantMealA2Scenario";
+import { participantMealBacktrackingScenario } from "../scenarios/participantMealBacktrackingScenario";
 import { engineTimeToMinute } from "../integration/engineTime";
 
 export interface ProbeObservation {
@@ -238,6 +239,7 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
   const secondPreflight = preflightEngineInputForPlannerNext(input);
   if (scope === "participant") {
     const runs=["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"].map(policy=>{const problem=participantMealA2Scenario(policy as "COMPATIBILITY_PRESERVING"|"EXACT_CONSTRUCTIVE");const execution=executePlannerNext(problem);const result=execution.result!;const validation=validatePlan(problem,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals);return {policy,complete:result.complete,hardValid:validation.hardValid,mealCount:result.scheduledParticipantMeals?.length??0};});
+    const backtracking=["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"].map(policy=>{const problem=participantMealBacktrackingScenario(policy as "COMPATIBILITY_PRESERVING"|"EXACT_CONSTRUCTIVE"),result=executePlannerNext(problem).result!;return {policy,complete:result.complete,productiveStart:result.scheduledTasks.find(x=>x.id==="flexible-productive")?.start,mealStart:result.scheduledParticipantMeals[0]?.start,prunes:"metrics" in result?result.metrics.futureInfeasibleCandidatesPruned:result.evidence.participantMealFutureInfeasibleBranches,backtracks:"metrics" in result?result.metrics.backtracks:result.evidence.standaloneBacktracks};});
     const obligation=firstAdapter.status==="SUPPORTED"?firstAdapter.problem.participantMeals?.[0]:undefined;
     return Object.freeze({id,functionsExecuted:["preflightEngineInputForPlannerNext","adaptEngineInputToPlannerNextProblem","executePlannerNext","validatePlan"],observations:Object.freeze([
       observe(id,"meal.participant.preflightStatus","PREFLIGHT","flexible participant meal is supported",firstPreflight.status,"SUPPORTED"),
@@ -248,6 +250,7 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
       observe(id,"meal.participant.identity","ADAPTER","source task identity is reversible",obligation?.sourceTaskId,"task:106"),
       observe(id,"meal.participant.entity","ADAPTER","meal obligation has stable identity",obligation?.id,"participant-meal:106"),
       observe(id,"meal.participant.bothPolicies","VALIDATION","both policies complete and validate",runs,[{policy:"COMPATIBILITY_PRESERVING",complete:true,hardValid:true,mealCount:3},{policy:"EXACT_CONSTRUCTIVE",complete:true,hardValid:true,mealCount:3}]),
+      observe(id,"meal.participant.structuralBacktracking","SEARCH","both policies reject the first destructive productive slot",backtracking,[{policy:"COMPATIBILITY_PRESERVING",complete:true,productiveStart:960,mealStart:780,prunes:1,backtracks:0},{policy:"EXACT_CONSTRUCTIVE",complete:true,productiveStart:960,mealStart:780,prunes:1,backtracks:2}]),
     ]),reasonCodes:firstPreflight.reasonCodes,deterministic:stable(firstPreflight)===stable(secondPreflight),inputImmutable:before===stable(input)});
   }
   const issue = firstPreflight.issues.find((entry) => entry.code === "UNSUPPORTED_BREAK_SCOPE");

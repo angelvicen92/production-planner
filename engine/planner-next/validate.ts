@@ -26,7 +26,7 @@ import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle 
 import { evaluateResourcePresence } from "./resourcePresence";
 import { anchoredAccompanimentPreflight, anchoredSequence, isInternalAnchoredPair } from "./anchoredAccompaniment";
 import { taskFitsAvailability, validateTaskAvailability } from "./taskAvailability";
-import { scheduleParticipantMeals } from "./participantMeals";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
 
 function hasDuplicateIds(items: Array<{ id: string }>): boolean {
   return new Set(items.map(({ id }) => id)).size !== items.length;
@@ -140,7 +140,10 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (participantMeals.length > 0 && (!problem.participantMealCapacity || !Number.isInteger(problem.participantMealCapacity.maxSimultaneous) || problem.participantMealCapacity.maxSimultaneous <= 0)) reasons.add("INVALID_PARTICIPANT_MEAL_CAPACITY");
   for (const meal of participantMeals) {
     if (!participantIds.has(meal.participantId)) reasons.add("MISSING_PARTICIPANT_REFERENCE");
-    if (!Number.isInteger(meal.duration) || meal.duration <= 0 || invalidWindow(meal.window, day) || meal.duration > meal.window.end - meal.window.start) reasons.add("INVALID_PARTICIPANT_MEAL_OBLIGATION");
+    if (!Number.isInteger(meal.duration) || meal.duration <= 0 || meal.duration%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || invalidWindow(meal.window, day) || meal.window.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.window.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0 || meal.duration > meal.window.end - meal.window.start) reasons.add("INVALID_PARTICIPANT_MEAL_OBLIGATION");
+    if (meal.status!=="pending"&&meal.status!=="interrupted"&&meal.status!=="done"&&meal.status!=="in_progress") reasons.add("INVALID_PARTICIPANT_MEAL_STATUS");
+    if ((meal.status==="done"||meal.status==="in_progress")&&!meal.fixedInterval) reasons.add("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL");
+    if ((meal.status==="pending"||meal.status==="interrupted")&&meal.fixedInterval) reasons.add("FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL");
     if (meal.fixedInterval && (invalidWindow(meal.fixedInterval, day) || meal.fixedInterval.end - meal.fixedInterval.start !== meal.duration || meal.fixedInterval.start < meal.window.start || meal.fixedInterval.end > meal.window.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
   }
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
@@ -264,7 +267,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals?: ScheduledParticipantMeal[]): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = []): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -482,9 +485,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
 
   const invalidMealSpaces=new Set<string>();const policyIds=new Set(spacesWithMealPolicy(problem).map(s=>s.id));for(const space of spacesWithMealPolicy(problem)){const policy=space.mealPolicy!,own=meals.filter(m=>m.spaceId===space.id),m=own[0];if(own.length!==1||!m||m.entryIndex!==1||m.id!==spaceMealId(space.id)||m.kind!=="space-meal"||m.spaceId!==space.id||m.duration!==policy.duration||m.end-m.start!==m.duration||m.start%5!==0||!spaceMealWithinDay(problem,m)||!spaceMealWithinWindow(policy,m)||!spaceMealWithinAvailability(space,m)||!spaceMealAvoidsTasks(m,scheduled)||!spaceMealAvoidsMeals(m,meals.filter(x=>x!==m)))invalidMealSpaces.add(space.id)}for(const m of meals)if(!policyIds.has(m.spaceId))invalidMealSpaces.add(m.spaceId);spaceMeal=[...invalidMealSpaces].sort().length;
 
-  const expectedParticipantMeals = new Map((participantMeals === undefined ? [] : problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
+  const expectedParticipantMeals = new Map((problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
   const actualCounts = new Map<string, number>();
-  for (const meal of participantMeals ?? []) {
+  for (const meal of participantMeals) {
     actualCounts.set(meal.sourceTaskId, (actualCounts.get(meal.sourceTaskId) ?? 0) + 1);
     const expected = expectedParticipantMeals.get(meal.sourceTaskId);
     const person = participants.get(meal.participantId);
@@ -494,9 +497,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       || scheduled.some((task) => task.participantId === meal.participantId && overlaps(task, meal))) participantMeal += 1;
   }
   for (const expected of expectedParticipantMeals.values()) if (actualCounts.get(expected.sourceTaskId) !== 1) participantMeal += 1;
-  const points = (participantMeals ?? []).flatMap((meal) => [{ minute: meal.start, delta: 1 }, { minute: meal.end, delta: -1 }]).sort((a,b)=>a.minute-b.minute||a.delta-b.delta);
+  const points = participantMeals.flatMap((meal) => [{ minute: meal.start, delta: 1 }, { minute: meal.end, delta: -1 }]).sort((a,b)=>a.minute-b.minute||a.delta-b.delta);
   let concurrent=0;for(const point of points){concurrent+=point.delta;if(concurrent>(problem.participantMealCapacity?.maxSimultaneous??0)){participantMeal+=1;break;}}
-  if (participantMeals === undefined && (problem.participantMeals?.length ?? 0) > 0 && !scheduleParticipantMeals(problem, scheduled).complete) participantMeal += 1;
 
   let anchoredAccompaniment=0;
   for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));}if(invalid)anchoredAccompaniment+=1;}

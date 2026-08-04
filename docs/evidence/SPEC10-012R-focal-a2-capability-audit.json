@@ -2854,7 +2854,8 @@
         "meal.participant.window",
         "meal.participant.identity",
         "meal.participant.entity",
-        "meal.participant.bothPolicies"
+        "meal.participant.bothPolicies",
+        "meal.participant.structuralBacktracking"
       ],
       "testAssertions": [
         {
@@ -2887,7 +2888,8 @@
         "EVIDENCE"
       ],
       "supportedVariantObservationIds": [
-        "meal.participant.bothPolicies"
+        "meal.participant.bothPolicies",
+        "meal.participant.structuralBacktracking"
       ],
       "unsupportedVariantObservationIds": [],
       "contractGapObservationIds": [],
@@ -3754,6 +3756,50 @@
           ],
           "pass": true,
           "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.structuralBacktracking",
+          "probeId": "meal-participant",
+          "layer": "SEARCH",
+          "property": "both policies reject the first destructive productive slot",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 0
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 2
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 0
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 2
+            }
+          ],
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -4471,6 +4517,50 @@
           "complete": true,
           "hardValid": true,
           "mealCount": 3
+        }
+      ],
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.participant.structuralBacktracking",
+      "probeId": "meal-participant",
+      "layer": "SEARCH",
+      "property": "both policies reject the first destructive productive slot",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 0
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 2
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 0
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 2
         }
       ],
       "pass": true,
@@ -5917,6 +6007,53 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.participant.structuralBacktracking",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "both policies reject the first destructive productive slot",
+      "file": null,
+      "selector": "meal.participant.structuralBacktracking",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 0
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 2
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 0
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "productiveStart": 960,
+          "mealStart": 780,
+          "prunes": 1,
+          "backtracks": 2
+        }
+      ],
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "test-134",
       "kind": "TEST",
       "status": "PASS",
@@ -6237,7 +6374,7 @@
     }
   ],
   "assertionCounts": {
-    "PASS": 111,
+    "PASS": 112,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -9682,7 +9819,8 @@
           "meal.participant.window",
           "meal.participant.identity",
           "meal.participant.entity",
-          "meal.participant.bothPolicies"
+          "meal.participant.bothPolicies",
+          "meal.participant.structuralBacktracking"
         ],
         "testAssertions": [
           {
@@ -9715,7 +9853,8 @@
           "EVIDENCE"
         ],
         "supportedVariantObservationIds": [
-          "meal.participant.bothPolicies"
+          "meal.participant.bothPolicies",
+          "meal.participant.structuralBacktracking"
         ],
         "unsupportedVariantObservationIds": [],
         "contractGapObservationIds": [],
@@ -9880,6 +10019,53 @@
               "complete": true,
               "hardValid": true,
               "mealCount": 3
+            }
+          ],
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.participant.structuralBacktracking",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "both policies reject the first destructive productive slot",
+          "file": null,
+          "selector": "meal.participant.structuralBacktracking",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 0
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 2
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 0
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "productiveStart": 960,
+              "mealStart": 780,
+              "prunes": 1,
+              "backtracks": 2
             }
           ],
           "reason": "Executed observation matches expected value",

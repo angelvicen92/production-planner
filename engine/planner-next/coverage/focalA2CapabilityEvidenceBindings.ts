@@ -184,11 +184,11 @@ export const FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS: readonly CapabilityEvidenceB
   {
     capabilityId: 134,
     sourceEvidenceIds: ["source-134-spec07-contestants", "source-134-a2-sodexo"],
-    probeObservationIds: ["meal.participant.preflightStatus", "meal.participant.reason", "meal.participant.adapterStatus", "meal.participant.scope", "meal.participant.window", "meal.participant.identity", "meal.participant.entity", "meal.participant.bothPolicies"],
+    probeObservationIds: ["meal.participant.preflightStatus", "meal.participant.reason", "meal.participant.adapterStatus", "meal.participant.scope", "meal.participant.window", "meal.participant.identity", "meal.participant.entity", "meal.participant.bothPolicies", "meal.participant.structuralBacktracking"],
     testAssertions: [testAssertion("test-134", "pilot 134: flexible participant meal task executes under both policies", "source task becomes a validated participant-meal obligation", "VALIDATION")],
     benchmarkAssertions: [probeBenchmark("benchmark-134", "meal-participant", "reasonCodes", [], "supported participant meal has no preflight reason", "EVIDENCE", "ENGINE_INPUT")],
     requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "VALIDATION", "EVIDENCE"],
-    supportedVariantObservationIds: ["meal.participant.bothPolicies"],
+    supportedVariantObservationIds: ["meal.participant.bothPolicies", "meal.participant.structuralBacktracking"],
     unsupportedVariantObservationIds: [],
     contractGapObservationIds: [],
     representativeBoundary: "ENGINE_INPUT",

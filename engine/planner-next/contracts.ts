@@ -151,7 +151,7 @@ export interface ValidationSummary {
   spaceMealViolationCount: number;
   mainFlowMealViolationCount: number;
   anchoredAccompanimentViolationCount: number;
-  participantMealViolationCount?: number;
+  participantMealViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -269,7 +269,8 @@ export interface PlanMetrics extends ValidationSummary {
   anchoredAccompanimentAnchorTaskIdById:Record<string,string>; anchoredAccompanimentBeforeTaskIdsById:Record<string,string[]>; anchoredAccompanimentAfterTaskIdsById:Record<string,string[]>;
   anchoredAccompanimentOperationStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorStartById:Record<string,Minute|null>; anchoredAccompanimentAnchorEndById:Record<string,Minute|null>; anchoredAccompanimentOperationEndById:Record<string,Minute|null>; anchoredAccompanimentTotalDurationById:Record<string,number>;
   anchoredAccompanimentAdjacencySatisfiedById:Record<string,boolean>; anchoredAccompanimentParticipantSatisfiedById:Record<string,boolean>; anchoredAccompanimentSpacesSatisfiedById:Record<string,boolean>; anchoredAccompanimentResourcesSatisfiedById:Record<string,boolean>; anchoredAccompanimentTaskWindowsSatisfiedById:Record<string,boolean>; anchoredAccompanimentCompleteById:Record<string,boolean>; anchoredAccompanimentRejectedReasonCountByCode:Record<string,number>;
-  participantMealCount?: number; participantMealPlannedCount?: number; participantMealProtectedCount?: number; participantMealCandidateCount?: number; participantMealBranchesExplored?: number; participantMealFutureFeasibilityChecks?: number; participantMealFutureInfeasibleBranches?: number; participantMealMaximumSimultaneous?: number; participantMealCapacityLimit?: number; participantMealStartByTaskId?: Record<string,Minute>; participantMealEndByTaskId?: Record<string,Minute>; participantMealRejectedReasonCountByCode?: Record<string,number>;
+  participantMealCount: number; participantMealPlannedCount: number; participantMealProtectedCount: number; participantMealCandidateCount: number; participantMealBranchesExplored: number; participantMealFutureFeasibilityChecks: number; participantMealFutureInfeasibleBranches: number; participantMealMaximumSimultaneous: number; participantMealCapacityLimit: number; participantMealStartByTaskId: Record<string,Minute>; participantMealEndByTaskId: Record<string,Minute>; participantMealRejectedReasonCountByCode: Record<string,number>;
+  participantMealBlockingTaskIds: string[]; participantMealAcceptedWitnessFingerprint: string|null;
 }
 
 export interface PlanResult {
@@ -277,6 +278,6 @@ export interface PlanResult {
   scheduledTasks: ScheduledTask[];
   scheduledSetupPreparations: ScheduledSetupPreparation[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
-  scheduledParticipantMeals?: ScheduledParticipantMeal[];
+  scheduledParticipantMeals: ScheduledParticipantMeal[];
   metrics: PlanMetrics;
 }

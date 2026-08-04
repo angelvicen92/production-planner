@@ -38,6 +38,7 @@ export type EngineInputPreflightReasonCode =
   | "MISSING_TASK_REFERENCE"
   | "MISSING_TRANSITION_CONFIGURATION"
   | "PLAN_ID_MISMATCH"
+  | "PARTICIPANT_MEAL_IDENTITY_CONFLICT"
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
   | "PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL"
@@ -1233,6 +1234,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
   const participantMeals = resolveParticipantScopedMeals(input);
   for (const meal of participantMeals.meals) {
+    const explicitlyLinkedMealTasks=input.tasks.filter(task=>task.breakId!=null&&String(task.breakId)===meal.breakId&&isFlexibleParticipantMealTask(input,task));
+    const unlinkedProtectedMealTasks=input.tasks.filter(task=>task.contestantId===meal.participantId&&(task.status==="done"||task.status==="in_progress")&&isFlexibleParticipantMealTask(input,task)&&!explicitlyLinkedMealTasks.includes(task));
+    if(unlinkedProtectedMealTasks.length)addIssue("PARTICIPANT_MEAL_IDENTITY_CONFLICT","break",meal.breakId,meal.sourcePath,"Protected participant meal break and task lack an explicit identity relation.",{breakId:meal.breakId,taskIds:unlinkedProtectedMealTasks.map(task=>task.id).sort((a,b)=>a-b),contestantId:meal.participantId});
     const details = {
       breakId: meal.breakId || null,
       contestantId: meal.participantId,
@@ -1254,7 +1258,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     if (meal.defects.some((defect) => defect === "OUTSIDE_AVAILABILITY" || defect === "OVERLAP" || defect === "EMPTY_AVAILABILITY")) {
       addIssue("UNREPRESENTABLE_PARTICIPANT_BREAK", "break", meal.breakId, meal.sourcePath, "Participant-scoped meal cannot be represented as an exact availability interruption.", details);
     }
-    if (meal.status === "SUPPORTED") {
+    if (meal.status === "SUPPORTED" && explicitlyLinkedMealTasks.length===0) {
       for (const task of input.tasks.filter((item) => item.contestantId === meal.participantId && (item.status === "done" || item.status === "in_progress"))) {
         const protectedTime = resolveProtectedTaskInterval(task);
         if (protectedTime.status !== "COMPLETE_REAL" && protectedTime.status !== "COMPLETE_PLANNED") continue;

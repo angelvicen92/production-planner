@@ -3,10 +3,9 @@ import type { ParticipantMealObligation, Window } from "../contracts";
 import { engineTimeToMinute } from "./engineTime";
 
 export function isFlexibleParticipantMealTask(input: EngineInput, task: TaskInput): boolean {
-  return task.operationalRole === "meal_break_placeholder"
+  return input.mealMode === "flexible_meal_window" && (task.operationalRole === "meal_break_placeholder"
     || task.breakKind === "participant_meal"
-    || task.breakKind === "meal"
-    || (input.mealTaskTemplateId != null && task.templateId === input.mealTaskTemplateId);
+    || (input.mealTaskTemplateId != null && task.templateId === input.mealTaskTemplateId));
 }
 
 function intersect(windows: TimeWindow[]): Window | null {

@@ -193,7 +193,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
       const reduced: PlannerNextProblem = { ...problem, tasks: problem.tasks.filter(({ id }) => coreIds.has(id)),
-        anchoredAccompaniments: applicableContracts };
+        anchoredAccompaniments: applicableContracts, participantMeals: undefined, participantMealCapacity: undefined };
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);

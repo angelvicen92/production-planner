@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledTask } from "./contracts";
-import { participantMealCandidates, scheduleParticipantMeals } from "./participantMeals";
+import { assessParticipantMealFutureFeasibility, participantMealCandidates, scheduleParticipantMeals } from "./participantMeals";
 import { executePlannerNext } from "./executePlannerNext";
 import { mainFlowVocalScenario } from "./scenarios/mainFlowVocalScenario";
-import { validatePlan } from "./validate";
+import { preflight, validatePlan } from "./validate";
+import { participantMealBacktrackingScenario } from "./scenarios/participantMealBacktrackingScenario";
 
 const problem = (meals: ParticipantMealObligation[], capacity: number): PlannerNextProblem => ({
   day:{start:480,end:1080},protectedMeal:{start:720,end:750},spaces:[{id:"s",availability:[{start:480,end:1080}]}],resources:[],coaches:[],
@@ -12,11 +13,23 @@ const problem = (meals: ParticipantMealObligation[], capacity: number): PlannerN
   mainFlow:{spaceId:"s",preferredEnd:720,continuity:"REQUIRED",maxBlocksByKey:2,minTasksPerBlock:1},participantTransitionMinutes:0,resourceTransitionMinutes:0,
   budget:{bestK:3,maxBacktracks:50,maxPatterns:50,maxBranchExpansions:500},participantMeals:meals,participantMealCapacity:{maxSimultaneous:capacity},
 });
+
+test("constructive policies reject the first productive slot and retain the meal-feasible alternative",()=>{
+ for(const policy of ["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"] as const){const source=participantMealBacktrackingScenario(policy),result=executePlannerNext(source).result!;assert.equal(result.complete,true);assert.equal(result.scheduledTasks.find(x=>x.id==="flexible-productive")?.start,960);assert.equal(result.scheduledParticipantMeals?.[0]?.start,780);if("metrics" in result){assert.ok(result.metrics.futureInfeasibleCandidatesPruned>0);assert.ok(result.metrics.participantMealBranchesExplored!>0);}else{assert.ok(result.evidence.standaloneBacktracks>0||result.evidence.standaloneForwardPrunes>0);assert.ok(result.evidence.branchesExplored>0);}assert.equal(validatePlan(source,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals).hardValid,true);}
+});
+
+test("shared meal budget never exceeds remaining allowance and reports atomic exhaustion",()=>{const source=problem([meal("1","p1"),meal("2","p2"),meal("3","p3")],1),budget={remaining:2};const result=assessParticipantMealFutureFeasibility(source,[],budget,"MATERIALIZE");assert.equal(result.complete,false);assert.equal(result.branchesExplored,2);assert.equal(budget.remaining,0);assert.ok(result.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"));assert.deepEqual(result.scheduled,[]);});
+
+test("validation never searches and rejects omitted published meals",()=>{const source=problem([meal("1","p1")],1);assert.equal(validatePlan(source,[],[],[],[]).hardValid,false);assert.ok(validatePlan(source,[],[],[],[]).reasonCodes.includes("PARTICIPANT_MEAL_VIOLATION"));});
+
+test("joint infeasibility publishes no structural or meal partials under either policy",()=>{for(const policy of ["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"] as const){const source=mainFlowVocalScenario();source.searchPolicy=policy;source.budget={bestK:20,maxBacktracks:10000,maxPatterns:10000,maxBranchExpansions:300000};source.participantMeals=[meal("1","participant-c",{start:780,end:825}),meal("2","participant-d",{start:780,end:825}),meal("3","participant-e",{start:780,end:825})];source.participantMealCapacity={maxSimultaneous:2};const result=executePlannerNext(source).result!;assert.equal(result.complete,false);assert.deepEqual(result.scheduledTasks,[]);assert.deepEqual(result.scheduledSpaceMeals,[]);assert.deepEqual(result.scheduledParticipantMeals,[]);if("scheduledSetupPreparations" in result)assert.deepEqual(result.scheduledSetupPreparations,[]);}});
+
+test("direct preflight enforces protected state and canonical grid",()=>{const protectedMissing=problem([{...meal("1","p1"),status:"done"}],1);assert.ok(validatePlan(protectedMissing,[]).reasonCodes.includes("PARTICIPANT_MEAL_VIOLATION"));assert.ok(preflight(protectedMissing).includes("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL"));const offGrid=problem([{...meal("1","p1"),duration:31,window:{start:781,end:900}}],1);assert.ok(preflight(offGrid).includes("INVALID_PARTICIPANT_MEAL_OBLIGATION"));});
 const meal=(id:string,participantId:string,window={start:780,end:960},duration=45):ParticipantMealObligation=>({id:`meal:${id}`,sourceTaskId:`task:${id}`,participantId,duration,window,status:"pending"});
 
 test("joint witness schedules every meal once, respects capacity, and is deterministic",()=>{
   const source=problem([meal("1","p1"),meal("2","p2"),meal("3","p3")],2);const before=structuredClone(source);
-  const first=scheduleParticipantMeals(source,[]),second=scheduleParticipantMeals(source,[]);
+  const first=scheduleParticipantMeals(source,[],500),second=scheduleParticipantMeals(source,[],500);
   assert.equal(first.complete,true);assert.equal(first.scheduled.length,3);assert.ok(first.maximumSimultaneous<=2);assert.deepEqual(first,second);assert.deepEqual(source,before);
   assert.ok(first.scheduled.every(x=>x.end-x.start===45));
 });
@@ -25,7 +38,7 @@ test("joint witness rejects capacity collision although every meal has an indivi
   const obligations=[meal("1","p1",{start:780,end:825}),meal("2","p2",{start:780,end:825}),meal("3","p3",{start:780,end:825})];
   const source=problem(obligations,2);
   assert.ok(obligations.every(item=>participantMealCandidates(source,item,[],[]).length===1));
-  const result=scheduleParticipantMeals(source,[]);assert.equal(result.complete,false);assert.deepEqual(result.scheduled,[]);assert.ok(result.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"));
+  const result=scheduleParticipantMeals(source,[],500);assert.equal(result.complete,false);assert.deepEqual(result.scheduled,[]);assert.ok(result.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE"));
 });
 
 test("meals occupy only their participant and exact boundaries remain valid",()=>{
