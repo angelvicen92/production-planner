@@ -297,6 +297,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let participantMeal = 0;
   let resourceMeal = 0;
   let itinerantUnitMeal = 0;
+  let itinerantUnitResourceAlias = false;
   const publishedResourceMeals=resourceMeals;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
@@ -304,8 +305,11 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const spaces = new Map(problem.spaces.map((item) => [item.id, item]));
   const resources = new Map(problem.resources.map((item) => [item.id, item]));
   const taskAvailabilityIds=new Set<string>();
+  const expectedTaskById=new Map(problem.tasks.map(task=>[task.id,task]));
 
   for (const task of scheduled) {
+    if(expectedTaskById.get(task.id)?.itinerantUnitId!==task.itinerantUnitId)itinerantUnitMeal+=1;
+    if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
     const participant = participants.get(task.participantId);
     const coach = task.coachId === undefined ? undefined : coaches.get(task.coachId);
     const space = spaces.get(task.spaceId);
@@ -524,6 +528,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   itinerantUnitMeal+=expectedItinerant.filter((value,index)=>actualItinerant.filter(x=>x===value).length!==1||expectedItinerant.indexOf(value)!==index).length;
   itinerantUnitMeal+=actualItinerant.filter(value=>!expectedItinerant.includes(value)).length;
   for(const meal of itinerantUnitMeals)for(const task of scheduled)if(task.itinerantUnitId===meal.itinerantUnitId&&task.start<meal.end&&meal.start<task.end)itinerantUnitMeal++;
+  const usedScheduledUnitIds=new Set([...scheduled.map(task=>task.itinerantUnitId),...itinerantUnitMeals.map(meal=>meal.itinerantUnitId)].filter((id):id is string=>id!==undefined));
+  if(problem.resources.some(resource=>usedScheduledUnitIds.has(resource.id)))itinerantUnitResourceAlias=true;
 
   let anchoredAccompaniment=0;
   for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));if(contract.itinerantUnitId)invalid||=(problem.itinerantUnitMeals??[]).some(meal=>meal.itinerantUnitId===contract.itinerantUnitId&&flat[0]!.start<meal.interval.end&&meal.interval.start<flat.at(-1)!.end);}if(invalid)anchoredAccompaniment+=1;}
@@ -550,6 +556,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if (participantMeal) reasonCodes.push("PARTICIPANT_MEAL_VIOLATION");
   if (resourceMeal) reasonCodes.push("RESOURCE_MEAL_VIOLATION");
   if (itinerantUnitMeal) reasonCodes.push("ITINERANT_UNIT_MEAL_VIOLATION");
+  if(itinerantUnitResourceAlias)reasonCodes.push("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
   for (const resource of [...problem.resources].sort((a, b) => a.id.localeCompare(b.id))) {
     if (resource?.presenceConcentrationPolicy !== "REQUIRED") continue;
     const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals);

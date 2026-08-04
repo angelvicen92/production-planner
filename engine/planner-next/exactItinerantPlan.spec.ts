@@ -133,13 +133,14 @@ test("zero alternatives are infeasible and failures publish no partial core", ()
   const input = problem([auxiliary("impossible", "a", [{ start: 0, end: 5 }])]);
   const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "INFEASIBLE"); assert.ok(result.evidence.standaloneZeroAlternativePrunes > 0);
-  assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);
+  assert.deepEqual(result.scheduledTasks, []); assert.deepEqual(result.scheduledSpaceMeals, []);assert.deepEqual(result.scheduledItinerantUnitMeals,[]);
 });
 
 test("unsupported standalone shapes are explicit and atomic", () => {
   const input = problem([{ id: "technical", kind: "technical", duration: 10, spaceId: "technical", dependencies: [] }]);
   const result = constructExactItinerantPlan(input);
   assert.equal(result.status, "UNSUPPORTED_STANDALONE_SHAPE");
+  assert.deepEqual(result.scheduledItinerantUnitMeals, []);
   assert.ok(result.evidence.reasonCodes.includes("UNSUPPORTED_STANDALONE_TASK_KIND:technical"));
   assert.deepEqual(result.scheduledTasks, []);
 });
@@ -154,7 +155,7 @@ test("the global branch threshold completes at B and B-1 exhausts exactly", () =
   assert.deepEqual(atThreshold.scheduledTasks, complete.scheduledTasks);
   const below = coreLeafContinuationProblem(); below.budget.maxBranchExpansions = threshold - 1;
   const exhausted = constructExactItinerantPlan(below);
-  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED"); assert.equal(exhausted.evidence.branchesExplored, threshold - 1);
+  assert.equal(exhausted.status, "BRANCH_BUDGET_EXHAUSTED"); assert.equal(exhausted.evidence.branchesExplored, threshold - 1);assert.deepEqual(exhausted.scheduledItinerantUnitMeals,[]);
   assert.equal(exhausted.evidence.branchesExplored, exhausted.evidence.coreBranches + exhausted.evidence.standaloneBranches);
   assert.ok(exhausted.evidence.standaloneForwardPrunes > 0);
   assert.equal(exhausted.evidence.lastExhaustionPhase, "STANDALONE");
@@ -215,5 +216,5 @@ test("budget exhaustion publishes an incumbent atomically but never a partial pl
   assert.equal(kept.scheduledTasks.length, withIncumbent.tasks.length);
   const withoutIncumbent = create(); withoutIncumbent.budget.maxBranchExpansions = first.evidence.branchesExplored - 1;
   const empty = runExactItinerantPlanSearch(withoutIncumbent, { standaloneCompletionSelection: "BEST_DOMINATING_WITHIN_BUDGET" });
-  assert.equal(empty.status, "BRANCH_BUDGET_EXHAUSTED"); assert.deepEqual(empty.scheduledTasks, []);
+  assert.equal(empty.status, "BRANCH_BUDGET_EXHAUSTED"); assert.deepEqual(empty.scheduledTasks, []);assert.deepEqual(empty.scheduledItinerantUnitMeals,[]);
 });

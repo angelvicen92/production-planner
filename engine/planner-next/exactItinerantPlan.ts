@@ -262,7 +262,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds);
   if (unsupported.length) {
     evidence.remainingTaskIds = standaloneTasks.map(({ id }) => id); evidence.reasonCodes = unsupported;
-    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],
+    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
