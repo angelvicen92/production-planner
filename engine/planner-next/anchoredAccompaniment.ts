@@ -3,6 +3,10 @@ import { canPlaceTask } from "./placement";
 
 export interface AnchoredOperation { contract: AnchoredAccompaniment; tasks: ScheduledTask[]; anchor: ScheduledTask; start: number; end: number }
 
+export function anchoredOperationAvoidsItinerantUnitMeals(problem:PlannerNextProblem,contract:AnchoredAccompaniment,start:number,end:number):boolean{
+  return !contract.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==contract.itinerantUnitId||end<=meal.interval.start||start>=meal.interval.end);
+}
+
 export function anchoredAccompanimentIndex(problem: PlannerNextProblem): Map<string, AnchoredAccompaniment> {
   return new Map([...(problem.anchoredAccompaniments ?? [])].sort((a,b)=>a.id.localeCompare(b.id)).map(c=>[c.anchorTaskId,c]));
 }
@@ -30,6 +34,7 @@ export function materializeAnchoredOperation(problem: PlannerNextProblem, anchor
   cursor=scheduledAnchor.end;const scheduledAfter:ScheduledTask[]=[];
   for(const task of after as Task[]){scheduledAfter.push({...task,start:cursor,end:cursor+task.duration});cursor+=task.duration;}
   const tasks=[...scheduledBefore,scheduledAnchor,...scheduledAfter];
+  if(!anchoredOperationAvoidsItinerantUnitMeals(problem,contract,tasks[0]!.start,tasks.at(-1)!.end))return null;
   if(tasks.some(t=>!canPlaceTask(problem,t,t.start,external,meals)))return null;
   if(tasks.slice(1).some((t,i)=>tasks[i]!.end!==t.start))return null;
   if(tasks.some(t=>t.participantId!==scheduledAnchor.participantId))return null;
@@ -51,6 +56,9 @@ export function anchoredAccompanimentPreflight(problem: PlannerNextProblem): str
     if(!anchor)reasons.add(`ANCHORED_ACCOMPANIMENT_UNKNOWN_ANCHOR:${id}:${c.anchorTaskId??""}`);else if(anchor.kind!=="main")reasons.add(`ANCHORED_ACCOMPANIMENT_UNSUPPORTED_ANCHOR_KIND:${id}:${anchor.kind}`);
     const local=new Set<string>();for(const taskId of [c.anchorTaskId??"",...segments]){if(local.has(taskId))reasons.add(taskId===c.anchorTaskId?`ANCHORED_ACCOMPANIMENT_NESTING_NOT_SUPPORTED:${id}`:`ANCHORED_ACCOMPANIMENT_DUPLICATE_TASK:${id}:${taskId}`);local.add(taskId);if(used.has(taskId))reasons.add(`ANCHORED_ACCOMPANIMENT_TASK_REUSED:${taskId}`);used.add(taskId);}
     for(const taskId of segments){const task=tasks.get(taskId);if(!task)reasons.add(`ANCHORED_ACCOMPANIMENT_UNKNOWN_SEGMENT:${id}:${taskId}`);else{if(task.kind!=="auxiliary")reasons.add(`ANCHORED_ACCOMPANIMENT_INVALID_SEGMENT_KIND:${id}:${taskId}`);if(anchor&&task.participantId!==anchor.participantId)reasons.add(`ANCHORED_ACCOMPANIMENT_PARTICIPANT_MISMATCH:${id}:${taskId}`);invalid||=!validTaskReferences(task,resources,spaces);}}
+    const taskUnits=[c.anchorTaskId??"",...segments].map(taskId=>tasks.get(taskId)?.itinerantUnitId).filter((x):x is string=>x!==undefined);
+    if(new Set(taskUnits).size>1||((c.itinerantUnitId!==undefined)&&taskUnits.some(unit=>unit!==c.itinerantUnitId)))reasons.add(`ANCHORED_ACCOMPANIMENT_ITINERANT_UNIT_MISMATCH:${id}`);
+    if(c.itinerantUnitId!==undefined&&(!taskUnits.length||taskUnits.some(unit=>unit!==c.itinerantUnitId)))invalid=true;
     if(anchor)invalid||=!validTaskReferences(anchor,resources,spaces);if(invalid)reasons.add(`ANCHORED_ACCOMPANIMENT_INVALID_CONTRACT:${id}`);
   }return [...reasons].sort();
 }

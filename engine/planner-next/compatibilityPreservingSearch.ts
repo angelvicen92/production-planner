@@ -409,7 +409,8 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       if (!participantMealWitness.complete) { counters.futurePruned += 1; for (const id of participantMealWitness.blockingMealTaskIds) counters.blockers[`participant-meals:${id}`]=(counters.blockers[`participant-meals:${id}`]??0)+1; }
       if (participantMealWitness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return failure(problem,begun,"FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED",counters);
     }
-    const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled],fixedResourceMeals) : null;
+    const fixedItinerantMeals=(problem.itinerantUnitMeals??[]).map(meal=>({id:meal.id,itinerantUnitId:meal.itinerantUnitId,start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+    const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled],fixedResourceMeals,fixedItinerantMeals) : null;
     if (!all || !participantMealWitness?.complete || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
       if (!hasNext) break;
