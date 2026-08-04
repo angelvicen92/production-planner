@@ -1,0 +1,200 @@
+{
+  "benchmark": "SPEC10-014-fixed-resource-meals",
+  "executions": [
+    {
+      "policy": "COMPATIBILITY_PRESERVING",
+      "resourceId": "shared-r",
+      "sourceWindows": [
+        {
+          "start": 540,
+          "end": 1020
+        }
+      ],
+      "adaptedWindows": [
+        {
+          "start": 540,
+          "end": 720
+        },
+        {
+          "start": 780,
+          "end": 1020
+        }
+      ],
+      "resourceTasks": [
+        {
+          "id": "resource-before",
+          "start": 690,
+          "end": 720
+        },
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "foreignTasksDuringMeal": [
+        {
+          "id": "vocal-participant-z",
+          "start": 720,
+          "end": 735,
+          "resourceIds": []
+        },
+        {
+          "id": "other-during-meal",
+          "start": 735,
+          "end": 765,
+          "resourceIds": [
+            "other-r"
+          ]
+        },
+        {
+          "id": "vocal-participant-d",
+          "start": 735,
+          "end": 750,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-e",
+          "start": 750,
+          "end": 765,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-f",
+          "start": 765,
+          "end": 780,
+          "resourceIds": []
+        }
+      ],
+      "flexibleTask": [
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "publishedResourceMeals": [
+        {
+          "id": "resource-meal",
+          "sourceTaskId": "source-resource-meal",
+          "resourceIds": [
+            "shared-r"
+          ],
+          "start": 720,
+          "end": 780,
+          "duration": 60
+        }
+      ],
+      "resourceTasksAvoidMeal": true,
+      "presence": {
+        "spanMinutes": 120,
+        "operationalBlocks": 1,
+        "internalGapMinutes": 0,
+        "authorizedMealMinutes": 60,
+        "crossesAuthorizedMeal": true
+      },
+      "branches": 5164,
+      "complete": true,
+      "hardValid": true,
+      "inputImmutable": true
+    },
+    {
+      "policy": "EXACT_CONSTRUCTIVE",
+      "resourceId": "shared-r",
+      "sourceWindows": [
+        {
+          "start": 540,
+          "end": 1020
+        }
+      ],
+      "adaptedWindows": [
+        {
+          "start": 540,
+          "end": 720
+        },
+        {
+          "start": 780,
+          "end": 1020
+        }
+      ],
+      "resourceTasks": [
+        {
+          "id": "resource-before",
+          "start": 690,
+          "end": 720
+        },
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "foreignTasksDuringMeal": [
+        {
+          "id": "vocal-participant-d",
+          "start": 720,
+          "end": 735,
+          "resourceIds": []
+        },
+        {
+          "id": "other-during-meal",
+          "start": 735,
+          "end": 765,
+          "resourceIds": [
+            "other-r"
+          ]
+        },
+        {
+          "id": "vocal-participant-c",
+          "start": 735,
+          "end": 750,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-z",
+          "start": 750,
+          "end": 765,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-h",
+          "start": 765,
+          "end": 780,
+          "resourceIds": []
+        }
+      ],
+      "flexibleTask": [
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "publishedResourceMeals": [
+        {
+          "id": "resource-meal",
+          "sourceTaskId": "source-resource-meal",
+          "resourceIds": [
+            "shared-r"
+          ],
+          "start": 720,
+          "end": 780,
+          "duration": 60
+        }
+      ],
+      "resourceTasksAvoidMeal": true,
+      "presence": {
+        "spanMinutes": 120,
+        "operationalBlocks": 1,
+        "internalGapMinutes": 0,
+        "authorizedMealMinutes": 60,
+        "crossesAuthorizedMeal": true
+      },
+      "branches": 819,
+      "complete": true,
+      "hardValid": true,
+      "inputImmutable": true
+    }
+  ],
+  "deterministic": true
+}

@@ -103,7 +103,11 @@ export interface PlannerNextProblem {
   searchPolicy?: PlannerSearchPolicy;
   participantMeals?: ParticipantMealObligation[];
   participantMealCapacity?: { maxSimultaneous: number };
+  resourceMeals?: ResourceMealBreak[];
 }
+
+export interface ResourceMealBreak { id:string; sourceTaskId:string; resourceIds:string[]; interval:Window; status:"pending"|"interrupted"|"done"|"in_progress" }
+export interface ScheduledResourceMeal { id:string; sourceTaskId:string; resourceIds:string[]; start:Minute; end:Minute; duration:Minute }
 
 export interface ParticipantMealObligation {
   id: string;
@@ -152,6 +156,7 @@ export interface ValidationSummary {
   mainFlowMealViolationCount: number;
   anchoredAccompanimentViolationCount: number;
   participantMealViolationCount: number;
+  resourceMealViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -279,5 +284,6 @@ export interface PlanResult {
   scheduledSetupPreparations: ScheduledSetupPreparation[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
+  scheduledResourceMeals: ScheduledResourceMeal[];
   metrics: PlanMetrics;
 }

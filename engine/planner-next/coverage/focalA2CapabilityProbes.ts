@@ -9,6 +9,8 @@ import { getTechnicalChains } from "../technicalChains";
 import { validatePlan } from "../validate";
 import { participantMealA2Scenario } from "../scenarios/participantMealA2Scenario";
 import { participantMealBacktrackingScenario } from "../scenarios/participantMealBacktrackingScenario";
+import { mainFlowVocalScenario } from "../scenarios/mainFlowVocalScenario";
+import { resourceMealScenario } from "../scenarios/resourceMealScenario";
 import { engineTimeToMinute } from "../integration/engineTime";
 
 export interface ProbeObservation {
@@ -224,14 +226,13 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
   } else if (scope === "itinerant-unit") {
     input.protectedBreaks = [{ id: "unit-meal", kind: "meal", start, end, itinerantTeamId: options.itinerantTeamId ?? 7 }];
   } else {
-    const task = input.tasks.find((entry) => entry.id === 105)!;
-    Object.assign(task, {
+    input.tasks.push({id:106,planId:input.planId,templateId:999,status:"pending",
       breakId: 135,
       breakKind: "resource_meal",
       assignedResourceIds: [options.resourceId ?? 503],
       fixedWindowStart: start,
       fixedWindowEnd: end,
-    });
+      durationOverrideMin:engineTimeToMinute(end)-engineTimeToMinute(start)});
   }
   const before = stable(input);
   const firstPreflight = preflightEngineInputForPlannerNext(input);
@@ -253,9 +254,15 @@ export function runScopedMealProbe(scope: "participant" | "resource" | "itineran
       observe(id,"meal.participant.structuralBacktracking","SEARCH","both policies reject the first destructive productive slot",backtracking,[{policy:"COMPATIBILITY_PRESERVING",complete:true,productiveStart:960,mealStart:780,prunes:1,backtracks:0},{policy:"EXACT_CONSTRUCTIVE",complete:true,productiveStart:960,mealStart:780,prunes:1,backtracks:2}]),
     ]),reasonCodes:firstPreflight.reasonCodes,deterministic:stable(firstPreflight)===stable(secondPreflight),inputImmutable:before===stable(input)});
   }
+  if(scope==="resource"&&firstAdapter.status==="SUPPORTED"){
+    const obligation=firstAdapter.problem.resourceMeals?.[0];
+    const runs=["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"].map(policy=>{const problem=resourceMealScenario(policy as "COMPATIBILITY_PRESERVING"|"EXACT_CONSTRUCTIVE"),result=executePlannerNext(problem).result!;const validation=validatePlan(problem,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals,result.scheduledResourceMeals),resourceTasks=result.scheduledTasks.filter(task=>(task.requiredResourceIds??[]).includes("shared-r")),foreign=result.scheduledTasks.filter(task=>task.id==="other-during-meal");return {policy,complete:result.complete,hardValid:validation.hardValid,mealCount:result.scheduledResourceMeals.length,windows:problem.resources.find(resource=>resource.id==="shared-r")?.availability,resourceTasks:resourceTasks.map(task=>({id:task.id,start:task.start,end:task.end})),foreignDuringMeal:foreign.map(task=>({id:task.id,start:task.start,end:task.end}))};});
+    return Object.freeze({id,functionsExecuted:["preflightEngineInputForPlannerNext","adaptEngineInputToPlannerNextProblem","executePlannerNext","validatePlan"],observations:Object.freeze([
+      observe(id,"meal.resource.preflightStatus","PREFLIGHT","resource meal is supported",firstPreflight.status,"SUPPORTED"),observe(id,"meal.resource.reason","PREFLIGHT","valid resource meal has no reason",firstPreflight.reasonCodes,[]),observe(id,"meal.resource.adapterStatus","ADAPTER","adapter publishes resource meal",firstAdapter.status,"SUPPORTED"),observe(id,"meal.resource.scope","ADAPTER","meal occupies exact resource only",obligation?.resourceIds,[`plan-resource:${options.resourceId??503}`]),observe(id,"meal.resource.window","ADAPTER","fixed interval is preserved",obligation?.interval,{start:engineTimeToMinute(start),end:engineTimeToMinute(end)}),observe(id,"meal.resource.identity","ADAPTER","source identity is reversible",obligation?.sourceTaskId,"task:106"),observe(id,"meal.resource.entity","ADAPTER","break identity is reversible",obligation?.id,"break:135"),observe(id,"meal.resource.bothPolicies","VALIDATION","both policies publish and validate the fixed meal",runs.map(({policy,complete,hardValid,mealCount})=>({policy,complete,hardValid,mealCount})),[{policy:"COMPATIBILITY_PRESERVING",complete:true,hardValid:true,mealCount:1},{policy:"EXACT_CONSTRUCTIVE",complete:true,hardValid:true,mealCount:1}]),observe(id,"meal.resource.search","SEARCH","both existing policies find a complete plan around split windows",runs.every(run=>run.complete),true),observe(id,"meal.resource.productiveLoad","SEARCH","split resource has real work before and after while another resource works during meal",runs.map(run=>({windows:run.windows,resourceTasks:run.resourceTasks,foreignDuringMeal:run.foreignDuringMeal})),[{windows:[{start:540,end:720},{start:780,end:1020}],resourceTasks:[{id:"resource-before",start:690,end:720},{id:"flexible-productive",start:780,end:810}],foreignDuringMeal:[{id:"other-during-meal",start:735,end:765}]},{windows:[{start:540,end:720},{start:780,end:1020}],resourceTasks:[{id:"resource-before",start:690,end:720},{id:"flexible-productive",start:780,end:810}],foreignDuringMeal:[{id:"other-during-meal",start:735,end:765}]}])]),reasonCodes:firstPreflight.reasonCodes,deterministic:stable(firstPreflight)===stable(secondPreflight),inputImmutable:before===stable(input)});
+  }
   const issue = firstPreflight.issues.find((entry) => entry.code === "UNSUPPORTED_BREAK_SCOPE");
   const protectedBreak = input.protectedBreaks?.[0];
-  const resourceTask = input.tasks.find((entry) => entry.id === 105);
+  const resourceTask = input.tasks.find((entry) => entry.id === 106);
   const observedScope = scope === "resource" ? resourceTask?.breakKind : issue?.details?.scope;
   const observedWindow = scope === "resource"
     ? { start: resourceTask?.fixedWindowStart, end: resourceTask?.fixedWindowEnd }

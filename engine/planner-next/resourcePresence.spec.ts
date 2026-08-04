@@ -103,3 +103,10 @@ test("resource availability blocks construction and overlap is invalid", () => {
   const validation = validatePlan({ ...problem, tasks: mains }, scheduled);
   assert.equal(validation.resourceOverlapViolationCount, 1);
 });
+
+test("resource-scoped meal bridges presence without a false operational block",()=>{
+  const resource={id:"r",availability:[{start:480,end:720},{start:780,end:1080}],presencePreference:"OFF" as const,presenceConcentrationPolicy:"REQUIRED" as const};
+  const tasks=[{id:"before",kind:"technical" as const,spaceId:"a",dependencies:[],requiredResourceIds:["r"],duration:30,start:690,end:720},{id:"after",kind:"technical" as const,spaceId:"a",dependencies:[],requiredResourceIds:["r"],duration:30,start:780,end:810}];
+  const result=evaluateResourcePresence(resource,tasks,[],[{id:"meal",sourceTaskId:"task:meal",resourceIds:["r"],start:720,end:780,duration:60}]);
+  assert.deepEqual({span:result.presenceSpanMinutes,meal:result.authorizedMealMinutes,gap:result.internalGapMinutes,blocks:result.operationalBlockCount,crosses:result.crossesAuthorizedMeal,required:result.requiredPolicySatisfied},{span:120,meal:60,gap:0,blocks:1,crosses:true,required:true});
+});

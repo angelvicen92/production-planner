@@ -7,6 +7,7 @@ import type {
   SearchStopReason,
   Task,
   ScheduledSpaceMeal,
+  ScheduledResourceMeal,
 } from "./contracts";
 import { fingerprint } from "./fingerprint";
 import { evaluateResourcePresence, presencePreferenceWeight, resourcePresenceIncrement, resourcePresenceMetrics, resourceRouteMetrics } from "./resourcePresence";
@@ -42,11 +43,11 @@ interface MainAlternative {
   feederClosable?: boolean;
 }
 
-function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative): [number, number, number] {
+function preferredPresenceTuple(problem: PlannerNextProblem, alternative: MainAlternative, resourceMeals: ScheduledResourceMeal[]): [number, number, number] {
   const meals = alternative.timeline ? [alternative.timeline.meal] : [];
   return problem.resources.filter((resource) => resource.presenceConcentrationPolicy === "PREFERRED")
     .reduce<[number, number, number]>((total, resource) => {
-      const tuple = evaluateResourcePresence(resource, alternative.tasks, meals).preferredLexicographicTuple;
+      const tuple = evaluateResourcePresence(resource, alternative.tasks, meals, resourceMeals).preferredLexicographicTuple;
       const weight = presencePreferenceWeight(resource.presencePreference);
       return [total[0] + tuple[0] * weight, total[1] + tuple[1] * weight, total[2] + tuple[2] * weight];
     }, [0, 0, 0]);
@@ -219,11 +220,13 @@ function failure(
     scheduledSetupPreparations: [],
     scheduledSpaceMeals: [],
     scheduledParticipantMeals: [],
+    scheduledResourceMeals: [],
     metrics: emptyMetrics(problem, [reason], performance.now() - begun, reason, counters),
   };
 }
 
 export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanResult {
+  const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
   const begun = performance.now();
   const hasPreferredPresence = Array.isArray(problem.resources)
     && problem.resources.some((resource) => resource.presenceConcentrationPolicy === "PREFERRED");
@@ -235,6 +238,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       scheduledSetupPreparations: [],
       scheduledSpaceMeals: [],
       scheduledParticipantMeals: [],
+      scheduledResourceMeals: [],
       metrics: emptyMetrics(problem, preflightReasons, performance.now() - begun, "PREFLIGHT_FAILED"),
     };
   }
@@ -325,7 +329,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
           const tasks = provisional;
           if(position===mains.length-1&&!remainingAuxiliariesHaveWitness(problem,tasks,timeline?[timeline.meal]:[]))continue;
           const candidate: MainAlternative = { tasks, score, participantScore: (state.participantScore ?? 0) + loss, signature: tasks.filter(t=>t.kind==="main").map(({ id }) => id).join("|"), timeline };
-          if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate);
+          if (hasPreferredPresence) candidate.preferredPresenceTuple = preferredPresenceTuple(problem, candidate,fixedResourceMeals);
           if (hasPreferredPresence) {
             candidate.feederClosable = tryGreedyFeederClosure(problem, tasks, timeline ? [timeline.meal] : []) !== null;
           }
@@ -338,7 +342,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
             const closable = completions.filter((completion) => tryGreedyFeederClosure(problem, completion, timeline ? [timeline.meal] : []) !== null);
             if (closable.length > 0) {
               candidate.feederClosable = true;
-              candidate.preferredPresenceTuple = closable.map((completion) => preferredPresenceTuple(problem, { ...candidate, tasks: completion }))
+              candidate.preferredPresenceTuple = closable.map((completion) => preferredPresenceTuple(problem, { ...candidate, tasks: completion },fixedResourceMeals))
                 .sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2])[0];
             } else candidate.feederClosable = false;
           }
@@ -362,7 +366,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
   for(const alternative of alternatives){
     const meals=alternative.timeline?[alternative.timeline.meal]:[];
     const requiredValid = problem.resources.every((resource) => resource.presenceConcentrationPolicy !== "REQUIRED"
-      || evaluateResourcePresence(resource, alternative.tasks, meals).requiredPolicySatisfied);
+      || evaluateResourcePresence(resource, alternative.tasks, meals,fixedResourceMeals).requiredPolicySatisfied);
     if (!requiredValid) continue;
     const greedy=tryGreedyFeederClosure(problem,alternative.tasks,meals);
     if(greedy){feederClosedAlternatives.push({...alternative,feeders:greedy.filter(t=>t.kind==="vocal"),feederScore:greedy.filter(t=>t.kind==="vocal").reduce((sum,f)=>sum+(alternative.tasks.find(m=>m.participantId===f.participantId)?.end??f.end)-f.start,0)});continue}
@@ -405,7 +409,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       if (!participantMealWitness.complete) { counters.futurePruned += 1; for (const id of participantMealWitness.blockingMealTaskIds) counters.blockers[`participant-meals:${id}`]=(counters.blockers[`participant-meals:${id}`]??0)+1; }
       if (participantMealWitness.reasonCodes.includes("PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED")) return failure(problem,begun,"FUTURE_FEASIBILITY_BRANCH_BUDGET_EXHAUSTED",counters);
     }
-    const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled]) : null;
+    const validation = all && participantMealWitness?.complete ? validatePlan(problem, all, preparations,meals,[...participantMealWitness.scheduled],fixedResourceMeals) : null;
     if (!all || !participantMealWitness?.complete || !validation?.hardValid) {
       const hasNext = index + 1 < retained.length;
       if (!hasNext) break;
@@ -433,7 +437,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       presence[id] = participantPresenceSpan(id, ordered);
     }
     const values = Object.values(presence);
-    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered, meals);
+    const resourcePresence = resourcePresenceMetrics(problem.resources, ordered, meals,fixedResourceMeals);
     const resourceRoute = resourceRouteMetrics(problem, ordered);
     const resourceValues = Object.values(resourcePresence.presenceMinutesById);
     const secondaryStartById: Record<string, number | null> = {}, secondaryEndById: Record<string, number | null> = {}, secondaryGapsById: Record<string, number> = {}, secondaryBlocksById: Record<string, number> = {};
@@ -524,7 +528,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
       participantMealCount:problem.participantMeals?.length??0,participantMealPlannedCount:participantMealWitness.scheduled.length,participantMealProtectedCount:(problem.participantMeals??[]).filter(x=>x.fixedInterval).length,participantMealCandidateCount:Object.values(participantMealWitness.candidateCountByTaskId).reduce((a,b)=>a+b,0),participantMealBranchesExplored:participantMealWitness.branchesExplored,participantMealFutureFeasibilityChecks:1,participantMealFutureInfeasibleBranches:0,participantMealMaximumSimultaneous:participantMealWitness.maximumSimultaneous,participantMealCapacityLimit:problem.participantMealCapacity?.maxSimultaneous??0,participantMealStartByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.start])),participantMealEndByTaskId:Object.fromEntries(participantMealWitness.scheduled.map(x=>[x.sourceTaskId,x.end])),participantMealRejectedReasonCountByCode:{},participantMealBlockingTaskIds:Object.keys(counters.blockers).filter(x=>x.startsWith("participant-meals:")).map(x=>x.slice("participant-meals:".length)).sort(),participantMealAcceptedWitnessFingerprint:participantMealWitnessFingerprint(participantMealWitness.scheduled),
       ...anchoredMetrics(problem,ordered,counters.anchoredCandidates,counters.anchoredRejected),
     };
-    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled], metrics };
+    return { complete: true, scheduledTasks: ordered, scheduledSetupPreparations: preparations, scheduledSpaceMeals:meals, scheduledParticipantMeals:[...participantMealWitness.scheduled],scheduledResourceMeals:fixedResourceMeals, metrics };
   }
   return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN", counters);
 }

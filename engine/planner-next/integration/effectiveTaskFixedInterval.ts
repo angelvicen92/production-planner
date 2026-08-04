@@ -30,6 +30,8 @@ export function resolveEffectiveTaskFixedInterval(task: TaskInput, locks: readon
   if (unique.length > 1) return freeze({ status: "CONFLICT", intervals: freeze(unique), sources });
   const interval = unique[0]!;
   const duration = minute(interval.end)! - minute(interval.start)!;
-  if ((task.status === "pending" || task.status === "interrupted") && task.durationOverrideMin !== duration) return freeze({ status: "INVALID", sources });
+  if ((task.status === "pending" || task.status === "interrupted")
+    && !(task.breakKind === "resource_meal" && task.durationOverrideMin == null)
+    && task.durationOverrideMin !== duration) return freeze({ status: "INVALID", sources });
   return freeze({ status: "EXACT", interval, sources });
 }

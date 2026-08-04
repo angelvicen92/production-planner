@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, PreferenceLevel, Resource, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
+import type { PlannerNextProblem, PreferenceLevel, Resource, ScheduledResourceMeal, ScheduledSpaceMeal, ScheduledTask } from "./contracts";
 import { effectiveResourceTransitionMinutes } from "./placement";
 
 /** Small fixed weights keep NEXT-003 explicit; callers cannot supply arbitrary numeric weights. */
@@ -62,6 +62,7 @@ export function evaluateResourcePresence(
   resource: Resource,
   tasks: ScheduledTask[],
   scheduledSpaceMeals: ScheduledSpaceMeal[] = [],
+  scheduledResourceMeals: ScheduledResourceMeal[] = [],
 ): ContinuousResourcePresence {
   const own = tasks
     .filter((task) => (task.requiredResourceIds ?? []).includes(resource.id))
@@ -74,12 +75,14 @@ export function evaluateResourcePresence(
   };
   const presenceStart = taskUnion[0]!.start;
   const presenceEnd = taskUnion.at(-1)!.end;
-  const authorizedMeals = resource.assignedSpaceId === undefined ? [] : scheduledSpaceMeals
+  const spaceMeals = resource.assignedSpaceId === undefined ? [] : scheduledSpaceMeals
     .filter((meal) => meal.spaceId === resource.assignedSpaceId
       && own.some((task) => task.end <= meal.start)
       && own.some((task) => task.start >= meal.end))
     .map((meal) => ({ id: meal.id, start: Math.max(meal.start, presenceStart), end: Math.min(meal.end, presenceEnd) }))
     .filter((meal) => meal.start < meal.end);
+  const directMeals=scheduledResourceMeals.filter(meal=>meal.resourceIds.includes(resource.id)&&own.some(task=>task.end<=meal.start)&&own.some(task=>task.start>=meal.end)).map(meal=>({id:meal.id,start:Math.max(meal.start,presenceStart),end:Math.min(meal.end,presenceEnd)})).filter(meal=>meal.start<meal.end);
+  const authorizedMeals=[...spaceMeals,...directMeals];
   const mealUnion = union(authorizedMeals);
   const occupations = union([...taskUnion, ...mealUnion]);
   const productiveTaskMinutes = taskUnion.reduce((sum, interval) => sum + interval.end - interval.start, 0);
@@ -97,7 +100,7 @@ export function evaluateResourcePresence(
   };
 }
 
-export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = []): {
+export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledTask[], scheduledSpaceMeals: ScheduledSpaceMeal[] = [],scheduledResourceMeals:ScheduledResourceMeal[]=[]): {
   presenceMinutesById: Record<string, number>;
   internalGapMinutesById: Record<string, number>;
   operationalBlockCountById: Record<string, number>;
@@ -108,7 +111,7 @@ export function resourcePresenceMetrics(resources: Resource[], tasks: ScheduledT
   const operationalBlockCountById: Record<string, number> = {};
   const authorizedMealMinutesById: Record<string, number> = {};
   for (const resource of [...resources].sort((a, b) => a.id.localeCompare(b.id))) {
-    const result = evaluateResourcePresence(resource, tasks, scheduledSpaceMeals);
+    const result = evaluateResourcePresence(resource, tasks, scheduledSpaceMeals,scheduledResourceMeals);
     presenceMinutesById[resource.id] = result.presenceSpanMinutes;
     internalGapMinutesById[resource.id] = result.internalGapMinutes;
     operationalBlockCountById[resource.id] = result.operationalBlockCount;

@@ -2908,15 +2908,18 @@
         "meal.resource.scope",
         "meal.resource.window",
         "meal.resource.identity",
-        "meal.resource.entity"
+        "meal.resource.entity",
+        "meal.resource.bothPolicies",
+        "meal.resource.search",
+        "meal.resource.productiveLoad"
       ],
       "testAssertions": [
         {
           "id": "test-135",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "testName": "pilot 135: resource meal executes and reports break scope",
-          "property": "resource-bound meal rejection is observed",
-          "layer": "PREFLIGHT"
+          "property": "fixed resource meal executes under both policies",
+          "layer": "VALIDATION"
         }
       ],
       "benchmarkAssertions": [
@@ -2927,10 +2930,8 @@
           "probeId": "meal-resource",
           "selector": "reasonCodes",
           "operator": "EQUALS",
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "property": "resource meal reason comes from task break probe",
+          "expected": [],
+          "property": "supported resource meal has no preflight reason",
           "layer": "EVIDENCE",
           "boundary": "ENGINE_INPUT"
         }
@@ -2939,15 +2940,18 @@
         "SOURCE",
         "PREFLIGHT",
         "ADAPTER",
+        "SEARCH",
+        "VALIDATION",
         "EVIDENCE"
       ],
-      "supportedVariantObservationIds": [],
-      "unsupportedVariantObservationIds": [
-        "meal.resource.reason"
+      "supportedVariantObservationIds": [
+        "meal.resource.bothPolicies",
+        "meal.resource.productiveLoad"
       ],
+      "unsupportedVariantObservationIds": [],
       "contractGapObservationIds": [],
       "representativeBoundary": "ENGINE_INPUT",
-      "notes": "Resource-bound meal is represented as an explicit resource task-break contract and rejected."
+      "notes": "A fixed resource-bound meal is normalized, adapted, scheduled and validated without search of its own."
     },
     {
       "capabilityId": 136,
@@ -3810,16 +3814,18 @@
       "id": "meal-resource",
       "functionsExecuted": [
         "preflightEngineInputForPlannerNext",
-        "adaptEngineInputToPlannerNextProblem"
+        "adaptEngineInputToPlannerNextProblem",
+        "executePlannerNext",
+        "validatePlan"
       ],
       "observations": [
         {
           "id": "meal.resource.preflightStatus",
           "probeId": "meal-resource",
           "layer": "PREFLIGHT",
-          "property": "resource meal is rejected by executed preflight",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "resource meal is supported",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -3827,9 +3833,9 @@
           "id": "meal.resource.reason",
           "probeId": "meal-resource",
           "layer": "PREFLIGHT",
-          "property": "resource meal reports executed break-scope reason",
-          "observed": true,
-          "expected": true,
+          "property": "valid resource meal has no reason",
+          "observed": [],
+          "expected": [],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -3837,34 +3843,38 @@
           "id": "meal.resource.adapterStatus",
           "probeId": "meal-resource",
           "layer": "ADAPTER",
-          "property": "resource meal cannot publish a PlannerNextProblem",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "adapter publishes resource meal",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.scope",
           "probeId": "meal-resource",
-          "layer": "PREFLIGHT",
-          "property": "resource meal scope is read from the executed input or issue",
-          "observed": "resource_meal",
-          "expected": "resource_meal",
+          "layer": "ADAPTER",
+          "property": "meal occupies exact resource only",
+          "observed": [
+            "plan-resource:503"
+          ],
+          "expected": [
+            "plan-resource:503"
+          ],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.window",
           "probeId": "meal-resource",
-          "layer": "PREFLIGHT",
-          "property": "resource meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "fixed interval is preserved",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "pass": true,
           "boundary": "ENGINE_INPUT"
@@ -3872,27 +3882,207 @@
         {
           "id": "meal.resource.identity",
           "probeId": "meal-resource",
-          "layer": "PREFLIGHT",
-          "property": "resource meal preserves its concrete scoped identity",
-          "observed": 503,
-          "expected": 503,
+          "layer": "ADAPTER",
+          "property": "source identity is reversible",
+          "observed": "task:106",
+          "expected": "task:106",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.resource.entity",
           "probeId": "meal-resource",
-          "layer": "PREFLIGHT",
-          "property": "resource meal issue preserves its exact entity ID",
-          "observed": "105",
-          "expected": "105",
+          "layer": "ADAPTER",
+          "property": "break identity is reversible",
+          "observed": "break:135",
+          "expected": "break:135",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.bothPolicies",
+          "probeId": "meal-resource",
+          "layer": "VALIDATION",
+          "property": "both policies publish and validate the fixed meal",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            }
+          ],
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.search",
+          "probeId": "meal-resource",
+          "layer": "SEARCH",
+          "property": "both existing policies find a complete plan around split windows",
+          "observed": true,
+          "expected": true,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.productiveLoad",
+          "probeId": "meal-resource",
+          "layer": "SEARCH",
+          "property": "split resource has real work before and after while another resource works during meal",
+          "observed": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
+          "expected": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "reasonCodes": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "reasonCodes": [],
       "deterministic": true,
       "inputImmutable": true
     },
@@ -4570,9 +4760,9 @@
       "id": "meal.resource.preflightStatus",
       "probeId": "meal-resource",
       "layer": "PREFLIGHT",
-      "property": "resource meal is rejected by executed preflight",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "resource meal is supported",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -4580,9 +4770,9 @@
       "id": "meal.resource.reason",
       "probeId": "meal-resource",
       "layer": "PREFLIGHT",
-      "property": "resource meal reports executed break-scope reason",
-      "observed": true,
-      "expected": true,
+      "property": "valid resource meal has no reason",
+      "observed": [],
+      "expected": [],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -4590,34 +4780,38 @@
       "id": "meal.resource.adapterStatus",
       "probeId": "meal-resource",
       "layer": "ADAPTER",
-      "property": "resource meal cannot publish a PlannerNextProblem",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "adapter publishes resource meal",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.scope",
       "probeId": "meal-resource",
-      "layer": "PREFLIGHT",
-      "property": "resource meal scope is read from the executed input or issue",
-      "observed": "resource_meal",
-      "expected": "resource_meal",
+      "layer": "ADAPTER",
+      "property": "meal occupies exact resource only",
+      "observed": [
+        "plan-resource:503"
+      ],
+      "expected": [
+        "plan-resource:503"
+      ],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.window",
       "probeId": "meal-resource",
-      "layer": "PREFLIGHT",
-      "property": "resource meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "fixed interval is preserved",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "pass": true,
       "boundary": "ENGINE_INPUT"
@@ -4625,20 +4819,202 @@
     {
       "id": "meal.resource.identity",
       "probeId": "meal-resource",
-      "layer": "PREFLIGHT",
-      "property": "resource meal preserves its concrete scoped identity",
-      "observed": 503,
-      "expected": 503,
+      "layer": "ADAPTER",
+      "property": "source identity is reversible",
+      "observed": "task:106",
+      "expected": "task:106",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.resource.entity",
       "probeId": "meal-resource",
-      "layer": "PREFLIGHT",
-      "property": "resource meal issue preserves its exact entity ID",
-      "observed": "105",
-      "expected": "105",
+      "layer": "ADAPTER",
+      "property": "break identity is reversible",
+      "observed": "break:135",
+      "expected": "break:135",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.bothPolicies",
+      "probeId": "meal-resource",
+      "layer": "VALIDATION",
+      "property": "both policies publish and validate the fixed meal",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        }
+      ],
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.search",
+      "probeId": "meal-resource",
+      "layer": "SEARCH",
+      "property": "both existing policies find a complete plan around split windows",
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.productiveLoad",
+      "probeId": "meal-resource",
+      "layer": "SEARCH",
+      "property": "split resource has real work before and after while another resource works during meal",
+      "observed": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -6097,11 +6473,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "resource meal is rejected by executed preflight",
+      "property": "resource meal is supported",
       "file": null,
       "selector": "meal.resource.preflightStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6110,11 +6486,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "resource meal reports executed break-scope reason",
+      "property": "valid resource meal has no reason",
       "file": null,
       "selector": "meal.resource.reason",
-      "observed": true,
-      "expected": true,
+      "observed": [],
+      "expected": [],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6123,11 +6499,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "resource meal cannot publish a PlannerNextProblem",
+      "property": "adapter publishes resource meal",
       "file": null,
       "selector": "meal.resource.adapterStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6135,12 +6511,16 @@
       "id": "meal.resource.scope",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "resource meal scope is read from the executed input or issue",
+      "layer": "ADAPTER",
+      "property": "meal occupies exact resource only",
       "file": null,
       "selector": "meal.resource.scope",
-      "observed": "resource_meal",
-      "expected": "resource_meal",
+      "observed": [
+        "plan-resource:503"
+      ],
+      "expected": [
+        "plan-resource:503"
+      ],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6148,17 +6528,17 @@
       "id": "meal.resource.window",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "resource meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "fixed interval is preserved",
       "file": null,
       "selector": "meal.resource.window",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
@@ -6167,12 +6547,12 @@
       "id": "meal.resource.identity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "resource meal preserves its concrete scoped identity",
+      "layer": "ADAPTER",
+      "property": "source identity is reversible",
       "file": null,
       "selector": "meal.resource.identity",
-      "observed": 503,
-      "expected": 503,
+      "observed": "task:106",
+      "expected": "task:106",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6180,12 +6560,203 @@
       "id": "meal.resource.entity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "resource meal issue preserves its exact entity ID",
+      "layer": "ADAPTER",
+      "property": "break identity is reversible",
       "file": null,
       "selector": "meal.resource.entity",
-      "observed": "105",
-      "expected": "105",
+      "observed": "break:135",
+      "expected": "break:135",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.bothPolicies",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "VALIDATION",
+      "property": "both policies publish and validate the fixed meal",
+      "file": null,
+      "selector": "meal.resource.bothPolicies",
+      "observed": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        }
+      ],
+      "expected": [
+        {
+          "policy": "COMPATIBILITY_PRESERVING",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        },
+        {
+          "policy": "EXACT_CONSTRUCTIVE",
+          "complete": true,
+          "hardValid": true,
+          "mealCount": 1
+        }
+      ],
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.search",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "both existing policies find a complete plan around split windows",
+      "file": null,
+      "selector": "meal.resource.search",
+      "observed": true,
+      "expected": true,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.productiveLoad",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "split resource has real work before and after while another resource works during meal",
+      "file": null,
+      "selector": "meal.resource.productiveLoad",
+      "observed": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6193,7 +6764,7 @@
       "id": "test-135",
       "kind": "TEST",
       "status": "PASS",
-      "layer": "PREFLIGHT",
+      "layer": "VALIDATION",
       "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 135: resource meal executes and reports break scope",
@@ -6207,15 +6778,11 @@
       "kind": "BENCHMARK",
       "status": "PASS",
       "layer": "EVIDENCE",
-      "property": "resource meal reason comes from task break probe",
+      "property": "supported resource meal has no preflight reason",
       "file": null,
       "selector": "reasonCodes",
-      "observed": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
-      "expected": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "observed": [],
+      "expected": [],
       "reason": "Observed benchmark value matches",
       "boundary": "ENGINE_INPUT"
     },
@@ -6374,7 +6941,7 @@
     }
   ],
   "assertionCounts": {
-    "PASS": 112,
+    "PASS": 115,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -10119,15 +10686,18 @@
           "meal.resource.scope",
           "meal.resource.window",
           "meal.resource.identity",
-          "meal.resource.entity"
+          "meal.resource.entity",
+          "meal.resource.bothPolicies",
+          "meal.resource.search",
+          "meal.resource.productiveLoad"
         ],
         "testAssertions": [
           {
             "id": "test-135",
             "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
             "testName": "pilot 135: resource meal executes and reports break scope",
-            "property": "resource-bound meal rejection is observed",
-            "layer": "PREFLIGHT"
+            "property": "fixed resource meal executes under both policies",
+            "layer": "VALIDATION"
           }
         ],
         "benchmarkAssertions": [
@@ -10138,10 +10708,8 @@
             "probeId": "meal-resource",
             "selector": "reasonCodes",
             "operator": "EQUALS",
-            "expected": [
-              "UNSUPPORTED_BREAK_SCOPE"
-            ],
-            "property": "resource meal reason comes from task break probe",
+            "expected": [],
+            "property": "supported resource meal has no preflight reason",
             "layer": "EVIDENCE",
             "boundary": "ENGINE_INPUT"
           }
@@ -10150,15 +10718,18 @@
           "SOURCE",
           "PREFLIGHT",
           "ADAPTER",
+          "SEARCH",
+          "VALIDATION",
           "EVIDENCE"
         ],
-        "supportedVariantObservationIds": [],
-        "unsupportedVariantObservationIds": [
-          "meal.resource.reason"
+        "supportedVariantObservationIds": [
+          "meal.resource.bothPolicies",
+          "meal.resource.productiveLoad"
         ],
+        "unsupportedVariantObservationIds": [],
         "contractGapObservationIds": [],
         "representativeBoundary": "ENGINE_INPUT",
-        "notes": "Resource-bound meal is represented as an explicit resource task-break contract and rejected."
+        "notes": "A fixed resource-bound meal is normalized, adapted, scheduled and validated without search of its own."
       },
       "assertionResults": [
         {
@@ -10179,11 +10750,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "resource meal is rejected by executed preflight",
+          "property": "resource meal is supported",
           "file": null,
           "selector": "meal.resource.preflightStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10192,11 +10763,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "resource meal reports executed break-scope reason",
+          "property": "valid resource meal has no reason",
           "file": null,
           "selector": "meal.resource.reason",
-          "observed": true,
-          "expected": true,
+          "observed": [],
+          "expected": [],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10205,11 +10776,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "resource meal cannot publish a PlannerNextProblem",
+          "property": "adapter publishes resource meal",
           "file": null,
           "selector": "meal.resource.adapterStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10217,12 +10788,16 @@
           "id": "meal.resource.scope",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "resource meal scope is read from the executed input or issue",
+          "layer": "ADAPTER",
+          "property": "meal occupies exact resource only",
           "file": null,
           "selector": "meal.resource.scope",
-          "observed": "resource_meal",
-          "expected": "resource_meal",
+          "observed": [
+            "plan-resource:503"
+          ],
+          "expected": [
+            "plan-resource:503"
+          ],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10230,17 +10805,17 @@
           "id": "meal.resource.window",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "resource meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "fixed interval is preserved",
           "file": null,
           "selector": "meal.resource.window",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
@@ -10249,12 +10824,12 @@
           "id": "meal.resource.identity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "resource meal preserves its concrete scoped identity",
+          "layer": "ADAPTER",
+          "property": "source identity is reversible",
           "file": null,
           "selector": "meal.resource.identity",
-          "observed": 503,
-          "expected": 503,
+          "observed": "task:106",
+          "expected": "task:106",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10262,12 +10837,203 @@
           "id": "meal.resource.entity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "resource meal issue preserves its exact entity ID",
+          "layer": "ADAPTER",
+          "property": "break identity is reversible",
           "file": null,
           "selector": "meal.resource.entity",
-          "observed": "105",
-          "expected": "105",
+          "observed": "break:135",
+          "expected": "break:135",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.bothPolicies",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "VALIDATION",
+          "property": "both policies publish and validate the fixed meal",
+          "file": null,
+          "selector": "meal.resource.bothPolicies",
+          "observed": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            }
+          ],
+          "expected": [
+            {
+              "policy": "COMPATIBILITY_PRESERVING",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            },
+            {
+              "policy": "EXACT_CONSTRUCTIVE",
+              "complete": true,
+              "hardValid": true,
+              "mealCount": 1
+            }
+          ],
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.search",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "both existing policies find a complete plan around split windows",
+          "file": null,
+          "selector": "meal.resource.search",
+          "observed": true,
+          "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.productiveLoad",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "split resource has real work before and after while another resource works during meal",
+          "file": null,
+          "selector": "meal.resource.productiveLoad",
+          "observed": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
+          "expected": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -10275,7 +11041,7 @@
           "id": "test-135",
           "kind": "TEST",
           "status": "PASS",
-          "layer": "PREFLIGHT",
+          "layer": "VALIDATION",
           "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 135: resource meal executes and reports break scope",
@@ -10289,21 +11055,17 @@
           "kind": "BENCHMARK",
           "status": "PASS",
           "layer": "EVIDENCE",
-          "property": "resource meal reason comes from task break probe",
+          "property": "supported resource meal has no preflight reason",
           "file": null,
           "selector": "reasonCodes",
-          "observed": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
+          "observed": [],
+          "expected": [],
           "reason": "Observed benchmark value matches",
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "derivedCoverageStatus": "EXPLICITLY_UNSUPPORTED",
-      "derivedBlockingLayer": "PREFLIGHT",
+      "derivedCoverageStatus": "EVIDENCED_SUPPORTED",
+      "derivedBlockingLayer": "NONE",
       "technicallyAudited": true,
       "sourceReviewed": true,
       "missingEvidence": [],
@@ -10994,7 +11756,7 @@
       "status": "PARTIALLY_SUPPORTED",
       "memberStatuses": {
         "134": "EVIDENCED_SUPPORTED",
-        "135": "EXPLICITLY_UNSUPPORTED",
+        "135": "EVIDENCED_SUPPORTED",
         "136": "EXPLICITLY_UNSUPPORTED"
       },
       "failedAssertions": [],
@@ -11167,10 +11929,10 @@
     "UNRESOLVED": 152
   },
   "statusCounts": {
-    "EVIDENCED_SUPPORTED": 11,
+    "EVIDENCED_SUPPORTED": 12,
     "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE": 0,
     "PARTIALLY_SUPPORTED": 2,
-    "EXPLICITLY_UNSUPPORTED": 2,
+    "EXPLICITLY_UNSUPPORTED": 1,
     "CONTRACT_GAP": 0,
     "SOURCE_AMBIGUOUS": 0,
     "NOT_AUDITED": 146,
@@ -11182,18 +11944,9 @@
   },
   "recommendation": {
     "type": "IMPLEMENT_CAPABILITY",
-    "selectedCapabilityId": 135,
-    "selectedAction": "Implement the demonstrated required blocker: resource-scoped meal",
+    "selectedCapabilityId": 136,
+    "selectedAction": "Implement the demonstrated required blocker: unit-scoped meal",
     "evaluatedCandidates": [
-      {
-        "capabilityId": 135,
-        "capability": "resource-scoped meal",
-        "ranking": [
-          -1,
-          0,
-          135
-        ]
-      },
       {
         "capabilityId": 136,
         "capability": "unit-scoped meal",
@@ -11206,10 +11959,10 @@
     ],
     "decisionTrace": [
       "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
-      "evaluate ranked candidates: resource-scoped meal, unit-scoped meal",
+      "evaluate ranked candidates: unit-scoped meal",
       "rank higher A2 visibility before official-only impact",
       "prefer directly observed rejection over inferred contract risk",
-      "select resource-scoped meal from the resulting deterministic order"
+      "select unit-scoped meal from the resulting deterministic order"
     ]
   },
   "focalEvidence": {

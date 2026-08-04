@@ -4,6 +4,8 @@ import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { evaluateResourcePresence } from "./resourcePresence";
 import { dividedRequiredSchedule, requiredContinuousResourceScenario } from "./scenarios/requiredContinuousResourceScenario";
 import { preflight, validatePlan } from "./validate";
+import {executePlannerNext} from "./executePlannerNext";
+import {resourceMealScenario} from "./scenarios/resourceMealScenario";
 
 test("generic REQUIRED controls complete contiguously and across their assigned meal", () => {
   for (const variant of ["FEASIBLE_CONTIGUOUS", "FEASIBLE_WITH_AUTHORIZED_MEAL"] as const) {
@@ -69,3 +71,5 @@ test("REQUIRED preflight and zero/one-task edge cases are explicit", () => {
   const task = dividedRequiredSchedule(p).tasks[0]!;
   assert.equal(evaluateResourcePresence(p.resources[0]!, [task]).requiredPolicySatisfied, true);
 });
+
+test("fixed resource meal is the REQUIRED bridge used by Compatibility and Exact",()=>{for(const policy of ["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"] as const){const problem=resourceMealScenario(policy),result=executePlannerNext(problem).result!;assert.equal(result.complete,true);const resource=problem.resources.find(item=>item.id==="shared-r")!,own=result.scheduledTasks.filter(task=>(task.requiredResourceIds??[]).includes(resource.id));assert.deepEqual(own.map(task=>[task.start,task.end]),[[690,720],[780,810]]);assert.equal(evaluateResourcePresence(resource,own).requiredPolicySatisfied,false);const presence=evaluateResourcePresence(resource,own,[],result.scheduledResourceMeals);assert.deepEqual({blocks:presence.operationalBlockCount,gap:presence.internalGapMinutes,meal:presence.authorizedMealMinutes,required:presence.requiredPolicySatisfied},{blocks:1,gap:0,meal:60,required:true});assert.equal(validatePlan(problem,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals,result.scheduledResourceMeals).hardValid,true);}});
