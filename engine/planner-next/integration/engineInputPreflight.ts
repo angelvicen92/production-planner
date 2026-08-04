@@ -6,6 +6,7 @@ import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialA
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./plannerNextCapabilities";
 import { resolveProjectedPlannerNextTaskResources, type ProjectedPlannerNextTaskResources } from "./projectedTaskResources";
+import { resolveParticipantScopedMeals } from "./participantScopedMeals";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -38,6 +39,7 @@ export type EngineInputPreflightReasonCode =
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
   | "UNREPRESENTABLE_RESOURCE_LOCK"
+  | "UNREPRESENTABLE_PARTICIPANT_BREAK"
   | "UNREPRESENTABLE_SPACE_LOCK"
   | "UNREPRESENTABLE_TIME_LOCK"
   | "UNSUPPORTED_BREAK_SCOPE"
@@ -114,6 +116,9 @@ export interface EngineInputPreflightDiagnostics {
   missingResourceReferenceCount: number;
   dependencyCount: number;
   breakCount: number;
+  participantScopedMealCount: number;
+  supportedParticipantScopedMealCount: number;
+  unsupportedParticipantScopedMealCount: number;
   transportConfigured: boolean;
   setupConfigurationDetected: boolean;
   integrationConfigurationPresent: boolean;
@@ -1194,6 +1199,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
 
   const classifyBreak = (entry: ProtectedBreakInput, path: string, concreteMeal = false): void => {
+    const participantMeal = entry.kind === "meal" && entry.contestantId != null
+      && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null;
+    if (participantMeal) return;
     const scoped = entry.contestantId != null || entry.spaceId != null || entry.zoneId != null || entry.itinerantTeamId != null;
     if (scoped || entry.kind === "global" || entry.kind === "protected" || (!concreteMeal && entry.kind == null)) {
       addIssue("UNSUPPORTED_BREAK_SCOPE", "break", entry.id ?? `${entry.start}-${entry.end}`, path, "Break scope cannot map exactly to the single Planner Next protected meal.", {
@@ -1206,6 +1214,42 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
   if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal", true);
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
+  const participantMeals = resolveParticipantScopedMeals(input);
+  for (const meal of participantMeals.meals) {
+    const details = {
+      breakId: meal.breakId || null,
+      contestantId: meal.participantId,
+      interval: meal.interval,
+      sourceAvailability: input.contestantAvailabilityById?.[meal.participantId] ?? null,
+      resultingWindows: participantMeals.availabilityByParticipantId.get(meal.participantId) ?? [],
+      sourcePath: meal.sourcePath,
+      defects: meal.defects,
+    };
+    if (meal.defects.includes("INVALID_ID") && !meal.breakId) {
+      addIssue("DUPLICATE_ID", "break", "missing", `${meal.sourcePath}.id`, "Participant-scoped meal requires an explicit stable ID.", details);
+    }
+    if (meal.defects.includes("INVALID_PARTICIPANT") || meal.defects.includes("MISSING_PARTICIPANT")) {
+      addIssue("MISSING_PARTICIPANT_REFERENCE", "break", meal.breakId, `${meal.sourcePath}.contestantId`, "Participant-scoped meal references no existing participant.", details);
+    }
+    if (meal.defects.includes("MIXED_SCOPE")) {
+      addIssue("UNSUPPORTED_BREAK_SCOPE", "break", meal.breakId, meal.sourcePath, "Participant-scoped meal combines unsupported scopes or kind.", details);
+    }
+    if (meal.defects.some((defect) => defect === "OUTSIDE_AVAILABILITY" || defect === "OVERLAP" || defect === "EMPTY_AVAILABILITY")) {
+      addIssue("UNREPRESENTABLE_PARTICIPANT_BREAK", "break", meal.breakId, meal.sourcePath, "Participant-scoped meal cannot be represented as an exact availability interruption.", details);
+    }
+    if (meal.status === "SUPPORTED") {
+      for (const task of input.tasks.filter((item) => item.contestantId === meal.participantId && (item.status === "done" || item.status === "in_progress"))) {
+        const protectedTime = resolveProtectedTaskInterval(task);
+        if (protectedTime.status !== "COMPLETE_REAL" && protectedTime.status !== "COMPLETE_PLANNED") continue;
+        const taskStart = toMinutes(protectedTime.interval.start), taskEnd = toMinutes(protectedTime.interval.end);
+        if (taskStart != null && taskEnd != null && taskStart < meal.minuteInterval.end && meal.minuteInterval.start < taskEnd) {
+          addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE", "task", task.id, `tasks.${task.id}.participantMeal.${meal.breakId}`, "Protected task overlaps the participant-scoped meal and cannot be moved.", {
+            ...details, taskId: task.id, taskInterval: protectedTime.interval, intervalSource: protectedTime.source,
+          });
+        }
+      }
+    }
+  }
   const concreteMealsByInterval = new Map<string, { start: string; end: string; sources: string[] }>();
   for (const representation of concreteMealRepresentations(input)) {
     const key = `${representation.start}\0${representation.end}`;
@@ -1251,6 +1295,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     + (input.globalHardBreaks?.length ?? 0) + flexibleMealCount
     + (input.contestantMealDurationMinutes != null || input.contestantMealMaxSimultaneous != null ? 1 : 0)
     + mapKeys(input.spaceMealBreakMinutesByZoneId).length + taskBreakCount;
+  const participantScopedMealCount = participantMeals.meals.length;
+  const supportedParticipantScopedMealCount = participantMeals.meals.filter((meal) => meal.status === "SUPPORTED").length;
+  const unsupportedParticipantScopedMealCount = participantScopedMealCount - supportedParticipantScopedMealCount;
 
   const transportConfigured = Boolean(
     input.transportSettings || input.transportSpaceId != null || input.transportVanCapacity != null || input.vanCapacity != null
@@ -1458,6 +1505,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     missingResourceReferenceCount,
     dependencyCount,
     breakCount,
+    participantScopedMealCount,
+    supportedParticipantScopedMealCount,
+    unsupportedParticipantScopedMealCount,
     transportConfigured,
     setupConfigurationDetected,
     integrationConfigurationPresent,

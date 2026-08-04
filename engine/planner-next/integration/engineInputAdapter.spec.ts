@@ -301,3 +301,28 @@ test("versioned Evidence is pure parseable JSON with exact scenarios and no runt
   const raw = readFileSync(new URL("../benchmarks/fixtures/spec10-010-engine-input-adapter-evidence.json", import.meta.url), "utf8"); const evidence = JSON.parse(raw);
   assert.equal(evidence.benchmark, "SPEC10-010-engine-input-adapter"); assert.deepEqual(evidence.scenarios.map((scenario: { scenarioId: string }) => scenario.scenarioId), ["synthetic-supported", "real-main-stage-with-backlog", "real-resource-lock-pressure", "real-protected-break-recovery"]); assert.ok(!raw.includes("npm run")); assert.ok(!/runtime|timestamp|generatedAt/i.test(raw));
 });
+
+test("participant-scoped meals split only the assigned participant and preserve break identity", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.protectedBreaks = [{ id: "meal-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" }];
+  const result = supported(input);
+  assert.deepEqual(result.problem.participants.find((entry) => entry.id === "participant:201")?.availability, [{ start: 480, end: 870 }, { start: 900, end: 1020 }]);
+  assert.deepEqual(result.problem.participants.find((entry) => entry.id === "participant:202")?.availability, [{ start: 540, end: 990 }]);
+  assert.ok(result.identityMap.some((entry) => entry.namespace === "break" && entry.sourceId === "meal-201" && entry.canonicalId === "break:meal-201"));
+  assert.deepEqual(result.problem.protectedMeal, { start: 780, end: 840 });
+});
+
+test("participant meal order is fingerprint-invariant while changing its interval is hard-sensitive", () => {
+  const input = createSupportedEngineInputAdapterFixture();
+  input.protectedBreaks = [
+    { id: "late", kind: "meal", contestantId: 201, start: "15:00", end: "15:30" },
+    { id: "early", kind: "meal", contestantId: 201, start: "11:00", end: "11:30" },
+  ];
+  const first = supported(input);
+  const reversed = clone(input); reversed.protectedBreaks!.reverse();
+  assert.equal(supported(reversed).problemFingerprint, first.problemFingerprint);
+  assert.equal(supported(reversed).sourceFingerprint, first.sourceFingerprint);
+  const changed = clone(input); changed.protectedBreaks![0].start = "15:30"; changed.protectedBreaks![0].end = "16:00";
+  assert.notEqual(supported(changed).problemFingerprint, first.problemFingerprint);
+  assert.notEqual(supported(changed).sourceFingerprint, first.sourceFingerprint);
+});

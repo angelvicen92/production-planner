@@ -4,6 +4,7 @@ import type { EngineInput, TaskInput } from "../../types";
 import { realProductionScenarios } from "../../orc/benchmarks/fixtures/real-scenarios/realProductionScenarios";
 import { preflightEngineInputForPlannerNext, type EngineInputPreflightIssue } from "./engineInputPreflight";
 import { projectPlanResourceItemsForEngineInput } from "../../buildInput";
+import { createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const deepFreeze = <T>(value: T): T => {
@@ -36,6 +37,45 @@ function input(overrides: Partial<EngineInput> = {}): EngineInput {
     ...overrides,
   };
 }
+
+test("participant-scoped meal preflight accepts exact scope and rejects its hard defects", () => {
+  const valid = createSupportedEngineInputAdapterFixture();
+  valid.protectedBreaks = [{ id: "meal-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" }];
+  const before = structuredClone(valid);
+  const accepted = preflightEngineInputForPlannerNext(valid);
+  assert.equal(accepted.status, "SUPPORTED");
+  assert.deepEqual(accepted.reasonCodes, []);
+  assert.equal(accepted.diagnostics.participantScopedMealCount, 1);
+  assert.equal(accepted.diagnostics.supportedParticipantScopedMealCount, 1);
+  assert.ok(accepted.identityMap.some((entry) => entry.namespace === "break" && entry.sourceId === "meal-201"));
+  assert.deepEqual(valid, before);
+
+  const actual = createSupportedEngineInputAdapterFixture();
+  actual.actualMeal = { id: "actual-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" };
+  assert.equal(preflightEngineInputForPlannerNext(actual).status, "SUPPORTED");
+
+  const missing = structuredClone(valid); missing.protectedBreaks![0].contestantId = 999;
+  assert.ok(preflightEngineInputForPlannerNext(missing).reasonCodes.includes("MISSING_PARTICIPANT_REFERENCE"));
+  const outside = structuredClone(valid); outside.protectedBreaks![0].start = "17:00"; outside.protectedBreaks![0].end = "17:30";
+  assert.ok(preflightEngineInputForPlannerNext(outside).reasonCodes.includes("UNREPRESENTABLE_PARTICIPANT_BREAK"));
+  const mixed = structuredClone(valid); mixed.protectedBreaks![0].spaceId = 301;
+  assert.ok(preflightEngineInputForPlannerNext(mixed).reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+  const overlap = structuredClone(valid); overlap.protectedBreaks!.push({ id: "meal-2", kind: "meal", contestantId: 201, start: "14:45", end: "15:15" });
+  assert.ok(preflightEngineInputForPlannerNext(overlap).reasonCodes.includes("UNREPRESENTABLE_PARTICIPANT_BREAK"));
+  const all = structuredClone(valid); all.protectedBreaks![0] = { id: "all", kind: "meal", contestantId: 201, start: "08:00", end: "17:00" };
+  assert.ok(preflightEngineInputForPlannerNext(all).reasonCodes.includes("UNREPRESENTABLE_PARTICIPANT_BREAK"));
+});
+
+test("participant meal never moves a protected task and rejects overlap explicitly", () => {
+  for (const status of ["done", "in_progress"] as const) {
+    const value = createSupportedEngineInputAdapterFixture();
+    value.tasks[0] = { ...value.tasks[0], status, startReal: "14:40", endReal: "14:55" };
+    value.protectedBreaks = [{ id: "meal-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" }];
+    const result = preflightEngineInputForPlannerNext(value);
+    assert.ok(result.reasonCodes.includes("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"));
+    assert.ok(result.issues.some((issue) => issue.code === "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE" && issue.details?.breakId === "meal-201" && issue.details?.taskId === 101));
+  }
+});
 
 function issue(source: EngineInput, code: string, entityId?: string): EngineInputPreflightIssue {
   const found = preflightEngineInputForPlannerNext(source).issues.find((candidate) => candidate.code === code && (entityId === undefined || candidate.entityId === entityId));
@@ -723,7 +763,7 @@ test("comida concreta y break scoped mantienen contratos separados", () => {
   const result = preflightEngineInputForPlannerNext(source);
   assert.equal(concreteMealIssue(source), undefined);
   assert.equal(result.diagnostics.breakCount, 2);
-  assert.ok(result.issues.some((entry) => entry.entityId === "1" && entry.code === "UNSUPPORTED_BREAK_SCOPE"));
+  assert.ok(result.issues.some((entry) => entry.entityId === "1" && entry.code === "MISSING_PARTICIPANT_REFERENCE"));
 });
 
 const runtimeInput = (source: EngineInput, fields: Record<string, unknown>): EngineInput => Object.assign(source, fields);
@@ -1121,6 +1161,9 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingResourceReferenceCount": 0,
       "dependencyCount": 0,
       "breakCount": 1,
+      "participantScopedMealCount": 0,
+      "supportedParticipantScopedMealCount": 0,
+      "unsupportedParticipantScopedMealCount": 0,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
       "integrationConfigurationPresent": false,
@@ -1194,6 +1237,9 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingResourceReferenceCount": 0,
       "dependencyCount": 0,
       "breakCount": 1,
+      "participantScopedMealCount": 0,
+      "supportedParticipantScopedMealCount": 0,
+      "unsupportedParticipantScopedMealCount": 0,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
       "integrationConfigurationPresent": false,
@@ -1268,6 +1314,9 @@ const EXPECTED_SCENARIOS: Record<string, unknown> = {
       "missingResourceReferenceCount": 0,
       "dependencyCount": 0,
       "breakCount": 1,
+      "participantScopedMealCount": 0,
+      "supportedParticipantScopedMealCount": 0,
+      "unsupportedParticipantScopedMealCount": 0,
       "transportConfigured": false,
       "setupConfigurationDetected": true,
       "integrationConfigurationPresent": false,

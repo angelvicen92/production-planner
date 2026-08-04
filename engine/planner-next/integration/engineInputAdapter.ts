@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
 import type { EngineInput, TimeWindow } from "../../types";
-import type { AnchoredAccompaniment, Minute, PlannerNextProblem, Task, Window } from "../contracts";
+import type { AnchoredAccompaniment, PlannerNextProblem, Task, Window } from "../contracts";
 import { preflight as preflightPlannerNextProblem } from "../validate";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { resolveProjectedPlannerNextTaskResources } from "./projectedTaskResources";
+import { engineTimeToMinute, minuteToEngineTime } from "./engineTime";
+import { resolveParticipantScopedMeals } from "./participantScopedMeals";
 import {
   preflightEngineInputForPlannerNext,
   resolveProtectedTaskInterval,
@@ -46,17 +48,7 @@ export interface EngineInputAdapterUnsupportedResult extends EngineInputAdapterE
 
 const compare = (left: string, right: string): number => left.localeCompare(right, "en");
 
-/** Planner Next uses minutes since 00:00 as its explicit temporal origin. */
-export function engineTimeToMinute(value: string): Minute {
-  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new RangeError(`Invalid HH:mm value: ${value}`);
-  const [hour, minute] = value.split(":").map(Number);
-  return hour * 60 + minute;
-}
-
-export function minuteToEngineTime(value: Minute): string {
-  if (!Number.isInteger(value) || value < 0 || value > 1439) throw new RangeError(`Invalid minute value: ${value}`);
-  return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
-}
+export { engineTimeToMinute, minuteToEngineTime } from "./engineTime";
 
 function window(value: TimeWindow): Window {
   return { start: engineTimeToMinute(value.start), end: engineTimeToMinute(value.end) };
@@ -112,6 +104,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return identity.canonicalId;
   };
   const config = input.plannerNext!;
+  const participantMeals = resolveParticipantScopedMeals(input);
   const spatial = resolveEffectivePlanSpatialAvailability(input.workDay, input.planZoneSettings, input.planSpaceSettings);
   const assignments = resolveEffectiveTaskResourceAssignments(input).assignments;
   const assignmentByTaskId = new Map(assignments.map((entry) => [entry.taskId, entry]));
@@ -154,7 +147,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   });
 
   const participants = [...new Set(activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!))]
-    .sort((a, b) => a - b).map((id) => ({ id: canonical("participant", id), availability: [window(input.contestantAvailabilityById![id])] }));
+    .sort((a, b) => a - b).map((id) => ({ id: canonical("participant", id), availability: [...(participantMeals.availabilityByParticipantId.get(id) ?? [window(input.contestantAvailabilityById![id])])] }));
   const resources = [...requiredResourceIds].sort((a, b) => a - b).map((id) => {
     const source = input.planResourceItems.find((entry) => entry.id === id)!;
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
