@@ -38,6 +38,19 @@ function input(overrides: Partial<EngineInput> = {}): EngineInput {
   };
 }
 
+function protectedResourceMealFixture(channel:"direct"|"effective"|"coach"|"lock",status:"done"|"in_progress"="done",taskInterval={start:"12:15",end:"12:45"}):EngineInput{
+  const source=createSupportedEngineInputAdapterFixture(),protectedTask=source.tasks.find(entry=>entry.id===(channel==="coach"?101:105))!;
+  protectedTask.status=status;protectedTask.startReal=taskInterval.start;protectedTask.endReal=taskInterval.end;
+  const resourceId=channel==="coach"?source.vocalCoachPlanResourceItemIdByContestantId![protectedTask.contestantId!]!:503;
+  if(channel==="direct")protectedTask.assignedResourceIds=[resourceId];
+  if(channel==="effective"){protectedTask.assignedResourceIds=[];source.spaceResourceAssignments[protectedTask.spaceId!]=[resourceId];}
+  if(channel==="lock"){protectedTask.assignedResourceIds=[];source.locks.push({id:999,planId:source.planId,taskId:protectedTask.id,lockType:"resource",lockedResourceId:resourceId});}
+  source.tasks.push({id:106,planId:source.planId,templateId:999,status:"pending",breakId:106,breakKind:"resource_meal",assignedResourceIds:[resourceId],fixedWindowStart:"12:00",fixedWindowEnd:"13:00"});return source;
+}
+
+test("resource meal conflicts use direct, effective, coach, and locked projected resources",()=>{for(const channel of ["direct","effective","coach","lock"] as const)for(const status of ["done","in_progress"] as const){const result=preflightEngineInputForPlannerNext(protectedResourceMealFixture(channel,status)),issue=result.issues.find(entry=>entry.code==="PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"&&entry.path.includes("protectedTaskConflict"));assert.ok(issue,`${channel}/${status}`);assert.deepEqual(issue.details?.mealInterval,{start:720,end:780});assert.deepEqual(issue.details?.protectedTaskInterval,{start:735,end:765});assert.ok((issue.details?.resourceIds as number[]).length>0);}});
+test("resource meal permits protected intervals touching either boundary",()=>{for(const interval of [{start:"11:30",end:"12:00"},{start:"13:00",end:"13:30"}]){const result=preflightEngineInputForPlannerNext(protectedResourceMealFixture("direct","done",interval));assert.equal(result.issues.some(entry=>entry.path.includes("protectedTaskConflict")),false);}});
+
 test("participant-scoped meal preflight accepts exact scope and rejects its hard defects", () => {
   const valid = createSupportedEngineInputAdapterFixture();
   valid.protectedBreaks = [{ id: "meal-201", kind: "meal", contestantId: 201, start: "14:30", end: "15:00" }];

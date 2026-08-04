@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import {
   createExactSearchLedger,
@@ -94,6 +94,7 @@ export interface ExactItinerantPlanResult {
   scheduledTasks: ScheduledTask[];
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
+  scheduledResourceMeals: ScheduledResourceMeal[];
   remainingTaskIds: string[];
   evidence: ExactItinerantPlanEvidence;
 }
@@ -258,7 +259,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds);
   if (unsupported.length) {
     evidence.remainingTaskIds = standaloneTasks.map(({ id }) => id); evidence.reasonCodes = unsupported;
-    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],
+    return { status: "UNSUPPORTED_STANDALONE_SHAPE", complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   }
   const core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer, onPartialCoreCandidate(candidate) {
@@ -316,7 +317,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.remainingTaskIds = [...core.remainingTaskIds].sort();
   const fail = (status: Exclude<ExactItinerantPlanStatus, "COMPLETE">, reasons: string[]): ExactItinerantPlanResult => {
     evidence.reasonCodes = [...new Set(reasons)].sort();
-    return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],
+    return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],
       remainingTaskIds: [...evidence.remainingTaskIds], evidence };
   };
   if (core.status === "BRANCH_BUDGET_EXHAUSTED" && selectedTasks === null) return fail("BRANCH_BUDGET_EXHAUSTED",
@@ -331,7 +332,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.selectedStandaloneStarts = Object.fromEntries(scheduledTasks.filter(({ id }) => !selectedCoreIds.has(id))
     .sort(byId).map(({ id, start }) => [id, start]));
   evidence.fullFingerprint = fingerprint(scheduledTasks, [], selectedMeals); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
-  return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSpaceMeals: [...selectedMeals], scheduledParticipantMeals:[...(selectedParticipantMeals?.scheduled??[])], remainingTaskIds: [], evidence };
+  const scheduledResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+  return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSpaceMeals: [...selectedMeals], scheduledParticipantMeals:[...(selectedParticipantMeals?.scheduled??[])],scheduledResourceMeals, remainingTaskIds: [], evidence };
 }
 
 /** Frozen historical control and explicit rollback path. */

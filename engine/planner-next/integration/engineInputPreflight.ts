@@ -839,7 +839,6 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       const meal=resourceMeals.meals.find(entry=>entry.sourceTaskId===task.id);
       if(task.status!=="cancelled"&&meal?.status!=="SUPPORTED") addIssue(meal?.defects.includes("INVALID_ID")?"RESOURCE_MEAL_IDENTITY_CONFLICT":"UNREPRESENTABLE_RESOURCE_BREAK","task",task.id,`${path}.breakContract`,"Fixed resource meal is not exactly representable.",{defects:meal?.defects??["INVALID_TIME"]});
       if(task.status!=="cancelled")for(const id of task.assignedResourceIds??[]){resourceAssignmentReferenceCount++;if(!planResourceIds.has(String(id)))missingResource("task",task.id,`${path}.assignedResourceIds`,id,"plan-resource");}
-      if(meal?.status==="SUPPORTED")for(const protectedTask of input.tasks.filter(candidate=>candidate.id!==task.id&&(candidate.status==="done"||candidate.status==="in_progress"))){const fixed=resolveEffectiveTaskFixedInterval(protectedTask,input.locks);if(fixed.status!=="EXACT")continue;const interval={start:engineTimeToMinute(fixed.interval.start),end:engineTimeToMinute(fixed.interval.end)};const shared=(protectedTask.assignedResourceIds??[]).filter(id=>meal.resourceIds.includes(id));if(shared.length&&interval.start<meal.minuteInterval.end&&meal.minuteInterval.start<interval.end)addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE","task",protectedTask.id,`${path}.protectedTaskConflict`,"A fixed resource meal overlaps a protected task using the same resource.",{resourceIds:shared,mealTaskId:task.id,protectedTaskId:protectedTask.id,mealInterval:meal.minuteInterval,protectedTaskInterval:interval});}
       continue;
     }
     if (flexibleParticipantMealTaskIds.has(task.id)) {
@@ -1102,6 +1101,16 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     const assignment = assignmentByTaskId.get(task.id);
     if (assignment) projectedResourcesByTaskId.set(task.id,
       resolveProjectedPlannerNextTaskResources(task, assignment, input.locks, coachByParticipantId, participantIdsByCoachId));
+  }
+  for(const meal of resourceMeals.meals.filter(entry=>entry.status==="SUPPORTED")){
+    for(const protectedTask of active.filter(task=>task.status==="done"||task.status==="in_progress")){
+      const fixed=resolveEffectiveTaskFixedInterval(protectedTask,input.locks),projection=projectedResourcesByTaskId.get(protectedTask.id);
+      if(fixed.status!=="EXACT"||projection?.status!=="REPRESENTABLE")continue;
+      const interval={start:toMinutes(fixed.interval.start)!,end:toMinutes(fixed.interval.end)!};
+      const projectedResourceIds=[...new Set([...projection.genericResourceIds,...(projection.coachResourceId===undefined?[]:[projection.coachResourceId])])].sort((a,b)=>a-b);
+      const sharedResourceIds=projectedResourceIds.filter(id=>meal.resourceIds.includes(id));
+      if(sharedResourceIds.length&&interval.start<meal.minuteInterval.end&&meal.minuteInterval.start<interval.end)addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE","task",protectedTask.id,`tasks.${meal.sourceTaskId}.protectedTaskConflict.${protectedTask.id}`,"A fixed resource meal overlaps a protected task using the same projected resource.",{resourceIds:sharedResourceIds,projectedResourceIds,mealTaskId:meal.sourceTaskId,protectedTaskId:protectedTask.id,mealInterval:meal.minuteInterval,protectedTaskInterval:interval});
+    }
   }
   if (integrationConfigurationRecord !== undefined) for (const task of active) {
     const fixed = resolveEffectiveTaskFixedInterval(task, input.locks);
