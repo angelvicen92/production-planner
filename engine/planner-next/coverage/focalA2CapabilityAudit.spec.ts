@@ -99,7 +99,7 @@ test("pilot 135: resource meal executes and reports break scope", () => {
 
 test("pilot 136: itinerant unit meal executes and reports break scope", () => {
   const probe = probeById().get("meal-itinerant-unit")!;
-  assert.deepEqual(probe.reasonCodes, ["UNSUPPORTED_BREAK_SCOPE"]);
+  assert.deepEqual(probe.reasonCodes, []);
   assert.equal(probe.observations.every((entry) => entry.pass), true);
 });
 
@@ -122,13 +122,13 @@ test("scoped meal observations read mutable windows and exact identities from ex
 
   const itinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit")]);
   const changedItinerant = indexProbeObservations([runScopedMealProbe("itinerant-unit", { start: "16:10", end: "16:40", itinerantTeamId: 8 })]);
-  assert.deepEqual(changedItinerant.get("meal.itinerant-unit.window")?.observed, { start: "16:10", end: "16:40" });
-  assert.equal(itinerant.get("meal.itinerant-unit.identity")?.observed, 7);
-  assert.equal(changedItinerant.get("meal.itinerant-unit.identity")?.observed, 8);
-  assert.equal(changedItinerant.get("meal.itinerant-unit.entity")?.observed, "unit-meal");
+  assert.deepEqual(changedItinerant.get("meal.itinerant-unit.window")?.observed, { start: 970, end: 1000 });
+  assert.equal(itinerant.get("meal.itinerant-unit.identity")?.observed, "itinerant-team:7");
+  assert.equal(changedItinerant.get("meal.itinerant-unit.identity")?.observed, "itinerant-team:8");
+  assert.equal(changedItinerant.get("meal.itinerant-unit.entity")?.observed, "break:unit-meal");
   assert.deepEqual(runScopedMealProbe("participant").reasonCodes, []);
   assert.deepEqual(runScopedMealProbe("resource").reasonCodes, []);
-  assert.ok(runScopedMealProbe("itinerant-unit").reasonCodes.includes("UNSUPPORTED_BREAK_SCOPE"));
+  assert.deepEqual(runScopedMealProbe("itinerant-unit").reasonCodes, []);
 });
 
 test("pilot source assertions use exact official anchors and limited A2 claims", () => {
@@ -202,7 +202,7 @@ test("meal classification comes only from executed probe observations", () => {
   const audit = buildFocalA2CapabilityAudit();
   assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 134)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
   assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 135)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
-  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 136)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
+  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === 136)?.derivedCoverageStatus, "EVIDENCED_SUPPORTED");
 });
 
 test("probe mutation or missing selector degrades capability", () => {
@@ -214,12 +214,11 @@ test("probe mutation or missing selector degrades capability", () => {
   assert.equal(evaluateCapabilityBinding(missingSelector, probes).some((entry) => entry.status === "NOT_FOUND"), true);
 });
 
-test("recommendation is generic and selects executed required rejection", () => {
+test("recommendation is generic after all scoped meals are evidenced", () => {
   const source = readFileSync("engine/planner-next/coverage/focalA2CapabilityAudit.ts", "utf8");
   assert.doesNotMatch(source, /capabilityId\s*===\s*141|find\([^\n]*141/);
   const audit = buildFocalA2CapabilityAudit();
-  assert.equal(audit.recommendation.type, "IMPLEMENT_CAPABILITY");
-  assert.equal(audit.evidenceRecords.find((record) => record.capabilityId === audit.recommendation.selectedCapabilityId)?.derivedCoverageStatus, "EXPLICITLY_UNSUPPORTED");
+  assert.equal(audit.recommendation.type, "AUDIT_MISSING_EVIDENCE");
   const withoutUnsupported = audit.evidenceRecords.map((record) => record.derivedCoverageStatus === "EXPLICITLY_UNSUPPORTED" ? { ...record, derivedCoverageStatus: "NOT_AUDITED" as const } : record);
   assert.equal(selectNextAction(withoutUnsupported).type, "AUDIT_MISSING_EVIDENCE");
 });

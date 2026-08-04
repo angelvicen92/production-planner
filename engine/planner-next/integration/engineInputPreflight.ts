@@ -9,6 +9,7 @@ import { resolveProjectedPlannerNextTaskResources, type ProjectedPlannerNextTask
 import { resolveParticipantScopedMeals } from "./assignedParticipantMealBreaks";
 import { isFlexibleParticipantMealTask, resolveFlexibleParticipantMealTasks } from "./flexibleParticipantMealTasks";
 import { resolveAssignedResourceMealBreaks } from "./assignedResourceMealBreaks";
+import { resolveAssignedItinerantUnitMealBreaks } from "./assignedItinerantUnitMealBreaks";
 
 export type EngineInputPreflightStatus = "SUPPORTED" | "UNSUPPORTED";
 
@@ -41,6 +42,8 @@ export type EngineInputPreflightReasonCode =
   | "PLAN_ID_MISMATCH"
   | "PARTICIPANT_MEAL_IDENTITY_CONFLICT"
   | "RESOURCE_MEAL_IDENTITY_CONFLICT"
+  | "UNREPRESENTABLE_ITINERANT_UNIT_BREAK"
+  | "ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED"
   | "UNREPRESENTABLE_RESOURCE_BREAK"
   | "PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE"
   | "PROTECTED_TASK_WITHOUT_FIXED_PLANNING"
@@ -1098,6 +1101,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   );
   const projectedResourcesByTaskId = new Map<number, ProjectedPlannerNextTaskResources>();
   for (const task of active) {
+    const unit=task.itinerantTeamId,allowed=task.allowedItinerantTeamIds??[],requirement=task.itinerantTeamRequirement;
+    const invalidUnit=unit!=null&&(!Number.isInteger(unit)||unit<=0),missingRequired=unit==null&&requirement!==undefined&&requirement!==null&&requirement!=="none",missingAllowed=unit==null&&allowed.length>0,incompatible=unit!=null&&allowed.length>0&&!allowed.includes(unit);
+    if(invalidUnit||missingRequired||missingAllowed||incompatible)addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`tasks.${task.id}.itinerantTeamRequirement`,"Itinerant-unit requirement has no concrete compatible reversible assignment.",{itinerantTeamId:unit??null,allowedItinerantTeamIds:allowed,itinerantTeamRequirement:requirement??null});
     const assignment = assignmentByTaskId.get(task.id);
     if (assignment) projectedResourcesByTaskId.set(task.id,
       resolveProjectedPlannerNextTaskResources(task, assignment, input.locks, coachByParticipantId, participantIdsByCoachId));
@@ -1239,6 +1245,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
 
   const classifyBreak = (entry: ProtectedBreakInput, path: string, concreteMeal = false): void => {
+    if(entry.kind==="meal"&&entry.itinerantTeamId!=null&&entry.contestantId==null&&entry.spaceId==null&&entry.zoneId==null)return;
     const participantMeal = entry.kind === "meal" && entry.contestantId != null
       && entry.spaceId == null && entry.zoneId == null && entry.itinerantTeamId == null;
     if (participantMeal) return;
@@ -1254,6 +1261,14 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   }
   if (input.actualMeal) classifyBreak(input.actualMeal, "actualMeal", true);
   input.protectedBreaks?.forEach((entry) => classifyBreak(entry, `protectedBreaks.${entry.id ?? `${entry.start}-${entry.end}`}`));
+  const itinerantMeals=resolveAssignedItinerantUnitMealBreaks(input);
+  for(const meal of itinerantMeals){const details={breakId:meal.breakId,itinerantTeamId:meal.itinerantTeamId,itinerantUnitId:meal.itinerantUnitId,interval:meal.interval,defects:meal.defects};
+    if(meal.defects.includes("INVALID_ID"))addIssue("DUPLICATE_ID","break","missing",`${meal.sourcePath}.id`,"Itinerant-unit meal requires an explicit stable ID.",details);
+    if(meal.defects.includes("AMBIGUOUS_DUPLICATE"))addIssue("DUPLICATE_ID","break",meal.breakId,meal.sourcePath,"Itinerant-unit meal identity is ambiguous across sources.",details);
+    if(meal.defects.some(d=>d==="INVALID_UNIT"||d==="INVALID_TIME"||d==="OUTSIDE_DAY"||d==="OFF_GRID"||d==="OVERLAP"))addIssue("UNREPRESENTABLE_ITINERANT_UNIT_BREAK","break",meal.breakId,meal.sourcePath,"Itinerant-unit meal cannot be represented exactly.",details);
+    if(meal.defects.includes("MIXED_SCOPE"))addIssue("UNSUPPORTED_BREAK_SCOPE","break",meal.breakId,meal.sourcePath,"Itinerant-unit meal combines scopes.",details);
+    if(meal.status==="SUPPORTED")for(const task of input.tasks.filter(task=>task.itinerantTeamId===meal.itinerantTeamId&&(task.status==="done"||task.status==="in_progress"))){const fixed=resolveProtectedTaskInterval(task);if(fixed.status!=="COMPLETE_REAL"&&fixed.status!=="COMPLETE_PLANNED")continue;const start=toMinutes(fixed.interval.start),end=toMinutes(fixed.interval.end);if(start!=null&&end!=null&&start<meal.interval.end&&meal.interval.start<end)addIssue("PROTECTED_TASK_CONSTRAINT_NOT_REPRESENTABLE","task",task.id,`tasks.${task.id}.itinerantUnitMeal.${meal.breakId}`,"Protected task overlaps its assigned unit meal.",{...details,taskId:task.id,taskInterval:fixed.interval});}
+  }
   const participantMeals = resolveParticipantScopedMeals(input);
   for (const meal of participantMeals.meals) {
     const explicitlyLinkedMealTasks=input.tasks.filter(task=>task.breakId!=null&&String(task.breakId)===meal.breakId&&isFlexibleParticipantMealTask(input,task));

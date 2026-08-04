@@ -41,6 +41,7 @@ interface BaseTask {
   dependencies: string[];
   requiredResourceIds?: string[];
   availability?: Window[];
+  itinerantUnitId?: string;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";
@@ -74,6 +75,7 @@ export interface AnchoredAccompaniment {
   adjacency: "REQUIRED";
   internalTransition: "INCLUDED";
   resourceContinuity: "REQUIRED";
+  itinerantUnitId?: string;
 }
 
 export type PlannerSearchPolicy =
@@ -104,7 +106,11 @@ export interface PlannerNextProblem {
   participantMeals?: ParticipantMealObligation[];
   participantMealCapacity?: { maxSimultaneous: number };
   resourceMeals?: ResourceMealBreak[];
+  itinerantUnitMeals?: ItinerantUnitMealBreak[];
 }
+
+export interface ItinerantUnitMealBreak { id:string; itinerantUnitId:string; interval:Window }
+export interface ScheduledItinerantUnitMeal { id:string; itinerantUnitId:string; start:Minute; end:Minute; duration:Minute }
 
 export interface ResourceMealBreak { id:string; sourceTaskId:string; resourceIds:string[]; interval:Window; status:"pending"|"interrupted"|"done"|"in_progress" }
 export interface ScheduledResourceMeal { id:string; sourceTaskId:string; resourceIds:string[]; start:Minute; end:Minute; duration:Minute }
@@ -157,6 +163,7 @@ export interface ValidationSummary {
   anchoredAccompanimentViolationCount: number;
   participantMealViolationCount: number;
   resourceMealViolationCount: number;
+  itinerantUnitMealViolationCount: number;
   reasonCodes: string[];
 }
 
@@ -285,5 +292,6 @@ export interface PlanResult {
   scheduledSpaceMeals: ScheduledSpaceMeal[];
   scheduledParticipantMeals: ScheduledParticipantMeal[];
   scheduledResourceMeals: ScheduledResourceMeal[];
+  scheduledItinerantUnitMeals: ScheduledItinerantUnitMeal[];
   metrics: PlanMetrics;
 }

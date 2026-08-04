@@ -2690,3 +2690,10 @@ Run `./validate-focal-a2-009r3.sh current`; Planner Next remains isolated from p
 - Ambas políticas publican la misma comida sin buscarla; la presencia entre trabajo anterior y posterior conserva un bloque, 0 minutos de gap interno y 60 minutos de comida autorizada.
 - La Evidence focal ocupa 4.277 bytes (`b5812abe5d28322843de8266f4c3b32aa4ec3adefd8b90e8b24c02d9afd23d8f`). La auditoría ocupa 371.478 bytes (`42b3cdaf30a4e2bda5017294f5aee61c0cab0ba616ab23aa68e76c6dce29cbe7`): 134 y 135 derivan a `EVIDENCED_SUPPORTED`, 136 permanece `EXPLICITLY_UNSUPPORTED`, `scoped-meals` permanece `PARTIALLY_SUPPORTED` y la recomendación genérica pasa a 136.
 - **Límites:** no cambia DB, schema, migraciones, RLS, UI, API, publicación, consolidación, ORC, V3 ni V4. El Focal protegido no contiene comidas de participante y conserva exactamente su presupuesto, fingerprint, métricas y resultado.
+
+### SPEC10-015 — comidas fijas por unidad itinerante
+
+- `Task.itinerantUnitId` procede únicamente de una asignación concreta `itinerantTeamId`; la comida 12:00–13:00 bloquea sólo la unidad 7, cuyos recursos efectivos siguen siendo `camera-7` y `sound-7`. La unidad nunca se materializa como recurso hard.
+- Ambas políticas rechazan la primera candidata solapada, publican la alternativa 13:00–13:30 y permiten trabajo real de la unidad 8 durante la comida. La operación `before → anchor → after` se rechaza completa al cruzar la comida y acepta una posición íntegra exterior.
+- La Evidence SPEC10-015 ocupa 2.837 bytes (`5e746184fe0db082835251fb51c13a7caa194c2d02d1dc9adffb84bdddd94bb6`). La auditoría ocupa 378.660 bytes (`225bd06bebb96289f6d00fc1ff3b3254519541da4abee159c3c4e45af4d5b16c`): 134, 135 y 136 derivan a `EVIDENCED_SUPPORTED`, `scoped-meals` deriva a `EVIDENCED_SUPPORTED` y la recomendación genérica es `AUDIT_MISSING_EVIDENCE` para la primera capacidad estable sin Evidence.
+- **Límites:** no cambia DB, schema, migraciones, RLS, UI, API, publicación, ORC, V3, V4, scoring, presupuestos ni Focal protegido.

@@ -2966,15 +2966,20 @@
         "meal.itinerant-unit.scope",
         "meal.itinerant-unit.window",
         "meal.itinerant-unit.identity",
-        "meal.itinerant-unit.entity"
+        "meal.itinerant-unit.entity",
+        "meal.itinerant-unit.bothPolicies",
+        "meal.itinerant-unit.productiveLoad",
+        "meal.itinerant-unit.foreignUnit",
+        "meal.itinerant-unit.atomicOperation",
+        "meal.itinerant-unit.noResourceAlias"
       ],
       "testAssertions": [
         {
           "id": "test-136",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "testName": "pilot 136: itinerant unit meal executes and reports break scope",
-          "property": "itinerant-team meal rejection is observed",
-          "layer": "PREFLIGHT"
+          "property": "fixed unit meal executes under both policies",
+          "layer": "VALIDATION"
         }
       ],
       "benchmarkAssertions": [
@@ -2985,10 +2990,8 @@
           "probeId": "meal-itinerant-unit",
           "selector": "reasonCodes",
           "operator": "EQUALS",
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "property": "itinerant meal reason comes from probe",
+          "expected": [],
+          "property": "supported unit meal has no preflight reason",
           "layer": "EVIDENCE",
           "boundary": "ENGINE_INPUT"
         }
@@ -2997,15 +3000,21 @@
         "SOURCE",
         "PREFLIGHT",
         "ADAPTER",
+        "SEARCH",
+        "VALIDATION",
         "EVIDENCE"
       ],
-      "supportedVariantObservationIds": [],
-      "unsupportedVariantObservationIds": [
-        "meal.itinerant-unit.reason"
+      "supportedVariantObservationIds": [
+        "meal.itinerant-unit.bothPolicies",
+        "meal.itinerant-unit.productiveLoad",
+        "meal.itinerant-unit.foreignUnit",
+        "meal.itinerant-unit.atomicOperation",
+        "meal.itinerant-unit.noResourceAlias"
       ],
+      "unsupportedVariantObservationIds": [],
       "contractGapObservationIds": [],
       "representativeBoundary": "ENGINE_INPUT",
-      "notes": "Required itinerant scope is explicitly rejected by executed preflight."
+      "notes": "A fixed unit-scoped meal is adapted, enforced atomically and hard-validated without a fictitious resource."
     }
   ],
   "probes": [
@@ -4090,16 +4099,20 @@
       "id": "meal-itinerant-unit",
       "functionsExecuted": [
         "preflightEngineInputForPlannerNext",
-        "adaptEngineInputToPlannerNextProblem"
+        "adaptEngineInputToPlannerNextProblem",
+        "canPlaceTask",
+        "executePlannerNext",
+        "validatePlan",
+        "materializeAnchoredOperation"
       ],
       "observations": [
         {
           "id": "meal.itinerant-unit.preflightStatus",
           "probeId": "meal-itinerant-unit",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal is rejected by executed preflight",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "unit meal is supported",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -4107,9 +4120,9 @@
           "id": "meal.itinerant-unit.reason",
           "probeId": "meal-itinerant-unit",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal reports executed break-scope reason",
-          "observed": true,
-          "expected": true,
+          "property": "valid unit meal has no reason",
+          "observed": [],
+          "expected": [],
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
@@ -4117,34 +4130,34 @@
           "id": "meal.itinerant-unit.adapterStatus",
           "probeId": "meal-itinerant-unit",
           "layer": "ADAPTER",
-          "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "property": "adapter publishes unit meal",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.scope",
           "probeId": "meal-itinerant-unit",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal scope is read from the executed input or issue",
-          "observed": "itinerant-team",
-          "expected": "itinerant-team",
+          "layer": "ADAPTER",
+          "property": "meal occupies exact unit only",
+          "observed": "itinerant-team:7",
+          "expected": "itinerant-team:7",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.window",
           "probeId": "meal-itinerant-unit",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "fixed interval is preserved",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "pass": true,
           "boundary": "ENGINE_INPUT"
@@ -4152,27 +4165,75 @@
         {
           "id": "meal.itinerant-unit.identity",
           "probeId": "meal-itinerant-unit",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal preserves its concrete scoped identity",
-          "observed": 7,
-          "expected": 7,
+          "layer": "ADAPTER",
+          "property": "unit identity is reversible",
+          "observed": "itinerant-team:7",
+          "expected": "itinerant-team:7",
           "pass": true,
           "boundary": "ENGINE_INPUT"
         },
         {
           "id": "meal.itinerant-unit.entity",
           "probeId": "meal-itinerant-unit",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal issue preserves its exact entity ID",
-          "observed": "unit-meal",
-          "expected": "unit-meal",
+          "layer": "ADAPTER",
+          "property": "break identity is reversible",
+          "observed": "break:unit-meal",
+          "expected": "break:unit-meal",
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.bothPolicies",
+          "probeId": "meal-itinerant-unit",
+          "layer": "VALIDATION",
+          "property": "both policies publish hard-valid plans",
+          "observed": true,
+          "expected": true,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.productiveLoad",
+          "probeId": "meal-itinerant-unit",
+          "layer": "SEARCH",
+          "property": "unit 7 has work and a later alternative",
+          "observed": true,
+          "expected": true,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.foreignUnit",
+          "probeId": "meal-itinerant-unit",
+          "layer": "SEARCH",
+          "property": "unit 8 works during unit 7 meal",
+          "observed": true,
+          "expected": true,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.atomicOperation",
+          "probeId": "meal-itinerant-unit",
+          "layer": "VALIDATION",
+          "property": "anchored operation is rejected atomically and has an alternative",
+          "observed": true,
+          "expected": true,
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.noResourceAlias",
+          "probeId": "meal-itinerant-unit",
+          "layer": "VALIDATION",
+          "property": "unit identity is never a hard resource",
+          "observed": true,
+          "expected": true,
           "pass": true,
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "reasonCodes": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "reasonCodes": [],
       "deterministic": true,
       "inputImmutable": true
     }
@@ -5022,9 +5083,9 @@
       "id": "meal.itinerant-unit.preflightStatus",
       "probeId": "meal-itinerant-unit",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal is rejected by executed preflight",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "unit meal is supported",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -5032,9 +5093,9 @@
       "id": "meal.itinerant-unit.reason",
       "probeId": "meal-itinerant-unit",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal reports executed break-scope reason",
-      "observed": true,
-      "expected": true,
+      "property": "valid unit meal has no reason",
+      "observed": [],
+      "expected": [],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -5042,34 +5103,34 @@
       "id": "meal.itinerant-unit.adapterStatus",
       "probeId": "meal-itinerant-unit",
       "layer": "ADAPTER",
-      "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "property": "adapter publishes unit meal",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.scope",
       "probeId": "meal-itinerant-unit",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal scope is read from the executed input or issue",
-      "observed": "itinerant-team",
-      "expected": "itinerant-team",
+      "layer": "ADAPTER",
+      "property": "meal occupies exact unit only",
+      "observed": "itinerant-team:7",
+      "expected": "itinerant-team:7",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.window",
       "probeId": "meal-itinerant-unit",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "fixed interval is preserved",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "pass": true,
       "boundary": "ENGINE_INPUT"
@@ -5077,20 +5138,70 @@
     {
       "id": "meal.itinerant-unit.identity",
       "probeId": "meal-itinerant-unit",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal preserves its concrete scoped identity",
-      "observed": 7,
-      "expected": 7,
+      "layer": "ADAPTER",
+      "property": "unit identity is reversible",
+      "observed": "itinerant-team:7",
+      "expected": "itinerant-team:7",
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
     {
       "id": "meal.itinerant-unit.entity",
       "probeId": "meal-itinerant-unit",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal issue preserves its exact entity ID",
-      "observed": "unit-meal",
-      "expected": "unit-meal",
+      "layer": "ADAPTER",
+      "property": "break identity is reversible",
+      "observed": "break:unit-meal",
+      "expected": "break:unit-meal",
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.bothPolicies",
+      "probeId": "meal-itinerant-unit",
+      "layer": "VALIDATION",
+      "property": "both policies publish hard-valid plans",
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.productiveLoad",
+      "probeId": "meal-itinerant-unit",
+      "layer": "SEARCH",
+      "property": "unit 7 has work and a later alternative",
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.foreignUnit",
+      "probeId": "meal-itinerant-unit",
+      "layer": "SEARCH",
+      "property": "unit 8 works during unit 7 meal",
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.atomicOperation",
+      "probeId": "meal-itinerant-unit",
+      "layer": "VALIDATION",
+      "property": "anchored operation is rejected atomically and has an alternative",
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.noResourceAlias",
+      "probeId": "meal-itinerant-unit",
+      "layer": "VALIDATION",
+      "property": "unit identity is never a hard resource",
+      "observed": true,
+      "expected": true,
       "pass": true,
       "boundary": "ENGINE_INPUT"
     }
@@ -6817,11 +6928,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal is rejected by executed preflight",
+      "property": "unit meal is supported",
       "file": null,
       "selector": "meal.itinerant-unit.preflightStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6830,11 +6941,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal reports executed break-scope reason",
+      "property": "valid unit meal has no reason",
       "file": null,
       "selector": "meal.itinerant-unit.reason",
-      "observed": true,
-      "expected": true,
+      "observed": [],
+      "expected": [],
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6843,11 +6954,11 @@
       "kind": "PROBE",
       "status": "PASS",
       "layer": "ADAPTER",
-      "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
+      "property": "adapter publishes unit meal",
       "file": null,
       "selector": "meal.itinerant-unit.adapterStatus",
-      "observed": "UNSUPPORTED",
-      "expected": "UNSUPPORTED",
+      "observed": "SUPPORTED",
+      "expected": "SUPPORTED",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6855,12 +6966,12 @@
       "id": "meal.itinerant-unit.scope",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal scope is read from the executed input or issue",
+      "layer": "ADAPTER",
+      "property": "meal occupies exact unit only",
       "file": null,
       "selector": "meal.itinerant-unit.scope",
-      "observed": "itinerant-team",
-      "expected": "itinerant-team",
+      "observed": "itinerant-team:7",
+      "expected": "itinerant-team:7",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6868,17 +6979,17 @@
       "id": "meal.itinerant-unit.window",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal window is read from the executed input",
+      "layer": "ADAPTER",
+      "property": "fixed interval is preserved",
       "file": null,
       "selector": "meal.itinerant-unit.window",
       "observed": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "expected": {
-        "start": "15:00",
-        "end": "15:30"
+        "start": 900,
+        "end": 930
       },
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
@@ -6887,12 +6998,12 @@
       "id": "meal.itinerant-unit.identity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal preserves its concrete scoped identity",
+      "layer": "ADAPTER",
+      "property": "unit identity is reversible",
       "file": null,
       "selector": "meal.itinerant-unit.identity",
-      "observed": 7,
-      "expected": 7,
+      "observed": "itinerant-team:7",
+      "expected": "itinerant-team:7",
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6900,12 +7011,77 @@
       "id": "meal.itinerant-unit.entity",
       "kind": "PROBE",
       "status": "PASS",
-      "layer": "PREFLIGHT",
-      "property": "itinerant-unit meal issue preserves its exact entity ID",
+      "layer": "ADAPTER",
+      "property": "break identity is reversible",
       "file": null,
       "selector": "meal.itinerant-unit.entity",
-      "observed": "unit-meal",
-      "expected": "unit-meal",
+      "observed": "break:unit-meal",
+      "expected": "break:unit-meal",
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.bothPolicies",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "VALIDATION",
+      "property": "both policies publish hard-valid plans",
+      "file": null,
+      "selector": "meal.itinerant-unit.bothPolicies",
+      "observed": true,
+      "expected": true,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.productiveLoad",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "unit 7 has work and a later alternative",
+      "file": null,
+      "selector": "meal.itinerant-unit.productiveLoad",
+      "observed": true,
+      "expected": true,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.foreignUnit",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "unit 8 works during unit 7 meal",
+      "file": null,
+      "selector": "meal.itinerant-unit.foreignUnit",
+      "observed": true,
+      "expected": true,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.atomicOperation",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "VALIDATION",
+      "property": "anchored operation is rejected atomically and has an alternative",
+      "file": null,
+      "selector": "meal.itinerant-unit.atomicOperation",
+      "observed": true,
+      "expected": true,
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.itinerant-unit.noResourceAlias",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "VALIDATION",
+      "property": "unit identity is never a hard resource",
+      "file": null,
+      "selector": "meal.itinerant-unit.noResourceAlias",
+      "observed": true,
+      "expected": true,
       "reason": "Executed observation matches expected value",
       "boundary": "ENGINE_INPUT"
     },
@@ -6913,7 +7089,7 @@
       "id": "test-136",
       "kind": "TEST",
       "status": "PASS",
-      "layer": "PREFLIGHT",
+      "layer": "VALIDATION",
       "property": "exact test definition exists",
       "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
       "selector": "pilot 136: itinerant unit meal executes and reports break scope",
@@ -6927,21 +7103,17 @@
       "kind": "BENCHMARK",
       "status": "PASS",
       "layer": "EVIDENCE",
-      "property": "itinerant meal reason comes from probe",
+      "property": "supported unit meal has no preflight reason",
       "file": null,
       "selector": "reasonCodes",
-      "observed": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
-      "expected": [
-        "UNSUPPORTED_BREAK_SCOPE"
-      ],
+      "observed": [],
+      "expected": [],
       "reason": "Observed benchmark value matches",
       "boundary": "ENGINE_INPUT"
     }
   ],
   "assertionCounts": {
-    "PASS": 115,
+    "PASS": 120,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -11086,15 +11258,20 @@
           "meal.itinerant-unit.scope",
           "meal.itinerant-unit.window",
           "meal.itinerant-unit.identity",
-          "meal.itinerant-unit.entity"
+          "meal.itinerant-unit.entity",
+          "meal.itinerant-unit.bothPolicies",
+          "meal.itinerant-unit.productiveLoad",
+          "meal.itinerant-unit.foreignUnit",
+          "meal.itinerant-unit.atomicOperation",
+          "meal.itinerant-unit.noResourceAlias"
         ],
         "testAssertions": [
           {
             "id": "test-136",
             "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
             "testName": "pilot 136: itinerant unit meal executes and reports break scope",
-            "property": "itinerant-team meal rejection is observed",
-            "layer": "PREFLIGHT"
+            "property": "fixed unit meal executes under both policies",
+            "layer": "VALIDATION"
           }
         ],
         "benchmarkAssertions": [
@@ -11105,10 +11282,8 @@
             "probeId": "meal-itinerant-unit",
             "selector": "reasonCodes",
             "operator": "EQUALS",
-            "expected": [
-              "UNSUPPORTED_BREAK_SCOPE"
-            ],
-            "property": "itinerant meal reason comes from probe",
+            "expected": [],
+            "property": "supported unit meal has no preflight reason",
             "layer": "EVIDENCE",
             "boundary": "ENGINE_INPUT"
           }
@@ -11117,15 +11292,21 @@
           "SOURCE",
           "PREFLIGHT",
           "ADAPTER",
+          "SEARCH",
+          "VALIDATION",
           "EVIDENCE"
         ],
-        "supportedVariantObservationIds": [],
-        "unsupportedVariantObservationIds": [
-          "meal.itinerant-unit.reason"
+        "supportedVariantObservationIds": [
+          "meal.itinerant-unit.bothPolicies",
+          "meal.itinerant-unit.productiveLoad",
+          "meal.itinerant-unit.foreignUnit",
+          "meal.itinerant-unit.atomicOperation",
+          "meal.itinerant-unit.noResourceAlias"
         ],
+        "unsupportedVariantObservationIds": [],
         "contractGapObservationIds": [],
         "representativeBoundary": "ENGINE_INPUT",
-        "notes": "Required itinerant scope is explicitly rejected by executed preflight."
+        "notes": "A fixed unit-scoped meal is adapted, enforced atomically and hard-validated without a fictitious resource."
       },
       "assertionResults": [
         {
@@ -11159,11 +11340,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal is rejected by executed preflight",
+          "property": "unit meal is supported",
           "file": null,
           "selector": "meal.itinerant-unit.preflightStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11172,11 +11353,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal reports executed break-scope reason",
+          "property": "valid unit meal has no reason",
           "file": null,
           "selector": "meal.itinerant-unit.reason",
-          "observed": true,
-          "expected": true,
+          "observed": [],
+          "expected": [],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11185,11 +11366,11 @@
           "kind": "PROBE",
           "status": "PASS",
           "layer": "ADAPTER",
-          "property": "itinerant-unit meal cannot publish a PlannerNextProblem",
+          "property": "adapter publishes unit meal",
           "file": null,
           "selector": "meal.itinerant-unit.adapterStatus",
-          "observed": "UNSUPPORTED",
-          "expected": "UNSUPPORTED",
+          "observed": "SUPPORTED",
+          "expected": "SUPPORTED",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11197,12 +11378,12 @@
           "id": "meal.itinerant-unit.scope",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal scope is read from the executed input or issue",
+          "layer": "ADAPTER",
+          "property": "meal occupies exact unit only",
           "file": null,
           "selector": "meal.itinerant-unit.scope",
-          "observed": "itinerant-team",
-          "expected": "itinerant-team",
+          "observed": "itinerant-team:7",
+          "expected": "itinerant-team:7",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11210,17 +11391,17 @@
           "id": "meal.itinerant-unit.window",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal window is read from the executed input",
+          "layer": "ADAPTER",
+          "property": "fixed interval is preserved",
           "file": null,
           "selector": "meal.itinerant-unit.window",
           "observed": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "expected": {
-            "start": "15:00",
-            "end": "15:30"
+            "start": 900,
+            "end": 930
           },
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
@@ -11229,12 +11410,12 @@
           "id": "meal.itinerant-unit.identity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal preserves its concrete scoped identity",
+          "layer": "ADAPTER",
+          "property": "unit identity is reversible",
           "file": null,
           "selector": "meal.itinerant-unit.identity",
-          "observed": 7,
-          "expected": 7,
+          "observed": "itinerant-team:7",
+          "expected": "itinerant-team:7",
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11242,12 +11423,77 @@
           "id": "meal.itinerant-unit.entity",
           "kind": "PROBE",
           "status": "PASS",
-          "layer": "PREFLIGHT",
-          "property": "itinerant-unit meal issue preserves its exact entity ID",
+          "layer": "ADAPTER",
+          "property": "break identity is reversible",
           "file": null,
           "selector": "meal.itinerant-unit.entity",
-          "observed": "unit-meal",
-          "expected": "unit-meal",
+          "observed": "break:unit-meal",
+          "expected": "break:unit-meal",
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.bothPolicies",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "VALIDATION",
+          "property": "both policies publish hard-valid plans",
+          "file": null,
+          "selector": "meal.itinerant-unit.bothPolicies",
+          "observed": true,
+          "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.productiveLoad",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "unit 7 has work and a later alternative",
+          "file": null,
+          "selector": "meal.itinerant-unit.productiveLoad",
+          "observed": true,
+          "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.foreignUnit",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "unit 8 works during unit 7 meal",
+          "file": null,
+          "selector": "meal.itinerant-unit.foreignUnit",
+          "observed": true,
+          "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.atomicOperation",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "VALIDATION",
+          "property": "anchored operation is rejected atomically and has an alternative",
+          "file": null,
+          "selector": "meal.itinerant-unit.atomicOperation",
+          "observed": true,
+          "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.itinerant-unit.noResourceAlias",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "VALIDATION",
+          "property": "unit identity is never a hard resource",
+          "file": null,
+          "selector": "meal.itinerant-unit.noResourceAlias",
+          "observed": true,
+          "expected": true,
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
@@ -11255,7 +11501,7 @@
           "id": "test-136",
           "kind": "TEST",
           "status": "PASS",
-          "layer": "PREFLIGHT",
+          "layer": "VALIDATION",
           "property": "exact test definition exists",
           "file": "engine/planner-next/coverage/focalA2CapabilityAudit.spec.ts",
           "selector": "pilot 136: itinerant unit meal executes and reports break scope",
@@ -11269,21 +11515,17 @@
           "kind": "BENCHMARK",
           "status": "PASS",
           "layer": "EVIDENCE",
-          "property": "itinerant meal reason comes from probe",
+          "property": "supported unit meal has no preflight reason",
           "file": null,
           "selector": "reasonCodes",
-          "observed": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
-          "expected": [
-            "UNSUPPORTED_BREAK_SCOPE"
-          ],
+          "observed": [],
+          "expected": [],
           "reason": "Observed benchmark value matches",
           "boundary": "ENGINE_INPUT"
         }
       ],
-      "derivedCoverageStatus": "EXPLICITLY_UNSUPPORTED",
-      "derivedBlockingLayer": "PREFLIGHT",
+      "derivedCoverageStatus": "EVIDENCED_SUPPORTED",
+      "derivedBlockingLayer": "NONE",
       "technicallyAudited": true,
       "sourceReviewed": true,
       "missingEvidence": [],
@@ -11753,11 +11995,11 @@
         135,
         136
       ],
-      "status": "PARTIALLY_SUPPORTED",
+      "status": "EVIDENCED_SUPPORTED",
       "memberStatuses": {
         "134": "EVIDENCED_SUPPORTED",
         "135": "EVIDENCED_SUPPORTED",
-        "136": "EXPLICITLY_UNSUPPORTED"
+        "136": "EVIDENCED_SUPPORTED"
       },
       "failedAssertions": [],
       "derived": true
@@ -11929,40 +12171,26 @@
     "UNRESOLVED": 152
   },
   "statusCounts": {
-    "EVIDENCED_SUPPORTED": 12,
+    "EVIDENCED_SUPPORTED": 13,
     "CODE_SUPPORTED_NOT_REPRESENTATIVE_EVIDENCE": 0,
     "PARTIALLY_SUPPORTED": 2,
-    "EXPLICITLY_UNSUPPORTED": 1,
+    "EXPLICITLY_UNSUPPORTED": 0,
     "CONTRACT_GAP": 0,
     "SOURCE_AMBIGUOUS": 0,
     "NOT_AUDITED": 146,
     "PRODUCT_PHASE_NOT_IMPLEMENTED": 6
   },
   "familyCounts": {
-    "EVIDENCED_SUPPORTED": 2,
-    "PARTIALLY_SUPPORTED": 3
+    "EVIDENCED_SUPPORTED": 3,
+    "PARTIALLY_SUPPORTED": 2
   },
   "recommendation": {
-    "type": "IMPLEMENT_CAPABILITY",
-    "selectedCapabilityId": 136,
-    "selectedAction": "Implement the demonstrated required blocker: unit-scoped meal",
-    "evaluatedCandidates": [
-      {
-        "capabilityId": 136,
-        "capability": "unit-scoped meal",
-        "ranking": [
-          -1,
-          0,
-          136
-        ]
-      }
-    ],
+    "type": "AUDIT_MISSING_EVIDENCE",
+    "selectedCapabilityId": 1,
+    "selectedAction": "Audit the next missing capability binding",
     "decisionTrace": [
-      "collect REQUIRED capabilities with executed EXPLICITLY_UNSUPPORTED Evidence",
-      "evaluate ranked candidates: unit-scoped meal",
-      "rank higher A2 visibility before official-only impact",
-      "prefer directly observed rejection over inferred contract risk",
-      "select unit-scoped meal from the resulting deterministic order"
+      "no required executed rejection remains",
+      "select first stable NOT_AUDITED catalog row"
     ]
   },
   "focalEvidence": {

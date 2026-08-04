@@ -8,13 +8,15 @@ import {
   resolvePlannerSearchPolicy,
   type PlannerSearchPolicyResolution,
 } from "./searchPolicy";
-import type { ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledTask } from "./contracts";
+import type { ScheduledItinerantUnitMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledTask } from "./contracts";
+import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 
-function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[]; scheduledResourceMeals?:ScheduledResourceMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[];scheduledResourceMeals:ScheduledResourceMeal[] } {
-  if (!result.complete) return { ...result, scheduledTasks: [], ...( "scheduledSetupPreparations" in result ? { scheduledSetupPreparations: [] } : {}), scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[] };
+function withParticipantMeals<T extends { complete: boolean; scheduledTasks: ScheduledTask[]; scheduledSpaceMeals: unknown[]; scheduledParticipantMeals?: ScheduledParticipantMeal[]; scheduledResourceMeals?:ScheduledResourceMeal[];scheduledItinerantUnitMeals?:ScheduledItinerantUnitMeal[] }>(problem: PlannerNextProblem, result: T): T & { scheduledParticipantMeals: ScheduledParticipantMeal[];scheduledResourceMeals:ScheduledResourceMeal[];scheduledItinerantUnitMeals:ScheduledItinerantUnitMeal[] } {
+  if (!result.complete) return { ...result, scheduledTasks: [], ...( "scheduledSetupPreparations" in result ? { scheduledSetupPreparations: [] } : {}), scheduledSpaceMeals: [], scheduledParticipantMeals: [],scheduledResourceMeals:[],scheduledItinerantUnitMeals:[] };
   if ((problem.participantMeals?.length ?? 0) > 0 && !result.scheduledParticipantMeals) throw new Error("Constructive search omitted the accepted participant-meal witness");
   const scheduledResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-  return { ...result, scheduledParticipantMeals: result.scheduledParticipantMeals ?? [],scheduledResourceMeals };
+  const scheduledItinerantUnitMeals=materializeScheduledItinerantUnitMeals(problem);
+  return { ...result, scheduledParticipantMeals: result.scheduledParticipantMeals ?? [],scheduledResourceMeals,scheduledItinerantUnitMeals };
 }
 
 export type PlannerNextExecution =
