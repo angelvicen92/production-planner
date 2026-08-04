@@ -197,11 +197,11 @@ export const FOCAL_A2_CAPABILITY_EVIDENCE_BINDINGS: readonly CapabilityEvidenceB
   {
     capabilityId: 135,
     sourceEvidenceIds: ["source-135-spec10-breaks"],
-    probeObservationIds: ["meal.resource.preflightStatus", "meal.resource.reason", "meal.resource.adapterStatus", "meal.resource.scope", "meal.resource.window", "meal.resource.identity", "meal.resource.entity", "meal.resource.bothPolicies", "meal.resource.search"],
+    probeObservationIds: ["meal.resource.preflightStatus", "meal.resource.reason", "meal.resource.adapterStatus", "meal.resource.scope", "meal.resource.window", "meal.resource.identity", "meal.resource.entity", "meal.resource.bothPolicies", "meal.resource.search", "meal.resource.productiveLoad"],
     testAssertions: [testAssertion("test-135", "pilot 135: resource meal executes and reports break scope", "fixed resource meal executes under both policies", "VALIDATION")],
     benchmarkAssertions: [probeBenchmark("benchmark-135", "meal-resource", "reasonCodes", [], "supported resource meal has no preflight reason", "EVIDENCE", "ENGINE_INPUT")],
     requiredLayers: ["SOURCE", "PREFLIGHT", "ADAPTER", "SEARCH", "VALIDATION", "EVIDENCE"],
-    supportedVariantObservationIds: ["meal.resource.bothPolicies"],
+    supportedVariantObservationIds: ["meal.resource.bothPolicies", "meal.resource.productiveLoad"],
     unsupportedVariantObservationIds: [],
     contractGapObservationIds: [],
     representativeBoundary: "ENGINE_INPUT",

@@ -3,11 +3,7 @@
   "executions": [
     {
       "policy": "COMPATIBILITY_PRESERVING",
-      "resourceId": "shared-meal-resource",
-      "interval": {
-        "start": 720,
-        "end": 780
-      },
+      "resourceId": "shared-r",
       "sourceWindows": [
         {
           "start": 540,
@@ -24,41 +20,87 @@
           "end": 1020
         }
       ],
-      "rejectedCandidate": {
-        "start": 750,
-        "end": 780
-      },
-      "acceptedCandidate": {
-        "start": 780,
-        "end": 810
-      },
       "resourceTasks": [
         {
-          "id": "before",
+          "id": "resource-before",
           "start": 690,
           "end": 720
         },
         {
-          "id": "after",
+          "id": "flexible-productive",
           "start": 780,
           "end": 810
         }
       ],
-      "presenceBlocks": 1,
-      "internalGapMinutes": 0,
-      "authorizedMealMinutes": 60,
-      "branches": 1576,
+      "foreignTasksDuringMeal": [
+        {
+          "id": "vocal-participant-z",
+          "start": 720,
+          "end": 735,
+          "resourceIds": []
+        },
+        {
+          "id": "other-during-meal",
+          "start": 735,
+          "end": 765,
+          "resourceIds": [
+            "other-r"
+          ]
+        },
+        {
+          "id": "vocal-participant-d",
+          "start": 735,
+          "end": 750,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-e",
+          "start": 750,
+          "end": 765,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-f",
+          "start": 765,
+          "end": 780,
+          "resourceIds": []
+        }
+      ],
+      "flexibleTask": [
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "publishedResourceMeals": [
+        {
+          "id": "resource-meal",
+          "sourceTaskId": "source-resource-meal",
+          "resourceIds": [
+            "shared-r"
+          ],
+          "start": 720,
+          "end": 780,
+          "duration": 60
+        }
+      ],
+      "resourceTasksAvoidMeal": true,
+      "presence": {
+        "spanMinutes": 120,
+        "operationalBlocks": 1,
+        "internalGapMinutes": 0,
+        "authorizedMealMinutes": 60,
+        "crossesAuthorizedMeal": true
+      },
+      "branches": 5164,
       "complete": true,
       "hardValid": true,
       "inputImmutable": true
     },
     {
       "policy": "EXACT_CONSTRUCTIVE",
-      "resourceId": "shared-meal-resource",
-      "interval": {
-        "start": 720,
-        "end": 780
-      },
+      "resourceId": "shared-r",
       "sourceWindows": [
         {
           "start": 540,
@@ -75,30 +117,80 @@
           "end": 1020
         }
       ],
-      "rejectedCandidate": {
-        "start": 750,
-        "end": 780
-      },
-      "acceptedCandidate": {
-        "start": 780,
-        "end": 810
-      },
       "resourceTasks": [
         {
-          "id": "before",
+          "id": "resource-before",
           "start": 690,
           "end": 720
         },
         {
-          "id": "after",
+          "id": "flexible-productive",
           "start": 780,
           "end": 810
         }
       ],
-      "presenceBlocks": 1,
-      "internalGapMinutes": 0,
-      "authorizedMealMinutes": 60,
-      "branches": 273,
+      "foreignTasksDuringMeal": [
+        {
+          "id": "vocal-participant-d",
+          "start": 720,
+          "end": 735,
+          "resourceIds": []
+        },
+        {
+          "id": "other-during-meal",
+          "start": 735,
+          "end": 765,
+          "resourceIds": [
+            "other-r"
+          ]
+        },
+        {
+          "id": "vocal-participant-c",
+          "start": 735,
+          "end": 750,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-z",
+          "start": 750,
+          "end": 765,
+          "resourceIds": []
+        },
+        {
+          "id": "vocal-participant-h",
+          "start": 765,
+          "end": 780,
+          "resourceIds": []
+        }
+      ],
+      "flexibleTask": [
+        {
+          "id": "flexible-productive",
+          "start": 780,
+          "end": 810
+        }
+      ],
+      "publishedResourceMeals": [
+        {
+          "id": "resource-meal",
+          "sourceTaskId": "source-resource-meal",
+          "resourceIds": [
+            "shared-r"
+          ],
+          "start": 720,
+          "end": 780,
+          "duration": 60
+        }
+      ],
+      "resourceTasksAvoidMeal": true,
+      "presence": {
+        "spanMinutes": 120,
+        "operationalBlocks": 1,
+        "internalGapMinutes": 0,
+        "authorizedMealMinutes": 60,
+        "crossesAuthorizedMeal": true
+      },
+      "branches": 819,
       "complete": true,
       "hardValid": true,
       "inputImmutable": true

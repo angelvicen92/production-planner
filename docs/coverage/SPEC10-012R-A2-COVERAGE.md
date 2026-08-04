@@ -9,10 +9,10 @@ PR #616 y la primera revisión de este PR aportaron andamiaje provisional, pero 
 - Capacidades auditadas: **12, 13, 14, 16, 18, 19, 20, 41, 120, 121, 122, 123, 134, 135, 136**.
 - Bindings literales: **15**.
 - Source assertions revisadas: **26**.
-- Probe observations ejecutadas: **60**.
+- Probe observations ejecutadas: **61**.
 - Test assertions: **15**.
 - Benchmark assertions: **15**.
-- Resultados de assertions: `{"PASS":114,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
+- Resultados de assertions: `{"PASS":115,"FAIL":0,"NOT_FOUND":0,"NOT_EXECUTED":0}`.
 
 Las 15 test references sólo demuestran que existe la definición exacta del test; la ejecución se informa separadamente en la validación local. Los probes y benchmark assertions son la Evidence ejecutable principal.
 

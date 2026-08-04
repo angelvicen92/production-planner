@@ -197,7 +197,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const expected = [...coreIds].sort();
       const actual = placed.map(({ id }) => id).sort();
       const validShape = actual.length === expected.length && actual.every((id, index) => id === expected[index]);
-      const validation = validatePlan(reduced, placed, [], meals);
+      const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+      const validation = validatePlan(reduced, placed, [], meals,[],fixedResourceMeals);
       if (validShape && validation.hardValid) {
         const ordered = [...placed].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));

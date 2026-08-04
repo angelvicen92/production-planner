@@ -746,7 +746,8 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
 
     if (task.status === "pending" || task.status === "interrupted") {
       if (task.startPlanned != null || task.endPlanned != null) pendingPlanningDiscardCount++;
-      const effectiveDuration = task.durationOverrideMin ?? (flexibleParticipantMealTaskIds.has(task.id) ? input.contestantMealDurationMinutes : resourceMealTaskIds.has(task.id)?0:undefined);
+      if(resourceMealTaskIds.has(task.id)) continue;
+      const effectiveDuration = task.durationOverrideMin ?? (flexibleParticipantMealTaskIds.has(task.id) ? input.contestantMealDurationMinutes : undefined);
       if (effectiveDuration == null) {
         missingDurationTaskCount++;
         addIssue("MISSING_TASK_DURATION", "task", task.id, `${path}.durationOverrideMin`, "Authoritative duration is absent.");

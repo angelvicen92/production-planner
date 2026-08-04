@@ -164,7 +164,8 @@ function searchStandaloneForCoreCandidate(problem: PlannerNextProblem, coreTasks
       const mealBudget={remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("STANDALONE",count)};
       const mealWitness=exact?assessParticipantMealFutureFeasibility(problem,candidate,mealBudget,"MATERIALIZE"):null;
       if(mealWitness){evidence.participantMealFutureFeasibilityChecks+=1;evidence.participantMealBranchesExplored+=mealWitness.branchesExplored;if(!mealWitness.complete)evidence.participantMealFutureInfeasibleBranches+=1;for(const id of mealWitness.blockingMealTaskIds)if(!evidence.participantMealBlockingTaskIds.includes(id))evidence.participantMealBlockingTaskIds.push(id);}
-      if (exact && mealWitness?.complete && validatePlan(problem, candidate, [], coreMeals,[...mealWitness.scheduled]).hardValid) {
+      const fixedResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+      if (exact && mealWitness?.complete && validatePlan(problem, candidate, [], coreMeals,[...mealWitness.scheduled],fixedResourceMeals).hardValid) {
         const quality = evaluateParticipantItineraryQuality(problem, candidate).summary;
         const compact: CompleteParticipantQuality = { maximumParticipantIdleMinutes: quality.maximumParticipantIdleMinutes,
           maximumSingleGapMinutes: quality.maximumSingleGapMinutes, totalIdleMinutes: quality.totalIdleMinutes,

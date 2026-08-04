@@ -149,7 +149,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
   const resourceMeals=Array.isArray(problem.resourceMeals)?problem.resourceMeals:[];
   if(hasDuplicateIds(resourceMeals)||new Set(resourceMeals.map(meal=>meal.sourceTaskId)).size!==resourceMeals.length)reasons.add("RESOURCE_MEAL_IDENTITY_CONFLICT");
-  for(const meal of resourceMeals){if(typeof meal.id!=="string"||!meal.id||typeof meal.sourceTaskId!=="string"||!meal.sourceTaskId||!Array.isArray(meal.resourceIds)||meal.resourceIds.length===0||new Set(meal.resourceIds).size!==meal.resourceIds.length||meal.resourceIds.some(id=>!resourceIds.has(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(!["pending","interrupted","done","in_progress"].includes(meal.status))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
+  for(const meal of resourceMeals){if(typeof meal.id!=="string"||!meal.id||typeof meal.sourceTaskId!=="string"||!meal.sourceTaskId||!Array.isArray(meal.resourceIds)||meal.resourceIds.length===0||new Set(meal.resourceIds).size!==meal.resourceIds.length||meal.resourceIds.some(id=>!resourceIds.has(id)&&!coachIds.has(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(invalidWindow(meal.interval,day)||meal.interval.start%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0||meal.interval.end%PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES!==0)reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");if(!["pending","interrupted","done","in_progress"].includes(meal.status))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
   for(let i=0;i<resourceMeals.length;i++)for(let j=i+1;j<resourceMeals.length;j++){const a=resourceMeals[i]!,b=resourceMeals[j]!;if(a.interval.start<b.interval.end&&b.interval.start<a.interval.end&&a.resourceIds.some(id=>b.resourceIds.includes(id)))reasons.add("UNREPRESENTABLE_RESOURCE_BREAK");}
   if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
@@ -272,7 +272,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   return [...reasons].sort();
 }
 
-export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals?: ScheduledResourceMeal[]): ValidationSummary {
+export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTask[], preparations: ScheduledSetupPreparation[] = [], meals:ScheduledSpaceMeal[]=[], participantMeals: ScheduledParticipantMeal[] = [], resourceMeals: ScheduledResourceMeal[] = []): ValidationSummary {
   let dependency = 0;
   let overlap = 0;
   let transition = 0;
@@ -290,7 +290,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   let spaceMeal = 0;
   let participantMeal = 0;
   let resourceMeal = 0;
-  const publishedResourceMeals=resourceMeals??(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+  const publishedResourceMeals=resourceMeals;
   const byId = new Map(scheduled.map((task) => [task.id, task]));
   const participants = new Map(problem.participants.map((item) => [item.id, item]));
   const coaches = new Map(problem.coaches.map((item) => [item.id, item]));

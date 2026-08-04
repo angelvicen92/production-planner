@@ -2910,7 +2910,8 @@
         "meal.resource.identity",
         "meal.resource.entity",
         "meal.resource.bothPolicies",
-        "meal.resource.search"
+        "meal.resource.search",
+        "meal.resource.productiveLoad"
       ],
       "testAssertions": [
         {
@@ -2944,7 +2945,8 @@
         "EVIDENCE"
       ],
       "supportedVariantObservationIds": [
-        "meal.resource.bothPolicies"
+        "meal.resource.bothPolicies",
+        "meal.resource.productiveLoad"
       ],
       "unsupportedVariantObservationIds": [],
       "contractGapObservationIds": [],
@@ -3942,6 +3944,142 @@
           "expected": true,
           "pass": true,
           "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.productiveLoad",
+          "probeId": "meal-resource",
+          "layer": "SEARCH",
+          "property": "split resource has real work before and after while another resource works during meal",
+          "observed": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
+          "expected": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
+          "pass": true,
+          "boundary": "ENGINE_INPUT"
         }
       ],
       "reasonCodes": [],
@@ -4741,6 +4879,142 @@
       "property": "both existing policies find a complete plan around split windows",
       "observed": true,
       "expected": true,
+      "pass": true,
+      "boundary": "ENGINE_INPUT"
+    },
+    {
+      "id": "meal.resource.productiveLoad",
+      "probeId": "meal-resource",
+      "layer": "SEARCH",
+      "property": "split resource has real work before and after while another resource works during meal",
+      "observed": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
       "pass": true,
       "boundary": "ENGINE_INPUT"
     },
@@ -6348,6 +6622,145 @@
       "boundary": "ENGINE_INPUT"
     },
     {
+      "id": "meal.resource.productiveLoad",
+      "kind": "PROBE",
+      "status": "PASS",
+      "layer": "SEARCH",
+      "property": "split resource has real work before and after while another resource works during meal",
+      "file": null,
+      "selector": "meal.resource.productiveLoad",
+      "observed": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        },
+        {
+          "windows": [
+            {
+              "start": 540,
+              "end": 720
+            },
+            {
+              "start": 780,
+              "end": 1020
+            }
+          ],
+          "resourceTasks": [
+            {
+              "id": "resource-before",
+              "start": 690,
+              "end": 720
+            },
+            {
+              "id": "flexible-productive",
+              "start": 780,
+              "end": 810
+            }
+          ],
+          "foreignDuringMeal": [
+            {
+              "id": "other-during-meal",
+              "start": 735,
+              "end": 765
+            }
+          ]
+        }
+      ],
+      "reason": "Executed observation matches expected value",
+      "boundary": "ENGINE_INPUT"
+    },
+    {
       "id": "test-135",
       "kind": "TEST",
       "status": "PASS",
@@ -6528,7 +6941,7 @@
     }
   ],
   "assertionCounts": {
-    "PASS": 114,
+    "PASS": 115,
     "FAIL": 0,
     "NOT_FOUND": 0,
     "NOT_EXECUTED": 0
@@ -10275,7 +10688,8 @@
           "meal.resource.identity",
           "meal.resource.entity",
           "meal.resource.bothPolicies",
-          "meal.resource.search"
+          "meal.resource.search",
+          "meal.resource.productiveLoad"
         ],
         "testAssertions": [
           {
@@ -10309,7 +10723,8 @@
           "EVIDENCE"
         ],
         "supportedVariantObservationIds": [
-          "meal.resource.bothPolicies"
+          "meal.resource.bothPolicies",
+          "meal.resource.productiveLoad"
         ],
         "unsupportedVariantObservationIds": [],
         "contractGapObservationIds": [],
@@ -10480,6 +10895,145 @@
           "selector": "meal.resource.search",
           "observed": true,
           "expected": true,
+          "reason": "Executed observation matches expected value",
+          "boundary": "ENGINE_INPUT"
+        },
+        {
+          "id": "meal.resource.productiveLoad",
+          "kind": "PROBE",
+          "status": "PASS",
+          "layer": "SEARCH",
+          "property": "split resource has real work before and after while another resource works during meal",
+          "file": null,
+          "selector": "meal.resource.productiveLoad",
+          "observed": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
+          "expected": [
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            },
+            {
+              "windows": [
+                {
+                  "start": 540,
+                  "end": 720
+                },
+                {
+                  "start": 780,
+                  "end": 1020
+                }
+              ],
+              "resourceTasks": [
+                {
+                  "id": "resource-before",
+                  "start": 690,
+                  "end": 720
+                },
+                {
+                  "id": "flexible-productive",
+                  "start": 780,
+                  "end": 810
+                }
+              ],
+              "foreignDuringMeal": [
+                {
+                  "id": "other-during-meal",
+                  "start": 735,
+                  "end": 765
+                }
+              ]
+            }
+          ],
           "reason": "Executed observation matches expected value",
           "boundary": "ENGINE_INPUT"
         },
