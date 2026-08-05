@@ -63,6 +63,15 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.tasks = e.tasks.filter((task: any) => task.id !== taskId("C01", "CROMA")); e.countsByType.CROMA -= 1; }, "PARTICIPANT_TASK_MATRIX", "PARTICIPANT_MATRIX_MISMATCH");
   assertInvariantFails((e) => { e.tasks.push({ ...e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")) }); }, "UNIQUE_TASK_IDS", "DUPLICATE_TASK_ID");
   assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).duration = 11; }, "DURATION_CATALOG", "DURATION_CHANGED");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("son-2"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
+  assertInvariantFails((e) => { e.resources.push({ id: "future-sound", label: "Future Sound", kind: "sound", availability: "creation_input_required" }); e.tasks.find((task: any) => task.id === taskId("C01", "CROMA")).requiredResourceIds.push("future-sound"); }, "KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID");
+  assertInvariantFails((e) => { e.technicalChains[0].adjacency = "OFF"; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID");
+  assertInvariantFails((e) => { e.technicalChains[0].resourceContinuity = "OFF"; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID");
+  assertInvariantFails((e) => { e.technicalChains[0].orderedTaskIds = ["TECH.tech_desmontaje_traslado", "TECH.tech_reality_eva", "TECH.tech_totales_post"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_ORDER_INVALID");
+  assertInvariantFails((e) => { e.technicalChains[0].requiredResourceIds = ["cam-3", "cam-4", "son-1"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_SET_INVALID");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds.push("son-2"); }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_reality_eva").duration = 25; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID");
+  assertInvariantFails((e) => { e.itinerantOperations.find((operation: any) => operation.id === "itinerant.reality-unit-b.C05.reality-plato").kind = "standalone"; }, "ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = []; }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.anchoredOperations = e.anchoredOperations.filter((operation: any) => operation.participantId !== "C05"); }, "ANCHORED_OPERATIONS", "ANCHORED_OPERATION_SET_INVALID");
   assertInvariantFails((e) => { e.jointOperations = []; }, "JOINT_OPERATIONS", "JOINT_OPERATION_SET_INVALID");
@@ -92,7 +101,7 @@ test("negative mutations fail the targeted invariant families", () => {
   assertInvariantFails((e) => { e.rules.totalesSynchronization.synchronizedRounds = false; }, "TOTALES_RULES", "TOTALES_SYNCHRONIZATION_LOST");
   assertInvariantFails((e) => { e.rules.coachTransition.minutes = 15; }, "COACH_TRANSITION_RULE", "COACH_TRANSITION_RULE_CHANGED");
   assertInvariantFails((e) => { e.rules.inTransport.minParticipantsPerGroup = 2; }, "TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED");
-  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_CONTINUITY_LOST");
+  assertInvariantFails((e) => { e.tasks.find((task: any) => task.id === "TECH.tech_desmontaje_traslado").requiredResourceIds = ["cam-3", "cam-4", "eva"]; }, "TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID");
   assertInvariantFails((e) => { const sodexo = e.tasks.find((task: any) => task.id === taskId("C01", "SODEXO")); sodexo.operationalKind = "auxiliary"; sodexo.meal.occupiesExclusiveSpace = true; }, "SODEXO_MEALS", "SODEXO_SEMANTICS_INVALID");
   assertInvariantFails((e) => { (e as any).leakedName = "Cristina Zuloaga"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");
   assertInvariantFails((e) => { (e.tasks[0] as any).startPlanned = "09:00"; }, "NO_EDITORIAL_OR_SEED", "FORBIDDEN_SOURCE_DATA_LEAK");

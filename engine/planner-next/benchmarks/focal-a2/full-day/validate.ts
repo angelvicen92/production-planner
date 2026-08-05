@@ -249,6 +249,9 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     : [issue("TRANSPORT_RULE", "TRANSPORT_RULE_CHANGED", "rules.inTransport", "Transport semantics or IN policy changed.")]],
   ["TECHNICAL_CHAIN", (expansion) => {
     const expectedIds = ["technical.reality-eva-transfer-totales-post"];
+    const expectedOrderedTaskIds = ["TECH.tech_reality_eva", "TECH.tech_desmontaje_traslado", "TECH.tech_totales_post"];
+    const expectedResourceIds = ["cam-3", "cam-4", "eva", "son-1"];
+    const expectedDurations = [20, 5, 5];
     const actualIds = expansion.technicalChains.map((chain) => chain.id).sort();
     const setIssues: ValidationIssue[] = JSON.stringify(actualIds) === JSON.stringify(expectedIds)
       ? []
@@ -256,10 +259,15 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     return [...setIssues, ...expansion.technicalChains.flatMap((chain) => {
     const chainTasks = chain.orderedTaskIds.map((id) => expansion.tasks.find((task) => task.id === id));
     const issues: ValidationIssue[] = [];
+    if (chain.adjacency !== "REQUIRED" || chain.resourceContinuity !== "REQUIRED") issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_CONTRACT_INVALID", chain.id, "Technical chain must require adjacency and resource continuity."));
+    if (JSON.stringify(chain.orderedTaskIds) !== JSON.stringify(expectedOrderedTaskIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_ORDER_INVALID", chain.id, "Technical chain orderedTaskIds must match the official sequence."));
+    if (JSON.stringify([...chain.requiredResourceIds].sort()) !== JSON.stringify(expectedResourceIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_SET_INVALID", chain.id, "Technical chain contract resources must be exactly CAM 3, CAM 4, SON 1 and EVA."));
     if (chainTasks.some((task) => !task || task.participantId !== undefined || task.operationalKind !== "technical")) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", chain.id, "Technical chain member missing or attributed to participant."));
-    for (const task of chainTasks) {
-      if (task && chain.requiredResourceIds.some((resourceId) => !task.requiredResourceIds.includes(resourceId))) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_RESOURCE_CONTINUITY_LOST", task.id, "Technical chain member lost continuous resources."));
-    }
+    chainTasks.forEach((task, index) => {
+      if (!task) return;
+      if (task.duration !== expectedDurations[index]) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_MEMBER_INVALID", task.id, "Technical chain task duration changed."));
+      if (JSON.stringify([...task.requiredResourceIds].sort()) !== JSON.stringify(expectedResourceIds)) issues.push(issue("TECHNICAL_CHAIN", "TECHNICAL_CHAIN_TASK_RESOURCE_SET_INVALID", task.id, "Technical chain task resources must be exactly CAM 3, CAM 4, SON 1 and EVA."));
+    });
     for (let index = 1; index < chain.orderedTaskIds.length; index += 1) {
       const task = chainTasks[index];
       const previousId = chain.orderedTaskIds[index - 1]!;
@@ -287,7 +295,7 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
     const claimedTaskIds = new Map<string, string>();
     for (const operation of expansion.itinerantOperations) {
       const expected = CANONICAL_ITINERANT_OPERATIONS.find((entry) => entry.id === operation.id);
-      if (!expected || operation.itinerantUnitId !== expected.itinerantUnitId || operation.participantId !== expected.participantId || operation.memberResourceIds.join(",") !== expected.memberResourceIds.join(",") || operation.taskIds.join(",") !== expected.taskIds.join(",")) {
+      if (!expected || operation.itinerantUnitId !== expected.itinerantUnitId || operation.participantId !== expected.participantId || operation.memberResourceIds.join(",") !== expected.memberResourceIds.join(",") || operation.taskIds.join(",") !== expected.taskIds.join(",") || operation.kind !== expected.kind) {
         issues.push(issue("ITINERANT_UNITS", "ITINERANT_OPERATION_SET_INVALID", operation.id, "Itinerant operation identity, members or tasks changed."));
       }
       for (const taskIdValue of operation.taskIds) {
@@ -313,7 +321,8 @@ const invariantChecks: ReadonlyArray<[string, (expansion: ExpandedCanonicalFullA
   ["KNOWN_RESOURCES", (expansion) => {
     const issues: ValidationIssue[] = [];
     const croma = expansion.tasks.filter((task) => task.type === "CROMA");
-    if (croma.some((task) => !task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.includes("son-1"))) issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must keep CAM 2 and no sound."));
+    const soundResourceIds = new Set(expansion.resources.filter((resource) => resource.kind === "sound").map((resource) => resource.id));
+    if (croma.some((task) => !task.requiredResourceIds.includes("cam-2") || task.requiredResourceIds.some((resourceId) => soundResourceIds.has(resourceId)))) issues.push(issue("KNOWN_RESOURCES", "CROMA_RESOURCE_INVALID", ids(croma).join(","), "Croma must keep CAM 2 and no canonical sound resource."));
     const evaTasks = expansion.tasks.filter((task) => task.type === "ALFOMBRA_ROJA_EVA" || task.type === "REALITY_CONTROL_EVA" || task.type.startsWith("TECH_"));
     if (evaTasks.some((task) => !task.requiredResourceIds.includes("eva"))) issues.push(issue("KNOWN_RESOURCES", "EVA_RESOURCE_LOST", ids(evaTasks).join(","), "EVA tasks must retain EVA resource."));
     const coached = expansion.tasks.filter((task) => task.type === "PRUEBA_VOCAL_LUCIA" || task.type === "PRUEBA_VOCAL_JOSE_MARIA" || task.type === "ENSAYO_ESTUDIO_7");

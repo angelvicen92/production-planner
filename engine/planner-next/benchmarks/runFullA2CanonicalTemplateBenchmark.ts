@@ -124,6 +124,15 @@ const evidence = {
     "setup.orderConstraintHardcoded",
     "setup.oneBlockPerFamilyLost",
     "counts.recomputedAgainstTasks",
+    "croma.addSon2",
+    "croma.addCanonicalSound",
+    "technicalChain.adjacencyLost",
+    "technicalChain.resourceContinuityLost",
+    "technicalChain.orderChanged",
+    "technicalChain.contractResourceLost",
+    "technicalChain.taskExtraResource",
+    "technicalChain.durationChanged",
+    "itinerantOperation.kindChanged",
   ],
 };
 
