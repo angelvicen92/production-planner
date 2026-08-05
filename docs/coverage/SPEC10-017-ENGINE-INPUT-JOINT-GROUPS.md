@@ -14,7 +14,7 @@ Antes, Planner Next exigía grupos conjuntos sin dependencias. Eso permitía Alf
 
 ## Flujo end-to-end
 
-El probe ejecuta EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard. La Evidence muestra dos grupos fuente, dos IDs canónicos `joint-group:*`, cuatro miembros planificados, sincronización por grupo y secuencia Alfombra Roja → Totales Post.
+El probe ejecuta EngineInput preflight, `adaptEngineInputToPlannerNextProblem`, preflight Planner Next, `planMainFlowAndFeeders` y `validatePlan` usando exclusivamente `adapter.problem`. La Evidence muestra dos grupos fuente, dos IDs canónicos `joint-group:*`, cuatro miembros adaptados y planificados, sincronización por grupo y secuencia Alfombra Roja → Totales Post sobre el mismo problema adaptado.
 
 ## Casos negativos
 

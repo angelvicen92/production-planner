@@ -93,6 +93,8 @@ const evidence = {
   implementationBlockers: representability.implementationBlockers,
   nextImplementationBlocker: representability.nextImplementationBlocker,
   adapterProbe: representability.adapterProbe,
+  jointGroupProbe: representability.jointGroupProbe,
+  jointGroupCapabilityProven: representability.jointGroupCapabilityProven,
   representabilityGate: gate,
   noEngineInputPartial: gate.engineInputBuilt === false,
   noSeedSchedule: expansion.tasks.every((task) => !("start" in task) && !("end" in task) && !("startPlanned" in task) && !("referenceOrder" in task)),
@@ -172,7 +174,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-${next ? `El siguiente paso de menor riesgo es **${next.code}**: Planner Next ya soporta grupos conjuntos mediante jointGroupId, no requiere nuevas reglas de búsqueda, exige una ampliación contractual menor en EngineInput/adaptador y desbloquea semántica real de C06/C10 que hoy se perdería si se aproximara con dependencias.` : "No hay blocker técnico pendiente."}
+${next ? `El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=${representability.jointGroupCapabilityProven}: EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard se ejecutan sobre adapter.problem con complete=${representability.jointGroupProbe.complete}, hardValid=${representability.jointGroupProbe.hardValid}, jointGroupViolationCount=${representability.jointGroupProbe.jointGroupViolationCount}, ambos grupos sincronizados y secuencia Alfombra Roja → Totales Post preservada. Por eso el siguiente paso de menor riesgo es **${next.code}**.` : "No hay blocker técnico pendiente."}
 
 ## No implementado
 

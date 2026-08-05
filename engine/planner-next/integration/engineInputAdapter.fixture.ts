@@ -13,7 +13,7 @@ export function createSupportedEngineInputAdapterFixture(): EngineInput {
     meal: { start: "13:00", end: "14:00" },
     plannerNext: {
       searchPolicy: "EXACT_CONSTRUCTIVE",
-      searchBudget: { bestK: 3, maxBacktracks: 40, maxPatterns: 50, maxBranchExpansions: 200 },
+      searchBudget: { bestK: 3, maxBacktracks: 40, maxPatterns: 50, maxBranchExpansions: 10000 },
       timeGridMinutes: 5,
       participantTransitionMinutes: 10,
       resourceTransitionMinutes: 15,
@@ -62,10 +62,10 @@ export function createSpec10017JointGroupEngineInputFixture(): EngineInput {
   const input = createSupportedEngineInputAdapterFixture();
   input.tasks = input.tasks.filter((task) => task.id !== 105);
   input.locks = input.locks.filter((lock) => lock.taskId !== 105);
-  input.plannerNext!.mainFlow.preferredEnd = "10:30";
-  input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 2000 };
-  input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: "10:30", availabilityEnd: "12:00", source: "spec10-017" });
-  input.contestantAvailabilityById = { ...input.contestantAvailabilityById, 201: { start: "08:00", end: "12:00" }, 202: { start: "08:00", end: "12:00" } };
+  input.plannerNext!.mainFlow.preferredEnd = "12:30";
+  input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 10000 };
+  input.planSpaceSettings.push({ spaceId: 304, zoneId: 403, availabilityStart: "12:30", availabilityEnd: "13:00", source: "spec10-017" });
+  input.contestantAvailabilityById = { ...input.contestantAvailabilityById, 201: { start: "08:00", end: "13:00" }, 202: { start: "08:00", end: "13:00" } };
   input.tasks.push(
     task(201, { templateId: 9201, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 304, zoneId: 403, durationOverrideMin: 10, jointGroupId: "a2-c06-c10-alfombra-roja" }),
     task(202, { templateId: 9201, plannerNextKind: "auxiliary", contestantId: 202, spaceId: 304, zoneId: 403, durationOverrideMin: 10, jointGroupId: "a2-c06-c10-alfombra-roja" }),

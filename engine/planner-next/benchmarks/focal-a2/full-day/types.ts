@@ -275,27 +275,32 @@ export interface RepresentabilityAnalysis {
   readonly adapterProbe: {
     readonly executed: true;
     readonly supported: boolean;
-    readonly engineInputPreflightSupported?: boolean;
-    readonly adapterSupported?: boolean;
-    readonly plannerNextPreflightSupported?: boolean;
-    readonly sourceGroupCount?: number;
-    readonly projectedGroupCount?: number;
-    readonly projectedMemberCount?: number;
-    readonly dependenciesPreserved?: boolean;
-    readonly firstGroupSynchronized?: boolean;
-    readonly secondGroupSynchronized?: boolean;
-    readonly sequencePreserved?: boolean;
-    readonly complete?: boolean;
-    readonly hardValid?: boolean;
-    readonly jointGroupViolationCount?: number;
-    readonly deterministic?: boolean;
-    readonly orderInvariant?: boolean;
-    readonly inputImmutable?: boolean;
     readonly projectedGlobalResourceTransitionMinutes: number | null;
     readonly supportsSpecificCoachRouteTransition: boolean;
     readonly problemHasRouteSpecificCoachTransition: boolean;
     readonly coachResourcesHaveOriginDestinationRule: boolean;
   };
+  readonly jointGroupProbe: {
+    readonly executed: true;
+    readonly engineInputPreflightSupported: boolean;
+    readonly adapterSupported: boolean;
+    readonly plannerNextPreflightSupported: boolean;
+    readonly sourceGroupCount: number;
+    readonly projectedGroupCount: number;
+    readonly projectedMemberCount: number;
+    readonly dependenciesPreserved: boolean;
+    readonly firstGroupSynchronized: boolean;
+    readonly secondGroupSynchronized: boolean;
+    readonly sequencePreserved: boolean;
+    readonly complete: boolean;
+    readonly hardValid: boolean;
+    readonly jointGroupViolationCount: number;
+    readonly deterministic: boolean;
+    readonly orderInvariant: boolean;
+    readonly inputImmutable: boolean;
+    readonly canonicalIds: readonly string[];
+  };
+  readonly jointGroupCapabilityProven: boolean;
 }
 
 export interface RepresentabilityGateResult {

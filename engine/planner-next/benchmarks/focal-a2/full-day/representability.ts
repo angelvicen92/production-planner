@@ -1,8 +1,6 @@
 import { adaptEngineInputToPlannerNextProblem } from "../../../integration/engineInputAdapter";
-import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
-import { planMainFlowAndFeeders } from "../../../planMainFlowAndFeeders";
-import { preflight as preflightPlannerNextProblem, validatePlan } from "../../../validate";
-import { preflightEngineInputForPlannerNext } from "../../../integration/engineInputPreflight";
+import { createSupportedEngineInputAdapterFixture } from "../../../integration/engineInputAdapter.fixture";
+import { runSpec10017Probe } from "../../runSpec10017JointGroupsBenchmark";
 import type { ExpandedCanonicalFullA2Template, RepresentabilityAnalysis, RepresentabilityBlocker, RepresentabilityExecutor, RepresentabilityGateResult } from "./types";
 import { contractFieldPresence } from "./types";
 
@@ -29,37 +27,9 @@ function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
   const resources = Array.isArray(problem.resources) ? problem.resources as readonly Record<string, unknown>[] : [];
   const problemHasRouteSpecificCoachTransition = ["coachRouteTransitions", "resourceRouteTransitions", "routeTransitionRules"].some((key) => key in problem);
   const coachResourcesHaveOriginDestinationRule = resources.some((resource) => resource.type === "coach" && ("fromSpaceId" in resource || "toSpaceId" in resource || "transitionScope" in resource));
-  const jointInput = createSpec10017JointGroupEngineInputFixture();
-  const before = structuredClone(jointInput);
-  const jointPreflight = preflightEngineInputForPlannerNext(jointInput);
-  const jointAdapter = adaptEngineInputToPlannerNextProblem(jointInput);
-  const jointPlannerPreflight = jointAdapter.status === "SUPPORTED" ? preflightPlannerNextProblem(jointAdapter.problem) : ["ADAPTER_UNSUPPORTED"];
-  const plan = jointAdapter.status === "SUPPORTED" && jointPlannerPreflight.length === 0 ? planMainFlowAndFeeders(jointAdapter.problem) : null;
-  const hard = plan && jointAdapter.status === "SUPPORTED" ? validatePlan(jointAdapter.problem, plan.scheduledTasks, plan.scheduledSetupPreparations, plan.scheduledSpaceMeals, plan.scheduledParticipantMeals, plan.scheduledResourceMeals, plan.scheduledItinerantUnitMeals) : null;
-  const first = plan?.scheduledTasks.filter(t => t.jointGroupId === "joint-group:a2-c06-c10-alfombra-roja") ?? [];
-  const second = plan?.scheduledTasks.filter(t => t.jointGroupId === "joint-group:a2-c06-c10-totales-post") ?? [];
-  const reversed = createSpec10017JointGroupEngineInputFixture(); reversed.tasks.reverse();
-  const reversedAdapter = adaptEngineInputToPlannerNextProblem(reversed);
-  const again = jointAdapter.status === "SUPPORTED" ? adaptEngineInputToPlannerNextProblem(createSpec10017JointGroupEngineInputFixture()) : null;
   return {
     executed: true,
     supported: result.status === "SUPPORTED",
-    engineInputPreflightSupported: jointPreflight.status === "SUPPORTED",
-    adapterSupported: jointAdapter.status === "SUPPORTED",
-    plannerNextPreflightSupported: jointPlannerPreflight.length === 0,
-    sourceGroupCount: 2,
-    projectedGroupCount: jointAdapter.status === "SUPPORTED" ? new Set(jointAdapter.problem.tasks.flatMap(t => t.jointGroupId ? [t.jointGroupId] : [])).size : 0,
-    projectedMemberCount: jointAdapter.status === "SUPPORTED" ? jointAdapter.problem.tasks.filter(t => t.jointGroupId).length : 0,
-    dependenciesPreserved: jointAdapter.status === "SUPPORTED" && jointAdapter.problem.tasks.find(t=>t.id==="task:203")?.dependencies[0] === "task:201" && jointAdapter.problem.tasks.find(t=>t.id==="task:204")?.dependencies[0] === "task:202",
-    firstGroupSynchronized: first.length === 2 && new Set(first.map(t => `${t.start}:${t.end}`)).size === 1,
-    secondGroupSynchronized: second.length === 2 && new Set(second.map(t => `${t.start}:${t.end}`)).size === 1,
-    sequencePreserved: first.length === 2 && second.length === 2 && Math.min(...second.map(t=>t.start)) >= Math.max(...first.map(t=>t.end)),
-    complete: plan?.complete ?? false,
-    hardValid: hard?.hardValid ?? false,
-    jointGroupViolationCount: hard?.jointGroupViolationCount ?? null,
-    deterministic: jointAdapter.status === "SUPPORTED" && again?.status === "SUPPORTED" && jointAdapter.problemFingerprint === again.problemFingerprint,
-    orderInvariant: jointAdapter.status === "SUPPORTED" && reversedAdapter.status === "SUPPORTED" && jointAdapter.problemFingerprint === reversedAdapter.problemFingerprint,
-    inputImmutable: JSON.stringify(jointInput) === JSON.stringify(before),
     projectedGlobalResourceTransitionMinutes: result.status === "SUPPORTED" ? result.problem.resourceTransitionMinutes : null,
     supportsSpecificCoachRouteTransition: problemHasRouteSpecificCoachTransition && coachResourcesHaveOriginDestinationRule,
     problemHasRouteSpecificCoachTransition,
@@ -67,7 +37,105 @@ function runAdapterTransitionProbe(): RepresentabilityAnalysis["adapterProbe"] {
   };
 }
 
-export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanonicalFullA2Template): RepresentabilityAnalysis {
+function failedJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
+  return {
+    executed: true,
+    engineInputPreflightSupported: false,
+    adapterSupported: false,
+    plannerNextPreflightSupported: false,
+    sourceGroupCount: 0,
+    projectedGroupCount: 0,
+    projectedMemberCount: 0,
+    dependenciesPreserved: false,
+    firstGroupSynchronized: false,
+    secondGroupSynchronized: false,
+    sequencePreserved: false,
+    complete: false,
+    hardValid: false,
+    jointGroupViolationCount: 1,
+    deterministic: false,
+    orderInvariant: false,
+    inputImmutable: false,
+    canonicalIds: [],
+  };
+}
+
+function runJointGroupProbe(): RepresentabilityAnalysis["jointGroupProbe"] {
+  try {
+    const baseline = runSpec10017Probe();
+    const repeated = runSpec10017Probe();
+    const inverted = runSpec10017Probe(() => {
+      const input = baseline.inputSnapshot;
+      return {
+        ...structuredClone(input),
+        tasks: [...input.tasks].reverse(),
+        planResourceItems: [...input.planResourceItems].reverse(),
+        planSpaceSettings: [...input.planSpaceSettings].reverse(),
+        planZoneSettings: [...input.planZoneSettings].reverse(),
+        locks: [...input.locks].reverse(),
+      };
+    });
+    const deterministic = baseline.sourceFingerprint === repeated.sourceFingerprint
+      && baseline.identityMapFingerprint === repeated.identityMapFingerprint
+      && baseline.problemFingerprint === repeated.problemFingerprint
+      && baseline.planFingerprint === repeated.planFingerprint;
+    const orderInvariant = baseline.sourceFingerprint === inverted.sourceFingerprint
+      && baseline.identityMapFingerprint === inverted.identityMapFingerprint
+      && baseline.problemFingerprint === inverted.problemFingerprint
+      && baseline.planFingerprint === inverted.planFingerprint;
+    return {
+      executed: true,
+      engineInputPreflightSupported: baseline.engineInputPreflightStatus === "SUPPORTED",
+      adapterSupported: baseline.adapterStatus === "SUPPORTED",
+      plannerNextPreflightSupported: baseline.plannerNextPreflightReasonCodes.length === 0,
+      sourceGroupCount: baseline.sourceGroupCount,
+      projectedGroupCount: baseline.projectedGroupCount,
+      projectedMemberCount: baseline.projectedMemberCount,
+      dependenciesPreserved: baseline.dependenciesPreserved,
+      firstGroupSynchronized: baseline.synchronization.firstGroupSynchronized,
+      secondGroupSynchronized: baseline.synchronization.secondGroupSynchronized,
+      sequencePreserved: baseline.precedence.sequencePreserved,
+      complete: baseline.complete,
+      hardValid: baseline.hardValid,
+      jointGroupViolationCount: baseline.jointGroupViolationCount,
+      deterministic,
+      orderInvariant,
+      inputImmutable: baseline.inputImmutable,
+      canonicalIds: baseline.canonicalGroupIds,
+    };
+  } catch {
+    return failedJointGroupProbe();
+  }
+}
+
+function jointGroupCapabilityProven(probe: RepresentabilityAnalysis["jointGroupProbe"]): boolean {
+  return contractFieldPresence.taskInputHasJointGroupId
+    && probe.executed
+    && probe.engineInputPreflightSupported
+    && probe.adapterSupported
+    && probe.plannerNextPreflightSupported
+    && probe.sourceGroupCount === 2
+    && probe.projectedGroupCount === 2
+    && probe.projectedMemberCount === 4
+    && probe.dependenciesPreserved
+    && probe.firstGroupSynchronized
+    && probe.secondGroupSynchronized
+    && probe.sequencePreserved
+    && probe.complete
+    && probe.hardValid
+    && probe.jointGroupViolationCount === 0
+    && probe.deterministic
+    && probe.orderInvariant
+    && probe.inputImmutable;
+}
+
+function jointGroupFailureLayer(probe: RepresentabilityAnalysis["jointGroupProbe"]): "ENGINE_INPUT" | "ADAPTER" | "PLANNER_NEXT" {
+  if (!probe.engineInputPreflightSupported) return "ENGINE_INPUT";
+  if (!probe.adapterSupported) return "ADAPTER";
+  return "PLANNER_NEXT";
+}
+
+export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanonicalFullA2Template, options: { readonly jointGroupProbe?: RepresentabilityAnalysis["jointGroupProbe"] } = {}): RepresentabilityAnalysis {
   const requiredCreationInputs = expansion.requiredCreationInputs.map((input) => blocker({
     code: `SOURCE_CONFIGURATION_REQUIRED_${input.toUpperCase()}`,
     layer: "SOURCE_CONFIGURATION",
@@ -76,6 +144,10 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     operationalExplanation: "La fuente exige este dato al crear el día, pero no fija un valor productivo.",
     semanticLoss: "Inventarlo convertiría una decisión de producción en dato canónico y contaminaría la plantilla.",
   }));
+
+  const adapterProbe = runAdapterTransitionProbe();
+  const jointGroupProbe = options.jointGroupProbe ?? runJointGroupProbe();
+  const jointGroupCapability = jointGroupCapabilityProven(jointGroupProbe);
 
   const implementationBlockers: RepresentabilityBlocker[] = [];
   if (!contractFieldPresence.taskInputHasJointGroupId) {
@@ -86,6 +158,16 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
       canonicalIds: expansion.jointOperations.flatMap((operation) => operation.taskIds),
       operationalExplanation: "Planner Next ya entiende jointGroupId, pero TaskInput/EngineInput no tiene el campo y el adaptador no puede proyectarlo.",
       semanticLoss: "Sustituirlo por dependencias preservaría orden, pero no mismo inicio y final.",
+      implementationRank: 1,
+    }));
+  } else if (!jointGroupCapability) {
+    implementationBlockers.push(blocker({
+      code: "PLANNER_NEXT_DEPENDENT_JOINT_GROUP_UNSUPPORTED",
+      layer: jointGroupFailureLayer(jointGroupProbe),
+      affectedRule: "operaciones conjuntas dependientes C06/C10",
+      canonicalIds: ["task:201", "task:202", "task:203", "task:204"],
+      operationalExplanation: "El probe conectado EngineInput → adaptador → Planner Next no demuestra planificación completa y hard-valid de Alfombra Roja conjunta seguida de Totales Post conjunto.",
+      semanticLoss: "Sin esa capacidad se pierde la sincronización de grupos con predecesores externos individuales o la precedencia Alfombra Roja → Totales Post.",
       implementationRank: 1,
     }));
   }
@@ -125,7 +207,6 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     }));
   }
 
-  const adapterProbe = runAdapterTransitionProbe();
   if (adapterProbe.projectedGlobalResourceTransitionMinutes === 30 && !adapterProbe.supportsSpecificCoachRouteTransition) {
     implementationBlockers.push(blocker({
       code: "ADAPTER_COACH_ROUTE_TRANSITION_SCOPE_LOSS",
@@ -146,6 +227,8 @@ export function analyzeCanonicalFullA2Representability(expansion: ExpandedCanoni
     blockers: [...requiredCreationInputs, ...implementationBlockers],
     nextImplementationBlocker,
     adapterProbe,
+    jointGroupProbe,
+    jointGroupCapabilityProven: jointGroupCapability,
   });
 }
 

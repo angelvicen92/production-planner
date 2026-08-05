@@ -35,7 +35,7 @@ La regla de setup conserva families=[sillon, estrellas], oneBlockPerFamily=true,
 
 ## Siguiente blocker técnico razonado
 
-El siguiente paso de menor riesgo es **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED**: Planner Next ya soporta grupos conjuntos mediante jointGroupId, no requiere nuevas reglas de búsqueda, exige una ampliación contractual menor en EngineInput/adaptador y desbloquea semántica real de C06/C10 que hoy se perdería si se aproximara con dependencias.
+El probe focal de SPEC10-017 demuestra jointGroupCapabilityProven=true: EngineInput preflight, adaptador, preflight Planner Next, planificación y validación hard se ejecutan sobre adapter.problem con complete=true, hardValid=true, jointGroupViolationCount=0, ambos grupos sincronizados y secuencia Alfombra Roja → Totales Post preservada. Por eso el siguiente paso de menor riesgo es **ENGINE_INPUT_SETUP_POLICY_NOT_PROJECTED**.
 
 ## No implementado
 

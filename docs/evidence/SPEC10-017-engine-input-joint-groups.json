@@ -11,52 +11,94 @@
     "joint-group:a2-c06-c10-alfombra-roja",
     "joint-group:a2-c06-c10-totales-post"
   ],
-  "tasksByGroup": {
+  "sourceFingerprint": "36f87c345d92ee17be4a37fa6cc567756bafee7285a814078084a7153909d693",
+  "identityMapFingerprint": "5c256db4b3f1a724a240c246e7a8fdb4b93ac8cca6b4161650f68bcb8f3a1abc",
+  "problemFingerprint": "96eff0bd99a50abf84016529922918e99f143182fbf9981aa2d994cb4ea03456",
+  "planFingerprint": "c8843bcde0a336763c8935249345dd75c163205f89b34b37ceea1824b8de3398",
+  "adaptedTasksByGroup": {
     "joint-group:a2-c06-c10-alfombra-roja": [
       {
-        "taskId": "a-joint-member-2",
-        "participantId": "participant-c",
-        "start": 605,
-        "end": 625,
+        "taskId": "task:201",
+        "participantId": "participant:201",
+        "duration": 10,
         "dependencies": []
       },
       {
-        "taskId": "z-joint-member-1",
-        "participantId": "participant-z",
-        "start": 605,
-        "end": 625,
+        "taskId": "task:202",
+        "participantId": "participant:202",
+        "duration": 10,
         "dependencies": []
       }
     ],
     "joint-group:a2-c06-c10-totales-post": [
       {
-        "taskId": "a2-c06-totales-post",
-        "participantId": "participant-c",
-        "start": 625,
-        "end": 630,
+        "taskId": "task:203",
+        "participantId": "participant:201",
+        "duration": 5,
         "dependencies": [
-          "a-joint-member-2"
+          "task:201"
         ]
       },
       {
-        "taskId": "a2-c10-totales-post",
-        "participantId": "participant-z",
-        "start": 625,
-        "end": 630,
+        "taskId": "task:204",
+        "participantId": "participant:202",
+        "duration": 5,
         "dependencies": [
-          "z-joint-member-1"
+          "task:202"
+        ]
+      }
+    ]
+  },
+  "plannedTasksByGroup": {
+    "joint-group:a2-c06-c10-alfombra-roja": [
+      {
+        "taskId": "task:201",
+        "participantId": "participant:201",
+        "duration": 10,
+        "start": 760,
+        "end": 770,
+        "dependencies": []
+      },
+      {
+        "taskId": "task:202",
+        "participantId": "participant:202",
+        "duration": 10,
+        "start": 760,
+        "end": 770,
+        "dependencies": []
+      }
+    ],
+    "joint-group:a2-c06-c10-totales-post": [
+      {
+        "taskId": "task:203",
+        "participantId": "participant:201",
+        "duration": 5,
+        "start": 770,
+        "end": 775,
+        "dependencies": [
+          "task:201"
+        ]
+      },
+      {
+        "taskId": "task:204",
+        "participantId": "participant:202",
+        "duration": 5,
+        "start": 770,
+        "end": 775,
+        "dependencies": [
+          "task:202"
         ]
       }
     ]
   },
   "dependenciesByMember": {
-    "a-joint-member-2": [],
-    "z-joint-member-1": [],
-    "a2-c06-totales-post": [
-      "a-joint-member-2"
+    "task:201": [],
+    "task:202": [],
+    "task:203": [
+      "task:201"
     ],
-    "a2-c10-totales-post": [
-      "z-joint-member-1"
+    "task:204": [
+      "task:202"
     ]
   },
   "engineInputPreflight": {
@@ -71,315 +113,76 @@
     "supported": true,
     "reasonCodes": []
   },
-  "sourceFingerprint": "b159fe7fd40aab94c5ebc9bb143edccbad003280586917c97f9cc705ef3343f8",
-  "identityMapFingerprint": "5c256db4b3f1a724a240c246e7a8fdb4b93ac8cca6b4161650f68bcb8f3a1abc",
-  "problemFingerprint": "5ebc18f9b66450132d15a305050dd9226391e716b6e9718e8ccfde67def1467d",
-  "planFingerprint": "204c97c930784ecf853e33100df582b553da649a7e5e6de03a00f1d703878556",
-  "metrics": {
-    "hardValid": true,
-    "dependencyViolationCount": 0,
-    "overlapViolationCount": 0,
-    "transitionViolationCount": 0,
-    "availabilityViolationCount": 0,
-    "taskAvailabilityViolationCount": 0,
-    "blockViolationCount": 0,
-    "resourceAvailabilityViolationCount": 0,
-    "resourceOverlapViolationCount": 0,
-    "resourceTransitionViolationCount": 0,
-    "secondaryContinuityViolationCount": 0,
-    "setupViolationCount": 0,
-    "setupPreparationViolationCount": 0,
-    "jointGroupViolationCount": 0,
-    "technicalOperationViolationCount": 0,
-    "technicalChainViolationCount": 0,
-    "spaceMealViolationCount": 0,
-    "mainFlowMealViolationCount": 0,
-    "anchoredAccompanimentViolationCount": 0,
-    "participantMealViolationCount": 0,
-    "resourceMealViolationCount": 0,
-    "itinerantUnitMealViolationCount": 0,
-    "reasonCodes": [],
-    "complete": true,
-    "plannedTaskCount": 28,
-    "unplannedTaskCount": 0,
-    "mainFlowStart": 780,
-    "mainFlowEnd": 900,
-    "mainFlowGapMinutes": 0,
-    "mainFlowMealStart": null,
-    "mainFlowMealEnd": null,
-    "mainFlowMorningTaskCount": 8,
-    "mainFlowAfternoonTaskCount": 0,
-    "mainFlowSelectedSplitIndex": null,
-    "mainFlowTimelineCandidateCount": 6,
-    "mainFlowAllMorningAlternativeCount": 0,
-    "mainFlowSplitAlternativeCount": 0,
-    "blockSequence": [
-      "coach-a",
-      "coach-b"
-    ],
-    "blockCountByKey": {
-      "coach-a": 1,
-      "coach-b": 1
-    },
-    "participantPresenceMinutesById": {
-      "participant-a": 90,
-      "participant-c": 190,
-      "participant-d": 110,
-      "participant-e": 170,
-      "participant-f": 170,
-      "participant-g": 120,
-      "participant-h": 120,
-      "participant-z": 205
-    },
-    "totalParticipantPresenceMinutes": 1175,
-    "maxParticipantPresenceMinutes": 205,
-    "resourcePresenceMinutesById": {
-      "joint-resource": 25
-    },
-    "resourceInternalGapMinutesById": {
-      "joint-resource": 0
-    },
-    "resourceOperationalBlockCountById": {
-      "joint-resource": 1
-    },
-    "resourceAuthorizedMealMinutesById": {
-      "joint-resource": 0
-    },
-    "resourceMoveCountById": {
-      "joint-resource": 0
-    },
-    "resourceTransitionSlackMinutesById": {
-      "joint-resource": 0
-    },
-    "totalResourcePresenceMinutes": 25,
-    "maxResourcePresenceMinutes": 25,
-    "alternativesGenerated": 390,
-    "alternativesRetained": 5,
-    "branchesExplored": 17357,
-    "backtracks": 0,
-    "patternsGenerated": 6,
-    "patternsEvaluated": 6,
-    "branchBudgetConsumed": 17357,
-    "feederClosureFallbackUsed": false,
-    "feederClosureBranchesExplored": 0,
-    "feederClosureCompleteCandidateCount": 1,
-    "feederClosureMaximumPartialStates": 0,
-    "feederClosureSelectedOrder": [],
-    "feederClosureZeroAlternativeTaskIds": [],
-    "feederClosureRejectedStateBlockerIds": [],
-    "searchStopReason": "SOLUTION_FOUND",
-    "runtimeMs": 146.93740099999997,
-    "planFingerprint": "204c97c930784ecf853e33100df582b553da649a7e5e6de03a00f1d703878556",
-    "auxiliaryTaskCount": 12,
-    "auxiliaryPlannedTaskCount": 12,
-    "auxiliaryBranchesExplored": 15781,
-    "auxiliarySelectionOrder": [
-      "b-family-a-task-1",
-      "x-family-a-task-2",
-      "z-family-b-task-2",
-      "c-family-b-task-1",
-      "a-family-c-task-1",
-      "y-family-c-task-2",
-      "a-joint-member-2",
-      "z-joint-member-1",
-      "a2-c06-totales-post",
-      "a2-c10-totales-post",
-      "flexible-task-1",
-      "flexible-task-2"
-    ],
-    "auxiliaryCandidateCountWhenSelectedByTaskId": {
-      "flexible-task-1": 27,
-      "flexible-task-2": 38
-    },
-    "saturatedResourceWindowBlockCount": 0,
-    "saturatedResourceWindowBlockPlannedCount": 0,
-    "saturatedResourceWindowBlockBranchesExplored": 0,
-    "saturatedResourceWindowBlockCandidateCountByKey": {},
-    "saturatedResourceWindowBlockTaskIdsByKey": {},
-    "saturatedResourceWindowBlockResourceIdsByKey": {},
-    "saturatedResourceWindowBlockStartByKey": {},
-    "saturatedResourceWindowBlockEndByKey": {},
-    "saturatedResourceWindowBlockSelectedOrderByKey": {},
-    "secondaryBlockBranchesExplored": 955,
-    "auxiliaryWorkItemSelectionOrder": [
-      "space:setup-room",
-      "joint:joint-group:a2-c06-c10-alfombra-roja",
-      "joint:joint-group:a2-c06-c10-totales-post",
-      "task:flexible-task-1",
-      "task:flexible-task-2"
-    ],
-    "secondaryBlockCandidateCountWhenSelectedBySpaceId": {
-      "setup-room": 98
-    },
-    "secondarySpaceStartById": {
-      "setup-room": 660
-    },
-    "secondarySpaceEndById": {
-      "setup-room": 780
-    },
-    "secondarySpaceGapMinutesById": {
-      "setup-room": 0
-    },
-    "secondarySpaceBlockCountById": {
-      "setup-room": 1
-    },
-    "setupFamilySequenceBySpaceId": {
-      "setup-room": [
-        "family-a",
-        "family-b",
-        "family-c"
-      ]
-    },
-    "setupBlockCountBySpaceAndFamily": {
-      "setup-room|family-a": 1,
-      "setup-room|family-b": 1,
-      "setup-room|family-c": 1
-    },
-    "setupSwitchCountBySpaceId": {
-      "setup-room": 2
-    },
-    "setupPreparationCount": 3,
-    "setupPreparationMinutesBySpaceId": {
-      "setup-room": 30
-    },
-    "setupPreparationCountBySpaceAndFamily": {
-      "setup-room|family-a": 1,
-      "setup-room|family-b": 1,
-      "setup-room|family-c": 1
-    },
-    "setupPreparationSequenceBySpaceId": {
-      "setup-room": [
-        "family-a",
-        "family-b",
-        "family-c"
-      ]
-    },
-    "jointGroupCount": 2,
-    "jointScheduledTaskCount": 4,
-    "jointGroupCandidateCountWhenSelectedById": {
-      "joint-group:a2-c06-c10-alfombra-roja": 9,
-      "joint-group:a2-c06-c10-totales-post": 1
-    },
-    "jointGroupStartById": {
-      "joint-group:a2-c06-c10-alfombra-roja": 605,
-      "joint-group:a2-c06-c10-totales-post": 625
-    },
-    "jointGroupEndById": {
-      "joint-group:a2-c06-c10-alfombra-roja": 625,
-      "joint-group:a2-c06-c10-totales-post": 630
-    },
-    "jointGroupParticipantIdsById": {
-      "joint-group:a2-c06-c10-alfombra-roja": [
-        "participant-c",
-        "participant-z"
-      ],
-      "joint-group:a2-c06-c10-totales-post": [
-        "participant-c",
-        "participant-z"
-      ]
-    },
-    "technicalOperationCount": 0,
-    "technicalOperationPlannedCount": 0,
-    "technicalOperationStartById": {},
-    "technicalOperationEndById": {},
-    "technicalOperationCandidateCountWhenSelectedById": {},
-    "technicalChainCount": 0,
-    "technicalChainPlannedCount": 0,
-    "technicalChainScheduledTaskCount": 0,
-    "technicalChainCandidateCountWhenSelectedByRootId": {},
-    "technicalChainTaskIdsByRootId": {},
-    "technicalChainStartByRootId": {},
-    "technicalChainEndByRootId": {},
-    "technicalChainBranchesExplored": 0,
-    "spaceMealCount": 0,
-    "spaceMealPlannedCount": 0,
-    "spaceMealCandidateCountWhenSelectedBySpaceId": {},
-    "spaceMealStartBySpaceId": {},
-    "spaceMealEndBySpaceId": {},
-    "spaceMealMinutesBySpaceId": {},
-    "spaceMealBranchesExplored": 0,
-    "futureFeasibilityChecks": 288,
-    "futureFeasibilityBranchesExplored": 14447,
-    "futureInfeasibleCandidatesPruned": 5,
-    "futureTopRankedCandidatesPruned": 0,
-    "futureBlockerCountByWorkItemKey": {
-      "joint:joint-group:a2-c06-c10-totales-post": 5
-    },
-    "acceptedPathMinimumFutureAlternativeCount": 1,
-    "participantMealCount": 0,
-    "participantMealPlannedCount": 0,
-    "participantMealProtectedCount": 0,
-    "participantMealCandidateCount": 0,
-    "participantMealBranchesExplored": 0,
-    "participantMealFutureFeasibilityChecks": 1,
-    "participantMealFutureInfeasibleBranches": 0,
-    "participantMealMaximumSimultaneous": 0,
-    "participantMealCapacityLimit": 0,
-    "participantMealStartByTaskId": {},
-    "participantMealEndByTaskId": {},
-    "participantMealRejectedReasonCountByCode": {},
-    "participantMealBlockingTaskIds": [],
-    "participantMealAcceptedWitnessFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "anchoredAccompanimentCount": 0,
-    "anchoredAccompanimentPlannedCount": 0,
-    "anchoredAccompanimentScheduledSegmentCount": 0,
-    "anchoredAccompanimentCandidatePositionsEvaluated": 0,
-    "anchoredAccompanimentRejectedPositionCount": 0,
-    "anchoredAccompanimentAnchorTaskIdById": {},
-    "anchoredAccompanimentBeforeTaskIdsById": {},
-    "anchoredAccompanimentAfterTaskIdsById": {},
-    "anchoredAccompanimentOperationStartById": {},
-    "anchoredAccompanimentAnchorStartById": {},
-    "anchoredAccompanimentAnchorEndById": {},
-    "anchoredAccompanimentOperationEndById": {},
-    "anchoredAccompanimentTotalDurationById": {},
-    "anchoredAccompanimentAdjacencySatisfiedById": {},
-    "anchoredAccompanimentParticipantSatisfiedById": {},
-    "anchoredAccompanimentSpacesSatisfiedById": {},
-    "anchoredAccompanimentResourcesSatisfiedById": {},
-    "anchoredAccompanimentTaskWindowsSatisfiedById": {},
-    "anchoredAccompanimentCompleteById": {},
-    "anchoredAccompanimentRejectedReasonCountByCode": {}
-  },
-  "synchronization": {
-    "firstGroup": true,
-    "secondGroup": true
-  },
-  "precedence": {
-    "sequencePreserved": true
-  },
-  "jointGroupViolationCount": 0,
   "complete": true,
   "hardValid": true,
+  "jointGroupViolationCount": 0,
+  "firstGroupSynchronized": true,
+  "secondGroupSynchronized": true,
+  "sequencePreserved": true,
+  "plannedTaskCount": 10,
+  "unplannedTaskCount": 0,
   "deterministic": true,
   "orderInvariant": true,
   "inputImmutable": true,
+  "repeatedProjectionMatches": true,
+  "invertedProjectionMatches": true,
   "negativeTests": [
-    "invalid runtime type",
-    "blank string",
-    "trimmed mismatch",
-    "technical task",
-    "missing contestant",
-    "non-auxiliary",
-    "internal dependency",
-    "single member"
+    {
+      "caseId": "blank-string",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "runtime-number",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "technical-task",
+      "passed": true,
+      "reasonCodes": [
+        "UNSUPPORTED_JOINT_GROUP_MAPPING"
+      ]
+    },
+    {
+      "caseId": "internal-dependency",
+      "passed": true,
+      "reasonCodes": [
+        "ADAPTED_PROBLEM_NOT_REPRESENTABLE"
+      ]
+    }
   ],
-  "artifactHashes": {
-    "evidenceSha256": "77247299ba8436354ffaba8df69efd1e8beffca5d92b27a812e130a16f798581"
-  },
   "modifiedFiles": [
-    "engine/types.ts",
-    "engine/planner-next/jointTasks.ts",
-    "engine/planner-next/jointTasks.spec.ts",
-    "engine/planner-next/validate.ts",
-    "engine/planner-next/integration/engineInputPreflight.ts",
-    "engine/planner-next/integration/engineInputAdapter.ts",
+    "README.md",
+    "docs/coverage/SPEC10-016-FULL-A2-TEMPLATE.md",
+    "docs/coverage/SPEC10-017-ENGINE-INPUT-JOINT-GROUPS.md",
+    "docs/evidence/SPEC10-016-full-a2-canonical-template.json",
+    "docs/evidence/SPEC10-017-engine-input-joint-groups.json",
+    "engine/planner-next/benchmarks/__tests__/fullA2CanonicalTemplate.test.ts",
+    "engine/planner-next/benchmarks/focal-a2/full-day/representability.ts",
+    "engine/planner-next/benchmarks/focal-a2/full-day/types.ts",
+    "engine/planner-next/benchmarks/runFullA2CanonicalTemplateBenchmark.ts",
+    "engine/planner-next/benchmarks/runSpec10017JointGroupsBenchmark.ts",
+    "engine/planner-next/futureFeasibility.ts",
     "engine/planner-next/integration/engineInputAdapter.fixture.ts",
     "engine/planner-next/integration/engineInputAdapter.spec.ts",
-    "engine/planner-next/benchmarks/runSpec10017JointGroupsBenchmark.ts",
-    "docs/evidence/SPEC10-017-engine-input-joint-groups.json",
-    "docs/coverage/SPEC10-017-ENGINE-INPUT-JOINT-GROUPS.md",
-    "README.md",
+    "engine/planner-next/integration/engineInputAdapter.ts",
+    "engine/planner-next/integration/engineInputPreflight.spec.ts",
+    "engine/planner-next/integration/engineInputPreflight.ts",
+    "engine/planner-next/jointTasks.spec.ts",
+    "engine/planner-next/jointTasks.ts",
+    "engine/planner-next/placeAuxiliaryTasks.ts",
+    "engine/planner-next/validate.ts",
+    "engine/types.ts",
     "package.json"
-  ]
+  ],
+  "artifactHashes": {
+    "hashScope": "canonical evidence payload excluding artifactHashes",
+    "evidencePayloadSha256": "ed59708ecb71c4d9df3da2757b299855061e330aae7c5030a5a8ff05063b34df",
+    "coverageSha256": "8c5be4fe8aa153d31aa1f86b56f019f5764f8806203208ee080b872cbb191b00"
+  }
 }

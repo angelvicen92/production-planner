@@ -6,6 +6,7 @@ import { preflight as preflightPlannerNextProblem } from "../validate";
 import { preflightEngineInputForPlannerNext } from "./engineInputPreflight";
 import { adaptEngineInputToPlannerNextProblem, engineTimeToMinute, fingerprintPlannerNextProblem, minuteToEngineTime } from "./engineInputAdapter";
 import { createSpec10017JointGroupEngineInputFixture, createSupportedEngineInputAdapterFixture } from "./engineInputAdapter.fixture";
+import { runSpec10017Probe } from "../benchmarks/runSpec10017JointGroupsBenchmark";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { isFlexibleParticipantMealTask } from "./flexibleParticipantMealTasks";
 
@@ -394,4 +395,87 @@ test("SPEC10-017 rejects invalid jointGroupId mappings without partial problems"
   }
   const cancelled = createSpec10017JointGroupEngineInputFixture(); cancelled.tasks.find(t => t.id === 201)!.status = "cancelled";
   assert.equal(adaptEngineInputToPlannerNextProblem(cancelled).status, "UNSUPPORTED");
+});
+
+
+function recursiveCanonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(recursiveCanonical);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, recursiveCanonical(item)]));
+  return value;
+}
+
+function spec10017LogicalProjection(run: ReturnType<typeof runSpec10017Probe>) {
+  return recursiveCanonical({
+    sourceFingerprint: run.sourceFingerprint,
+    identityMapFingerprint: run.identityMapFingerprint,
+    problemFingerprint: run.problemFingerprint,
+    planFingerprint: run.planFingerprint,
+    complete: run.complete,
+    hardValid: run.hardValid,
+    jointGroupViolationCount: run.jointGroupViolationCount,
+    adaptedTasksByGroup: run.adaptedTasksByGroup,
+    plannedTasksByGroup: run.plannedTasksByGroup,
+    dependenciesByMember: run.dependenciesByMember,
+    plannedTaskCount: run.plannedTaskCount,
+    unplannedTaskCount: run.unplannedTaskCount,
+  });
+}
+
+test("SPEC10-017 plans dependent EngineInput joint groups end-to-end from adapter.problem", () => {
+  const input = createSpec10017JointGroupEngineInputFixture();
+  const snapshot = clone(input);
+  const run = runSpec10017Probe(() => input);
+  assert.equal(run.engineInputPreflightStatus, "SUPPORTED");
+  assert.equal(run.adapterStatus, "SUPPORTED");
+  assert.deepEqual(run.plannerNextPreflightReasonCodes, []);
+  assert.equal(run.complete, true);
+  assert.equal(run.hardValid, true);
+  assert.equal(run.projectedMemberCount, 4);
+  assert.equal(run.projectedGroupCount, 2);
+  assert.equal(Object.values(run.plannedTasksByGroup).every((members) => members.length === 2), true);
+  assert.equal(run.synchronization.firstGroupSynchronized, true);
+  assert.equal(run.synchronization.secondGroupSynchronized, true);
+  assert.equal(run.dependenciesPreserved, true);
+  assert.deepEqual(run.dependenciesByMember, { "task:201": [], "task:202": [], "task:203": ["task:201"], "task:204": ["task:202"] });
+  assert.equal(run.precedence.sequencePreserved, true);
+  assert.equal(run.jointGroupViolationCount, 0);
+  assert.equal(run.inputImmutable, true);
+  assert.deepEqual(input, snapshot);
+  const adapted = supported(createSpec10017JointGroupEngineInputFixture());
+  assert.equal(adapted.problem.tasks.find((task) => task.id === "task:205")?.jointGroupId, undefined);
+  assert.equal(adapted.problem.tasks.filter((task) => task.kind === "technical").every((task) => task.jointGroupId === undefined), true);
+
+  const inverted = runSpec10017Probe(() => {
+    const fixture = createSpec10017JointGroupEngineInputFixture();
+    fixture.tasks.reverse(); fixture.planResourceItems.reverse(); fixture.planSpaceSettings.reverse(); fixture.planZoneSettings.reverse(); fixture.locks.reverse();
+    return fixture;
+  });
+  assert.deepEqual(spec10017LogicalProjection(inverted), spec10017LogicalProjection(run));
+});
+
+test("jointGroupId null, undefined and absence share EngineInput source semantics", () => {
+  const withAux = (mode: "absent" | "undefined" | "null" | "first" | "second") => {
+    const input = createSupportedEngineInputAdapterFixture();
+    const aux: any = { id: 106, planId: 701, templateId: 9106, status: "pending", durationOverrideMin: 5, plannerNextKind: "auxiliary", contestantId: 201, spaceId: 302, zoneId: 402 };
+    if (mode === "undefined") aux.jointGroupId = undefined;
+    if (mode === "null") aux.jointGroupId = null;
+    if (mode === "first") aux.jointGroupId = "source-group-a";
+    if (mode === "second") aux.jointGroupId = "source-group-b";
+    input.tasks.push(aux);
+    return input;
+  };
+  const absent = preflightEngineInputForPlannerNext(withAux("absent"));
+  const undefinedValue = preflightEngineInputForPlannerNext(withAux("undefined"));
+  const nullValue = preflightEngineInputForPlannerNext(withAux("null"));
+  assert.equal(absent.sourceFingerprint, undefinedValue.sourceFingerprint);
+  assert.equal(absent.sourceFingerprint, nullValue.sourceFingerprint);
+  for (const input of [withAux("absent"), withAux("undefined"), withAux("null")]) {
+    const preflight = preflightEngineInputForPlannerNext(input);
+    assert.equal(preflight.identityMap.some((entry) => entry.namespace === "joint-group"), false);
+    assert.equal(supported(input).problem.tasks.some((task) => task.jointGroupId !== undefined), false);
+  }
+  const first = preflightEngineInputForPlannerNext(withAux("first"));
+  const second = preflightEngineInputForPlannerNext(withAux("second"));
+  assert.notEqual(first.sourceFingerprint, absent.sourceFingerprint);
+  assert.notEqual(second.sourceFingerprint, first.sourceFingerprint);
 });

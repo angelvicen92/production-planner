@@ -261,7 +261,7 @@ function sourceProjection(input: EngineInput): unknown {
       id: task.id, planId: task.planId, templateId: task.templateId, contestantId: task.contestantId,
       zoneId: task.zoneId, spaceId: task.spaceId, status: task.status, durationOverrideMin: task.durationOverrideMin,
       camerasOverride: task.camerasOverride, resourceRequirements: task.resourceRequirements,
-      itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds, ...(Object.prototype.hasOwnProperty.call(task as unknown as Record<string, unknown>, "jointGroupId") ? { jointGroupId: task.jointGroupId ?? null } : {}),
+      itinerantTeamId: task.itinerantTeamId, allowedItinerantTeamIds: task.allowedItinerantTeamIds, jointGroupId: task.jointGroupId ?? null,
       dependsOnTaskIds: task.dependsOnTaskIds, dependsOnTaskId: task.dependsOnTaskId,
       dependsOnTemplateIds: task.dependsOnTemplateIds, dependsOnTemplateId: task.dependsOnTemplateId,
       ...(task.status !== "cancelled" ? { assignedResourceIds: task.assignedResourceIds } : {}),

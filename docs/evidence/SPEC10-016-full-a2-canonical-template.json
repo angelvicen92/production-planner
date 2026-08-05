@@ -1300,6 +1300,13 @@
   "adapterProbe": {
     "executed": true,
     "supported": true,
+    "projectedGlobalResourceTransitionMinutes": 30,
+    "supportsSpecificCoachRouteTransition": false,
+    "problemHasRouteSpecificCoachTransition": false,
+    "coachResourcesHaveOriginDestinationRule": false
+  },
+  "jointGroupProbe": {
+    "executed": true,
     "engineInputPreflightSupported": true,
     "adapterSupported": true,
     "plannerNextPreflightSupported": true,
@@ -1307,20 +1314,21 @@
     "projectedGroupCount": 2,
     "projectedMemberCount": 4,
     "dependenciesPreserved": true,
-    "firstGroupSynchronized": false,
-    "secondGroupSynchronized": false,
-    "sequencePreserved": false,
-    "complete": false,
-    "hardValid": false,
-    "jointGroupViolationCount": 2,
+    "firstGroupSynchronized": true,
+    "secondGroupSynchronized": true,
+    "sequencePreserved": true,
+    "complete": true,
+    "hardValid": true,
+    "jointGroupViolationCount": 0,
     "deterministic": true,
     "orderInvariant": true,
     "inputImmutable": true,
-    "projectedGlobalResourceTransitionMinutes": 30,
-    "supportsSpecificCoachRouteTransition": false,
-    "problemHasRouteSpecificCoachTransition": false,
-    "coachResourcesHaveOriginDestinationRule": false
+    "canonicalIds": [
+      "joint-group:a2-c06-c10-alfombra-roja",
+      "joint-group:a2-c06-c10-totales-post"
+    ]
   },
+  "jointGroupCapabilityProven": true,
   "representabilityGate": {
     "status": "REJECTED_BLOCKED",
     "analysis": {
@@ -1767,6 +1775,13 @@
       "adapterProbe": {
         "executed": true,
         "supported": true,
+        "projectedGlobalResourceTransitionMinutes": 30,
+        "supportsSpecificCoachRouteTransition": false,
+        "problemHasRouteSpecificCoachTransition": false,
+        "coachResourcesHaveOriginDestinationRule": false
+      },
+      "jointGroupProbe": {
+        "executed": true,
         "engineInputPreflightSupported": true,
         "adapterSupported": true,
         "plannerNextPreflightSupported": true,
@@ -1774,20 +1789,21 @@
         "projectedGroupCount": 2,
         "projectedMemberCount": 4,
         "dependenciesPreserved": true,
-        "firstGroupSynchronized": false,
-        "secondGroupSynchronized": false,
-        "sequencePreserved": false,
-        "complete": false,
-        "hardValid": false,
-        "jointGroupViolationCount": 2,
+        "firstGroupSynchronized": true,
+        "secondGroupSynchronized": true,
+        "sequencePreserved": true,
+        "complete": true,
+        "hardValid": true,
+        "jointGroupViolationCount": 0,
         "deterministic": true,
         "orderInvariant": true,
         "inputImmutable": true,
-        "projectedGlobalResourceTransitionMinutes": 30,
-        "supportsSpecificCoachRouteTransition": false,
-        "problemHasRouteSpecificCoachTransition": false,
-        "coachResourcesHaveOriginDestinationRule": false
-      }
+        "canonicalIds": [
+          "joint-group:a2-c06-c10-alfombra-roja",
+          "joint-group:a2-c06-c10-totales-post"
+        ]
+      },
+      "jointGroupCapabilityProven": true
     },
     "executorCallCount": 0,
     "engineInputBuilt": false,
